@@ -4,8 +4,9 @@ fonts/
 ref/
 resources/
 
-# Log Files
-tasks
+# Output Files
+minecraft
+test
 
 # Prerequisites
 *.d
