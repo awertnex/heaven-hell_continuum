@@ -1,2 +1,3 @@
 # minecraft.c
-A Minecraft clone, 1:1, as best as I could, in C, minimal library usage.
+A 1:1 Minecraft clone but in C, as best as I could, with minimal library usage.
+Eventually I will replace all minecraft resources with my own, for copyright reasons.
