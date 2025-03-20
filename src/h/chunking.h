@@ -12,13 +12,13 @@
 #define WORLD_KILL_Z		-128
 #define WORLD_BOTTOM		-69
 #define WORLD_SEA_LEVEL		62
-#define WORLD_HEIGHT_NORMAL	420 /*- WORLD_BOTTOM*/
-#define WORLD_HEIGHT_HELL	365 /*- WORLD_BOTTOM*/
-#define WORLD_HEIGHT_END	256 /*- WORLD_BOTTOM*/
+#define WORLD_HEIGHT_NORMAL	420 /* - WORLD_BOTTOM */
+#define WORLD_HEIGHT_HELL	365 /* - WORLD_BOTTOM */
+#define WORLD_HEIGHT_END	256 /* - WORLD_BOTTOM */
 #define CHUNK_SIZE			64
 #define WORLD_SIZE			64*32767 /* in each cardinal direction */
 
-#define opacity 180 /*debug mode*/
+#define opacity 180 //debug mode
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
