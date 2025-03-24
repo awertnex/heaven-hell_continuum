@@ -1,3 +1,3 @@
-#include "windows.h"
-#include "minecraft.c"
+#include "main.h"
+#include "main.c"
 

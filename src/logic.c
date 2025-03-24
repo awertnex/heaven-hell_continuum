@@ -3,7 +3,7 @@
 #include <sys/time.h>
 
 #include "h/logic.h"
-#include "h/minecraft.h"
+#include "h/main.h"
 #include "h/chunking.h"
 #include "h/gui.h"
 

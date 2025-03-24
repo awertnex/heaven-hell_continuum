@@ -1,5 +1,5 @@
 #include "h/super_debugger.h"
-#include "h/minecraft.h"
+#include "h/main.h"
 
 // ---- variables --------------------------------------------------------------
 Texture2D texture_super_debugger;

@@ -1,2 +1,2 @@
-#include "minecraft.c"
+#include "main.c"
 
