@@ -88,7 +88,8 @@ void main_init()
 	SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
 	//TODO: fix fullscreen
 	SetWindowState(FLAG_WINDOW_RESIZABLE);
-	SetWindowState(FLAG_VSYNC_HINT);
+    SetWindowState(FLAG_MSAA_4X_HINT);
+	SetWindowState(FLAG_WINDOW_HIGHDPI);
 	SetWindowMinSize(200, 150);
 	hide_cursor;
 	center_cursor;
