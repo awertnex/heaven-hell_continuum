@@ -80,10 +80,9 @@ void parse_chunk_states(chunk *chunk, u16 height)
 //TODO: revise, might not be needed
 chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 {
-	u8 x = 0, y = 0;
-	for (; y < setting.render_distance*2; ++y)
+	for (u8 y = 0; y < setting.render_distance*2; ++y)
 	{
-		for (; x < setting.render_distance*2; ++x)
+		for (u8 x = 0; x < setting.render_distance*2; ++x)
 		{
 			if (chunk_buf[y][x].pos.x == floorf((f32)coordinates->x/CHUNK_SIZE) && chunk_buf[y][x].pos.y == floorf((f32)coordinates->y/CHUNK_SIZE))
 			{
@@ -91,7 +90,6 @@ chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 				return &chunk_buf[y][x];
 			}
 		}
-		x = 0;
 	}
 	*state &= ~flag;
 	return NULL;

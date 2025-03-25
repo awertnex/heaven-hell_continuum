@@ -37,7 +37,6 @@
 #include "h/assets.h"
 #include "h/keymaps.h"
 #include "h/super_debugger.h"
-#include "tests/test.c"
 
 // ---- variables --------------------------------------------------------------
 window win =
@@ -172,6 +171,7 @@ void main_loop()
             target_chunk = get_chunk(&lily.previous_target, &lily.state, STATE_PARSE_TARGET);
             printf("targetxyz[%d, %d, %d]\t\tstate[%d]\n", lily.previous_target.x, lily.previous_target.y, lily.previous_target.z, target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x]); /*temp*/
         }
+
         if (lily.state & STATE_PARSE_TARGET)
             if (target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x] & NOT_EMPTY)
                 draw_block_wires(&lily.previous_target);
@@ -283,9 +283,9 @@ int main(int argc, char **argv)
 void listen(player *player)
 {
     // ---- movement -----------------------------------------------------------
-    if (IsKeyPressed(bind_jump))
-        get_double_press(player, bind_jump) ? player->state ^= STATE_FLYING : 0;
-    if (IsKeyDown(bind_jump))
+    if (IsKeyPressed(BIND_JUMP))
+        get_double_press(player, (KeyboardKey)BIND_JUMP) ? player->state ^= STATE_FLYING : 0;
+    if (IsKeyDown(BIND_JUMP))
     {
         if (player->state & STATE_FLYING)
             player->pos.z += player->movement_speed;
@@ -296,45 +296,45 @@ void listen(player *player)
         }
     }
 
-    if (IsKeyDown(bind_sneak))
+    if (IsKeyDown(BIND_SNEAK))
     {
         player->state & STATE_FLYING ?
             (player->pos.z -= player->movement_speed) :
             (player->state |= STATE_SNEAKING);
     }
-    IsKeyUp(bind_sneak) ? player->state &= ~STATE_SNEAKING : 0;
+    IsKeyUp(BIND_SNEAK) ? player->state &= ~STATE_SNEAKING : 0;
 
-    IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards) ? player->state |= STATE_SPRINTING : 0;
-    IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards) ? player->state &= ~STATE_SPRINTING : 0;
+    IsKeyDown(BIND_SPRINT) && IsKeyDown(BIND_WALK_FORWARDS) ? player->state |= STATE_SPRINTING : 0;
+    IsKeyUp(BIND_SPRINT) && IsKeyUp(BIND_WALK_FORWARDS) ? player->state &= ~STATE_SPRINTING : 0;
 
-    if (IsKeyDown(bind_strafe_left))
+    if (IsKeyDown(BIND_STRAFE_LEFT))
     {
         player->pos.x -= player->movement_speed*sinf(player->yaw*DEG2RAD);
         player->pos.y += player->movement_speed*cosf(player->yaw*DEG2RAD);
     }
 
-    if (IsKeyDown(bind_strafe_right))
+    if (IsKeyDown(BIND_STRAFE_RIGHT))
     {
         player->pos.x += player->movement_speed*sinf(player->yaw*DEG2RAD);
         player->pos.y -= player->movement_speed*cosf(player->yaw*DEG2RAD);
     }
 
-    if (IsKeyDown(bind_walk_backwards))
+    if (IsKeyDown(BIND_WALK_BACKWARDS))
     {
         player->pos.x -= player->movement_speed*cosf(player->yaw*DEG2RAD);
         player->pos.y -= player->movement_speed*sinf(player->yaw*DEG2RAD);
     }
 
-    if (IsKeyPressed(bind_walk_forwards))
-        get_double_press(player, bind_walk_forwards) ? player->state |= STATE_SPRINTING : 0;
-    if (IsKeyDown(bind_walk_forwards))
+    if (IsKeyPressed(BIND_WALK_FORWARDS))
+        get_double_press(player, (KeyboardKey)BIND_WALK_FORWARDS) ? player->state |= STATE_SPRINTING : 0;
+    if (IsKeyDown(BIND_WALK_FORWARDS))
     {
         player->pos.x += player->movement_speed*cosf(player->yaw*DEG2RAD);
         player->pos.y += player->movement_speed*sinf(player->yaw*DEG2RAD);
     }
 
     // ---- gameplay -----------------------------------------------------------
-    if (IsMouseButtonDown(bind_attack_or_destroy))
+    if (IsMouseButtonDown(BIND_ATTACK_OR_DESTROY))
     {
         if (player->state & STATE_PARSE_TARGET)
         {
@@ -350,11 +350,11 @@ void listen(player *player)
         */
     }
 
-    if (IsMouseButtonDown(bind_pick_block))
+    if (IsMouseButtonDown(BIND_PICK_BLOCK))
     {
     }
 
-    if (IsMouseButtonDown(bind_use_item_or_place_block))
+    if (IsMouseButtonDown(BIND_USE_ITEM_OR_PLACE_BLOCK))
     {
         /*old
         //TODO: refine (make correct targeting)
@@ -366,17 +366,17 @@ void listen(player *player)
     }
 
     // ---- inventory ----------------------------------------------------------
-    IsKeyPressed(bind_hotbar_slot_1) || IsKeyPressed(bind_hotbar_slot_kp_1) ? hud_hotbar_slot_selected = 1 : 0;
-    IsKeyPressed(bind_hotbar_slot_2) || IsKeyPressed(bind_hotbar_slot_kp_2) ? hud_hotbar_slot_selected = 2 : 0;
-    IsKeyPressed(bind_hotbar_slot_3) || IsKeyPressed(bind_hotbar_slot_kp_3) ? hud_hotbar_slot_selected = 3 : 0;
-    IsKeyPressed(bind_hotbar_slot_4) || IsKeyPressed(bind_hotbar_slot_kp_4) ? hud_hotbar_slot_selected = 4 : 0;
-    IsKeyPressed(bind_hotbar_slot_5) || IsKeyPressed(bind_hotbar_slot_kp_5) ? hud_hotbar_slot_selected = 5 : 0;
-    IsKeyPressed(bind_hotbar_slot_6) || IsKeyPressed(bind_hotbar_slot_kp_6) ? hud_hotbar_slot_selected = 6 : 0;
-    IsKeyPressed(bind_hotbar_slot_7) || IsKeyPressed(bind_hotbar_slot_kp_7) ? hud_hotbar_slot_selected = 7 : 0;
-    IsKeyPressed(bind_hotbar_slot_8) || IsKeyPressed(bind_hotbar_slot_kp_8) ? hud_hotbar_slot_selected = 8 : 0;
-    IsKeyPressed(bind_hotbar_slot_9) || IsKeyPressed(bind_hotbar_slot_kp_9) ? hud_hotbar_slot_selected = 9 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_1) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_1) ? hud_hotbar_slot_selected = 1 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_2) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_2) ? hud_hotbar_slot_selected = 2 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_3) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_3) ? hud_hotbar_slot_selected = 3 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_4) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_4) ? hud_hotbar_slot_selected = 4 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_5) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_5) ? hud_hotbar_slot_selected = 5 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_6) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_6) ? hud_hotbar_slot_selected = 6 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_7) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_7) ? hud_hotbar_slot_selected = 7 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_8) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_8) ? hud_hotbar_slot_selected = 8 : 0;
+    IsKeyPressed(BIND_HOTBAR_SLOT_9) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_9) ? hud_hotbar_slot_selected = 9 : 0;
 
-    if (IsKeyPressed(bind_open_or_close_inventory))
+    if (IsKeyPressed(BIND_OPEN_OR_CLOSE_INVENTORY))
     {
         if (player->container_state & STATE_INVENTORY && player->state & STATE_MENU_OPEN)
         {
@@ -395,11 +395,11 @@ void listen(player *player)
     }
 
     // ---- miscellaneous ------------------------------------------------------
-    IsKeyPressed(bind_toggle_hud) ? state ^= STATE_HUD : 0;
-    IsKeyPressed(bind_toggle_debug) ? state ^= STATE_DEBUG : 0;
+    IsKeyPressed(BIND_TOGGLE_HUD) ? state ^= STATE_HUD : 0;
+    IsKeyPressed(BIND_TOGGLE_DEBUG) ? state ^= STATE_DEBUG : 0;
 
     //TODO: fix fullscreen
-    if (IsKeyPressed(bind_toggle_fullscreen))
+    if (IsKeyPressed(BIND_TOGGLE_FULLSCREEN))
     {
         state ^= STATE_FULLSCREEN;
         ToggleBorderlessWindowed();
@@ -416,10 +416,10 @@ void listen(player *player)
         }
     }
 
-    if (IsKeyPressed(bind_toggle_perspective))
+    if (IsKeyPressed(BIND_TOGGLE_PERSPECTIVE))
         (player->perspective < 4) ? (++player->perspective) : (player->perspective = 0);
 
-    if (IsKeyPressed(bind_pause))
+    if (IsKeyPressed(BIND_PAUSE))
     {
         if (!state_menu_depth)
         {
@@ -439,19 +439,19 @@ void listen(player *player)
 
     // ---- debug --------------------------------------------------------------
     IsKeyPressed(KEY_TAB) ? state ^= STATE_SUPER_DEBUG : 0;
-    IsKeyPressed(bind_quit) ? state &= ~STATE_ACTIVE : 0;
+    IsKeyPressed(BIND_QUIT) ? state &= ~STATE_ACTIVE : 0;
 }
 
 void listen_menus(player *player)
 {
-    if ((IsKeyPressed(bind_pause) || button_state_back_to_game == BUTTON_PRESSED) && state_menu_depth == 1)
+    if ((IsKeyPressed(BIND_PAUSE) || button_state_back_to_game == BUTTON_PRESSED) && state_menu_depth == 1)
     {
         state ^= STATE_PAUSED;
         button_state_back_to_game = BUTTON_LISTENING;
         player->state &= ~STATE_MENU_OPEN;
         state_menu_depth = 0;
     }
-    if ((IsKeyPressed(bind_quit) || button_state_save_and_quit_to_title == BUTTON_PRESSED) && state_menu_depth)
+    if ((IsKeyPressed(BIND_QUIT) || button_state_save_and_quit_to_title == BUTTON_PRESSED) && state_menu_depth)
         state &= ~STATE_ACTIVE;
 }
 
