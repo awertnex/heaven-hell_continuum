@@ -1,60 +1,63 @@
 #ifndef KEYMAPS_H
 #include <raylib.h>
 
+enum KeyBinds
+{
 // ---- movement ---------------------------------------------------------------
-extern KeyboardKey bind_jump;
-extern KeyboardKey bind_sneak;
-extern KeyboardKey bind_sprint;
-extern KeyboardKey bind_strafe_left;
-extern KeyboardKey bind_strafe_right;
-extern KeyboardKey bind_walk_backwards;
-extern KeyboardKey bind_walk_forwards;
+BIND_JUMP =						KEY_SPACE,
+BIND_SNEAK =					KEY_LEFT_CONTROL,
+BIND_SPRINT =					KEY_LEFT_SHIFT,
+BIND_STRAFE_LEFT =				KEY_A,
+BIND_STRAFE_RIGHT =				KEY_D,
+BIND_WALK_BACKWARDS =			KEY_S,
+BIND_WALK_FORWARDS =			KEY_W,
 
 // ---- gameplay ---------------------------------------------------------------
-extern MouseButton bind_attack_or_destroy;
-extern MouseButton bind_pick_block;
-extern MouseButton bind_use_item_or_place_block;
+BIND_ATTACK_OR_DESTROY =		MOUSE_BUTTON_LEFT,
+BIND_PICK_BLOCK =				MOUSE_BUTTON_MIDDLE,
+BIND_USE_ITEM_OR_PLACE_BLOCK =	MOUSE_BUTTON_RIGHT,
 
 // ---- inventory --------------------------------------------------------------
-extern KeyboardKey bind_drop_selected_item;
-extern KeyboardKey bind_hotbar_slot_1;
-extern KeyboardKey bind_hotbar_slot_2;
-extern KeyboardKey bind_hotbar_slot_3;
-extern KeyboardKey bind_hotbar_slot_4;
-extern KeyboardKey bind_hotbar_slot_5;
-extern KeyboardKey bind_hotbar_slot_6;
-extern KeyboardKey bind_hotbar_slot_7;
-extern KeyboardKey bind_hotbar_slot_8;
-extern KeyboardKey bind_hotbar_slot_9;
-extern KeyboardKey bind_hotbar_slot_kp_1;
-extern KeyboardKey bind_hotbar_slot_kp_2;
-extern KeyboardKey bind_hotbar_slot_kp_3;
-extern KeyboardKey bind_hotbar_slot_kp_4;
-extern KeyboardKey bind_hotbar_slot_kp_5;
-extern KeyboardKey bind_hotbar_slot_kp_6;
-extern KeyboardKey bind_hotbar_slot_kp_7;
-extern KeyboardKey bind_hotbar_slot_kp_8;
-extern KeyboardKey bind_hotbar_slot_kp_9;
-extern KeyboardKey bind_open_or_close_inventory;
-extern KeyboardKey bind_swap_item_with_offhand;
+BIND_DROP_SELECTED_ITEM =		KEY_Q,
+BIND_HOTBAR_SLOT_1 =			KEY_ONE,
+BIND_HOTBAR_SLOT_2 =			KEY_TWO,
+BIND_HOTBAR_SLOT_3 =			KEY_THREE,
+BIND_HOTBAR_SLOT_4 =			KEY_FOUR,
+BIND_HOTBAR_SLOT_5 =			KEY_FIVE,
+BIND_HOTBAR_SLOT_6 =			KEY_SIX,
+BIND_HOTBAR_SLOT_7 =			KEY_SEVEN,
+BIND_HOTBAR_SLOT_8 =			KEY_EIGHT,
+BIND_HOTBAR_SLOT_9 =			KEY_NINE,
+BIND_HOTBAR_SLOT_KP_1 =			KEY_KP_1,
+BIND_HOTBAR_SLOT_KP_2 =			KEY_KP_2,
+BIND_HOTBAR_SLOT_KP_3 =			KEY_KP_3,
+BIND_HOTBAR_SLOT_KP_4 =			KEY_KP_4,
+BIND_HOTBAR_SLOT_KP_5 =			KEY_KP_5,
+BIND_HOTBAR_SLOT_KP_6 =			KEY_KP_6,
+BIND_HOTBAR_SLOT_KP_7 =			KEY_KP_7,
+BIND_HOTBAR_SLOT_KP_8 =			KEY_KP_8,
+BIND_HOTBAR_SLOT_KP_9 =			KEY_KP_9,
+BIND_OPEN_OR_CLOSE_INVENTORY =	KEY_E,
+BIND_SWAP_ITEM_WITH_OFFHAND =	KEY_F,
 
 // ---- miscellaneous ----------------------------------------------------------
-extern KeyboardKey bind_take_screenshot;
-extern KeyboardKey bind_toggle_hud;
-extern KeyboardKey bind_toggle_debug;
-extern KeyboardKey bind_toggle_cinematic_camera;
-extern KeyboardKey bind_toggle_fullscreen;
-extern KeyboardKey bind_toggle_perspective;
-extern KeyboardKey bind_pause;
-extern KeyboardKey bind_chat_or_command;
+BIND_TAKE_SCREENSHOT =			KEY_F2,
+BIND_TOGGLE_HUD =				KEY_F1,
+BIND_TOGGLE_DEBUG =				KEY_F3,
+BIND_TOGGLE_CINEMATIC_CAMERA =	KEY_F6,
+BIND_TOGGLE_FULLSCREEN =		KEY_F11,
+BIND_TOGGLE_PERSPECTIVE =		KEY_F5,
+BIND_PAUSE =					KEY_ESCAPE,
+BIND_CHAT_OR_COMMAND =			KEY_SLASH,
 
 // ---- debug & menu -----------------------------------------------------------
 //TODO: navigate menus with arrow keys
-extern KeyboardKey bind_left;
-extern KeyboardKey bind_right;
-extern KeyboardKey bind_down;
-extern KeyboardKey bind_up;
-extern KeyboardKey bind_quit;
+BIND_LEFT =						KEY_LEFT,
+BIND_RIGHT =					KEY_RIGHT,
+BIND_DOWN =						KEY_DOWN,
+BIND_UP =						KEY_UP,
+BIND_QUIT =						KEY_Q,
+}; /* KeyBinds */
 
 #define KEYMAPS_H
 #endif
