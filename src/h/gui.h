@@ -3,7 +3,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <types.h>
+#include <defines.h>
 
 #define show_cursor ShowCursor()
 #define hide_cursor HideCursor()

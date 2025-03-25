@@ -1,7 +1,7 @@
 #ifndef MINECRAFT_H
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <types.h>
+#include <defines.h>
 #include "logic.h"
 
 #define WIDTH		1280

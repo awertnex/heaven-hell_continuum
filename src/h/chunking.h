@@ -4,7 +4,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <types.h>
+#include <defines.h>
 
 #include "setting.h"
 
