@@ -1,11 +1,17 @@
 # changelog
 
-## v0.1.0:
-- - - -
+## v0.1.1 - (DD MMM YYYY)
+----------
+
+#### changes:
+- added delta time
+
+
+## v0.1.0 - (24 Mar 2025)
+----------
 **first version, as I have started this project long before I version-controlled it with git**
 
 #### features:
-- segfaulting while wandering into unloaded chunks
 - basic gui functionality
 - centering text vertically and horizontally
 - basic controls:
@@ -25,3 +31,5 @@
 - minecraft instance directory creation or opening if exists (instance name = argv 1)
 - basic chunking, rigid, buggy, but there.
 - basic debugger interface, doesn't do anything, just pops up and shows bounding boxes
+- my favorite: segfaulting while wandering into unloaded chunks
+- my 2nd favorite: chunk states shift by one block into a specific direction with each chunk in the positive direction and shift into the opposite direction with each chunk in the negative direction, don't know why, I've never encountered such goofy behavior and I'm stuck here
