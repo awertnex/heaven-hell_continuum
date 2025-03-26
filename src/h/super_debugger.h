@@ -31,8 +31,6 @@ extern debug_rect DebugRectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
-extern u8 button_state_add;
-extern u8 button_state_sub;
 
 // ---- signatures -------------------------------------------------------------
 void init_super_debugger();

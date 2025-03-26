@@ -2,7 +2,7 @@
 
 SOURCE="src/"
 MAIN="minecraft_linux.c"
-CHILDREN="chunking.c gui.c logic.c assets.c super_debugger.c"
+CHILDREN="chunking.c gui.c keymaps.c logic.c assets.c super_debugger.c"
 CFLAGS="-Wall -Wextra"
 LIBS="-lraylib -lm"
 PLATFORM=""

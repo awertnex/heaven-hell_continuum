@@ -1,4 +1,5 @@
 #include "h/super_debugger.h"
+#include "h/gui.h"
 #include "h/main.h"
 
 // ---- variables --------------------------------------------------------------
@@ -18,12 +19,13 @@ debug_rect DebugRectangle =
 
 Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
-u8 button_state_add = BUTTON_LISTENING;
-u8 button_state_sub = BUTTON_LISTENING;
 
 // ---- functions --------------------------------------------------------------
 void init_super_debugger()
 {
+    buttons[BTN_SDB_ADD] = BTN_ACTIVE;
+    buttons[BTN_SDB_SUB] = BTN_ACTIVE;
+
     texture_super_debugger = LoadTexture("resources/gui/container/super_debugger.png");
     DebugRectangle.scl.x = 300;
     DebugRectangle.scl.y = win.scl.y - ((MARGIN + SDB_BASE_SIZE)*2);
@@ -33,6 +35,9 @@ void init_super_debugger()
 
 void free_super_debugger()
 {
+    buttons[BTN_SDB_ADD] = BTN_INACTIVE;
+    buttons[BTN_SDB_SUB] = BTN_INACTIVE;
+
     UnloadTexture(texture_super_debugger);
 }
 
@@ -114,10 +119,10 @@ void draw_super_debugger()
     draw_button(texture_super_debugger, debug_button_add,
             (v2i16){
             DebugRectangle.pos.x + ((DebugRectangle.scl.x/3)*2),
-            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &button_state_add, 0);
+            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &buttons[BTN_SDB_ADD], 0);
 
     draw_button(texture_super_debugger, debug_button_sub,
             (v2i16){
             DebugRectangle.pos.x + ((DebugRectangle.scl.x/3)*2) + (debug_button_add.width*2),
-            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &button_state_sub, 0);
+            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &buttons[BTN_SDB_SUB], 0);
 }

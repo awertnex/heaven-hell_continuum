@@ -1,4 +1,5 @@
 #ifndef MINECRAFT_H
+
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include <defines.h>
@@ -24,18 +25,12 @@ typedef struct window
 extern window win;
 extern f64 delta_time;
 extern f64 start_time;
-#define dt (get_time_ms() - start_time)
+//#define dt (get_time_ms() - start_time)
+#define dt GetFrameTime()
 
 extern u16 state;
 extern u8 state_menu_depth;
 extern v3i32 target_coordinates_feet; /*temp*/
-
-// ---- signatures -------------------------------------------------------------
-void    main_init();
-void    main_loop();
-void    main_close();
-void    update_input(player *player);
-void    listen_menus(player *player);
 
 // ---- platform ---------------------------------------------------------------
 #if defined __linux__

@@ -66,24 +66,24 @@ void parse_player_states(player *player)
     if (player->state & STATE_FLYING)
     {
         player->v = v3fzero;
-        player->movement_speed = PLAYER_SPEED_FLY*delta_time;
+        player->movement_speed = PLAYER_SPEED_FLY*dt;
         player->camera.fovy = 80; //TODO: revise (add lerp)
     }
 
     if (player->state & STATE_SNEAKING && !(player->state & STATE_FLYING))
-        player->movement_speed = PLAYER_SPEED_SNEAK*delta_time;
+        player->movement_speed = PLAYER_SPEED_SNEAK*dt;
     else if (player->state & STATE_SPRINTING)
     {
         !(player->state & STATE_FLYING) ?
-            (player->movement_speed = PLAYER_SPEED_SPRINT*delta_time,
+            (player->movement_speed = PLAYER_SPEED_SPRINT*dt,
              player->camera.fovy = 75) :
 
-            (player->movement_speed = PLAYER_SPEED_FLY_FAST*delta_time,
+            (player->movement_speed = PLAYER_SPEED_FLY_FAST*dt,
              player->camera.fovy = 90);
     }
     else if (!(player->state & STATE_SNEAKING) && !(player->state & STATE_SPRINTING) && !(player->state & STATE_FLYING))
     {
-        player->movement_speed = PLAYER_SPEED_WALK*delta_time;
+        player->movement_speed = PLAYER_SPEED_WALK*dt;
         player->camera.fovy = 70;
     }
 
@@ -254,7 +254,7 @@ bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
 void give_gravity(player *player)
 {
     if (player->state & STATE_FALLING)
-        player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*delta_time);
+        player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*dt);
     player->pos.z += player->v.z;
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
 }

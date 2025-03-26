@@ -1,20 +1,7 @@
 /* ==== section table ==========================================================
 _section_instance_directory_map ================================================
 _section_main ==================================================================
-_section_listeners_&_input =====================================================
-_section_testing ===============================================================
- */
-
-/* TASKS:
-[!] display Chunk coordinates
-[!] detect targeted block
-[!] place blocks
-[!] break blocks
-[!] figure out delta time (25 Mar 2025)
-[ ] detect new chunk, allocate memory and spawn accordingly
-[ ] fix seg fault when player target enters non-allocated chunk area
-[ ] fix funky chunk states shifting away by 1 unit each chunk
-[ ] change chunk_buff allocation from stack to heap + access using pointer arithmetic
+_section_input =================================================================
  */
 
 #include <stdio.h>
@@ -40,7 +27,6 @@ window win =
 {
     .scl = {WIDTH, HEIGHT},
 };
-f64 delta_time;
 f64 start_time = 0;
 u16 state = 0;
 u8 state_menu_depth = 0;
@@ -57,6 +43,11 @@ settings setting =
 // =============================================================================
 // _section_function_signatures ================================================
 // =============================================================================
+static void init_game();
+static void update_game();
+static void close_game();
+void update_input(player *player);
+void update_game_menu(player *player);
 void draw_default_grid();
 
 // =============================================================================
@@ -84,7 +75,7 @@ void init_instance_dir(str **instance_name)
 // _section_main ===============================================================
 // =============================================================================
 
-void main_init()
+void init_game()
 {
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
@@ -99,6 +90,7 @@ void main_init()
 
     SetWindowState(FLAG_MSAA_4X_HINT);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
+    SetTargetFPS(60);
     SetWindowMinSize(200, 150);
     hide_cursor;
     center_cursor;
@@ -141,9 +133,8 @@ void main_init()
     state |= STATE_ACTIVE | STATE_HUD;
 }
 
-void main_loop()
+void update_game()
 {
-    delta_time = GetFrameTime();
     start_time = get_time_ms();
     win.scl.x = GetRenderWidth();
     win.scl.y = GetRenderHeight();
@@ -158,7 +149,7 @@ void main_loop()
             ((GetMouseDelta().x > 2 || GetMouseDelta().x < -2) ||
              (GetMouseDelta().y > 2 || GetMouseDelta().y < -2)))
         center_cursor;
-    listen(&lily);
+    update_input(&lily);
 
     BeginDrawing();
     ClearBackground(COL_SKYBOX); /* TODO: make actual skybox */
@@ -208,8 +199,8 @@ void main_loop()
             draw_debug_info();
         if (state_menu_depth)
         {
-            if (lily.container_state & STATE_INVENTORY)
-                draw_inventory_survival();
+            if (lily.container_state & CONTR_INVENTORY)
+                draw_inventory();
         }
     }
 
@@ -222,10 +213,11 @@ void main_loop()
         BeginDrawing();
         draw_menu_overlay;
         EndDrawing();
+
         while (state & STATE_PAUSED && state & STATE_ACTIVE)
         {
             BeginDrawing();
-            listen_menus(&lily);
+            update_game_menu(&lily);
             draw_game_menu();
             EndDrawing();
         }
@@ -233,7 +225,7 @@ void main_loop()
     }
 }
 
-void main_close()
+void close_game()
 {
     unload_textures();
     free_gui();
@@ -243,10 +235,9 @@ void main_close()
 
 int main(void)
 {
-    main_init();
-    test(); /*temp*/
-    while (state & STATE_ACTIVE) main_loop();
-    main_close();
+    init_game();
+    while (state & STATE_ACTIVE) update_game();
+    close_game();
     return 0;
 }
 
@@ -254,33 +245,45 @@ int main(void)
 // _section_listeners_&_input ==================================================
 // =============================================================================
 
-void listen(player *player)
+void update_input(player *player)
 {
-    // ---- movement -----------------------------------------------------------
+    // ---- jumping ------------------------------------------------------------
     if (IsKeyPressed(BIND_JUMP))
-        get_double_press(player, (KeyboardKey)BIND_JUMP) ? player->state ^= STATE_FLYING : 0;
+        if (get_double_press(player, BIND_JUMP))
+            player->state ^= STATE_FLYING;
+
     if (IsKeyDown(BIND_JUMP))
     {
         if (player->state & STATE_FLYING)
-            player->pos.z += (player->movement_speed);
-        else if (player->state & STATE_CAN_JUMP)
+            player->pos.z += player->movement_speed;
+
+        if (player->state & STATE_CAN_JUMP)
         {
             player->v.z += PLAYER_JUMP_HEIGHT;
             player->state &= ~STATE_CAN_JUMP;
         }
     }
 
+    // ---- sneaking -----------------------------------------------------------
     if (IsKeyDown(BIND_SNEAK))
     {
-        player->state & STATE_FLYING ?
-            (player->pos.z -= player->movement_speed) :
-            (player->state |= STATE_SNEAKING);
+        if (player->state & STATE_FLYING)
+            player->pos.z -= player->movement_speed;
+        else
+            player->state |= STATE_SNEAKING;
     }
-    IsKeyUp(BIND_SNEAK) ? player->state &= ~STATE_SNEAKING : 0;
 
-    IsKeyDown(BIND_SPRINT) && IsKeyDown(BIND_WALK_FORWARDS) ? player->state |= STATE_SPRINTING : 0;
-    IsKeyUp(BIND_SPRINT) && IsKeyUp(BIND_WALK_FORWARDS) ? player->state &= ~STATE_SPRINTING : 0;
+    if (IsKeyUp(BIND_SNEAK))
+        player->state &= ~STATE_SNEAKING;
 
+    // ---- sprinting ----------------------------------------------------------
+    if (IsKeyDown(BIND_SPRINT) && IsKeyDown(BIND_WALK_FORWARDS))
+        player->state |= STATE_SPRINTING;
+
+    if (IsKeyUp(BIND_SPRINT) && IsKeyUp(BIND_WALK_FORWARDS))
+        player->state &= ~STATE_SPRINTING;
+
+    // ---- moving -------------------------------------------------------------
     if (IsKeyDown(BIND_STRAFE_LEFT))
     {
         player->pos.x -= player->movement_speed*sinf(player->yaw*DEG2RAD);
@@ -300,7 +303,9 @@ void listen(player *player)
     }
 
     if (IsKeyPressed(BIND_WALK_FORWARDS))
-        get_double_press(player, (KeyboardKey)BIND_WALK_FORWARDS) ? player->state |= STATE_SPRINTING : 0;
+        if (get_double_press(player, BIND_WALK_FORWARDS))
+            player->state |= STATE_SPRINTING;
+
     if (IsKeyDown(BIND_WALK_FORWARDS))
     {
         player->pos.x += player->movement_speed*cosf(player->yaw*DEG2RAD);
@@ -340,37 +345,58 @@ void listen(player *player)
     }
 
     // ---- inventory ----------------------------------------------------------
-    IsKeyPressed(BIND_HOTBAR_SLOT_1) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_1) ? hud_hotbar_slot_selected = 1 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_2) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_2) ? hud_hotbar_slot_selected = 2 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_3) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_3) ? hud_hotbar_slot_selected = 3 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_4) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_4) ? hud_hotbar_slot_selected = 4 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_5) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_5) ? hud_hotbar_slot_selected = 5 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_6) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_6) ? hud_hotbar_slot_selected = 6 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_7) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_7) ? hud_hotbar_slot_selected = 7 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_8) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_8) ? hud_hotbar_slot_selected = 8 : 0;
-    IsKeyPressed(BIND_HOTBAR_SLOT_9) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_9) ? hud_hotbar_slot_selected = 9 : 0;
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_1) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_1))
+        hud_hotbar_slot_selected = 1;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_2) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_2))
+        hud_hotbar_slot_selected = 2;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_3) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_3))
+        hud_hotbar_slot_selected = 3;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_4) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_4))
+        hud_hotbar_slot_selected = 4;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_5) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_5))
+        hud_hotbar_slot_selected = 5;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_6) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_6))
+        hud_hotbar_slot_selected = 6;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_7) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_7))
+        hud_hotbar_slot_selected = 7;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_8) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_8))
+        hud_hotbar_slot_selected = 8;
+
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_9) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_9))
+        hud_hotbar_slot_selected = 9;
 
     if (IsKeyPressed(BIND_OPEN_OR_CLOSE_INVENTORY))
     {
-        if (player->container_state & STATE_INVENTORY && player->state & STATE_MENU_OPEN)
+        if (player->container_state & CONTR_INVENTORY && player->state & STATE_MENU_OPEN)
         {
-            player->container_state &= ~STATE_INVENTORY;
+            player->container_state &= ~CONTR_INVENTORY;
             state_menu_depth = 0;
             player->state &= ~STATE_MENU_OPEN;
         }
-        else if (!(player->container_state & STATE_INVENTORY) && !(state & STATE_MENU_OPEN))
+        else if (!(player->container_state & CONTR_INVENTORY) && !(state & STATE_MENU_OPEN))
         {
-            player->container_state |= STATE_INVENTORY;
+            player->container_state |= CONTR_INVENTORY;
             player->state |= STATE_MENU_OPEN;
             state_menu_depth = 1;
         }
-        if (!(player->container_state & STATE_INVENTORY) && state_menu_depth)
+
+        if (!(player->container_state & CONTR_INVENTORY) && state_menu_depth)
             --state_menu_depth;
     }
 
     // ---- miscellaneous ------------------------------------------------------
-    IsKeyPressed(BIND_TOGGLE_HUD) ? state ^= STATE_HUD : 0;
-    IsKeyPressed(BIND_TOGGLE_DEBUG) ? state ^= STATE_DEBUG : 0;
+    if (IsKeyPressed(BIND_TOGGLE_HUD))
+        state ^= STATE_HUD;
+
+    if (IsKeyPressed(BIND_TOGGLE_DEBUG))
+        state ^= STATE_DEBUG;
 
     //TODO: fix fullscreen
     if (IsKeyPressed(BIND_TOGGLE_FULLSCREEN))
@@ -391,7 +417,11 @@ void listen(player *player)
     }
 
     if (IsKeyPressed(BIND_TOGGLE_PERSPECTIVE))
-        (player->perspective < 4) ? (++player->perspective) : (player->perspective = 0);
+    {
+        if (player->perspective < 4)
+            ++player->perspective;
+        else player->perspective = 0;
+    }
 
     if (IsKeyPressed(BIND_PAUSE))
     {
@@ -403,6 +433,12 @@ void listen(player *player)
             player->state |= STATE_MENU_OPEN;
             show_cursor;
         }
+        else if (state_menu_depth == 1)
+        {
+            player->container_state = 0;
+            player->state &= ~STATE_MENU_OPEN;
+            state_menu_depth = 0;
+        }
         else --state_menu_depth;
     }
     if (!state_menu_depth && !(state & STATE_SUPER_DEBUG))
@@ -412,32 +448,24 @@ void listen(player *player)
     }
 
     // ---- debug --------------------------------------------------------------
-    IsKeyPressed(KEY_TAB) ? state ^= STATE_SUPER_DEBUG : 0;
-    IsKeyPressed(BIND_QUIT) ? state &= ~STATE_ACTIVE : 0;
-}
+    if (IsKeyPressed(KEY_TAB))
+        state ^= STATE_SUPER_DEBUG;
 
-void listen_menus(player *player)
-{
-    if ((IsKeyPressed(BIND_PAUSE) || button_state_back_to_game == BUTTON_PRESSED) && state_menu_depth == 1)
-    {
-        state ^= STATE_PAUSED;
-        button_state_back_to_game = BUTTON_LISTENING;
-        player->state &= ~STATE_MENU_OPEN;
-        state_menu_depth = 0;
-    }
-    if ((IsKeyPressed(BIND_QUIT) || button_state_save_and_quit_to_title == BUTTON_PRESSED) && state_menu_depth)
+    if (IsKeyPressed(BIND_QUIT))
         state &= ~STATE_ACTIVE;
 }
 
-// =============================================================================
-// _section_testing ============================================================
-// =============================================================================
-
-void test() /* command: './minecraft test' to run only this function*/
+void update_game_menu(player *player)
 {
-    printf("chunk block state: %d\n", chunk_buf[0][3].i[0][0][0]);
-    printf("chunk start memory addr: %p\n", &chunk_buf[0][3].i[0][0][0]);
-    printf("chunk block memory addr: %p\n", &chunk_buf[0][3].i[0][0][63]);
+    if ((IsKeyPressed(BIND_PAUSE) || buttons[BTN_BACK_TO_GAME] == BTN_PRESSED) && state_menu_depth == 1)
+    {
+        state ^= STATE_PAUSED;
+        buttons[BTN_BACK_TO_GAME] = BTN_ACTIVE;
+        player->state &= ~STATE_MENU_OPEN;
+        state_menu_depth = 0;
+    }
+    if ((IsKeyPressed(BIND_QUIT) || buttons[BTN_SAVE_AND_QUIT_TO_TITLE] == BTN_PRESSED) && state_menu_depth)
+        state &= ~STATE_ACTIVE;
 }
 
 void draw_default_grid()

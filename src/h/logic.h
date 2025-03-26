@@ -33,7 +33,7 @@ typedef struct player
     v3f32 v;                // for physics calculations
     f32 m;                  // for physics calculations
     f32 movement_speed;     // depends on enum: PlayerStates
-    u16 container_state;    // enum: ContainerStates
+    u64 container_state;    // enum: ContainerStates
     u8 perspective;         // camera perspective mode
     u16 state;              // enum: PlayerStates
 
@@ -60,9 +60,31 @@ enum GameStates
 
 enum ContainerStates
 {
-    STATE_INVENTORY =               0x01,
-    STATE_CHEST =                   0x02,
-    STATE_FURNACE =                 0x04,
+    CONTR_ANVIL =                   0x00000001,
+    CONTR_BEACON =                  0x00000002,
+    CONTR_BLAST_FURNACE =           0x00000004,
+    CONTR_BREWING_STAND =           0x00000008,
+    CONTR_CARTOGRAPHY_TABLE =       0x00000010,
+    CONTR_CHEST =                   0x00000020,
+    CONTR_CHEST_LARGE =             0x00000040,
+    CONTR_CRAFTING_TABLE =          0x00000080,
+    CONTR_DISPENSER =               0x00000100,
+    CONTR_ENCHANTING_TABLE =        0x00000200,
+    CONTR_FURNACE =                 0x00000400,
+    CONTR_GAMEMODE_SWITCHER =       0x00000800,
+    CONTR_GRINDSTONE =              0x00001000,
+    CONTR_HOPPER =                  0x00002000,
+    CONTR_HORSE =                   0x00004000,
+    CONTR_INVENTORY =               0x00008000,
+    CONTR_LEGACY_SMITHING =         0x00010000,
+    CONTR_LOOM =                    0x00020000,
+    CONTR_SMITHING =                0x00040000,
+    CONTR_SMOKER =                  0x00080000,
+    CONTR_STONECUTTER =             0x00100000,
+    CONTR_VILLAGER =                0x00200000,
+    CONTR_TAB_INVENTORY =           0x00400000,
+    CONTR_TAB_ITEMS =               0x00800000,
+    CONTR_TAB_ITEMS_SEARCH =        0x01000000,
 }; /* ContainerStates */
 
 enum PlayerStates
