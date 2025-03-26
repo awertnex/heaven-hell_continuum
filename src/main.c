@@ -47,12 +47,17 @@ u8 state_menu_depth = 0;
 
 settings setting =
 {
-    .reach_distance =		SETTING_REACH_DISTANCE_MAX,
-    .fov =					SETTING_FOV_DEFAULT,
-    .mouse_sensitivity =	SETTING_MOUSE_SENSITIVITY_DEFAULT,
-    .render_distance =		SETTING_RENDER_DISTANCE_DEFAULT,
-    .gui_scale =			SETTING_GUI_SCALE_DEFAULT,
+    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
+    .fov =                  SETTING_FOV_DEFAULT,
+    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT,
+    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
+
+// =============================================================================
+// _section_function_signatures ================================================
+// =============================================================================
+void draw_default_grid();
 
 // =============================================================================
 // _section_instance_directory_map =============================================
@@ -81,15 +86,16 @@ void init_instance_dir(str **instance_name)
 
 void main_init()
 {
-    if (ModeDebug) printf("debug mode: on");
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
     //TODO: fix fullscreen
 
-#if ModeDebug
-    SetWindowState(FLAG_WINDOW_TOPMOST);
-    SetWindowState(FLAG_WINDOW_HIGHDPI);
-#endif
+    if (ModeDebug)
+    {
+        printf("DEBUG MODE: ON");
+        SetWindowState(FLAG_WINDOW_TOPMOST);
+        SetWindowState(FLAG_WINDOW_HIGHDPI);
+    }
 
     SetWindowState(FLAG_MSAA_4X_HINT);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
@@ -190,34 +196,7 @@ void main_loop()
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1, 1, 1}, GREEN);
         draw_bounding_box(&lily.pos, &lily.scl);
-
-        rlPushMatrix();
-        rlBegin(RL_LINES);
-
-        draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, WHITE);
-        draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, WHITE);
-        draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, WHITE);
-        draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, WHITE);
-        draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, WHITE);
-        draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, WHITE);
-        draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, WHITE);
-        draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, WHITE);
-        draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, WHITE);
-        draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, RAYWHITE);
-        draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, RAYWHITE);
-
-        draw_line_3d(v3izero, (v3i32){2, 0, 0}, COL_X);
-        draw_line_3d(v3izero, (v3i32){0, 2, 0}, COL_Y);
-        draw_line_3d(v3izero, (v3i32){0, 0, 2}, COL_Z);
-        rlEnd();
-        rlPopMatrix();
+        draw_default_grid();
     }
 
     EndMode3D();
@@ -459,4 +438,34 @@ void test() /* command: './minecraft test' to run only this function*/
     printf("chunk block state: %d\n", chunk_buf[0][3].i[0][0][0]);
     printf("chunk start memory addr: %p\n", &chunk_buf[0][3].i[0][0][0]);
     printf("chunk block memory addr: %p\n", &chunk_buf[0][3].i[0][0][63]);
+}
+
+void draw_default_grid()
+{
+    rlPushMatrix();
+    rlBegin(RL_LINES);
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, RAYWHITE);
+
+    draw_line_3d(v3izero, (v3i32){2, 0, 0}, COL_X);
+    draw_line_3d(v3izero, (v3i32){0, 2, 0}, COL_Y);
+    draw_line_3d(v3izero, (v3i32){0, 0, 2}, COL_Z);
+    rlEnd();
+    rlPopMatrix();
 }

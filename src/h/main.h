@@ -4,20 +4,20 @@
 #include <defines.h>
 #include "logic.h"
 
-#define WIDTH		1280
-#define HEIGHT		720
-#define MARGIN		20
+#define WIDTH       1280
+#define HEIGHT      720
+#define MARGIN      20
 
 enum DebugStates
 {
-	ModeDebug =		1,
-	ModeCollide =	0,
-	ModeGravity =	1,
+    ModeDebug =     1,
+    ModeCollide =   0,
+    ModeGravity =   1,
 }; /* DebugStates */
 
 typedef struct window
 {
-	v2f32 scl;
+    v2f32 scl;
 } window;
 
 // ---- declarations -----------------------------------------------------------
@@ -31,12 +31,11 @@ extern u8 state_menu_depth;
 extern v3i32 target_coordinates_feet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
-void	main_init();
-void	main_loop();
-void	main_close();
-void	listen(player *player);
-void	listen_menus(player *player);
-void	test();
+void    main_init();
+void    main_loop();
+void    main_close();
+void    update_input(player *player);
+void    listen_menus(player *player);
 
 // ---- platform ---------------------------------------------------------------
 #if defined __linux__
@@ -47,5 +46,5 @@ void	test();
 
 #endif // PLATFORM
 
-#define	MINECRAFT_H
-#endif // MINECRAFT_H
+#define MINECRAFT_H
+#endif

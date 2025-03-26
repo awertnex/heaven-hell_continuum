@@ -6,23 +6,23 @@
 #include <defines.h>
 #include "gui.h"
 
-#define SDB_ROW_HEIGHT	22
-#define SDB_BASE_SIZE	5
-#define SDB_BUTTON_SIZE	14
+#define SDB_ROW_HEIGHT  22
+#define SDB_BASE_SIZE   5
+#define SDB_BUTTON_SIZE 14
 
 typedef struct debug_rect
 {
-	Rectangle corner_00;
-	Rectangle corner_10;
-	Rectangle corner_01;
-	Rectangle corner_11;
-	Rectangle edge_left;
-	Rectangle edge_right;
-	Rectangle edge_top;
-	Rectangle edge_bottom;
-	Rectangle rect_center;
-	Vector2 pos;
-	Vector2 scl;
+    Rectangle corner_00;
+    Rectangle corner_10;
+    Rectangle corner_01;
+    Rectangle corner_11;
+    Rectangle edge_left;
+    Rectangle edge_right;
+    Rectangle edge_top;
+    Rectangle edge_bottom;
+    Rectangle rect_center;
+    Vector2 pos;
+    Vector2 scl;
 } debug_rect;
 
 // ---- declarations -----------------------------------------------------------

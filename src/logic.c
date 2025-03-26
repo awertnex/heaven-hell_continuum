@@ -109,10 +109,10 @@ void give_camera_movements_player(player *player)
             player->pitch -= GetMouseDelta().y*setting.mouse_sensitivity/650;
     }
 
-    if (player->yaw >= 360)			player->yaw = 0;
-    else if (player->yaw < 0)		player->yaw += 360;
-    if (player->pitch > 90)			player->pitch = 90;
-    else if (player->pitch < -90)	player->pitch = -90;
+    if (player->yaw >= 360)         player->yaw = 0;
+    else if (player->yaw < 0)       player->yaw += 360;
+    if (player->pitch > 90)         player->pitch = 90;
+    else if (player->pitch < -90)   player->pitch = -90;
 
     switch (lily.perspective)
     {
@@ -270,7 +270,7 @@ void give_collision_static(player *player, v3i32 *target_coordinates_feet)
         if (target_chunk_feet->i[z - 1 - WORLD_BOTTOM][y][x] & NOT_EMPTY)
         {
             player->pos.z = ceilf(target_coordinates_feet->z) + WORLD_BOTTOM + 1;
-            player->v.z = 0;	
+            player->v.z = 0;
             if (player->state & STATE_FLYING) player->state &= ~STATE_FLYING;
             player->state |= STATE_CAN_JUMP;
             player->state &= ~STATE_FALLING;
