@@ -219,13 +219,13 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
     rlVertex2f(bottomRight.x, topLeft.y);
 }
 
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 *button_state, const str *str)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, void (*func)(), const str *str)
 {
     pos.x -= (button.width*setting.gui_scale)/2;
     pos.y -= (button.height*setting.gui_scale)/2;
     v2i16 text_offset = {pos.x + button.width/2, pos.y + button.height/2};
 
-    if (button_state)
+    if (btn_state)
     {
         if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.gui_scale)
                 && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.gui_scale))
@@ -233,8 +233,12 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 *button_stat
             draw_texture(texture, button_selected, pos,
                     (v2i16){setting.gui_scale, setting.gui_scale},
                     ColorTint(COL_TEXTURE_DEFAULT, TINT_BUTTON_HOVER));
-            if (IsMouseButtonPressed(0))
-                *button_state = BTN_PRESSED;
+
+            if (IsMouseButtonDown(0))
+                buttons[btn_state] = BTN_PRESSED;
+
+            if (IsMouseButtonUp(0) && buttons[btn_state] == BTN_PRESSED)
+                func();
         }
         else
         {
@@ -242,6 +246,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 *button_stat
                     (v2i16){setting.gui_scale, setting.gui_scale},
                     COL_TEXTURE_DEFAULT);
         }
+
         if (str) draw_text_centered(font_regular, str, text_offset, button.height*0.7f, 1, COL_TEXT_DEFAULT, 1);
     }
     else draw_texture(texture, button_inactive, pos, 
@@ -257,15 +262,20 @@ void draw_game_menu()
 
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position},
-            &buttons[BTN_BACK_TO_GAME],
+            BTN_BACK_TO_GAME,
+            &btn_back_to_game,
             "Back to Game");
+
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position + ((button.height + button_spacing_verical)*setting.gui_scale)},
-            &buttons[BTN_OPTIONS],
+            BTN_OPTIONS,
+            &btn_options,
             "Options...");
+
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*2)*setting.gui_scale)},
-            &buttons[BTN_SAVE_AND_QUIT_TO_TITLE],
+            BTN_SAVE_AND_QUIT_TO_TITLE,
+            &btn_quit_to_title,
             "Save and Quit to Title");
 
     rlEnd();
@@ -378,4 +388,21 @@ void draw_debug_info()
     draw_line_3d(v3izero, (v3i32){0, 0, 1}, COL_Z);
     rlEnd();
     EndMode3D();
+}
+
+void btn_back_to_game()
+{
+    state ^= STATE_PAUSED;
+    buttons[BTN_BACK_TO_GAME] = BTN_INACTIVE;
+    lily.state &= ~STATE_MENU_OPEN;
+    state_menu_depth = 0;
+}
+
+void btn_options()
+{
+}
+
+void btn_quit_to_title()
+{
+    state &= ~STATE_ACTIVE;
 }

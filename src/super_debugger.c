@@ -116,13 +116,15 @@ void draw_super_debugger()
             1}, COL_TRANS_MENU);
 
     // ---- draw the rest of the stuff -----------------------------------------
+    /* temp
     draw_button(texture_super_debugger, debug_button_add,
             (v2i16){
             DebugRectangle.pos.x + ((DebugRectangle.scl.x/3)*2),
-            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &buttons[BTN_SDB_ADD], 0);
+            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, BTN_SDB_ADD, 0);
 
     draw_button(texture_super_debugger, debug_button_sub,
             (v2i16){
             DebugRectangle.pos.x + ((DebugRectangle.scl.x/3)*2) + (debug_button_add.width*2),
-            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, &buttons[BTN_SDB_SUB], 0);
+            DebugRectangle.pos.y + (SDB_BASE_SIZE*2)}, BTN_SDB_SUB, 0);
+            */
 }

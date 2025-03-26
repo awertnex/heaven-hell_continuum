@@ -77,18 +77,18 @@ void init_instance_dir(str **instance_name)
 
 void init_game()
 {
+    if (ModeDebug)
+        printf("DEBUG MODE: ON");
+
+    SetWindowState(FLAG_WINDOW_HIGHDPI);
+    SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
     //TODO: fix fullscreen
 
     if (ModeDebug)
-    {
-        printf("DEBUG MODE: ON");
         SetWindowState(FLAG_WINDOW_TOPMOST);
-        SetWindowState(FLAG_WINDOW_HIGHDPI);
-    }
 
-    SetWindowState(FLAG_MSAA_4X_HINT);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
     SetWindowMinSize(200, 150);
@@ -457,14 +457,16 @@ void update_input(player *player)
 
 void update_game_menu(player *player)
 {
-    if ((IsKeyPressed(BIND_PAUSE) || buttons[BTN_BACK_TO_GAME] == BTN_PRESSED) && state_menu_depth == 1)
+    if (IsKeyPressed(BIND_PAUSE) && state_menu_depth == 1)
     {
         state ^= STATE_PAUSED;
         buttons[BTN_BACK_TO_GAME] = BTN_ACTIVE;
+        buttons[BTN_OPTIONS] = BTN_ACTIVE;
+        buttons[BTN_SAVE_AND_QUIT_TO_TITLE] = BTN_ACTIVE;
         player->state &= ~STATE_MENU_OPEN;
         state_menu_depth = 0;
     }
-    if ((IsKeyPressed(BIND_QUIT) || buttons[BTN_SAVE_AND_QUIT_TO_TITLE] == BTN_PRESSED) && state_menu_depth)
+    if (IsKeyPressed(BIND_QUIT) && state_menu_depth)
         state &= ~STATE_ACTIVE;
 }
 

@@ -5,18 +5,20 @@ MAIN="minecraft_linux.c"
 CHILDREN="chunking.c gui.c keymaps.c logic.c assets.c super_debugger.c"
 CFLAGS="-Wall -Wextra"
 LIBS="-lraylib -lm"
+OUT="minecraft"
 PLATFORM=""
 
 tests=(
-"chunk_loader"
+    "chunk_loader"
+    "function_pointer"
 )
 
 case $1 in
     "list")
-        local count=0
+        count=1
         echo "    TESTS:"
         for i in "${tests[@]}"; do
-            printf "test %03g$count: ${tests[$i]}\n"
+            printf "test $count: $i\n"
             let ++count
         done
         exit
@@ -27,17 +29,23 @@ case $1 in
         PLATFORM="_win.exe";
         ;;
 
-    "0")
+    "1")
+        SOURCE="src/tests/"
         MAIN="${tests[0]}.c"
         CHILDREN=""
+        OUT="test_${tests[0]}"
+        ;;
+        
+    "2")
+        SOURCE="src/tests/"
+        MAIN="${tests[1]}.c"
+        CHILDREN=""
+        OUT="test_${tests[1]}"
         ;;
 esac
 
 pushd $SOURCE
-time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o minecraft$PLATFORM
-if [ "$?" = 0 ]; then
-    chmod 775 minecraft
-    mv minecraft$PLATFORM ../
-fi
+time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$PLATFORM &&
+    chmod 775 $OUT &&
+    mv $OUT$PLATFORM ../
 popd
-echo "Exit Code: $?"
