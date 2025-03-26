@@ -1,29 +1,26 @@
 /* ==== section table ==========================================================
-   _section_instance_directory_map ================================================
-   _section_main ==================================================================
-   _section_listeners_&_input =====================================================
-   _section_testing ===============================================================
-   */
+_section_instance_directory_map ================================================
+_section_main ==================================================================
+_section_listeners_&_input =====================================================
+_section_testing ===============================================================
+ */
 
-// TASKS:    [!]: done!    [x]: deleted
-// [!] display Chunk coordinates
-// [x] convert world coordinates to Chunk index
-// [x] convert Chunk index to world coordinates
-// [!] detect targeted block
-// [!] place blocks
-// [!] break blocks
-// [ ] figure out delta time
-// [ ] detect new chunk, allocate memory and spawn accordingly
-// [x] print chunk index's memory address at target on MOUSE_BUTTON_MIDDLE
-// [ ] fix seg fault when player target enters non-allocated chunk area
-// [ ] fix funky chunk states shifting away by 1 unit each chunk
-// [ ] change chunk_buff allocation from stack to heap + access using pointer arithmetic
+/* TASKS:
+[!] display Chunk coordinates
+[!] detect targeted block
+[!] place blocks
+[!] break blocks
+[!] figure out delta time (25 Mar 2025)
+[ ] detect new chunk, allocate memory and spawn accordingly
+[ ] fix seg fault when player target enters non-allocated chunk area
+[ ] fix funky chunk states shifting away by 1 unit each chunk
+[ ] change chunk_buff allocation from stack to heap + access using pointer arithmetic
+ */
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
-#include <pthread.h>
 
 #include <raylib.h>
 #include <raymath.h>
@@ -43,6 +40,7 @@ window win =
 {
     .scl = {WIDTH, HEIGHT},
 };
+f64 delta_time;
 f64 start_time = 0;
 u16 state = 0;
 u8 state_menu_depth = 0;
@@ -87,9 +85,14 @@ void main_init()
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
     //TODO: fix fullscreen
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetWindowState(FLAG_MSAA_4X_HINT);
+
+#if ModeDebug
+    SetWindowState(FLAG_WINDOW_TOPMOST);
     SetWindowState(FLAG_WINDOW_HIGHDPI);
+#endif
+
+    SetWindowState(FLAG_MSAA_4X_HINT);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetWindowMinSize(200, 150);
     hide_cursor;
     center_cursor;
@@ -134,6 +137,7 @@ void main_init()
 
 void main_loop()
 {
+    delta_time = GetFrameTime();
     start_time = get_time_ms();
     win.scl.x = GetRenderWidth();
     win.scl.y = GetRenderHeight();
@@ -168,11 +172,12 @@ void main_loop()
     {
         if (check_target_delta_position(&lily.camera.target, &lily.previous_target))
         {
+            //TODO: fix segfault
             target_chunk = get_chunk(&lily.previous_target, &lily.state, STATE_PARSE_TARGET);
             printf("targetxyz[%d, %d, %d]\t\tstate[%d]\n", lily.previous_target.x, lily.previous_target.y, lily.previous_target.z, target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x]); /*temp*/
         }
 
-        if (lily.state & STATE_PARSE_TARGET)
+        if (target_chunk != NULL && lily.state & STATE_PARSE_TARGET)
             if (target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x] & NOT_EMPTY)
                 draw_block_wires(&lily.previous_target);
     }
@@ -257,18 +262,8 @@ void main_close()
     CloseWindow();
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
-    if (argc >= 2 && argv[1])
-    {
-        if (!strncmp(argv[1], "test", 4)) /*debug mode*/
-        {
-            test();
-            return 0;
-        }
-        init_instance_dir(&argv[1]);
-    }
-
     main_init();
     test(); /*temp*/
     while (state & STATE_ACTIVE) main_loop();
@@ -288,7 +283,7 @@ void listen(player *player)
     if (IsKeyDown(BIND_JUMP))
     {
         if (player->state & STATE_FLYING)
-            player->pos.z += player->movement_speed;
+            player->pos.z += (player->movement_speed);
         else if (player->state & STATE_CAN_JUMP)
         {
             player->v.z += PLAYER_JUMP_HEIGHT;

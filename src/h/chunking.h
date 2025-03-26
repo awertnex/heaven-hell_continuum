@@ -23,25 +23,26 @@
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
 {
-	POSITIVE_X =			0x01,
-	NEGATIVE_X =			0x02,
-	POSITIVE_Y =			0x04,
-	NEGATIVE_Y =			0x08,
-	POSITIVE_Z =			0x10,
-	NEGATIVE_Z =			0x20,
-	NOT_EMPTY =				0x40,
+    POSITIVE_X =			0x01,
+    NEGATIVE_X =			0x02,
+    POSITIVE_Y =			0x04,
+    NEGATIVE_Y =			0x08,
+    POSITIVE_Z =			0x10,
+    NEGATIVE_Z =			0x20,
+    NOT_EMPTY =				0x40,
 }; /* BlockFaces */
 
 enum BlockData
 {
-	BLOCKFACES =			0x0000003F,
-	BLOCKID =				0x00FFFF00,
+    BLOCKFACES =			0x0000003F,
+    BLOCKID =				0x00FFFF00,
 }; /* BlockData */
 
 typedef struct chunk
 {
-	v2i16 pos;
-	u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    u8 loaded;
+    v2i16 pos;
+    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
 } chunk;
 
 // ---- declarations -----------------------------------------------------------

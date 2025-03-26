@@ -75,6 +75,7 @@ void parse_chunk_states(chunk *chunk, u16 height)
 				if (chunk->i[z][y][x] & NEGATIVE_Z)
 					++quad_count;
 			}
+    chunk->loaded = 1;
 }
 
 //TODO: revise, might not be needed
@@ -84,6 +85,12 @@ chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 	{
 		for (u8 x = 0; x < setting.render_distance*2; ++x)
 		{
+            if (!chunk_buf[y][x].loaded)
+            {
+                *state &= ~flag;
+                return 0;
+            }
+
 			if (chunk_buf[y][x].pos.x == floorf((f32)coordinates->x/CHUNK_SIZE) && chunk_buf[y][x].pos.y == floorf((f32)coordinates->y/CHUNK_SIZE))
 			{
 				*state |= flag;
@@ -91,8 +98,7 @@ chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 			}
 		}
 	}
-	*state &= ~flag;
-	return NULL;
+    return 0;
 }
 
 void draw_chunk(chunk *chunk, u16 height)

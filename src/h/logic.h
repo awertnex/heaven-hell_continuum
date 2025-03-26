@@ -18,11 +18,11 @@
 
 // ---- player defaults --------------------------------------------------------
 #define PLAYER_JUMP_HEIGHT					1.25f
-#define PLAYER_SPEED_WALK					0.035f
-#define PLAYER_SPEED_FLY					0.1f
-#define PLAYER_SPEED_FLY_FAST				0.4f
-#define PLAYER_SPEED_SNEAK					0.013f
-#define PLAYER_SPEED_SPRINT					0.07f
+#define PLAYER_SPEED_WALK					3.0f
+#define PLAYER_SPEED_FLY					10.0f
+#define PLAYER_SPEED_FLY_FAST				40.0f
+#define PLAYER_SPEED_SNEAK					1.8f
+#define PLAYER_SPEED_SPRINT					4.0f
 
 typedef struct player
 {

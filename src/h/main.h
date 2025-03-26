@@ -22,6 +22,7 @@ typedef struct window
 
 // ---- declarations -----------------------------------------------------------
 extern window win;
+extern f64 delta_time;
 extern f64 start_time;
 #define dt (get_time_ms() - start_time)
 
