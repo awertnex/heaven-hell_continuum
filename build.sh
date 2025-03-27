@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 SOURCE="src/"
 MAIN="minecraft_linux.c"
 CHILDREN="chunking.c gui.c keymaps.c logic.c assets.c super_debugger.c"
