@@ -75,6 +75,26 @@ void init_gui()
     font_bold_italic =              LoadFont("fonts/minecraft_bold_italic.otf");
     texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
     texture_container_inventory =   LoadTexture("resources/gui/container/inventory.png");
+
+    update_gui();
+}
+
+void update_gui()
+{
+    hud_hotbar_position =
+        (v2i16){
+            roundf((win.scl.x/2) - ((f32)hud_hotbar.width/2)),
+            win.scl.y - hud_hotbar.height - 2,
+        };
+    hud_crosshair_position =
+        (v2i16){
+            (win.scl.x/2) - ((f32)hud_crosshair.width/2),
+            (win.scl.y/2) - ((f32)hud_crosshair.height/2),
+        };
+    container_inventory_position = (v2i16){
+        roundf((win.scl.x/2) - ((f32)container_inventory.width/2)),
+        roundf((win.scl.y/2) - ((f32)container_inventory.height/2)),
+    };
 }
 
 void free_gui()
@@ -263,19 +283,19 @@ void draw_game_menu()
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position},
             BTN_BACK_TO_GAME,
-            &btn_back_to_game,
+            &btn_func_back_to_game,
             "Back to Game");
 
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position + ((button.height + button_spacing_verical)*setting.gui_scale)},
             BTN_OPTIONS,
-            &btn_options,
+            &btn_func_options,
             "Options...");
 
     draw_button(texture_hud_widgets, button,
             (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*2)*setting.gui_scale)},
             BTN_SAVE_AND_QUIT_TO_TITLE,
-            &btn_quit_to_title,
+            &btn_func_save_and_quit_to_title,
             "Save and Quit to Title");
 
     rlEnd();
@@ -284,21 +304,6 @@ void draw_game_menu()
 
 void draw_hud()
 {
-    hud_hotbar_position =
-        (v2i16){
-            roundf((win.scl.x/2) - ((f32)hud_hotbar.width/2)),
-            win.scl.y - hud_hotbar.height - 2,
-        };
-    hud_crosshair_position =
-        (v2i16){
-            (win.scl.x/2) - ((f32)hud_crosshair.width/2),
-            (win.scl.y/2) - ((f32)hud_crosshair.height/2),
-        };
-    container_inventory_position = (v2i16){
-        roundf((win.scl.x/2) - ((f32)container_inventory.width/2)),
-        roundf((win.scl.y/2) - ((f32)container_inventory.height/2)),
-    };
-
     rlBegin(RL_QUADS);
 
     draw_texture(texture_hud_widgets, hud_hotbar,
@@ -306,6 +311,7 @@ void draw_hud()
             (v2i16){
             setting.gui_scale,
             setting.gui_scale}, COL_TEXTURE_DEFAULT);
+
     draw_texture(texture_hud_widgets, hud_hotbar_selected,
             (v2i16){
             (hud_hotbar_position.x - 1) + ((hud_hotbar.height - 2)*(hud_hotbar_slot_selected - 1)),
@@ -313,6 +319,7 @@ void draw_hud()
             (v2i16){
             setting.gui_scale,
             setting.gui_scale}, COL_TEXTURE_DEFAULT);
+
     draw_texture(texture_hud_widgets, hud_hotbar_offhand,
             (v2i16){
             hud_hotbar_position.x - (hud_hotbar.height*2),
@@ -320,6 +327,7 @@ void draw_hud()
             (v2i16){
             setting.gui_scale,
             setting.gui_scale}, COL_TEXTURE_DEFAULT);
+
     if (!(state & STATE_DEBUG))
         draw_texture(texture_hud_widgets, hud_crosshair,
                 hud_crosshair_position, 
@@ -390,19 +398,19 @@ void draw_debug_info()
     EndMode3D();
 }
 
-void btn_back_to_game()
+void btn_func_back_to_game()
 {
-    state ^= STATE_PAUSED;
+    state &= ~STATE_PAUSED;
     buttons[BTN_BACK_TO_GAME] = BTN_INACTIVE;
     lily.state &= ~STATE_MENU_OPEN;
     state_menu_depth = 0;
 }
 
-void btn_options()
+void btn_func_options()
 {
 }
 
-void btn_quit_to_title()
+void btn_func_save_and_quit_to_title()
 {
     state &= ~STATE_ACTIVE;
 }

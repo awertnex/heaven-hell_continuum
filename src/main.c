@@ -1,6 +1,5 @@
 /* ==== section table ==========================================================
 _section_instance_directory_map ================================================
-_section_main ==================================================================
 _section_input =================================================================
  */
 
@@ -40,9 +39,7 @@ settings setting =
     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
 
-// =============================================================================
-// _section_function_signatures ================================================
-// =============================================================================
+// ---- signatures -------------------------------------------------------------
 static void init_game();
 static void update_game();
 static void close_game();
@@ -50,10 +47,7 @@ void update_input(player *player);
 void update_game_menu(player *player);
 void draw_default_grid();
 
-// =============================================================================
 // _section_instance_directory_map =============================================
-// =============================================================================
-
 FILE *instance;
 void init_instance_dir(str **instance_name)
 {
@@ -70,10 +64,6 @@ void init_instance_dir(str **instance_name)
 
     if (instance != 0) fclose(instance);
 }
-
-// =============================================================================
-// _section_main ===============================================================
-// =============================================================================
 
 void init_game()
 {
@@ -136,8 +126,7 @@ void init_game()
 void update_game()
 {
     start_time = get_time_ms();
-    win.scl.x = GetRenderWidth();
-    win.scl.y = GetRenderHeight();
+    win.scl = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
     !ModeCollide ?: give_collision_static(&lily, &target_coordinates_feet);
@@ -405,12 +394,10 @@ void update_input(player *player)
         ToggleBorderlessWindowed();
 
         if (state & STATE_FULLSCREEN)
-        {
-            SetWindowPosition(0, 0);
-            SetWindowSize(GetMonitorWidth(0), GetMonitorHeight(0));
-        }
+            MaximizeWindow();
         else
         {
+            RestoreWindow();
             SetWindowSize(WIDTH, HEIGHT);
             SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
         }
@@ -460,11 +447,12 @@ void update_game_menu(player *player)
     if (IsKeyPressed(BIND_PAUSE) && state_menu_depth == 1)
     {
         state ^= STATE_PAUSED;
-        buttons[BTN_BACK_TO_GAME] = BTN_ACTIVE;
-        buttons[BTN_OPTIONS] = BTN_ACTIVE;
-        buttons[BTN_SAVE_AND_QUIT_TO_TITLE] = BTN_ACTIVE;
         player->state &= ~STATE_MENU_OPEN;
         state_menu_depth = 0;
+
+        buttons[BTN_BACK_TO_GAME] = BTN_INACTIVE;
+        buttons[BTN_OPTIONS] = BTN_INACTIVE;
+        buttons[BTN_SAVE_AND_QUIT_TO_TITLE] = BTN_INACTIVE;
     }
     if (IsKeyPressed(BIND_QUIT) && state_menu_depth)
         state &= ~STATE_ACTIVE;
