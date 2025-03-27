@@ -1,18 +1,20 @@
 #ifndef MINECRAFT_H
 
+#define VERSION "Minecraft.c 0.1.1"
+
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include <defines.h>
 #include "logic.h"
 
-#define WIDTH       1280
-#define HEIGHT      720
-#define MARGIN      20
+#define WIDTH 1280
+#define HEIGHT 720
+#define MARGIN 20
 
 enum DebugStates
 {
     ModeDebug =     1,
-    ModeCollide =   0,
+    ModeCollide =   1,
     ModeGravity =   1,
 }; /* DebugStates */
 

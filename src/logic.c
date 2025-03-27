@@ -105,7 +105,7 @@ void give_camera_movements_player(player *player)
     if (!(player->state & STATE_MENU_OPEN) && !(state & STATE_SUPER_DEBUG))
     {
         player->yaw -= GetMouseDelta().x*setting.mouse_sensitivity/650;
-        if (player->pitch <= 90 && player->pitch >= -90)
+        if (player->pitch <= 90.05f && player->pitch >= -90.05f)
             player->pitch -= GetMouseDelta().y*setting.mouse_sensitivity/650;
     }
 

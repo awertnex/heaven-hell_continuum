@@ -80,7 +80,7 @@ void init_game()
         SetWindowState(FLAG_WINDOW_TOPMOST);
 
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetTargetFPS(60);
+    SetWindowState(FLAG_VSYNC_HINT);
     SetWindowMinSize(200, 150);
     hide_cursor;
     center_cursor;
@@ -134,10 +134,6 @@ void update_game()
     if (state & STATE_DEBUG)
         give_camera_movements_debug_info(&lily);
     (lily.state & STATE_MENU_OPEN || state & STATE_SUPER_DEBUG) ? show_cursor : hide_cursor;
-    if (!(lily.state & STATE_MENU_OPEN) && !(state & STATE_SUPER_DEBUG) &&
-            ((GetMouseDelta().x > 2 || GetMouseDelta().x < -2) ||
-             (GetMouseDelta().y > 2 || GetMouseDelta().y < -2)))
-        center_cursor;
     update_input(&lily);
 
     BeginDrawing();

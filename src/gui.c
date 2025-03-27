@@ -380,7 +380,7 @@ void draw_debug_info()
     DrawRectangle(MARGIN - 2, MARGIN + text_row_height*8,   get_str_width(font_regular, str_vertex_count,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
 
     draw_text(font_regular, str_fps,                (v2i16){MARGIN, MARGIN},                        font_size_debug_info, 1, COL_STATS_1);
-    draw_text(font_regular, str_player_position,    (v2i16){MARGIN, MARGIN + text_row_height},  font_size_debug_info, 1, COL_STATS_2);
+    draw_text(font_regular, str_player_position,    (v2i16){MARGIN, MARGIN + text_row_height},      font_size_debug_info, 1, COL_STATS_2);
     draw_text(font_regular, str_player_block,       (v2i16){MARGIN, MARGIN + text_row_height*2},    font_size_debug_info, 1, COL_STATS_2);
     draw_text(font_regular, str_player_chunk,       (v2i16){MARGIN, MARGIN + text_row_height*3},    font_size_debug_info, 1, COL_STATS_2);
     draw_text(font_regular, str_player_direction,   (v2i16){MARGIN, MARGIN + text_row_height*4},    font_size_debug_info, 1, COL_STATS_2);
