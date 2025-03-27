@@ -7,7 +7,7 @@ demos/
 
 # Output Files
 minecraft
-test
+test_*
 
 # Prerequisites
 *.d
