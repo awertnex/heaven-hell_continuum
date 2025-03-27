@@ -4,9 +4,17 @@
 ----------
 
 #### changes:
-- added delta time
-- made the codebase a lot more readable
+- added many button names for menus and containers enum
+- added all menu names enum
+- added all container names enum
+- implemented more menus (just 1 more, now I have title screen and game menu working well, next I'll do Options)
+- got title screen working fine
+- organized game flow a little better
+- clicking 'Singleplayer' loads the world
+- clicking 'Save and Quit to Title' goes back to title screen, but doesn't save, just keeps the game state saved for the session
 - fixed fullscreen (it's actually borderless windowed mode)
+- made the codebase a lot more readable
+- added delta time
 
 ## v0.1.0 - (24 Mar 2025)
 ----------
