@@ -136,9 +136,9 @@ void init_world()
         chunk_buf[0][5].pos = (v2i16){0, 2};
         chunk_buf[0][6].pos = (v2i16){-1, -10};
         chunk_buf[0][7].pos = (v2i16){1, 0};
-        parse_chunk_states(&chunk_buf[0][0], 2);
-        parse_chunk_states(&chunk_buf[0][1], 1);
-        parse_chunk_states(&chunk_buf[0][2], 1);
+        parse_chunk_states(&chunk_buf[0][0], 3);
+        parse_chunk_states(&chunk_buf[0][1], 2);
+        parse_chunk_states(&chunk_buf[0][2], 2);
         parse_chunk_states(&chunk_buf[0][3], 30);
         parse_chunk_states(&chunk_buf[0][4], 2);
         parse_chunk_states(&chunk_buf[0][5], 2);
@@ -182,9 +182,9 @@ void update_world()
     ClearBackground(COL_SKYBOX); /* TODO: make actual skybox */
     BeginMode3D(lily.camera);
     { /*temp*/
-        draw_chunk(&chunk_buf[0][0], 2);
-        draw_chunk(&chunk_buf[0][1], 1);
-        draw_chunk(&chunk_buf[0][2], 1);
+        draw_chunk(&chunk_buf[0][0], 20);
+        draw_chunk(&chunk_buf[0][1], 2);
+        draw_chunk(&chunk_buf[0][2], 2);
         draw_chunk(&chunk_buf[0][3], 30);
         draw_chunk(&chunk_buf[0][4], 2);
         draw_chunk(&chunk_buf[0][5], 2);
@@ -318,13 +318,6 @@ void update_input(player *player)
     if (IsMouseButtonDown(BIND_USE_ITEM_OR_PLACE_BLOCK))
     {
         add_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
-        /*old
-        //TODO: refine (make correct targeting)
-        u32 block_index = convert_coordinates_to_chunk_index(&lily.previous_target);
-        chunk_buf[target_chunk].index[block_index] |= NOT_EMPTY;
-        //parse_chunk_states(&chunk_buf[target_chunk]); //temp
-        calculate_surrounding_block_state(&chunk_buf[target_chunk], block_index);
-        */
     }
 
     // ---- inventory ----------------------------------------------------------

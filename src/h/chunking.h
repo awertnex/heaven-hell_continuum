@@ -6,6 +6,7 @@
 #define VECTOR3_TYPES
 #include <defines.h>
 
+#include "main.h"
 #include "setting.h"
 
 // ---- world stuff ------------------------------------------------------------
@@ -18,7 +19,7 @@
 #define CHUNK_SIZE          64
 #define WORLD_SIZE          64*32767 /* in each cardinal direction */
 
-#define opacity 180 //debug mode
+#define opacity 180
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
