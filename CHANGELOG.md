@@ -5,6 +5,7 @@
 
 #### changes:
 - added delta time
+- made the codebase a lot more readable
 
 
 ## v0.1.0 - (24 Mar 2025)
