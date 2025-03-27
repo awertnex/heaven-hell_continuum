@@ -6,7 +6,7 @@
 #### changes:
 - added delta time
 - made the codebase a lot more readable
-
+- fixed fullscreen (it's actually borderless windowed mode)
 
 ## v0.1.0 - (24 Mar 2025)
 ----------

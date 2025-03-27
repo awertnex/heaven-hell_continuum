@@ -5,7 +5,6 @@
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include <defines.h>
-#include "logic.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -14,7 +13,7 @@
 enum DebugStates
 {
     ModeDebug =     1,
-    ModeCollide =   1,
+    ModeCollide =   0,
     ModeGravity =   1,
 }; /* DebugStates */
 
@@ -27,12 +26,14 @@ typedef struct window
 extern window win;
 extern f64 delta_time;
 extern f64 start_time;
-//#define dt (get_time_ms() - start_time)
 #define dt GetFrameTime()
 
 extern u16 state;
 extern u8 state_menu_depth;
 extern v3i32 target_coordinates_feet; /*temp*/
+
+// ---- signatures -------------------------------------------------------------
+void init_world();
 
 // ---- platform ---------------------------------------------------------------
 #if defined __linux__

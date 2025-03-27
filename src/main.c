@@ -40,12 +40,9 @@ settings setting =
 };
 
 // ---- signatures -------------------------------------------------------------
-static void init_game();
-static void update_game();
-static void close_game();
-void update_input(player *player);
-void update_game_menu(player *player);
-void draw_default_grid();
+static void update_world();
+static void update_input(player *player);
+static void draw_default_grid();
 
 // _section_instance_directory_map =============================================
 FILE *instance;
@@ -65,7 +62,7 @@ void init_instance_dir(str **instance_name)
     if (instance != 0) fclose(instance);
 }
 
-void init_game()
+int main(void)
 {
     if (ModeDebug)
         printf("DEBUG MODE: ON");
@@ -74,7 +71,6 @@ void init_game()
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
-    //TODO: fix fullscreen
 
     if (ModeDebug)
         SetWindowState(FLAG_WINDOW_TOPMOST);
@@ -82,16 +78,54 @@ void init_game()
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetWindowState(FLAG_VSYNC_HINT);
     SetWindowMinSize(200, 150);
-    hide_cursor;
-    center_cursor;
 
     setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
 
-    init_chunking();
     init_texture_layouts();
     init_textures();
     init_gui();
     init_super_debugger();
+
+    state |= STATE_ACTIVE;
+    while (state & STATE_ACTIVE) // ---- game loop -----------------------------
+    {
+        if (!(state & STATE_WORLD_LOADED))
+        {
+            BeginDrawing();
+            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
+            EndDrawing();
+            update_menus(&lily.state);
+        }
+        else update_world();
+
+        if (state & STATE_PAUSED)
+        {
+            BeginDrawing();
+            draw_menu_overlay;
+            EndDrawing();
+
+            while (state & STATE_PAUSED && state & STATE_ACTIVE)
+            {
+                BeginDrawing();
+                update_menus(&lily.state);
+                EndDrawing();
+            }
+        }
+    }
+
+    unload_textures();
+    free_gui();
+    free_super_debugger();
+    CloseWindow();
+    return 0;
+}
+
+void init_world()
+{
+    hide_cursor;
+    center_cursor;
+
+    init_chunking();
 
     { /*temp*/
         chunk_buf[0][0].pos = (v2i16){0, 0};
@@ -120,20 +154,27 @@ void init_game()
         lily.state |= STATE_FLYING;
     }
 
-    state |= STATE_ACTIVE | STATE_HUD;
+    state |= STATE_HUD | STATE_WORLD_LOADED;
 }
 
-void update_game()
+void update_world()
 {
     start_time = get_time_ms();
     win.scl = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
-    !ModeCollide ?: give_collision_static(&lily, &target_coordinates_feet);
-    give_camera_movements_player(&lily);
+
+    if (ModeCollide)
+        give_collision_static(&lily, &target_coordinates_feet);
+
     if (state & STATE_DEBUG)
         give_camera_movements_debug_info(&lily);
-    (lily.state & STATE_MENU_OPEN || state & STATE_SUPER_DEBUG) ? show_cursor : hide_cursor;
+    give_camera_movements_player(&lily);
+
+    if (state_menu_depth || state & STATE_SUPER_DEBUG)
+        show_cursor;
+    else hide_cursor;
+
     update_input(&lily);
 
     BeginDrawing();
@@ -180,8 +221,7 @@ void update_game()
     if (state & STATE_HUD)
     {
         draw_hud();
-        if (state & STATE_DEBUG)
-            draw_debug_info();
+        draw_debug_info();
         if (state_menu_depth)
         {
             if (lily.container_state & CONTR_INVENTORY)
@@ -189,47 +229,11 @@ void update_game()
         }
     }
 
-    if (state & STATE_SUPER_DEBUG)
-        draw_super_debugger();
+    draw_super_debugger();
     EndDrawing();
-
-    if (state & STATE_PAUSED)
-    {
-        BeginDrawing();
-        draw_menu_overlay;
-        EndDrawing();
-
-        while (state & STATE_PAUSED && state & STATE_ACTIVE)
-        {
-            BeginDrawing();
-            update_game_menu(&lily);
-            draw_game_menu();
-            EndDrawing();
-        }
-        lily.state &= ~STATE_MENU_OPEN;
-    }
 }
 
-void close_game()
-{
-    unload_textures();
-    free_gui();
-    free_super_debugger();
-    CloseWindow();
-}
-
-int main(void)
-{
-    init_game();
-    while (state & STATE_ACTIVE) update_game();
-    close_game();
-    return 0;
-}
-
-// =============================================================================
-// _section_listeners_&_input ==================================================
-// =============================================================================
-
+// _section_input ==============================================================
 void update_input(player *player)
 {
     // ---- jumping ------------------------------------------------------------
@@ -359,17 +363,15 @@ void update_input(player *player)
 
     if (IsKeyPressed(BIND_OPEN_OR_CLOSE_INVENTORY))
     {
-        if (player->container_state & CONTR_INVENTORY && player->state & STATE_MENU_OPEN)
+        if (player->container_state & CONTR_INVENTORY && state_menu_depth)
         {
-            player->container_state &= ~CONTR_INVENTORY;
             state_menu_depth = 0;
-            player->state &= ~STATE_MENU_OPEN;
+            player->container_state &= ~CONTR_INVENTORY;
         }
-        else if (!(player->container_state & CONTR_INVENTORY) && !(state & STATE_MENU_OPEN))
+        else if (!(player->container_state & CONTR_INVENTORY) && !state_menu_depth)
         {
-            player->container_state |= CONTR_INVENTORY;
-            player->state |= STATE_MENU_OPEN;
             state_menu_depth = 1;
+            player->container_state |= CONTR_INVENTORY;
         }
 
         if (!(player->container_state & CONTR_INVENTORY) && state_menu_depth)
@@ -383,7 +385,6 @@ void update_input(player *player)
     if (IsKeyPressed(BIND_TOGGLE_DEBUG))
         state ^= STATE_DEBUG;
 
-    //TODO: fix fullscreen
     if (IsKeyPressed(BIND_TOGGLE_FULLSCREEN))
     {
         state ^= STATE_FULLSCREEN;
@@ -397,6 +398,7 @@ void update_input(player *player)
             SetWindowSize(WIDTH, HEIGHT);
             SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
         }
+        apply_render_settings();
     }
 
     if (IsKeyPressed(BIND_TOGGLE_PERSPECTIVE))
@@ -410,17 +412,16 @@ void update_input(player *player)
     {
         if (!state_menu_depth)
         {
-            player->container_state = 0;
-            state |= STATE_PAUSED;
             state_menu_depth = 1;
-            player->state |= STATE_MENU_OPEN;
+            menu_index = MENU_GAME;
+            state |= STATE_PAUSED;
+            player->container_state = 0;
             show_cursor;
         }
         else if (state_menu_depth == 1)
         {
-            player->container_state = 0;
-            player->state &= ~STATE_MENU_OPEN;
             state_menu_depth = 0;
+            player->container_state = 0;
         }
         else --state_menu_depth;
     }
@@ -435,22 +436,6 @@ void update_input(player *player)
         state ^= STATE_SUPER_DEBUG;
 
     if (IsKeyPressed(BIND_QUIT))
-        state &= ~STATE_ACTIVE;
-}
-
-void update_game_menu(player *player)
-{
-    if (IsKeyPressed(BIND_PAUSE) && state_menu_depth == 1)
-    {
-        state ^= STATE_PAUSED;
-        player->state &= ~STATE_MENU_OPEN;
-        state_menu_depth = 0;
-
-        buttons[BTN_BACK_TO_GAME] = BTN_INACTIVE;
-        buttons[BTN_OPTIONS] = BTN_INACTIVE;
-        buttons[BTN_SAVE_AND_QUIT_TO_TITLE] = BTN_INACTIVE;
-    }
-    if (IsKeyPressed(BIND_QUIT) && state_menu_depth)
         state &= ~STATE_ACTIVE;
 }
 

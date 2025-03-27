@@ -1,5 +1,6 @@
 #include "h/super_debugger.h"
 #include "h/gui.h"
+#include "h/logic.h"
 #include "h/main.h"
 
 // ---- variables --------------------------------------------------------------
@@ -43,6 +44,8 @@ void free_super_debugger()
 
 void draw_super_debugger()
 {
+    if (!(state & STATE_SUPER_DEBUG)) return;
+
     DebugRectangle.scl.y = win.scl.y - ((MARGIN + SDB_BASE_SIZE)*2);
     DebugRectangle.pos.x = win.scl.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 
