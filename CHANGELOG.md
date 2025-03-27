@@ -1,8 +1,12 @@
 # changelog
 
-## v0.1.1 - (DD MMM YYYY)
-----------
+## v0.1.2 - (27 Mar 2025)
+-------------------------
+#### changes:
+- can break and place blocks
 
+## v0.1.1 - (27 Mar 2025)
+-------------------------
 #### changes:
 - added many button names for menus and containers enum
 - added all menu names enum
@@ -17,7 +21,7 @@
 - added delta time
 
 ## v0.1.0 - (24 Mar 2025)
-----------
+-------------------------
 **first version, as I have started this project long before I version-controlled it with git**
 
 #### features:

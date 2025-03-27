@@ -5,6 +5,7 @@ TASKS:
 [x] place blocks
 [x] break blocks
 [x] figure out delta time (25 Mar 2025)
+[ ] make the player target a ray-caster
 [ ] detect new chunk, allocate memory and spawn accordingly
 [ ] fix seg fault when player target enters non-allocated chunk area
 [ ] fix funky chunk states shifting away by 1 unit each chunk

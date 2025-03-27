@@ -155,6 +155,7 @@ void init_world()
     }
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
+    printf("World Loaded: Poop Consistency Tester\n"); //temp
 }
 
 void update_world()
@@ -306,16 +307,8 @@ void update_input(player *player)
     {
         if (player->state & STATE_PARSE_TARGET)
         {
-            target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x] = 0;
-            parse_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
+            sub_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
         }
-        /*old
-        //TODO: refine (make correct targeting)
-        u32 block_index = convert_coordinates_to_chunk_index(&lily.previous_target);
-        chunk_buf[target_chunk].index[block_index] = 0;
-        //parse_chunk_states(&chunk_buf[target_chunk]); //temp
-        calculate_surrounding_block_state(&chunk_buf[target_chunk], block_index);
-        */
     }
 
     if (IsMouseButtonDown(BIND_PICK_BLOCK))
@@ -324,6 +317,7 @@ void update_input(player *player)
 
     if (IsMouseButtonDown(BIND_USE_ITEM_OR_PLACE_BLOCK))
     {
+        add_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
         /*old
         //TODO: refine (make correct targeting)
         u32 block_index = convert_coordinates_to_chunk_index(&lily.previous_target);

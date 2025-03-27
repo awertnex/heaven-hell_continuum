@@ -14,7 +14,7 @@ void init_chunking()
 }
 
 //TODO: check chunk barrier faces
-void parse_block_state(chunk *chunk, u8 x, u8 y, u16 z)
+void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 {
     if (x < CHUNK_SIZE - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] &= ~NEGATIVE_X) : (chunk->i[z][y][x] |= POSITIVE_X);
@@ -51,6 +51,36 @@ void parse_block_state(chunk *chunk, u8 x, u8 y, u16 z)
     */
 }
 
+//TODO: check chunk barrier faces
+void sub_block_state(chunk *chunk, u8 x, u8 y, u16 z)
+{
+    if (x < CHUNK_SIZE - 1)
+        chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : (chunk->i[z][y][x] &= ~POSITIVE_X);
+    else chunk->i[z][y][x] &= ~POSITIVE_X;
+
+    if (x > 0)
+        chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] |= POSITIVE_X) : (chunk->i[z][y][x] &= ~NEGATIVE_X);
+    else chunk->i[z][y][x] &= ~NEGATIVE_X;
+
+    if (y < CHUNK_SIZE - 1)
+        chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] |= NEGATIVE_Y) : (chunk->i[z][y][x] &= ~POSITIVE_Y);
+    else chunk->i[z][y][x] &= ~POSITIVE_Y;
+
+    if (y > 0)
+        chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] |= POSITIVE_Y) : (chunk->i[z][y][x] &= ~NEGATIVE_Y);
+    else chunk->i[z][y][x] &= ~NEGATIVE_Y;
+
+    if (z < world_height - 1)
+        chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] |= NEGATIVE_Z) : (chunk->i[z][y][x] &= ~POSITIVE_Z);
+    else chunk->i[z][y][x] &= ~POSITIVE_Z;
+    
+    if (z > 0)
+        chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] |= POSITIVE_Z) : (chunk->i[z][y][x] &= ~NEGATIVE_Z);
+    else chunk->i[z][y][x] &= ~NEGATIVE_Z;
+
+    chunk->i[z][y][x] &= ~NOT_EMPTY;
+}
+
 void parse_chunk_states(chunk *chunk, u16 height)
 {
     if (!height) height = world_height; /* temp */
@@ -58,7 +88,7 @@ void parse_chunk_states(chunk *chunk, u16 height)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)
             for (u8 x = 0; x < CHUNK_SIZE; ++x)
             {
-                parse_block_state(chunk, x, y, z);
+                add_block_state(chunk, x, y, z);
                 if (chunk->i[z][y][x])
                     ++block_count;
                 if (chunk->i[z][y][x] & POSITIVE_X)
