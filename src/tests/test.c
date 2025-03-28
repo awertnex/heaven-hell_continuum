@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <raylib.h>
-#include "../src/h/main.h"
+#include "../h/main.h"
 
 void test_binary_operators()
 {
