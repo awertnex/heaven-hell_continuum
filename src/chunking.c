@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "h/chunking.h"
@@ -16,6 +17,9 @@ void init_chunking()
 //TODO: check chunk barrier faces
 void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 {
+    x %= CHUNK_SIZE;
+    y %= CHUNK_SIZE;
+
     if (x < CHUNK_SIZE - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] &= ~NEGATIVE_X) : (chunk->i[z][y][x] |= POSITIVE_X);
     else chunk->i[z][y][x] |= POSITIVE_X;
@@ -42,18 +46,17 @@ void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 
     chunk->i[z][y][x] |= NOT_EMPTY;
 
+    printf("i:%3d    x:%3d    y:%3d    z:%3d\n", chunk->i[z][y][x], x, y, z);
     /*temp
-    printf("cxy[%d, %d]\t\tixyz[%d, %d, %d, %d]", chunk->pos.x, chunk->pos.y, chunk->i[z][y][x], x, y, z);
-    if (x > 0) printf("\t\tnx[%d]", chunk->i[z][y][x - 1]);
-    if (y > 0) printf("\t\tny[%d]", chunk->i[z][y - 1][x]);
-    if (z > 0) printf("\t\tnz[%d]", chunk->i[z - 1][y][x]);
-    printf("\n");
     */
 }
 
 //TODO: check chunk barrier faces
 void remove_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 {
+    x %= CHUNK_SIZE;
+    y %= CHUNK_SIZE;
+
     if (x < CHUNK_SIZE - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : (chunk->i[z][y][x] &= ~POSITIVE_X);
     else chunk->i[z][y][x] &= ~POSITIVE_X;

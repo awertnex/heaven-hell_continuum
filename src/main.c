@@ -133,7 +133,7 @@ void init_world()
         chunk_buf[0][3].pos = (v2i16){-1, 0};
         chunk_buf[0][4].pos = (v2i16){0, 1};
         chunk_buf[0][5].pos = (v2i16){0, 2};
-        chunk_buf[0][6].pos = (v2i16){-1, -10};
+        chunk_buf[0][6].pos = (v2i16){-1, -1};
         chunk_buf[0][7].pos = (v2i16){1, 0};
         parse_chunk_states(&chunk_buf[0][0], 3);
         parse_chunk_states(&chunk_buf[0][1], 2);
@@ -141,7 +141,7 @@ void init_world()
         parse_chunk_states(&chunk_buf[0][3], 30);
         parse_chunk_states(&chunk_buf[0][4], 2);
         parse_chunk_states(&chunk_buf[0][5], 2);
-        parse_chunk_states(&chunk_buf[0][6], 9);
+        parse_chunk_states(&chunk_buf[0][6], 0);
         parse_chunk_states(&chunk_buf[0][7], 2);
     }
     lily.state |= STATE_FALLING; //temp
