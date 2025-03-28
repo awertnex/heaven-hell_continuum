@@ -5,6 +5,7 @@
 #### changes
 - can break and place blocks
 - added menu navigation
+- fixed breaking and placing blocks in other chunks than 'xy: 0, 0'
 
 ## v0.1.1 - (27 Mar 2025)
 -------------------------
