@@ -16,6 +16,11 @@ tests=(
 )
 
 case $1 in
+    "edit")
+        nv ./build.sh
+        exit
+        ;;
+
     "list")
         count=1
         echo "    TESTS:"
@@ -43,6 +48,11 @@ case $1 in
         MAIN="${tests[1]}.c"
         CHILDREN=""
         OUT="test_${tests[1]}"
+        ;;
+    *)
+        echo "Invalid '$1'"
+        echo "Try: './build.sh list' to list all items, or './build.sh' to build 'main.c'"
+        exit
         ;;
 esac
 
