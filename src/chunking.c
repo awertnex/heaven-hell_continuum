@@ -4,8 +4,8 @@
 #include "h/chunking.h"
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
-chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
-chunk *target_chunk = 0;
+Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
+Chunk *target_chunk = 0;
 u64 block_count = 0; //debug mode
 u64 quad_count = 0; //debug mode
 
@@ -15,7 +15,7 @@ void init_chunking()
 }
 
 //TODO: check chunk barrier faces
-void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
+void add_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_SIZE;
     y %= CHUNK_SIZE;
@@ -52,7 +52,7 @@ void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 }
 
 //TODO: check chunk barrier faces
-void remove_block_state(chunk *chunk, u8 x, u8 y, u16 z)
+void remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_SIZE;
     y %= CHUNK_SIZE;
@@ -84,7 +84,7 @@ void remove_block_state(chunk *chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] &= ~NOT_EMPTY;
 }
 
-void parse_chunk_states(chunk *chunk, u16 height)
+void parse_chunk_states(Chunk *chunk, u16 height)
 {
     if (chunk->loaded) return;
     if (!height) height = world_height; /* temp */
@@ -112,7 +112,7 @@ void parse_chunk_states(chunk *chunk, u16 height)
 }
 
 //TODO: revise, might not be needed
-chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
+Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 {
     for (u8 y = 0; y < setting.render_distance*2; ++y)
     {
@@ -134,7 +134,7 @@ chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     return 0;
 }
 
-void draw_chunk(chunk *chunk, u16 height)
+void draw_chunk(Chunk *chunk, u16 height)
 {
     rlPushMatrix();
     rlBegin(RL_QUADS);

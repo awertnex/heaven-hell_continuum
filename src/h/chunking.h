@@ -39,27 +39,28 @@ enum BlockData
     BLOCKID =               0x00FFFF00,
 }; /* BlockData */
 
-typedef struct chunk
+typedef struct Chunk
 {
     u8 loaded;
     v2i16 pos;
-    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-} chunk;
+    u8 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    u16 id[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+} Chunk;
 
 // ---- declarations -----------------------------------------------------------
 extern u16 world_height;
-extern chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1];
-extern chunk *target_chunk;
+extern Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1];
+extern Chunk *target_chunk;
 extern u64 block_count; //debug mode
 extern u64 quad_count; //debug mode
 
 // ---- signatures -------------------------------------------------------------
 void    init_chunking();
-void    add_block_state(chunk *chunk, u8 x, u8 y, u16 z);
-void    remove_block_state(chunk *chunk, u8 x, u8 y, u16 z);
-void    parse_chunk_states(chunk *chunk, u16 height);
-chunk*  get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
-void    draw_chunk(chunk *chunk, u16 height);
+void    add_block_state(Chunk *chunk, u8 x, u8 y, u16 z);
+void    remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z);
+void    parse_chunk_states(Chunk *chunk, u16 height);
+Chunk*  get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
+void    draw_chunk(Chunk *chunk, u16 height);
 void    draw_block(u32 block_state);
 void    draw_block_wires(v3i32 *pos);
 void    draw_bounding_box(Vector3 *origin, Vector3 *scl);
