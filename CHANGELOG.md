@@ -1,13 +1,14 @@
 # changelog
 
-## v0.1.2 - (27 Mar 2025)
+## v0.1.2 - (DD Apr 2025)
 -------------------------
-#### changes:
+#### changes
 - can break and place blocks
+- added menu navigation
 
 ## v0.1.1 - (27 Mar 2025)
 -------------------------
-#### changes:
+#### changes
 - added many button names for menus and containers enum
 - added all menu names enum
 - added all container names enum
@@ -24,7 +25,7 @@
 -------------------------
 **first version, as I have started this project long before I version-controlled it with git**
 
-#### features:
+#### features
 - basic gui functionality
 - centering text vertically and horizontally
 - basic controls:
