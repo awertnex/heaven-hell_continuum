@@ -52,7 +52,7 @@ void add_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 }
 
 //TODO: check chunk barrier faces
-void sub_block_state(chunk *chunk, u8 x, u8 y, u16 z)
+void remove_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 {
     if (x < CHUNK_SIZE - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : (chunk->i[z][y][x] &= ~POSITIVE_X);
@@ -83,6 +83,7 @@ void sub_block_state(chunk *chunk, u8 x, u8 y, u16 z)
 
 void parse_chunk_states(chunk *chunk, u16 height)
 {
+    if (chunk->loaded) return;
     if (!height) height = world_height; /* temp */
     for (u16 z = 0; z < height; ++z)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)

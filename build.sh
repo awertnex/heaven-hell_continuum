@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set -xe
+set -e
 
 SOURCE="src/"
 MAIN="minecraft_linux.c"
 CHILDREN="chunking.c gui.c keymaps.c logic.c assets.c super_debugger.c"
-CFLAGS="-Wall -Wextra"
+CFLAGS="-Wall -Wextra -ggdb"
 LIBS="-lraylib -lm"
 OUT="minecraft"
 PLATFORM=""

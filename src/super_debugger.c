@@ -24,8 +24,8 @@ Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTO
 // ---- functions --------------------------------------------------------------
 void init_super_debugger()
 {
-    buttons[BTN_SDB_ADD] = BTN_ACTIVE;
-    buttons[BTN_SDB_SUB] = BTN_ACTIVE;
+    buttons[BTN_SDB_ADD] = 1;
+    buttons[BTN_SDB_SUB] = 1;
 
     texture_super_debugger = LoadTexture("resources/gui/container/super_debugger.png");
     DebugRectangle.scl.x = 300;
@@ -36,8 +36,8 @@ void init_super_debugger()
 
 void free_super_debugger()
 {
-    buttons[BTN_SDB_ADD] = BTN_INACTIVE;
-    buttons[BTN_SDB_SUB] = BTN_INACTIVE;
+    buttons[BTN_SDB_ADD] = 0;
+    buttons[BTN_SDB_SUB] = 0;
 
     UnloadTexture(texture_super_debugger);
 }

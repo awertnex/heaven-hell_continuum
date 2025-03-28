@@ -50,8 +50,9 @@ u8 container_cursor_slot[2];
 u8 *hotbar_slots[9][9];
 
 u16 menu_index;
-b8 check_buttons_ready;
-u8 buttons[BTN_COUNT] = {BTN_INACTIVE};
+u16 menu_layer[5] = {0};
+u8 buttons[BTN_COUNT];
+static b8 check_menu_ready;
 
 // ---- debug info -------------------------------------------------------------
 str str_fps[16];
@@ -72,6 +73,29 @@ Camera3D camera_debug_info =
 };
 
 // ---- functions --------------------------------------------------------------
+static void print_menu_layers()
+{
+    static str menu_names[10][24] =
+    {
+        "",
+        "MENU_TITLE",
+        "MENU_SINGLEPLAYER",
+        "MENU_MULTIPLAYER",
+        "MENU_MINECRAFT_C_REALMS",
+        "MENU_OPTIONS",
+        "MENU_OPTIONS_GAME",
+        "MENU_VIDEO_SETTINGS",
+        "MENU_GAME",
+        "MENU_DEATH",
+    };
+    printf("menu layers:\n");
+    for (u8 i = 0; i < 9; ++i)
+    {
+        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
+    }
+    putchar('\n');
+}
+
 void init_gui()
 {
     font_regular =                  LoadFont("fonts/minecraft_regular.otf");
@@ -82,6 +106,8 @@ void init_gui()
     texture_container_inventory =   LoadTexture("resources/gui/container/inventory.png");
 
     menu_index = MENU_TITLE;
+    state_menu_depth = 1;
+    memset(buttons, 0, BTN_COUNT);
     apply_render_settings();
 }
 
@@ -115,7 +141,8 @@ void free_gui()
 
 void update_menus(u16 *player_state)
 {
-    if (!menu_index) return;
+    if (!menu_index)
+        return;
 
     if (IsKeyPressed(BIND_QUIT))
         state &= ~STATE_ACTIVE;
@@ -124,18 +151,19 @@ void update_menus(u16 *player_state)
     switch (menu_index)
     {
         case MENU_TITLE:
-            if (!check_buttons_ready)
+            if (!check_menu_ready)
             {
-                memset(buttons, BTN_INACTIVE, BTN_COUNT);
-                buttons[BTN_SINGLEPLAYER] = BTN_ACTIVE;
-                buttons[BTN_MULTIPLAYER] = BTN_ACTIVE;
-                buttons[BTN_MINECRAFT_C_REALMS] = BTN_ACTIVE;
-                buttons[BTN_OPTIONS] = BTN_ACTIVE;
-                buttons[BTN_QUIT] = BTN_ACTIVE;
-                check_buttons_ready = 1;
+                menu_layer[state_menu_depth] = MENU_TITLE;
+                memset(buttons, 0, BTN_COUNT);
+                buttons[BTN_SINGLEPLAYER] = 1;
+                buttons[BTN_MULTIPLAYER] = 1;
+                buttons[BTN_MINECRAFT_C_REALMS] = 1;
+                buttons[BTN_OPTIONS] = 1;
+                buttons[BTN_QUIT] = 1;
+                check_menu_ready = 1;
             }
 
-            draw_text(font_regular, VERSION,
+            draw_text(font_regular, MC_C_VERSION,
                     (v2i16){0, win.scl.y - font_size},
                     font_size, 2, COL_TEXT_DEFAULT);
 
@@ -176,19 +204,83 @@ void update_menus(u16 *player_state)
             break;
 
         case MENU_OPTIONS:
-            // TODO: update and draw menu options
+            if (!check_menu_ready)
+            {
+                menu_layer[state_menu_depth] = MENU_OPTIONS;
+                memset(buttons, 0, BTN_COUNT);
+                buttons[BTN_DONE] = 1;
+                buttons[BTN_FOV] = 1;
+                buttons[BTN_ONLINE] = 1;
+                buttons[BTN_SKIN_CUSTOMIZATION] = 1;
+                buttons[BTN_MUSIC_N_SOUNDS] = 1;
+                buttons[BTN_VIDEO_SETTINGS] = 1;
+                buttons[BTN_CONTROLS] = 1;
+                buttons[BTN_LANGUAGE] = 1;
+                buttons[BTN_CHAT_SETTINGS] = 1;
+                buttons[BTN_RESOURCE_PACKS] = 1;
+                buttons[BTN_ACCESSIBILITY_SETTINGS] = 1;
+                buttons[BTN_TELEMETRY_DATA] = 1;
+                buttons[BTN_CREDITS_N_ATTRIBUTION] = 1;
+                check_menu_ready = 1;
+            }
+
+            rlBegin(RL_QUADS);
+
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){win.scl.x/2, game_menu_position},
+                    BTN_DONE,
+                    &btn_func_back,
+                    "Done");
+
+            rlEnd();
+            rlSetTexture(0);
             break;
 
-        case MENU_GAME:
-            if (!check_buttons_ready)
+        case MENU_OPTIONS_GAME:
+            if (!check_menu_ready)
             {
-                memset(buttons, BTN_INACTIVE, BTN_COUNT);
-                buttons[BTN_BACK_TO_GAME] = BTN_ACTIVE;
-                buttons[BTN_ADVANCEMENTS] = BTN_ACTIVE;
-                buttons[BTN_GIVE_FEEDBACK] = BTN_ACTIVE;
-                buttons[BTN_OPTIONS] = BTN_ACTIVE;
-                buttons[BTN_QUIT] = BTN_ACTIVE;
-                check_buttons_ready = 1;
+                menu_layer[state_menu_depth] = MENU_OPTIONS_GAME;
+                memset(buttons, 0, BTN_COUNT);
+                buttons[BTN_DONE] = 1;
+                buttons[BTN_FOV] = 1;
+                buttons[BTN_DIFFICULTY] = 1;
+                buttons[BTN_SKIN_CUSTOMIZATION] = 1;
+                buttons[BTN_MUSIC_N_SOUNDS] = 1;
+                buttons[BTN_VIDEO_SETTINGS] = 1;
+                buttons[BTN_CONTROLS] = 1;
+                buttons[BTN_LANGUAGE] = 1;
+                buttons[BTN_CHAT_SETTINGS] = 1;
+                buttons[BTN_RESOURCE_PACKS] = 1;
+                buttons[BTN_ACCESSIBILITY_SETTINGS] = 1;
+                buttons[BTN_TELEMETRY_DATA] = 1;
+                buttons[BTN_CREDITS_N_ATTRIBUTION] = 1;
+                check_menu_ready = 1;
+            }
+
+            rlBegin(RL_QUADS);
+
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){win.scl.x/2, game_menu_position},
+                    BTN_DONE,
+                    &btn_func_back,
+                    "Done");
+
+            rlEnd();
+            rlSetTexture(0);
+            break;
+
+
+        case MENU_GAME:
+            if (!check_menu_ready)
+            {
+                menu_layer[state_menu_depth] = MENU_GAME;
+                memset(buttons, 0, BTN_COUNT);
+                buttons[BTN_BACK_TO_GAME] = 1;
+                buttons[BTN_ADVANCEMENTS] = 1;
+                buttons[BTN_GIVE_FEEDBACK] = 1;
+                buttons[BTN_OPTIONS_GAME] = 1;
+                buttons[BTN_QUIT] = 1;
+                check_menu_ready = 1;
             }
 
             if (IsKeyPressed(BIND_PAUSE))
@@ -205,19 +297,19 @@ void update_menus(u16 *player_state)
             draw_button(texture_hud_widgets, button,
                     (v2i16){win.scl.x/2, game_menu_position + ((button.height + button_spacing_verical)*setting.gui_scale)},
                     BTN_ADVANCEMENTS,
-                    &btn_func_options,
+                    &btn_func_options_game,
                     "Advancements");
 
             draw_button(texture_hud_widgets, button,
                     (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*2)*setting.gui_scale)},
                     BTN_GIVE_FEEDBACK,
-                    &btn_func_options,
+                    &btn_func_options_game,
                     "Give Feedback");
 
             draw_button(texture_hud_widgets, button,
                     (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*3)*setting.gui_scale)},
-                    BTN_OPTIONS,
-                    &btn_func_options,
+                    BTN_OPTIONS_GAME,
+                    &btn_func_options_game,
                     "Options...");
 
             draw_button(texture_hud_widgets, button,
@@ -476,10 +568,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
                     (v2i16){setting.gui_scale, setting.gui_scale},
                     ColorTint(COL_TEXTURE_DEFAULT, TINT_BUTTON_HOVER));
 
-            if (IsMouseButtonDown(0))
-                buttons[btn_state] = BTN_PRESSED;
-
-            if (IsMouseButtonUp(0) && buttons[btn_state] == BTN_PRESSED)
+            if (IsMouseButtonPressed(0))
                 func();
         }
         else
@@ -499,10 +588,9 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
 
 void btn_func_singleplayer()
 {
-    state_menu_depth = 0; //TODO: set actual value (2)
     menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
+    state_menu_depth = 0; //TODO: set actual value (2)
+    check_menu_ready = 0;
     state &= ~STATE_PAUSED;
 
     init_world(); //temp
@@ -510,26 +598,39 @@ void btn_func_singleplayer()
 
 void btn_func_multiplayer()
 {
-    state_menu_depth = 2;
     menu_index = MENU_MULTIPLAYER;
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
+    state_menu_depth = 2;
+    check_menu_ready = 0;
 }
 
 void btn_func_minecraft_c_realms()
 {
-    state_menu_depth = 2;
     menu_index = MENU_MINECRAFT_C_REALMS;
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
+    state_menu_depth = 2;
+    check_menu_ready = 0;
 }
 
 void btn_func_options()
 {
-    state_menu_depth = 2;
     menu_index = MENU_OPTIONS;
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
+    state_menu_depth = 2;
+    check_menu_ready = 0;
+}
+
+void btn_func_options_game()
+{
+    menu_index = MENU_OPTIONS_GAME;
+    state_menu_depth = 2;
+    check_menu_ready = 0;
+}
+
+void btn_func_back_to_game()
+{
+    menu_index = 0;
+    state_menu_depth = 0;
+    check_menu_ready = 0;
+    state &= ~STATE_PAUSED;
+    lily.state &= ~STATE_MENU_OPEN;
 }
 
 void btn_func_quit()
@@ -537,23 +638,19 @@ void btn_func_quit()
     state &= ~STATE_ACTIVE;
 }
 
-void btn_func_back_to_game()
-{
-    state_menu_depth = 0;
-    menu_index = 0;
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
-    state &= ~STATE_PAUSED;
-    lily.state &= ~STATE_MENU_OPEN;
-}
-
 void btn_func_save_and_quit_to_title()
 {
-    state_menu_depth = 1;
     menu_index = MENU_TITLE;
-    memset(buttons, BTN_INACTIVE, BTN_COUNT);
-    check_buttons_ready = 0;
+    state_menu_depth = 1;
+    check_menu_ready = 0;
     // TODO: save and unload world
     state &= ~STATE_WORLD_LOADED;
     ClearBackground(DARKBROWN);
+}
+
+void btn_func_back()
+{
+    --state_menu_depth;
+    menu_index = menu_layer[state_menu_depth];
+    check_menu_ready = 0;
 }

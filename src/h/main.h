@@ -1,6 +1,6 @@
 #ifndef MINECRAFT_H
 
-#define VERSION "Minecraft.c 0.1.1"
+#define MC_C_VERSION "Minecraft.c 0.1.1"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
@@ -17,13 +17,13 @@ enum DebugStates
     ModeGravity =   1,
 }; /* DebugStates */
 
-typedef struct window
+typedef struct Window
 {
     v2f32 scl;
-} window;
+} WindowInfo;
 
 // ---- declarations -----------------------------------------------------------
-extern window win;
+extern WindowInfo win;
 extern f64 delta_time;
 extern f64 start_time;
 #define dt GetFrameTime()

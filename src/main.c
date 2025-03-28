@@ -22,14 +22,13 @@ _section_input =================================================================
 #include "h/super_debugger.h"
 
 // ---- variables --------------------------------------------------------------
-window win =
+WindowInfo win =
 {
     .scl = {WIDTH, HEIGHT},
 };
 f64 start_time = 0;
 u16 state = 0;
 u8 state_menu_depth = 0;
-
 settings setting =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
@@ -307,7 +306,7 @@ void update_input(player *player)
     {
         if (player->state & STATE_PARSE_TARGET)
         {
-            sub_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
+            remove_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
         }
     }
 
