@@ -2,6 +2,7 @@
 
 set -e
 
+DIR="$HOME/programming/minecraft.c/"
 SOURCE="src/"
 MAIN="minecraft_linux.c"
 CHILDREN="chunking.c gui.c keymaps.c logic.c assets.c super_debugger.c"
@@ -37,6 +38,7 @@ case $1 in
         ;;
 
     "1")
+        echo "Building test 001: ${tests[0]}"
         SOURCE="src/tests/"
         MAIN="${tests[0]}.c"
         CHILDREN=""
@@ -44,6 +46,7 @@ case $1 in
         ;;
         
     "2")
+        echo "Building test 002: ${tests[1]}"
         SOURCE="src/tests/"
         MAIN="${tests[1]}.c"
         CHILDREN=""
@@ -59,5 +62,5 @@ esac
 pushd $SOURCE
 time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$PLATFORM &&
     chmod 775 $OUT &&
-    mv $OUT$PLATFORM ../
+    mv $OUT$PLATFORM $DIR
 popd
