@@ -77,7 +77,6 @@ void remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
 void parse_chunk_states(Chunk *chunk, u16 height)
 {
     if (chunk->loaded) return;
-    if (!height) height = world_height; /* temp */
     for (u16 z = 0; z < height; ++z)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)
             for (u8 x = 0; x < CHUNK_SIZE; ++x)
@@ -111,17 +110,29 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
             if (!chunk_buf[y][x].loaded)
             {
                 *state &= ~flag;
-                return 0;
+                return NULL;
             }
 
-            if (chunk_buf[y][x].pos.x == floorf((f32)coordinates->x/CHUNK_SIZE) && chunk_buf[y][x].pos.y == floorf((f32)coordinates->y/CHUNK_SIZE))
+            if (
+                    chunk_buf[y][x].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
+                    chunk_buf[y][x].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
             {
+                //TODO: temp
+                printf("coords.xyz[%03d %03d %03d]    chunk.xy[%03d %03d]    state[%03d]\ncoords.xy/[%03d %03d]\ncoords.xy%%[%03d %03d]\n\n",
+                        coordinates->x,
+                        coordinates->y,
+                        coordinates->z,
+                        chunk_buf[y][x].pos.x,
+                        chunk_buf[y][x].pos.y,
+                        chunk_buf[y][x].i[coordinates->z - WORLD_BOTTOM][coordinates->y][coordinates->x],
+                        (i32)floorf((f32)coordinates->x/CHUNK_SIZE), (i32)floorf((f32)coordinates->y/CHUNK_SIZE),
+                        coordinates->x % CHUNK_SIZE, coordinates->y % CHUNK_SIZE);
                 *state |= flag;
                 return &chunk_buf[y][x];
             }
         }
     }
-    return 0;
+    return NULL;
 }
 
 void draw_chunk(Chunk *chunk, u16 height)

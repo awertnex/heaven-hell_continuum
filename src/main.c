@@ -191,14 +191,12 @@ void update_world()
         draw_chunk(&chunk_buf[0][7], 2);
     }
 
-    if (is_range_within_v3fi(&lily.camera.target, (v3i32){-WORLD_SIZE, -WORLD_SIZE, WORLD_BOTTOM}, (v3i32){WORLD_SIZE, WORLD_SIZE, world_height}))
+    if (is_range_within_v3fi(&lily.camera.target,
+                (v3i32){-WORLD_SIZE, -WORLD_SIZE, WORLD_BOTTOM},
+                (v3i32){WORLD_SIZE, WORLD_SIZE, world_height}))
     {
         if (check_target_delta_position(&lily.camera.target, &lily.previous_target))
-        {
-            //TODO: fix segfault
             target_chunk = get_chunk(&lily.previous_target, &lily.state, STATE_PARSE_TARGET);
-            printf("targetxyz[%d, %d, %d]\t\tstate[%d]\n", lily.previous_target.x, lily.previous_target.y, lily.previous_target.z, target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x]); /*temp*/
-        }
 
         if (target_chunk != NULL && lily.state & STATE_PARSE_TARGET)
             if (target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x] & NOT_EMPTY)
