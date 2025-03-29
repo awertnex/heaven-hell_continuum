@@ -91,28 +91,42 @@ void tokenize_chunk()
         return;
     }
 
-    str *save_file_contents = (str*)malloc(0x9D800A);
-    for (u32 i = 0; i < 0x9D800A /* (2*5) + ((64*64*420)*6) */ && i < (u64)buf.st_size; ++i)
+    str *save_file_contents = (str*)malloc(sizeof(Chunk));
+    for (u32 i = 0; i < sizeof(Chunk) /* (2*5) + ((64*64*420)*6) */ && i < (u64)buf.st_size; ++i)
         save_file_contents[i] = getc(save_file);
 
     u8 stage = 1, parse = 1;
-    for (u64 i = 0; i < (u64)buf.st_size; ++i)
+    for (u64 i = 0, c = 0; i < (u64)buf.st_size; ++i)
     {
         switch (stage)
         {
             case 1:
-                for (u8 j = 0; j < 10; ++j)
+                for (u8 j = 0; j < strlen(tokens_default[stage - 1]); ++j ,++c)
                 {
-                    if (save_file_contents[j] != tokens_default[stage - 1][j])
+                    if (save_file_contents[c] != tokens_default[stage - 1][j])
                     {
                         parse = 0;
                         break;
                     }
                 }
+                if (parse)
+                    snprintf(tokens_loaded[stage - 1], strlen(tokens_default[stage - 1]), "%s", tokens_default[stage - 1]);
                 stage = 2;
                 break;
 
             case 2:
+                for (u8 j = 0; j < strlen(tokens_default[stage - 1]); ++j ,++c)
+                {
+                    if (save_file_contents[c] == '\n') ++c;
+                    if (save_file_contents[c] != tokens_default[stage - 1][j])
+                    {
+                        parse = 0;
+                        active = 0;
+                        break;
+                    }
+                }
+                if (parse)
+                    snprintf(tokens_loaded[stage - 1], strlen(tokens_default[stage - 1]), "%s", tokens_default[stage - 1]);
                 stage = 3;
                 break;
 
@@ -196,14 +210,16 @@ void input()
         active = 0;
 
     if (IsKeyPressed(KEY_ONE))
-        load_chunk();
-
-    if (IsKeyPressed(KEY_TWO))
-        update_chunk();
-
-    if (IsKeyPressed(KEY_THREE))
         update_chunk_directory();
 
+    if (IsKeyPressed(KEY_TWO))
+        load_chunk();
+
+    if (IsKeyPressed(KEY_THREE))
+        update_chunk();
+
+    if (IsKeyPressed(KEY_FOUR))
+        unload_chunk();
 }
 
 void gui()
@@ -212,11 +228,12 @@ void gui()
     ClearBackground(DARKGRAY);
 
     DrawText("Controls:", 10, 10, font_size, RAYWHITE);
-    DrawText("Chunk Info:", 500, 10, font_size, RAYWHITE);
+    DrawText("Loaded Chunk:", 500, 10, font_size, RAYWHITE);
     DrawText("Directory:", 1100, 10, font_size, RAYWHITE);
-    DrawText("1: load chunk file", 10, 10 + text_vertical_spacing, font_size, RAYWHITE);
-    DrawText("2: read chunk file", 10, 10 + (text_vertical_spacing*2), font_size, RAYWHITE);
-    DrawText("3: read chunk directory", 10, 10 + (text_vertical_spacing*3), font_size, RAYWHITE);
+    DrawText("1: read chunk directory", 10, 10 + text_vertical_spacing, font_size, RAYWHITE);
+    DrawText("2: load chunk file", 10, 10 + (text_vertical_spacing*2), font_size, RAYWHITE);
+    DrawText("3: read chunk file", 10, 10 + (text_vertical_spacing*3), font_size, RAYWHITE);
+    DrawText("4: unload chunk", 10, 10 + (text_vertical_spacing*4), font_size, RAYWHITE);
 
     for (u8 i = 0; i < 10; ++i)
         DrawText(tokens_loaded[i], 500, 10 + ((i + 1)*text_vertical_spacing), font_size, RAYWHITE);
