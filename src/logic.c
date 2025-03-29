@@ -267,7 +267,10 @@ void give_collision_static(player *player, v3i32 *target_coordinates_feet)
     Chunk *target_chunk_feet = get_chunk(&player->previous_pos, &player->state, STATE_PARSE_COLLISION_FEET);
     if ((player->state & STATE_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
     {
-        if (target_chunk_feet->i[z - 1 - WORLD_BOTTOM][y][x] & NOT_EMPTY)
+        if (target_chunk_feet->i
+                [z - 1 - WORLD_BOTTOM]
+                [y - (target_chunk_feet->pos.y*CHUNK_SIZE)]
+                [x - (target_chunk_feet->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
         {
             player->pos.z = ceilf(target_coordinates_feet->z) + WORLD_BOTTOM + 1;
             player->v.z = 0;
