@@ -47,14 +47,15 @@ static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
-    memset(mc_c_grandpath, 0, PATH_MAX - NAME_MAX);
-    snprintf(mc_c_grandpath, PATH_MAX - NAME_MAX, "%s/minecraft.c/", getenv("HOME"));
+    snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
+    init_grandpath_directory();
 
+    // TODO: make launcher screen instead
     if (argc > 1)
     {
         for (u8 i = 1; i < argc; ++i)
         {
-            printf("xxx\n");
+            init_instance_directory(argv[i]);
         }
     }
 
@@ -150,7 +151,7 @@ void init_world()
     }
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
-    LOG(LOGGER_INFO, "World Loaded: Poop Consistency Tester");
+    LOGINFO("World Loaded: Poop Consistency Tester");
 }
 
 void update_world()
