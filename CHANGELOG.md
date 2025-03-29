@@ -15,6 +15,7 @@
 - created instance directory structure
 - created info/ directory to populate assets and array info
 - wrote a proper logger
+- instance directory structure creation successful
 
 - - - -
 ## v0.1.1 - (27 Mar 2025)

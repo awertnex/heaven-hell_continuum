@@ -20,9 +20,9 @@ void init_grandpath_directory()
 {
     snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
     if (!mkdir(mc_c_grandpath, 0775))
-        LOGINFO("'minecraft.c' Directory Created: 'HOME/minecraft.c/'");
+        LOGINFO("Main Directory Created 'HOME/minecraft.c/'");
     else
-        LOGINFO("'minecraft.c' Directory Exists at 'HOME/minecraft.c/'");
+        LOGINFO("Main Directory Path '%s/minecraft.c/'", getenv("HOME"));
 }
 
 FILE *instance;
@@ -32,7 +32,7 @@ void init_instance_directory(str *instance_name)
     str string[PATH_MAX];
     if ((info = fopen("src/info/dir.txt", "r")))
     {
-        LOGINFO("Loading Instance Directory Structure");
+        LOGINFO("Loading Instance Directory Structure..");
         for (u16 i = 0, j = 0, stage = 0; i < 0xFFF && fgets(string, PATH_MAX, info); ++i, ++j)
         {
             if (!strncmp(string, "\n", 1))
@@ -71,16 +71,25 @@ void init_instance_directory(str *instance_name)
     }
     else
     {
-        LOGFATAL("File Not Found 'src/info/instance_directory_structure.txt', Instance Creation Aborted");
+        LOGFATAL("File Not Found 'src/info/dir.txt', Instance Creation Aborted");
         state &= ~STATE_ACTIVE;
         return;
     }
 
-    snprintf(mc_c_subpath, strlen(mc_c_grandpath) + strlen(instance_name), "%s%s", mc_c_grandpath, instance_name);
-    if (mkdir(mc_c_subpath, 0775))
+    snprintf(mc_c_subpath, sizeof(mc_c_subpath), "%s%s", mc_c_grandpath, instance_name);
+    for (u16 i = 0; i < (PATH_MAX - 1); ++i)
+        if (mc_c_subpath[i + 1] == 0 && mc_c_subpath[i] != '/')
+        {
+            strncat(mc_c_subpath, "/", 2);
+            break;
+        }
+
+    if (!mkdir(mc_c_subpath, 0775))
     {
+        LOGINFO("Instance Directory Created '%s'", mc_c_subpath);
+
         memset(string, 0, PATH_MAX);
-        for (u8 i = 0; i < 255 && string[0]; ++i)
+        for (u8 i = 0; i < 255 && instance_directory_structure[i][0] != 0; ++i)
         {
             snprintf(string,
                     strlen(mc_c_subpath) + strlen(instance_directory_structure[i]),
@@ -89,22 +98,11 @@ void init_instance_directory(str *instance_name)
             mkdir(string, 0775);
             LOGINFO("Directory Created '%s/%s'", instance_name, instance_directory_structure[i]);
         }
+        LOGINFO("Instance Creation Complete '%s'", instance_name);
     }
-    else
-    {
-        LOGFATAL("Path Invalid '%s'", mc_c_subpath);
-        state &= ~STATE_ACTIVE;
-        return;
-    }
+    else LOGINFO("Instance Opened '%s'", mc_c_subpath);
 
-    // TODO: make the launcher before executing these steps
-    instance = fopen(mc_c_launcher_path, "r+");
-    if (instance)
-    {
-        LOGINFO("Instance Opened '%s'", instance_name);
-        fclose(instance);
-    }
-    else LOGINFO("Instance Created '%s'", instance_name);
+    // TODO: make an instance executable and launch it using the launcher screen
 }
 
 void init_world_directory()
