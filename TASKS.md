@@ -7,8 +7,9 @@ TASKS:
 [x] figure out delta time (25 Mar 2025)
 [ ] make the player target a ray-caster
 [ ] detect new chunk, allocate memory and spawn accordingly
-[x] fix seg fault when player target enters non-allocated chunk area (29 Mar 2025)
-[ ] fix funky chunk states shifting away by 1 unit each chunk
+[x] fix segfault when player target enters non-allocated chunk area (29 Mar 2025)
+[ ] fix segfault while placing or breaking blocks in non-allocated chunk area
+[x] fix funky chunk states shifting away by 1 unit each chunk
 [ ] change chunk_buff allocation from stack to heap
 [ ] navigate menus with arrow keys
 [ ] tokenize chunk block state files
