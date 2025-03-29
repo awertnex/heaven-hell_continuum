@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <errno.h>
 #include <defines.h>
 
 #define RELEASE_BUILD 0
@@ -26,36 +23,27 @@ enum LogLevel
     LOGGER_DEBUG = 4,
 }; /* LogLevel */
 
-static str log_level[5][9] = 
-{
-    "FATAL",
-    "WARNING",
-    "ERROR",
-    "INFO",
-    "DEBUG",
-};
-
 b8 init_logger();
 void close_logger();
-void log(u8 log_level, const str *message, ...);
+void log_output(u8 log_level, const str* message, ...);
 
-#define LOGFATAL(message, ...) log(LOGGER_FATAL, message, ##__VA_ARGS__)
-#define LOGWARNING(message, ...) log(LOGGER_WARNING, message, ##__VA_ARGS__)
+#define LOGFATAL(message, ...) log_output(LOGGER_FATAL, message, ##__VA_ARGS__)
+#define LOGWARNING(message, ...) log_output(LOGGER_WARNING, message, ##__VA_ARGS__)
 
 #if LOGGING_ERROR == 1
-    #define LOGERROR(message, ...) log(LOGGER_ERROR, message, ##__VA_ARGS__)
+    #define LOGERROR(message, ...) log_output(LOGGER_ERROR, message, ##__VA_ARGS__)
 #else
     #define LOGERROR(message, ...)
 #endif
 
 #if LOGGING_INFO == 1
-    #define LOGINFO(message, ...) log(LOGGER_INFO, message, ##__VA_ARGS__)
+    #define LOGINFO(message, ...) log_output(LOGGER_INFO, message, ##__VA_ARGS__)
 #else
     #define LOGINFO(message, ...)
 #endif
 
 #if LOGGING_DEBUG == 1
-    #define LOGDEBUG(message, ...) log(LOGGER_DEBUG, message, ##__VA_ARGS__)
+    #define LOGDEBUG(message, ...) log_output(LOGGER_DEBUG, message, ##__VA_ARGS__)
 #else
     #define LOGDEBUG(message, ...)
 #endif
