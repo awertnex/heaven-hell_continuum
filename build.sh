@@ -16,48 +16,50 @@ tests=(
     "function_pointer"
 )
 
-case $1 in
-    "edit")
-        nv ./build.sh
-        exit
-        ;;
+if [[ "$1" ]]; then
+    case $1 in
+        "edit")
+            nv ./build.sh
+            exit
+            ;;
 
-    "list")
-        count=1
-        echo "    TESTS:"
-        for i in "${tests[@]}"; do
-            printf "test $count: $i\n"
-            let ++count
-        done
-        exit
-        ;;
+        "list")
+            count=1
+            echo "    TESTS:"
+            for i in "${tests[@]}"; do
+                printf "test $count: $i\n"
+                let ++count
+            done
+            exit
+            ;;
 
-    "win")
-        MAIN="minecraft_win.c"
-        PLATFORM="_win.exe";
-        ;;
+        "win")
+            MAIN="minecraft_win.c"
+            PLATFORM="_win.exe";
+            ;;
 
-    "1")
-        echo "Building test 001: ${tests[0]}"
-        SOURCE="src/tests/"
-        MAIN="${tests[0]}.c"
-        CHILDREN=""
-        OUT="test_${tests[0]}"
-        ;;
-        
-    "2")
-        echo "Building test 002: ${tests[1]}"
-        SOURCE="src/tests/"
-        MAIN="${tests[1]}.c"
-        CHILDREN=""
-        OUT="test_${tests[1]}"
-        ;;
-    *)
-        echo "Invalid '$1'"
-        echo "Try: './build.sh list' to list all items, or './build.sh' to build 'main.c'"
-        exit
-        ;;
-esac
+        "1")
+            echo "Building test 001: ${tests[0]}"
+            SOURCE="src/tests/"
+            MAIN="${tests[0]}.c"
+            CHILDREN=""
+            OUT="test_${tests[0]}"
+            ;;
+
+        "2")
+            echo "Building test 002: ${tests[1]}"
+            SOURCE="src/tests/"
+            MAIN="${tests[1]}.c"
+            CHILDREN=""
+            OUT="test_${tests[1]}"
+            ;;
+        *)
+            echo "Invalid '$1'"
+            echo "Try: './build.sh list' to list all items, or './build.sh' to build 'main.c'"
+            exit
+            ;;
+    esac
+fi
 
 pushd $SOURCE
 time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$PLATFORM &&
