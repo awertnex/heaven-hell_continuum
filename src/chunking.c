@@ -117,16 +117,6 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
                     chunk_buf[y][x].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
                     chunk_buf[y][x].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
             {
-                //TODO: temp
-                printf("coords.xyz[%03d %03d %03d]    chunk.xy[%03d %03d]    state[%03d]\ncoords.xy/[%03d %03d]\ncoords.xy%%[%03d %03d]\n\n",
-                        coordinates->x,
-                        coordinates->y,
-                        coordinates->z,
-                        chunk_buf[y][x].pos.x,
-                        chunk_buf[y][x].pos.y,
-                        chunk_buf[y][x].i[coordinates->z - WORLD_BOTTOM][coordinates->y][coordinates->x],
-                        (i32)floorf((f32)coordinates->x/CHUNK_SIZE), (i32)floorf((f32)coordinates->y/CHUNK_SIZE),
-                        coordinates->x % CHUNK_SIZE, coordinates->y % CHUNK_SIZE);
                 *state |= flag;
                 return &chunk_buf[y][x];
             }

@@ -19,6 +19,7 @@ _section_input =================================================================
 #include "h/logic.h"
 #include "h/assets.h"
 #include "h/keymaps.h"
+#include "h/logger.h"
 #include "h/super_debugger.h"
 
 // ---- variables --------------------------------------------------------------
@@ -141,7 +142,7 @@ void init_world()
         parse_chunk_states(&chunk_buf[0][3], 30);
         parse_chunk_states(&chunk_buf[0][4], 2);
         parse_chunk_states(&chunk_buf[0][5], 2);
-        parse_chunk_states(&chunk_buf[0][6], 0);
+        parse_chunk_states(&chunk_buf[0][6], 3);
         parse_chunk_states(&chunk_buf[0][7], 2);
     }
     lily.state |= STATE_FALLING; //temp
@@ -154,7 +155,7 @@ void init_world()
     }
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
-    printf("World Loaded: Poop Consistency Tester\n"); //temp
+    LOG(LOGGER_INFO, "World Loaded: Poop Consistency Tester");
 }
 
 void update_world()
@@ -199,7 +200,10 @@ void update_world()
             target_chunk = get_chunk(&lily.previous_target, &lily.state, STATE_PARSE_TARGET);
 
         if (target_chunk != NULL && lily.state & STATE_PARSE_TARGET)
-            if (target_chunk->i[lily.previous_target.z - WORLD_BOTTOM][lily.previous_target.y][lily.previous_target.x] & NOT_EMPTY)
+            if (target_chunk->i
+                    [lily.previous_target.z - WORLD_BOTTOM]
+                    [lily.previous_target.y - (target_chunk->pos.y*CHUNK_SIZE)]
+                    [lily.previous_target.x - (target_chunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
                 draw_block_wires(&lily.previous_target);
     }
 
