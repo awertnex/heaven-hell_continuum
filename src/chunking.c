@@ -45,10 +45,6 @@ void add_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
     else chunk->i[z][y][x] |= NEGATIVE_Z;
 
     chunk->i[z][y][x] |= NOT_EMPTY;
-
-    printf("i:%3d    x:%3d    y:%3d    z:%3d\n", chunk->i[z][y][x], x, y, z);
-    /*temp
-    */
 }
 
 //TODO: check chunk barrier faces
@@ -58,30 +54,24 @@ void remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
     y %= CHUNK_SIZE;
 
     if (x < CHUNK_SIZE - 1)
-        chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : (chunk->i[z][y][x] &= ~POSITIVE_X);
-    else chunk->i[z][y][x] &= ~POSITIVE_X;
+        chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : 0;
 
     if (x > 0)
-        chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] |= POSITIVE_X) : (chunk->i[z][y][x] &= ~NEGATIVE_X);
-    else chunk->i[z][y][x] &= ~NEGATIVE_X;
+        chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] |= POSITIVE_X) : 0;
 
     if (y < CHUNK_SIZE - 1)
-        chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] |= NEGATIVE_Y) : (chunk->i[z][y][x] &= ~POSITIVE_Y);
-    else chunk->i[z][y][x] &= ~POSITIVE_Y;
+        chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] |= NEGATIVE_Y) : 0;
 
     if (y > 0)
-        chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] |= POSITIVE_Y) : (chunk->i[z][y][x] &= ~NEGATIVE_Y);
-    else chunk->i[z][y][x] &= ~NEGATIVE_Y;
+        chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] |= POSITIVE_Y) : 0;
 
     if (z < world_height - 1)
-        chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] |= NEGATIVE_Z) : (chunk->i[z][y][x] &= ~POSITIVE_Z);
-    else chunk->i[z][y][x] &= ~POSITIVE_Z;
+        chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] |= NEGATIVE_Z) : 0;
     
     if (z > 0)
-        chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] |= POSITIVE_Z) : (chunk->i[z][y][x] &= ~NEGATIVE_Z);
-    else chunk->i[z][y][x] &= ~NEGATIVE_Z;
+        chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] |= POSITIVE_Z) : 0;
 
-    chunk->i[z][y][x] &= ~NOT_EMPTY;
+    chunk->i[z][y][x] = 0;
 }
 
 void parse_chunk_states(Chunk *chunk, u16 height)
