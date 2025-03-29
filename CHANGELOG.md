@@ -7,6 +7,10 @@
 - added menu navigation
 - fixed breaking and placing blocks in other chunks than 'xy: 0, 0'
 - fixed segfault while wandering into unloaded chunks (I returned 0 while I was supposed to return NULL...)
+- fixed chunk states shifting by one block into a specific direction with each chunk in the positive direction and shift into the opposite direction with each chunk in the negative direction
+    now I know why, I was doing 'at player target xyz', apparently I forgot to do 'at player target xyz % CHUNK_SIZE'.
+    I abandoned this project for over 3 months because I couldn't figure out... somehow.
+    so the chunk states weren't shifting by one block, they were shifting by a familiar value, if I printed the index number I was targeting I would have gotten somewhere maybe, but doesn't matter, I fixed it
 
 ## v0.1.1 - (27 Mar 2025)
 -------------------------
