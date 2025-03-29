@@ -1,9 +1,9 @@
 /* ==== section table ==========================================================
-_section_instance_directory_map ================================================
 _section_input =================================================================
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -14,6 +14,7 @@ _section_input =================================================================
 
 #include "h/main.h"
 #include "h/setting.h"
+#include "instance_directory_structure.c"
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
@@ -44,26 +45,19 @@ static void update_world();
 static void update_input(player *player);
 static void draw_default_grid();
 
-// _section_instance_directory_map =============================================
-FILE *instance;
-void init_instance_dir(str **instance_name)
+int main(int argc, char **argv) // ---- game init ------------------------------
 {
-    if (mkdir(*instance_name, 0775))
+    memset(mc_c_grandpath, 0, PATH_MAX - NAME_MAX);
+    snprintf(mc_c_grandpath, PATH_MAX - NAME_MAX, "%s/minecraft.c/", getenv("HOME"));
+
+    if (argc > 1)
     {
-        instance = fopen(*instance_name, "r+");
-        printf("Instance Opened: %s\n", *instance_name);
-    }
-    else
-    {
-        instance = fopen(*instance_name, "r+");
-        printf("Instance Created: %s\n", *instance_name);
+        for (u8 i = 1; i < argc; ++i)
+        {
+            printf("xxx\n");
+        }
     }
 
-    if (instance != 0) fclose(instance);
-}
-
-int main(void)
-{
     if (ModeDebug)
         printf("DEBUG MODE: ON");
 
@@ -113,6 +107,7 @@ int main(void)
         }
     }
 
+    // ---- game close ---------------------------------------------------------
     unload_textures();
     free_gui();
     free_super_debugger();

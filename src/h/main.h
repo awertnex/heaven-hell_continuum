@@ -2,6 +2,7 @@
 
 #define MC_C_VERSION "Minecraft.c 0.1.1"
 
+#include <limits.h>
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include <defines.h>
@@ -23,6 +24,8 @@ typedef struct Window
 } WindowInfo;
 
 // ---- declarations -----------------------------------------------------------
+extern str mc_c_grandpath[PATH_MAX - NAME_MAX];
+
 extern WindowInfo win;
 extern f64 delta_time;
 extern f64 start_time;
