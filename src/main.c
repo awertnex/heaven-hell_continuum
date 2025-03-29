@@ -14,7 +14,7 @@ _section_input =================================================================
 
 #include "h/main.h"
 #include "h/setting.h"
-#include "instance_directory_structure.c"
+#include "dir.c"
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
@@ -56,13 +56,14 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         for (u8 i = 1; i < argc; ++i)
         {
             init_instance_directory(argv[i]);
+            if (!(state & STATE_ACTIVE))
+                return -1;
         }
     }
 
     if (ModeDebug)
         printf("DEBUG MODE: ON");
 
-    SetWindowState(FLAG_WINDOW_HIGHDPI);
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));

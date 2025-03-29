@@ -24,8 +24,6 @@ typedef struct Window
 } WindowInfo;
 
 // ---- declarations -----------------------------------------------------------
-extern str mc_c_grandpath[PATH_MAX];
-
 extern WindowInfo win;
 extern f64 delta_time;
 extern f64 start_time;
