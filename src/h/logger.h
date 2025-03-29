@@ -5,14 +5,14 @@
 #include <errno.h>
 #include <defines.h>
 
-#define LOG(x, ...) fprintf(stderr, "--%d: %s\n", log_level[x], __VA_ARGS__)
+#define LOG(x, ...) fprintf(stderr, "--%s: %s\n", log_level[x], __VA_ARGS__)
 
 enum LogLevel
 {
-    FATAL = 0,
-    WARNING = 1,
-    ERROR = 2,
-    INFO = 3,
+    LOGGER_FATAL = 0,
+    LOGGER_WARNING = 1,
+    LOGGER_ERROR = 2,
+    LOGGER_INFO = 3,
 }; /* LogLevel */
 
 static str log_level[4][9] = 
