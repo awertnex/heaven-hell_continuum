@@ -11,12 +11,11 @@
 #define HEIGHT 720
 #define MARGIN 20
 
-enum DebugStates
+enum DebugModes
 {
-    ModeDebug =     1,
     ModeCollide =   0,
     ModeGravity =   1,
-}; /* DebugStates */
+}; /* DebugModes */
 
 typedef struct Window
 {

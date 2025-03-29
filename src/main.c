@@ -14,7 +14,7 @@ _section_input =================================================================
 
 #include "h/main.h"
 #include "h/setting.h"
-#include "dir.c"
+#include "h/dir.h"
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
@@ -47,7 +47,6 @@ static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
-    snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
     init_grandpath_directory();
 
     // TODO: make launcher screen instead
@@ -61,16 +60,17 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         }
     }
 
-    if (ModeDebug)
-        printf("DEBUG MODE: ON");
+    if (LOGGING_DEBUG)
+        LOGDEBUG("Debugging Enabled");
 
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
 
-    if (ModeDebug)
+    if (LOGGING_DEBUG)
         SetWindowState(FLAG_WINDOW_TOPMOST);
 
+    // TODO: fix rendering issues when resizing window
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetWindowState(FLAG_VSYNC_HINT);
     SetWindowMinSize(200, 150);
