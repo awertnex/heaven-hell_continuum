@@ -145,7 +145,7 @@ void init_world()
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
 
-    if (ModeDebug)
+    if (LOGGING_DEBUG)
     {
         state |= STATE_DEBUG;
         lily.state |= STATE_FLYING;
@@ -204,7 +204,7 @@ void update_world()
                 draw_block_wires(&lily.previous_target);
     }
 
-    if (ModeDebug)
+    if (LOGGING_DEBUG)
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);
