@@ -1,7 +1,8 @@
 # changelog
 
+- - - -
 ## v0.1.2 - (DD Apr 2025)
--------------------------
+
 #### changes
 - can break and place blocks
 - added menu navigation
@@ -11,9 +12,13 @@
     now I know why, I was doing 'at player target xyz', apparently I forgot to do 'at player target xyz % CHUNK_SIZE'.
     I abandoned this project for over 3 months because I couldn't figure out... somehow.
     so the chunk states weren't shifting by one block, they were shifting by a familiar value, if I printed the index number I was targeting I would have gotten somewhere maybe, but doesn't matter, I fixed it
+- created instance directory structure
+- created info/ directory to populate assets and array info
+- wrote a proper logger
 
+- - - -
 ## v0.1.1 - (27 Mar 2025)
--------------------------
+
 #### changes
 - added many button names for menus and containers enum
 - added all menu names enum
@@ -27,8 +32,9 @@
 - made the codebase a lot more readable
 - added delta time
 
+- - - -
 ## v0.1.0 - (24 Mar 2025)
--------------------------
+
 **first version, as I have started this project long before I version-controlled it with git**
 
 #### features
