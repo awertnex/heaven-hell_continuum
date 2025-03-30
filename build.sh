@@ -9,7 +9,7 @@ CHILDREN="logger.c launcher.c assets.c chunking.c dir.c gui.c keymaps.c logic.c 
 CFLAGS="-Wall -Wextra -ggdb"
 LIBS="-lraylib -lm"
 OUT="minecraft"
-PLATFORM=""
+EXTENSION=""
 
 tests=(
     "chunk_loader"
@@ -35,7 +35,7 @@ if [[ "$1" ]]; then
 
         "win")
             MAIN="minecraft_win.c"
-            PLATFORM="_win.exe";
+            EXTENSION=".exe";
             ;;
 
         "1")
@@ -62,7 +62,7 @@ if [[ "$1" ]]; then
 fi
 
 pushd $SOURCE
-time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$PLATFORM &&
+time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$EXTENSION &&
     chmod 775 $OUT &&
-    mv $OUT$PLATFORM $DIR
+    mv $OUT$EXTENSION $DIR
 popd

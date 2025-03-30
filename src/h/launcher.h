@@ -4,6 +4,7 @@
 #include "gui.h"
 #include "logic.h"
 
+#define LAUNCHER_ENABLED 1
 #define COL_LAUNCHER_BG color(0x30, 0x30, 0x30, 0xFF, 0xFF)
 
 // ---- declarations -----------------------------------------------------------

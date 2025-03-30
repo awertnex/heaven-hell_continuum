@@ -13,6 +13,7 @@ _section_input =================================================================
 #include <rlgl.h>
 
 #include "h/main.h"
+#include "h/launcher.h"
 #include "h/setting.h"
 #include "h/dir.h"
 #include "h/gui.h"
@@ -51,6 +52,19 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         LOGDEBUG("Debugging Enabled");
 
     init_grandpath_directory();
+
+#if LAUNCHER_ENABLED
+    init_launcher();
+
+    while (state & STATE_LAUNCHER)
+    {
+        update_launcher_input();
+        update_launcher();
+    }
+
+    if (close_launcher() != 0)
+        return -1;
+#endif // LAUNCHER_ENABLED
 
     // TODO: make launcher screen instead
     if (argc > 1)
