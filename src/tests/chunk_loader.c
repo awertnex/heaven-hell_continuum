@@ -9,7 +9,7 @@
 #include <rlgl.h>
 
 #define VECTOR2_TYPES
-#include "defines.h"
+#include "../h/defines.h"
 
 #define LOG(x, ...) memset(logger, 0, 255); \
     snprintf(logger, 18, "%s: ", log_level[x]); \
