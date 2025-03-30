@@ -17,6 +17,7 @@ _section_input =================================================================
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/chunking.h"
+#include "h/launcher.h"
 #include "h/logic.h"
 #include "h/assets.h"
 #include "h/keymaps.h"
@@ -47,7 +48,20 @@ static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
+    if (LOGGING_DEBUG)
+        LOGDEBUG("Debugging Enabled");
+
     init_grandpath_directory();
+    init_launcher();
+    while (state & STATE_LAUNCHER)
+    {
+        update_launcher();
+        update_launcher_input();
+
+    }
+
+    if (close_launcher() != 0)
+        return -1;
 
     // TODO: make launcher screen instead
     if (argc > 1)
@@ -59,9 +73,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
                 return -1;
         }
     }
-
-    if (LOGGING_DEBUG)
-        LOGDEBUG("Debugging Enabled");
 
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
@@ -146,10 +157,7 @@ void init_world()
     lily.state &= ~STATE_PARSE_TARGET;
 
     if (LOGGING_DEBUG)
-    {
-        state |= STATE_DEBUG;
         lily.state |= STATE_FLYING;
-    }
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
     LOGINFO("World Loaded: Poop Consistency Tester");
