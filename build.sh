@@ -5,7 +5,7 @@ set -e
 DIR="$HOME/programming/minecraft.c/"
 SOURCE="src/"
 MAIN="minecraft_linux.c"
-CHILDREN="logger.c assets.c chunking.c dir.c gui.c keymaps.c logic.c super_debugger.c"
+CHILDREN="logger.c assets.c chunking.c dir.c gui.c keymaps.c launcher.c logic.c super_debugger.c"
 CFLAGS="-Wall -Wextra -ggdb"
 LIBS="-lraylib -lm"
 OUT="minecraft"
