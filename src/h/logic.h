@@ -53,9 +53,10 @@ enum GameStates
     STATE_LAUNCHER =                0x02,
     STATE_PAUSED =                  0x04,
     STATE_SUPER_DEBUG =             0x08,
-    STATE_HUD =                     0x10,
-    STATE_FULLSCREEN =              0x20,
-    STATE_WORLD_LOADED =            0x40,
+    STATE_DEBUG =                   0x10,
+    STATE_HUD =                     0x20,
+    STATE_FULLSCREEN =              0x40,
+    STATE_WORLD_LOADED =            0x80,
 }; /* GameStates */
 
 enum ContainerStates
