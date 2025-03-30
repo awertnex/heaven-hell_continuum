@@ -16,6 +16,13 @@ void update_launcher()
 {
     BeginDrawing();
     ClearBackground(COL_LAUNCHER_BG);
+
+    //TODO: fix segfault while calling draw_text_centered() but not DrawText()
+    draw_text_centered(font_regular,
+            MC_C_VERSION,
+            (v2i16){(f32)render_size.x/2, 20},
+            font_size, 2, COL_TEXT_DEFAULT, 1);
+
     EndDrawing();
 }
 

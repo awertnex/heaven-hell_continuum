@@ -55,9 +55,8 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     init_launcher();
     while (state & STATE_LAUNCHER)
     {
-        update_launcher();
         update_launcher_input();
-
+        update_launcher();
     }
 
     if (close_launcher() != 0)

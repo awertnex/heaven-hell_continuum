@@ -15,6 +15,5 @@ void update_launcher();
 u8 close_launcher();
 void update_launcher_input();
 
-
 #define LAUNCHER_H
 #endif
