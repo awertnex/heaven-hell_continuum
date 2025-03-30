@@ -87,6 +87,7 @@ void init_instance_directory(str *instance_name)
     if (!mkdir(mc_c_subpath, 0775))
     {
         LOGINFO("Instance Directory Created '%s'", mc_c_subpath);
+        LOGINFO("Building Instance Directory Structure:");
 
         memset(string, 0, PATH_MAX);
         for (u8 i = 0; i < 255 && instance_directory_structure[i][0] != 0; ++i)
@@ -100,7 +101,7 @@ void init_instance_directory(str *instance_name)
         }
         LOGINFO("Instance Creation Complete '%s'", instance_name);
     }
-    else LOGINFO("Instance Opened '%s'", mc_c_subpath);
+    else LOGINFO("Instance Opened '%s'", instance_name);
 
     // TODO: make an instance executable and launch it using the launcher screen
 }
