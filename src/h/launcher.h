@@ -1,7 +1,8 @@
 #ifndef LAUNCHER_H
 
-#include "../h/gui.h"
-#include "../h/logic.h"
+#include "main.h"
+#include "gui.h"
+#include "logic.h"
 
 #define COL_LAUNCHER_BG color(0x30, 0x30, 0x30, 0xFF, 0xFF)
 

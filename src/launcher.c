@@ -1,9 +1,10 @@
 #include <raylib.h>
 
-#include "launcher.h"
+#include "h/launcher.h"
 #include "h/keymaps.h"
 
 v2i16 render_size = {500, 720};
+
 void init_launcher()
 {
     state |= STATE_LAUNCHER;
