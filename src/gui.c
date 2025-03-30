@@ -96,12 +96,16 @@ static void print_menu_layers()
     putchar('\n');
 }
 
-void init_gui()
+void init_fonts()
 {
     font_regular =                  LoadFont("fonts/minecraft_regular.otf");
     font_bold =                     LoadFont("fonts/minecraft_bold.otf");
     font_italic =                   LoadFont("fonts/minecraft_italic.otf");
     font_bold_italic =              LoadFont("fonts/minecraft_bold_italic.otf");
+}
+
+void init_gui()
+{
     texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
     texture_container_inventory =   LoadTexture("resources/gui/container/inventory.png");
 

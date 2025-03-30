@@ -1,6 +1,6 @@
 #pragma once
 
-#include <defines.h>
+#include "defines.h"
 
 #define RELEASE_BUILD 0
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
 #include "h/chunking.h"
 
 u16 world_height = WORLD_HEIGHT_NORMAL;

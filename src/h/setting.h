@@ -1,6 +1,6 @@
 #ifndef SETTING_H
 #include <raylib.h>
-#include <defines.h>
+#include "defines.h"
 
 // ---- internal ---------------------------------------------------------------
 #define SETTING_CAMERA_DISTANCE_MAX         4

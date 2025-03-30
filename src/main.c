@@ -52,6 +52,9 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         LOGDEBUG("Debugging Enabled");
 
     init_grandpath_directory();
+    init_texture_layouts();
+    init_textures();
+    init_fonts();
 
 #if LAUNCHER_ENABLED
     init_launcher();
@@ -77,23 +80,16 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         }
     }
 
-    SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
 
-    if (LOGGING_DEBUG)
-        SetWindowState(FLAG_WINDOW_TOPMOST);
+    init_gui();
+    init_super_debugger();
 
     // TODO: fix rendering issues when resizing window
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetWindowState(FLAG_VSYNC_HINT);
     SetWindowMinSize(200, 150);
 
     setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
-
-    init_texture_layouts();
-    init_textures();
-    init_gui();
-    init_super_debugger();
 
     state |= STATE_ACTIVE;
     while (state & STATE_ACTIVE) // ---- game loop -----------------------------

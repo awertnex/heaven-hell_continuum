@@ -5,7 +5,7 @@
 #include <limits.h>
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <defines.h>
+#include "defines.h"
 
 #define WIDTH 1280
 #define HEIGHT 720

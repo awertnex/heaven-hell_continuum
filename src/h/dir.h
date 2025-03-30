@@ -1,7 +1,7 @@
 #ifndef DIR_H
 
 #include <limits.h>
-#include <defines.h>
+#include "defines.h"
 
 enum DirectoryStructure
 {

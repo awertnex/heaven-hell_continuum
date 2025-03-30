@@ -3,7 +3,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <defines.h>
+#include "defines.h"
 #include "gui.h"
 
 #define SDB_ROW_HEIGHT  22

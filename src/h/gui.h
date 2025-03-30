@@ -3,7 +3,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include <defines.h>
+#include "defines.h"
 
 #define show_cursor ShowCursor()
 #define hide_cursor HideCursor()
@@ -254,6 +254,7 @@ extern u8 font_size_debug_info;
 extern Camera3D camera_debug_info;
 
 // ---- signatures -------------------------------------------------------------
+void init_fonts();
 void init_gui();
 void apply_render_settings();
 void free_gui();

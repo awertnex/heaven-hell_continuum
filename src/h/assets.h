@@ -1,6 +1,6 @@
 #ifndef ASSETS_H
 #include <raylib.h>
-#include <defines.h>
+#include "defines.h"
 
 #include "dir.h"
 
