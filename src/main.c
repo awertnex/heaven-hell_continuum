@@ -55,8 +55,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     init_texture_layouts();
     init_textures();
     init_fonts();
-
-#if LAUNCHER_ENABLED
     init_launcher();
 
     while (state & STATE_LAUNCHER)
@@ -67,7 +65,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
     if (close_launcher() != 0)
         return -1;
-#endif // LAUNCHER_ENABLED
 
     // TODO: make launcher screen instead
     if (argc > 1)

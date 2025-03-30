@@ -22,11 +22,16 @@ void update_launcher()
     BeginDrawing();
     ClearBackground(COL_LAUNCHER_BG);
 
-    //TODO: fix segfault while calling draw_text_centered() but not DrawText()
     draw_text_centered(font_regular,
             MC_C_VERSION,
             (v2i16){(f32)render_size.x/2, 20},
             font_size, 3, COL_TEXT_DEFAULT, 1);
+
+    draw_button(texture_hud_widgets, button,
+            (v2i16){render_size.x/2, render_size.y/2},
+            BTN_DONE,
+            &btn_func_quit,
+            "Quit");
 
     EndDrawing();
 }
