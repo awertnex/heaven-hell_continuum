@@ -17,7 +17,6 @@ _section_input =================================================================
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/chunking.h"
-#include "h/launcher.h"
 #include "h/logic.h"
 #include "h/assets.h"
 #include "h/keymaps.h"
@@ -52,15 +51,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         LOGDEBUG("Debugging Enabled");
 
     init_grandpath_directory();
-    init_launcher();
-    while (state & STATE_LAUNCHER)
-    {
-        update_launcher_input();
-        update_launcher();
-    }
-
-    if (close_launcher() != 0)
-        return -1;
 
     // TODO: make launcher screen instead
     if (argc > 1)
@@ -75,7 +65,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
-    SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
 
     if (LOGGING_DEBUG)
         SetWindowState(FLAG_WINDOW_TOPMOST);

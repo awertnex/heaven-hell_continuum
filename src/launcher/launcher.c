@@ -1,6 +1,6 @@
 #include <raylib.h>
 
-#include "h/launcher.h"
+#include "launcher.h"
 #include "h/keymaps.h"
 
 v2i16 render_size = {500, 720};
@@ -33,11 +33,25 @@ u8 close_launcher()
     return 0;
 }
 
+int main(void) // ---- game init -----------------------------------------------
+{
+    init_launcher();
+
+    while (state & STATE_LAUNCHER) // ---- main loop ---------------------------
+    {
+        update_launcher_input();
+        update_launcher();
+    }
+
+    // ---- main close ---------------------------------------------------------
+    if (close_launcher() != 0)
+        return -1;
+}
+
 void update_launcher_input()
 {
     if (IsKeyPressed(BIND_QUIT))
     {
-        state &= ~STATE_LAUNCHER;
         state &= ~STATE_ACTIVE;
     }
 }
