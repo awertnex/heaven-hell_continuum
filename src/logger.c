@@ -35,5 +35,5 @@ void log_output(u8 log_level, const str* message, ...)
     va_end(args);
 
     snprintf(out_message, 6144, "  %s: %s\n", log_tag[log_level], in_message);
-    printf("%s", out_message);
+    fprintf(stderr, "%s", out_message);
 }
