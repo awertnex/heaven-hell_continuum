@@ -12,7 +12,7 @@ OUT="minecraft"
 EXTENSION=""
 
 LAUNCHER_MAIN="launcher/launcher.c"
-LAUNCHER_CHILDREN=""
+LAUNCHER_CHILDREN="logger.c keymaps.c"
 LAUNCHER_LIBS="-lraylib"
 LAUNCHER_OUT="launcher"
 
