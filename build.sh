@@ -6,7 +6,7 @@ DIR="$HOME/programming/minecraft.c/"
 SOURCE="src/"
 MAIN="minecraft_linux.c"
 CHILDREN="logger.c launcher.c assets.c chunking.c dir.c gui.c keymaps.c logic.c super_debugger.c"
-CFLAGS="-Wall -Wextra -ggdb"
+CFLAGS="-Wall -Wextra -ggdb -pedantic"
 LIBS="-lraylib -lm"
 OUT="minecraft"
 EXTENSION=""
@@ -62,7 +62,7 @@ if [[ "$1" ]]; then
 fi
 
 pushd $SOURCE
-time gcc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$EXTENSION &&
+time cc $MAIN $CHILDREN $CFLAGS $LIBS -o $OUT$EXTENSION &&
     chmod 775 $OUT &&
     mv $OUT$EXTENSION $DIR
 popd
