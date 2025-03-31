@@ -54,8 +54,8 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     init_grandpath_directory();
     init_texture_layouts();
     init_textures();
-    init_fonts();
     init_launcher();
+    init_fonts();
 
     while (state & STATE_LAUNCHER)
     {
