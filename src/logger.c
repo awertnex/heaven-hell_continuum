@@ -25,7 +25,8 @@ void close_logger()
 
 void log_output(u8 log_level, const str* message, ...)
 {
-    b8 is_error = log_level < 2;
+    //TODO: use b8 is_error;
+    //b8 is_error = log_level < 2;
     str in_message[4096] = {0};
     str out_message[8192] = {0};
 
