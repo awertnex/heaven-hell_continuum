@@ -4,12 +4,17 @@ set -e
 
 DIR="$HOME/programming/minecraft.c/"
 SOURCE="src/"
-MAIN="minecraft_linux.c"
+MAIN="main.c"
 CHILDREN="logger.c launcher.c assets.c chunking.c dir.c gui.c keymaps.c logic.c super_debugger.c"
 CFLAGS="-Wall -Wextra -ggdb -Wpedantic"
 LIBS="-lraylib -lm"
 OUT="minecraft"
 EXTENSION=""
+
+LAUNCHER_MAIN="launcher/launcher.c"
+LAUNCHER_CHILDREN=""
+LAUNCHER_LIBS="-lraylib"
+LAUNCHER_OUT="launcher"
 
 tests=(
     "chunk_loader"
@@ -25,6 +30,7 @@ if [[ "$1" ]]; then
 
         "list")
             count=1
+            echo "launcher: 0"
             echo "    TESTS:"
             for i in "${tests[@]}"; do
                 printf "test $count: $i\n"
@@ -34,12 +40,20 @@ if [[ "$1" ]]; then
             ;;
 
         "win")
-            MAIN="minecraft_win.c"
+            MAIN="main_win.c"
             EXTENSION=".exe";
             ;;
 
+        "0")
+            echo "Building minecraft.c Launcher.."
+            MAIN=$LAUNCHER_MAIN
+            CHILDREN=$LAUNCHER_CHILDREN
+            LIBS=$LAUNCHER_LIBS
+            OUT=$LAUNCHER_OUT
+            ;;
+
         "1")
-            echo "Building test 001: ${tests[0]}"
+            echo "Building test 001: ${tests[0]}.."
             SOURCE="src/tests/"
             MAIN="${tests[0]}.c"
             CHILDREN=""
@@ -47,7 +61,7 @@ if [[ "$1" ]]; then
             ;;
 
         "2")
-            echo "Building test 002: ${tests[1]}"
+            echo "Building test 002: ${tests[1]}.."
             SOURCE="src/tests/"
             MAIN="${tests[1]}.c"
             CHILDREN=""
