@@ -13,7 +13,6 @@ _section_input =================================================================
 #include <rlgl.h>
 
 #include "h/main.h"
-#include "h/launcher.h"
 #include "h/setting.h"
 #include "h/dir.h"
 #include "h/gui.h"
@@ -54,19 +53,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     init_grandpath_directory();
     init_texture_layouts();
     init_textures();
-    init_launcher();
-    init_fonts();
 
-    while (state & STATE_LAUNCHER)
-    {
-        update_launcher_input();
-        update_launcher();
-    }
-
-    if (close_launcher() != 0)
-        return -1;
-
-    // TODO: make launcher screen instead
     if (argc > 1)
     {
         for (u8 i = 1; i < argc; ++i)
@@ -78,7 +65,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     }
 
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
-
+    init_fonts();
     init_gui();
     init_super_debugger();
 
