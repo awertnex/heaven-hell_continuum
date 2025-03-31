@@ -11,10 +11,8 @@ LIBS="-lraylib -lm"
 OUT="minecraft"
 EXTENSION=""
 
-LAUNCHER_MAIN="launcher/launcher.c"
-LAUNCHER_CHILDREN="logger.c keymaps.c"
+LAUNCHER_CHILDREN="../logger.c"
 LAUNCHER_LIBS="-lraylib"
-LAUNCHER_OUT="launcher"
 
 tests=(
     "chunk_loader"
@@ -46,10 +44,11 @@ if [[ "$1" ]]; then
 
         "0")
             echo "Building minecraft.c Launcher.."
-            MAIN=$LAUNCHER_MAIN
+            SOURCE="src/launcher/"
+            MAIN="launcher.c"
             CHILDREN=$LAUNCHER_CHILDREN
             LIBS=$LAUNCHER_LIBS
-            OUT=$LAUNCHER_OUT
+            OUT="launcher"
             ;;
 
         "1")
