@@ -50,7 +50,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     if (LOGGING_DEBUG)
         LOGDEBUG("Debugging Enabled");
 
-    init_grandpath_directory();
+    init_paths();
     init_texture_layouts();
     init_textures();
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     {
         for (u8 i = 1; i < argc; ++i)
         {
-            init_instance_directory(argv[i]);
+            init_instance_directory(argv[i], &state, STATE_ACTIVE);
             if (!(state & STATE_ACTIVE))
                 return -1;
         }
