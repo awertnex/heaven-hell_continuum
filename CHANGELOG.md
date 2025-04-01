@@ -18,6 +18,7 @@
 - instance directory structure creation successful
 - added game launcher
 - changed build system from Bash to C
+- made 'defines.h' a local file
 
 - - - -
 ## v0.1.1 - (27 Mar 2025)
