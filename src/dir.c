@@ -4,10 +4,8 @@
 #include <string.h>
 #include <dirent.h>
 
-#include "h/main.h"
 #include "h/dir.h"
 #include "h/logger.h"
-#include "h/logic.h"
 
 str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
@@ -16,7 +14,7 @@ str instance_directory_structure[17][NAME_MAX] = {0};
 str world_directory_structure[3][NAME_MAX] = {0};
 
 // ---- functions --------------------------------------------------------------
-void init_grandpath_directory()
+void init_paths()
 {
     snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
     if (!mkdir(mc_c_grandpath, 0775))
@@ -27,7 +25,7 @@ void init_grandpath_directory()
 
 FILE *instance;
 FILE *info;
-void init_instance_directory(str *instance_name)
+void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
 {
     str string[PATH_MAX];
     if ((info = fopen("src/info/dir.txt", "r")))
@@ -72,7 +70,7 @@ void init_instance_directory(str *instance_name)
     else
     {
         LOGFATAL("File Not Found 'src/info/dir.txt', Instance Creation Aborted");
-        state &= ~STATE_ACTIVE;
+        *state &= ~FLAG_ACTIVE;
         return;
     }
 

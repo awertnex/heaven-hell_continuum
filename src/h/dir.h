@@ -34,8 +34,8 @@ extern str instance_directory_structure[17][NAME_MAX];
 extern str world_directory_structure[3][NAME_MAX];
 
 // ---- signatures -------------------------------------------------------------
-void init_grandpath_directory();
-void init_instance_directory(str *instance_name);
+void init_paths();
+void init_instance_directory(str *instance_name, u16 *state, u8 STATE_ACTIVE);
 void init_world_directory();
 
 #define DIR_H
