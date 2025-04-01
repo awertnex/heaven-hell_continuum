@@ -2,6 +2,7 @@
 
 #include "launcher.h"
 #include "../h/logger.h"
+#include "../h/dir.h"
 
 u8 state = 0;
 v2i16 render_size = {500, 720};
@@ -46,4 +47,8 @@ void update_launcher_input()
 {
     if (IsKeyPressed(KEY_Q))
         state &= ~STATE_ACTIVE;
+}
+
+void draw_button()
+{
 }
