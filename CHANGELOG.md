@@ -1,7 +1,7 @@
 # changelog
 
 - - - -
-## v0.1.2 - (DD Apr 2025)
+## v0.1.2 - (01 Apr 2025)
 
 #### changes
 - can break and place blocks
@@ -17,6 +17,7 @@
 - wrote a proper logger
 - instance directory structure creation successful
 - added game launcher
+- changed build system from Bash to C
 
 - - - -
 ## v0.1.1 - (27 Mar 2025)
