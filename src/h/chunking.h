@@ -36,7 +36,8 @@ enum BlockFaces
 enum BlockData
 {
     BLOCKFACES =            0x0000003F,
-    BLOCKID =               0x00FFFF00,
+    BLOCKID =               0x000FFF00,
+    BLOCKSTATE =            0x00F00000,
 }; /* BlockData */
 
 typedef struct Chunk
@@ -44,7 +45,7 @@ typedef struct Chunk
     u8 loaded;
     v2i16 pos;
     u8 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-    u16 id[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    u16 info[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
