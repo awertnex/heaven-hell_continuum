@@ -1,7 +1,7 @@
 # minecraft.c
-**a 1:1 minecraft clone but in C, as best as I could, with minimal library usage, if any.\
-eventually I will replace all minecraft resources with my own, for copyright reasons.\
-I'm following the C99 standard, but it still builds fine without** `-std=c99`
+**a 1:1 minecraft clone but in C with the C99 standard, as best as I could, with minimal library usage if any.\
+It still builds fine without `-std=c99`\
+eventually I will replace all minecraft resources with my own for copyright reasons.**
 
 ## dependencies
 - [raylib](https://github.com/raysan5/raylib) by [raysan5](https://github.com/raysan5)
