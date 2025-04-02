@@ -21,4 +21,5 @@ texts/
 advancements/
 chunks/
 entities/
+logs/
 player_data/
