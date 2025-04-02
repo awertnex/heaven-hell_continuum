@@ -9,9 +9,9 @@ demos/
 NOTES.md
 
 # Output Files
-minecraft
-launcher
-test_*
+./minecraft_c
+./launcher
+./test_*
 
 # Prerequisites
 *.d
