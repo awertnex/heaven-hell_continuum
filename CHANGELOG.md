@@ -1,5 +1,9 @@
 # changelog
 
+##v0.1.3 - (DD Apr 2025)
+- - - -
+- fixed segfault while placing or breaking blocks in non-allocated chunk area 
+
 - - - -
 ## v0.1.2 - (01 Apr 2025)
 
