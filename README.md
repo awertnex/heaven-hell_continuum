@@ -1,6 +1,6 @@
 # minecraft.c
-**a 1:1 minecraft clone but in C, as best as I could, with minimal library usage, if any.
-eventually I will replace all minecraft resources with my own, for copyright reasons.
+**a 1:1 minecraft clone but in C, as best as I could, with minimal library usage, if any.\
+eventually I will replace all minecraft resources with my own, for copyright reasons.\
 I'm following the C99 standard, but it still builds fine without** `-std=c99`
 
 ## dependencies
