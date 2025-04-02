@@ -5,8 +5,6 @@
 #include "h/chunking.h"
 #include "h/logger.h"
 
-#define MODE_GRAY 1
-
 u16 world_height = WORLD_HEIGHT_NORMAL;
 Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
 Chunk *target_chunk = 0;
@@ -159,8 +157,8 @@ void draw_block(u32 block_state)
 {
     if (block_state & POSITIVE_X)
     {
-        if (MODE_GRAY)
-            rlColor4ub(150, 150, 137, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(150, 150, 137, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 210, 90, opacity);
         rlVertex3f(1.0f, 0.0f, 0.0f);
@@ -171,8 +169,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_X)
     {
-        if (MODE_GRAY)
-            rlColor4ub(135, 135, 123, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(135, 135, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(236, 17, 90, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);
@@ -183,8 +181,8 @@ void draw_block(u32 block_state)
 
     if (block_state & POSITIVE_Y)
     {
-        if (MODE_GRAY)
-            rlColor4ub(155, 155, 142, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(155, 155, 142, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 248, 246, opacity);
         rlVertex3f(0.0f, 1.0f, 0.0f);
@@ -195,8 +193,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_Y)
     {
-        if (MODE_GRAY)
-            rlColor4ub(140, 140, 123, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(140, 140, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(28, 14, 50, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);
@@ -207,8 +205,8 @@ void draw_block(u32 block_state)
 
     if (block_state & POSITIVE_Z)
     {
-        if (MODE_GRAY)
-            rlColor4ub(176, 176, 160, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(176, 176, 160, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(250, 18, 5, opacity);
         rlVertex3f(0.0f, 0.0f, 1.0f);
@@ -219,8 +217,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_Z)
     {
-        if (MODE_GRAY)
-            rlColor4ub(115, 115, 104, 255);
+        if (MODE_GRAY_BLOCKS)
+            rlColor4ub(115, 115, 104, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 40, 203, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);

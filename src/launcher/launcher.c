@@ -1,4 +1,5 @@
 #include <raylib.h>
+#include <dirent.h>
 
 #include "launcher.h"
 #include "../h/logger.h"
@@ -6,6 +7,9 @@
 
 u8 state = 0;
 v2i16 render_size = {500, 720};
+
+DIR *dir;
+struct dirent *drnt;
 
 void init_launcher()
 {
@@ -15,7 +19,10 @@ void init_launcher()
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     if (LOGGING_DEBUG)
+    {
+        LOGDEBUG("Debugging Enabled");
         SetWindowState(FLAG_WINDOW_TOPMOST);
+    }
 }
 
 int main(void) // ---- main ----------------------------------------------------
@@ -49,6 +56,6 @@ void update_launcher_input()
         state &= ~STATE_ACTIVE;
 }
 
-void draw_button()
+void evaluate_instance(str *mc_c_subpath)
 {
 }

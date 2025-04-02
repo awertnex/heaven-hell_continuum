@@ -18,7 +18,7 @@ void init_paths()
 {
     snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
     if (!mkdir(mc_c_grandpath, 0775))
-        LOGINFO("Main Directory Created 'HOME/minecraft.c/'");
+        LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
     else
         LOGINFO("Main Directory Path '%s/minecraft.c/'", getenv("HOME"));
 }
@@ -30,7 +30,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
     str string[PATH_MAX];
     if ((info = fopen("src/info/dir.txt", "r")))
     {
-        LOGINFO("Loading Instance Directory Structure..");
+        LOGINFO("%s", "Loading Instance Directory Structure..");
         for (u16 i = 0, j = 0, stage = 0; i < 0xFFF && fgets(string, PATH_MAX, info); ++i, ++j)
         {
             if (!strncmp(string, "\n", 1))
@@ -65,11 +65,11 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
             }
         }
         fclose(info);
-        LOGINFO("Instance Directory Structure Loaded!");
+        LOGINFO("%s", "Instance Directory Structure Loaded!");
     }
     else
     {
-        LOGFATAL("File Not Found 'src/info/dir.txt', Instance Creation Aborted");
+        LOGFATAL("%s", "File Not Found 'src/info/dir.txt', Instance Creation Aborted");
         *state &= ~FLAG_ACTIVE;
         return;
     }
@@ -85,7 +85,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
     if (!mkdir(mc_c_subpath, 0775))
     {
         LOGINFO("Instance Directory Created '%s'", mc_c_subpath);
-        LOGINFO("Building Instance Directory Structure:");
+        LOGINFO("%s", "Building Instance Directory Structure:");
 
         memset(string, 0, PATH_MAX);
         for (u8 i = 0; i < 255 && instance_directory_structure[i][0] != 0; ++i)

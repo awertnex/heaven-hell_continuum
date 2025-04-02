@@ -11,11 +11,9 @@
 #define HEIGHT 720
 #define MARGIN 20
 
-enum DebugModes
-{
-    ModeCollide =   0,
-    ModeGravity =   1,
-}; /* DebugModes */
+#define MODE_COLLIDE        0
+#define MODE_GRAVITY        1
+#define MODE_GRAY_BLOCKS    1
 
 typedef struct Window
 {

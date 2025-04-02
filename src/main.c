@@ -152,7 +152,7 @@ void update_world()
 
     parse_player_states(&lily);
 
-    if (ModeCollide)
+    if (MODE_COLLIDE)
         give_collision_static(&lily, &target_coordinates_feet);
 
     if (state & STATE_DEBUG)
