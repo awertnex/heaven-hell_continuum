@@ -29,6 +29,7 @@ if build successful, run minecraft.c with `./minecraft_c`
     - all minecraft.c instances will be stored in 'minecraft.c/instances/'
     - the default path to 'minecraft.c/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
 - list available tests with `./build list`
-    - build test [n] with `./build test [n]`
-    - this command searches the directory 'src/tests/' and loads all `.c` files into an array to execute by index [n]
+    - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
+- build test [n] with `./build test [n]`
+    - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
 - help `./build --help`
