@@ -17,7 +17,7 @@ char** cmd;
 char str_exec[24] = "cc";
 char str_main[32] = "main.c";
 char str_children[9][24] = {"logger.c", "assets.c", "chunking.c", "dir.c", "gui.c", "keymaps.c", "logic.c", "super_debugger.c", NULL};
-char str_cflags[5][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", NULL};
+char str_cflags[6][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", "-std=c99", NULL};
 char str_libs[3][24] = {"-lraylib", "-lm", NULL};
 char str_out[3][32] = {"-o", "../minecraft_c", NULL};
 char str_tests[3][24] =
