@@ -18,8 +18,9 @@ cd minecraft.c/
 ```
 if `./build` gives errors or is outdated, then:
 ```
-cc build.c -o build; ./build
+cc build.c -o build -std=c99; ./build
 ```
+the cflag '-std=c99' is optional but preferred.\
 if build successful, run minecraft.c with `./minecraft_c`
 
 - - - -
