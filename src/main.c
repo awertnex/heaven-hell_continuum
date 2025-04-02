@@ -48,7 +48,7 @@ static void draw_default_grid();
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
     if (LOGGING_DEBUG)
-        LOGDEBUG("Debugging Enabled");
+        LOGDEBUG("%s", "Debugging Enabled");
 
     init_paths();
     init_texture_layouts();
@@ -142,7 +142,7 @@ void init_world()
         lily.state |= STATE_FLYING;
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
-    LOGINFO("World Loaded: Poop Consistency Tester");
+    LOGINFO("%s", "World Loaded: Poop Consistency Tester");
 }
 
 void update_world()

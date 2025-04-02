@@ -2,10 +2,13 @@
 
 #define MC_C_VERSION "Minecraft.c 0.1.2"
 
-#include <limits.h>
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include "defines.h"
+
+// ---- from linux/limits.h ----------------------------------------------------
+#define NAME_MAX         255	/* # chars in a file name */
+#define PATH_MAX        4096	/* # chars in a path name including nul */
 
 #define WIDTH 1280
 #define HEIGHT 720

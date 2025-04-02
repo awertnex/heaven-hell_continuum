@@ -1,7 +1,10 @@
 #ifndef DIR_H
 
-#include <limits.h>
 #include "defines.h"
+
+// ---- from linux/limits.h ----------------------------------------------------
+#define NAME_MAX         255	/* # chars in a file name */
+#define PATH_MAX        4096	/* # chars in a path name including nul */
 
 enum DirectoryStructure
 {
