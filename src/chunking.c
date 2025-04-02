@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "h/chunking.h"
+#include "h/logger.h"
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
 Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
@@ -16,7 +17,7 @@ void init_chunking()
 }
 
 //TODO: check chunk barrier faces
-void add_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
+void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_SIZE;
     y %= CHUNK_SIZE;
@@ -49,7 +50,7 @@ void add_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
 }
 
 //TODO: check chunk barrier faces
-void remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z)
+void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_SIZE;
     y %= CHUNK_SIZE;
@@ -82,7 +83,7 @@ void parse_chunk_states(Chunk *chunk, u16 height)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)
             for (u8 x = 0; x < CHUNK_SIZE; ++x)
             {
-                add_block_state(chunk, x, y, z);
+                add_block(chunk, x, y, z);
                 if (chunk->i[z][y][x])
                     ++block_count;
                 if (chunk->i[z][y][x] & POSITIVE_X)
@@ -156,7 +157,8 @@ void draw_block(u32 block_state)
 {
     if (block_state & POSITIVE_X)
     {
-        rlColor4ub(200, 210, 90, opacity);  /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(200, 210, 90, opacity);
         rlVertex3f(1.0f, 0.0f, 0.0f);
         rlVertex3f(1.0f, 1.0f, 0.0f);
         rlVertex3f(1.0f, 1.0f, 1.0f);
@@ -165,7 +167,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_X)
     {
-        rlColor4ub(236, 17, 90, opacity);   /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(236, 17, 90, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);
         rlVertex3f(0.0f, 0.0f, 1.0f);
         rlVertex3f(0.0f, 1.0f, 1.0f);
@@ -174,7 +177,8 @@ void draw_block(u32 block_state)
 
     if (block_state & POSITIVE_Y)
     {
-        rlColor4ub(200, 248, 246, opacity); /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(200, 248, 246, opacity);
         rlVertex3f(0.0f, 1.0f, 0.0f);
         rlVertex3f(0.0f, 1.0f, 1.0f);
         rlVertex3f(1.0f, 1.0f, 1.0f);
@@ -183,7 +187,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_Y)
     {
-        rlColor4ub(28, 14, 50, opacity);    /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(28, 14, 50, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);
         rlVertex3f(1.0f, 0.0f, 0.0f);
         rlVertex3f(1.0f, 0.0f, 1.0f);
@@ -192,7 +197,8 @@ void draw_block(u32 block_state)
 
     if (block_state & POSITIVE_Z)
     {
-        rlColor4ub(250, 18, 5, opacity);    /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(250, 18, 5, opacity);
         rlVertex3f(0.0f, 0.0f, 1.0f);
         rlVertex3f(1.0f, 0.0f, 1.0f);
         rlVertex3f(1.0f, 1.0f, 1.0f);
@@ -201,7 +207,8 @@ void draw_block(u32 block_state)
 
     if (block_state & NEGATIVE_Z)
     {
-        rlColor4ub(200, 40, 203, opacity);  /*debug mode*/
+        if (LOGGER_DEBUG)
+            rlColor4ub(200, 40, 203, opacity);
         rlVertex3f(0.0f, 0.0f, 0.0f);
         rlVertex3f(0.0f, 1.0f, 0.0f);
         rlVertex3f(1.0f, 1.0f, 0.0f);

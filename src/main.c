@@ -295,7 +295,7 @@ void update_input(player *player)
     {
         if (player->state & STATE_PARSE_TARGET)
         {
-            remove_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
+            remove_block(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
         }
     }
 
@@ -305,7 +305,7 @@ void update_input(player *player)
 
     if (IsMouseButtonDown(BIND_USE_ITEM_OR_PLACE_BLOCK))
     {
-        add_block_state(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
+        add_block(target_chunk, lily.previous_target.x, lily.previous_target.y, floorf(lily.previous_target.z - WORLD_BOTTOM));
     }
 
     // ---- inventory ----------------------------------------------------------

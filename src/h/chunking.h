@@ -56,8 +56,8 @@ extern u64 quad_count; //debug mode
 
 // ---- signatures -------------------------------------------------------------
 void    init_chunking();
-void    add_block_state(Chunk *chunk, u8 x, u8 y, u16 z);
-void    remove_block_state(Chunk *chunk, u8 x, u8 y, u16 z);
+void    add_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void    remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void    parse_chunk_states(Chunk *chunk, u16 height);
 Chunk*  get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
 void    draw_chunk(Chunk *chunk, u16 height);
