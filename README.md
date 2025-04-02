@@ -26,7 +26,9 @@ if build successful, run minecraft.c with `./minecraft_c`
 **additional commands**
 - build launcher with `./build launcher` and run with `./launcher`
     - the launcher creates a directory 'minecraft.c/' in your 'HOME' directory on linux or in your 'appdata' folder on windows
-    - all minecraft.c instances will be stored in 'minecraft.c/instances'
+    - all minecraft.c instances will be stored in 'minecraft.c/instances/'
     - the default path to 'minecraft.c/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
-- list available tests with `./build list`, build test [n] with `./build test [n]`
+- list available tests with `./build list`
+    - build test [n] with `./build test [n]`
+    - this command searches the directory 'src/tests/' and loads all `.c` files into an array to execute by index [n]
 - help `./build --help`
