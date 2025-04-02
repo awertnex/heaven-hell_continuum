@@ -92,7 +92,7 @@ void build_cmd()
     }
 
     if (!chdir("src/"))
-        EXECUTEVP("cc", cmd);
+        EXECUTEVP(str_exec, cmd);
     else
     {
         printf("Error: 'src/' Directory Not Found");
