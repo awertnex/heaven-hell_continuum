@@ -1,6 +1,7 @@
 # minecraft.c
 **a 1:1 minecraft clone but in C, as best as I could, with minimal library usage, if any.
-eventually I will replace all minecraft resources with my own, for copyright reasons.**
+eventually I will replace all minecraft resources with my own, for copyright reasons.
+I'm following the C99 standard, but it still builds fine without** `-std=c99`
 
 ## dependencies
 - [raylib](https://github.com/raysan5/raylib) by [raysan5](https://github.com/raysan5)
@@ -13,8 +14,11 @@ eventually I will replace all minecraft resources with my own, for copyright rea
 ```
 git clone https://github.com/awertnex/minecraft.c.git
 cd minecraft.c/
-cc src/build.c -o build -std=c99
 ./build
+```
+if `./build` gives errors or is outdated, then:
+```
+cc build.c -o build; ./build
 ```
 if build successful, run minecraft.c with `./minecraft_c`
 
