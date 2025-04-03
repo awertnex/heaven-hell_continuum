@@ -1,9 +1,11 @@
 # changelog
 
-##v0.1.3 - (DD Apr 2025)
+## Release - v0.1.3 - (03 Apr 2025)
 - - - -
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard
+- changed original resources to avoid copyright
+- made build system more difficult to read but easier to use (not tested on windows)
 
 - - - -
 ## v0.1.2 - (01 Apr 2025)
