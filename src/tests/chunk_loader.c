@@ -7,9 +7,13 @@
 #include <sys/stat.h>
 #include <raylib.h>
 #include <rlgl.h>
+#include <wchar.h>
 
 #define VECTOR2_TYPES
 #include "../h/defines.h"
+
+#define NAME_MAX         255	/* # chars in a file name */
+#define PATH_MAX        4096	/* # chars in a path name including nul */
 
 #define LOG(x, ...) memset(logger, 0, 255); \
     snprintf(logger, 18, "%s: ", log_level[x]); \
@@ -34,27 +38,39 @@ enum LogLevel
 }; /* LogLevel */
 
 // -----------------------------------------------------------------------------
-FILE *save_file;
-str tokens_default[10][255] =
+str* mc_c_grandpath;
+str* mc_c_subpath;
+str* mc_c_chunkpath;
+str tokens_default[10][8] =
 {
-    "FF",
-    "FF",
-    "FFFFFF",
+    "4",    // bytes for chunk->pos;
+    "1",    // bytes for each chunk->i;
+    "2",    // bytes for each chunk->info;
+    "x",    // formatter: repeat 'bytes to the left of x' a 'bytes to the right of x' times;
 };
-str tokens_loaded[10][255] = {0};
 
+str** tokens_loaded;
+
+FILE *save_file;
 DIR *dir;
 struct dirent *drnt;
-str files[32][NAME_MAX] = {0};
+str files[32][NAME_MAX + 1] = {0};
 u16 file_count;
 
 typedef struct Chunk
 {
-    u8 loaded;
     v2i16 pos;
+    u8 loaded;
     u8 i[420][64][64];
-    u16 id[420][64][64];
+    u16 info[420][64][64];
 } Chunk;
+Chunk chunk =
+{
+    .pos = {-1, 4095},
+    .i = {3, 35, 45, 34, 8, 11, 30},
+    .info = {0, 0, 0, 0, 3999, 0, 0},
+    .loaded = 1,
+};
 
 // -----------------------------------------------------------------------------
 void tokenize_chunk();
@@ -66,15 +82,16 @@ void gui();
 
 void load_chunk()
 {
-    save_file = fopen("chunk/chunk_00_00", "r");
+    save_file = fopen(files[0], "rb");
     if (save_file)
     {
         tokenize_chunk();
         fclose(save_file);
+        LOG(INFO, "Chunk Loaded 'chunk'");
     }
     else
     {
-        LOG(INFO, "Chunk created: chunk_00_00");
+        LOG(INFO, "Chunk Created 'chunk'");
         update_chunk();
     }
 
@@ -83,7 +100,7 @@ void load_chunk()
 void tokenize_chunk()
 {
     struct stat buf;
-    stat("chunk/chunk_00_00", &buf);
+    stat(files[0], &buf);
 
     if (buf.st_size < 1)
     {
@@ -151,30 +168,36 @@ void tokenize_chunk()
         }
     }
 
-    LOG(INFO, "Chunk loaded: chunk_00_00");
+    LOG(INFO, "Chunk Loaded 'chunk'");
     printf("  CONTENTS: %s\n", save_file_contents);
     free(save_file_contents);
 }
 
 void update_chunk()
 {
-    save_file = fopen("chunk/chunk_00_00", "w");
-    fwrite("0x00,0x00\n", 10, 1, save_file);
+    save_file = fopen(files[0], "wb");
+    fwrite(&chunk, sizeof(chunk), 1, save_file);
     fclose(save_file);
+    return;
+    printf("tokens loaded: %s\n", tokens_loaded[0]);
+    save_file = fopen(files[0], "rb");
+    fread(tokens_loaded[0], sizeof(tokens_loaded[0]), 1, save_file);
+    fclose(save_file);
+    printf("tokens loaded: %s\n", tokens_loaded[0]);
 }
 
 void update_chunk_directory()
 {
-    dir = opendir("chunk/");
+    dir = opendir(mc_c_chunkpath);
     if (dir)
     {
         file_count = 0;
-        for (u16 i = 0; i < 264 /*TODO: FILES_MAX*/ && files[i][0]; ++i)
+        for (u16 i = 0; i < 264 && files[i][0]; ++i)
             memset(files[i], 0, NAME_MAX);
 
         while ((drnt = readdir(dir)))
         {
-            snprintf(files[file_count], NAME_MAX + 1, "%s", drnt->d_name);
+            snprintf(files[file_count], NAME_MAX, "%s%s", mc_c_chunkpath, drnt->d_name);
             ++file_count;
         }
 
@@ -186,11 +209,27 @@ void unload_chunk()
 {
 }
 
-// -----------------------------------------------------------------------------
 int main(void)
 {
+    mc_c_grandpath = (char*) malloc(PATH_MAX);
+    mc_c_subpath = (char*) malloc(PATH_MAX);
+    mc_c_chunkpath = (char*) malloc(PATH_MAX);
+    tokens_loaded = (char**) calloc(10, 8);
+
+    memset(mc_c_grandpath, 0, PATH_MAX);
+    memset(mc_c_subpath, 0, PATH_MAX);
+    memset(mc_c_chunkpath, 0, PATH_MAX);
+    memset(tokens_loaded, 0, 80);
+
+    snprintf(mc_c_grandpath, 64, "%s/minecraft.c/", getenv("HOME"));
+    snprintf(mc_c_subpath, 128, "%stest_instance/", mc_c_grandpath);
+    snprintf(mc_c_chunkpath, 256, "%schunk/", mc_c_subpath);
+
+    mkdir(mc_c_grandpath, 0775);
+    mkdir(mc_c_subpath, 0775);
+    mkdir(mc_c_chunkpath, 0775);
+
     InitWindow(1280, 720, "test: chunk_loader");
-    printf("Chunk Size: %ld\n", sizeof(Chunk));
     SetTargetFPS(60);
 
     while (active)
@@ -199,6 +238,10 @@ int main(void)
         gui();
     }
 
+    free(mc_c_grandpath);
+    free(mc_c_subpath);
+    free(mc_c_chunkpath);
+    free(tokens_loaded);
     unload_chunk();
     CloseWindow();
     return 0;
@@ -231,7 +274,7 @@ void gui()
     DrawText("Loaded Chunk:", 500, 10, font_size, RAYWHITE);
     DrawText("Directory:", 1100, 10, font_size, RAYWHITE);
     DrawText("1: read chunk directory", 10, 10 + text_vertical_spacing, font_size, RAYWHITE);
-    DrawText("2: load chunk file", 10, 10 + (text_vertical_spacing*2), font_size, RAYWHITE);
+    DrawText("2: load & read chunk file", 10, 10 + (text_vertical_spacing*2), font_size, RAYWHITE);
     DrawText("3: read chunk file", 10, 10 + (text_vertical_spacing*3), font_size, RAYWHITE);
     DrawText("4: unload chunk", 10, 10 + (text_vertical_spacing*4), font_size, RAYWHITE);
 
