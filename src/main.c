@@ -45,6 +45,7 @@ static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
+    //TODO: make bounding boxes n all that disappear if 'debug' argv not mentioned
     if (argc > 1)
     {
         if (strncmp(argv[1], "debug ", 6))
