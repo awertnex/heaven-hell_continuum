@@ -335,6 +335,9 @@ void update_input(player *player)
     if (IsKeyPressed(BIND_HOTBAR_SLOT_9) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_9))
         hud_hotbar_slot_selected = 9;
 
+    if (IsKeyPressed(BIND_HOTBAR_SLOT_0) || IsKeyPressed(BIND_HOTBAR_SLOT_KP_0))
+        hud_hotbar_slot_selected = 10;
+
     if (IsKeyPressed(BIND_OPEN_OR_CLOSE_INVENTORY))
     {
         if (player->container_state & CONTR_INVENTORY && state_menu_depth)

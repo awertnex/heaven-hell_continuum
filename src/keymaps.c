@@ -26,6 +26,7 @@ KeyboardKey BIND_HOTBAR_SLOT_6 =            KEY_SIX;
 KeyboardKey BIND_HOTBAR_SLOT_7 =            KEY_SEVEN;
 KeyboardKey BIND_HOTBAR_SLOT_8 =            KEY_EIGHT;
 KeyboardKey BIND_HOTBAR_SLOT_9 =            KEY_NINE;
+KeyboardKey BIND_HOTBAR_SLOT_0 =            KEY_ZERO;
 KeyboardKey BIND_HOTBAR_SLOT_KP_1 =         KEY_KP_1;
 KeyboardKey BIND_HOTBAR_SLOT_KP_2 =         KEY_KP_2;
 KeyboardKey BIND_HOTBAR_SLOT_KP_3 =         KEY_KP_3;
@@ -35,6 +36,7 @@ KeyboardKey BIND_HOTBAR_SLOT_KP_6 =         KEY_KP_6;
 KeyboardKey BIND_HOTBAR_SLOT_KP_7 =         KEY_KP_7;
 KeyboardKey BIND_HOTBAR_SLOT_KP_8 =         KEY_KP_8;
 KeyboardKey BIND_HOTBAR_SLOT_KP_9 =         KEY_KP_9;
+KeyboardKey BIND_HOTBAR_SLOT_KP_0 =         KEY_KP_0;
 KeyboardKey BIND_OPEN_OR_CLOSE_INVENTORY =  KEY_E;
 KeyboardKey BIND_SWAP_ITEM_WITH_OFFHAND =   KEY_F;
 

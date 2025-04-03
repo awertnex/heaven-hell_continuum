@@ -23,7 +23,7 @@ u8 text_row_height = 20;
 Texture2D texture_hud_widgets;
 Texture2D texture_container_inventory;
 
-Rectangle hud_hotbar =          {0, 0, 182, 22};
+Rectangle hud_hotbar =          {0, 0, 202, 22};
 Rectangle hud_hotbar_selected = {0, 22, 24, 24};
 Rectangle hud_hotbar_offhand =  {24, 22, 22, 24};
 Rectangle hud_crosshair =       {240, 0, 16, 16};
@@ -568,7 +568,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
         if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.gui_scale)
                 && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.gui_scale))
         {
-            draw_texture(texture, button_selected, pos,
+            draw_texture(texture, button, pos,
                     (v2i16){setting.gui_scale, setting.gui_scale},
                     ColorTint(COL_TEXTURE_DEFAULT, TINT_BUTTON_HOVER));
 

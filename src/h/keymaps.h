@@ -26,6 +26,7 @@ extern KeyboardKey BIND_HOTBAR_SLOT_6;
 extern KeyboardKey BIND_HOTBAR_SLOT_7;
 extern KeyboardKey BIND_HOTBAR_SLOT_8;
 extern KeyboardKey BIND_HOTBAR_SLOT_9;
+extern KeyboardKey BIND_HOTBAR_SLOT_0;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_1;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_2;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_3;
@@ -35,6 +36,7 @@ extern KeyboardKey BIND_HOTBAR_SLOT_KP_6;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_7;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_8;
 extern KeyboardKey BIND_HOTBAR_SLOT_KP_9;
+extern KeyboardKey BIND_HOTBAR_SLOT_KP_0;
 extern KeyboardKey BIND_OPEN_OR_CLOSE_INVENTORY;
 extern KeyboardKey BIND_SWAP_ITEM_WITH_OFFHAND;
 
