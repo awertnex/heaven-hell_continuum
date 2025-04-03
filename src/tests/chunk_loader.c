@@ -60,15 +60,15 @@ u16 file_count;
 typedef struct Chunk
 {
     v2i16 pos;
+    u8 i[4][4][4];
+    u16 info[4][4][4];
     u8 loaded;
-    u8 i[420][64][64];
-    u16 info[420][64][64];
 } Chunk;
 Chunk chunk =
 {
     .pos = {-1, 4095},
     .i = {3, 35, 45, 34, 8, 11, 30},
-    .info = {0, 0, 0, 0, 3999, 0, 0},
+    .info = {0, 0, 0, 0, 4095, 0, 0},
     .loaded = 1,
 };
 
@@ -109,7 +109,7 @@ void tokenize_chunk()
     }
 
     str *save_file_contents = (str*)malloc(sizeof(Chunk));
-    for (u32 i = 0; i < sizeof(Chunk) /* (2*5) + ((64*64*420)*6) */ && i < (u64)buf.st_size; ++i)
+    for (u32 i = 0; i < sizeof(Chunk) && i < (u64)buf.st_size; ++i)
         save_file_contents[i] = getc(save_file);
 
     u8 stage = 1, parse = 1;
