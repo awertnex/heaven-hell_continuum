@@ -259,7 +259,7 @@ void init_gui();
 void apply_render_settings();
 void free_gui();
 
-void update_menus(u16 *player_state);
+void update_menus();
 void draw_hud();
 void draw_inventory();
 void draw_debug_info();

@@ -107,7 +107,7 @@ void init_fonts()
 void init_gui()
 {
     texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
-    texture_container_inventory =   LoadTexture("resources/gui/container/inventory.png");
+    texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
 
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
@@ -143,7 +143,7 @@ void free_gui()
     UnloadTexture(texture_container_inventory);
 }
 
-void update_menus(u16 *player_state)
+void update_menus()
 {
     if (!menu_index)
         return;

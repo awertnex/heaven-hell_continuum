@@ -2,8 +2,6 @@
 _section_input =================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -47,8 +45,13 @@ static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
-    if (LOGGING_DEBUG)
-        LOGDEBUG("%s", "Debugging Enabled");
+    if (argc > 1)
+    {
+        if (strncmp(argv[1], "debug ", 6))
+        {
+            LOGDEBUG("%s", "Debugging Enabled");
+        }
+    }
 
     init_paths();
     init_texture_layouts();
@@ -56,11 +59,14 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
     if (argc > 1)
     {
-        for (u8 i = 1; i < argc; ++i)
+        if (strncmp(argv[1], "instance ", 9) && argv[2][0])
         {
-            init_instance_directory(argv[i], &state, STATE_ACTIVE);
-            if (!(state & STATE_ACTIVE))
-                return -1;
+            for (u8 i = 2; i < argc; ++i)
+            {
+                init_instance_directory(argv[i], &state, STATE_ACTIVE);
+                if (!(state & STATE_ACTIVE))
+                    return -1;
+            }
         }
     }
 
