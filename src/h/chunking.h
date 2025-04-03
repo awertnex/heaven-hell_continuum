@@ -19,25 +19,27 @@
 #define CHUNK_SIZE          64
 #define WORLD_SIZE          64*32767 /* in each cardinal direction */
 
-#define opacity 180
+#define opacity 200
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
 {
-    POSITIVE_X =            0x01,
-    NEGATIVE_X =            0x02,
-    POSITIVE_Y =            0x04,
-    NEGATIVE_Y =            0x08,
-    POSITIVE_Z =            0x10,
-    NEGATIVE_Z =            0x20,
-    NOT_EMPTY =             0x40,
+    POSITIVE_X =    0x01,
+    NEGATIVE_X =    0x02,
+    POSITIVE_Y =    0x04,
+    NEGATIVE_Y =    0x08,
+    POSITIVE_Z =    0x10,
+    NEGATIVE_Z =    0x20,
+    NOT_EMPTY =     0x40,
+    COUNTAHEAD =    0x80,
 }; /* BlockFaces */
 
 enum BlockData
 {
-    BLOCKFACES =            0x0000003F,
-    BLOCKID =               0x000FFF00,
-    BLOCKSTATE =            0x00F00000,
+    BLOCKFACES =    0x0000003F, // 00000000 00000000 00000000 00111111
+    BLOCKSTATE =    0x00000F00, // 00000000 00000000 00001111 00000000
+    BLOCKID =       0x00FFF000, // 00000000 11111111 11110000 00000000
+    BLOCKLIGHT =    0x1F000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
 
 typedef struct Chunk
