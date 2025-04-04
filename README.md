@@ -26,11 +26,6 @@ cc build.c -o build -std=c99; ./build
 the cflag `-std=c99` is optional but preferred.\
 if build successful, run minecraft.c with `./minecraft_c`
 
-#### windows (using file explorer):
-- download the zip file (the green `<> Code` button at the top, then `Download ZIP`)
-- extract, and run `minecraft_c.exe` inside
-- if it gives errors or is outdated, run `build.exe` and then run `minecraft_c.exe`
-
 **additional commands**
 - build launcher with `./build launcher` and run with `./launcher`
     - the launcher creates a directory 'minecraft.c/' in your 'HOME' directory
@@ -41,7 +36,8 @@ if build successful, run minecraft.c with `./minecraft_c`
 - build test [n] with `./build test [n]`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
 - help `./build --help`
-#### windows (using mingw/gcc):
+
+#### windows (using mingw/gcc) [not implemented yet]:
 ```
 git clone https://github.com/awertnex/minecraft.c.git
 cd minecraft.c/
