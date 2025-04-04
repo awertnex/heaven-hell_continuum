@@ -37,5 +37,12 @@ extern v3i32 target_coordinates_feet; /*temp*/
 // ---- signatures -------------------------------------------------------------
 void init_world();
 
+// ---- platform ---------------------------------------------------------------
+#if defined __linux__
+    #define PLATFORM_LINUX
+#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
+    #define PLATFORM_WINDOWS
+#endif // PLATFORM
+
 #define MINECRAFT_H
 #endif
