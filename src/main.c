@@ -9,16 +9,22 @@ _section_input =================================================================
 #include "dependencies/raylib-5.5/src/raylib.h"
 #include "dependencies/raylib-5.5/src/rlgl.h"
 
+#if defined __linux__
+    #include "linux_minecraft.c"
+#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
+    #include "windows_minecraft.c"
+#endif // PLATFORM
+
 #include "h/main.h"
 #include "h/setting.h"
-#include "h/dir.h"
-#include "h/gui.h"
-#include "h/chunking.h"
-#include "h/logic.h"
-#include "h/assets.h"
-#include "h/keymaps.h"
-#include "h/logger.h"
-#include "h/super_debugger.h"
+#include "dir.c"
+#include "gui.c"
+#include "chunking.c"
+#include "logic.c"
+#include "assets.c"
+#include "keymaps.c"
+#include "logger.c"
+#include "super_debugger.c"
 
 // ---- variables --------------------------------------------------------------
 WindowInfo win =

@@ -16,8 +16,8 @@ str world_directory_structure[3][NAME_MAX] = {0};
 // ---- functions --------------------------------------------------------------
 void init_paths()
 {
-    snprintf(mc_c_grandpath, strlen(getenv("HOME")) + 14, "%s/minecraft.c/", getenv("HOME"));
-    if (!mkdir(mc_c_grandpath, 0775))
+    INIT_MC_C_GRANDPATH;
+    if (!mc_mkdir(mc_c_grandpath, 0775))
         LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
     else
         LOGINFO("Main Directory Path '%s/minecraft.c/'", getenv("HOME"));
@@ -82,7 +82,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
             break;
         }
 
-    if (!mkdir(mc_c_subpath, 0775))
+    if (!mc_mkdir(mc_c_subpath, 0775))
     {
         LOGINFO("Instance Directory Created '%s'", mc_c_subpath);
         LOGINFO("%s", "Building Instance Directory Structure:");
@@ -94,7 +94,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
                     strlen(mc_c_subpath) + strlen(instance_directory_structure[i]),
                     "%s%s", mc_c_subpath, instance_directory_structure[i]);
 
-            mkdir(string, 0775);
+            mc_mkdir(string, 0775);
             LOGINFO("Directory Created '%s/%s'", instance_name, instance_directory_structure[i]);
         }
         LOGINFO("Instance Creation Complete '%s'", instance_name);

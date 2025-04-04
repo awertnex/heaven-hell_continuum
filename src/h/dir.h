@@ -1,5 +1,6 @@
 #ifndef DIR_H
 
+#include "main.h"
 #include "defines.h"
 
 // ---- from linux/limits.h ----------------------------------------------------

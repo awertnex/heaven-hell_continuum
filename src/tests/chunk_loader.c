@@ -225,9 +225,9 @@ int main(void)
     snprintf(mc_c_subpath, 128, "%stest_instance/", mc_c_grandpath);
     snprintf(mc_c_chunkpath, 256, "%schunk/", mc_c_subpath);
 
-    mkdir(mc_c_grandpath, 0775);
-    mkdir(mc_c_subpath, 0775);
-    mkdir(mc_c_chunkpath, 0775);
+    mc_mkdir(mc_c_grandpath, 0775);
+    mc_mkdir(mc_c_subpath, 0775);
+    mc_mkdir(mc_c_chunkpath, 0775);
 
     InitWindow(1280, 720, "test: chunk_loader");
     SetTargetFPS(60);

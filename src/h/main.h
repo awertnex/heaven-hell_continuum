@@ -1,6 +1,8 @@
 #ifndef MINECRAFT_H
 
 #define MC_C_VERSION "Minecraft.c 0.1.2"
+#define MC_C_HOME
+#define INIT_MC_C_GRANDPATH
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
@@ -35,6 +37,7 @@ extern u8 state_menu_depth;
 extern v3i32 target_coordinates_feet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
+int mc_mkdir(const char *path, mode_t mode);
 void init_world();
 
 #define MINECRAFT_H
