@@ -15,17 +15,6 @@ _section_input =================================================================
     #include "windows_minecraft.c"
 #endif // PLATFORM
 
-#include "h/main.h"
-#include "h/setting.h"
-#include "dir.c"
-#include "gui.c"
-#include "chunking.c"
-#include "logic.c"
-#include "assets.c"
-#include "keymaps.c"
-#include "logger.c"
-#include "super_debugger.c"
-
 // ---- variables --------------------------------------------------------------
 WindowInfo win =
 {

@@ -262,6 +262,7 @@ void free_gui();
 
 void update_menus();
 void draw_hud();
+void update_debug_strings();
 void draw_inventory();
 void draw_debug_info();
 

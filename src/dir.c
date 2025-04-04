@@ -4,6 +4,7 @@
 #include <string.h>
 #include <dirent.h>
 
+#include "h/main.h"
 #include "h/dir.h"
 #include "h/logger.h"
 
@@ -16,7 +17,7 @@ str world_directory_structure[3][NAME_MAX] = {0};
 // ---- functions --------------------------------------------------------------
 void init_paths()
 {
-    INIT_MC_C_GRANDPATH;
+    snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 14, "%s/Roaming/minecraft.c/", getenv(MC_C_HOME));
     if (!mc_mkdir(mc_c_grandpath, 0775))
         LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
     else

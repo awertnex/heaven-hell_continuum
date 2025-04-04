@@ -4,8 +4,12 @@
 #include "defines.h"
 
 // ---- from linux/limits.h ----------------------------------------------------
-#define NAME_MAX         255	/* # chars in a file name */
-#define PATH_MAX        4096	/* # chars in a path name including nul */
+#ifndef NAME_MAX
+    #define NAME_MAX    255
+#endif // NAME_MAX
+#ifndef PATH_MAX
+    #define PATH_MAX    4096
+#endif // PATH_MAX
 
 enum DirectoryStructure
 {

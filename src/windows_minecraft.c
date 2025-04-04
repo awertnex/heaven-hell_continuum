@@ -1,8 +1,18 @@
+#include <sys/stat.h>
+
 #include "h/main.h"
-#include "sys/stat.h"
+#include "h/setting.h"
 
 #define MC_C_HOME "APPDATA"
-#define INIT_MC_C_GRANDPATH snprintf(mc_c_grandpath, strlen(getenv("APPDATA")) + 14, "%s/Roaming/minecraft.c/", getenv("APPDATA"));
+
+#include "dir.c"
+#include "gui.c"
+#include "chunking.c"
+#include "logic.c"
+#include "assets.c"
+#include "keymaps.c"
+#include "logger.c"
+#include "super_debugger.c"
 
 int mc_mkdir(const char *path, mode_t mode)
 {

@@ -389,10 +389,10 @@ void draw_debug_info()
     snprintf(str_player_block, 32,              "BLOCK: %.0f %.0f %.0f",    floorf(lily.pos.x), floorf(lily.pos.y), floorf(lily.pos.z));
     snprintf(str_player_chunk, 32,              "CHUNK: %d %d",             (i16)floorf(lily.pos.x/CHUNK_SIZE), (i16)floorf(lily.pos.y/CHUNK_SIZE));
     snprintf(str_player_direction, 32,          "YAW: %.1f PITCH: %.1f",    lily.yaw, lily.pitch);
-    snprintf(str_block_count, 32,               "BLOCKS: %ld",              block_count);
-    snprintf(str_quad_count, 32,                "QUADS: %ld",               quad_count);
-    snprintf(str_tri_count, 32,                 "TRIS: %ld",                quad_count*2);
-    snprintf(str_vertex_count, 32,              "VERTICES: %ld",            quad_count*6);
+    snprintf(str_block_count, 32,               "BLOCKS: %lld",             block_count);
+    snprintf(str_quad_count, 32,                "QUADS: %lld",              quad_count);
+    snprintf(str_tri_count, 32,                 "TRIS: %lld",               quad_count*2);
+    snprintf(str_vertex_count, 32,              "VERTICES: %lld",           quad_count*6);
 
     // TODO: rewrite DrawRectangle, get rectangle correct size for font
     DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(font_regular, str_fps,                font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
