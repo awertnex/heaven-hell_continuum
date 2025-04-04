@@ -4,7 +4,6 @@
 #include <unistd.h>
 
 #if defined __linux__
-    #define EXECUTEVP(cmd, args) execvp(cmd, args)
     #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
     #define ZERO_CMD (memset(&cmd, 0, 64*sizeof(char*)))
     #define FREE_CMD free(cmd)
@@ -13,11 +12,10 @@
 char** cmd;
 
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
-    #define EXECUTEVP(cmd, args) execvp(cmd, args)
     #define ALLOC_CMD
     #define ZERO_CMD
     #define FREE_CMD
-    #define COMPILER "cc"
+    #define COMPILER "gcc"
     #define EXECUTABLE "../minecraft_c.exe"
 char* cmd[64];
 #endif // PLATFORM
@@ -89,7 +87,7 @@ void build_cmd()
     }
 
     if (!chdir("src/"))
-        EXECUTEVP(COMPILER, cmd);
+        execvp(COMPILER, cmd);
     else
     {
         printf("Error: 'src/' Directory Not Found");
