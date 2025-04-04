@@ -31,6 +31,7 @@
 // ---- declarations -----------------------------------------------------------
 extern Vector2 cursor;
 #define detect_cursor cursor = GetMousePosition();
+extern Image mc_c_icon;
 
 extern Font font_regular;
 extern Font font_bold;

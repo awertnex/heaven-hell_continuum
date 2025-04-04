@@ -31,7 +31,7 @@ extern u8 state_menu_depth;
 extern v3i32 target_coordinates_feet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
-int mc_mkdir(const char *path, mode_t mode);
+int mc_mkdir(const char *path, u16 mode);
 void init_world();
 
 #define MINECRAFT_H
