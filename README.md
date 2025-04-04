@@ -7,7 +7,7 @@ eventually I will replace all minecraft resources with my own for copyright reas
 - [raylib](https://github.com/raysan5/raylib) by [raysan5](https://github.com/raysan5)
 
 ## requirements
-- c compiler 'cc' or 'gcc' (or MSVC, the c/c++ compiler that comes with visual studio)
+- a c compiler, 'cc' or 'gcc' (or MSVC, the c/c++ compiler that comes with visual studio)
     - download `gcc` for windows from [sourceforge/gcc-win64](https://www.sourceforge.net/projects/gcc-win64/)
     - extract it and move the extracted folder somewhere like `Program Files`
     - add the path of the `bin` folder inside to the `path` environment variable
