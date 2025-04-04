@@ -2,8 +2,10 @@
 
 ## vx.x.x - (DD MMM YYYY)
 - - - -
-- added windows support for the build tool
+- added windows support for build tool
+- finished windows support for build tool
 - created minecraft.c logo 'resources/logo/'
+- added platform layer C files 'linux_minecraft.c' and 'windows_minecraft.c'
 
 ## Release - v0.1.3 - (03 Apr 2025)
 - - - -
