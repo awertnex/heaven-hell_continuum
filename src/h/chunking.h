@@ -1,6 +1,7 @@
 #ifndef CHUNKING_H
-#include <raylib.h>
-#include <rlgl.h>
+
+#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES

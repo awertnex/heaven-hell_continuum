@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <raylib.h>
-#include <raymath.h>
-#include <rlgl.h>
+#include "dependencies/raylib-5.5/src/raylib.h"
+#include "dependencies/raylib-5.5/src/rlgl.h"
 
 #include "h/gui.h"
 #include "h/keymaps.h"

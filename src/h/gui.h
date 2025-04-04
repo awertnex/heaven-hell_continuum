@@ -1,5 +1,6 @@
 #ifndef GUI_H
-#include <raylib.h>
+
+#include "../dependencies/raylib-5.5/src/raylib.h"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES

@@ -6,9 +6,8 @@ _section_input =================================================================
 #include <sys/stat.h>
 #include <math.h>
 
-#include <raylib.h>
-#include <raymath.h>
-#include <rlgl.h>
+#include "dependencies/raylib-5.5/src/raylib.h"
+#include "dependencies/raylib-5.5/src/rlgl.h"
 
 #include "h/main.h"
 #include "h/setting.h"

@@ -1,4 +1,4 @@
-#include <raylib.h>
+#include "dependencies/raylib-5.5/src/raylib.h"
 #include "h/keymaps.h"
 
 // ---- movement ---------------------------------------------------------------

@@ -1,6 +1,6 @@
 #ifndef LAUNCHER_H
 
-#include <raylib.h>
+#include "../dependencies/raylib-5.5/src/raylib.h"
 
 #define VECTOR2_TYPES
 #include "../h/defines.h"

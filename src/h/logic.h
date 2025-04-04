@@ -1,6 +1,8 @@
 #ifndef LOGIC_H
-#include <raylib.h>
-#include <raymath.h>
+
+#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "../dependencies/raylib-5.5/src/raymath.h"
+#include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES

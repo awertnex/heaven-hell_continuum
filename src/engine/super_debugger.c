@@ -1,7 +1,9 @@
-#include <raylib.h>
+#include "../dependencies/raylib-5.5/src/raylib.h"
+
 #define SDB_ROW_HEIGHT  22
 #define SDB_BASE_SIZE   5
 #define SDB_BUTTON_SIZE 14
+
 typedef struct DebugRect
 {
     Rectangle corner_00;
@@ -46,8 +48,8 @@ void free_super_debugger()
 
 Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
-u8 button_state_add = BUTTON_LISTENING;
-u8 button_state_sub = BUTTON_LISTENING;
+u8 button_state_add = BUTTON_ACTIVE;
+u8 button_state_sub = BUTTON_ACTIVE;
 void draw_super_debugger()
 {
     DebugRectangle.scl.y = w_height - ((MARGIN + SDB_BASE_SIZE)*2);

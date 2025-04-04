@@ -5,9 +5,9 @@
 #include <dirent.h>
 #include <stdarg.h>
 #include <sys/stat.h>
-#include <raylib.h>
-#include <rlgl.h>
-#include <wchar.h>
+
+#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
 #include "../h/defines.h"

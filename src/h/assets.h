@@ -1,7 +1,7 @@
 #ifndef ASSETS_H
-#include <raylib.h>
-#include "defines.h"
 
+#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "defines.h"
 #include "dir.h"
 
 enum BlockStates

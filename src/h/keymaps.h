@@ -1,5 +1,6 @@
 #ifndef KEYMAPS_H
-#include <raylib.h>
+
+#include "../dependencies/raylib-5.5/src/raylib.h"
 
 // ---- movement ---------------------------------------------------------------
 extern KeyboardKey BIND_JUMP;
