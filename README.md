@@ -1,4 +1,7 @@
-# minecraft.c
+<h1 align="center">
+  <img src="resources/logo/1024x1024.png" alt="minecraft.c">
+</h1>
+
 **a 1:1 minecraft clone but in C with the C99 standard, as best as I could, with minimal library usage if any.\
 It still builds fine without `-std=c99`\
 eventually I will replace all minecraft resources with my own for copyright reasons.**
