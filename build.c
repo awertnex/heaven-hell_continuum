@@ -6,7 +6,7 @@
 #if defined __linux__
     #define EXECUTEVP(cmd, args) execvp(cmd, args)
 char** cmd;
-    #define ALLOC_CMD cmd = (char**) malloc(64*sizeof(char*)
+    #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
     #define FREE_CMD free(cmd)
     #define COMPILER "cc"
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
