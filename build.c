@@ -4,17 +4,22 @@
 #include <unistd.h>
 
 #if defined __linux__
-    #define PLATFORM_LINUX
     #define EXECUTEVP(cmd, args) execvp(cmd, args)
+char** cmd;
+    #define ALLOC_CMD cmd = (char**) malloc(64*sizeof(char*)
+    #define FREE_CMD free(cmd)
+    #define COMPILER "cc"
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
-    #define PLATFORM_WINDOWS
-    #define EXECUTEVP(cmd, args) _execvp(cmd, args)
+    #define EXECUTEVP(cmd, args) execvp(cmd, args)
+char* cmd[64];
+    #define ALLOC_CMD
+    #define FREE_CMD
+    #define COMPILER "cc"
 #endif // PLATFORM
 
 int exit_code = 0;
-char** cmd;
 
-char str_exec[24] = "cc";
+char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
 char str_children[9][24] = {"logger.c", "assets.c", "chunking.c", "dir.c", "gui.c", "keymaps.c", "logic.c", "super_debugger.c", NULL};
 char str_cflags[7][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", "-std=c99", "-fno-builtin", NULL};
@@ -29,7 +34,7 @@ char str_tests[3][24] =
 
 void build_cmd()
 {
-    cmd = (char**) malloc(64*sizeof(char*));
+    ALLOC_CMD;
     memset(cmd, 0, 64*sizeof(char*));
     for (int i = 2, j = 0, stage = 0, parse = 1; i < 64 && parse; ++i)
     {
@@ -92,14 +97,14 @@ void build_cmd()
     }
 
     if (!chdir("src/"))
-        EXECUTEVP(str_exec, cmd);
+        EXECUTEVP(COMPILER, cmd);
     else
     {
         printf("Error: 'src/' Directory Not Found");
         exit_code = -1;
     }
 
-    free(cmd);
+    FREE_CMD;
 }
 
 int main(int argc, char **argv)

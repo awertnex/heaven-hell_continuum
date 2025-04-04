@@ -1,7 +1,9 @@
 # changelog
 
-## v0.2.0 - Alpha - (DD MMM YYYY)
+## vx.x.x - (DD MMM YYYY)
 - - - -
+- added windows support for the build tool
+
 ## Release - v0.1.3 - (03 Apr 2025)
 - - - -
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
