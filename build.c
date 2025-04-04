@@ -10,6 +10,7 @@
     #define COMPILER "cc"
     #define EXECUTABLE "../minecraft_c"
 char** cmd;
+char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
     #define ALLOC_CMD
@@ -18,14 +19,14 @@ char** cmd;
     #define COMPILER "gcc"
     #define EXECUTABLE "../minecraft_c.exe"
 char* cmd[64];
+char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
 int exit_code = 0;
 
 char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
-char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
-char str_libs[3][24] = {"-lraylib", "-lm", 0};
+char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
 char str_out[3][32] = {"-o", EXECUTABLE, 0};
 char str_tests[3][24] =
 {
