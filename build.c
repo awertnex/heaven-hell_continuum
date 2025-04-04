@@ -6,6 +6,7 @@
 #if defined __linux__
     #define EXECUTEVP(cmd, args) execvp(cmd, args)
     #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
+    #define ZERO_CMD (memset(&cmd, 0, 64*sizeof(char*)))
     #define FREE_CMD free(cmd)
     #define COMPILER "cc"
     #define PLATFORM_LAYER "linux_minecraft.c"
@@ -14,6 +15,7 @@ char** cmd;
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
     #define EXECUTEVP(cmd, args) execvp(cmd, args)
     #define ALLOC_CMD
+    #define ZERO_CMD
     #define FREE_CMD
     #define COMPILER "cc"
     #define PLATFORM_LAYER "windows_minecraft.c"
@@ -24,21 +26,21 @@ int exit_code = 0;
 
 char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
-char str_children[10][24] = {PLATFORM_LAYER, "logger.c", "assets.c", "chunking.c", "dir.c", "gui.c", "keymaps.c", "logic.c", "super_debugger.c", NULL};
-char str_cflags[7][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", "-std=c99", "-fno-builtin", NULL};
-char str_libs[3][24] = {"-lraylib", "-lm", NULL};
-char str_out[3][32] = {"-o", "../minecraft_c", NULL};
+char str_children[10][24] = {PLATFORM_LAYER, "logger.c", "assets.c", "chunking.c", "dir.c", "gui.c", "keymaps.c", "logic.c", "super_debugger.c", 0};
+char str_cflags[7][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
+char str_libs[3][24] = {"-lraylib", "-lm", 0};
+char str_out[3][32] = {"-o", "../minecraft_c", 0};
 char str_tests[3][24] =
 {
     "chunk_loader",
     "function_pointer",
-    NULL,
+    0,
 };
 
 void build_cmd()
 {
     ALLOC_CMD;
-    memset(cmd, 0, 64*sizeof(char*));
+    ZERO_CMD;
     for (int i = 2, j = 0, stage = 0, parse = 1; i < 64 && parse; ++i)
     {
         switch (stage)
