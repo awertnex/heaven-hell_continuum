@@ -9,7 +9,7 @@
     #define ZERO_CMD (memset(&cmd, 0, 64*sizeof(char*)))
     #define FREE_CMD free(cmd)
     #define COMPILER "cc"
-    #define PLATFORM_LAYER "linux_minecraft.c"
+    #define EXECUTABLE "../minecraft_c"
 char** cmd;
 
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
@@ -18,7 +18,7 @@ char** cmd;
     #define ZERO_CMD
     #define FREE_CMD
     #define COMPILER "cc"
-    #define PLATFORM_LAYER "windows_minecraft.c"
+    #define EXECUTABLE "../minecraft_c.exe"
 char* cmd[64];
 #endif // PLATFORM
 
@@ -26,10 +26,9 @@ int exit_code = 0;
 
 char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
-char str_children[10][24] = {PLATFORM_LAYER, "logger.c", "assets.c", "chunking.c", "dir.c", "gui.c", "keymaps.c", "logic.c", "super_debugger.c", 0};
 char str_cflags[7][24] = {"-Wall", "-Wextra", "-ggdb", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
-char str_out[3][32] = {"-o", "../minecraft_c", 0};
+char str_out[3][32] = {"-o", EXECUTABLE, 0};
 char str_tests[3][24] =
 {
     "chunk_loader",
@@ -53,18 +52,6 @@ void build_cmd()
                 break;
 
             case 1:
-                if (!str_children[j][0])
-                {
-                    ++stage;
-                    --i;
-                    j = 0;
-                    continue;
-                }
-                cmd[i] = str_children[j];
-                ++j;
-                break;
-
-            case 2:
                 if (!str_cflags[j][0])
                 {
                     ++stage;
@@ -76,7 +63,7 @@ void build_cmd()
                 ++j;
                 break;
 
-            case 3:
+            case 2:
                 if (!str_libs[j][0])
                 {
                     ++stage;
@@ -88,7 +75,7 @@ void build_cmd()
                 ++j;
                 break;
 
-            case 4:
+            case 3:
                 if (!str_out[j][0])
                 {
                     cmd[i] = NULL;
@@ -134,7 +121,6 @@ int main(int argc, char **argv)
     {
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
-        memset(str_children, 0, sizeof(str_children));
         memset(str_libs[1], 0, sizeof(str_libs[1]));
         snprintf(str_out[1], 32, "../launcher");
         build_cmd();
@@ -155,7 +141,6 @@ int main(int argc, char **argv)
 
         printf("Building test %03d '%s'..\n", (argv[2][0]) - 48, str_tests[argv[2][0] - 48]);
         snprintf(str_main, 32, "tests/%s.c", str_tests[argv[2][0] - 48]);
-        memset(str_children, 0, sizeof(str_children));
         snprintf(str_out[1], 32, "../test_%s", str_tests[argv[2][0] - 48]);
         build_cmd();
         if (exit_code) return exit_code;
