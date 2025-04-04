@@ -142,7 +142,7 @@ int main(int argc, char **argv)
             printf("usage: ./build test [n]\n");
             return -1;
         }
-        else if (((argv[2][0] - 48) < 0) || ((argv[2][0] - 48) > sizeof(str_tests)/sizeof(str_tests[0])))
+        else if (((argv[2][0] - 48) < 0) || ((argv[2][0] - 48) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
         {
             printf("Invalid '%c', Try './build list' to List Available Options..\n", argv[2][0]);
             return -1;
