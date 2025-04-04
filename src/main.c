@@ -49,8 +49,9 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     }
 
     init_paths();
-    init_texture_layouts();
-    init_textures();
+    //TODO: load textures
+    //init_texture_layouts();
+    //init_textures();
 
     if (argc > 1)
     {
