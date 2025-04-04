@@ -5,7 +5,7 @@
 
 #if defined __linux__
     #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
-    #define ZERO_CMD (memset(&cmd, 0, 64*sizeof(char*)))
+    #define ZERO_CMD (memset(cmd, 0, 64*sizeof(char*)))
     #define FREE_CMD free(cmd)
     #define COMPILER "cc"
     #define EXECUTABLE "../minecraft_c"
