@@ -27,7 +27,7 @@
 typedef struct settings
 {
     // ---- internal -----------------------------------------------------------
-    u8 reach_distance;  // for player functionality reach (arm length basically)
+    u8 reach_distance;  // for player reach (arm length basically)
 
     // ---- options menu -------------------------------------------------------
     u16 fov;
