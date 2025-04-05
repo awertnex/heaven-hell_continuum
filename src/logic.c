@@ -8,33 +8,9 @@
 #include "h/gui.h"
 
 // ---- variables --------------------------------------------------------------
-player lily =
-{
-    .name = "Lily",
-    .pos = {8, -6, -65},
-    .scl = {0.6f, 0.6f, 1.8f},
-    .pitch = -29,
-    .yaw = 121,
-    .m = 2,
-    .movement_speed = 10,
-    .container_state = 0,
-    .perspective = 0,
-
-    .camera =
-    {
-        .up.z = 1,
-        .fovy = 70,
-        .projection = CAMERA_PERSPECTIVE,
-    },
-    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
-
-    .spawn_point = {3, -6, 9},
-};
-
 v3i32 target_coordinates_feet; /*temp*/
 
-// ---- functions --------------------------------------------------------------
-bool get_double_press(player *player, KeyboardKey key)
+bool get_double_press(Player *player, KeyboardKey key)
 {
     static f64 double_press_start_time = 0;
     static KeyboardKey double_press_key = KEY_NULL;
@@ -58,7 +34,7 @@ bool get_double_press(player *player, KeyboardKey key)
     return false;
 }
 
-void parse_player_states(player *player)
+void parse_player_states(Player *player)
 {
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
@@ -100,7 +76,7 @@ void parse_player_states(player *player)
     }
 }
 
-void give_camera_movements_player(player *player)
+void give_camera_movements_player(Player *player)
 {
     if (!(state_menu_depth) && !(state & STATE_SUPER_DEBUG))
     {
@@ -181,7 +157,7 @@ void give_camera_movements_player(player *player)
     }
 }
 
-void give_camera_movements_debug_info(player *player)
+void give_camera_movements_debug_info(Player *player)
 {
     if (player->perspective == 0 || player->perspective == 1)
     {
@@ -251,7 +227,7 @@ bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
     return true;
 }
 
-void give_gravity(player *player)
+void give_gravity(Player *player)
 {
     if (player->state & STATE_FALLING)
         player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*dt);
@@ -259,7 +235,7 @@ void give_gravity(player *player)
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
 }
 
-void give_collision_static(player *player, v3i32 *target_coordinates_feet)
+void give_collision_static(Player *player, v3i32 *target_coordinates_feet)
 {
     i32 x = floorf(player->pos.x);
     i32 y = floorf(player->pos.y);

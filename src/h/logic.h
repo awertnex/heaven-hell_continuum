@@ -26,7 +26,7 @@
 #define PLAYER_SPEED_SNEAK      1.8f
 #define PLAYER_SPEED_SPRINT     4.0f
 
-typedef struct player
+typedef struct Player
 {
     str name[100];          // player in-game name
     Vector3 pos;            // player current coordinates in world
@@ -46,7 +46,7 @@ typedef struct player
     v3i32 previous_pos;     // for collision tunneling prevention
 
     v3i32 spawn_point;
-} player;
+} Player;
 
 // ---- states -----------------------------------------------------------------
 enum GameStates
@@ -105,20 +105,20 @@ enum PlayerStates
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
-extern player lily;
+extern Player lily;
 extern v3i32 target_coordinates_feet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
-bool    get_double_press(player *player, KeyboardKey key);
-void    parse_player_states(player *player);
-void    give_camera_movements_player(player *player);
-void    give_camera_movements_debug_info(player *player);
+bool    get_double_press(Player *player, KeyboardKey key);
+void    parse_player_states(Player *player);
+void    give_camera_movements_player(Player *player);
+void    give_camera_movements_debug_info(Player *player);
 bool    check_target_delta_position(Vector3 *coordinates, v3i32 *previous_target);
 bool    is_range_within_ff(f32 *pos, f32 start, f32 end);
 bool    is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
 bool    is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
-void    give_gravity(player *player);
-void    give_collision_static(player *player, v3i32 *target_coordinates_feet);
+void    give_gravity(Player *player);
+void    give_collision_static(Player *player, v3i32 *target_coordinates_feet);
 f64     get_time_ms();
 bool    get_timer(f64 *time_start, f32 interval);
 

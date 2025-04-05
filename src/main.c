@@ -1,7 +1,3 @@
-/* ==== section table ==========================================================
-_section_input =================================================================
- */
-
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -33,10 +29,32 @@ settings setting =
     .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
+Player lily =
+{
+    .name = "Lily",
+    .pos = {8, -6, -65},
+    .scl = {0.6f, 0.6f, 1.8f},
+    .pitch = -29,
+    .yaw = 121,
+    .m = 2,
+    .movement_speed = 10,
+    .container_state = 0,
+    .perspective = 0,
+
+    .camera =
+    {
+        .up.z = 1,
+        .fovy = 70,
+        .projection = CAMERA_PERSPECTIVE,
+    },
+    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+
+    .spawn_point = {3, -6, 9},
+};
 
 // ---- signatures -------------------------------------------------------------
 static void update_world();
-static void update_input(player *player);
+static void update_input(Player *player);
 static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
@@ -229,8 +247,7 @@ void update_world()
     EndDrawing();
 }
 
-// _section_input ==============================================================
-void update_input(player *player)
+void update_input(Player *player)
 {
     // ---- jumping ------------------------------------------------------------
     if (IsKeyPressed(BIND_JUMP))
