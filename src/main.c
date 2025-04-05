@@ -55,7 +55,6 @@ Player lily =
 // ---- signatures -------------------------------------------------------------
 static void update_world();
 static void update_input(Player *player);
-static void draw_default_grid();
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
@@ -97,6 +96,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
     setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
 
+    Model object = LoadModel("cube.obj");
     state |= STATE_ACTIVE;
     while (state & STATE_ACTIVE) // ---- game loop -----------------------------
     {
@@ -107,7 +107,10 @@ int main(int argc, char **argv) // ---- game init ------------------------------
             EndDrawing();
             update_menus();
         }
-        else update_world();
+        else
+        {
+            update_world();
+        }
 
         if (state & STATE_PAUSED)
         {
@@ -181,7 +184,7 @@ void update_world()
         give_collision_static(&lily, &target_coordinates_feet);
 
     if (state & STATE_DEBUG)
-        give_camera_movements_debug_info(&lily);
+        give_camera_movements_debug_info(&camera_debug_info, &lily);
     give_camera_movements_player(&lily);
 
     if (state_menu_depth || state & STATE_SUPER_DEBUG)
@@ -227,7 +230,7 @@ void update_world()
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1, 1, 1}, GREEN);
         draw_bounding_box(&lily.pos, &lily.scl);
-        draw_default_grid();
+        draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 
     EndMode3D();
@@ -440,32 +443,3 @@ void update_input(Player *player)
         state &= ~STATE_ACTIVE;
 }
 
-void draw_default_grid()
-{
-    rlPushMatrix();
-    rlBegin(RL_LINES);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, RAYWHITE);
-
-    draw_line_3d(v3izero, (v3i32){2, 0, 0}, COL_X);
-    draw_line_3d(v3izero, (v3i32){0, 2, 0}, COL_Y);
-    draw_line_3d(v3izero, (v3i32){0, 0, 2}, COL_Z);
-    rlEnd();
-    rlPopMatrix();
-}

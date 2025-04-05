@@ -45,10 +45,12 @@ enum BlockData
 
 typedef struct Chunk
 {
-    u8 loaded;
     v2i16 pos;
     u8 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
     u16 info[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    u8 loaded;
+    /*TODO: replace 'loaded' with a 'chunk_table' array of pointers to 'chunk_buf'
+      addresses and update pointer addresses as player enters or exits chunks */
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
@@ -59,16 +61,18 @@ extern u64 block_count; //debug mode
 extern u64 quad_count; //debug mode
 
 // ---- signatures -------------------------------------------------------------
-void    init_chunking();
-void    add_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void    remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void    parse_chunk_states(Chunk *chunk, u16 height);
-Chunk*  get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
-void    draw_chunk(Chunk *chunk, u16 height);
-void    draw_block(u32 block_state);
-void    draw_block_wires(v3i32 *pos);
-void    draw_bounding_box(Vector3 *origin, Vector3 *scl);
-void    draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
+void init_chunking();
+void load_chunks();
+void unload_chunks();
+void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void parse_chunk_states(Chunk *chunk, u16 height);
+Chunk* get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
+void draw_chunk(Chunk *chunk, u16 height);
+void draw_block(u32 block_state);
+void draw_block_wires(v3i32 *pos);
+void draw_bounding_box(Vector3 *origin, Vector3 *scl);
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 
 #define CHUNKING_H
 #endif

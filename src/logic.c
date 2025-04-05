@@ -3,9 +3,7 @@
 #include <sys/time.h>
 
 #include "h/logic.h"
-#include "h/main.h"
 #include "h/chunking.h"
-#include "h/gui.h"
 
 // ---- variables --------------------------------------------------------------
 v3i32 target_coordinates_feet; /*temp*/
@@ -157,34 +155,34 @@ void give_camera_movements_player(Player *player)
     }
 }
 
-void give_camera_movements_debug_info(Player *player)
+void give_camera_movements_debug_info(Camera3D *camera, Player *player)
 {
     if (player->perspective == 0 || player->perspective == 1)
     {
-        camera_debug_info.position =
+        camera->position =
             (Vector3){
                 -cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
                 -sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
                 -sinf(player->pitch*DEG2RAD),
             };
-        camera_debug_info.up =
+        camera->up =
             (Vector3){
                 -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
                 -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
                 cosf(player->pitch*DEG2RAD),
             };
-        camera_debug_info.target = Vector3Zero();
+        camera->target = Vector3Zero();
     }
     else if (player->perspective == 2)
     {
-        camera_debug_info.position =
+        camera->position =
             (Vector3){
                 cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
                 sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
                 sinf(player->pitch*DEG2RAD),
             };
-        camera_debug_info.target = Vector3Zero();
-        camera_debug_info.up =
+        camera->target = Vector3Zero();
+        camera->up =
             (Vector3){
                 -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
                 -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
@@ -275,4 +273,34 @@ bool get_timer(f64 *time_start, f32 interval)
         return true;
     }
     return false;
+}
+
+void draw_default_grid(Color x, Color y, Color z)
+{
+    rlPushMatrix();
+    rlBegin(RL_LINES);
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, WHITE);
+    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, WHITE);
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, RAYWHITE);
+    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, RAYWHITE);
+
+    draw_line_3d(v3izero, (v3i32){2, 0, 0}, x);
+    draw_line_3d(v3izero, (v3i32){0, 2, 0}, y);
+    draw_line_3d(v3izero, (v3i32){0, 0, 2}, z);
+    rlEnd();
+    rlPopMatrix();
 }

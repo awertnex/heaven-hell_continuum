@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -7,13 +6,14 @@
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
 Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
+void *chunk_table[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
 Chunk *target_chunk = 0;
 u64 block_count = 0; //debug mode
 u64 quad_count = 0; //debug mode
 
 void init_chunking()
 {
-    memset(&chunk_buf, 0, sizeof(*chunk_buf));
+    //TODO: write something in 'init_chunking()'
 }
 
 //TODO: check chunk barrier faces
