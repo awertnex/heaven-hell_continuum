@@ -10,8 +10,9 @@ It still builds fine without `-std=c99`**
 
 
 ## downloads
-- [v0.1.3_linux-x86_64.tar.gz](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/v0.1.3_linux-x86_64.tar.gz)
-- [v0.1.3_linux-x86_64.zip](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/v0.1.3_linux-x86_64.zip)
+- [v0.1.3_linux-x86_64.tar.gz](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/minecraft_c-v0.1.3_linux-x86_64.tar.gz)
+- [v0.1.3_linux-x86_64.zip](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/minecraft_c-v0.1.3_linux-x86_64.zip)
+- unzip, launch and play
 
 
 ## build from source
