@@ -6,6 +6,7 @@
 #define VECTOR3_TYPES
 #include "defines.h"
 
+// ---- platform layer ---------------------------------------------------------
 #define WIDTH 1280
 #define HEIGHT 720
 #define MARGIN 20

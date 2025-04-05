@@ -21,6 +21,8 @@ WindowInfo win =
     .scl = {WIDTH, HEIGHT},
 };
 f64 start_time = 0;
+static f64 game_start_time = 0;
+static u64 game_tick = 0;
 u16 state = 0;
 u8 state_menu_depth = 0;
 settings setting =
@@ -85,7 +87,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
             BeginDrawing();
             ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
             EndDrawing();
-            update_menus(&lily.state);
+            update_menus();
         }
         else update_world();
 
@@ -98,7 +100,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
             while (state & STATE_PAUSED && state & STATE_ACTIVE)
             {
                 BeginDrawing();
-                update_menus(&lily.state);
+                update_menus();
                 EndDrawing();
             }
         }
@@ -114,6 +116,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
 void init_world()
 {
+    game_start_time = get_time_ms();
     hide_cursor;
     center_cursor;
 
@@ -150,6 +153,8 @@ void init_world()
 void update_world()
 {
     start_time = get_time_ms();
+    game_tick = (u64)((get_time_ms() - game_start_time)*20);
+    printf("tick: %lu\n", game_tick);
     win.scl = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);

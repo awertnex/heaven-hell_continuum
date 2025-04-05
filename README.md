@@ -12,7 +12,7 @@ It still builds fine without `-std=c99`**
 ## downloads
 - [v0.1.3_linux-x86_64.tar.gz](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/minecraft_c-v0.1.3_linux-x86_64.tar.gz)
 - [v0.1.3_linux-x86_64.zip](https://github.com/awertnex/minecraft.c/releases/download/v0.1.3/minecraft_c-v0.1.3_linux-x86_64.zip)
-- unzip, launch and play
+- unzip and launch
 
 
 ## build from source
@@ -46,14 +46,15 @@ if build successful, run minecraft.c with `./minecraft_c`\
     - extract it and move the extracted folder somewhere like `C:\` (preferrably) or `C:\Program Files`
     - add the path of the `bin` folder inside to the `path` environment variable
 
-```console
+```command
 git clone https://github.com/awertnex/minecraft.c.git
 cd minecraft.c
-gcc .\build.c -std=c99 -o build.exe :: -std=c99 optional, but preferred
+gcc .\build.c -std=c99 -o build.exe
 .\build.exe
 .\minecraft_c.exe
 ```
 if build successful, run minecraft.c with `minecraft_c.exe`\
+cflag `-std=c99` optional, but preferred
 
 **additional commands**
 - build launcher with `.\build launcher` and run with `.\launcher.exe`

@@ -1,4 +1,4 @@
-TODO: complete world_info.txt
+//TODO: complete world_info.txt
 # SETTING:                              NOTES:
 
 --defaults {
