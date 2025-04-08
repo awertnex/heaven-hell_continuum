@@ -1,6 +1,9 @@
 # changelog
 
-## v0.1.4-alpha - (08 Apr 2025)
+## v0.x.x (DD MMM YYYY)
+- - - -
+
+## v0.1.4-alpha (08 Apr 2025)
 - - - -
 - added windows support for build tool
 - created minecraft.c logo 'resources/logo/'
@@ -10,7 +13,7 @@
 - added day/night cycle
 - added compiled release_build for windows
 
-## Release - v0.1.3 - (03 Apr 2025)
+## Release - v0.1.3 (03 Apr 2025)
 - - - -
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard
@@ -18,7 +21,7 @@
 - made build system more difficult to read but easier to use (not tested on windows)
 
 - - - -
-## v0.1.2 - (01 Apr 2025)
+## v0.1.2 (01 Apr 2025)
 
 #### changes
 - can break and place blocks
@@ -38,7 +41,7 @@
 - made 'defines.h' a local file
 
 - - - -
-## v0.1.1 - (27 Mar 2025)
+## v0.1.1 (27 Mar 2025)
 
 #### changes
 - added many button names for menus and containers enum
@@ -54,7 +57,7 @@
 - added delta time
 
 - - - -
-## v0.1.0 - (24 Mar 2025)
+## v0.1.0 (24 Mar 2025)
 
 **first version, as I have started this project long before I version-controlled it with git**
 
