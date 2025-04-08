@@ -16,3 +16,4 @@ TASKS:
     - e.g. {1,1,1,3,3,7,1,5,5,2,2,2,2,2,2} -> {1x3,3x2,7,1,5x2,2x6}
 [x] figure out why the button "Back to Game" is inactive (26 Mar 2025)
 [ ] rewrite the entire gui, make it more flexible, scalable and modular
+[ ] make gameTick stop when game is paused, and save state on quit-to-title
