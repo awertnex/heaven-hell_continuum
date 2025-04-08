@@ -12,7 +12,7 @@ _section_tools =================================================================
 #include "h/dir.h"
 
 // ---- variables --------------------------------------------------------------
-u16 base_texture_size;
+u16 baseTextureSize;
 texture_layout OneSide;
 texture_layout TwoSide;
 texture_layout ThreeSide;
@@ -37,23 +37,23 @@ str block_names[3][NAME_MAX] =
 void init_texture_layouts()
 {
     OneSide =       (texture_layout){0, 0,                  0,                      0,                  0,                  0};
-    TwoSide =       (texture_layout){0, 0,                  base_texture_size,      0,                  0,                  base_texture_size};
-    ThreeSide =     (texture_layout){0, 0,                  base_texture_size,      0,                  0,                  (base_texture_size*2)};
-    ThreeSideAlt =  (texture_layout){0, base_texture_size,  (base_texture_size*2),  0,                  base_texture_size,  (base_texture_size*2)};
-    FourSide =      (texture_layout){0, base_texture_size,  (base_texture_size*2),  base_texture_size,  base_texture_size,  (base_texture_size*3)};
+    TwoSide =       (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  baseTextureSize};
+    ThreeSide =     (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  (baseTextureSize*2)};
+    ThreeSideAlt =  (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  0,                  baseTextureSize,  (baseTextureSize*2)};
+    FourSide =      (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  baseTextureSize,  baseTextureSize,  (baseTextureSize*3)};
 }
 
 void init_textures()
 {
-    base_texture_size = 16;
+    baseTextureSize = 16;
 
     str string[PATH_MAX + NAME_MAX] = {0};
     for (u8 i = 0; i < 3; ++i)
     {
         snprintf(string,
-                strlen(mc_c_subpath) + strlen(instance_directory_structure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
+                strlen(mc_c_subpath) + strlen(instanceDirStructure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
                 "%s%s%s",
-                mc_c_subpath, instance_directory_structure[MC_C_DIR_BLOCK], block_names[i]);
+                mc_c_subpath, instanceDirStructure[MC_C_DIR_BLOCK], block_names[i]);
 
         textures[i] = LoadTexture(string);
     }

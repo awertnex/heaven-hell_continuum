@@ -1,7 +1,6 @@
 #include "h/super_debugger.h"
 #include "h/gui.h"
 #include "h/logic.h"
-#include "h/main.h"
 
 // ---- variables --------------------------------------------------------------
 Texture2D texture_super_debugger;
@@ -22,15 +21,15 @@ Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTO
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 
 // ---- functions --------------------------------------------------------------
-void init_super_debugger()
+void init_super_debugger(v2f32 renderSize)
 {
     buttons[BTN_SDB_ADD] = 1;
     buttons[BTN_SDB_SUB] = 1;
 
     texture_super_debugger = LoadTexture("resources/gui/container/super_debugger.png");
     DebugRectangle.scl.x = 300;
-    DebugRectangle.scl.y = win.scl.y - ((MARGIN + SDB_BASE_SIZE)*2);
-    DebugRectangle.pos.x = win.scl.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
+    DebugRectangle.scl.y = renderSize.y - ((MARGIN + SDB_BASE_SIZE)*2);
+    DebugRectangle.pos.x = renderSize.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
     DebugRectangle.pos.y = MARGIN + SDB_BASE_SIZE;
 }
 
@@ -42,12 +41,12 @@ void free_super_debugger()
     UnloadTexture(texture_super_debugger);
 }
 
-void draw_super_debugger()
+void draw_super_debugger(v2f32 renderSize)
 {
     if (!(state & STATE_SUPER_DEBUG)) return;
 
-    DebugRectangle.scl.y = win.scl.y - ((MARGIN + SDB_BASE_SIZE)*2);
-    DebugRectangle.pos.x = win.scl.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
+    DebugRectangle.scl.y = renderSize.y - ((MARGIN + SDB_BASE_SIZE)*2);
+    DebugRectangle.pos.x = renderSize.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 
     // ---- draw base ----------------------------------------------------------
     draw_texture_simple(texture_super_debugger, DebugRectangle.rect_center,

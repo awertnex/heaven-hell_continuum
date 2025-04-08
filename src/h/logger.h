@@ -25,7 +25,7 @@ enum LogLevel
 
 b8 init_logger();
 void close_logger();
-void log_output(u8 log_level, const str* message, ...);
+void log_output(u8 logLevel, const str* message, ...);
 
 #define LOGFATAL(message, ...) log_output(LOGGER_FATAL, message, ##__VA_ARGS__)
 #define LOGWARNING(message, ...) log_output(LOGGER_WARNING, message, ##__VA_ARGS__)
