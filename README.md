@@ -24,7 +24,7 @@ cd minecraft.c/
 cc build.c -std=c99 -o build # -std=c99 optional, but preferred
 ./build
 ```
-if build successful, run minecraft.c with `./minecraft_c`\
+if build successful, run minecraft.c with `./minecraft_c`
 
 **additional commands**
 - build launcher with `./build launcher` and run with `./launcher`
