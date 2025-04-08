@@ -16,13 +16,7 @@
 #define MODE_GRAVITY        1
 #define MODE_GRAY_BLOCKS    1
 
-typedef struct Window
-{
-    v2f32 scl;
-} WindowInfo;
-
 // ---- declarations -----------------------------------------------------------
-extern WindowInfo win;
 extern f64 delta_time;
 extern f64 start_time;
 #define dt GetFrameTime()

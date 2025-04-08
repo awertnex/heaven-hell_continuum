@@ -10,7 +10,7 @@
 #define hide_cursor HideCursor()
 #define center_cursor SetMousePosition(WIDTH/2, HEIGHT/2)
 #define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
-#define draw_menu_overlay DrawRectangle(0, 0, win.scl.x, win.scl.y, COL_MENU_BG_OVERLAY)
+#define draw_menu_overlay DrawRectangle(0, 0, renderSize.x, renderSize.y, COL_MENU_BG_OVERLAY)
 
 // ---- colors -----------------------------------------------------------------
 #define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xFF, 0x46)

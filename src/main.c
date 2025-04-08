@@ -12,10 +12,7 @@
 #endif // PLATFORM
 
 // ---- variables --------------------------------------------------------------
-WindowInfo win =
-{
-    .scl = {WIDTH, HEIGHT},
-};
+v2f32 renderSize = {WIDTH, HEIGHT};
 f64 start_time = 0;
 static f64 game_start_time = 0;
 static u64 game_tick = 0;
@@ -175,7 +172,7 @@ void update_world()
     start_time = get_time_ms();
     game_tick = (u64)((get_time_ms() - game_start_time)*20);
     printf("tick: %lu\n", game_tick);
-    win.scl = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
 
