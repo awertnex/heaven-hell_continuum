@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dependencies/raylib-5.5/src/raylib.h"
 
 // ---- movement ---------------------------------------------------------------
