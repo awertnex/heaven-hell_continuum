@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define TRUE        1
+#define FALSE       0
+
 // ---- data types -------------------------------------------------------------
 typedef uint8_t		u8;
 typedef uint16_t	u16;

@@ -113,14 +113,15 @@ bool get_double_press(Player *player, KeyboardKey key);
 void parse_player_states(Player *player);
 void give_camera_movements_player(Player *player);
 void give_camera_movements_debug_info(Camera3D *camera, Player *player);
-bool check_target_delta_position(Vector3 *coordinates, v3i32 *previous_target);
-bool is_range_within_ff(f32 *pos, f32 start, f32 end);
-bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
-bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
+b8 check_target_delta_position(Vector3 *coordinates, v3i32 *previous_target);
+b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
+b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
+b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
+b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void give_gravity(Player *player);
 void give_collision_static(Player *player, v3i32 *target_coordinates_feet);
 f64 get_time_ms();
-bool get_timer(f64 *time_start, f32 interval);
+b8 get_timer(f64 *time_start, f32 interval);
 
 void draw_default_grid(Color x, Color y, Color z);
 

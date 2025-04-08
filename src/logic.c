@@ -225,6 +225,13 @@ bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
     return true;
 }
 
+b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
+{
+    if (target_chunk->i[player->previous_target.z][player->previous_target.y][player->previous_target.x])
+        return true;
+    return false;
+}
+
 void give_gravity(Player *player)
 {
     if (player->state & STATE_FALLING)
