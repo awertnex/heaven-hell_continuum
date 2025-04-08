@@ -56,7 +56,6 @@ Player lily =
 static void update_world();
 static void update_input(Player *player);
 
-Model object;
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
     //TODO: make bounding boxes n all that disappear if 'debug' argv not mentioned
@@ -97,7 +96,6 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
     setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
 
-    object = LoadModel("cube.obj");
     state |= STATE_ACTIVE;
     while (state & STATE_ACTIVE) // ---- game loop -----------------------------
     {
@@ -207,8 +205,6 @@ void update_world()
         draw_chunk(&chunk_buf[0][6], 9);
         draw_chunk(&chunk_buf[0][7], 2);
     }
-    //TODO: share loaded models
-    DrawModel(object, Vector3Zero(), 10.0f, RAYWHITE);
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
