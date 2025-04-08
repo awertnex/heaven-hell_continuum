@@ -66,3 +66,7 @@ cflag `-std=c99` optional, but preferred
 - build test [n] with `build test [n]`
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to execute by index [n]
 - help `build --help`
+
+## Contributors (alpha testing - windows)
+- [sofia](https://github.com/EdgySofia666)
+
