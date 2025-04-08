@@ -11,8 +11,8 @@
 
 #define GRAVITY (9.7803267715f/100.0f)
 #define PI 3.14159265358979323846f
-#define DEG2RAD (PI/180.0f)
-#define RAD2DEG (180.0f/PI)
+#define MC_C_DEG2RAD 0.017453293f   // PI/180.0f
+#define MC_C_RAD2DEG 57.295779513f  // 180.0f/PI
 
 #define sqr(x) ((x)*(x))
 #define v3izero ((v3i32){0, 0, 0})
