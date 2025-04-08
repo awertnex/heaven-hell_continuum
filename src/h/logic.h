@@ -32,18 +32,18 @@ typedef struct Player
     Vector3 pos;            // player current coordinates in world
     Vector3 scl;            // player size for collision detection
     f32 pitch, yaw;         // for player camera direction and target
-    v3f32 v;                // for physics calculations
-    f32 m;                  // for physics calculations
-    f32 movementSpeed;     // depends on enum: PlayerStates
-    u64 containerState;    // enum: ContainerStates
+    v3f32 v;                // velocity
+    f32 m;                  // mass
+    f32 movementSpeed;      // depends on enum: PlayerStates
+    u64 containerState;     // enum: ContainerStates
     u8 perspective;         // camera perspective mode
     u16 state;              // enum: PlayerStates
 
     Camera3D camera;
-    f32 cameraDistance;    // for camera collision detection
+    f32 cameraDistance;     // for camera collision detection
 
     v3i32 lastTarget;
-    v3i32 lastPos;     // for collision tunneling prevention
+    v3i32 lastPos;          // for collision tunneling prevention
 
     v3i32 spawnPoint;
 } Player;
