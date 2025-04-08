@@ -1,15 +1,14 @@
 # changelog
 
-## v0.1.4-alpha - (DD Apr 2025)
+## v0.1.4-alpha - (08 Apr 2025)
 - - - -
 - added windows support for build tool
-- finished windows support for build tool
 - created minecraft.c logo 'resources/logo/'
 - added platform layer C files 'linux_minecraft.c' and 'windows_minecraft.c'
-- finished writing platform layers
 - compiled and ran on windows successfully
 - added game ticking
 - added day/night cycle
+- added compiled release_build for windows
 
 ## Release - v0.1.3 - (03 Apr 2025)
 - - - -
