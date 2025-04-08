@@ -16,6 +16,7 @@ v2f32 renderSize = {WIDTH, HEIGHT};
 f64 start_time = 0;
 static f64 game_start_time = 0;
 static u64 game_tick = 0;
+static u64 game_days = 0;
 u16 state = 0;
 u8 state_menu_depth = 0;
 settings setting =
@@ -55,14 +56,8 @@ static void update_input(Player *player);
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
-    //TODO: make bounding boxes n all that disappear if 'debug' argv not mentioned
-    if (argc > 1)
-    {
-        if (strncmp(argv[1], "debug ", 6))
-        {
-            LOGDEBUG("%s", "Debugging Enabled");
-        }
-    }
+    if (MODE_DEBUG)
+        LOGDEBUG("%s", "Debugging Enabled");
 
     init_paths();
     //TODO: load textures
@@ -160,7 +155,7 @@ void init_world()
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
 
-    if (LOGGING_DEBUG)
+    if (MODE_DEBUG)
         lily.state |= STATE_FLYING;
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
@@ -171,6 +166,11 @@ void update_world()
 {
     start_time = get_time_ms();
     game_tick = (u64)((get_time_ms() - game_start_time)*20);
+    if (game_tick >= SETTING_DAY_TICKS_MAX)
+    {
+	game_tick = 0;
+	++game_days;
+    }
     printf("tick: %lu\n", game_tick);
     renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
@@ -228,7 +228,7 @@ void update_world()
         }
     }
 
-    if (LOGGING_DEBUG)
+    if (MODE_DEBUG)
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);

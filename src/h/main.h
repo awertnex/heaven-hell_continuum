@@ -11,7 +11,7 @@
 #define HEIGHT 720
 #define MARGIN 20
 
-#define MODE_DEBUG          0
+#define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
 #define MODE_GRAY_BLOCKS    1

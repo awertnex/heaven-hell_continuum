@@ -6,6 +6,7 @@
 // ---- internal ---------------------------------------------------------------
 #define SETTING_CAMERA_DISTANCE_MAX         4
 #define SETTING_REACH_DISTANCE_MAX          5
+#define SETTING_DAY_TICKS_MAX               24000
 
 // ---- options menu -----------------------------------------------------------
 #define SETTING_FOV_DEFAULT                 70
