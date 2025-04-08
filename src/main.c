@@ -81,7 +81,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     init_fonts();
     init_gui();
     apply_render_settings(renderSize);
-    init_super_debugger();
+    init_super_debugger(renderSize);
 
     // TODO: fix rendering issues when resizing window
     SetWindowState(FLAG_WINDOW_RESIZABLE);
@@ -172,7 +172,6 @@ void update_world()
 	gameTick = 0;
 	++gameDays;
     }
-    printf("tick: %lu\n", gameTick);
     renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
@@ -253,7 +252,7 @@ void update_world()
         }
     }
 
-    draw_super_debugger();
+    draw_super_debugger(renderSize);
     EndDrawing();
 }
 
