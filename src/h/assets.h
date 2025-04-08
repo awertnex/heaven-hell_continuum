@@ -38,9 +38,9 @@ enum BlockID
 
 typedef struct block
 {
-    u8 block_id;
-    u16 block_state;
-    void *texture_layout;
+    u8 blockId;
+    u16 blockState;
+    void *textureLayout;
     void *texture;
 } block;
 
@@ -51,16 +51,16 @@ typedef struct texture_layout
 } texture_layout;
 
 // ---- declarations -----------------------------------------------------------
-extern u16 base_texture_size;
+extern u16 baseTextureSize;
 extern texture_layout OneSide;
 extern texture_layout TwoSide;
 extern texture_layout ThreeSide;
 extern texture_layout ThreeSideAlt;
 extern texture_layout FourSide;
 
-extern Texture2D texture_block_grass;
-extern Texture2D texture_block_cobblestone;
-extern Texture2D texture_block_cobbled_deepslate;
+extern Texture2D textureBlockGrass;
+extern Texture2D textureBlockCobblestone;
+extern Texture2D textureBlockCobbledDeepslate;
 
 // ---- signatures -------------------------------------------------------------
 void init_texture_layouts();

@@ -5,67 +5,66 @@
 #include "dependencies/raylib-5.5/src/rlgl.h"
 
 #include "h/gui.h"
-#include "h/keymaps.h"
-#include "h/main.h"
+#include "keymaps.c"
 #include "h/chunking.h"
 #include "h/logic.h"
 
 // ---- variables --------------------------------------------------------------
 Vector2 cursor;
 Image mc_c_icon;
-Font font_regular;
-Font font_bold;
-Font font_italic;
-Font font_bold_italic;
-u8 font_size = 22;
-u8 text_row_height = 20;
+Font fontRegular;
+Font fontBold;
+Font fontItalic;
+Font fontBoldItalic;
+u8 fontSize = 22;
+u8 textRowHeight = 20;
 
-Texture2D texture_hud_widgets;
-Texture2D texture_container_inventory;
+Texture2D textureHUDWidgets;
+Texture2D textureContainerInventory;
 
-Rectangle hud_hotbar =          {0, 0, 202, 22};
-Rectangle hud_hotbar_selected = {0, 22, 24, 24};
-Rectangle hud_hotbar_offhand =  {24, 22, 22, 24};
-Rectangle hud_crosshair =       {240, 0, 16, 16};
-Rectangle button_inactive =     {0, 46, 200, 20};
+Rectangle hotbar =          {0, 0, 202, 22};
+Rectangle hotbarSelected = {0, 22, 24, 24};
+Rectangle hotbarOffhand =  {24, 22, 22, 24};
+Rectangle crosshair =       {240, 0, 16, 16};
+Rectangle buttonInactive =     {0, 46, 200, 20};
 Rectangle button =              {0, 66, 200, 20};
-Rectangle button_selected =     {0, 86, 200, 20};
-Rectangle container_inventory = {0, 0, 176, 184};
-Rectangle container_slot_size = {0, 0, 16, 16};
+Rectangle buttonSelected =     {0, 86, 200, 20};
+Rectangle containerInventory = {0, 0, 176, 184};
+Rectangle containerSlotSize = {0, 0, 16, 16};
 
-v2i16 hud_hotbar_position;
-f32 hud_hotbar_slot_selected = 1;
-v2i16 hud_crosshair_position;
-u16 game_menu_position = HEIGHT/3;
-u8 button_spacing_verical = 5;
-v2i16 container_inventory_position;
-v2i16 container_inventory_first_slot_position;
+v2i16 hotbarPosition;
+f32 hotbarSlotSelected = 1;
+v2i16 crosshairPosition;
+u16 gameMenuPosition = HEIGHT/3;
+u8 buttonSpacingVertical = 5;
+v2i16 containerInventoryPosition;
+v2i16 containerInventoryFirstSlotPosition;
 
 // TODO: you know what TODO
-u8 *container_inventory_slots[5][9];
-u8 *container_inventory_slots_crafting[5];
-u8 *container_inventory_slots_armor[5];
-u8 container_inventory_slots_offhand;
-u8 container_cursor_slot[2];
-u8 *hotbar_slots[9][9];
+u8 *containerInventorySlots[5][9];
+u8 *containerInventorySlotsCrafting[5];
+u8 *containerInventorySlotsArmor[5];
+u8 containerInventorySlotsOffhand;
+u8 containerCursorSlot[2];
+u8 *hotbarSlots[9][9];
 
-u16 menu_index;
-u16 menu_layer[5] = {0};
+u16 menuIndex;
+u16 menuLayer[5] = {0};
 u8 buttons[BTN_COUNT];
 static b8 check_menu_ready;
 
 // ---- debug info -------------------------------------------------------------
-str str_fps[16];
-str str_player_position[32];
-str str_player_block[32];
-str str_player_chunk[32];
-str str_player_direction[32];
-str str_block_count[32];
-str str_quad_count[32];
-str str_tri_count[32];
-str str_vertex_count[32];
-u8 font_size_debug_info = 22;
-Camera3D camera_debug_info =
+str strFPS[16];
+str strPlayerPos[32];
+str strPlayerBlock[32];
+str strPlayerChunk[32];
+str strPlayerDirection[32];
+str strBlockCount[32];
+str strQuadCount[32];
+str strTriCount[32];
+str strVertexCount[32];
+u8 fontSizeDebugInfo = 22;
+Camera3D cameraDebugInfo =
 {
     .up.z = 1,
     .fovy = 50,
@@ -91,17 +90,17 @@ static void print_menu_layers()
     printf("menu layers:\n");
     for (u8 i = 0; i < 9; ++i)
     {
-        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
+        printf("layer %1d: %s\n", i, menu_names[menuLayer[i]]);
     }
     putchar('\n');
 }
 
 void init_fonts()
 {
-    font_regular =                  LoadFont("fonts/minecraft_regular.otf");
-    font_bold =                     LoadFont("fonts/minecraft_bold.otf");
-    font_italic =                   LoadFont("fonts/minecraft_italic.otf");
-    font_bold_italic =              LoadFont("fonts/minecraft_bold_italic.otf");
+    fontRegular =                  LoadFont("fonts/minecraft_regular.otf");
+    fontBold =                     LoadFont("fonts/minecraft_bold.otf");
+    fontItalic =                   LoadFont("fonts/minecraft_italic.otf");
+    fontBoldItalic =              LoadFont("fonts/minecraft_bold_italic.otf");
 }
 
 void init_gui()
@@ -109,59 +108,58 @@ void init_gui()
     mc_c_icon = LoadImage("resources/logo/128x128.png");
     SetWindowIcon(mc_c_icon);
 
-    texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
-    texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
+    textureHUDWidgets =           LoadTexture("resources/gui/widgets.png");
+    textureContainerInventory =   LoadTexture("resources/gui/containers/inventory.png");
 
-    menu_index = MENU_TITLE;
-    state_menu_depth = 1;
+    menuIndex = MENU_TITLE;
+    stateMenuDepth = 1;
     memset(buttons, 0, BTN_COUNT);
-    apply_render_settings();
 }
 
-void apply_render_settings()
+void apply_render_settings(v2f32 renderSize)
 {
-    hud_hotbar_position =
+    hotbarPosition =
         (v2i16){
-            roundf((win.scl.x/2) - ((f32)hud_hotbar.width/2)),
-            win.scl.y - hud_hotbar.height - 2,
+            roundf((renderSize.x/2) - ((f32)hotbar.width/2)),
+            renderSize.y - hotbar.height - 2,
         };
-    hud_crosshair_position =
+    crosshairPosition =
         (v2i16){
-            (win.scl.x/2) - ((f32)hud_crosshair.width/2),
-            (win.scl.y/2) - ((f32)hud_crosshair.height/2),
+            (renderSize.x/2) - ((f32)crosshair.width/2),
+            (renderSize.y/2) - ((f32)crosshair.height/2),
         };
-    container_inventory_position = (v2i16){
-        roundf((win.scl.x/2) - ((f32)container_inventory.width/2)),
-        roundf((win.scl.y/2) - ((f32)container_inventory.height/2)),
+    containerInventoryPosition = (v2i16){
+        roundf((renderSize.x/2) - ((f32)containerInventory.width/2)),
+        roundf((renderSize.y/2) - ((f32)containerInventory.height/2)),
     };
 }
 
 void free_gui()
 {
     UnloadImage(mc_c_icon);
-    UnloadFont(font_regular);
-    UnloadFont(font_bold);
-    UnloadFont(font_italic);
-    UnloadFont(font_bold_italic);
-    UnloadTexture(texture_hud_widgets);
-    UnloadTexture(texture_container_inventory);
+    UnloadFont(fontRegular);
+    UnloadFont(fontBold);
+    UnloadFont(fontItalic);
+    UnloadFont(fontBoldItalic);
+    UnloadTexture(textureHUDWidgets);
+    UnloadTexture(textureContainerInventory);
 }
 
-void update_menus()
+void update_menus(v2f32 renderSize)
 {
-    if (!menu_index)
+    if (!menuIndex)
         return;
 
-    if (IsKeyPressed(BIND_QUIT))
+    if (IsKeyPressed(bindQuit))
         state &= ~STATE_ACTIVE;
 
     detect_cursor;
-    switch (menu_index)
+    switch (menuIndex)
     {
         case MENU_TITLE:
             if (!check_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_TITLE;
+                menuLayer[stateMenuDepth] = MENU_TITLE;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_SINGLEPLAYER] = 1;
                 buttons[BTN_MULTIPLAYER] = 1;
@@ -171,38 +169,38 @@ void update_menus()
                 check_menu_ready = 1;
             }
 
-            draw_text(font_regular, MC_C_VERSION,
-                    (v2i16){0, win.scl.y - font_size},
-                    font_size, 2, COL_TEXT_DEFAULT);
+            draw_text(fontRegular, MC_C_VERSION,
+                    (v2i16){0, renderSize.y - fontSize},
+                    fontSize, 2, COL_TEXT_DEFAULT);
 
             rlBegin(RL_QUADS);
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition},
                     BTN_SINGLEPLAYER,
                     &btn_func_singleplayer,
                     "Singleplayer");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + ((button.height + button_spacing_verical)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
                     BTN_MULTIPLAYER,
                     &btn_func_multiplayer,
                     "Multiplayer");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*2)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
                     BTN_MINECRAFT_C_REALMS,
                     &btn_func_minecraft_c_realms,
                     "Minecraft.c Realms");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*3)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
                     BTN_OPTIONS,
                     &btn_func_options,
                     "Options...");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*4)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
                     BTN_QUIT,
                     &btn_func_quit,
                     "Quit Game");
@@ -214,7 +212,7 @@ void update_menus()
         case MENU_OPTIONS:
             if (!check_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_OPTIONS;
+                menuLayer[stateMenuDepth] = MENU_OPTIONS;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
@@ -234,8 +232,8 @@ void update_menus()
 
             rlBegin(RL_QUADS);
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition},
                     BTN_DONE,
                     &btn_func_back,
                     "Done");
@@ -247,7 +245,7 @@ void update_menus()
         case MENU_OPTIONS_GAME:
             if (!check_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_OPTIONS_GAME;
+                menuLayer[stateMenuDepth] = MENU_OPTIONS_GAME;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
@@ -267,8 +265,8 @@ void update_menus()
 
             rlBegin(RL_QUADS);
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition},
                     BTN_DONE,
                     &btn_func_back,
                     "Done");
@@ -281,7 +279,7 @@ void update_menus()
         case MENU_GAME:
             if (!check_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_GAME;
+                menuLayer[stateMenuDepth] = MENU_GAME;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_BACK_TO_GAME] = 1;
                 buttons[BTN_ADVANCEMENTS] = 1;
@@ -291,37 +289,37 @@ void update_menus()
                 check_menu_ready = 1;
             }
 
-            if (IsKeyPressed(BIND_PAUSE))
+            if (IsKeyPressed(bindPause))
                 btn_func_back_to_game();
 
             rlBegin(RL_QUADS);
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition},
                     BTN_BACK_TO_GAME,
                     &btn_func_back_to_game,
                     "Back to Game");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + ((button.height + button_spacing_verical)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
                     BTN_ADVANCEMENTS,
                     &btn_func_options_game,
                     "Advancements");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*2)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
                     BTN_GIVE_FEEDBACK,
                     &btn_func_options_game,
                     "Give Feedback");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*3)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
                     BTN_OPTIONS_GAME,
                     &btn_func_options_game,
                     "Options...");
 
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){win.scl.x/2, game_menu_position + (((button.height + button_spacing_verical)*4)*setting.gui_scale)},
+            draw_button(textureHUDWidgets, button,
+                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
                     BTN_QUIT,
                     &btn_func_save_and_quit_to_title,
                     "Save and Quit to Title");
@@ -336,50 +334,50 @@ void draw_hud()
 {
     rlBegin(RL_QUADS);
 
-    draw_texture(texture_hud_widgets, hud_hotbar,
-            hud_hotbar_position, 
+    draw_texture(textureHUDWidgets, hotbar,
+            hotbarPosition, 
             (v2i16){
-            setting.gui_scale,
-            setting.gui_scale}, COL_TEXTURE_DEFAULT);
+            setting.guiScale,
+            setting.guiScale}, COL_TEXTURE_DEFAULT);
 
-    draw_texture(texture_hud_widgets, hud_hotbar_selected,
+    draw_texture(textureHUDWidgets, hotbarSelected,
             (v2i16){
-            (hud_hotbar_position.x - 1) + ((hud_hotbar.height - 2)*(hud_hotbar_slot_selected - 1)),
-            hud_hotbar_position.y - 1}, 
+            (hotbarPosition.x - 1) + ((hotbar.height - 2)*(hotbarSlotSelected - 1)),
+            hotbarPosition.y - 1}, 
             (v2i16){
-            setting.gui_scale,
-            setting.gui_scale}, COL_TEXTURE_DEFAULT);
+            setting.guiScale,
+            setting.guiScale}, COL_TEXTURE_DEFAULT);
 
-    draw_texture(texture_hud_widgets, hud_hotbar_offhand,
+    draw_texture(textureHUDWidgets, hotbarOffhand,
             (v2i16){
-            hud_hotbar_position.x - (hud_hotbar.height*2),
-            hud_hotbar_position.y}, 
+            hotbarPosition.x - (hotbar.height*2),
+            hotbarPosition.y}, 
             (v2i16){
-            setting.gui_scale,
-            setting.gui_scale}, COL_TEXTURE_DEFAULT);
+            setting.guiScale,
+            setting.guiScale}, COL_TEXTURE_DEFAULT);
 
     if (!(state & STATE_DEBUG))
-        draw_texture(texture_hud_widgets, hud_crosshair,
-                hud_crosshair_position, 
+        draw_texture(textureHUDWidgets, crosshair,
+                crosshairPosition, 
                 (v2i16){
-                setting.gui_scale,
-                setting.gui_scale}, COL_TEXTURE_DEFAULT);
+                setting.guiScale,
+                setting.guiScale}, COL_TEXTURE_DEFAULT);
 
     rlEnd();
     rlSetTexture(0);
 }
 
-void draw_inventory()
+void draw_inventory(v2f32 renderSize)
 {
-    draw_menu_overlay;
+    draw_menu_overlay(renderSize);
     rlBegin(RL_QUADS);
 
-    draw_texture(texture_container_inventory,
-            container_inventory,
-            container_inventory_position, 
+    draw_texture(textureContainerInventory,
+            containerInventory,
+            containerInventoryPosition, 
             (v2i16){
-            setting.gui_scale,
-            setting.gui_scale}, COL_TEXTURE_DEFAULT);
+            setting.guiScale,
+            setting.guiScale}, COL_TEXTURE_DEFAULT);
 
     rlEnd();
     rlSetTexture(0);
@@ -392,27 +390,27 @@ void draw_debug_info()
     update_debug_strings();
 
     // TODO: rewrite DrawRectangle, get rectangle correct size for font
-    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(font_regular, str_fps,                font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height,     get_str_width(font_regular, str_player_position,    font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*2,   get_str_width(font_regular, str_player_block,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*3,   get_str_width(font_regular, str_player_chunk,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*4,   get_str_width(font_regular, str_player_direction,   font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*5,   get_str_width(font_regular, str_block_count,        font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*6,   get_str_width(font_regular, str_quad_count,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*7,   get_str_width(font_regular, str_tri_count,          font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height*8,   get_str_width(font_regular, str_vertex_count,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(fontRegular, strFPS,                fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,     get_str_width(fontRegular, strPlayerPos,    fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*2,   get_str_width(fontRegular, strPlayerBlock,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*3,   get_str_width(fontRegular, strPlayerChunk,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*4,   get_str_width(fontRegular, strPlayerDirection,   fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*5,   get_str_width(fontRegular, strBlockCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*6,   get_str_width(fontRegular, strQuadCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
 
-    draw_text(font_regular, str_fps,                (v2i16){MARGIN, MARGIN},                        font_size_debug_info, 1, COL_STATS_1);
-    draw_text(font_regular, str_player_position,    (v2i16){MARGIN, MARGIN + text_row_height},      font_size_debug_info, 1, COL_STATS_2);
-    draw_text(font_regular, str_player_block,       (v2i16){MARGIN, MARGIN + text_row_height*2},    font_size_debug_info, 1, COL_STATS_2);
-    draw_text(font_regular, str_player_chunk,       (v2i16){MARGIN, MARGIN + text_row_height*3},    font_size_debug_info, 1, COL_STATS_2);
-    draw_text(font_regular, str_player_direction,   (v2i16){MARGIN, MARGIN + text_row_height*4},    font_size_debug_info, 1, COL_STATS_2);
-    draw_text(font_regular, str_block_count,        (v2i16){MARGIN, MARGIN + text_row_height*5},    font_size_debug_info, 1, COL_STATS_3);
-    draw_text(font_regular, str_quad_count,         (v2i16){MARGIN, MARGIN + text_row_height*6},    font_size_debug_info, 1, COL_STATS_3);
-    draw_text(font_regular, str_tri_count,          (v2i16){MARGIN, MARGIN + text_row_height*7},    font_size_debug_info, 1, COL_STATS_3);
-    draw_text(font_regular, str_vertex_count,       (v2i16){MARGIN, MARGIN + text_row_height*8},    font_size_debug_info, 1, COL_STATS_3);
+    draw_text(fontRegular, strFPS,                (v2i16){MARGIN, MARGIN},                        fontSizeDebugInfo, 1, COL_STATS_1);
+    draw_text(fontRegular, strPlayerPos,    (v2i16){MARGIN, MARGIN + textRowHeight},      fontSizeDebugInfo, 1, COL_STATS_2);
+    draw_text(fontRegular, strPlayerBlock,       (v2i16){MARGIN, MARGIN + textRowHeight*2},    fontSizeDebugInfo, 1, COL_STATS_2);
+    draw_text(fontRegular, strPlayerChunk,       (v2i16){MARGIN, MARGIN + textRowHeight*3},    fontSizeDebugInfo, 1, COL_STATS_2);
+    draw_text(fontRegular, strPlayerDirection,   (v2i16){MARGIN, MARGIN + textRowHeight*4},    fontSizeDebugInfo, 1, COL_STATS_2);
+    draw_text(fontRegular, strBlockCount,        (v2i16){MARGIN, MARGIN + textRowHeight*5},    fontSizeDebugInfo, 1, COL_STATS_3);
+    draw_text(fontRegular, strQuadCount,         (v2i16){MARGIN, MARGIN + textRowHeight*6},    fontSizeDebugInfo, 1, COL_STATS_3);
+    draw_text(fontRegular, strTriCount,          (v2i16){MARGIN, MARGIN + textRowHeight*7},    fontSizeDebugInfo, 1, COL_STATS_3);
+    draw_text(fontRegular, strVertexCount,       (v2i16){MARGIN, MARGIN + textRowHeight*8},    fontSizeDebugInfo, 1, COL_STATS_3);
 
-    BeginMode3D(camera_debug_info);
+    BeginMode3D(cameraDebugInfo);
     rlBegin(RL_LINES);
     draw_line_3d(v3izero, (v3i32){1, 0, 0}, COL_X);
     draw_line_3d(v3izero, (v3i32){0, 1, 0}, COL_Y);
@@ -445,7 +443,7 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
         {
             if ((codepoint != ' ') && (codepoint != '\t'))
             {
-                DrawTextCodepoint(font_bold, codepoint,
+                DrawTextCodepoint(fontBold, codepoint,
                         (Vector2){pos.x + textOffsetX + 1, pos.y + textOffsetY + 1},
                         font_size, ColorAlpha(ColorBrightness(tint, -0.1f), 0.4f));
 
@@ -555,17 +553,17 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
 
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, void (*func)(), const str *str)
 {
-    pos.x -= (button.width*setting.gui_scale)/2;
-    pos.y -= (button.height*setting.gui_scale)/2;
+    pos.x -= (button.width*setting.guiScale)/2;
+    pos.y -= (button.height*setting.guiScale)/2;
     v2i16 text_offset = {pos.x + button.width/2, pos.y + button.height/2};
 
     if (buttons[btn_state])
     {
-        if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.gui_scale)
-                && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.gui_scale))
+        if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.guiScale)
+                && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.guiScale))
         {
             draw_texture(texture, button, pos,
-                    (v2i16){setting.gui_scale, setting.gui_scale},
+                    (v2i16){setting.guiScale, setting.guiScale},
                     ColorTint(COL_TEXTURE_DEFAULT, TINT_BUTTON_HOVER));
 
             if (IsMouseButtonPressed(0))
@@ -574,22 +572,22 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
         else
         {
             draw_texture(texture, button, pos, 
-                    (v2i16){setting.gui_scale, setting.gui_scale},
+                    (v2i16){setting.guiScale, setting.guiScale},
                     COL_TEXTURE_DEFAULT);
         }
 
-        if (str) draw_text_centered(font_regular, str, text_offset, button.height*0.7f, 1, COL_TEXT_DEFAULT, 1);
+        if (str) draw_text_centered(fontRegular, str, text_offset, button.height*0.7f, 1, COL_TEXT_DEFAULT, 1);
     }
-    else draw_texture(texture, button_inactive, pos, 
+    else draw_texture(texture, buttonInactive, pos, 
             (v2i16){
-            setting.gui_scale,
-            setting.gui_scale}, COL_TEXTURE_DEFAULT);
+            setting.guiScale,
+            setting.guiScale}, COL_TEXTURE_DEFAULT);
 }
 
 void btn_func_singleplayer()
 {
-    menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
-    state_menu_depth = 0; //TODO: set actual value (2)
+    menuIndex = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
+    stateMenuDepth = 0; //TODO: set actual value (2)
     check_menu_ready = 0;
     state &= ~STATE_PAUSED;
 
@@ -598,36 +596,36 @@ void btn_func_singleplayer()
 
 void btn_func_multiplayer()
 {
-    menu_index = MENU_MULTIPLAYER;
-    state_menu_depth = 2;
+    menuIndex = MENU_MULTIPLAYER;
+    stateMenuDepth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_minecraft_c_realms()
 {
-    menu_index = MENU_MINECRAFT_C_REALMS;
-    state_menu_depth = 2;
+    menuIndex = MENU_MINECRAFT_C_REALMS;
+    stateMenuDepth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_options()
 {
-    menu_index = MENU_OPTIONS;
-    state_menu_depth = 2;
+    menuIndex = MENU_OPTIONS;
+    stateMenuDepth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_options_game()
 {
-    menu_index = MENU_OPTIONS_GAME;
-    state_menu_depth = 2;
+    menuIndex = MENU_OPTIONS_GAME;
+    stateMenuDepth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_back_to_game()
 {
-    menu_index = 0;
-    state_menu_depth = 0;
+    menuIndex = 0;
+    stateMenuDepth = 0;
     check_menu_ready = 0;
     state &= ~STATE_PAUSED;
     lily.state &= ~STATE_MENU_OPEN;
@@ -640,8 +638,8 @@ void btn_func_quit()
 
 void btn_func_save_and_quit_to_title()
 {
-    menu_index = MENU_TITLE;
-    state_menu_depth = 1;
+    menuIndex = MENU_TITLE;
+    stateMenuDepth = 1;
     check_menu_ready = 0;
     // TODO: save and unload world
     state &= ~STATE_WORLD_LOADED;
@@ -650,7 +648,7 @@ void btn_func_save_and_quit_to_title()
 
 void btn_func_back()
 {
-    --state_menu_depth;
-    menu_index = menu_layer[state_menu_depth];
+    --stateMenuDepth;
+    menuIndex = menuLayer[stateMenuDepth];
     check_menu_ready = 0;
 }

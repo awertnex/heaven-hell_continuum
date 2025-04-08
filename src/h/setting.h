@@ -6,6 +6,7 @@
 // ---- internal ---------------------------------------------------------------
 #define SETTING_CAMERA_DISTANCE_MAX         4
 #define SETTING_REACH_DISTANCE_MAX          5
+#define SETTING_DAY_TICKS_MAX               24000
 
 // ---- options menu -----------------------------------------------------------
 #define SETTING_FOV_DEFAULT                 70
@@ -27,16 +28,16 @@
 typedef struct settings
 {
     // ---- internal -----------------------------------------------------------
-    u8 reach_distance;  // for player reach (arm length basically)
+    u8 reachDistance;  // for player reach (arm length basically)
 
     // ---- options menu -------------------------------------------------------
     u16 fov;
-    u16 mouse_sensitivity;
+    u16 mouseSensitivity;
 
     // ---- video --------------------------------------------------------------
-    u8 render_distance;
+    u8 renderDistance;
     //TODO: repair
-    f32 gui_scale;
+    f32 guiScale;
 } settings;
 
 // ---- declarations -----------------------------------------------------------
