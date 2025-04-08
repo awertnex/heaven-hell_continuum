@@ -17,13 +17,13 @@
 #define MODE_GRAY_BLOCKS    1
 
 // ---- declarations -----------------------------------------------------------
-extern f64 delta_time;
-extern f64 start_time;
+extern f64 deltaTime;
+extern f64 startTime;
 #define dt GetFrameTime()
 
 extern u16 state;
-extern u8 state_menu_depth;
-extern v3i32 target_coordinates_feet; /*temp*/
+extern u8 stateMenuDepth;
+extern v3i32 targetCoordinatesFeet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
 int mc_mkdir(const char *path, u16 mode);

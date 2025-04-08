@@ -54,11 +54,11 @@ typedef struct Chunk
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
-extern u16 world_height;
-extern Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1];
-extern Chunk *target_chunk;
-extern u64 block_count; //debug mode
-extern u64 quad_count; //debug mode
+extern u16 worldHeight;
+extern Chunk chunkBuf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1];
+extern Chunk *targetChunk;
+extern u64 blockCount; //debug mode
+extern u64 quadCount; //debug mode
 
 // ---- signatures -------------------------------------------------------------
 void init_chunking();
@@ -69,10 +69,10 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void parse_chunk_states(Chunk *chunk, u16 height);
 Chunk* get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
 void draw_chunk(Chunk *chunk, u16 height);
-void draw_block(u32 block_state);
+void draw_block(u32 blockStates);
 void draw_block_wires(v3i32 *pos);
 void draw_bounding_box(Vector3 *origin, Vector3 *scl);
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
+void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color);
 
 #define CHUNKING_H
 #endif

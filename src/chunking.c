@@ -4,12 +4,12 @@
 #include "h/chunking.h"
 #include "h/logger.h"
 
-u16 world_height = WORLD_HEIGHT_NORMAL;
-Chunk chunk_buf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
+u16 worldHeight = WORLD_HEIGHT_NORMAL;
+Chunk chunkBuf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
 void *chunk_table[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
-Chunk *target_chunk = 0;
-u64 block_count = 0; //debug mode
-u64 quad_count = 0; //debug mode
+Chunk *targetChunk = 0;
+u64 blockCount = 0; //debug mode
+u64 quadCount = 0; //debug mode
 
 void init_chunking()
 {
@@ -38,7 +38,7 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
         chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] &= ~POSITIVE_Y) : (chunk->i[z][y][x] |= NEGATIVE_Y);
     else chunk->i[z][y][x] |= NEGATIVE_Y;
 
-    if (z < world_height - 1)
+    if (z < worldHeight - 1)
         chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] &= ~NEGATIVE_Z) : (chunk->i[z][y][x] |= POSITIVE_Z);
     else chunk->i[z][y][x] |= POSITIVE_Z;
     
@@ -67,7 +67,7 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
     if (y > 0)
         chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] |= POSITIVE_Y) : 0;
 
-    if (z < world_height - 1)
+    if (z < worldHeight - 1)
         chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] |= NEGATIVE_Z) : 0;
     
     if (z > 0)
@@ -85,19 +85,19 @@ void parse_chunk_states(Chunk *chunk, u16 height)
             {
                 add_block(chunk, x, y, z);
                 if (chunk->i[z][y][x])
-                    ++block_count;
+                    ++blockCount;
                 if (chunk->i[z][y][x] & POSITIVE_X)
-                    ++quad_count;
+                    ++quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_X)
-                    ++quad_count;
+                    ++quadCount;
                 if (chunk->i[z][y][x] & POSITIVE_Y)
-                    ++quad_count;
+                    ++quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_Y)
-                    ++quad_count;
+                    ++quadCount;
                 if (chunk->i[z][y][x] & POSITIVE_Z)
-                    ++quad_count;
+                    ++quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_Z)
-                    ++quad_count;
+                    ++quadCount;
             }
     chunk->loaded = 1;
 }
@@ -105,22 +105,22 @@ void parse_chunk_states(Chunk *chunk, u16 height)
 //TODO: revise, might not be needed
 Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 {
-    for (u8 y = 0; y < setting.render_distance*2; ++y)
+    for (u8 y = 0; y < setting.renderDistance*2; ++y)
     {
-        for (u8 x = 0; x < setting.render_distance*2; ++x)
+        for (u8 x = 0; x < setting.renderDistance*2; ++x)
         {
-            if (!chunk_buf[y][x].loaded)
+            if (!chunkBuf[y][x].loaded)
             {
                 *state &= ~flag;
                 return NULL;
             }
 
             if (
-                    chunk_buf[y][x].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
-                    chunk_buf[y][x].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
+                    chunkBuf[y][x].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
+                    chunkBuf[y][x].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
             {
                 *state |= flag;
-                return &chunk_buf[y][x];
+                return &chunkBuf[y][x];
             }
         }
     }

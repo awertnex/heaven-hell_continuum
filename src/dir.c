@@ -11,8 +11,8 @@
 str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
 str mc_c_launcher_path[PATH_MAX] = {0};
-str instance_directory_structure[17][NAME_MAX] = {0};
-str world_directory_structure[3][NAME_MAX] = {0};
+str instanceDirStructure[17][NAME_MAX] = {0};
+str worldDirStructure[3][NAME_MAX] = {0};
 
 // ---- functions --------------------------------------------------------------
 void init_paths()
@@ -57,11 +57,11 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
                     break;
 
                 case 1:
-                    snprintf(instance_directory_structure[j], strlen(string), "%s", string);
+                    snprintf(instanceDirStructure[j], strlen(string), "%s", string);
                     break;
 
                 case 2:
-                    snprintf(world_directory_structure[j], strlen(string), "%s", string);
+                    snprintf(worldDirStructure[j], strlen(string), "%s", string);
                     break;
             }
         }
@@ -89,14 +89,14 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
         LOGINFO("%s", "Building Instance Directory Structure:");
 
         memset(string, 0, PATH_MAX);
-        for (u8 i = 0; i < 255 && instance_directory_structure[i][0] != 0; ++i)
+        for (u8 i = 0; i < 255 && instanceDirStructure[i][0] != 0; ++i)
         {
             snprintf(string,
-                    strlen(mc_c_subpath) + strlen(instance_directory_structure[i]),
-                    "%s%s", mc_c_subpath, instance_directory_structure[i]);
+                    strlen(mc_c_subpath) + strlen(instanceDirStructure[i]),
+                    "%s%s", mc_c_subpath, instanceDirStructure[i]);
 
             mc_mkdir(string, 0775);
-            LOGINFO("Directory Created '%s/%s'", instance_name, instance_directory_structure[i]);
+            LOGINFO("Directory Created '%s/%s'", instance_name, instanceDirStructure[i]);
         }
         LOGINFO("Instance Creation Complete '%s'", instance_name);
     }
