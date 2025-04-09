@@ -1,7 +1,8 @@
 # changelog
 
-## v0.x.x (DD MMM YYYY)
+## vx.x.x (DD MMM YYYY)
 - - - -
+- added skybox colors for day/night cycle
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
