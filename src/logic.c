@@ -108,6 +108,7 @@ void give_camera_movements_player(Player *player)
                     cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
+
         case 1: // ---- 3rd person back ----------------------------------------
             player->camera.position =
                 (Vector3){
@@ -126,6 +127,7 @@ void give_camera_movements_player(Player *player)
                     cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
+
         case 2: // ---- 3rd person front ---------------------------------------
             player->camera.position =
                 (Vector3){
@@ -144,12 +146,14 @@ void give_camera_movements_player(Player *player)
                     cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
+
         case 3: // ---- 3rd person stalker -------------------------------------
             player->camera.target =
                 (Vector3){
                     player->pos.x, player->pos.y, player->pos.z + 1.5f,
                 };
             break;
+
         case 4: // ---- spectator ----------------------------------------------
             break;
     }
