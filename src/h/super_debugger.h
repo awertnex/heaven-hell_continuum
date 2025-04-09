@@ -34,9 +34,9 @@ extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
 // ---- signatures -------------------------------------------------------------
-void init_super_debugger();
+void init_super_debugger(v2f32 renderSize);
 void free_super_debugger();
-void draw_super_debugger();
+void draw_super_debugger(v2f32 renderSize);
 
 #define SUPER_DEBUGGER_H
 #endif
