@@ -97,23 +97,23 @@ void give_camera_movements_player(Player *player)
                 };
             player->camera.target =
                 (Vector3){
-                    player->pos.x + ((cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*setting.reachDistance),
-                    player->pos.y + ((sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*setting.reachDistance),
-                    player->camera.position.z + (sinf(player->pitch*DEG2RAD)*setting.reachDistance),
+                    player->pos.x + ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*setting.reachDistance),
+                    player->pos.y + ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*setting.reachDistance),
+                    player->camera.position.z + (sinf(player->pitch*MC_C_DEG2RAD)*setting.reachDistance),
                 };
             player->camera.up =
                 (Vector3){
-                    -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    cosf(player->pitch*DEG2RAD),
+                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
         case 1: // ---- 3rd person back ----------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x - ((cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*player->cameraDistance),
-                    player->pos.y - ((sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*player->cameraDistance),
-                    player->pos.z + 1.5f - (sinf(player->pitch*DEG2RAD)*player->cameraDistance),
+                    player->pos.x - ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
+                    player->pos.y - ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
+                    player->pos.z + 1.5f - (sinf(player->pitch*MC_C_DEG2RAD)*player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
@@ -121,17 +121,17 @@ void give_camera_movements_player(Player *player)
                 };
             player->camera.up =
                 (Vector3){
-                    -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    cosf(player->pitch*DEG2RAD),
+                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
         case 2: // ---- 3rd person front ---------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x + ((cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*player->cameraDistance),
-                    player->pos.y + ((sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD))*player->cameraDistance),
-                    player->pos.z + 1.5f + (sinf(player->pitch*DEG2RAD)*player->cameraDistance),
+                    player->pos.x + ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
+                    player->pos.y + ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
+                    player->pos.z + 1.5f + (sinf(player->pitch*MC_C_DEG2RAD)*player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
@@ -139,9 +139,9 @@ void give_camera_movements_player(Player *player)
                 };
             player->camera.up =
                 (Vector3){
-                    -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                    cosf(player->pitch*DEG2RAD),
+                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                    cosf(player->pitch*MC_C_DEG2RAD),
                 };
             break;
         case 3: // ---- 3rd person stalker -------------------------------------
@@ -161,15 +161,15 @@ void give_camera_movements_debug_info(Camera3D *camera, Player *player)
     {
         camera->position =
             (Vector3){
-                -cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
-                -sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
-                -sinf(player->pitch*DEG2RAD),
+                -cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
+                -sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
+                -sinf(player->pitch*MC_C_DEG2RAD),
             };
         camera->up =
             (Vector3){
-                -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                cosf(player->pitch*DEG2RAD),
+                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                cosf(player->pitch*MC_C_DEG2RAD),
             };
         camera->target = Vector3Zero();
     }
@@ -177,16 +177,16 @@ void give_camera_movements_debug_info(Camera3D *camera, Player *player)
     {
         camera->position =
             (Vector3){
-                cosf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
-                sinf(player->yaw*DEG2RAD)*cosf(player->pitch*DEG2RAD),
-                sinf(player->pitch*DEG2RAD),
+                cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
+                sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
+                sinf(player->pitch*MC_C_DEG2RAD),
             };
         camera->target = Vector3Zero();
         camera->up =
             (Vector3){
-                -cosf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                -sinf(player->yaw*DEG2RAD)*sinf(player->pitch*DEG2RAD),
-                cosf(player->pitch*DEG2RAD),
+                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
+                cosf(player->pitch*MC_C_DEG2RAD),
             };
     }
 }

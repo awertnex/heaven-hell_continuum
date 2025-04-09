@@ -13,7 +13,6 @@
 
 // ---- variables --------------------------------------------------------------
 v2f32 renderSize = {WIDTH, HEIGHT};
-f64 startTime = 0;
 static f64 gameStartTime = 0;
 static u64 gameTick = 0;
 static u64 gameDays = 0;
@@ -51,6 +50,7 @@ Player lily =
 };
 
 // ---- signatures -------------------------------------------------------------
+Color draw_skybox();
 static void update_world();
 static void update_input(Player *player);
 
@@ -101,7 +101,11 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         }
         else
         {
+            BeginDrawing();
+            ClearBackground(draw_skybox());
+            LOGDEBUG("gameTick: %d", gameTick);
             update_world();
+            EndDrawing();
         }
 
         if (state & STATE_PAUSED)
@@ -165,13 +169,9 @@ void init_world()
 
 void update_world()
 {
-    startTime = get_time_ms();
-    gameTick = (u64)((get_time_ms() - gameStartTime)*20);
+    gameTick = (floor((get_time_ms() - gameStartTime)*20)) - (SETTING_DAY_TICKS_MAX*gameDays);
     if (gameTick >= SETTING_DAY_TICKS_MAX)
-    {
-	gameTick = 0;
-	++gameDays;
-    }
+        ++gameDays;
     renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
@@ -189,8 +189,6 @@ void update_world()
 
     update_input(&lily);
 
-    BeginDrawing();
-    ClearBackground(COL_SKYBOX); /* TODO: make actual skybox */
     BeginMode3D(lily.camera);
     { /*temp*/
         draw_chunk(&chunkBuf[0][0], 20);
@@ -253,7 +251,6 @@ void update_world()
     }
 
     draw_super_debugger(renderSize);
-    EndDrawing();
 }
 
 void update_input(Player *player)
@@ -297,20 +294,20 @@ void update_input(Player *player)
     // ---- moving -------------------------------------------------------------
     if (IsKeyDown(bindStrafeLeft))
     {
-        player->pos.x -= player->movementSpeed*sinf(player->yaw*DEG2RAD);
-        player->pos.y += player->movementSpeed*cosf(player->yaw*DEG2RAD);
+        player->pos.x -= player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
+        player->pos.y += player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
     }
 
     if (IsKeyDown(bindStrafeRight))
     {
-        player->pos.x += player->movementSpeed*sinf(player->yaw*DEG2RAD);
-        player->pos.y -= player->movementSpeed*cosf(player->yaw*DEG2RAD);
+        player->pos.x += player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
+        player->pos.y -= player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
     }
 
     if (IsKeyDown(bindWalkBackwards))
     {
-        player->pos.x -= player->movementSpeed*cosf(player->yaw*DEG2RAD);
-        player->pos.y -= player->movementSpeed*sinf(player->yaw*DEG2RAD);
+        player->pos.x -= player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
+        player->pos.y -= player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
     }
 
     if (IsKeyPressed(bindWalkForwards))
@@ -319,8 +316,8 @@ void update_input(Player *player)
 
     if (IsKeyDown(bindWalkForwards))
     {
-        player->pos.x += player->movementSpeed*cosf(player->yaw*DEG2RAD);
-        player->pos.y += player->movementSpeed*sinf(player->yaw*DEG2RAD);
+        player->pos.x += player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
+        player->pos.y += player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
     }
 
     // ---- gameplay -----------------------------------------------------------
@@ -447,4 +444,10 @@ void update_input(Player *player)
 
     if (IsKeyPressed(bindQuit))
         state &= ~STATE_ACTIVE;
+}
+
+Color draw_skybox()
+{
+    u8 amount = (sinf(((f32)gameTick/24000)*MC_C_RAD2DEG) + 1)*127;
+    return (Color){amount*0.54f, amount*0.8f, amount, 0xFF};
 }

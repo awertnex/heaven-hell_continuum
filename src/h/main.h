@@ -18,7 +18,9 @@
 
 // ---- declarations -----------------------------------------------------------
 extern f64 deltaTime;
-extern f64 startTime;
+static f64 gameStartTime;
+static u64 gameTick;
+static u64 gameDays;
 #define dt GetFrameTime()
 
 extern u16 state;
