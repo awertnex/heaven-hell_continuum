@@ -160,6 +160,7 @@ void update_menus(v2f32 renderSize)
             if (!check_menu_ready)
             {
                 menuLayer[stateMenuDepth] = MENU_TITLE;
+                menuIndex = MENU_TITLE;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_SINGLEPLAYER] = 1;
                 buttons[BTN_MULTIPLAYER] = 1;
@@ -170,7 +171,13 @@ void update_menus(v2f32 renderSize)
             }
 
             draw_text(fontRegular, MC_C_VERSION,
-                    (v2i16){0, renderSize.y - fontSize},
+                    (v2i16){6, renderSize.y - fontSize - 3},
+                    fontSize, 2, COL_TEXT_DEFAULT);
+
+            draw_text(fontRegular, MC_C_AUTHOR,
+                    (v2i16){
+                    renderSize.x - get_str_width(fontRegular, MC_C_AUTHOR, fontSize, 2) - 2,
+                    renderSize.y - fontSize - 3},
                     fontSize, 2, COL_TEXT_DEFAULT);
 
             rlBegin(RL_QUADS);
@@ -643,11 +650,12 @@ void btn_func_save_and_quit_to_title()
     check_menu_ready = 0;
     // TODO: save and unload world
     state &= ~STATE_WORLD_LOADED;
-    ClearBackground(DARKBROWN);
+    state &= ~STATE_PAUSED;
 }
 
 void btn_func_back()
 {
+    menuLayer[stateMenuDepth] = 0;
     --stateMenuDepth;
     menuIndex = menuLayer[stateMenuDepth];
     check_menu_ready = 0;

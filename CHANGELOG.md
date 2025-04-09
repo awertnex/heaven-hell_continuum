@@ -3,6 +3,7 @@
 ## vx.x.x (DD MMM YYYY)
 - - - -
 - added skybox colors for day/night cycle
+- fixed menu buttons not disappearing after leaving menu (forgot to clear background)
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
