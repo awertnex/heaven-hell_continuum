@@ -97,10 +97,10 @@ static void print_menu_layers()
 
 void init_fonts()
 {
-    fontRegular =                  LoadFont("fonts/minecraft_regular.otf");
-    fontBold =                     LoadFont("fonts/minecraft_bold.otf");
-    fontItalic =                   LoadFont("fonts/minecraft_italic.otf");
-    fontBoldItalic =              LoadFont("fonts/minecraft_bold_italic.otf");
+    fontRegular =       LoadFont("fonts/minecraft_regular.otf");
+    fontBold =          LoadFont("fonts/minecraft_bold.otf");
+    fontItalic =        LoadFont("fonts/minecraft_italic.otf");
+    fontBoldItalic =    LoadFont("fonts/minecraft_bold_italic.otf");
 }
 
 void init_gui()

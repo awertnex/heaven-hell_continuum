@@ -258,13 +258,13 @@ extern Camera3D cameraDebugInfo;
 // ---- signatures -------------------------------------------------------------
 void init_fonts();
 void init_gui();
-void apply_render_settings();
+void apply_render_settings(v2f32 renderSize);
 void free_gui();
 
-void update_menus();
+void update_menus(v2f32 renderSize);
 void draw_hud();
 void update_debug_strings();
-void draw_inventory();
+void draw_inventory(v2f32 renderSize);
 void draw_debug_info();
 
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, Color tint);
