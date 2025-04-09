@@ -27,6 +27,11 @@ extern u16 state;
 extern u8 stateMenuDepth;
 extern v3i32 targetCoordinatesFeet; /*temp*/
 
+extern f64 skyboxMidDay;
+extern f64 skyboxBurn;
+extern f64 skyboxBurnBoost;
+extern f64 skyboxMidNight;
+
 // ---- signatures -------------------------------------------------------------
 int mc_mkdir(const char *path, u16 mode);
 void init_world();

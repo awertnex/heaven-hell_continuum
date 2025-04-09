@@ -13,11 +13,11 @@
 
 // ---- variables --------------------------------------------------------------
 v2f32 renderSize = {WIDTH, HEIGHT};
+u16 state = 0;
+u8 stateMenuDepth = 0;
 static f64 gameStartTime = 0;
 static u64 gameTick = 0;
 static u64 gameDays = 0;
-u16 state = 0;
-u8 stateMenuDepth = 0;
 settings setting =
 {
     .reachDistance =        SETTING_REACH_DISTANCE_MAX,
@@ -50,7 +50,7 @@ Player lily =
 };
 
 // ---- signatures -------------------------------------------------------------
-Color draw_skybox();
+void draw_skybox();
 static void update_world();
 static void update_input(Player *player);
 
@@ -102,8 +102,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         else
         {
             BeginDrawing();
-            ClearBackground(draw_skybox());
-            LOGDEBUG("gameTick: %d", gameTick);
+            draw_skybox();
             update_world();
             EndDrawing();
         }
@@ -175,13 +174,13 @@ void update_world()
     renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
     parse_player_states(&lily);
+    give_camera_movements_player(&lily);
 
     if (MODE_COLLIDE)
         give_collision_static(&lily, &targetCoordinatesFeet);
 
     if (state & STATE_DEBUG)
         give_camera_movements_debug_info(&cameraDebugInfo, &lily);
-    give_camera_movements_player(&lily);
 
     if (stateMenuDepth || state & STATE_SUPER_DEBUG)
         show_cursor;
@@ -212,7 +211,7 @@ void update_world()
         if (check_target_delta_position(&lily.camera.target, &lily.lastTarget))
             targetChunk = get_chunk(&lily.lastTarget, &lily.state, STATE_PARSE_TARGET);
 
-        if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET)
+        if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD))
         {
             if (targetChunk->i
                     [lily.lastTarget.z - WORLD_BOTTOM]
@@ -220,13 +219,15 @@ void update_world()
                     [lily.lastTarget.x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
             {
                 draw_block_wires(&lily.lastTarget);
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
+                if (state & STATE_DEBUG)
+                    DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
             }
-            else DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
+            else if (state & STATE_DEBUG)
+                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
         }
     }
 
-    if (MODE_DEBUG)
+    if (MODE_DEBUG && (state & STATE_DEBUG))
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);
@@ -446,8 +447,24 @@ void update_input(Player *player)
         state &= ~STATE_ACTIVE;
 }
 
-Color draw_skybox()
+f64 skyboxMidDay = 0;
+f64 skyboxBurn = 0;
+f64 skyboxBurnBoost = 0;
+f64 skyboxMidNight = 0;
+Color skyboxRGBA = {0};
+void draw_skybox()
 {
-    u8 amount = (sinf(((f32)gameTick/24000)*MC_C_RAD2DEG) + 1)*127;
-    return (Color){amount*0.54f, amount*0.8f, amount, 0xFF};
+    skyboxMidDay =      fabs(powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX)*PI), 2));
+    skyboxBurn =        powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI*2.0f), 8);
+    skyboxBurnBoost =   powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI*1.4f), 32);
+    skyboxMidNight =    powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI), 8);
+    skyboxRGBA =
+        (Color){
+            (skyboxMidDay*171) + (skyboxBurn*110) + (skyboxMidNight*2) + (skyboxBurnBoost*33),
+            (skyboxMidDay*229) + (skyboxBurn*55) + (skyboxMidNight*5) + (skyboxBurnBoost*11),
+            (skyboxMidDay*255) + (skyboxBurn*2) + (skyboxMidNight*19),
+            255
+        };
+
+    ClearBackground(skyboxRGBA);
 }
