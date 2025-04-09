@@ -1,6 +1,7 @@
 #ifndef MINECRAFT_H
 
 #define MC_C_VERSION "Minecraft.c 0.1.4"
+#define MC_C_AUTHOR "Lily Awertnex"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
