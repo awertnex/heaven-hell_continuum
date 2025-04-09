@@ -1,6 +1,6 @@
 #ifndef MINECRAFT_H
 
-#define MC_C_VERSION "Minecraft.c 0.1.2"
+#define MC_C_VERSION "Minecraft.c 0.1.4"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
