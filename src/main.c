@@ -94,7 +94,8 @@ int main(int argc, char **argv)
 
     init_fonts();
     init_gui();
-    apply_render_settings(renderSize);
+    apply_render_settings();
+    update_render_settings(renderSize);
     init_super_debugger(renderSize);
 
     setting.renderDistance = SETTING_RENDER_DISTANCE_MAX; //temp
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
         // ---- game loop ------------------------------------------------------
     {
         update_input_general(&lily);
-        apply_render_settings(renderSize);
+        update_render_settings(renderSize);
         renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
         BeginDrawing();
         //draw_texture_tiled(); // TODO: draw tiled texture of title screen
@@ -252,11 +253,8 @@ void update_world()
     {
         draw_hud();
         draw_debug_info(&lily.cameraDebugInfo);
-        if (stateMenuDepth)
-        {
-            if (lily.containerState & CONTR_INVENTORY)
-                draw_inventory(renderSize);
-        }
+        if (stateMenuDepth && lily.containerState)
+            draw_containers(&lily, renderSize);
     }
 
     draw_super_debugger(renderSize);
@@ -296,7 +294,7 @@ void update_input_general(Player *player)
         else btn_func_back();
     }
 
-    if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
+    else if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
     {
         if (stateMenuDepth == 1)
             state &= ~STATE_ACTIVE;

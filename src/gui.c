@@ -114,11 +114,15 @@ void init_gui()
     memset(buttons, 0, BTN_COUNT);
 }
 
-void apply_render_settings(v2f32 renderSize)
+void apply_render_settings()
 {
+    setting.guiScale = SETTING_GUI_SCALE_2; //temp
     fontSize = 14*setting.guiScale;
     textRowHeight = 8*setting.guiScale;
+}
 
+void update_render_settings(v2f32 renderSize)
+{
     hotbarPosition =                (v2i16){renderSize.x/2, renderSize.y - (2*setting.guiScale)};
     crosshairPosition =             (v2i16){renderSize.x/2, renderSize.y/2};
     containerInventoryPosition =    (v2i16){renderSize.x/2, renderSize.y/2};
@@ -421,18 +425,95 @@ void draw_hud()
     rlSetTexture(0);
 }
 
-void draw_inventory(v2f32 renderSize)
+void draw_containers(Player *player, v2f32 renderSize)
 {
     draw_menu_overlay(renderSize);
     rlBegin(RL_QUADS);
 
-    draw_texture(textureContainerInventory,
-            containerInventory,
-            containerInventoryPosition, 
-            (v2i16){
-            setting.guiScale,
-            setting.guiScale},
-            1, 1, COL_TEXTURE_DEFAULT);
+    switch (player->containerState)
+    {
+        case CONTR_ANVIL:
+            break;
+
+        case CONTR_BEACON:
+            break;
+
+        case CONTR_BLAST_FURNACE:
+            break;
+
+        case CONTR_BREWING_STAND:
+            break;
+
+        case CONTR_CARTOGRAPHY_TABLE:
+            break;
+
+        case CONTR_CHEST:
+            break;
+
+        case CONTR_CHEST_LARGE:
+            break;
+
+        case CONTR_CRAFTING_TABLE:
+            break;
+
+        case CONTR_DISPENSER:
+            break;
+
+        case CONTR_ENCHANTING_TABLE:
+            break;
+
+        case CONTR_FURNACE:
+            break;
+
+        case CONTR_GAMEMODE_SWITCHER:
+            break;
+
+        case CONTR_GRINDSTONE:
+            break;
+
+        case CONTR_HOPPER:
+            break;
+
+        case CONTR_HORSE:
+            break;
+
+        case CONTR_INVENTORY:
+            draw_texture(textureContainerInventory,
+                    containerInventory,
+                    containerInventoryPosition, 
+                    (v2i16){
+                    setting.guiScale,
+                    setting.guiScale},
+                    1, 1, COL_TEXTURE_DEFAULT);
+            break;
+
+        case CONTR_LEGACY_SMITHING:
+            break;
+
+        case CONTR_LOOM:
+            break;
+
+        case CONTR_SMITHING:
+            break;
+
+        case CONTR_SMOKER:
+            break;
+
+        case CONTR_STONECUTTER:
+            break;
+
+        case CONTR_VILLAGER:
+            break;
+
+        case CONTR_TAB_INVENTORY:
+            break;
+
+        case CONTR_TAB_ITEMS:
+            break;
+
+        case CONTR_TAB_ITEMS_SEARCH:
+            break;
+    }
 
     rlEnd();
     rlSetTexture(0);

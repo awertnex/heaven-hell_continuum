@@ -260,7 +260,8 @@ extern u8 fontSizeDebugInfo;
 // ---- signatures -------------------------------------------------------------
 void init_fonts();
 void init_gui();
-void apply_render_settings(v2f32 renderSize);
+void apply_render_settings();
+void update_render_settings(v2f32 renderSize);
 void free_gui();
 
 void update_menus(v2f32 renderSize);
