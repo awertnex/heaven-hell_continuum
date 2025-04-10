@@ -64,12 +64,6 @@ str strQuadCount[32];
 str strTriCount[32];
 str strVertexCount[32];
 u8 fontSizeDebugInfo = 22;
-Camera3D cameraDebugInfo =
-{
-    .up.z = 1,
-    .fovy = 50,
-    .projection = CAMERA_ORTHOGRAPHIC,
-};
 
 // ---- functions --------------------------------------------------------------
 static void print_menu_layers()
@@ -390,7 +384,7 @@ void draw_inventory(v2f32 renderSize)
     rlSetTexture(0);
 }
 
-void draw_debug_info()
+void draw_debug_info(Camera3D *camera)
 {
     if (!(state & STATE_DEBUG)) return;
 
@@ -417,7 +411,7 @@ void draw_debug_info()
     draw_text(fontRegular, strTriCount,          (v2i16){MARGIN, MARGIN + textRowHeight*7},    fontSizeDebugInfo, 1, COL_STATS_3);
     draw_text(fontRegular, strVertexCount,       (v2i16){MARGIN, MARGIN + textRowHeight*8},    fontSizeDebugInfo, 1, COL_STATS_3);
 
-    BeginMode3D(cameraDebugInfo);
+    BeginMode3D(*camera);
     rlBegin(RL_LINES);
     draw_line_3d(v3izero, (v3i32){1, 0, 0}, COL_X);
     draw_line_3d(v3izero, (v3i32){0, 1, 0}, COL_Y);

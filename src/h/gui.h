@@ -253,7 +253,6 @@ extern str strQuadCount[32];
 extern str strTriCount[32];
 extern str strVertexCount[32];
 extern u8 fontSizeDebugInfo;
-extern Camera3D cameraDebugInfo;
 
 // ---- signatures -------------------------------------------------------------
 void init_fonts();
@@ -265,7 +264,7 @@ void update_menus(v2f32 renderSize);
 void draw_hud();
 void update_debug_strings();
 void draw_inventory(v2f32 renderSize);
-void draw_debug_info();
+void draw_debug_info(Camera3D *camera);
 
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, Color tint);
 void draw_text_centered(Font font, const str *str, v2i16 pos, f32 fontSize, f32 spacing, Color tint, u8 centenVertically);

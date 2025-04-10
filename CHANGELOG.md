@@ -1,6 +1,6 @@
 # changelog
 
-## vx.x.x (DD MMM YYYY)
+## v0.2.0 (DD MMM 2025)
 - - - -
 - added skybox colors for day/night cycle
 - fixed menu buttons not disappearing after leaving menu (forgot to clear background)
