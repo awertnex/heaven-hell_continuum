@@ -20,7 +20,7 @@
 #define CHUNK_SIZE          64
 #define WORLD_SIZE          64*32767 /* in each cardinal direction */
 
-#define opacity 200
+#define opacity 210
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
