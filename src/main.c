@@ -305,9 +305,6 @@ void update_input_general(Player *player)
 #if RELEASE_BUILD == 0
     if (IsKeyPressed(KEY_TAB))
         state ^= STATE_SUPER_DEBUG;
-
-    if (IsKeyPressed(bindQuit))
-        state &= ~STATE_ACTIVE;
 #endif // RELEASE_BUILD
 }
 
