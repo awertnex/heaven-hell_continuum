@@ -266,8 +266,7 @@ void update_debug_strings();
 void draw_inventory(v2f32 renderSize);
 void draw_debug_info(Camera3D *camera);
 
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, Color tint);
-void draw_text_centered(Font font, const str *str, v2i16 pos, f32 fontSize, f32 spacing, Color tint, u8 centenVertically);
+void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
 float get_str_width(Font font, const str *str, f32 fontSize, f32 spacing);
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on source.scale*scl */
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on scl */

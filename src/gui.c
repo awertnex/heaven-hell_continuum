@@ -165,14 +165,14 @@ void update_menus(v2f32 renderSize)
             }
 
             draw_text(fontRegular, MC_C_VERSION,
-                    (v2i16){6, renderSize.y - fontSize - 3},
-                    fontSize, 2, COL_TEXT_DEFAULT);
+                    (v2i16){6, renderSize.y - 3},
+                    fontSize, 2, 0, 2, COL_TEXT_DEFAULT);
 
             draw_text(fontRegular, MC_C_AUTHOR,
                     (v2i16){
-                    renderSize.x - get_str_width(fontRegular, MC_C_AUTHOR, fontSize, 2) - 2,
-                    renderSize.y - fontSize - 3},
-                    fontSize, 2, COL_TEXT_DEFAULT);
+                    renderSize.x - 2,
+                    renderSize.y - 3},
+                    fontSize, 2, 2, 2, COL_TEXT_DEFAULT);
 
             rlBegin(RL_QUADS);
 
@@ -391,25 +391,25 @@ void draw_debug_info(Camera3D *camera)
     update_debug_strings();
 
     // TODO: rewrite DrawRectangle, get rectangle correct size for font
-    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(fontRegular, strFPS,                fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,     get_str_width(fontRegular, strPlayerPos,    fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*2,   get_str_width(fontRegular, strPlayerBlock,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*3,   get_str_width(fontRegular, strPlayerChunk,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*4,   get_str_width(fontRegular, strPlayerDirection,   fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*5,   get_str_width(fontRegular, strBlockCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*6,   get_str_width(fontRegular, strQuadCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN,                     get_str_width(fontRegular, strFPS,                fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,     get_str_width(fontRegular, strPlayerPos,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*2,   get_str_width(fontRegular, strPlayerBlock,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*3,   get_str_width(fontRegular, strPlayerChunk,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*4,   get_str_width(fontRegular, strPlayerDirection,    fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*5,   get_str_width(fontRegular, strBlockCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*6,   get_str_width(fontRegular, strQuadCount,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,           fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
 
-    draw_text(fontRegular, strFPS,                (v2i16){MARGIN, MARGIN},                        fontSizeDebugInfo, 1, COL_STATS_1);
-    draw_text(fontRegular, strPlayerPos,    (v2i16){MARGIN, MARGIN + textRowHeight},      fontSizeDebugInfo, 1, COL_STATS_2);
-    draw_text(fontRegular, strPlayerBlock,       (v2i16){MARGIN, MARGIN + textRowHeight*2},    fontSizeDebugInfo, 1, COL_STATS_2);
-    draw_text(fontRegular, strPlayerChunk,       (v2i16){MARGIN, MARGIN + textRowHeight*3},    fontSizeDebugInfo, 1, COL_STATS_2);
-    draw_text(fontRegular, strPlayerDirection,   (v2i16){MARGIN, MARGIN + textRowHeight*4},    fontSizeDebugInfo, 1, COL_STATS_2);
-    draw_text(fontRegular, strBlockCount,        (v2i16){MARGIN, MARGIN + textRowHeight*5},    fontSizeDebugInfo, 1, COL_STATS_3);
-    draw_text(fontRegular, strQuadCount,         (v2i16){MARGIN, MARGIN + textRowHeight*6},    fontSizeDebugInfo, 1, COL_STATS_3);
-    draw_text(fontRegular, strTriCount,          (v2i16){MARGIN, MARGIN + textRowHeight*7},    fontSizeDebugInfo, 1, COL_STATS_3);
-    draw_text(fontRegular, strVertexCount,       (v2i16){MARGIN, MARGIN + textRowHeight*8},    fontSizeDebugInfo, 1, COL_STATS_3);
+    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                    fontSizeDebugInfo, 1, 0, 0, COL_STATS_1);
+    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},    fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
+    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight*2},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
+    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight*3},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
+    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight*4},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
+    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight*5},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
+    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight*6},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
+    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight*7},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
+    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight*8},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
@@ -421,8 +421,34 @@ void draw_debug_info(Camera3D *camera)
 }
 
 // raylib/rtext.c/DrawTextEx refactored
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, Color tint)
+void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint)
 {
+    // spacing: char spacing;
+    // alignX: 0 = left, 1 = center, 2 = right;
+    // alignY: 0 = top, 1 = center, 2 = bottom;
+
+    switch (alignX)
+    {
+        case 1:
+            pos.x -= (get_str_width(font, str, font_size, spacing)/2);
+            break;
+
+        case 2:
+            pos.x -= get_str_width(font, str, font_size, spacing);
+            break;
+    };
+
+    switch (alignY)
+    {
+        case 1:
+            pos.y -= (font_size/1.8f);
+            break;
+
+        case 2:
+            pos.y -= font_size;
+            break;
+    };
+
     if (font.texture.id == 0) font = GetFontDefault();
     u16 size = TextLength(str);
 
@@ -460,17 +486,6 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
         }
         i += codepointByteCount;
     }
-}
-
-// raylib/rtext.c/DrawTextEx refactored
-void draw_text_centered(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, Color tint, u8 center_vertically)
-{
-    pos.x -= (get_str_width(font, str, font_size, spacing)/2);
-
-    if (center_vertically)
-        pos.y -= (font_size/1.8f);
-
-    draw_text(font, str, pos, font_size, spacing, tint);
 }
 
 float get_str_width(Font font, const str *str, f32 font_size, f32 spacing)
@@ -556,7 +571,6 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
 {
     pos.x -= (button.width*setting.guiScale)/2;
     pos.y -= (button.height*setting.guiScale)/2;
-    v2i16 text_offset = {pos.x + button.width/2, pos.y + button.height/2};
 
     if (buttons[btn_state])
     {
@@ -577,7 +591,12 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btn_state, v
                     COL_TEXTURE_DEFAULT);
         }
 
-        if (str) draw_text_centered(fontRegular, str, text_offset, button.height*0.7f, 1, COL_TEXT_DEFAULT, 1);
+        if (str)
+        {
+            draw_text(fontRegular, str,
+                    (v2i16){pos.x + (button.width/2), pos.y + (button.height/2)},
+                    button.height*0.7f, 1, 1, 1, COL_TEXT_DEFAULT);
+        }
     }
     else draw_texture(texture, buttonInactive, pos, 
             (v2i16){

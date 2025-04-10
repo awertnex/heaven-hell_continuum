@@ -4,6 +4,9 @@
 - - - -
 - added skybox colors for day/night cycle
 - fixed menu buttons not disappearing after leaving menu (forgot to clear background)
+- added windows support for building launcher and tests
+- removed 'draw_text_centered()', added arguments 'alignX' and 'alignY' to 'draw_text()'
+- added text alignment to left, center, right, top, center and bottom
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
