@@ -9,6 +9,7 @@
     #define FREE_CMD free(cmd)
     #define COMPILER "cc"
     #define EXECUTABLE "../minecraft_c"
+    #define EXTENSION ""
 char** cmd;
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
@@ -18,13 +19,13 @@ char str_libs[3][24] = {"-lraylib", "-lm", 0};
     #define FREE_CMD
     #define COMPILER "gcc"
     #define EXECUTABLE "../minecraft_c.exe"
+    #define EXTENSION ".exe"
 char* cmd[64];
 char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
 int exit_code = 0;
 
-char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
 char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
 char str_out[3][32] = {"-o", EXECUTABLE, 0};
@@ -44,7 +45,7 @@ void build_cmd()
         switch (stage)
         {
             case 0:
-                cmd[0] = str_exec;
+                cmd[0] = COMPILER;
                 cmd[1] = str_main;
                 ++stage;
                 --i;
@@ -121,7 +122,7 @@ int main(int argc, char **argv)
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
         memset(str_libs[1], 0, sizeof(str_libs[1]));
-        snprintf(str_out[1], 32, "../launcher");
+        snprintf(str_out[1], 32, "../launcher%s", EXTENSION);
         build_cmd();
         if (exit_code) return exit_code;
     }
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
 
         printf("Building test %03d '%s'..\n", (argv[2][0]) - 48, str_tests[argv[2][0] - 48]);
         snprintf(str_main, 32, "tests/%s.c", str_tests[argv[2][0] - 48]);
-        snprintf(str_out[1], 32, "../test_%s", str_tests[argv[2][0] - 48]);
+        snprintf(str_out[1], 32, "../test_%s%s", str_tests[argv[2][0] - 48], EXTENSION);
         build_cmd();
         if (exit_code) return exit_code;
     }
