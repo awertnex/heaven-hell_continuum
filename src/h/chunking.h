@@ -33,6 +33,8 @@ enum BlockFaces
     NEGATIVE_Z =    0x20,
     NOT_EMPTY =     0x40,
     COUNTAHEAD =    0x80,
+    // COUNTAHEAD: fwrite(): if ((Chunk.i[n] & NOT_EMPTY) && Chunk.info[n] == Chunk.info[n - 1]) loop: u32 count++, compare again; if comparison fails, byte[n] |= COUNTAHEAD; 4 bytes[n + 1] = count;
+    // COUNTAHEAD: fread(): if (byte[n] & COUNTAHEAD) u32 count = next 4 bytes, fill Chunk.i from Chunk.i[n] to chunk.i[n + count]
 }; /* BlockFaces */
 
 enum BlockData
