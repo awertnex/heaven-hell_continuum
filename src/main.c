@@ -84,6 +84,10 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     }
 
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
+#if RELEASE_BUILD == 0
+    SetTargetFPS(60);
+#endif // RELEASE_BUILD
+
     init_fonts();
     init_gui();
     apply_render_settings(renderSize);
