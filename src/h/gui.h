@@ -8,7 +8,7 @@
 
 #define show_cursor ShowCursor()
 #define hide_cursor HideCursor()
-#define center_cursor SetMousePosition(WIDTH/2, HEIGHT/2)
+#define center_cursor SetMousePosition(renderSize.x/2, renderSize.y/2)
 #define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
 #define draw_menu_overlay(renderSize) DrawRectangle(0, 0, renderSize.x, renderSize.y, COL_MENU_BG_OVERLAY)
 
@@ -42,6 +42,7 @@ extern u8 textRowHeight;
 
 extern Texture2D textureHUDWidgets;
 extern Texture2D textureContainerInventory;
+extern Texture2D textureBackground;
 
 extern Rectangle hotbar;
 extern Rectangle hotbarSelected;
@@ -52,6 +53,8 @@ extern Rectangle button;
 extern Rectangle buttonSelected;
 extern Rectangle containerInventory;
 extern Rectangle containerSlotSize;
+extern Rectangle rectBackground;
+extern Rectangle rectBackgroundDark;
 
 extern v2i16 hotbarPosition;
 extern f32 hotbarSlotSelected;
@@ -269,6 +272,7 @@ void draw_debug_info(Camera3D *camera);
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
 float get_str_width(Font font, const str *str, f32 fontSize, f32 spacing);
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on source.scale*scl */
+void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on scl */
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btnState, void (*func)(), const str *str);
 
