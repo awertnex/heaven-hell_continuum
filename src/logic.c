@@ -32,7 +32,7 @@ bool get_double_press(Player *player, KeyboardKey key)
     return false;
 }
 
-void parse_player_states(Player *player)
+void update_player_states(Player *player)
 {
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
@@ -74,7 +74,7 @@ void parse_player_states(Player *player)
     }
 }
 
-void give_camera_movements_player(Player *player)
+void update_camera_movements_player(Player *player)
 {
     if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG))
     {
@@ -88,12 +88,11 @@ void give_camera_movements_player(Player *player)
     if (player->pitch > 90)         player->pitch = 90;
     else if (player->pitch < -90)   player->pitch = -90;
 
-    switch (lily.perspective)
+    switch (player->perspective)
     {
         case 0: // ---- 1st person ---------------------------------------------
             player->camera.position =
-                (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + 1.5f,
+                (Vector3){player->pos.x, player->pos.y, player->pos.z + 1.5f,
                 };
             player->camera.target =
                 (Vector3){
@@ -159,7 +158,7 @@ void give_camera_movements_player(Player *player)
     }
 }
 
-void give_camera_movements_debug_info(Camera3D *camera, Player *player)
+void update_camera_movements_debug_info(Camera3D *camera, Player *player)
 {
     if (player->perspective == 0 || player->perspective == 1)
     {

@@ -29,7 +29,7 @@ settings setting =
 Player lily =
 {
     .name = "Lily",
-    .pos = {8, -6, -65},
+    .pos = {0},
     .scl = {0.6f, 0.6f, 1.8f},
     .pitch = -29,
     .yaw = 121,
@@ -45,14 +45,20 @@ Player lily =
         .projection = CAMERA_PERSPECTIVE,
     },
     .cameraDistance = SETTING_CAMERA_DISTANCE_MAX,
+    .cameraDebugInfo =
+    {
+        .up.z = 1,
+        .fovy = 50,
+        .projection = CAMERA_ORTHOGRAPHIC,
+    },
 
-    .spawnPoint = {3, -6, 9},
+    .spawnPoint = {0, 0, 0},
 };
 
 // ---- signatures -------------------------------------------------------------
+void update_world();
+void update_input(Player *player);
 void draw_skybox();
-static void update_world();
-static void update_input(Player *player);
 
 int main(int argc, char **argv) // ---- game init ------------------------------
 {
@@ -159,9 +165,6 @@ void init_world()
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
 
-    if (MODE_DEBUG)
-        lily.state |= STATE_FLYING;
-
     state |= STATE_HUD | STATE_WORLD_LOADED;
     LOGINFO("%s", "World Loaded: Poop Consistency Tester");
 }
@@ -173,14 +176,14 @@ void update_world()
         ++gameDays;
     renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
-    parse_player_states(&lily);
-    give_camera_movements_player(&lily);
+    update_player_states(&lily);
+    update_camera_movements_player(&lily);
 
     if (MODE_COLLIDE)
         give_collision_static(&lily, &targetCoordinatesFeet);
 
     if (state & STATE_DEBUG)
-        give_camera_movements_debug_info(&cameraDebugInfo, &lily);
+        update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
 
     if (stateMenuDepth || state & STATE_SUPER_DEBUG)
         show_cursor;
@@ -243,7 +246,7 @@ void update_world()
     if (state & STATE_HUD)
     {
         draw_hud();
-        draw_debug_info();
+        draw_debug_info(&lily.cameraDebugInfo);
         if (stateMenuDepth)
         {
             if (lily.containerState & CONTR_INVENTORY)
@@ -440,11 +443,13 @@ void update_input(Player *player)
     }
 
     // ---- debug --------------------------------------------------------------
+#if RELEASE_BUILD == 0
     if (IsKeyPressed(KEY_TAB))
         state ^= STATE_SUPER_DEBUG;
 
     if (IsKeyPressed(bindQuit))
         state &= ~STATE_ACTIVE;
+#endif // RELEASE_BUILD
 }
 
 f64 skyboxMidDay = 0;

@@ -26,7 +26,7 @@ void init_super_debugger(v2f32 renderSize)
     buttons[BTN_SDB_ADD] = 1;
     buttons[BTN_SDB_SUB] = 1;
 
-    texture_super_debugger = LoadTexture("resources/gui/container/super_debugger.png");
+    texture_super_debugger = LoadTexture("resources/gui/containers/super_debugger.png");
     DebugRectangle.scl.x = 300;
     DebugRectangle.scl.y = renderSize.y - ((MARGIN + SDB_BASE_SIZE)*2);
     DebugRectangle.pos.x = renderSize.x - DebugRectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);

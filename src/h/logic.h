@@ -28,22 +28,23 @@
 
 typedef struct Player
 {
-    str name[100];          // player in-game name
-    Vector3 pos;            // player current coordinates in world
-    Vector3 scl;            // player size for collision detection
-    f32 pitch, yaw;         // for player camera direction and target
-    v3f32 v;                // velocity
-    f32 m;                  // mass
-    f32 movementSpeed;      // depends on enum: PlayerStates
-    u64 containerState;     // enum: ContainerStates
-    u8 perspective;         // camera perspective mode
-    u16 state;              // enum: PlayerStates
+    str name[100];              // player in-game name
+    Vector3 pos;                // player current coordinates in world
+    Vector3 scl;                // player size for collision detection
+    f32 pitch, yaw;             // for player camera direction and target
+    v3f32 v;                    // velocity
+    f32 m;                      // mass
+    f32 movementSpeed;          // depends on enum: PlayerStates
+    u64 containerState;         // enum: ContainerStates
+    u8 perspective;             // camera perspective mode
+    u16 state;                  // enum: PlayerStates
 
     Camera3D camera;
-    f32 cameraDistance;     // for camera collision detection
+    f32 cameraDistance;         // for camera collision detection
+    Camera3D cameraDebugInfo;
 
     v3i32 lastTarget;
-    v3i32 lastPos;          // for collision tunneling prevention
+    v3i32 lastPos;              // for collision tunneling prevention
 
     v3i32 spawnPoint;
 } Player;
@@ -110,9 +111,9 @@ extern v3i32 targetCoordinatesFeet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
 bool get_double_press(Player *player, KeyboardKey key);
-void parse_player_states(Player *player);
-void give_camera_movements_player(Player *player);
-void give_camera_movements_debug_info(Camera3D *camera, Player *player);
+void update_player_states(Player *player);
+void update_camera_movements_player(Player *player);
+void update_camera_movements_debug_info(Camera3D *camera, Player *player);
 b8 check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
