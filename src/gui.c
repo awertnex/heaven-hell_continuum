@@ -116,7 +116,7 @@ void init_gui()
 
 void apply_render_settings()
 {
-    setting.guiScale = SETTING_GUI_SCALE_2; //temp
+    setting.guiScale = SETTING_GUI_SCALE_DEFAULT;
     fontSize = 14*setting.guiScale;
     textRowHeight = 8*setting.guiScale;
 }
@@ -173,9 +173,6 @@ void update_menus(v2f32 renderSize)
 {
     if (!menuIndex)
         return;
-
-    if (IsKeyPressed(bindQuit))
-        state &= ~STATE_ACTIVE;
 
     detect_cursor;
     switch (menuIndex)
@@ -337,9 +334,6 @@ void update_menus(v2f32 renderSize)
                 buttons[BTN_QUIT] = 1;
                 check_menu_ready = 1;
             }
-
-            if (IsKeyPressed(bindPause))
-                btn_func_back_to_game();
 
             rlBegin(RL_QUADS);
 
@@ -906,7 +900,7 @@ void btn_func_singleplayer()
     menuIndex = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
     stateMenuDepth = 0; //TODO: set actual value (2)
     check_menu_ready = 0;
-    state &= ~STATE_PAUSED;
+    state &= ~STATE_PAUSED; //temp
 
     init_world(); //temp
 }
@@ -946,6 +940,7 @@ void btn_func_back_to_game()
     check_menu_ready = 0;
     state &= ~STATE_PAUSED;
     lily.state &= ~STATE_MENU_OPEN;
+    lily.containerState = 0;
 }
 
 void btn_func_quit()

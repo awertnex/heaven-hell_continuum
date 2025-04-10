@@ -265,14 +265,17 @@ void update_input_general(Player *player)
     if (IsKeyPressed(bindToggleFullscreen))
     {
         state ^= STATE_FULLSCREEN;
-        ToggleBorderlessWindowed();
 
-        switch (state & STATE_FULLSCREEN)
+        if (state & STATE_FULLSCREEN)
         {
-            case 0: SetConfigFlags(FLAG_FULLSCREEN_MODE); break;
-            case 1: SetConfigFlags(~FLAG_FULLSCREEN_MODE); break;
+            ToggleBorderlessWindowed();
+            SetConfigFlags(FLAG_FULLSCREEN_MODE);
         }
-        apply_render_settings(renderSize);
+        else
+        {
+            SetConfigFlags(~FLAG_FULLSCREEN_MODE);
+            ToggleBorderlessWindowed();
+        }
     }
 
     if (IsKeyPressed(bindPause) && (state & STATE_WORLD_LOADED))
@@ -287,11 +290,8 @@ void update_input_general(Player *player)
         }
         else if (stateMenuDepth == 1)
         {
-            stateMenuDepth = 0;
-            state &= ~STATE_PAUSED;
-            player->containerState = 0;
+            btn_func_back_to_game();
         }
-        else btn_func_back();
     }
 
     else if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
