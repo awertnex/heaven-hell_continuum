@@ -57,10 +57,12 @@ Player lily =
 
 // ---- signatures -------------------------------------------------------------
 void update_world();
-void update_input(Player *player);
+void update_input_general(Player *player);
+void update_input_world(Player *player);
 void draw_skybox();
 
-int main(int argc, char **argv) // ---- game init ------------------------------
+int main(int argc, char **argv)
+    // ---- game init ----------------------------------------------------------
 {
     if (MODE_DEBUG)
         LOGDEBUG("%s", "Debugging Enabled");
@@ -83,9 +85,11 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         }
     }
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
-#if RELEASE_BUILD == 0
-    SetTargetFPS(60);
+    SetWindowMinSize(640, 480);
+#if !RELEASE_BUILD
+    SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
 #endif // RELEASE_BUILD
 
     init_fonts();
@@ -93,31 +97,27 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     apply_render_settings(renderSize);
     init_super_debugger(renderSize);
 
-    // TODO: fix rendering issues when resizing window
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetWindowMinSize(200, 150);
-
     setting.renderDistance = SETTING_RENDER_DISTANCE_MAX; //temp
 
     state |= STATE_ACTIVE;
-    while (state & STATE_ACTIVE) // ---- game loop -----------------------------
+    while (state & STATE_ACTIVE)
+        // ---- game loop ------------------------------------------------------
     {
-        if (!(state & STATE_WORLD_LOADED))
+        update_input_general(&lily);
+        apply_render_settings(renderSize);
+        renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        BeginDrawing();
+        //draw_texture_tiled(); // TODO: draw tiled texture of title screen
+        ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
+        update_menus(renderSize);
+        if (state & STATE_WORLD_LOADED)
         {
-            BeginDrawing();
-            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
-            EndDrawing();
-            update_menus(renderSize);
-        }
-        else
-        {
-            BeginDrawing();
             draw_skybox();
             update_world();
-            EndDrawing();
         }
+        EndDrawing();
 
-        if (state & STATE_PAUSED)
+        if (state & STATE_PAUSED) // TODO: make real pausing instead of using the uncleared bg as still
         {
             BeginDrawing();
             draw_menu_overlay(renderSize);
@@ -125,6 +125,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
 
             while (state & STATE_PAUSED && state & STATE_ACTIVE)
             {
+                update_input_general(&lily);
                 BeginDrawing();
                 update_menus(renderSize);
                 EndDrawing();
@@ -193,7 +194,7 @@ void update_world()
         show_cursor;
     else hide_cursor;
 
-    update_input(&lily);
+    update_input_world(&lily);
 
     BeginMode3D(lily.camera);
     { /*temp*/
@@ -261,7 +262,58 @@ void update_world()
     draw_super_debugger(renderSize);
 }
 
-void update_input(Player *player)
+void update_input_general(Player *player)
+{
+    if (IsKeyPressed(bindToggleFullscreen))
+    {
+        state ^= STATE_FULLSCREEN;
+        ToggleBorderlessWindowed();
+
+        switch (state & STATE_FULLSCREEN)
+        {
+            case 0: SetConfigFlags(FLAG_FULLSCREEN_MODE); break;
+            case 1: SetConfigFlags(~FLAG_FULLSCREEN_MODE); break;
+        }
+        apply_render_settings(renderSize);
+    }
+
+    if (IsKeyPressed(bindPause) && (state & STATE_WORLD_LOADED))
+    {
+        if (!stateMenuDepth)
+        {
+            stateMenuDepth = 1;
+            menuIndex = MENU_GAME;
+            state |= STATE_PAUSED;
+            player->containerState = 0;
+            show_cursor;
+        }
+        else if (stateMenuDepth == 1)
+        {
+            stateMenuDepth = 0;
+            state &= ~STATE_PAUSED;
+            player->containerState = 0;
+        }
+        else btn_func_back();
+    }
+
+    if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
+    {
+        if (stateMenuDepth == 1)
+            state &= ~STATE_ACTIVE;
+        else btn_func_back();
+    }
+
+    // ---- debug --------------------------------------------------------------
+#if RELEASE_BUILD == 0
+    if (IsKeyPressed(KEY_TAB))
+        state ^= STATE_SUPER_DEBUG;
+
+    if (IsKeyPressed(bindQuit))
+        state &= ~STATE_ACTIVE;
+#endif // RELEASE_BUILD
+}
+
+void update_input_world(Player *player)
 {
     // ---- jumping ------------------------------------------------------------
     if (IsKeyPressed(bindJump))
@@ -400,22 +452,6 @@ void update_input(Player *player)
     if (IsKeyPressed(bindToggleDebug))
         state ^= STATE_DEBUG;
 
-    if (IsKeyPressed(bindToggleFullscreen))
-    {
-        state ^= STATE_FULLSCREEN;
-        ToggleBorderlessWindowed();
-
-        if (state & STATE_FULLSCREEN)
-            MaximizeWindow();
-        else
-        {
-            RestoreWindow();
-            SetWindowSize(WIDTH, HEIGHT);
-            SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
-        }
-        apply_render_settings(renderSize);
-    }
-
     if (IsKeyPressed(bindTogglePerspective))
     {
         if (player->perspective < 4)
@@ -423,37 +459,11 @@ void update_input(Player *player)
         else player->perspective = 0;
     }
 
-    if (IsKeyPressed(bindPause))
-    {
-        if (!stateMenuDepth)
-        {
-            stateMenuDepth = 1;
-            menuIndex = MENU_GAME;
-            state |= STATE_PAUSED;
-            player->containerState = 0;
-            show_cursor;
-        }
-        else if (stateMenuDepth == 1)
-        {
-            stateMenuDepth = 0;
-            player->containerState = 0;
-        }
-        else --stateMenuDepth;
-    }
     if (!stateMenuDepth && !(state & STATE_SUPER_DEBUG))
     {
         hide_cursor;
         center_cursor;
     }
-
-    // ---- debug --------------------------------------------------------------
-#if RELEASE_BUILD == 0
-    if (IsKeyPressed(KEY_TAB))
-        state ^= STATE_SUPER_DEBUG;
-
-    if (IsKeyPressed(bindQuit))
-        state &= ~STATE_ACTIVE;
-#endif // RELEASE_BUILD
 }
 
 f64 skyboxMidDay = 0;
