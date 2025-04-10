@@ -7,8 +7,9 @@
 - added windows support for building launcher and tests
 - removed 'draw_text_centered()', added arguments 'alignX' and 'alignY' to 'draw_text()'
 - added text alignment to left, center, right, top, center and bottom
-- added window resize poll event
+- added window resize poll events
 - fixed bug centering cursor to center of screen instead of center of viewport
+- added texture alignment to left, center, right, top, center and bottom
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
@@ -20,7 +21,7 @@
 - added day/night cycle
 - added compiled release_build for windows
 
-## Release - v0.1.3 (03 Apr 2025)
+## v0.1.3 (03 Apr 2025)
 - - - -
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard

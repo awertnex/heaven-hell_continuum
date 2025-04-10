@@ -271,10 +271,10 @@ void draw_debug_info(Camera3D *camera);
 
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
 float get_str_width(Font font, const str *str, f32 fontSize, f32 spacing);
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on source.scale*scl */
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint); /* scale is based on source.scale*scl */
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on scl */
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 btnState, void (*func)(), const str *str);
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str *str);
 
 void btn_func_singleplayer();
 void btn_func_multiplayer();

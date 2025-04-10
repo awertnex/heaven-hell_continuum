@@ -94,28 +94,32 @@ void draw_super_debugger(v2f32 renderSize)
             DebugRectangle.pos.y - SDB_BASE_SIZE},
             (v2i16){
             1,
-            1}, COL_TRANS_MENU);
+            1},
+            0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_10,
             (v2i16){
             DebugRectangle.pos.x + DebugRectangle.scl.x,
             DebugRectangle.pos.y - SDB_BASE_SIZE},
             (v2i16){
             1,
-            1}, COL_TRANS_MENU);
+            1},
+            0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_01,
             (v2i16){
             DebugRectangle.pos.x - SDB_BASE_SIZE,
             DebugRectangle.pos.y + DebugRectangle.scl.y},
             (v2i16){
             1,
-            1}, COL_TRANS_MENU);
+            1},
+            0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_11,
             (v2i16){
             DebugRectangle.pos.x + DebugRectangle.scl.x,
             DebugRectangle.pos.y + DebugRectangle.scl.y},
             (v2i16){
             1,
-            1}, COL_TRANS_MENU);
+            1},
+            0, 0, COL_TRANS_MENU);
 
     // ---- draw the rest of the stuff -----------------------------------------
     /* temp

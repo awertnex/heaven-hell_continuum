@@ -20,7 +20,7 @@
 #define SETTING_RENDER_DISTANCE_DEFAULT     3
 #define SETTING_RENDER_DISTANCE_MIN         2
 #define SETTING_RENDER_DISTANCE_MAX         8
-#define SETTING_GUI_SCALE_DEFAULT           1.0f
+#define SETTING_GUI_SCALE_DEFAULT           2.0f
 #define SETTING_GUI_SCALE_MIN               1.0f //TODO: figure out values
 #define SETTING_GUI_SCALE_MAX               3.0f //TODO: figure out values
 
