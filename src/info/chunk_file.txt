@@ -1,0 +1,7 @@
+i16 chunk pos x
+i16 chunk pos y
+u16 number of blocks to parse
+u8 block index[number of blocks to parse]
+u16 block info[number of blocks to parse]
+
+
