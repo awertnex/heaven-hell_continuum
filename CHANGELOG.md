@@ -13,6 +13,10 @@
 - added functions kill_player() and respawn_player()
 - changed chunk drawing into entire chunkBuf drawing
 - added block texturing
+- fixed player movement
+- fixed player bounding box slidy
+- fixed window close bugs
+- fixed menu input events
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
