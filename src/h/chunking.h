@@ -20,6 +20,11 @@
 #define CHUNK_SIZE          64
 #define WORLD_SIZE          CHUNK_SIZE*32767 // in each cardinal direction
 
+#define MAX_CHUNK_BLOCKS    1720320     // CHUNK_SIZE*CHUNK_ZIZE*WORLD_HEIGHT_NORMAL
+#define MAX_CHUNK_QUADS     5160960     // (CHUNK_SIZE/2)*CHUNK_SIZE*WORLD_HEIGHT_NORMAL
+#define MAX_CHUNK_TRIS      10321920    // (MAX_CHUNK_QUADS/2)
+#define MAX_CHUNK_VERTICES  20643840    // (MAX_CHUNK_QUADS*4)
+
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
 {
