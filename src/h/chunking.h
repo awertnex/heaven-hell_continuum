@@ -14,11 +14,11 @@
 #define WORLD_KILL_Z        -128
 #define WORLD_BOTTOM        -69
 #define WORLD_SEA_LEVEL     62
-#define WORLD_HEIGHT_NORMAL 420 /* - WORLD_BOTTOM */
-#define WORLD_HEIGHT_HELL   365 /* - WORLD_BOTTOM */
-#define WORLD_HEIGHT_END    256 /* - WORLD_BOTTOM */
+#define WORLD_HEIGHT_NORMAL 420 // - WORLD_BOTTOM
+#define WORLD_HEIGHT_HELL   365 // - WORLD_BOTTOM
+#define WORLD_HEIGHT_END    256 // - WORLD_BOTTOM
 #define CHUNK_SIZE          64
-#define WORLD_SIZE          64*32767 /* in each cardinal direction */
+#define WORLD_SIZE          CHUNK_SIZE*32767 // in each cardinal direction
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
@@ -49,6 +49,7 @@ typedef struct Chunk
     u8 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
     u16 info[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
     u8 loaded;
+    u32 id;
     /*TODO: replace 'loaded' with a 'chunk_table' array of pointers to 'chunk_buf'
       addresses and update pointer addresses as player enters or exits chunks */
 } Chunk;

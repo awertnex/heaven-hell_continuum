@@ -130,13 +130,14 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 }
 
 Texture2D cobblestone;
+Texture2D dirt;
 void draw_chunk_buffer(Chunk *chunkBuf)
 {
     if (state & STATE_DEBUG)
         opacity = 200;
     else opacity = 255;
     rlPushMatrix();
-    rlSetTexture(cobblestone.id); //temp texturing
+    rlSetTexture(dirt.id); //temp texturing
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
