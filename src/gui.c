@@ -529,15 +529,15 @@ void draw_debug_info(Camera3D *camera)
     DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,           fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
     DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
 
-    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                    fontSizeDebugInfo, 1, 0, 0, COL_STATS_1);
-    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},    fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
-    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight*2},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
-    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight*3},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
-    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight*4},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_2);
-    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight*5},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
-    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight*6},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
-    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight*7},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
-    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight*8},  fontSizeDebugInfo, 1, 0, 0, COL_STATS_3);
+    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight*2},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight*3},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight*4},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight*5},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight*6},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight*7},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight*8},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
