@@ -35,7 +35,7 @@ typedef struct settings
 
     // ---- options menu -------------------------------------------------------
     u16 fov;
-    u16 mouseSensitivity;
+    f64 mouseSensitivity;
 
     // ---- video --------------------------------------------------------------
     u8 renderDistance;

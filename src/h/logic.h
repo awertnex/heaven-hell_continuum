@@ -32,9 +32,13 @@ typedef struct Player
     Vector3 pos;                // player current coordinates in world
     Vector3 scl;                // player size for collision detection
     f32 pitch, yaw;             // for player camera direction and target
+    f32 sinPitch, cosPitch;     // processed player pitch angles
+    f32 sinYaw, cosYaw;         // processed player yaw angles
+    f32 eyeHeight;              // height of player camera, usually
     v3f32 v;                    // velocity
     f32 m;                      // mass
     f32 movementSpeed;          // depends on enum: PlayerStates
+    f32 movementStepLength;
     u64 containerState;         // enum: ContainerStates
     u8 perspective;             // camera perspective mode
     u16 state;                  // enum: PlayerStates
@@ -108,6 +112,7 @@ enum PlayerStates
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
+extern Vector2 mouseDelta;
 extern v3i32 targetCoordinatesFeet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------

@@ -6,6 +6,7 @@
 #include "h/chunking.h"
 
 // ---- variables --------------------------------------------------------------
+Vector2 mouseDelta;
 v3i32 targetCoordinatesFeet; /*temp*/
 
 bool get_double_press(Player *player, KeyboardKey key)
@@ -13,13 +14,12 @@ bool get_double_press(Player *player, KeyboardKey key)
     static f64 doublePressStartTime = 0;
     static KeyboardKey doublePressKey = KEY_NULL;
 
-    if (((player->state & STATE_DOUBLE_PRESS) && get_time_ms() - doublePressStartTime >= 0.25f) ||
+    if (((player->state & STATE_DOUBLE_PRESS) && (f64)(get_time_ms() - doublePressStartTime >= 0.25f)) ||
             key != doublePressKey)
         player->state &= ~STATE_DOUBLE_PRESS;
     else
     {
         doublePressKey = KEY_NULL;
-        player->state &= ~STATE_DOUBLE_PRESS;
         return true;
     }
 
@@ -78,81 +78,80 @@ void update_camera_movements_player(Player *player)
 {
     if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG))
     {
-        player->yaw -= GetMouseDelta().x*((f32)setting.mouseSensitivity/650);
-        if (player->pitch <= 90 && player->pitch >= -90)
-            player->pitch -= GetMouseDelta().y*((f32)setting.mouseSensitivity/650);
+        player->yaw -= mouseDelta.x*setting.mouseSensitivity;
+        player->pitch -= mouseDelta.y*setting.mouseSensitivity;
     }
 
-    if (player->yaw >= 360)         player->yaw = 0;
-    else if (player->yaw < 0)       player->yaw += 360;
-    if (player->pitch > 90)         player->pitch = 90;
-    else if (player->pitch < -90)   player->pitch = -90;
+    player->yaw = fmodf(player->yaw, 360.0f);
+    if (player->yaw < 0.0f) player->yaw += 360.0f;
+    if (player->pitch > 90.0f) player->pitch = 90.0f;
+    else if (player->pitch < -90.0f) player->pitch = -90.0f;
+
+    player->sinPitch =  sinf(player->pitch*MC_C_DEG2RAD);
+    player->cosPitch =  cosf(player->pitch*MC_C_DEG2RAD);
+    player->sinYaw =    sinf(player->yaw*MC_C_DEG2RAD);
+    player->cosYaw =    cosf(player->yaw*MC_C_DEG2RAD);
+
+    Vector3 playerCameraUp;
+    playerCameraUp =
+        (Vector3){
+            -player->cosYaw*player->sinPitch,
+            -player->sinYaw*player->sinPitch,
+            player->cosPitch,
+        };
 
     switch (player->perspective)
     {
         case 0: // ---- 1st person ---------------------------------------------
             player->camera.position =
-                (Vector3){player->pos.x, player->pos.y, player->pos.z + 1.5f,
+                (Vector3){player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
                 };
             player->camera.target =
                 (Vector3){
-                    player->pos.x + ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*setting.reachDistance),
-                    player->pos.y + ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*setting.reachDistance),
-                    player->camera.position.z + (sinf(player->pitch*MC_C_DEG2RAD)*setting.reachDistance),
+                    player->pos.x + ((player->cosYaw*player->cosPitch)*setting.reachDistance),
+                    player->pos.y + ((player->sinYaw*player->cosPitch)*setting.reachDistance),
+                    player->camera.position.z + (player->sinPitch*setting.reachDistance),
                 };
-            player->camera.up =
-                (Vector3){
-                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    cosf(player->pitch*MC_C_DEG2RAD),
-                };
+            player->camera.up = playerCameraUp;
             break;
 
         case 1: // ---- 3rd person back ----------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x - ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
-                    player->pos.y - ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
-                    player->pos.z + 1.5f - (sinf(player->pitch*MC_C_DEG2RAD)*player->cameraDistance),
+                    player->pos.x - ((player->cosYaw*player->cosPitch)*player->cameraDistance),
+                    player->pos.y - ((player->sinYaw*player->cosPitch)*player->cameraDistance),
+                    player->pos.z + player->eyeHeight - (player->sinPitch*player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + 1.5f,
+                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
                 };
-            player->camera.up =
-                (Vector3){
-                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    cosf(player->pitch*MC_C_DEG2RAD),
-                };
+            player->camera.up = playerCameraUp;
             break;
 
         case 2: // ---- 3rd person front ---------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x + ((cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
-                    player->pos.y + ((sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD))*player->cameraDistance),
-                    player->pos.z + 1.5f + (sinf(player->pitch*MC_C_DEG2RAD)*player->cameraDistance),
+                    player->pos.x + ((player->cosYaw*player->cosPitch)*player->cameraDistance),
+                    player->pos.y + ((player->sinYaw*player->cosPitch)*player->cameraDistance),
+                    player->pos.z + player->eyeHeight + (player->sinPitch*player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + 1.5f,
+                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
                 };
-            player->camera.up =
-                (Vector3){
-                    -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                    cosf(player->pitch*MC_C_DEG2RAD),
-                };
+            player->camera.up = playerCameraUp;
             break;
 
-        case 3: // ---- 3rd person stalker -------------------------------------
+            // TODO: make the stalker camera mode
+        case 3: // ---- stalker ------------------------------------------------
             player->camera.target =
                 (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + 1.5f,
+                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
                 };
             break;
 
+            // TODO: make the spectator camera mode
         case 4: // ---- spectator ----------------------------------------------
             break;
     }

@@ -22,37 +22,39 @@ settings setting =
 {
     .reachDistance =        SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
-    .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT,
+    .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT/650.0f,
     .renderDistance =       SETTING_RENDER_DISTANCE_DEFAULT,
     .guiScale =             SETTING_GUI_SCALE_DEFAULT,
 };
 Player lily =
 {
     .name = "Lily",
-    .pos = {0},
+    .pos = {0.0f},
     .scl = {0.6f, 0.6f, 1.8f},
-    .pitch = -29,
-    .yaw = 121,
-    .m = 2,
-    .movementSpeed = 10,
+    .pitch = -29.0f,
+    .yaw = 121.0f,
+    .sinPitch = 0.0f, .cosPitch = 0.0f, .sinYaw = 0.0f, .cosYaw = 0.0f,
+    .eyeHeight = 1.5f,
+    .m = 2.0f,
+    .movementSpeed = 10.0f,
     .containerState = 0,
     .perspective = 0,
 
     .camera =
     {
-        .up.z = 1,
-        .fovy = 70,
+        .up.z = 1.0f,
+        .fovy = 70.0f,
         .projection = CAMERA_PERSPECTIVE,
     },
     .cameraDistance = SETTING_CAMERA_DISTANCE_MAX,
     .cameraDebugInfo =
     {
-        .up.z = 1,
-        .fovy = 50,
+        .up.z = 1.0f,
+        .fovy = 50.0f,
         .projection = CAMERA_ORTHOGRAPHIC,
     },
 
-    .spawnPoint = {0, 0, 0},
+    .spawnPoint = {0.0f, 0.0f, 0.0f},
 };
 
 // ---- signatures -------------------------------------------------------------
@@ -114,6 +116,7 @@ int main(int argc, char **argv)
         update_menus(renderSize);
         if (state & STATE_WORLD_LOADED)
         {
+            mouseDelta = GetMouseDelta();
             draw_skybox();
             update_world();
         }
@@ -127,6 +130,7 @@ int main(int argc, char **argv)
 
             while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose())
             {
+                renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
                 update_input_general(&lily);
                 BeginDrawing();
                 update_menus(renderSize);
@@ -164,12 +168,13 @@ void init_world()
         parse_chunk_states(&chunkBuf[0][0], 3);
         parse_chunk_states(&chunkBuf[0][1], 2);
         parse_chunk_states(&chunkBuf[0][2], 2);
-        parse_chunk_states(&chunkBuf[0][3], 30);
+        parse_chunk_states(&chunkBuf[0][3], 50);
         parse_chunk_states(&chunkBuf[0][4], 2);
         parse_chunk_states(&chunkBuf[0][5], 2);
         parse_chunk_states(&chunkBuf[0][6], 3);
         parse_chunk_states(&chunkBuf[0][7], 2);
         cobblestone = LoadTexture("resources/textures/blocks/stone.png"); //temp
+        dirt = LoadTexture("resources/textures/blocks/dirt.png"); //temp
     }
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
@@ -183,10 +188,6 @@ void update_world()
     gameTick = (floor((get_time_ms() - gameStartTime)*20)) - (SETTING_DAY_TICKS_MAX*gameDays);
     if (gameTick >= SETTING_DAY_TICKS_MAX)
         ++gameDays;
-    renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
-
-    update_player_states(&lily);
-    update_camera_movements_player(&lily);
 
     if (MODE_COLLIDE)
         give_collision_static(&lily, &targetCoordinatesFeet);
@@ -199,11 +200,10 @@ void update_world()
     else hide_cursor;
 
     update_input_world(&lily);
-
+    update_player_states(&lily);
+    update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
-    { /*temp*/
-        draw_chunk_buffer(*chunkBuf);
-    }
+    draw_chunk_buffer(*chunkBuf);
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
@@ -307,12 +307,11 @@ void update_input_general(Player *player)
 void update_input_world(Player *player)
 {
     // ---- jumping ------------------------------------------------------------
-    if (IsKeyPressed(bindJump))
-        if (get_double_press(player, bindJump))
-            player->state ^= STATE_FLYING;
-
     if (IsKeyDown(bindJump))
     {
+        if (IsKeyPressed(bindJump) && get_double_press(player, bindJump))
+            player->state ^= STATE_FLYING;
+
         if (player->state & STATE_FLYING)
             player->pos.z += player->movementSpeed;
 
@@ -345,30 +344,39 @@ void update_input_world(Player *player)
     // ---- moving -------------------------------------------------------------
     if (IsKeyDown(bindStrafeLeft))
     {
-        player->pos.x -= player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
-        player->pos.y += player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
+        player->v.x -= player->movementSpeed*player->sinYaw;
+        player->v.y += player->movementSpeed*player->cosYaw;
     }
 
     if (IsKeyDown(bindStrafeRight))
     {
-        player->pos.x += player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
-        player->pos.y -= player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
+        player->v.x += player->movementSpeed*player->sinYaw;
+        player->v.y -= player->movementSpeed*player->cosYaw;
     }
 
     if (IsKeyDown(bindWalkBackwards))
     {
-        player->pos.x -= player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
-        player->pos.y -= player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
+        player->v.x -= player->movementSpeed*player->cosYaw;
+        player->v.y -= player->movementSpeed*player->sinYaw;
     }
-
-    if (IsKeyPressed(bindWalkForwards))
-        if (get_double_press(player, bindWalkForwards))
-            player->state |= STATE_SPRINTING;
 
     if (IsKeyDown(bindWalkForwards))
     {
-        player->pos.x += player->movementSpeed*cosf(player->yaw*MC_C_DEG2RAD);
-        player->pos.y += player->movementSpeed*sinf(player->yaw*MC_C_DEG2RAD);
+        if (IsKeyPressed(bindWalkForwards) && get_double_press(player, bindWalkForwards))
+            player->state |= STATE_SPRINTING;
+
+        player->v.x += player->movementSpeed*player->cosYaw;
+        player->v.y += player->movementSpeed*player->sinYaw;
+    }
+
+    player->movementStepLength = sqrt(sqr(player->v.x) + sqr(player->v.y));
+    if (player->movementStepLength > 0.0f)
+    {
+        player->v.x /= player->movementStepLength;
+        player->v.y /= player->movementStepLength;
+
+        player->pos.x += player->v.x*player->movementSpeed;
+        player->pos.y += player->v.y*player->movementSpeed;
     }
 
     // ---- gameplay -----------------------------------------------------------
@@ -457,22 +465,26 @@ void update_input_world(Player *player)
     }
 }
 
+f64 skyboxTime = 0;
 f64 skyboxMidDay = 0;
+f64 skyboxPreBurn = 0;
 f64 skyboxBurn = 0;
 f64 skyboxBurnBoost = 0;
 f64 skyboxMidNight = 0;
 Color skyboxRGBA = {0};
 void draw_skybox()
 {
-    skyboxMidDay =      fabs(powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX)*PI), 2));
-    skyboxBurn =        powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI*2.0f), 8);
-    skyboxBurnBoost =   powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI*1.4f), 32);
-    skyboxMidNight =    powf(sinf(((f64)gameTick/SETTING_DAY_TICKS_MAX - 0.5f)*PI), 8);
+    skyboxTime =        (f64)gameTick/SETTING_DAY_TICKS_MAX;
+    skyboxMidDay =      fabs(sinf(1.5f*powf(sinf(skyboxTime*PI), 2.0f)));
+    skyboxPreBurn =     fabs(sinf(powf(sinf((skyboxTime + 0.33)*PI*1.2f), 16.0f)));
+    skyboxBurn =        fabs(sinf(1.5f*powf(sinf((skyboxTime + 0.124f)*PI*1.6f), 20.0f)));
+    skyboxBurnBoost =   fabs(powf(sinf((skyboxTime + 0.212f)*PI*1.4f), 64.0f));
+    skyboxMidNight =    fabs(sinf(powf(2*cosf(skyboxTime*PI), 3.0f)));
     skyboxRGBA =
         (Color){
-            (skyboxMidDay*171) + (skyboxBurn*110) + (skyboxMidNight*2) + (skyboxBurnBoost*33),
-            (skyboxMidDay*229) + (skyboxBurn*55) + (skyboxMidNight*5) + (skyboxBurnBoost*11),
-            (skyboxMidDay*255) + (skyboxBurn*2) + (skyboxMidNight*19),
+            Clamp((skyboxMidDay*171) + (skyboxBurn*85) + (skyboxMidNight*1) +   (skyboxPreBurn*13) +    (skyboxBurnBoost*76),   0, 255),
+            Clamp((skyboxMidDay*229) + (skyboxBurn*42) + (skyboxMidNight*4) +   (skyboxPreBurn*7) +     (skyboxBurnBoost*34),   0, 255),
+            Clamp((skyboxMidDay*255) + (skyboxBurn*19) + (skyboxMidNight*14) +  (skyboxPreBurn*20),                             0, 255),
             255
         };
 
