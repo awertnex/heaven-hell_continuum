@@ -5,7 +5,6 @@
 #include "dependencies/raylib-5.5/src/rlgl.h"
 
 #include "h/gui.h"
-#include "keymaps.c"
 #include "h/chunking.h"
 #include "h/logic.h"
 
