@@ -194,6 +194,30 @@ void update_camera_movements_debug_info(Camera3D *camera, Player *player)
     }
 }
 
+void kill_player(Player *player)
+{
+    *player =
+        (Player){
+            .v = {0.0f},
+            .m = 0.0f,
+            .movementSpeed = 0.0f,
+            .containerState = 0,
+            .state = STATE_DEAD,
+    };
+}
+
+void player_respawn(Player *player)
+{
+    *player =
+        (Player){
+            .pos = (Vector3){
+                player->spawnPoint.x,
+                player->spawnPoint.y,
+                player->spawnPoint.z},
+            .state = 0,
+    };
+}
+
 bool check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget)
 {
     if (lastTarget->x == floorf(coordinates->x) &&
@@ -314,3 +338,4 @@ void draw_default_grid(Color x, Color y, Color z)
     rlEnd();
     rlPopMatrix();
 }
+

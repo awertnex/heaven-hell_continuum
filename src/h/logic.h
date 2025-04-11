@@ -102,7 +102,8 @@ enum PlayerStates
     STATE_FALLING =                 0x0080,
     STATE_DOUBLE_PRESS =            0x0100,
     STATE_PARSE_TARGET =            0x0200,
-    STATE_PARSE_COLLISION_FEET =    0x0400, /*temp*/
+    STATE_DEAD =                    0x0400,
+    STATE_PARSE_COLLISION_FEET =    0x0800, /*temp*/
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
@@ -114,6 +115,8 @@ bool get_double_press(Player *player, KeyboardKey key);
 void update_player_states(Player *player);
 void update_camera_movements_player(Player *player);
 void update_camera_movements_debug_info(Camera3D *camera, Player *player);
+void kill_player(Player *player);
+void respawn_player(Player *player);
 b8 check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);

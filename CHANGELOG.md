@@ -10,6 +10,9 @@
 - added window resize poll events
 - fixed bug centering cursor to center of screen instead of center of viewport
 - added texture alignment to left, center, right, top, center and bottom
+- added functions kill_player() and respawn_player()
+- changed chunk drawing into entire chunkBuf drawing
+- added block texturing
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
