@@ -1,7 +1,8 @@
-#include <string.h>
+#include <stdio.h>
 #include <math.h>
 
 #include "h/chunking.h"
+#include "h/logic.h"
 #include "h/logger.h"
 
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
@@ -10,6 +11,7 @@ void *chunk_table[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_
 Chunk *targetChunk = 0;
 u64 blockCount = 0; //debug mode
 u64 quadCount = 0; //debug mode
+u8 opacity = 0;
 
 void init_chunking()
 {
@@ -127,29 +129,52 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     return NULL;
 }
 
+Texture2D cobblestone;
+void draw_chunk_buffer(Chunk *chunkBuf)
+{
+    if (state & STATE_DEBUG)
+        opacity = 200;
+    else opacity = 255;
+    rlPushMatrix();
+    rlSetTexture(cobblestone.id); //temp texturing
+    rlBegin(RL_QUADS);
+
+    for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
+        if (chunkBuf[i].loaded)
+            draw_chunk(&chunkBuf[i], 0);
+
+    rlEnd();
+    rlPopMatrix();
+    rlSetTexture(0); //temp texturing
+}
+
 void draw_chunk(Chunk *chunk, u16 height)
 {
-    rlPushMatrix();
-    rlBegin(RL_QUADS);
+    if (!height) height = 50;
     rlTranslatef(chunk->pos.x*CHUNK_SIZE, chunk->pos.y*CHUNK_SIZE, WORLD_BOTTOM);
 
-    for (u16 z = 0; z < height; ++z)
+    u16 z = 0; u8 y = 0, x = 0;
+    for (; z < height; ++z)
     {
-        for (u8 y = 0; y < CHUNK_SIZE; ++y)
+        for (; y < CHUNK_SIZE; ++y)
         {
-            for (u8 x = 0; x < CHUNK_SIZE; ++x)
+            for (; x < CHUNK_SIZE; ++x)
             {
                 if (chunk->i[z][y][x] & BLOCKFACES)
                     draw_block(chunk->i[z][y][x]);
                 rlTranslatef(1, 0, 0);
             }
+            x = 0;
             rlTranslatef(-CHUNK_SIZE, 1, 0);
         }
+        y = 0;
         rlTranslatef(0, -CHUNK_SIZE, 1);
     }
-
-    rlEnd();
-    rlPopMatrix();
+    rlTranslatef(
+            (-chunk->pos.x*CHUNK_SIZE),
+            (-chunk->pos.y*CHUNK_SIZE),
+            (-WORLD_BOTTOM) - height
+            );
 }
 
 // raylib/rmodels.c/DrawCube refactored
@@ -161,10 +186,12 @@ void draw_block(u32 block_state)
             rlColor4ub(150, 150, 137, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 210, 90, opacity);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
+        
+        rlNormal3f(1.0f, 0.0f, 0.0f); //temp texturing
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
     }
 
     if (block_state & NEGATIVE_X)
@@ -173,10 +200,12 @@ void draw_block(u32 block_state)
             rlColor4ub(135, 135, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(236, 17, 90, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
+
+        rlNormal3f(-1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
     }
 
     if (block_state & POSITIVE_Y)
@@ -185,10 +214,12 @@ void draw_block(u32 block_state)
             rlColor4ub(155, 155, 142, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 248, 246, opacity);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
+
+        rlNormal3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
     }
 
     if (block_state & NEGATIVE_Y)
@@ -197,10 +228,12 @@ void draw_block(u32 block_state)
             rlColor4ub(140, 140, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(28, 14, 50, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
+
+        rlNormal3f(0.0f, -1.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
     }
 
     if (block_state & POSITIVE_Z)
@@ -209,10 +242,12 @@ void draw_block(u32 block_state)
             rlColor4ub(176, 176, 160, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(250, 18, 5, opacity);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
+
+        rlNormal3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
     }
 
     if (block_state & NEGATIVE_Z)
@@ -221,10 +256,12 @@ void draw_block(u32 block_state)
             rlColor4ub(115, 115, 104, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 40, 203, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
+
+        rlNormal3f(0.0f, 0.0f, -1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
     }
 }
 

@@ -87,6 +87,7 @@ int main(int argc, char **argv)
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
+    SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
 #if !RELEASE_BUILD
     SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
@@ -101,7 +102,7 @@ int main(int argc, char **argv)
     setting.renderDistance = SETTING_RENDER_DISTANCE_MAX; //temp
 
     state |= STATE_ACTIVE;
-    while (state & STATE_ACTIVE)
+    while (!WindowShouldClose() && (state & STATE_ACTIVE))
         // ---- game loop ------------------------------------------------------
     {
         update_input_general(&lily);
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
             draw_menu_overlay(renderSize);
             EndDrawing();
 
-            while (state & STATE_PAUSED && state & STATE_ACTIVE)
+            while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose())
             {
                 update_input_general(&lily);
                 BeginDrawing();
@@ -135,6 +136,7 @@ int main(int argc, char **argv)
     }
 
     // ---- game close ---------------------------------------------------------
+    UnloadTexture(cobblestone); //temp
     unload_textures();
     free_gui();
     free_super_debugger();
@@ -150,7 +152,7 @@ void init_world()
 
     init_chunking();
 
-    { /*temp*/
+    { //temp
         chunkBuf[0][0].pos = (v2i16){0, 0};
         chunkBuf[0][1].pos = (v2i16){0, -1};
         chunkBuf[0][2].pos = (v2i16){0, -2};
@@ -167,6 +169,7 @@ void init_world()
         parse_chunk_states(&chunkBuf[0][5], 2);
         parse_chunk_states(&chunkBuf[0][6], 3);
         parse_chunk_states(&chunkBuf[0][7], 2);
+        cobblestone = LoadTexture("resources/textures/blocks/stone.png"); //temp
     }
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
@@ -199,14 +202,7 @@ void update_world()
 
     BeginMode3D(lily.camera);
     { /*temp*/
-        draw_chunk(&chunkBuf[0][0], 20);
-        draw_chunk(&chunkBuf[0][1], 2);
-        draw_chunk(&chunkBuf[0][2], 2);
-        draw_chunk(&chunkBuf[0][3], 30);
-        draw_chunk(&chunkBuf[0][4], 2);
-        draw_chunk(&chunkBuf[0][5], 2);
-        draw_chunk(&chunkBuf[0][6], 9);
-        draw_chunk(&chunkBuf[0][7], 2);
+        draw_chunk_buffer(*chunkBuf);
     }
 
     //TODO: make a function 'index_to_bounding_box()'

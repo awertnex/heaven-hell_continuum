@@ -20,8 +20,6 @@
 #define CHUNK_SIZE          64
 #define WORLD_SIZE          64*32767 /* in each cardinal direction */
 
-#define opacity 210
-
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
 {
@@ -61,6 +59,7 @@ extern Chunk chunkBuf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTA
 extern Chunk *targetChunk;
 extern u64 blockCount; //debug mode
 extern u64 quadCount; //debug mode
+extern u8 opacity;
 
 // ---- signatures -------------------------------------------------------------
 void init_chunking();
@@ -70,6 +69,7 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void parse_chunk_states(Chunk *chunk, u16 height);
 Chunk* get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
+void draw_chunk_buffer(Chunk *chunkBuf);
 void draw_chunk(Chunk *chunk, u16 height);
 void draw_block(u32 blockStates);
 void draw_block_wires(v3i32 *pos);
