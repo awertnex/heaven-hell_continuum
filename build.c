@@ -13,7 +13,7 @@
 char** cmd;
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
-#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
+#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
     #define ALLOC_CMD
     #define ZERO_CMD
     #define FREE_CMD
@@ -101,6 +101,8 @@ void build_cmd()
 
 int main(int argc, char **argv)
 {
+    perror("execvp");
+
     if (argc == 1)
     {
         printf("Building minecraft.c..\n");
@@ -133,7 +135,7 @@ int main(int argc, char **argv)
             printf("usage: ./build test [n]\n");
             return -1;
         }
-        else if (((argv[2][0] - 48) < 0) || ((argv[2][0] - 48) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
+        else if ((atoi(argv[2]) < 0) || (atoi(argv[2]) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
         {
             printf("Invalid '%c', Try './build list' to List Available Options..\n", argv[2][0]);
             return -1;
