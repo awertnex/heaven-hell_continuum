@@ -226,10 +226,10 @@ void update_world()
                     [lily.lastTarget.x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
             {
                 draw_block_wires(&lily.lastTarget);
-                if (state & STATE_DEBUG)
+                if (state & STATE_DEBUG_MORE)
                     DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
             }
-            else if (state & STATE_DEBUG)
+            else if (state & STATE_DEBUG_MORE)
                 DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
         }
     }

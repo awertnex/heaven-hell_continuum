@@ -133,7 +133,7 @@ Texture2D cobblestone;
 Texture2D dirt;
 void draw_chunk_buffer(Chunk *chunkBuf)
 {
-    if (state & STATE_DEBUG)
+    if (state & STATE_DEBUG_MORE)
         opacity = 200;
     else opacity = 255;
     rlPushMatrix();
@@ -151,7 +151,7 @@ void draw_chunk_buffer(Chunk *chunkBuf)
 
 void draw_chunk(Chunk *chunk, u16 height)
 {
-    if (!height) height = 50;
+    if (!height) height = 30;
     rlTranslatef(chunk->pos.x*CHUNK_SIZE, chunk->pos.y*CHUNK_SIZE, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;
@@ -360,6 +360,61 @@ void draw_bounding_box(Vector3 *origin, Vector3 *scl)
 
     rlVertex3f(0,       scl->y, scl->z);
     rlVertex3f(0,       scl->y, 0);
+
+    rlEnd();
+    rlPopMatrix();
+}
+
+void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl)
+{
+    Vector3 start =
+        (Vector3){
+            floorf(origin->x - (scl->x/2.0f)) - 1,
+            floorf(origin->y - (scl->y/2.0f)) - 1,
+            floorf(origin->z) - 1,
+        };
+
+    Vector3 end =
+        (Vector3){
+            ceilf(scl->x) + 2,
+            ceilf(scl->y) + 2,
+            ceilf(scl->z) + 2,
+        };
+
+    rlPushMatrix();
+    rlTranslatef(
+            start.x,
+            start.y,
+            start.z);
+    rlBegin(RL_LINES);
+    rlColor4ub(5, 209, 255, 255);
+
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+
+    rlVertex3f(0.0f,    0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  end.z);
+    rlVertex3f(0.0f,    0.0f,   end.z);
+
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+    rlVertex3f(0.0f,    0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  end.z);
 
     rlEnd();
     rlPopMatrix();

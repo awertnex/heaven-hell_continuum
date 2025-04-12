@@ -265,6 +265,7 @@ void give_gravity(Player *player) // TODO: fix player gravity
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
 }
 
+/*
 void update_collision_static(Player *player) // TODO: make AABB collision work
 {
     player->collisionCheckStart =
@@ -300,6 +301,7 @@ void update_collision_static(Player *player) // TODO: make AABB collision work
     //TODO: move to new 'void parse_camera_collisions()'
     player->cameraDistance = SETTING_CAMERA_DISTANCE_MAX;
 }
+*/
 
 f64 get_time_ms()
 {
