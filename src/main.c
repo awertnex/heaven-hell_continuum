@@ -234,7 +234,7 @@ void update_world()
         }
     }
 
-    if (state & STATE_DEBUG)
+    if (state & STATE_DEBUG_MORE)
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);
@@ -288,9 +288,7 @@ void update_input_general(Player *player)
             show_cursor;
         }
         else if (stateMenuDepth == 1)
-        {
             btn_func_back_to_game();
-        }
     }
 
     else if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
@@ -452,7 +450,14 @@ void update_input_world(Player *player)
         state ^= STATE_HUD;
 
     if (IsKeyPressed(bindToggleDebug))
-        state ^= STATE_DEBUG;
+    {
+        if (state & STATE_DEBUG)
+            state &= ~(STATE_DEBUG | STATE_DEBUG_MORE);
+        else state |= STATE_DEBUG;
+
+        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & STATE_DEBUG))
+            state |= STATE_DEBUG_MORE;
+    }
 
     if (IsKeyPressed(bindTogglePerspective))
     {

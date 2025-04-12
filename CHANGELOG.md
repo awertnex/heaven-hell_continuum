@@ -17,6 +17,7 @@
 - fixed player bounding box slidy
 - fixed window close bugs
 - fixed menu input events
+- added <shift> + <F3> combination for special debug (e.g. draw bounding boxes)
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
