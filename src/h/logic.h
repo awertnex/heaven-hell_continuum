@@ -31,6 +31,8 @@ typedef struct Player
     str name[100];              // player in-game name
     Vector3 pos;                // player current coordinates in world
     Vector3 scl;                // player size for collision detection
+    Vector3 collisionCheckStart;
+    Vector3 collisionCheckEnd;
     f32 pitch, yaw;             // for player camera direction and target
     f32 sinPitch, cosPitch;     // processed player pitch angles
     f32 sinYaw, cosYaw;         // processed player yaw angles
@@ -60,9 +62,10 @@ enum GameStates
     STATE_PAUSED =                  0x02,
     STATE_SUPER_DEBUG =             0x04,
     STATE_DEBUG =                   0x08,
-    STATE_HUD =                     0x10,
-    STATE_FULLSCREEN =              0x20,
-    STATE_WORLD_LOADED =            0x40,
+    STATE_DEBUG_MORE =              0x10,
+    STATE_HUD =                     0x20,
+    STATE_FULLSCREEN =              0x40,
+    STATE_WORLD_LOADED =            0x80,
 }; /* GameStates */
 
 enum ContainerStates
@@ -107,13 +110,11 @@ enum PlayerStates
     STATE_DOUBLE_PRESS =            0x0100,
     STATE_PARSE_TARGET =            0x0200,
     STATE_DEAD =                    0x0400,
-    STATE_PARSE_COLLISION_FEET =    0x0800, /*temp*/
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
 extern Vector2 mouseDelta;
-extern v3i32 targetCoordinatesFeet; /*temp*/
 
 // ---- signatures -------------------------------------------------------------
 bool get_double_press(Player *player, KeyboardKey key);
@@ -128,7 +129,7 @@ b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void give_gravity(Player *player);
-void give_collision_static(Player *player, v3i32 *targetCoordinatesFeet);
+void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *timeStart, f32 interval);
 

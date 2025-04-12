@@ -31,6 +31,8 @@ Player lily =
     .name = "Lily",
     .pos = {0.0f},
     .scl = {0.6f, 0.6f, 1.8f},
+    .collisionCheckStart = {0.0f},
+    .collisionCheckEnd = {0.0f},
     .pitch = -29.0f,
     .yaw = 121.0f,
     .sinPitch = 0.0f, .cosPitch = 0.0f, .sinYaw = 0.0f, .cosYaw = 0.0f,
@@ -168,7 +170,7 @@ void init_world()
         parse_chunk_states(&chunkBuf[0][0], 3);
         parse_chunk_states(&chunkBuf[0][1], 2);
         parse_chunk_states(&chunkBuf[0][2], 2);
-        parse_chunk_states(&chunkBuf[0][3], 50);
+        parse_chunk_states(&chunkBuf[0][3], 30);
         parse_chunk_states(&chunkBuf[0][4], 2);
         parse_chunk_states(&chunkBuf[0][5], 2);
         parse_chunk_states(&chunkBuf[0][6], 3);
@@ -190,7 +192,7 @@ void update_world()
         ++gameDays;
 
     if (MODE_COLLIDE)
-        give_collision_static(&lily, &targetCoordinatesFeet);
+        update_collision_static(&lily);
 
     if (state & STATE_DEBUG)
         update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
@@ -232,7 +234,7 @@ void update_world()
         }
     }
 
-    if (MODE_DEBUG && (state & STATE_DEBUG))
+    if (state & STATE_DEBUG)
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);
@@ -240,6 +242,7 @@ void update_world()
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1, 1, 1}, GREEN);
         draw_bounding_box(&lily.pos, &lily.scl);
+        draw_bounding_box_clamped(&lily.pos, &lily.scl); //temp AABB collision
         draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 

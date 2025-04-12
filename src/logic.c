@@ -7,7 +7,6 @@
 
 // ---- variables --------------------------------------------------------------
 Vector2 mouseDelta;
-v3i32 targetCoordinatesFeet; /*temp*/
 
 bool get_double_press(Player *player, KeyboardKey key)
 {
@@ -258,7 +257,7 @@ b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
     return false;
 }
 
-void give_gravity(Player *player)
+void give_gravity(Player *player) // TODO: fix player gravity
 {
     if (player->state & STATE_FALLING)
         player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*dt);
@@ -266,18 +265,29 @@ void give_gravity(Player *player)
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
 }
 
-void give_collision_static(Player *player, v3i32 *targetCoordinatesFeet)
+void update_collision_static(Player *player) // TODO: make AABB collision work
 {
-    i32 x = floorf(player->pos.x);
-    i32 y = floorf(player->pos.y);
-    i32 z = floorf(player->pos.z);
-    Chunk *targetChunkFeet = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
+    player->collisionCheckStart =
+        (Vector3){
+            floorf(player->pos.x - (player->scl.x/2.0f)) - 1,
+            floorf(player->pos.y - (player->scl.y/2.0f)) - 1,
+            floorf(player->pos.z) - 1,
+        };
+
+    player->collisionCheckEnd =
+        (Vector3){
+            ceilf(player->scl.x) + 2,
+            ceilf(player->scl.y) + 2,
+            ceilf(player->scl.z) + 2,
+        };
+
+    Chunk *targetChunk = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
     if ((player->state & STATE_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
     {
-        if (targetChunkFeet->i
+        if (targetChunk->i
                 [z - 1 - WORLD_BOTTOM]
-                [y - (targetChunkFeet->pos.y*CHUNK_SIZE)]
-                [x - (targetChunkFeet->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
+                [y - (targetChunk->pos.y*CHUNK_SIZE)]
+                [x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
         {
             player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
             player->v.z = 0;
