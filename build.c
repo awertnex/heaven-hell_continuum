@@ -93,7 +93,7 @@ void build_cmd()
         execvp(COMPILER, cmd);
     else
     {
-        printf("Error: 'src/' Directory Not Found");
+        printf("Error: 'src/' Directory Not Found\n");
         exit_code = -1;
     }
 
