@@ -29,9 +29,10 @@ int exit_code = 0;
 char str_main[32] = "main.c";
 char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
 char str_out[3][32] = {"-o", EXECUTABLE, 0};
-char str_tests[3][24] =
+char str_tests[4][24] =
 {
     "chunk_loader",
+    "chunk_pointer_table",
     "function_pointer",
     0,
 };
