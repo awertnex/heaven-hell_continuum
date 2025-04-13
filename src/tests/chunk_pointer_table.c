@@ -35,7 +35,7 @@ typedef struct Chunk
 
 u8 state = 0;
 Chunk *chunkBuf;
-u64 *chunkTable;
+void *chunkTable;
 
 int allocate_buffers();
 
@@ -82,7 +82,7 @@ int main(void)
 int allocate_buffers()
 {
     chunkBuf = (Chunk*) malloc(CHUNK_COUNT*sizeof(Chunk));
-    chunkTable = (u64*) malloc(CHUNK_TABLE_SIZE);
+    chunkTable = malloc(CHUNK_TABLE_SIZE);
 
     if (&chunkBuf[0] != NULL)
     {

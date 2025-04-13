@@ -60,9 +60,6 @@ enum BlockData
 
 enum ChunkStates
 {
-    STATE_CHUNK_BUF_ALLOC =     0x1,
-    STATE_CHUNK_TAB_ALLOC =     0x2,
-
     STATE_CHUNK_LOADED =        0x1,
     STATE_CHUNK_DIRTY =         0x2,
 };
@@ -82,7 +79,6 @@ typedef struct Chunk
 
 // ---- declarations -----------------------------------------------------------
 extern u16 worldHeight;
-extern u8 stateChunking;
 extern Chunk *chunkBuf;
 extern void *chunkTab;
 extern Chunk *targetChunk;

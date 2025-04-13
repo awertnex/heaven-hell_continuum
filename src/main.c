@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     // ---- game init ----------------------------------------------------------
 {
     if (MODE_DEBUG)
-        LOGDEBUG("%s", "Debugging Enabled");
+        LOGINFO("%s", "Debugging Enabled");
 
     init_paths();
     //TODO: load textures
@@ -181,14 +181,17 @@ void init_world()
         parse_chunk_states(&chunkBuf[chunkXY(5, 0)], 2);
         parse_chunk_states(&chunkBuf[chunkXY(6, 0)], 3);
         parse_chunk_states(&chunkBuf[chunkXY(7, 0)], 2);
-        cobblestone = LoadTexture("resources/textures/blocks/stone.png"); //temp
-        dirt = LoadTexture("resources/textures/blocks/dirt.png"); //temp
+
+        cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
+        dirt =          LoadTexture("resources/textures/blocks/dirt.png");
+
+        lily.state |= STATE_FALLING;
     }
-    lily.state |= STATE_FALLING; //temp
+
     lily.state &= ~STATE_PARSE_TARGET;
 
-    state |= STATE_HUD | STATE_WORLD_LOADED;
-    LOGINFO("%s", "World Loaded: Poop Consistency Tester");
+    state |= (STATE_HUD | STATE_WORLD_LOADED);
+    LOGINFO("%s '%s'", "World Loaded", "Poop Consistency Tester");
 }
 
 void update_world()

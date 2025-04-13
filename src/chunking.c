@@ -1,13 +1,12 @@
-#include <stdlib.h>
-#include <string.h>
 #include <math.h>
+
+#include "engine/h/memory.h"
+#include "engine/h/logger.h"
 
 #include "h/chunking.h"
 #include "h/logic.h"
-#include "h/logger.h"
 
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
-u8 stateChunking = 0;
 Chunk *chunkBuf = {0};
 void *chunkTab = {0};
 Chunk *targetChunk = 0; //temp
@@ -16,54 +15,24 @@ u64 blockCount = 0;
 u64 quadCount = 0;
 u8 opacity = 0;
 
-u8 init_chunking() // TODO: init chunking correctly
+u8 init_chunking()
 {
-    chunkBuf = (Chunk*) malloc(CHUNK_BUF_ELEMENTS*sizeof(Chunk));
-    memset(chunkBuf, 0, sizeof(*chunkBuf));
-
-    chunkTab = (void*) malloc(CHUNK_BUF_ELEMENTS*sizeof(void*));
-    memset(chunkTab, 0, sizeof(*chunkTab));
-
-    if (&chunkBuf[0] != NULL)
-    {
-        stateChunking |= STATE_CHUNK_BUF_ALLOC;
-        LOGINFO("%s", "chunkBuf Memory Allocated");
-    }
-    else
-    {
-        LOGFATAL("%s", "chunkBuf Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
-
-    if (&chunkTab[0] != NULL)
-    {
-        stateChunking |= STATE_CHUNK_TAB_ALLOC;
-        LOGINFO("%s", "chunkTab Memory Allocated");
-    }
-    else
-    {
-        LOGFATAL("%s", "chunkTab Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
+    MC_C_ALLOC(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(Chunk));
+    MC_C_ALLOC(chunkTab, CHUNK_BUF_ELEMENTS*sizeof(void*));
     return 0;
+
+cleanup:
+    free_chunking();
+    return 1;
 }
 
 void free_chunking()
 {
-    if (stateChunking & STATE_CHUNK_BUF_ALLOC)
-    {
-        free(chunkBuf);
-        LOGDEBUG("%s", "chunkBuf Unloaded");
-    }
-
-    if (stateChunking & STATE_CHUNK_TAB_ALLOC)
-    {
-        free(chunkTab);
-        LOGDEBUG("%s", "chunkTab Unloaded");
-    }
+    MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(Chunk));
+    MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(void*));
 }
 
-//TODO: check chunk barrier faces
+//TODO: check chunk-border block-faces
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_SIZE;

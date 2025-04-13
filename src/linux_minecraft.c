@@ -11,7 +11,7 @@
 #include "logic.c"
 #include "assets.c"
 #include "keymaps.c"
-#include "logger.c"
+#include "engine/logger.c"
 #include "super_debugger.c"
 
 int mc_mkdir(const char *path, u16 mode)
@@ -31,3 +31,4 @@ void update_debug_strings()
     snprintf(strTriCount, 32,                 "TRIS: %ld",                quadCount*2);
     snprintf(strVertexCount, 32,              "VERTICES: %ld",            quadCount*6);
 }
+
