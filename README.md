@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="resources/logo/512x512.png" alt="minecraft.c">
+  <img src="resources/logo/128x128.png" alt="minecraft.c">
 </h1>
 
 **a 1:1 minecraft clone but in C with the C99 standard, as best as I could, with minimal library usage if any.\
