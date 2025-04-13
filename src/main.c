@@ -15,9 +15,9 @@
 v2f32 renderSize = {WIDTH, HEIGHT};
 u16 state = 0;
 u8 stateMenuDepth = 0;
-static f64 gameStartTime = 0;
-static u64 gameTick = 0;
-static u64 gameDays = 0;
+f64 gameStartTime = 0;
+u64 gameTick = 0;
+u64 gameDays = 0;
 settings setting =
 {
     .reachDistance =        SETTING_REACH_DISTANCE_MAX,
@@ -143,7 +143,9 @@ int main(int argc, char **argv)
 
     // ---- game close ---------------------------------------------------------
     UnloadTexture(cobblestone); //temp
+    UnloadTexture(dirt); //temp
     unload_textures();
+    free_chunking();
     free_gui();
     free_super_debugger();
     CloseWindow();
@@ -156,25 +158,29 @@ void init_world()
     hide_cursor;
     center_cursor;
 
-    init_chunking();
+    if (init_chunking() != 0)
+    {
+        state &= ~STATE_ACTIVE;
+        WindowShouldClose();
+    }
 
     { //temp
-        chunkBuf[0][0].pos = (v2i16){0, 0};
-        chunkBuf[0][1].pos = (v2i16){0, -1};
-        chunkBuf[0][2].pos = (v2i16){0, -2};
-        chunkBuf[0][3].pos = (v2i16){-1, 0};
-        chunkBuf[0][4].pos = (v2i16){0, 1};
-        chunkBuf[0][5].pos = (v2i16){0, 2};
-        chunkBuf[0][6].pos = (v2i16){-1, -1};
-        chunkBuf[0][7].pos = (v2i16){1, 0};
-        parse_chunk_states(&chunkBuf[0][0], 3);
-        parse_chunk_states(&chunkBuf[0][1], 2);
-        parse_chunk_states(&chunkBuf[0][2], 2);
-        parse_chunk_states(&chunkBuf[0][3], 30);
-        parse_chunk_states(&chunkBuf[0][4], 2);
-        parse_chunk_states(&chunkBuf[0][5], 2);
-        parse_chunk_states(&chunkBuf[0][6], 3);
-        parse_chunk_states(&chunkBuf[0][7], 2);
+        chunkBuf[chunkXY(0, 0)].pos = (v2i16){0, 0};
+        chunkBuf[chunkXY(1, 0)].pos = (v2i16){0, -1};
+        chunkBuf[chunkXY(2, 0)].pos = (v2i16){0, -2};
+        chunkBuf[chunkXY(3, 0)].pos = (v2i16){-1, 0};
+        chunkBuf[chunkXY(4, 0)].pos = (v2i16){0, 1};
+        chunkBuf[chunkXY(5, 0)].pos = (v2i16){0, 2};
+        chunkBuf[chunkXY(6, 0)].pos = (v2i16){-1, -1};
+        chunkBuf[chunkXY(7, 0)].pos = (v2i16){1, 0};
+        parse_chunk_states(&chunkBuf[chunkXY(0, 0)], 3);
+        parse_chunk_states(&chunkBuf[chunkXY(1, 0)], 2);
+        parse_chunk_states(&chunkBuf[chunkXY(2, 0)], 2);
+        parse_chunk_states(&chunkBuf[chunkXY(3, 0)], 30);
+        parse_chunk_states(&chunkBuf[chunkXY(4, 0)], 2);
+        parse_chunk_states(&chunkBuf[chunkXY(5, 0)], 2);
+        parse_chunk_states(&chunkBuf[chunkXY(6, 0)], 3);
+        parse_chunk_states(&chunkBuf[chunkXY(7, 0)], 2);
         cobblestone = LoadTexture("resources/textures/blocks/stone.png"); //temp
         dirt = LoadTexture("resources/textures/blocks/dirt.png"); //temp
     }
@@ -205,15 +211,15 @@ void update_world()
     update_player_states(&lily);
     update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
-    draw_chunk_buffer(*chunkBuf);
+    draw_chunk_buffer(chunkBuf);
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
     {
     }
     if (is_range_within_v3fi(&lily.camera.target,
-                (v3i32){-WORLD_SIZE, -WORLD_SIZE, WORLD_BOTTOM},
-                (v3i32){WORLD_SIZE, WORLD_SIZE, worldHeight}))
+                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
+                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, worldHeight}))
     {
         if (check_target_delta_position(&lily.camera.target, &lily.lastTarget))
             targetChunk = get_chunk(&lily.lastTarget, &lily.state, STATE_PARSE_TARGET);

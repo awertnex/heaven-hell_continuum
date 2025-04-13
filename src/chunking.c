@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include "h/chunking.h"
@@ -6,16 +7,60 @@
 #include "h/logger.h"
 
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
-Chunk chunkBuf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
-void *chunk_table[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1] = {0};
-Chunk *targetChunk = 0;
-u64 blockCount = 0; //debug mode
-u64 quadCount = 0; //debug mode
+u8 stateChunking = 0;
+Chunk *chunkBuf = {0};
+void *chunkTab = {0};
+Chunk *targetChunk = 0; //temp
+// TODO: put blockCount quadCount into a struct WorldStats
+u64 blockCount = 0;
+u64 quadCount = 0;
 u8 opacity = 0;
 
-void init_chunking()
+u8 init_chunking() // TODO: init chunking correctly
 {
-    //TODO: write something in 'init_chunking()'
+    chunkBuf = (Chunk*) malloc(CHUNK_BUF_ELEMENTS*sizeof(Chunk));
+    memset(chunkBuf, 0, sizeof(*chunkBuf));
+
+    chunkTab = (void*) malloc(CHUNK_BUF_ELEMENTS*sizeof(void*));
+    memset(chunkTab, 0, sizeof(*chunkTab));
+
+    if (&chunkBuf[0] != NULL)
+    {
+        stateChunking |= STATE_CHUNK_BUF_ALLOC;
+        LOGINFO("%s", "chunkBuf Memory Allocated");
+    }
+    else
+    {
+        LOGFATAL("%s", "chunkBuf Memory Allocation Failed, Aborting Process");
+        return 1;
+    }
+
+    if (&chunkTab[0] != NULL)
+    {
+        stateChunking |= STATE_CHUNK_TAB_ALLOC;
+        LOGINFO("%s", "chunkTab Memory Allocated");
+    }
+    else
+    {
+        LOGFATAL("%s", "chunkTab Memory Allocation Failed, Aborting Process");
+        return 1;
+    }
+    return 0;
+}
+
+void free_chunking()
+{
+    if (stateChunking & STATE_CHUNK_BUF_ALLOC)
+    {
+        free(chunkBuf);
+        LOGDEBUG("%s", "chunkBuf Unloaded");
+    }
+
+    if (stateChunking & STATE_CHUNK_TAB_ALLOC)
+    {
+        free(chunkTab);
+        LOGDEBUG("%s", "chunkTab Unloaded");
+    }
 }
 
 //TODO: check chunk barrier faces
@@ -111,18 +156,18 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     {
         for (u8 x = 0; x < setting.renderDistance*2; ++x)
         {
-            if (!(chunkBuf[y][x].state & STATE_CHUNK_LOADED))
+            if (!(chunkBuf[chunkXY(x, y)].state & STATE_CHUNK_LOADED))
             {
                 *state &= ~flag;
                 return NULL;
             }
 
             if (
-                    chunkBuf[y][x].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
-                    chunkBuf[y][x].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
+                    chunkBuf[chunkXY(x, y)].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
+                    chunkBuf[chunkXY(x, y)].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
             {
                 *state |= flag;
-                return &chunkBuf[y][x];
+                return &chunkBuf[chunkXY(x, y)];
             }
         }
     }
@@ -142,16 +187,16 @@ void draw_chunk_buffer(Chunk *chunkBuf)
 
     for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
         if (chunkBuf[i].state & STATE_CHUNK_LOADED)
-            draw_chunk(&chunkBuf[i], 0);
+            draw_chunk(&chunkBuf[i]);
 
     rlEnd();
     rlPopMatrix();
     rlSetTexture(0); //temp texturing
 }
 
-void draw_chunk(Chunk *chunk, u16 height)
+void draw_chunk(Chunk *chunk)
 {
-    if (!height) height = 30;
+    u16 height = 30; //temp
     rlTranslatef(chunk->pos.x*CHUNK_SIZE, chunk->pos.y*CHUNK_SIZE, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;
