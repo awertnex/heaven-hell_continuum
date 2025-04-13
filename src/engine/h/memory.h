@@ -5,19 +5,28 @@
 
 #include "logger.h"
 
-#define MC_C_ALLOC(ptr, size)                                                   \
-    (ptr) = malloc(size);                                                       \
-    if ((ptr) == NULL) {                                                        \
-        LOGFATAL("%s %s", #ptr, "Memory Allocation Failed, Aborting Process");  \
-        goto cleanup;                                                           \
+#define MC_C_ALLOC(x, size)                                                     \
+    if ((x) == NULL) {                                                          \
+        (x) = malloc(size);                                                     \
+        if ((x) == NULL) {                                                      \
+            LOGFATAL("%s %s", #x, "Memory Allocation Failed, Aborting Process");\
+            goto cleanup;                                                       \
+        }                                                                       \
     }                                                                           \
-    memset((ptr), 0, (size));
+    memset((x), 0, (size));                                                     \
+    LOGINFO("%s %s", #x, "Memory Allocated");
 
-#define MC_C_FREE(ptr, size)                                                    \
-    if ((ptr)) {                                                                \
-        memset((ptr), 0, (size));                                               \
-        free((ptr));                                                            \
-        (ptr) = NULL;                                                           \
-        LOGINFO("%s Unloaded", #ptr);                                           \
+#define MC_C_FREE(x, size)                                                      \
+    if ((x)) {                                                                  \
+        memset((x), 0, (size));                                                 \
+        free((x));                                                              \
+        (x) = NULL;                                                             \
+        LOGINFO("%s Unloaded", #x);                                             \
+    }
+
+#define MC_C_CLEAR(x, size)                                                     \
+    if ((x)) {                                                                  \
+        memset((x), 0, (size));                                                 \
+        LOGINFO("%s Cleared", #x);                                              \
     }
 
