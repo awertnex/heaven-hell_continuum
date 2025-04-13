@@ -5,15 +5,17 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#define DIR_BIN "bin"
+#define DIR_BIN             "bin/"
+#define DIR_BIN_TESTS       "bin/tests/"
 
 #if defined __linux__
-    #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
-    #define ZERO_CMD (memset(cmd, 0, 64*sizeof(char*)))
-    #define FREE_CMD free(cmd)
-    #define COMPILER "cc"
-    #define EXTENSION ""
-    #define MKDIR_BIN mkdir("bin/", 0775);
+    #define ALLOC_CMD       (cmd = (char**) malloc(64*sizeof(char*)))
+    #define ZERO_CMD        (memset(cmd, 0, 64*sizeof(char*)))
+    #define FREE_CMD        free(cmd)
+    #define COMPILER        "cc"
+    #define EXTENSION       ""
+    #define MKDIR_BIN       mkdir("bin/", 0775);
+    #define MKDIR_BIN_TESTS mkdir("bin/tests/", 0775);
 char** cmd;
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
@@ -21,16 +23,17 @@ char str_libs[3][24] = {"-lraylib", "-lm", 0};
     #define ALLOC_CMD
     #define ZERO_CMD
     #define FREE_CMD
-    #define COMPILER "gcc"
-    #define EXTENSION ".exe"
-    #define MKDIR_BIN mkdir("bin");
+    #define COMPILER        "gcc"
+    #define EXTENSION       ".exe"
+    #define MKDIR_BIN       mkdir("bin/");
+    #define MKDIR_BIN_TESTS mkdir("bin/tests/");
 char* cmd[64];
 char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
 char str_main[32] = "main.c";
 char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
-char str_out[3][32] = {"-o", "../bin/minecraft_c", 0};
+char str_out[3][48] = {"-o", "../bin/minecraft_c", 0};
 char str_tests[4][24] =
 {
     "chunk_loader",
@@ -121,6 +124,12 @@ int main(int argc, char **argv)
         printf("Directory 'bin/' Created!\n");
     }
 
+    if (!is_dir_exists(DIR_BIN_TESTS))
+    {
+        MKDIR_BIN_TESTS;
+        printf("Directory 'bin/tests/' Created!\n");
+    }
+
 
     if (argc == 1)
     {
@@ -142,7 +151,7 @@ int main(int argc, char **argv)
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
         memset(str_libs[1], 0, sizeof(str_libs[1]));
-        snprintf(str_out[1], 32, "../bin/launcher%s", EXTENSION);
+        snprintf(str_out[1], 32, "../%slauncher%s", DIR_BIN, EXTENSION);
         if(build_cmd()) return -1;
     }
     else if (!strncmp(argv[1], "test", 4))
@@ -160,7 +169,7 @@ int main(int argc, char **argv)
 
         printf("Building test %03d '%s'..\n", (argv[2][0]) - 48, str_tests[argv[2][0] - 48]);
         snprintf(str_main, 32, "tests/%s.c", str_tests[argv[2][0] - 48]);
-        snprintf(str_out[1], 32, "../test_%s%s", str_tests[argv[2][0] - 48], EXTENSION);
+        snprintf(str_out[1], 48, "../%stest_%s%s", DIR_BIN_TESTS, str_tests[argv[2][0] - 48], EXTENSION);
         if (build_cmd()) return -1;
     }
     else if (!strncmp(argv[1], "--help", 6))
