@@ -1,6 +1,25 @@
 # changelog
 
-## v0.1.4-alpha - (08 Apr 2025)
+## v0.2.0 (DD MMM 2025)
+- - - -
+- added skybox colors for day/night cycle
+- fixed menu buttons not disappearing after leaving menu (forgot to clear background)
+- added windows support for building launcher and tests
+- removed 'draw_text_centered()', added arguments 'alignX' and 'alignY' to 'draw_text()'
+- added text alignment to left, center, right, top, center and bottom
+- added window resize poll events
+- fixed bug centering cursor to center of screen instead of center of viewport
+- added texture alignment to left, center, right, top, center and bottom
+- added functions kill_player() and respawn_player()
+- changed chunk drawing into entire chunkBuf drawing
+- added block texturing
+- fixed player movement
+- fixed player bounding box slidy
+- fixed window close bugs
+- fixed menu input events
+- added <shift> + <F3> combination for special debug (e.g. draw bounding boxes)
+
+## v0.1.4-alpha (08 Apr 2025)
 - - - -
 - added windows support for build tool
 - created minecraft.c logo 'resources/logo/'
@@ -10,7 +29,7 @@
 - added day/night cycle
 - added compiled release_build for windows
 
-## Release - v0.1.3 - (03 Apr 2025)
+## v0.1.3 (03 Apr 2025)
 - - - -
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard
@@ -18,7 +37,7 @@
 - made build system more difficult to read but easier to use (not tested on windows)
 
 - - - -
-## v0.1.2 - (01 Apr 2025)
+## v0.1.2 (01 Apr 2025)
 
 #### changes
 - can break and place blocks
@@ -38,7 +57,7 @@
 - made 'defines.h' a local file
 
 - - - -
-## v0.1.1 - (27 Mar 2025)
+## v0.1.1 (27 Mar 2025)
 
 #### changes
 - added many button names for menus and containers enum
@@ -54,7 +73,7 @@
 - added delta time
 
 - - - -
-## v0.1.0 - (24 Mar 2025)
+## v0.1.0 (24 Mar 2025)
 
 **first version, as I have started this project long before I version-controlled it with git**
 

@@ -1,6 +1,7 @@
 #ifndef MINECRAFT_H
 
-#define MC_C_VERSION "Minecraft.c 0.1.2"
+#define MC_C_VERSION "Minecraft.c 0.1.4"
+#define MC_C_AUTHOR "Author: Lily Awertnex"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
@@ -18,12 +19,18 @@
 
 // ---- declarations -----------------------------------------------------------
 extern f64 deltaTime;
-extern f64 startTime;
+static f64 gameStartTime;
+static u64 gameTick;
+static u64 gameDays;
 #define dt GetFrameTime()
 
 extern u16 state;
 extern u8 stateMenuDepth;
-extern v3i32 targetCoordinatesFeet; /*temp*/
+
+extern f64 skyboxMidDay;
+extern f64 skyboxBurn;
+extern f64 skyboxBurnBoost;
+extern f64 skyboxMidNight;
 
 // ---- signatures -------------------------------------------------------------
 int mc_mkdir(const char *path, u16 mode);

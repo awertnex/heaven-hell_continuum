@@ -1,16 +1,10 @@
 # Directories
 files/
 ref/
-release_builds/
 demos/
 
 # Notes
 NOTES.md
-
-# Output Files
-minecraft_c
-launcher
-test_*
 
 # Prerequisites
 *.d

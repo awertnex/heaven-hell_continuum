@@ -1,41 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
+
+#define DIR_BIN             "bin/"
+#define DIR_BIN_TESTS       "bin/tests/"
 
 #if defined __linux__
-    #define ALLOC_CMD (cmd = (char**) malloc(64*sizeof(char*)))
-    #define ZERO_CMD (memset(cmd, 0, 64*sizeof(char*)))
-    #define FREE_CMD free(cmd)
-    #define COMPILER "cc"
-    #define EXECUTABLE "../minecraft_c"
+    #define ALLOC_CMD       (cmd = (char**) malloc(64*sizeof(char*)))
+    #define ZERO_CMD        (memset(cmd, 0, 64*sizeof(char*)))
+    #define FREE_CMD        free(cmd)
+    #define COMPILER        "cc"
+    #define EXTENSION       ""
+    #define MKDIR_BIN       mkdir("bin/", 0775);
+    #define MKDIR_BIN_TESTS mkdir("bin/tests/", 0775);
 char** cmd;
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
-#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
+#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
     #define ALLOC_CMD
     #define ZERO_CMD
     #define FREE_CMD
-    #define COMPILER "gcc"
-    #define EXECUTABLE "../minecraft_c.exe"
+    #define COMPILER        "gcc"
+    #define EXTENSION       ".exe"
+    #define MKDIR_BIN       mkdir("bin/");
+    #define MKDIR_BIN_TESTS mkdir("bin/tests/");
 char* cmd[64];
 char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
-int exit_code = 0;
-
-char str_exec[24] = COMPILER;
 char str_main[32] = "main.c";
 char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
-char str_out[3][32] = {"-o", EXECUTABLE, 0};
-char str_tests[3][24] =
+char str_out[3][48] = {"-o", "../bin/minecraft_c", 0};
+char str_tests[4][24] =
 {
     "chunk_loader",
+    "chunk_pointer_table",
     "function_pointer",
     0,
 };
 
-void build_cmd()
+int is_dir_exists(const char *path)
+{
+    struct stat stats;
+    if (stat(path, &stats) == 0)
+        if (S_ISDIR(stats.st_mode))
+            return 1;
+    return 0;
+}
+
+int build_cmd()
 {
     ALLOC_CMD;
     ZERO_CMD;
@@ -44,7 +60,7 @@ void build_cmd()
         switch (stage)
         {
             case 0:
-                cmd[0] = str_exec;
+                cmd[0] = COMPILER;
                 cmd[1] = str_main;
                 ++stage;
                 --i;
@@ -91,20 +107,34 @@ void build_cmd()
         execvp(COMPILER, cmd);
     else
     {
-        printf("Error: 'src/' Directory Not Found");
-        exit_code = -1;
+        printf("Error: 'src/' Directory Not Found, Aborting Build\n");
+        return 1;
     }
 
     FREE_CMD;
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
+    perror("execvp");
+    if (!is_dir_exists(DIR_BIN))
+    {
+        MKDIR_BIN;
+        printf("Directory 'bin/' Created!\n");
+    }
+
+    if (!is_dir_exists(DIR_BIN_TESTS))
+    {
+        MKDIR_BIN_TESTS;
+        printf("Directory 'bin/tests/' Created!\n");
+    }
+
+
     if (argc == 1)
     {
         printf("Building minecraft.c..\n");
-        build_cmd();
-        if (exit_code) return exit_code;
+        if (build_cmd()) return -1;
         return 0;
     }
 
@@ -121,9 +151,8 @@ int main(int argc, char **argv)
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
         memset(str_libs[1], 0, sizeof(str_libs[1]));
-        snprintf(str_out[1], 32, "../launcher");
-        build_cmd();
-        if (exit_code) return exit_code;
+        snprintf(str_out[1], 32, "../%slauncher%s", DIR_BIN, EXTENSION);
+        if(build_cmd()) return -1;
     }
     else if (!strncmp(argv[1], "test", 4))
     {
@@ -132,17 +161,16 @@ int main(int argc, char **argv)
             printf("usage: ./build test [n]\n");
             return -1;
         }
-        else if (((argv[2][0] - 48) < 0) || ((argv[2][0] - 48) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
+        else if ((atoi(argv[2]) < 0) || (atoi(argv[2]) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
         {
-            printf("Invalid '%c', Try './build list' to List Available Options..\n", argv[2][0]);
+            printf("'%c' Invalid, Try './build list' to List Available Options..\n", argv[2][0]);
             return -1;
         }
 
         printf("Building test %03d '%s'..\n", (argv[2][0]) - 48, str_tests[argv[2][0] - 48]);
         snprintf(str_main, 32, "tests/%s.c", str_tests[argv[2][0] - 48]);
-        snprintf(str_out[1], 32, "../test_%s", str_tests[argv[2][0] - 48]);
-        build_cmd();
-        if (exit_code) return exit_code;
+        snprintf(str_out[1], 48, "../%stest_%s%s", DIR_BIN_TESTS, str_tests[argv[2][0] - 48], EXTENSION);
+        if (build_cmd()) return -1;
     }
     else if (!strncmp(argv[1], "--help", 6))
     {

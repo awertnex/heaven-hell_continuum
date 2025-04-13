@@ -57,4 +57,3 @@ KeyboardKey bindLeft =                      KEY_LEFT;
 KeyboardKey bindRight =                     KEY_RIGHT;
 KeyboardKey bindDown =                      KEY_DOWN;
 KeyboardKey bindUp =                        KEY_UP;
-KeyboardKey bindQuit =                      KEY_Q;

@@ -11,8 +11,8 @@
 
 #define GRAVITY (9.7803267715f/100.0f)
 #define PI 3.14159265358979323846f
-#define DEG2RAD (PI/180.0f)
-#define RAD2DEG (180.0f/PI)
+#define MC_C_DEG2RAD 0.017453293f   // PI/180.0f
+#define MC_C_RAD2DEG 57.295779513f  // 180.0f/PI
 
 #define sqr(x) ((x)*(x))
 #define v3izero ((v3i32){0, 0, 0})
@@ -28,22 +28,29 @@
 
 typedef struct Player
 {
-    str name[100];          // player in-game name
-    Vector3 pos;            // player current coordinates in world
-    Vector3 scl;            // player size for collision detection
-    f32 pitch, yaw;         // for player camera direction and target
-    v3f32 v;                // for physics calculations
-    f32 m;                  // for physics calculations
-    f32 movementSpeed;     // depends on enum: PlayerStates
-    u64 containerState;    // enum: ContainerStates
-    u8 perspective;         // camera perspective mode
-    u16 state;              // enum: PlayerStates
+    str name[100];              // player in-game name
+    Vector3 pos;                // player current coordinates in world
+    Vector3 scl;                // player size for collision detection
+    Vector3 collisionCheckStart;
+    Vector3 collisionCheckEnd;
+    f32 pitch, yaw;             // for player camera direction and target
+    f32 sinPitch, cosPitch;     // processed player pitch angles
+    f32 sinYaw, cosYaw;         // processed player yaw angles
+    f32 eyeHeight;              // height of player camera, usually
+    v3f32 v;                    // velocity
+    f32 m;                      // mass
+    f32 movementSpeed;          // depends on enum: PlayerStates
+    f32 movementStepLength;
+    u64 containerState;         // enum: ContainerStates
+    u8 perspective;             // camera perspective mode
+    u16 state;                  // enum: PlayerStates
 
     Camera3D camera;
-    f32 cameraDistance;    // for camera collision detection
+    f32 cameraDistance;         // for camera collision detection
+    Camera3D cameraDebugInfo;
 
     v3i32 lastTarget;
-    v3i32 lastPos;     // for collision tunneling prevention
+    v3i32 lastPos;              // for collision tunneling prevention
 
     v3i32 spawnPoint;
 } Player;
@@ -55,9 +62,10 @@ enum GameStates
     STATE_PAUSED =                  0x02,
     STATE_SUPER_DEBUG =             0x04,
     STATE_DEBUG =                   0x08,
-    STATE_HUD =                     0x10,
-    STATE_FULLSCREEN =              0x20,
-    STATE_WORLD_LOADED =            0x40,
+    STATE_DEBUG_MORE =              0x10,
+    STATE_HUD =                     0x20,
+    STATE_FULLSCREEN =              0x40,
+    STATE_WORLD_LOADED =            0x80,
 }; /* GameStates */
 
 enum ContainerStates
@@ -101,25 +109,27 @@ enum PlayerStates
     STATE_FALLING =                 0x0080,
     STATE_DOUBLE_PRESS =            0x0100,
     STATE_PARSE_TARGET =            0x0200,
-    STATE_PARSE_COLLISION_FEET =    0x0400, /*temp*/
+    STATE_DEAD =                    0x0400,
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
-extern v3i32 targetCoordinatesFeet; /*temp*/
+extern Vector2 mouseDelta;
 
 // ---- signatures -------------------------------------------------------------
 bool get_double_press(Player *player, KeyboardKey key);
-void parse_player_states(Player *player);
-void give_camera_movements_player(Player *player);
-void give_camera_movements_debug_info(Camera3D *camera, Player *player);
+void update_player_states(Player *player);
+void update_camera_movements_player(Player *player);
+void update_camera_movements_debug_info(Camera3D *camera, Player *player);
+void kill_player(Player *player);
+void respawn_player(Player *player);
 b8 check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void give_gravity(Player *player);
-void give_collision_static(Player *player, v3i32 *targetCoordinatesFeet);
+void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *timeStart, f32 interval);
 

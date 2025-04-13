@@ -1,7 +1,8 @@
-#include <string.h>
+#include <stdio.h>
 #include <math.h>
 
 #include "h/chunking.h"
+#include "h/logic.h"
 #include "h/logger.h"
 
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
@@ -10,6 +11,7 @@ void *chunk_table[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_
 Chunk *targetChunk = 0;
 u64 blockCount = 0; //debug mode
 u64 quadCount = 0; //debug mode
+u8 opacity = 0;
 
 void init_chunking()
 {
@@ -78,7 +80,7 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
 
 void parse_chunk_states(Chunk *chunk, u16 height)
 {
-    if (chunk->loaded) return;
+    if (chunk->state & STATE_CHUNK_LOADED) return;
     for (u16 z = 0; z < height; ++z)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)
             for (u8 x = 0; x < CHUNK_SIZE; ++x)
@@ -99,7 +101,7 @@ void parse_chunk_states(Chunk *chunk, u16 height)
                 if (chunk->i[z][y][x] & NEGATIVE_Z)
                     ++quadCount;
             }
-    chunk->loaded = 1;
+    chunk->state |= STATE_CHUNK_LOADED;
 }
 
 //TODO: revise, might not be needed
@@ -109,7 +111,7 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     {
         for (u8 x = 0; x < setting.renderDistance*2; ++x)
         {
-            if (!chunkBuf[y][x].loaded)
+            if (!(chunkBuf[y][x].state & STATE_CHUNK_LOADED))
             {
                 *state &= ~flag;
                 return NULL;
@@ -127,29 +129,53 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     return NULL;
 }
 
+Texture2D cobblestone;
+Texture2D dirt;
+void draw_chunk_buffer(Chunk *chunkBuf)
+{
+    if (state & STATE_DEBUG_MORE)
+        opacity = 200;
+    else opacity = 255;
+    rlPushMatrix();
+    rlSetTexture(dirt.id); //temp texturing
+    rlBegin(RL_QUADS);
+
+    for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
+        if (chunkBuf[i].state & STATE_CHUNK_LOADED)
+            draw_chunk(&chunkBuf[i], 0);
+
+    rlEnd();
+    rlPopMatrix();
+    rlSetTexture(0); //temp texturing
+}
+
 void draw_chunk(Chunk *chunk, u16 height)
 {
-    rlPushMatrix();
-    rlBegin(RL_QUADS);
+    if (!height) height = 30;
     rlTranslatef(chunk->pos.x*CHUNK_SIZE, chunk->pos.y*CHUNK_SIZE, WORLD_BOTTOM);
 
-    for (u16 z = 0; z < height; ++z)
+    u16 z = 0; u8 y = 0, x = 0;
+    for (; z < height; ++z)
     {
-        for (u8 y = 0; y < CHUNK_SIZE; ++y)
+        for (; y < CHUNK_SIZE; ++y)
         {
-            for (u8 x = 0; x < CHUNK_SIZE; ++x)
+            for (; x < CHUNK_SIZE; ++x)
             {
                 if (chunk->i[z][y][x] & BLOCKFACES)
                     draw_block(chunk->i[z][y][x]);
                 rlTranslatef(1, 0, 0);
             }
+            x = 0;
             rlTranslatef(-CHUNK_SIZE, 1, 0);
         }
+        y = 0;
         rlTranslatef(0, -CHUNK_SIZE, 1);
     }
-
-    rlEnd();
-    rlPopMatrix();
+    rlTranslatef(
+            (-chunk->pos.x*CHUNK_SIZE),
+            (-chunk->pos.y*CHUNK_SIZE),
+            (-WORLD_BOTTOM) - height
+            );
 }
 
 // raylib/rmodels.c/DrawCube refactored
@@ -161,10 +187,12 @@ void draw_block(u32 block_state)
             rlColor4ub(150, 150, 137, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 210, 90, opacity);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
+        
+        rlNormal3f(1.0f, 0.0f, 0.0f); //temp texturing
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
     }
 
     if (block_state & NEGATIVE_X)
@@ -173,10 +201,12 @@ void draw_block(u32 block_state)
             rlColor4ub(135, 135, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(236, 17, 90, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
+
+        rlNormal3f(-1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
     }
 
     if (block_state & POSITIVE_Y)
@@ -185,10 +215,12 @@ void draw_block(u32 block_state)
             rlColor4ub(155, 155, 142, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 248, 246, opacity);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
+
+        rlNormal3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
     }
 
     if (block_state & NEGATIVE_Y)
@@ -197,10 +229,12 @@ void draw_block(u32 block_state)
             rlColor4ub(140, 140, 123, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(28, 14, 50, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
+
+        rlNormal3f(0.0f, -1.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
     }
 
     if (block_state & POSITIVE_Z)
@@ -209,10 +243,12 @@ void draw_block(u32 block_state)
             rlColor4ub(176, 176, 160, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(250, 18, 5, opacity);
-        rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlVertex3f(0.0f, 1.0f, 1.0f);
+
+        rlNormal3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
     }
 
     if (block_state & NEGATIVE_Z)
@@ -221,10 +257,12 @@ void draw_block(u32 block_state)
             rlColor4ub(115, 115, 104, opacity);
         else if (LOGGER_DEBUG)
             rlColor4ub(200, 40, 203, opacity);
-        rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlVertex3f(1.0f, 0.0f, 0.0f);
+
+        rlNormal3f(0.0f, 0.0f, -1.0f);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
     }
 }
 
@@ -322,6 +360,61 @@ void draw_bounding_box(Vector3 *origin, Vector3 *scl)
 
     rlVertex3f(0,       scl->y, scl->z);
     rlVertex3f(0,       scl->y, 0);
+
+    rlEnd();
+    rlPopMatrix();
+}
+
+void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl)
+{
+    Vector3 start =
+        (Vector3){
+            floorf(origin->x - (scl->x/2.0f)) - 1,
+            floorf(origin->y - (scl->y/2.0f)) - 1,
+            floorf(origin->z) - 1,
+        };
+
+    Vector3 end =
+        (Vector3){
+            ceilf(scl->x) + 2,
+            ceilf(scl->y) + 2,
+            ceilf(scl->z) + 2,
+        };
+
+    rlPushMatrix();
+    rlTranslatef(
+            start.x,
+            start.y,
+            start.z);
+    rlBegin(RL_LINES);
+    rlColor4ub(5, 209, 255, 255);
+
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+
+    rlVertex3f(0.0f,    0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  end.z);
+    rlVertex3f(0.0f,    0.0f,   end.z);
+
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+    rlVertex3f(0.0f,    0.0f,   end.z);
+    rlVertex3f(end.x,   0.0f,   0.0f);
+    rlVertex3f(end.x,   0.0f,   end.z);
+    rlVertex3f(end.x,   end.y,  0.0f);
+    rlVertex3f(end.x,   end.y,  end.z);
+    rlVertex3f(0.0f,    end.y,  0.0f);
+    rlVertex3f(0.0f,    end.y,  end.z);
 
     rlEnd();
     rlPopMatrix();

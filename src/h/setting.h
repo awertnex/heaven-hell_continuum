@@ -20,9 +20,12 @@
 #define SETTING_RENDER_DISTANCE_DEFAULT     3
 #define SETTING_RENDER_DISTANCE_MIN         2
 #define SETTING_RENDER_DISTANCE_MAX         8
-#define SETTING_GUI_SCALE_DEFAULT           1.0f
-#define SETTING_GUI_SCALE_MIN               1.0f //TODO: figure out values
-#define SETTING_GUI_SCALE_MAX               3.0f //TODO: figure out values
+#define SETTING_GUI_SCALE_DEFAULT           2.0f
+#define SETTING_GUI_SCALE_0                 // TODO: auto gui scale
+#define SETTING_GUI_SCALE_1                 1.0f
+#define SETTING_GUI_SCALE_2                 2.0f
+#define SETTING_GUI_SCALE_3                 3.0f
+#define SETTING_GUI_SCALE_4                 4.0f
 
 // ---- settings ---------------------------------------------------------------
 typedef struct settings
@@ -32,7 +35,7 @@ typedef struct settings
 
     // ---- options menu -------------------------------------------------------
     u16 fov;
-    u16 mouseSensitivity;
+    f64 mouseSensitivity;
 
     // ---- video --------------------------------------------------------------
     u8 renderDistance;

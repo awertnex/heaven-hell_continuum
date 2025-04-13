@@ -13,48 +13,60 @@
 
 // ---- variables --------------------------------------------------------------
 v2f32 renderSize = {WIDTH, HEIGHT};
-f64 startTime = 0;
+u16 state = 0;
+u8 stateMenuDepth = 0;
 static f64 gameStartTime = 0;
 static u64 gameTick = 0;
 static u64 gameDays = 0;
-u16 state = 0;
-u8 stateMenuDepth = 0;
 settings setting =
 {
     .reachDistance =        SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
-    .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT,
+    .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT/650.0f,
     .renderDistance =       SETTING_RENDER_DISTANCE_DEFAULT,
     .guiScale =             SETTING_GUI_SCALE_DEFAULT,
 };
 Player lily =
 {
     .name = "Lily",
-    .pos = {8, -6, -65},
+    .pos = {0.0f},
     .scl = {0.6f, 0.6f, 1.8f},
-    .pitch = -29,
-    .yaw = 121,
-    .m = 2,
-    .movementSpeed = 10,
+    .collisionCheckStart = {0.0f},
+    .collisionCheckEnd = {0.0f},
+    .pitch = -29.0f,
+    .yaw = 121.0f,
+    .sinPitch = 0.0f, .cosPitch = 0.0f, .sinYaw = 0.0f, .cosYaw = 0.0f,
+    .eyeHeight = 1.5f,
+    .m = 2.0f,
+    .movementSpeed = 10.0f,
     .containerState = 0,
     .perspective = 0,
 
     .camera =
     {
-        .up.z = 1,
-        .fovy = 70,
+        .up.z = 1.0f,
+        .fovy = 70.0f,
         .projection = CAMERA_PERSPECTIVE,
     },
     .cameraDistance = SETTING_CAMERA_DISTANCE_MAX,
+    .cameraDebugInfo =
+    {
+        .up.z = 1.0f,
+        .fovy = 50.0f,
+        .projection = CAMERA_ORTHOGRAPHIC,
+    },
 
-    .spawnPoint = {3, -6, 9},
+    .spawnPoint = {0.0f, 0.0f, 0.0f},
 };
 
 // ---- signatures -------------------------------------------------------------
-static void update_world();
-static void update_input(Player *player);
+void update_world();
+void update_input_general(Player *player);
+void update_input_world(Player *player);
+void draw_skybox();
 
-int main(int argc, char **argv) // ---- game init ------------------------------
+int main(int argc, char **argv)
+    // ---- game init ----------------------------------------------------------
 {
     if (MODE_DEBUG)
         LOGDEBUG("%s", "Debugging Enabled");
@@ -77,41 +89,51 @@ int main(int argc, char **argv) // ---- game init ------------------------------
         }
     }
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
+    SetExitKey(KEY_PAUSE);
+    SetWindowMinSize(640, 480);
+#if !RELEASE_BUILD
+    SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
+#endif // RELEASE_BUILD
+
     init_fonts();
     init_gui();
-    apply_render_settings(renderSize);
+    apply_render_settings();
+    update_render_settings(renderSize);
     init_super_debugger(renderSize);
-
-    // TODO: fix rendering issues when resizing window
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetWindowMinSize(200, 150);
 
     setting.renderDistance = SETTING_RENDER_DISTANCE_MAX; //temp
 
     state |= STATE_ACTIVE;
-    while (state & STATE_ACTIVE) // ---- game loop -----------------------------
+    while (!WindowShouldClose() && (state & STATE_ACTIVE))
+        // ---- game loop ------------------------------------------------------
     {
-        if (!(state & STATE_WORLD_LOADED))
+        update_input_general(&lily);
+        update_render_settings(renderSize);
+        renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        BeginDrawing();
+        //draw_texture_tiled(); // TODO: draw tiled texture of title screen
+        ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
+        update_menus(renderSize);
+        if (state & STATE_WORLD_LOADED)
         {
-            BeginDrawing();
-            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
-            EndDrawing();
-            update_menus(renderSize);
-        }
-        else
-        {
+            mouseDelta = GetMouseDelta();
+            draw_skybox();
             update_world();
         }
+        EndDrawing();
 
-        if (state & STATE_PAUSED)
+        if (state & STATE_PAUSED) // TODO: make real pausing instead of using the uncleared bg as still
         {
             BeginDrawing();
             draw_menu_overlay(renderSize);
             EndDrawing();
 
-            while (state & STATE_PAUSED && state & STATE_ACTIVE)
+            while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose())
             {
+                renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+                update_input_general(&lily);
                 BeginDrawing();
                 update_menus(renderSize);
                 EndDrawing();
@@ -120,6 +142,7 @@ int main(int argc, char **argv) // ---- game init ------------------------------
     }
 
     // ---- game close ---------------------------------------------------------
+    UnloadTexture(cobblestone); //temp
     unload_textures();
     free_gui();
     free_super_debugger();
@@ -135,7 +158,7 @@ void init_world()
 
     init_chunking();
 
-    { /*temp*/
+    { //temp
         chunkBuf[0][0].pos = (v2i16){0, 0};
         chunkBuf[0][1].pos = (v2i16){0, -1};
         chunkBuf[0][2].pos = (v2i16){0, -2};
@@ -152,12 +175,11 @@ void init_world()
         parse_chunk_states(&chunkBuf[0][5], 2);
         parse_chunk_states(&chunkBuf[0][6], 3);
         parse_chunk_states(&chunkBuf[0][7], 2);
+        cobblestone = LoadTexture("resources/textures/blocks/stone.png"); //temp
+        dirt = LoadTexture("resources/textures/blocks/dirt.png"); //temp
     }
     lily.state |= STATE_FALLING; //temp
     lily.state &= ~STATE_PARSE_TARGET;
-
-    if (MODE_DEBUG)
-        lily.state |= STATE_FLYING;
 
     state |= STATE_HUD | STATE_WORLD_LOADED;
     LOGINFO("%s", "World Loaded: Poop Consistency Tester");
@@ -165,43 +187,25 @@ void init_world()
 
 void update_world()
 {
-    startTime = get_time_ms();
-    gameTick = (u64)((get_time_ms() - gameStartTime)*20);
+    gameTick = (floor((get_time_ms() - gameStartTime)*20)) - (SETTING_DAY_TICKS_MAX*gameDays);
     if (gameTick >= SETTING_DAY_TICKS_MAX)
-    {
-	gameTick = 0;
-	++gameDays;
-    }
-    renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
-
-    parse_player_states(&lily);
+        ++gameDays;
 
     if (MODE_COLLIDE)
-        give_collision_static(&lily, &targetCoordinatesFeet);
+        update_collision_static(&lily);
 
     if (state & STATE_DEBUG)
-        give_camera_movements_debug_info(&cameraDebugInfo, &lily);
-    give_camera_movements_player(&lily);
+        update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
 
     if (stateMenuDepth || state & STATE_SUPER_DEBUG)
         show_cursor;
     else hide_cursor;
 
-    update_input(&lily);
-
-    BeginDrawing();
-    ClearBackground(COL_SKYBOX); /* TODO: make actual skybox */
+    update_input_world(&lily);
+    update_player_states(&lily);
+    update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
-    { /*temp*/
-        draw_chunk(&chunkBuf[0][0], 20);
-        draw_chunk(&chunkBuf[0][1], 2);
-        draw_chunk(&chunkBuf[0][2], 2);
-        draw_chunk(&chunkBuf[0][3], 30);
-        draw_chunk(&chunkBuf[0][4], 2);
-        draw_chunk(&chunkBuf[0][5], 2);
-        draw_chunk(&chunkBuf[0][6], 9);
-        draw_chunk(&chunkBuf[0][7], 2);
-    }
+    draw_chunk_buffer(*chunkBuf);
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
@@ -214,7 +218,7 @@ void update_world()
         if (check_target_delta_position(&lily.camera.target, &lily.lastTarget))
             targetChunk = get_chunk(&lily.lastTarget, &lily.state, STATE_PARSE_TARGET);
 
-        if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET)
+        if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD))
         {
             if (targetChunk->i
                     [lily.lastTarget.z - WORLD_BOTTOM]
@@ -222,13 +226,15 @@ void update_world()
                     [lily.lastTarget.x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
             {
                 draw_block_wires(&lily.lastTarget);
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
+                if (state & STATE_DEBUG_MORE)
+                    DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
             }
-            else DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
+            else if (state & STATE_DEBUG_MORE)
+                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
         }
     }
 
-    if (MODE_DEBUG)
+    if (state & STATE_DEBUG_MORE)
     {
         /*temp
           draw_block_wires(&target_coordinates_feet);
@@ -236,6 +242,7 @@ void update_world()
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1, 1, 1}, GREEN);
         draw_bounding_box(&lily.pos, &lily.scl);
+        draw_bounding_box_clamped(&lily.pos, &lily.scl); //temp AABB collision
         draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 
@@ -244,27 +251,68 @@ void update_world()
     if (state & STATE_HUD)
     {
         draw_hud();
-        draw_debug_info();
-        if (stateMenuDepth)
-        {
-            if (lily.containerState & CONTR_INVENTORY)
-                draw_inventory(renderSize);
-        }
+        draw_debug_info(&lily.cameraDebugInfo);
+        if (stateMenuDepth && lily.containerState)
+            draw_containers(&lily, renderSize);
     }
 
     draw_super_debugger(renderSize);
-    EndDrawing();
 }
 
-void update_input(Player *player)
+void update_input_general(Player *player)
+{
+    if (IsKeyPressed(bindToggleFullscreen))
+    {
+        state ^= STATE_FULLSCREEN;
+
+        if (state & STATE_FULLSCREEN)
+        {
+            ToggleBorderlessWindowed();
+            SetConfigFlags(FLAG_FULLSCREEN_MODE);
+        }
+        else
+        {
+            SetConfigFlags(~FLAG_FULLSCREEN_MODE);
+            ToggleBorderlessWindowed();
+        }
+    }
+
+    if (IsKeyPressed(bindPause) && (state & STATE_WORLD_LOADED))
+    {
+        if (!stateMenuDepth)
+        {
+            stateMenuDepth = 1;
+            menuIndex = MENU_GAME;
+            state |= STATE_PAUSED;
+            player->containerState = 0;
+            show_cursor;
+        }
+        else if (stateMenuDepth == 1)
+            btn_func_back_to_game();
+    }
+
+    else if (IsKeyPressed(bindPause) && !(state & STATE_WORLD_LOADED))
+    {
+        if (stateMenuDepth == 1)
+            state &= ~STATE_ACTIVE;
+        else btn_func_back();
+    }
+
+    // ---- debug --------------------------------------------------------------
+#if RELEASE_BUILD == 0
+    if (IsKeyPressed(KEY_TAB))
+        state ^= STATE_SUPER_DEBUG;
+#endif // RELEASE_BUILD
+}
+
+void update_input_world(Player *player)
 {
     // ---- jumping ------------------------------------------------------------
-    if (IsKeyPressed(bindJump))
-        if (get_double_press(player, bindJump))
-            player->state ^= STATE_FLYING;
-
     if (IsKeyDown(bindJump))
     {
+        if (IsKeyPressed(bindJump) && get_double_press(player, bindJump))
+            player->state ^= STATE_FLYING;
+
         if (player->state & STATE_FLYING)
             player->pos.z += player->movementSpeed;
 
@@ -297,30 +345,39 @@ void update_input(Player *player)
     // ---- moving -------------------------------------------------------------
     if (IsKeyDown(bindStrafeLeft))
     {
-        player->pos.x -= player->movementSpeed*sinf(player->yaw*DEG2RAD);
-        player->pos.y += player->movementSpeed*cosf(player->yaw*DEG2RAD);
+        player->v.x -= player->movementSpeed*player->sinYaw;
+        player->v.y += player->movementSpeed*player->cosYaw;
     }
 
     if (IsKeyDown(bindStrafeRight))
     {
-        player->pos.x += player->movementSpeed*sinf(player->yaw*DEG2RAD);
-        player->pos.y -= player->movementSpeed*cosf(player->yaw*DEG2RAD);
+        player->v.x += player->movementSpeed*player->sinYaw;
+        player->v.y -= player->movementSpeed*player->cosYaw;
     }
 
     if (IsKeyDown(bindWalkBackwards))
     {
-        player->pos.x -= player->movementSpeed*cosf(player->yaw*DEG2RAD);
-        player->pos.y -= player->movementSpeed*sinf(player->yaw*DEG2RAD);
+        player->v.x -= player->movementSpeed*player->cosYaw;
+        player->v.y -= player->movementSpeed*player->sinYaw;
     }
-
-    if (IsKeyPressed(bindWalkForwards))
-        if (get_double_press(player, bindWalkForwards))
-            player->state |= STATE_SPRINTING;
 
     if (IsKeyDown(bindWalkForwards))
     {
-        player->pos.x += player->movementSpeed*cosf(player->yaw*DEG2RAD);
-        player->pos.y += player->movementSpeed*sinf(player->yaw*DEG2RAD);
+        if (IsKeyPressed(bindWalkForwards) && get_double_press(player, bindWalkForwards))
+            player->state |= STATE_SPRINTING;
+
+        player->v.x += player->movementSpeed*player->cosYaw;
+        player->v.y += player->movementSpeed*player->sinYaw;
+    }
+
+    player->movementStepLength = sqrt(sqr(player->v.x) + sqr(player->v.y));
+    if (player->movementStepLength > 0.0f)
+    {
+        player->v.x /= player->movementStepLength;
+        player->v.y /= player->movementStepLength;
+
+        player->pos.x += player->v.x*player->movementSpeed;
+        player->pos.y += player->v.y*player->movementSpeed;
     }
 
     // ---- gameplay -----------------------------------------------------------
@@ -393,22 +450,13 @@ void update_input(Player *player)
         state ^= STATE_HUD;
 
     if (IsKeyPressed(bindToggleDebug))
-        state ^= STATE_DEBUG;
-
-    if (IsKeyPressed(bindToggleFullscreen))
     {
-        state ^= STATE_FULLSCREEN;
-        ToggleBorderlessWindowed();
+        if (state & STATE_DEBUG)
+            state &= ~(STATE_DEBUG | STATE_DEBUG_MORE);
+        else state |= STATE_DEBUG;
 
-        if (state & STATE_FULLSCREEN)
-            MaximizeWindow();
-        else
-        {
-            RestoreWindow();
-            SetWindowSize(WIDTH, HEIGHT);
-            SetWindowPosition((GetMonitorWidth(0)/2) - (WIDTH/2), (GetMonitorHeight(0)/2) - (HEIGHT/2));
-        }
-        apply_render_settings(renderSize);
+        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & STATE_DEBUG))
+            state |= STATE_DEBUG_MORE;
     }
 
     if (IsKeyPressed(bindTogglePerspective))
@@ -418,33 +466,35 @@ void update_input(Player *player)
         else player->perspective = 0;
     }
 
-    if (IsKeyPressed(bindPause))
-    {
-        if (!stateMenuDepth)
-        {
-            stateMenuDepth = 1;
-            menuIndex = MENU_GAME;
-            state |= STATE_PAUSED;
-            player->containerState = 0;
-            show_cursor;
-        }
-        else if (stateMenuDepth == 1)
-        {
-            stateMenuDepth = 0;
-            player->containerState = 0;
-        }
-        else --stateMenuDepth;
-    }
     if (!stateMenuDepth && !(state & STATE_SUPER_DEBUG))
     {
         hide_cursor;
         center_cursor;
     }
+}
 
-    // ---- debug --------------------------------------------------------------
-    if (IsKeyPressed(KEY_TAB))
-        state ^= STATE_SUPER_DEBUG;
+f64 skyboxTime = 0;
+f64 skyboxMidDay = 0;
+f64 skyboxPreBurn = 0;
+f64 skyboxBurn = 0;
+f64 skyboxBurnBoost = 0;
+f64 skyboxMidNight = 0;
+Color skyboxRGBA = {0};
+void draw_skybox()
+{
+    skyboxTime =        (f64)gameTick/SETTING_DAY_TICKS_MAX;
+    skyboxMidDay =      fabs(sinf(1.5f*powf(sinf(skyboxTime*PI), 2.0f)));
+    skyboxPreBurn =     fabs(sinf(powf(sinf((skyboxTime + 0.33)*PI*1.2f), 16.0f)));
+    skyboxBurn =        fabs(sinf(1.5f*powf(sinf((skyboxTime + 0.124f)*PI*1.6f), 20.0f)));
+    skyboxBurnBoost =   fabs(powf(sinf((skyboxTime + 0.212f)*PI*1.4f), 64.0f));
+    skyboxMidNight =    fabs(sinf(powf(2*cosf(skyboxTime*PI), 3.0f)));
+    skyboxRGBA =
+        (Color){
+            Clamp((skyboxMidDay*171) + (skyboxBurn*85) + (skyboxMidNight*1) +   (skyboxPreBurn*13) +    (skyboxBurnBoost*76),   0, 255),
+            Clamp((skyboxMidDay*229) + (skyboxBurn*42) + (skyboxMidNight*4) +   (skyboxPreBurn*7) +     (skyboxBurnBoost*34),   0, 255),
+            Clamp((skyboxMidDay*255) + (skyboxBurn*19) + (skyboxMidNight*14) +  (skyboxPreBurn*20),                             0, 255),
+            255
+        };
 
-    if (IsKeyPressed(bindQuit))
-        state &= ~STATE_ACTIVE;
+    ClearBackground(skyboxRGBA);
 }
