@@ -3,13 +3,13 @@
 
 #include "h/logger.h"
 
-static str log_tag[5][9] = 
+static str log_tag[5][13] = 
 {
-    "FATAL",
-    "WARNING",
-    "ERROR",
-    "INFO",
-    "DEBUG",
+    "MC_C_FATAL",
+    "MC_C_WARNING",
+    "MC_C_ERROR",
+    "MC_C_INFO",
+    "MC_C_DEBUG",
 };
 
 b8 init_logger()
@@ -35,6 +35,6 @@ void log_output(u8 log_level, const str* message, ...)
     vsnprintf(in_message, 4096, message, args);
     va_end(args);
 
-    snprintf(out_message, 6144, "  %s: %s\n", log_tag[log_level], in_message);
+    snprintf(out_message, 6144, "%s: %s\n", log_tag[log_level], in_message);
     fprintf(stderr, "%s", out_message);
 }
