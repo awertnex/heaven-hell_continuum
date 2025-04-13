@@ -80,7 +80,7 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
 
 void parse_chunk_states(Chunk *chunk, u16 height)
 {
-    if (chunk->loaded) return;
+    if (chunk->state & STATE_CHUNK_LOADED) return;
     for (u16 z = 0; z < height; ++z)
         for (u8 y = 0; y < CHUNK_SIZE; ++y)
             for (u8 x = 0; x < CHUNK_SIZE; ++x)
@@ -101,7 +101,7 @@ void parse_chunk_states(Chunk *chunk, u16 height)
                 if (chunk->i[z][y][x] & NEGATIVE_Z)
                     ++quadCount;
             }
-    chunk->loaded = 1;
+    chunk->state |= STATE_CHUNK_LOADED;
 }
 
 //TODO: revise, might not be needed
@@ -111,7 +111,7 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
     {
         for (u8 x = 0; x < setting.renderDistance*2; ++x)
         {
-            if (!chunkBuf[y][x].loaded)
+            if (!(chunkBuf[y][x].state & STATE_CHUNK_LOADED))
             {
                 *state &= ~flag;
                 return NULL;
@@ -141,7 +141,7 @@ void draw_chunk_buffer(Chunk *chunkBuf)
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
-        if (chunkBuf[i].loaded)
+        if (chunkBuf[i].state & STATE_CHUNK_LOADED)
             draw_chunk(&chunkBuf[i], 0);
 
     rlEnd();

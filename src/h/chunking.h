@@ -43,18 +43,28 @@ enum BlockFaces
 enum BlockData
 {
     BLOCKFACES =    0x0000003F, // 00000000 00000000 00000000 00111111
-    BLOCKSTATE =    0x00000F00, // 00000000 00000000 00001111 00000000
-    BLOCKID =       0x00FFF000, // 00000000 11111111 11110000 00000000
+    BLOCKID =       0x000FFF00, // 00000000 00001111 11111111 00000000
+    BLOCKSTATE =    0x00F00000, // 00000000 11110000 00000000 00000000
     BLOCKLIGHT =    0x1F000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
+
+enum ChunkStates
+{
+    STATE_CHUNK_LOADED =    0x1,
+    STATE_CHUNK_DIRTY =     0x2,
+};
+
+typedef struct ChunkMesh // TODO: finish ChunkMesh struct
+{
+} ChunkMesh;
 
 typedef struct Chunk
 {
     v2i16 pos;
-    u8 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-    u16 info[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-    u8 loaded;
     u32 id;
+    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    ChunkMesh mesh;
+    u8 state;
     /*TODO: replace 'loaded' with a 'chunk_table' array of pointers to 'chunk_buf'
       addresses and update pointer addresses as player enters or exits chunks */
 } Chunk;
@@ -80,6 +90,7 @@ void draw_chunk(Chunk *chunk, u16 height);
 void draw_block(u32 blockStates);
 void draw_block_wires(v3i32 *pos);
 void draw_bounding_box(Vector3 *origin, Vector3 *scl);
+void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl);
 void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color);
 
 #define CHUNKING_H
