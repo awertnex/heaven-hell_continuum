@@ -35,7 +35,9 @@ typedef struct Chunk
 
 u8 state = 0;
 Chunk *chunkBuf;
-void *chunkTable;
+u64 *chunkTable;
+
+int allocate_buffers();
 
 void loop()
 {
@@ -49,35 +51,6 @@ void loop()
     }
     rect(16.0f, 0.0f, MC_C_GREEN);
     rect(32.0f, 0.0f, MC_C_BLUE);
-}
-
-int allocate_buffers()
-{
-    chunkBuf = (Chunk*) malloc(CHUNK_COUNT*sizeof(Chunk));
-    chunkTable = (void*) malloc(CHUNK_TABLE_SIZE);
-
-    if (&chunkBuf[0] != NULL)
-    {
-        state |= STATE_CHUNK_BUF_ALLOC;
-        LOGINFO("%s", "chunkBuf Memory Allocation Successful");
-    }
-    else
-    {
-        LOGFATAL("%s", "chunkBuf Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
-
-    if (&chunkTable[0] != NULL)
-    {
-        state |= STATE_CHUNK_TAB_ALLOC;
-        LOGINFO("%s", "chunkTable Memory Allocation Successful");
-    }
-    else
-    {
-        LOGFATAL("%s", "chunkTable Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
-    return 0;
 }
 
 int main(void)
@@ -105,3 +78,33 @@ int main(void)
     CloseWindow();
     return 0;
 }
+
+int allocate_buffers()
+{
+    chunkBuf = (Chunk*) malloc(CHUNK_COUNT*sizeof(Chunk));
+    chunkTable = (u64*) malloc(CHUNK_TABLE_SIZE);
+
+    if (&chunkBuf[0] != NULL)
+    {
+        state |= STATE_CHUNK_BUF_ALLOC;
+        LOGINFO("%s", "chunkBuf Memory Allocation Successful");
+    }
+    else
+    {
+        LOGFATAL("%s", "chunkBuf Memory Allocation Failed, Aborting Process");
+        return 1;
+    }
+
+    if (&chunkTable[0] != NULL)
+    {
+        state |= STATE_CHUNK_TAB_ALLOC;
+        LOGINFO("%s", "chunkTable Memory Allocation Successful");
+    }
+    else
+    {
+        LOGFATAL("%s", "chunkTable Memory Allocation Failed, Aborting Process");
+        return 1;
+    }
+    return 0;
+}
+
