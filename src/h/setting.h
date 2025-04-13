@@ -17,9 +17,9 @@
 #define SETTING_MOUSE_SENSITIVITY_MAX       200
 
 // ---- video ------------------------------------------------------------------
-#define SETTING_RENDER_DISTANCE_DEFAULT     3
-#define SETTING_RENDER_DISTANCE_MIN         2
-#define SETTING_RENDER_DISTANCE_MAX         8
+#define SETTING_RENDER_DISTANCE_DEFAULT     8
+#define SETTING_RENDER_DISTANCE_MIN         4
+#define SETTING_RENDER_DISTANCE_MAX         32 
 #define SETTING_GUI_SCALE_DEFAULT           2.0f
 #define SETTING_GUI_SCALE_0                 // TODO: auto gui scale
 #define SETTING_GUI_SCALE_1                 1.0f
