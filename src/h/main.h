@@ -34,7 +34,7 @@ extern f64 skyboxMidNight;
 
 // ---- signatures -------------------------------------------------------------
 int mc_mkdir(const char *path, u16 mode);
-void init_world();
+void init_world(const char *str);
 
 #define MINECRAFT_H
 #endif

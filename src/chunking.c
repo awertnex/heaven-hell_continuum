@@ -94,10 +94,17 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
 
 void parse_chunk_states(Chunk *chunk, u16 height)
 {
-    if (chunk->state & STATE_CHUNK_LOADED) return;
-    for (u16 z = 0; z < height; ++z)
-        for (u8 y = 0; y < CHUNK_SIZE; ++y)
-            for (u8 x = 0; x < CHUNK_SIZE; ++x)
+    if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
+        return;
+
+    chunk->mat = LoadMaterialDefault();
+
+    u16 z = 0; u8 y = 0, x = 0;
+    for (; z < height; ++z)
+    {
+        for (; y < CHUNK_SIZE; ++y)
+        {
+            for (; x < CHUNK_SIZE; ++x)
             {
                 add_block(chunk, x, y, z);
                 if (chunk->i[z][y][x])
@@ -115,7 +122,11 @@ void parse_chunk_states(Chunk *chunk, u16 height)
                 if (chunk->i[z][y][x] & NEGATIVE_Z)
                     ++quadCount;
             }
-    chunk->state |= STATE_CHUNK_LOADED;
+            x = 0;
+        }
+        y = 0;
+    }
+    chunk->state = STATE_CHUNK_LOADED;
 }
 
 //TODO: revise, might not be needed
@@ -151,7 +162,7 @@ void draw_chunk_buffer(Chunk *chunkBuf)
         opacity = 200;
     else opacity = 255;
     rlPushMatrix();
-    rlSetTexture(dirt.id); //temp texturing
+    rlSetTexture(cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)

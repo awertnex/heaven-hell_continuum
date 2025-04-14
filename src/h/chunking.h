@@ -60,20 +60,18 @@ enum BlockData
 
 enum ChunkStates
 {
-    STATE_CHUNK_LOADED =        0x1,
-    STATE_CHUNK_DIRTY =         0x2,
+    STATE_CHUNK_LOADED =        1,
+    STATE_CHUNK_RENDER =        2,
+    STATE_CHUNK_DIRTY =         3,
 };
-
-typedef struct ChunkMesh // TODO: finish ChunkMesh struct
-{
-} ChunkMesh;
 
 typedef struct Chunk
 {
     v2i16 pos;
     u32 id;
     u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-    ChunkMesh mesh;
+    Model model;
+    Material mat;
     u8 state;
 } Chunk;
 

@@ -9,8 +9,9 @@
 #include "logic.c"
 #include "assets.c"
 #include "keymaps.c"
-#include "engine/logger.c"
+#include "rendering.c"
 #include "super_debugger.c"
+#include "engine/logger.c"
 
 int mc_mkdir(const char *path, u16 mode)
 {

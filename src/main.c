@@ -112,13 +112,13 @@ int main(int argc, char **argv)
         update_input_general(&lily);
         update_render_settings(renderSize);
         renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        mouseDelta = GetMouseDelta();
         BeginDrawing();
         //draw_texture_tiled(); // TODO: draw tiled texture of title screen
         ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
         update_menus(renderSize);
         if (state & STATE_WORLD_LOADED)
         {
-            mouseDelta = GetMouseDelta();
             draw_skybox();
             update_world();
         }
@@ -152,17 +152,12 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void init_world()
+void init_world(const char *str)
 {
-    gameStartTime = get_time_ms();
-    hide_cursor;
-    center_cursor;
+    rlSetClipPlanes(0.1f, 500);
 
     if (init_chunking() != 0)
-    {
         state &= ~STATE_ACTIVE;
-        WindowShouldClose();
-    }
 
     { //temp
         chunkBuf[chunkXY(0, 0)].pos = (v2i16){0, 0};
@@ -192,6 +187,10 @@ void init_world()
 
     state |= (STATE_HUD | STATE_WORLD_LOADED);
     LOGINFO("%s '%s'", "World Loaded", "Poop Consistency Tester");
+
+    hide_cursor;
+    center_cursor;
+    gameStartTime = get_time_ms();
 }
 
 void update_world()

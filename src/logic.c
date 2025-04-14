@@ -77,8 +77,8 @@ void update_camera_movements_player(Player *player)
 {
     if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG))
     {
-        player->yaw -= mouseDelta.x*setting.mouseSensitivity;
-        player->pitch -= mouseDelta.y*setting.mouseSensitivity;
+        player->yaw -= (f32)mouseDelta.x*setting.mouseSensitivity;
+        player->pitch -= (f32)mouseDelta.y*setting.mouseSensitivity;
     }
 
     player->yaw = fmodf(player->yaw, 360.0f);

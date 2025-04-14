@@ -1,7 +1,10 @@
 i16 chunk pos x
 i16 chunk pos y
 u16 number of blocks to parse
-u8 block index[number of blocks to parse]
-u16 block info[number of blocks to parse]
+u32 block index[number of blocks to parse]
+
+starting at 'block index[0]', if 'block index[n] & COUNTAHEAD', load
+'block index[n] & ~COUNTAHEAD' into memory the count of '2 bytes: block index[n + 1]' and
+continue after those read indexes
 
 
