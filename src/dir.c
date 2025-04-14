@@ -71,8 +71,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
     else
     {
         LOGFATAL("%s", "File Not Found 'src/info/dir.txt', Instance Creation Aborted");
-        *state &= ~FLAG_ACTIVE;
-        return;
+        goto cleanup;
     }
 
     snprintf(mc_c_subpath, sizeof(mc_c_subpath), "%s%s", mc_c_grandpath, instance_name);
@@ -103,6 +102,9 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
     else LOGINFO("Instance Opened '%s'", instance_name);
 
     // TODO: make an instance executable and launch it using the launcher screen
+cleanup:
+    *state &= ~FLAG_ACTIVE;
+    return;
 }
 
 void init_world_directory()
