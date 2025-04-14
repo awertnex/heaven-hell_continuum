@@ -1,7 +1,7 @@
 #ifndef DIR_H
 
 #include "main.h"
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 // ---- from linux/limits.h ----------------------------------------------------
 #ifndef NAME_MAX

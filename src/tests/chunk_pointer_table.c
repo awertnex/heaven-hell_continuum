@@ -3,9 +3,9 @@
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
-#include "../h/defines.h"
-#include "../h/logger.h"
-#include "../logger.c"
+#include "../engine/h/defines.h"
+#include "../engine/h/logger.h"
+#include "../engine/logger.c"
 
 #define MC_C_RED    (Color){0xff, 0x78, 0x78, 0xff}
 #define MC_C_GREEN  (Color){0x78, 0xff, 0x78, 0xff}

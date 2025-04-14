@@ -5,7 +5,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 #include "main.h"
 #include "setting.h"

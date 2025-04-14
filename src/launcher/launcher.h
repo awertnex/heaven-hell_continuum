@@ -3,7 +3,7 @@
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
 #define VECTOR2_TYPES
-#include "../h/defines.h"
+#include "../engine/h/defines.h"
 
 #define WIDTH 1280
 #define HEIGHT 720

@@ -12,9 +12,9 @@
             LOGFATAL("%s %s", #x, "Memory Allocation Failed, Aborting Process");\
             goto cleanup;                                                       \
         }                                                                       \
-    }                                                                           \
-    memset((x), 0, (size));                                                     \
-    LOGINFO("%s %s", #x, "Memory Allocated");
+        memset((x), 0, (size));                                                 \
+        LOGINFO("%s %s", #x, "Memory Allocated");                               \
+    }
 
 #define MC_C_FREE(x, size)                                                      \
     if ((x)) {                                                                  \

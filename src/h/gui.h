@@ -4,7 +4,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 #define show_cursor ShowCursor()
 #define hide_cursor HideCursor()

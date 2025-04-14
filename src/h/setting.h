@@ -1,7 +1,7 @@
 #ifndef SETTING_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 // ---- internal ---------------------------------------------------------------
 #define SETTING_CAMERA_DISTANCE_MAX         4

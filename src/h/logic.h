@@ -6,7 +6,7 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 #include "setting.h"
 
 #define GRAVITY (9.7803267715f/100.0f)

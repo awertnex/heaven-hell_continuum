@@ -10,7 +10,7 @@
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
-#include "../h/defines.h"
+#include "../engine/h/defines.h"
 
 #define NAME_MAX         255	/* # chars in a file name */
 #define PATH_MAX        4096	/* # chars in a path name including nul */
