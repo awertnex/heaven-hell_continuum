@@ -35,7 +35,7 @@ if build successful, run minecraft.c with `./minecraft_c`\
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
 - build test [n] with `./build test [n]`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
-- help `./build --help`
+- help `./build help`
 
 
 ### windows (using mingw/gcc):
@@ -65,7 +65,7 @@ cflag `-std=c99` optional, but preferred
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to list
 - build test [n] with `build test [n]`
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to execute by index [n]
-- help `build --help`
+- help `build help`
 
 ## Contributors (alpha testing - windows)
 - [sofia](https://github.com/EdgySofia666)
