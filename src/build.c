@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <dirent.h>
 
@@ -9,9 +10,10 @@
 #define DIR_BIN_TESTS       "bin/tests/"
 
 #if defined __linux__
-    #define ALLOC_CMD       (cmd = (char**) malloc(64*sizeof(char*)))
-    #define ZERO_CMD        (memset(cmd, 0, 64*sizeof(char*)))
+    #define ALLOC_CMD       (cmd = (char**) malloc(64 * sizeof(char*)))
+    #define ZERO_CMD        (memset(cmd, 0, 64 * sizeof(char*)))
     #define FREE_CMD        free(cmd)
+    #define NULL_CMD        (cmd = NULL)
     #define COMPILER        "cc"
     #define EXTENSION       ""
     #define MKDIR_BIN       mkdir("bin/", 0775);
@@ -23,6 +25,7 @@ char str_libs[3][24] = {"-lraylib", "-lm", 0};
     #define ALLOC_CMD
     #define ZERO_CMD
     #define FREE_CMD
+    #define NULL_CMD
     #define COMPILER        "gcc"
     #define EXTENSION       ".exe"
     #define MKDIR_BIN       mkdir("bin/");
@@ -42,7 +45,18 @@ char str_tests[4][24] =
     0,
 };
 
-int is_dir_exists(const char *path)
+void fail_cmd()
+{
+    if (cmd)
+    {
+        ZERO_CMD;
+        FREE_CMD;
+        NULL_CMD;
+    }
+    exit(-1);
+}
+
+int is_dir_exists(const char* path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -51,7 +65,7 @@ int is_dir_exists(const char *path)
     return 0;
 }
 
-int build_cmd()
+void build_cmd()
 {
     ALLOC_CMD;
     ZERO_CMD;
@@ -102,79 +116,104 @@ int build_cmd()
                 break;
         }
     }
-
-    if (!chdir("src/"))
-        execvp(COMPILER, cmd);
-    else
-    {
-        printf("Error: 'src/' Directory Not Found, Aborting Build\n");
-        return 1;
-    }
-
-    FREE_CMD;
-    return 0;
 }
 
-int main(int argc, char **argv)
+void execute_cmd()
+{
+    if (chdir("src/"))
+    {
+        fprintf(stderr, "Error: Directory 'src/' Not Found, Process Aborted\n");
+        fail_cmd();
+    }
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        fprintf(stderr, "Error: Fork Failed, Process Aborted\n");
+        fail_cmd();
+    }
+    else if (pid == 0)
+    {
+        execvp(COMPILER, cmd);
+        fprintf(stderr, "Error: Build Failed, Process Aborted\n");
+        fail_cmd();
+    }
+    else
+    {
+        int status;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status))
+        {
+            fprintf(stderr, "Build Exit Code: %d\n", WEXITSTATUS(status));
+
+            if (WEXITSTATUS(status))
+                fail_cmd();
+        }
+        else
+            fprintf(stderr, "Error: Build Exited Abnormally, Process Aborted\n");
+    }
+}
+
+int main(int argc, char** argv)
 {
     perror("execvp");
+
     if (!is_dir_exists(DIR_BIN))
     {
         MKDIR_BIN;
-        printf("Directory 'bin/' Created!\n");
+        fprintf(stderr, "Directory 'bin/' Created!\n");
     }
 
     if (!is_dir_exists(DIR_BIN_TESTS))
     {
         MKDIR_BIN_TESTS;
-        printf("Directory 'bin/tests/' Created!\n");
+        fprintf(stderr, "Directory 'bin/tests/' Created!\n");
     }
-
 
     if (argc == 1)
     {
         printf("Building minecraft.c..\n");
-        if (build_cmd()) return -1;
+        build_cmd();
+        execute_cmd();
+        fprintf(stderr, "minecraft.c Built 'bin/minecraft_c%s'\n", EXTENSION);
         return 0;
     }
 
-    if (!strncmp(argv[1], "list", 4))
-    {
-        printf("List: \n  %s\n",
-                "launcher");
-        printf("Tests: \n");
-        for (int i = 0; i < 64 && str_tests[i][0]; ++i)
-            printf("  test %03d: %s\n", i, str_tests[i]);
-    }
-    else if (!strncmp(argv[1], "launcher", 8))
+    if (!strncmp(argv[1], "launcher", 8))
     {
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
         memset(str_libs[1], 0, sizeof(str_libs[1]));
-        snprintf(str_out[1], 32, "../%slauncher%s", DIR_BIN, EXTENSION);
-        if(build_cmd()) return -1;
+        build_cmd();
+        execute_cmd();
+        fprintf(stderr, "minecraft.c Launcher Built 'bin/minecraft_c%s'\n", EXTENSION);
     }
     else if (!strncmp(argv[1], "test", 4))
     {
+        int test_index = atoi(argv[2]);
+        int str_tests_members = (int)(sizeof(str_tests)/sizeof(str_tests[0]));
         if (!argv[2])
         {
-            printf("usage: ./build test [n]\n");
-            return -1;
+            fprintf(stderr, "usage: ./build%s test [n]\n", EXTENSION);
+            fail_cmd();
         }
-        else if ((atoi(argv[2]) < 0) || (atoi(argv[2]) >= (sizeof(str_tests)/sizeof(str_tests[0])) - 1))
+        else if ((test_index < 0) || (test_index >= (str_tests_members - 1)))
         {
-            printf("'%c' Invalid, Try './build list' to List Available Options..\n", argv[2][0]);
-            return -1;
+            fprintf(stderr, "Error: '%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
+            fail_cmd();
         }
 
-        printf("Building test %03d '%s'..\n", (argv[2][0]) - 48, str_tests[argv[2][0] - 48]);
-        snprintf(str_main, 32, "tests/%s.c", str_tests[argv[2][0] - 48]);
-        snprintf(str_out[1], 48, "../%stest_%s%s", DIR_BIN_TESTS, str_tests[argv[2][0] - 48], EXTENSION);
-        if (build_cmd()) return -1;
+        printf("Building test %03d '%s'..\n", test_index, str_tests[test_index]);
+        snprintf(str_main, 32, "tests/%s.c", str_tests[test_index]);
+        snprintf(str_out[1], 48, "../%stest_%s%s", DIR_BIN_TESTS, str_tests[test_index], EXTENSION);
+        build_cmd();
+        execute_cmd();
+        fprintf(stderr, "test %03d Built 'bin/tests/%s%s'\n", test_index, str_tests[test_index], EXTENSION);
     }
-    else if (!strncmp(argv[1], "--help", 6))
+    else if (!strncmp(argv[1], "help", 6))
     {
-        printf("usages:\n  %s\n  %s\n  %s\n  %s\n",
+        fprintf(stderr, "usages:\n  %s\n  %s\n  %s\n  %s\n",
                 "./build launcher   (build the launcher)",
                 "./build list       (list all available options and tests)",
                 "./build test [n]   (build test 'n' from the 'list' command)",
@@ -182,8 +221,8 @@ int main(int argc, char **argv)
     }
     else
     {
-        printf("Invalid '%s', Try './build help' to List Available Options..\n", argv[1]);
-        return -1;
+        fprintf(stderr, "Invalid '%s', Try './build help' to List Available Options..\n", argv[1]);
+        fail_cmd();
     }
 
     return 0;
