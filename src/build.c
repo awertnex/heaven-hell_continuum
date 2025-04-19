@@ -157,8 +157,6 @@ void execute_cmd()
 
 int main(int argc, char** argv)
 {
-    perror("execvp");
-
     if (!is_dir_exists(DIR_BIN))
     {
         MKDIR_BIN;
