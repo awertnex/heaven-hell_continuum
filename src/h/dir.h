@@ -10,6 +10,7 @@
 #ifndef PATH_MAX
     #define PATH_MAX    4096
 #endif // PATH_MAX
+// ---- from linux/limits.h ----------------------------------------------------
 
 enum DirectoryStructure
 {
@@ -43,7 +44,7 @@ extern str worldDirStructure[3][NAME_MAX];
 
 // ---- signatures -------------------------------------------------------------
 void init_paths();
-void init_instance_directory(str *instanceName, u16 *state, u8 STATE_ACTIVE);
+void init_instance_directory(str* instanceName, u16* state, u8 STATE_ACTIVE);
 void init_world_directory();
 
 #define DIR_H

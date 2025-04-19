@@ -8,14 +8,16 @@
 #include "../engine/h/defines.h"
 
 // ---- platform layer ---------------------------------------------------------
-#define WIDTH 1280
-#define HEIGHT 720
+#define WIDTH 854
+#define HEIGHT 480
 #define MARGIN 20
 
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
 #define MODE_GRAY_BLOCKS    1
+
+#define THREAD_COUNT 2
 
 // ---- declarations -----------------------------------------------------------
 extern f64 deltaTime;
@@ -33,8 +35,8 @@ extern f64 skyboxBurnBoost;
 extern f64 skyboxMidNight;
 
 // ---- signatures -------------------------------------------------------------
-int mc_mkdir(const char *path, u16 mode);
-void init_world(const char *str);
+int mc_mkdir(const char* path, u16 mode);
+void init_world(const char* str);
 
 #define MINECRAFT_H
 #endif

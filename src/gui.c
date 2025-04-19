@@ -37,18 +37,18 @@ Rectangle rectBackgroundDark = {16, 0, 16, 16};
 v2i16 hotbarPosition;
 f32 hotbarSlotSelected = 1;
 v2i16 crosshairPosition;
-u16 gameMenuPosition = HEIGHT/3;
+u16 gameMenuPosition = HEIGHT / 3;
 u8 buttonSpacingVertical = 5;
 v2i16 containerInventoryPosition;
 v2i16 containerInventoryFirstSlotPosition;
 
 // TODO: you know what TODO
-u8 *containerInventorySlots[5][9];
-u8 *containerInventorySlotsCrafting[5];
-u8 *containerInventorySlotsArmor[5];
+u8* containerInventorySlots[5][9];
+u8* containerInventorySlotsCrafting[5];
+u8* containerInventorySlotsArmor[5];
 u8 containerInventorySlotsOffhand;
 u8 containerCursorSlot[2];
-u8 *hotbarSlots[9][9];
+u8* hotbarSlots[9][9];
 
 u16 menuIndex;
 u16 menuLayer[5] = {0};
@@ -115,16 +115,23 @@ void init_gui()
 
 void apply_render_settings()
 {
-    setting.guiScale = SETTING_GUI_SCALE_DEFAULT;
-    fontSize = 14*setting.guiScale;
-    textRowHeight = 8*setting.guiScale;
+    setting =
+        (settings){
+            .reachDistance =        SETTING_REACH_DISTANCE_MAX,
+            .fov =                  SETTING_FOV_DEFAULT,
+            .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
+            .renderDistance =       SETTING_RENDER_DISTANCE_DEFAULT,
+            .guiScale =             SETTING_GUI_SCALE_DEFAULT,
+        };
+    fontSize = 14 * setting.guiScale;
+    textRowHeight = 8 * setting.guiScale;
 }
 
 void update_render_settings(v2f32 renderSize)
 {
-    hotbarPosition =                (v2i16){renderSize.x/2, renderSize.y - (2*setting.guiScale)};
-    crosshairPosition =             (v2i16){renderSize.x/2, renderSize.y/2};
-    containerInventoryPosition =    (v2i16){renderSize.x/2, renderSize.y/2};
+    hotbarPosition =                (v2i16){renderSize.x / 2, renderSize.y - (2 * setting.guiScale)};
+    crosshairPosition =             (v2i16){renderSize.x / 2, renderSize.y / 2};
+    containerInventoryPosition =    (v2i16){renderSize.x / 2, renderSize.y / 2};
 }
 
 void free_gui()
@@ -842,29 +849,29 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 a
     switch (alignX)
     {
         case 1:
-            pos.x -= ((button.width*setting.guiScale)/2);
+            pos.x -= ((button.width * setting.guiScale) / 2);
             break;
 
         case 2:
-            pos.x -= (button.width*setting.guiScale);
+            pos.x -= (button.width * setting.guiScale);
             break;
     };
 
     switch (alignY)
     {
         case 1:
-            pos.y -= ((button.height*setting.guiScale)/2);
+            pos.y -= ((button.height * setting.guiScale) / 2);
             break;
 
         case 2:
-            pos.y -= (button.height*setting.guiScale);
+            pos.y -= (button.height * setting.guiScale);
             break;
     };
 
     if (buttons[btn_state])
     {
-        if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.guiScale)
-                && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.guiScale))
+        if (cursor.x > pos.x && cursor.x < pos.x + (button.width * setting.guiScale)
+                && cursor.y > pos.y && cursor.y < pos.y + (button.height * setting.guiScale))
         {
             draw_texture(texture, button, pos,
                     (v2i16){setting.guiScale, setting.guiScale},
@@ -883,7 +890,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 a
         if (str)
         {
             draw_text(fontRegular, str,
-                    (v2i16){pos.x + ((button.width*setting.guiScale)/2), pos.y + ((button.height*setting.guiScale)/2)},
+                    (v2i16){pos.x + ((button.width*setting.guiScale) / 2), pos.y + ((button.height*setting.guiScale) / 2)},
                     fontSize, 1, alignX, alignY, COL_TEXT_DEFAULT);
         }
     }
@@ -901,7 +908,7 @@ void btn_func_singleplayer()
     check_menu_ready = 0;
     state &= ~STATE_PAUSED; //temp
 
-    init_world(); //temp
+    init_world("Poop Consistency Tester"); //temp
 }
 
 void btn_func_multiplayer()

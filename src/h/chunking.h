@@ -18,22 +18,22 @@
 #define WORLD_HEIGHT_HELL   365 // - WORLD_BOTTOM
 #define WORLD_HEIGHT_END    256 // - WORLD_BOTTOM
 
-#define CHUNK_SIZE          16
-#define CHUNK_DATA_SIZE     (sizeof(Chunk))
-#define CHUNK_BUF_ROW       ((SETTING_RENDER_DISTANCE_MAX*2) + 1)
-#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_ROW*CHUNK_BUF_ROW)
+#define CHUNK_DIAMETER      32
+#define CHUNK_DATA_SIZE     (sizeof(Chunk)) // truct Chunk
+#define CHUNK_BUF_ROW       ((SETTING_RENDER_DISTANCE_MAX * 2) + 1)
+#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_ROW * CHUNK_BUF_ROW)
 
-#define WORLD_DIAMETER      (32767*2)
-#define WORLD_ROW           ((WORLD_DIAMETER*2) + 1)
-#define WORLD_SIZE          (CHUNK_SIZE*WORLD_ROW*WORLD_ROW)
-#define WORLD_MAX_CHUNKS    (WORLD_SIZE/CHUNK_SIZE)
-#define CHUNK_MAX_BLOCKS    (CHUNK_SIZE*CHUNK_SIZE*WORLD_HEIGHT_NORMAL)
-#define CHUNK_MAX_QUADS     ((CHUNK_SIZE/2)*CHUNK_SIZE*WORLD_HEIGHT_NORMAL)
-#define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS*2)
-#define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS*4)
+#define WORLD_RADIUS        32767 // (((int16_t top of range) - 1)/2)
+#define WORLD_DIAMETER      ((WORLD_RADIUS * 2) + 1)
+#define WORLD_AREA          (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
+#define WORLD_MAX_CHUNKS    (WORLD_AREA / CHUNK_DIAMETER)
+#define CHUNK_MAX_BLOCKS    (CHUNK_DIAMETER * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL)
+#define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL)
+#define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS * 2)
+#define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
 
-#define chunkXY(x, y)       (x + (y*sizeof(Chunk)))
-#define blockXYZ(x, y, z)   (x + (y*CHUNK_SIZE) + (z*CHUNK_SIZE*CHUNK_SIZE))
+#define chunkXY(x, y)       (x + (y * CHUNK_DATA_SIZE))
+#define blockXYZ(x, y, z)   (x + (y * CHUNK_DIAMETER) + (z * CHUNK_DIAMETER * CHUNK_DIAMETER))
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
@@ -52,24 +52,33 @@ enum BlockFaces
 
 enum BlockData
 {
-    BLOCKFACES =    0x0000003F, // 00000000 00000000 00000000 00111111
-    BLOCKID =       0x000FFF00, // 00000000 00001111 11111111 00000000
-    BLOCKSTATE =    0x00F00000, // 00000000 11110000 00000000 00000000
-    BLOCKLIGHT =    0x1F000000, // 00011111 00000000 00000000 00000000
+    BLOCKFACES =    0x0000003f, // 00000000 00000000 00000000 00111111
+    BLOCKID =       0x000fff00, // 00000000 00001111 11111111 00000000
+    BLOCKSTATE =    0x00f00000, // 00000000 11110000 00000000 00000000
+    BLOCKDATA =     0x00ffff00, // 00000000 11111111 11111111 00000000
+    BLOCKLIGHT =    0x1f000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
+
+#define GET_BLOCKID(x)          (((x) & BLOCKID) >> 8)
+#define SET_BLOCKID(x, id)      ((x) = ((x) & ~BLOCKID) | ((id) << 8))
+#define GET_BLOCKSTATE(x)       (((x) & BLOCKSTATE) >> 20)
+#define SET_BLOCKSTATE(x, id)   ((x) = ((x) & ~BLOCKSTATE) | ((id) << 20))
+#define GET_BLOCKDATA(x)        (((x) & BLOCKDATA) >> 8)
 
 enum ChunkStates
 {
-    STATE_CHUNK_LOADED =        1,
-    STATE_CHUNK_RENDER =        2,
-    STATE_CHUNK_DIRTY =         3,
-};
+    STATE_CHUNK_LOADED = 1,
+    STATE_CHUNK_RENDER = 2,
+    STATE_CHUNK_DIRTY = 3,
+}; /* ChunkStates */
 
+// TODO: add 'version' byte to the chunk file for evolving the format safely
+// TODO: add chunk slicing
 typedef struct Chunk
 {
     v2i16 pos;
     u32 id;
-    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
+    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Model model;
     Material mat;
     u8 state;
@@ -77,12 +86,14 @@ typedef struct Chunk
 
 // ---- declarations -----------------------------------------------------------
 extern u16 worldHeight;
-extern Chunk *chunkBuf;
-extern void *chunkTab;
-extern Chunk *targetChunk;
-//TODO: put blockCount quadCount into a struct WorldStats
-extern u64 blockCount;
-extern u64 quadCount;
+extern Chunk* chunkBuf;
+extern void* chunkTab;
+extern Chunk* targetChunk;
+extern struct WorldStats
+{
+    u64 blockCount;
+    u64 quadCount;
+} world_stats;
 extern u8 opacity;
 
 // ---- signatures -------------------------------------------------------------
@@ -90,16 +101,16 @@ u8 init_chunking();
 void free_chunking();
 void load_chunks();
 void unload_chunks();
-void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void parse_chunk_states(Chunk *chunk, u16 height);
-Chunk* get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
-void draw_chunk_buffer(Chunk *chunkBuf);
-void draw_chunk(Chunk *chunk);
+void add_block(Chunk* chunk, u8 x, u8 y, u16 z);
+void remove_block(Chunk* chunk, u8 x, u8 y, u16 z);
+void parse_chunk_states(Chunk* chunk, u16 height);
+Chunk* get_chunk(v3i32* coordinates, u16 *state, u16 flag);
+void draw_chunk_buffer(Chunk* chunkBuf);
+void draw_chunk(Chunk* chunk);
 void draw_block(u32 blockStates);
-void draw_block_wires(v3i32 *pos);
-void draw_bounding_box(Vector3 *origin, Vector3 *scl);
-void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl);
+void draw_block_wires(v3i32* pos);
+void draw_bounding_box(Vector3* origin, Vector3* scl);
+void draw_bounding_box_clamped(Vector3* origin, Vector3* scl);
 void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color);
 
 #define CHUNKING_H

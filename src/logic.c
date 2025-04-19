@@ -8,7 +8,7 @@
 // ---- variables --------------------------------------------------------------
 Vector2 mouseDelta;
 
-bool get_double_press(Player *player, KeyboardKey key)
+bool get_double_press(Player* player, KeyboardKey key)
 {
     static f64 doublePressStartTime = 0;
     static KeyboardKey doublePressKey = KEY_NULL;
@@ -31,7 +31,7 @@ bool get_double_press(Player *player, KeyboardKey key)
     return false;
 }
 
-void update_player_states(Player *player)
+void update_player_states(Player* player)
 {
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
@@ -39,24 +39,28 @@ void update_player_states(Player *player)
     if (player->state & STATE_FLYING)
     {
         player->v = v3fzero;
-        player->movementSpeed = PLAYER_SPEED_FLY*dt;
+        player->movementSpeed = PLAYER_SPEED_FLY * dt;
         player->camera.fovy = 80; //TODO: revise (add lerp)
     }
 
     if (player->state & STATE_SNEAKING && !(player->state & STATE_FLYING))
-        player->movementSpeed = PLAYER_SPEED_SNEAK*dt;
+        player->movementSpeed = PLAYER_SPEED_SNEAK * dt;
     else if (player->state & STATE_SPRINTING)
     {
-        !(player->state & STATE_FLYING) ?
-            (player->movementSpeed = PLAYER_SPEED_SPRINT*dt,
-             player->camera.fovy = 75) :
-
-            (player->movementSpeed = PLAYER_SPEED_FLY_FAST*dt,
-             player->camera.fovy = 90);
+        if (!(player->state & STATE_FLYING))
+        {
+            player->movementSpeed = PLAYER_SPEED_SPRINT * dt;
+            player->camera.fovy = 75;
+        }
+        else
+        {
+            player->movementSpeed = PLAYER_SPEED_FLY_FAST * dt;
+            player->camera.fovy = 90;
+        }
     }
     else if (!(player->state & STATE_SNEAKING) && !(player->state & STATE_SPRINTING) && !(player->state & STATE_FLYING))
     {
-        player->movementSpeed = PLAYER_SPEED_WALK*dt;
+        player->movementSpeed = PLAYER_SPEED_WALK * dt;
         player->camera.fovy = 70;
     }
 
@@ -73,12 +77,12 @@ void update_player_states(Player *player)
     }
 }
 
-void update_camera_movements_player(Player *player)
+void update_camera_movements_player(Player* player)
 {
     if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG))
     {
-        player->yaw -= (f32)mouseDelta.x*setting.mouseSensitivity;
-        player->pitch -= (f32)mouseDelta.y*setting.mouseSensitivity;
+        player->yaw -= (f32)mouseDelta.x * setting.mouseSensitivity;
+        player->pitch -= (f32)mouseDelta.y * setting.mouseSensitivity;
     }
 
     player->yaw = fmodf(player->yaw, 360.0f);
@@ -86,16 +90,16 @@ void update_camera_movements_player(Player *player)
     if (player->pitch > 90.0f) player->pitch = 90.0f;
     else if (player->pitch < -90.0f) player->pitch = -90.0f;
 
-    player->sinPitch =  sinf(player->pitch*MC_C_DEG2RAD);
-    player->cosPitch =  cosf(player->pitch*MC_C_DEG2RAD);
-    player->sinYaw =    sinf(player->yaw*MC_C_DEG2RAD);
-    player->cosYaw =    cosf(player->yaw*MC_C_DEG2RAD);
+    player->sinPitch =  sinf(player->pitch * MC_C_DEG2RAD);
+    player->cosPitch =  cosf(player->pitch * MC_C_DEG2RAD);
+    player->sinYaw =    sinf(player->yaw * MC_C_DEG2RAD);
+    player->cosYaw =    cosf(player->yaw * MC_C_DEG2RAD);
 
     Vector3 playerCameraUp;
     playerCameraUp =
         (Vector3){
-            -player->cosYaw*player->sinPitch,
-            -player->sinYaw*player->sinPitch,
+            -player->cosYaw * player->sinPitch,
+            -player->sinYaw * player->sinPitch,
             player->cosPitch,
         };
 
@@ -107,9 +111,9 @@ void update_camera_movements_player(Player *player)
                 };
             player->camera.target =
                 (Vector3){
-                    player->pos.x + ((player->cosYaw*player->cosPitch)*setting.reachDistance),
-                    player->pos.y + ((player->sinYaw*player->cosPitch)*setting.reachDistance),
-                    player->camera.position.z + (player->sinPitch*setting.reachDistance),
+                    player->pos.x + ((player->cosYaw * player->cosPitch) * setting.reachDistance),
+                    player->pos.y + ((player->sinYaw * player->cosPitch) * setting.reachDistance),
+                    player->camera.position.z + (player->sinPitch * setting.reachDistance),
                 };
             player->camera.up = playerCameraUp;
             break;
@@ -117,9 +121,9 @@ void update_camera_movements_player(Player *player)
         case 1: // ---- 3rd person back ----------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x - ((player->cosYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.y - ((player->sinYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.z + player->eyeHeight - (player->sinPitch*player->cameraDistance),
+                    player->pos.x - ((player->cosYaw * player->cosPitch) * player->cameraDistance),
+                    player->pos.y - ((player->sinYaw * player->cosPitch) * player->cameraDistance),
+                    player->pos.z + player->eyeHeight - (player->sinPitch * player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
@@ -131,9 +135,9 @@ void update_camera_movements_player(Player *player)
         case 2: // ---- 3rd person front ---------------------------------------
             player->camera.position =
                 (Vector3){
-                    player->pos.x + ((player->cosYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.y + ((player->sinYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.z + player->eyeHeight + (player->sinPitch*player->cameraDistance),
+                    player->pos.x + ((player->cosYaw * player->cosPitch) * player->cameraDistance),
+                    player->pos.y + ((player->sinYaw * player->cosPitch) * player->cameraDistance),
+                    player->pos.z + player->eyeHeight + (player->sinPitch * player->cameraDistance),
                 };
             player->camera.target =
                 (Vector3){
@@ -156,21 +160,21 @@ void update_camera_movements_player(Player *player)
     }
 }
 
-void update_camera_movements_debug_info(Camera3D *camera, Player *player)
+void update_camera_movements_debug_info(Camera3D* camera, Player* player)
 {
     if (player->perspective == 0 || player->perspective == 1)
     {
         camera->position =
             (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->pitch*MC_C_DEG2RAD),
+                -cosf(player->yaw * MC_C_DEG2RAD) * cosf(player->pitch * MC_C_DEG2RAD),
+                -sinf(player->yaw * MC_C_DEG2RAD) * cosf(player->pitch * MC_C_DEG2RAD),
+                -sinf(player->pitch * MC_C_DEG2RAD),
             };
         camera->up =
             (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                cosf(player->pitch*MC_C_DEG2RAD),
+                -cosf(player->yaw * MC_C_DEG2RAD) * sinf(player->pitch * MC_C_DEG2RAD),
+                -sinf(player->yaw * MC_C_DEG2RAD) * sinf(player->pitch * MC_C_DEG2RAD),
+                cosf(player->pitch * MC_C_DEG2RAD),
             };
         camera->target = Vector3Zero();
     }
@@ -178,21 +182,21 @@ void update_camera_movements_debug_info(Camera3D *camera, Player *player)
     {
         camera->position =
             (Vector3){
-                cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                sinf(player->pitch*MC_C_DEG2RAD),
+                cosf(player->yaw * MC_C_DEG2RAD) * cosf(player->pitch * MC_C_DEG2RAD),
+                sinf(player->yaw * MC_C_DEG2RAD) * cosf(player->pitch * MC_C_DEG2RAD),
+                sinf(player->pitch * MC_C_DEG2RAD),
             };
         camera->target = Vector3Zero();
         camera->up =
             (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                cosf(player->pitch*MC_C_DEG2RAD),
+                -cosf(player->yaw * MC_C_DEG2RAD) * sinf(player->pitch * MC_C_DEG2RAD),
+                -sinf(player->yaw * MC_C_DEG2RAD) * sinf(player->pitch * MC_C_DEG2RAD),
+                cosf(player->pitch * MC_C_DEG2RAD),
             };
     }
 }
 
-void kill_player(Player *player)
+void kill_player(Player* player)
 {
     *player =
         (Player){
@@ -204,7 +208,7 @@ void kill_player(Player *player)
     };
 }
 
-void player_respawn(Player *player)
+void player_respawn(Player* player)
 {
     *player =
         (Player){
@@ -216,33 +220,33 @@ void player_respawn(Player *player)
     };
 }
 
-bool check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget)
+bool check_delta_target(Vector3* coordinates, v3i32* deltaTarget)
 {
-    if (lastTarget->x == floorf(coordinates->x) &&
-            lastTarget->y == floorf(coordinates->y) &&
-            lastTarget->z == floorf(coordinates->z))
+    if (deltaTarget->x == floorf(coordinates->x) &&
+            deltaTarget->y == floorf(coordinates->y) &&
+            deltaTarget->z == floorf(coordinates->z))
         return false;
 
-    lastTarget->x = (i32)floorf(coordinates->x);
-    lastTarget->y = (i32)floorf(coordinates->y);
-    lastTarget->z = (i32)floorf(coordinates->z);
+    deltaTarget->x = (i32)floorf(coordinates->x);
+    deltaTarget->y = (i32)floorf(coordinates->y);
+    deltaTarget->z = (i32)floorf(coordinates->z);
     return true;
 }
 
-bool is_range_within_ff(f32 *pos, f32 start, f32 end)
+bool is_range_within_ff(f32* pos, f32 start, f32 end)
 {
     if (*pos < start || *pos > end) return false;
     return true;
 }
 
-bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end)
+bool is_range_within_v2ff(v2f32* pos, v2f32 start, v2f32 end)
 {
     if (pos->x < start.x || pos->x > end.x ||
             pos->y < start.y || pos->y > end.y) return false;
     return true;
 }
 
-bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
+bool is_range_within_v3fi(Vector3* pos, v3i32 start, v3i32 end)
 {
     if (pos->x < start.x || pos->x > end.x ||
             pos->y < start.y || pos->y > end.y ||
@@ -250,28 +254,28 @@ bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
     return true;
 }
 
-b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
+b8 is_ray_intersect(Player* player) //TODO: make the player ray intersection
 {
-    if (targetChunk->i[player->lastTarget.z][player->lastTarget.y][player->lastTarget.x])
+    if (targetChunk->i[player->deltaTarget.z][player->deltaTarget.y][player->deltaTarget.x])
         return true;
     return false;
 }
 
-void give_gravity(Player *player) // TODO: fix player gravity
+void give_gravity(Player* player) // TODO: fix player gravity
 {
     if (player->state & STATE_FALLING)
-        player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*dt);
+        player->v.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->m * dt);
     player->pos.z += player->v.z;
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
 }
 
 /*
-void update_collision_static(Player *player) // TODO: make AABB collision work
+void update_collision_static(Player* player) // TODO: make AABB collision work
 {
     player->collisionCheckStart =
         (Vector3){
-            floorf(player->pos.x - (player->scl.x/2.0f)) - 1,
-            floorf(player->pos.y - (player->scl.y/2.0f)) - 1,
+            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
+            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1,
             floorf(player->pos.z) - 1,
         };
 
@@ -282,13 +286,13 @@ void update_collision_static(Player *player) // TODO: make AABB collision work
             ceilf(player->scl.z) + 2,
         };
 
-    Chunk *targetChunk = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
+    Chunk* targetChunk = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
     if ((player->state & STATE_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
     {
         if (targetChunk->i
                 [z - 1 - WORLD_BOTTOM]
-                [y - (targetChunk->pos.y*CHUNK_SIZE)]
-                [x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
+                [y - (targetChunk->pos.y * CHUNK_SIZE)]
+                [x - (targetChunk->pos.x * CHUNK_SIZE)] & NOT_EMPTY)
         {
             player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
             player->v.z = 0;
@@ -307,10 +311,10 @@ f64 get_time_ms()
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
-    return tp.tv_sec + (f64)tp.tv_usec/1000000;
+    return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
-bool get_timer(f64 *timeStart, f32 interval)
+bool get_timer(f64* timeStart, f32 interval)
 {
     if (get_time_ms() - *timeStart >= interval)
     {

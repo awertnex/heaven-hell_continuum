@@ -7,38 +7,40 @@
 #include "h/logic.h"
 
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
-Chunk *chunkBuf = {0};
-void *chunkTab = {0};
-Chunk *targetChunk = 0; //temp
-// TODO: put blockCount quadCount into a struct WorldStats
-u64 blockCount = 0;
-u64 quadCount = 0;
+Chunk* chunkBuf = {0};
+void* chunkTab = {0};
+Chunk* targetChunk = 0; //temp
+struct WorldStats world_stats =
+{
+    .blockCount = 0,
+    .quadCount = 0,
+};
 u8 opacity = 0;
 
 u8 init_chunking()
 {
-    MC_C_ALLOC(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(Chunk));
-    MC_C_ALLOC(chunkTab, CHUNK_BUF_ELEMENTS*sizeof(void*));
+    MC_C_ALLOC(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+    MC_C_ALLOC(chunkTab, CHUNK_BUF_ELEMENTS * sizeof(void*));
     return 0;
 
 cleanup:
     free_chunking();
-    return 1;
+    return -1;
 }
 
 void free_chunking()
 {
-    MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(Chunk));
-    MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS*sizeof(void*));
+    MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+    MC_C_FREE(chunkTab, CHUNK_BUF_ELEMENTS * sizeof(void*));
 }
 
 //TODO: check chunk-border block-faces
-void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
+void add_block(Chunk* chunk, u8 x, u8 y, u16 z)
 {
-    x %= CHUNK_SIZE;
-    y %= CHUNK_SIZE;
+    x %= CHUNK_DIAMETER;
+    y %= CHUNK_DIAMETER;
 
-    if (x < CHUNK_SIZE - 1)
+    if (x < CHUNK_DIAMETER - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] &= ~NEGATIVE_X) : (chunk->i[z][y][x] |= POSITIVE_X);
     else chunk->i[z][y][x] |= POSITIVE_X;
 
@@ -46,7 +48,7 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
         chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] &= ~POSITIVE_X) : (chunk->i[z][y][x] |= NEGATIVE_X);
     else chunk->i[z][y][x] |= NEGATIVE_X;
 
-    if (y < CHUNK_SIZE - 1)
+    if (y < CHUNK_DIAMETER - 1)
         chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] &= ~NEGATIVE_Y) : (chunk->i[z][y][x] |= POSITIVE_Y);
     else chunk->i[z][y][x] |= POSITIVE_Y;
 
@@ -66,18 +68,18 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
 }
 
 //TODO: check chunk barrier faces
-void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
+void remove_block(Chunk* chunk, u8 x, u8 y, u16 z)
 {
-    x %= CHUNK_SIZE;
-    y %= CHUNK_SIZE;
+    x %= CHUNK_DIAMETER;
+    y %= CHUNK_DIAMETER;
 
-    if (x < CHUNK_SIZE - 1)
+    if (x < CHUNK_DIAMETER - 1)
         chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : 0;
 
     if (x > 0)
         chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] |= POSITIVE_X) : 0;
 
-    if (y < CHUNK_SIZE - 1)
+    if (y < CHUNK_DIAMETER - 1)
         chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] |= NEGATIVE_Y) : 0;
 
     if (y > 0)
@@ -92,7 +94,7 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] = 0;
 }
 
-void parse_chunk_states(Chunk *chunk, u16 height)
+void parse_chunk_states(Chunk* chunk, u16 height)
 {
     if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
         return;
@@ -102,25 +104,25 @@ void parse_chunk_states(Chunk *chunk, u16 height)
     u16 z = 0; u8 y = 0, x = 0;
     for (; z < height; ++z)
     {
-        for (; y < CHUNK_SIZE; ++y)
+        for (; y < CHUNK_DIAMETER; ++y)
         {
-            for (; x < CHUNK_SIZE; ++x)
+            for (; x < CHUNK_DIAMETER; ++x)
             {
                 add_block(chunk, x, y, z);
                 if (chunk->i[z][y][x])
-                    ++blockCount;
+                    ++world_stats.blockCount;
                 if (chunk->i[z][y][x] & POSITIVE_X)
-                    ++quadCount;
+                    ++world_stats.quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_X)
-                    ++quadCount;
+                    ++world_stats.quadCount;
                 if (chunk->i[z][y][x] & POSITIVE_Y)
-                    ++quadCount;
+                    ++world_stats.quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_Y)
-                    ++quadCount;
+                    ++world_stats.quadCount;
                 if (chunk->i[z][y][x] & POSITIVE_Z)
-                    ++quadCount;
+                    ++world_stats.quadCount;
                 if (chunk->i[z][y][x] & NEGATIVE_Z)
-                    ++quadCount;
+                    ++world_stats.quadCount;
             }
             x = 0;
         }
@@ -130,11 +132,11 @@ void parse_chunk_states(Chunk *chunk, u16 height)
 }
 
 //TODO: revise, might not be needed
-Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
+Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag)
 {
-    for (u8 y = 0; y < setting.renderDistance*2; ++y)
+    for (u8 y = 0; y < setting.renderDistance * 2; ++y)
     {
-        for (u8 x = 0; x < setting.renderDistance*2; ++x)
+        for (u8 x = 0; x < setting.renderDistance * 2; ++x)
         {
             if (!(chunkBuf[chunkXY(x, y)].state & STATE_CHUNK_LOADED))
             {
@@ -143,8 +145,8 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
             }
 
             if (
-                    chunkBuf[chunkXY(x, y)].pos.x == (i32)floorf((f32)coordinates->x/CHUNK_SIZE) &&
-                    chunkBuf[chunkXY(x, y)].pos.y == (i32)floorf((f32)coordinates->y/CHUNK_SIZE))
+                    chunkBuf[chunkXY(x, y)].pos.x == (i32)floorf((f32)coordinates->x / CHUNK_DIAMETER) &&
+                    chunkBuf[chunkXY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER))
             {
                 *state |= flag;
                 return &chunkBuf[chunkXY(x, y)];
@@ -156,7 +158,7 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag)
 
 Texture2D cobblestone;
 Texture2D dirt;
-void draw_chunk_buffer(Chunk *chunkBuf)
+void draw_chunk_buffer(Chunk* chunkBuf)
 {
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
@@ -165,7 +167,7 @@ void draw_chunk_buffer(Chunk *chunkBuf)
     rlSetTexture(cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
-    for (u16 i = 0; i < sqr((SETTING_RENDER_DISTANCE_MAX*2) + 1); ++i)
+    for (u16 i = 0; i < pow((SETTING_RENDER_DISTANCE_MAX * 2) + 1, 2); ++i)
         if (chunkBuf[i].state & STATE_CHUNK_LOADED)
             draw_chunk(&chunkBuf[i]);
 
@@ -174,31 +176,31 @@ void draw_chunk_buffer(Chunk *chunkBuf)
     rlSetTexture(0); //temp texturing
 }
 
-void draw_chunk(Chunk *chunk)
+void draw_chunk(Chunk* chunk)
 {
     u16 height = 30; //temp
-    rlTranslatef(chunk->pos.x*CHUNK_SIZE, chunk->pos.y*CHUNK_SIZE, WORLD_BOTTOM);
+    rlTranslatef(chunk->pos.x * CHUNK_DIAMETER, chunk->pos.y * CHUNK_DIAMETER, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;
     for (; z < height; ++z)
     {
-        for (; y < CHUNK_SIZE; ++y)
+        for (; y < CHUNK_DIAMETER; ++y)
         {
-            for (; x < CHUNK_SIZE; ++x)
+            for (; x < CHUNK_DIAMETER; ++x)
             {
                 if (chunk->i[z][y][x] & BLOCKFACES)
                     draw_block(chunk->i[z][y][x]);
                 rlTranslatef(1, 0, 0);
             }
             x = 0;
-            rlTranslatef(-CHUNK_SIZE, 1, 0);
+            rlTranslatef(-CHUNK_DIAMETER, 1, 0);
         }
         y = 0;
-        rlTranslatef(0, -CHUNK_SIZE, 1);
+        rlTranslatef(0, -CHUNK_DIAMETER, 1);
     }
     rlTranslatef(
-            (-chunk->pos.x*CHUNK_SIZE),
-            (-chunk->pos.y*CHUNK_SIZE),
+            (-chunk->pos.x * CHUNK_DIAMETER),
+            (-chunk->pos.y * CHUNK_DIAMETER),
             (-WORLD_BOTTOM) - height
             );
 }
@@ -292,118 +294,118 @@ void draw_block(u32 block_state)
 }
 
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_block_wires(v3i32 *pos)
+void draw_block_wires(v3i32* pos)
 {
     rlPushMatrix();
     rlTranslatef(pos->x, pos->y, pos->z);
     rlBegin(RL_LINES);
     rlColor4ub(0, 0, 0, 150);
 
-    rlVertex3f(0, 0, 1);
-    rlVertex3f(1, 0, 1);
+    rlVertex3f(0.0f, 0.0f, 1.0f);
+    rlVertex3f(1.0f, 0.0f, 1.0f);
 
-    rlVertex3f(1, 0, 1);
-    rlVertex3f(1, 1, 1);
+    rlVertex3f(1.0f, 0.0f, 1.0f);
+    rlVertex3f(1.0f, 1.0f, 1.0f);
 
-    rlVertex3f(1, 1, 1);
-    rlVertex3f(0, 1, 1);
+    rlVertex3f(1.0f, 1.0f, 1.0f);
+    rlVertex3f(0.0f, 1.0f, 1.0f);
 
-    rlVertex3f(0, 1, 1);
-    rlVertex3f(0, 0, 1);
+    rlVertex3f(0.0f, 1.0f, 1.0f);
+    rlVertex3f(0.0f, 0.0f, 1.0f);
 
-    rlVertex3f(0, 0, 0);
-    rlVertex3f(1, 0, 0);
+    rlVertex3f(0.0f, 0.0f, 0.0f);
+    rlVertex3f(1.0f, 0.0f, 0.0f);
 
-    rlVertex3f(1, 0, 0);
-    rlVertex3f(1, 1, 0);
+    rlVertex3f(1.0f, 0.0f, 0.0f);
+    rlVertex3f(1.0f, 1.0f, 0.0f);
 
-    rlVertex3f(1, 1, 0);
-    rlVertex3f(0, 1, 0);
+    rlVertex3f(1.0f, 1.0f, 0.0f);
+    rlVertex3f(0.0f, 1.0f, 0.0f);
 
-    rlVertex3f(0, 1, 0);
-    rlVertex3f(0, 0, 0);
+    rlVertex3f(0.0f, 1.0f, 0.0f);
+    rlVertex3f(0.0f, 0.0f, 0.0f);
 
-    rlVertex3f(0, 0, 1);
-    rlVertex3f(0, 0, 0);
+    rlVertex3f(0.0f, 0.0f, 1.0f);
+    rlVertex3f(0.0f, 0.0f, 0.0f);
 
-    rlVertex3f(1, 0, 1);
-    rlVertex3f(1, 0, 0);
+    rlVertex3f(1.0f, 0.0f, 1.0f);
+    rlVertex3f(1.0f, 0.0f, 0.0f);
 
-    rlVertex3f(1, 1, 1);
-    rlVertex3f(1, 1, 0);
+    rlVertex3f(1.0f, 1.0f, 1.0f);
+    rlVertex3f(1.0f, 1.0f, 0.0f);
 
-    rlVertex3f(0, 1, 1);
-    rlVertex3f(0, 1, 0);
+    rlVertex3f(0.0f, 1.0f, 1.0f);
+    rlVertex3f(0.0f, 1.0f, 0.0f);
 
     rlEnd();
     rlPopMatrix();
 }
 
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_bounding_box(Vector3 *origin, Vector3 *scl)
+void draw_bounding_box(Vector3* origin, Vector3* scl)
 {
     rlPushMatrix();
     rlTranslatef(
-            origin->x - (scl->x/2),
-            origin->y - (scl->y/2),
+            origin->x - (scl->x / 2),
+            origin->y - (scl->y / 2),
             origin->z);
     rlBegin(RL_LINES);
     rlColor4ub(255, 200, 220, 255);
 
-    rlVertex3f(0,       0,      scl->z);
-    rlVertex3f(scl->x,  0,      scl->z);
+    rlVertex3f(0.0f,    0.0f,   scl->z);
+    rlVertex3f(scl->x,  0.0f,   scl->z);
 
-    rlVertex3f(scl->x,  0,      scl->z);
+    rlVertex3f(scl->x,  0.0f,   scl->z);
     rlVertex3f(scl->x,  scl->y, scl->z);
 
     rlVertex3f(scl->x,  scl->y, scl->z);
-    rlVertex3f(0,       scl->y, scl->z);
+    rlVertex3f(0.0f,    scl->y, scl->z);
 
-    rlVertex3f(0,       scl->y, scl->z);
-    rlVertex3f(0,       0,      scl->z);
+    rlVertex3f(0.0f,    scl->y, scl->z);
+    rlVertex3f(0.0f,    0.0f,   scl->z);
 
-    rlVertex3f(0,       0,      0);
-    rlVertex3f(scl->x,  0,      0);
+    rlVertex3f(0.0f,    0.0f,   0.0f);
+    rlVertex3f(scl->x,  0.0f,   0.0f);
 
-    rlVertex3f(scl->x,  0,      0);
-    rlVertex3f(scl->x,  scl->y, 0);
+    rlVertex3f(scl->x,  0.0f,   0.0f);
+    rlVertex3f(scl->x,  scl->y, 0.0f);
 
-    rlVertex3f(scl->x,  scl->y, 0);
-    rlVertex3f(0,       scl->y, 0);
+    rlVertex3f(scl->x,  scl->y, 0.0f);
+    rlVertex3f(0.0f,    scl->y, 0.0f);
 
-    rlVertex3f(0,       scl->y, 0);
-    rlVertex3f(0,       0,      0);
+    rlVertex3f(0.0f,    scl->y, 0.0f);
+    rlVertex3f(0.0f,    0.0f,   0.0f);
 
-    rlVertex3f(0,       0,      scl->z);
-    rlVertex3f(0,       0,      0);
+    rlVertex3f(0.0f,    0.0f,   scl->z);
+    rlVertex3f(0.0f,    0.0f,   0.0f);
 
-    rlVertex3f(scl->x,  0,      scl->z);
-    rlVertex3f(scl->x,  0,      0);
+    rlVertex3f(scl->x,  0.0f,   scl->z);
+    rlVertex3f(scl->x,  0.0f,   0.0f);
 
     rlVertex3f(scl->x,  scl->y, scl->z);
-    rlVertex3f(scl->x,  scl->y, 0);
+    rlVertex3f(scl->x,  scl->y, 0.0f);
 
-    rlVertex3f(0,       scl->y, scl->z);
-    rlVertex3f(0,       scl->y, 0);
+    rlVertex3f(0.0f,    scl->y, scl->z);
+    rlVertex3f(0.0f,    scl->y, 0.0f);
 
     rlEnd();
     rlPopMatrix();
 }
 
-void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl)
+void draw_bounding_box_clamped(Vector3* origin, Vector3* scl)
 {
     Vector3 start =
         (Vector3){
-            floorf(origin->x - (scl->x/2.0f)) - 1,
-            floorf(origin->y - (scl->y/2.0f)) - 1,
-            floorf(origin->z) - 1,
+            floorf(origin->x - 2.0f),
+            floorf(origin->y - 2.0f),
+            floorf(origin->z - 1.0f),
         };
 
     Vector3 end =
         (Vector3){
-            ceilf(scl->x) + 2,
-            ceilf(scl->y) + 2,
-            ceilf(scl->z) + 2,
+            ceilf(scl->x + 4.0f),
+            ceilf(scl->y + 4.0f),
+            ceilf(scl->z + 3.0f),
         };
 
     rlPushMatrix();

@@ -6,27 +6,27 @@
 #define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 
-#define show_cursor ShowCursor()
-#define hide_cursor HideCursor()
-#define center_cursor SetMousePosition(renderSize.x/2, renderSize.y/2)
-#define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
-#define draw_menu_overlay(renderSize) DrawRectangle(0, 0, renderSize.x, renderSize.y, COL_MENU_BG_OVERLAY)
+#define show_cursor                     ShowCursor()
+#define disable_cursor                  DisableCursor()
+#define center_cursor                   SetMousePosition(renderSize.x / 2, renderSize.y / 2)
+#define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
+#define draw_menu_overlay(renderSize)   DrawRectangle(0, 0, renderSize.x, renderSize.y, COL_MENU_BG_OVERLAY)
 
 // ---- colors -----------------------------------------------------------------
-#define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xFF, 0x46)
-#define COL_TEXTURE_DEFAULT color(0xFF, 0xFF, 0xFF, 0xFF, 0xFF)
-#define COL_TEXT_DEFAULT    color(0xFF, 0xFF, 0xFF, 0xE6, 0xFF)
-#define COL_TEXT_HOVER      color(0xE8, 0xE6, 0x91, 0xE6, 0xFF)
-#define COL_TRANS_MENU      color(0xFF, 0xFF, 0xFF, 0xFF, 0xBE)
-#define COL_SKYBOX          color(0xA4, 0xE6, 0xFF, 0xE6, 0xFF)
-#define COL_STATS_0         color(0x4B, 0xC8, 0x64, 0xFF, 0xFF)
-#define COL_STATS_1         color(0x64, 0xC8, 0x4B, 0xFF, 0xFF)
-#define COL_STATS_2         color(0xC8, 0x64, 0x4B, 0xFF, 0xFF)
-#define COL_STATS_3         color(0xC8, 0x4B, 0x5F, 0xFF, 0xFF)
-#define COL_X               color(0xFF, 0x32, 0x32, 0xFF, 0xFF)
-#define COL_Y               color(0x32, 0xFF, 0x32, 0xFF, 0xFF)
-#define COL_Z               color(0x32, 0x32, 0xFF, 0xFF, 0xFF)
-#define TINT_BUTTON_HOVER   color(0xB0, 0xFF, 0xF3, 0xFF, 0xFF)
+#define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xff, 0x46)
+#define COL_TEXTURE_DEFAULT color(0xff, 0xff, 0xff, 0xff, 0xff)
+#define COL_TEXT_DEFAULT    color(0xff, 0xff, 0xff, 0xe6, 0xff)
+#define COL_TEXT_HOVER      color(0xe8, 0xe6, 0x91, 0xe6, 0xff)
+#define COL_TRANS_MENU      color(0xff, 0xff, 0xff, 0xff, 0xbe)
+#define COL_SKYBOX          color(0xa4, 0xe6, 0xff, 0xe6, 0xff)
+#define COL_STATS_0         color(0x4b, 0xc8, 0x64, 0xff, 0xff)
+#define COL_STATS_1         color(0x64, 0xc8, 0x4b, 0xff, 0xff)
+#define COL_STATS_2         color(0xc8, 0x64, 0x4b, 0xff, 0xff)
+#define COL_STATS_3         color(0xc8, 0x4b, 0x5f, 0xff, 0xff)
+#define COL_X               color(0xff, 0x32, 0x32, 0xff, 0xff)
+#define COL_Y               color(0x32, 0xff, 0x32, 0xff, 0xff)
+#define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
+#define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
 
 // ---- declarations -----------------------------------------------------------
 extern Vector2 cursor;
@@ -268,14 +268,14 @@ void update_menus(v2f32 renderSize);
 void draw_hud();
 void update_debug_strings();
 void draw_inventory(v2f32 renderSize);
-void draw_debug_info(Camera3D *camera);
+void draw_debug_info(Camera3D* camera);
 
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
-float get_str_width(Font font, const str *str, f32 fontSize, f32 spacing);
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint); /* scale is based on source.scale*scl */
+void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
+float get_str_width(Font font, const str* str, f32 fontSize, f32 spacing);
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint); /* scale is based on source.scale * scl */
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on scl */
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str *str);
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str* str);
 
 void btn_func_singleplayer();
 void btn_func_multiplayer();

@@ -24,15 +24,15 @@ void init_paths()
         LOGINFO("Main Directory Path '%s/minecraft.c/'", getenv("HOME"));
 }
 
-FILE *instance;
-FILE *info;
-void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
+FILE* instance;
+FILE* info;
+void init_instance_directory(str* instance_name, u16* state, u8 FLAG_ACTIVE)
 {
     str string[PATH_MAX];
     if ((info = fopen("src/info/dir.txt", "r")))
     {
         LOGINFO("%s", "Loading Instance Directory Structure..");
-        for (u16 i = 0, j = 0, stage = 0; i < 0xFFF && fgets(string, PATH_MAX, info); ++i, ++j)
+        for (u16 i = 0, j = 0, stage = 0; i < 0xfff && fgets(string, PATH_MAX, info); ++i, ++j)
         {
             if (!strncmp(string, "\n", 1))
                 continue;
@@ -53,7 +53,7 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
 
             switch (stage)
             {
-                case 0:
+                case 0: // TODO: see if it works without empty case 0:
                     break;
 
                 case 1:
