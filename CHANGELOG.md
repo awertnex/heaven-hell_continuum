@@ -18,6 +18,7 @@
 - fixed window close bugs
 - fixed menu input events
 - added <shift> + <F3> combination for special debug (e.g. draw bounding boxes)
+- fixed bug mouse movement not registering with intended precision
 
 ## v0.1.4-alpha (08 Apr 2025)
 - - - -
