@@ -16,3 +16,6 @@ TASKS:
 - [x] figure out why the button "Back to Game" is inactive (26 Mar 2025)
 - [ ] rewrite entire gui
 - [ ] make gameTick stop when game is paused, and save state on quit-to-title
+- [ ] switch to Y-up
+- [ ] fix fullscreen, still not going back to original size on toggle off
+- [ ] fix fullscreen affecting mouse delta
