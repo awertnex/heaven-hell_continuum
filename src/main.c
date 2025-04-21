@@ -166,22 +166,24 @@ void init_world(const char* str)
         state &= ~STATE_ACTIVE;
 
     { //temp
-        chunkBuf[chunkXY(0, 0)].pos = (v2i16){0, 0};
-        chunkBuf[chunkXY(1, 0)].pos = (v2i16){0, -1};
-        chunkBuf[chunkXY(2, 0)].pos = (v2i16){0, -2};
-        chunkBuf[chunkXY(3, 0)].pos = (v2i16){-1, 0};
-        chunkBuf[chunkXY(4, 0)].pos = (v2i16){0, 1};
-        chunkBuf[chunkXY(5, 0)].pos = (v2i16){0, 2};
-        chunkBuf[chunkXY(6, 0)].pos = (v2i16){-1, -1};
-        chunkBuf[chunkXY(7, 0)].pos = (v2i16){1, 0};
-        parse_chunk_states(&chunkBuf[chunkXY(0, 0)], 3);
-        parse_chunk_states(&chunkBuf[chunkXY(1, 0)], 2);
-        parse_chunk_states(&chunkBuf[chunkXY(2, 0)], 2);
-        parse_chunk_states(&chunkBuf[chunkXY(3, 0)], 30);
-        parse_chunk_states(&chunkBuf[chunkXY(4, 0)], 2);
-        parse_chunk_states(&chunkBuf[chunkXY(5, 0)], 2);
-        parse_chunk_states(&chunkBuf[chunkXY(6, 0)], 3);
-        parse_chunk_states(&chunkBuf[chunkXY(7, 0)], 2);
+        /* temp off
+        chunkBuf[GET_CHUNK_XY(0, 0)].pos = (v2i16){0, 0};
+        chunkBuf[GET_CHUNK_XY(1, 0)].pos = (v2i16){0, -1};
+        chunkBuf[GET_CHUNK_XY(2, 0)].pos = (v2i16){0, -2};
+        chunkBuf[GET_CHUNK_XY(3, 0)].pos = (v2i16){-1, 0};
+        chunkBuf[GET_CHUNK_XY(4, 0)].pos = (v2i16){0, 1};
+        chunkBuf[GET_CHUNK_XY(5, 0)].pos = (v2i16){0, 2};
+        chunkBuf[GET_CHUNK_XY(6, 0)].pos = (v2i16){-1, -1};
+        chunkBuf[GET_CHUNK_XY(7, 0)].pos = (v2i16){1, 0};
+        load_chunk(&chunkBuf[GET_CHUNK_XY(0, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(1, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(2, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(3, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(4, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(5, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(6, 0)]);
+        load_chunk(&chunkBuf[GET_CHUNK_XY(7, 0)]);
+        */
 
         cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
         dirt =          LoadTexture("resources/textures/blocks/dirt.png");
@@ -207,16 +209,17 @@ void update_world()
     if (MODE_COLLIDE)
         update_collision_static(&lily);
 
-    if (state & STATE_DEBUG)
-        update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
-
     if (stateMenuDepth || (state & STATE_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
 
+    if (state & STATE_DEBUG)
+        update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
+
     update_player_states(&lily);
     update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
+    update_chunk_buffer(&lily.deltaTarget, &lily.chunk);
     draw_chunk_buffer(chunkBuf);
 
     //TODO: make a function 'index_to_bounding_box()'
@@ -227,6 +230,11 @@ void update_world()
                 (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
                 (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, worldHeight}))
     {
+        if (state & STATE_DEBUG_MORE)
+            draw_bounding_box(
+                    (Vector3){lily.chunk.x + ((f32)CHUNK_DIAMETER / 2), lily.chunk.y + ((f32)CHUNK_DIAMETER / 2), WORLD_BOTTOM},
+                    (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, worldHeight});
+
         if (check_delta_target(&lily.camera.target, &lily.deltaTarget))
             targetChunk = get_chunk(&lily.deltaTarget, &lily.state, STATE_PARSE_TARGET);
 
@@ -237,7 +245,7 @@ void update_world()
                     [lily.deltaTarget.y - (targetChunk->pos.y * CHUNK_DIAMETER)]
                     [lily.deltaTarget.x - (targetChunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY)
             {
-                draw_block_wires(&lily.deltaTarget);
+                draw_block_wires(lily.deltaTarget);
                 if (state & STATE_DEBUG_MORE)
                     DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
             }
@@ -253,8 +261,8 @@ void update_world()
           printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
-        draw_bounding_box(&lily.pos, &lily.scl);
-        draw_bounding_box_clamped(&lily.pos, &lily.scl); //temp AABB collision
+        draw_bounding_box(lily.pos, lily.scl);
+        draw_bounding_box_clamped(lily.pos, lily.scl); //temp AABB collision
         draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 

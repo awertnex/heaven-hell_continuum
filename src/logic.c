@@ -33,6 +33,12 @@ bool get_double_press(Player* player, KeyboardKey key)
 
 void update_player_states(Player* player)
 {
+    player->chunk =
+        (v2i16){
+            ((i32)floorf((f32)player->pos.x / CHUNK_DIAMETER)) * CHUNK_DIAMETER,
+            ((i32)floorf((f32)player->pos.y / CHUNK_DIAMETER)) * CHUNK_DIAMETER,
+        };
+
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
 

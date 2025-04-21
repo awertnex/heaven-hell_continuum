@@ -48,8 +48,9 @@ typedef struct Player
     f32 cameraDistance;             // for camera collision detection
     Camera3D cameraDebugInfo;
 
-    v3i32 deltaTarget;
     v3i32 deltaPos;                 // for collision tunneling prevention
+    v3i32 deltaTarget;
+    v2i16 chunk;                    // current chunk player is in
     b8 velocityDirty;
 
     v3i32 spawnPoint;

@@ -1,14 +1,14 @@
 #include <math.h>
 
-#include "engine/h/memory.h"
-#include "engine/h/logger.h"
-
 #include "h/chunking.h"
 #include "h/logic.h"
 
+#include "engine/h/memory.h"
+#include "engine/h/logger.h"
+
 u16 worldHeight = WORLD_HEIGHT_NORMAL;
 Chunk* chunkBuf = {0};
-void* chunkTab = {0};
+void* chunkTab[CHUNK_BUF_ELEMENTS] = {0};
 Chunk* targetChunk = 0; //temp
 struct WorldStats world_stats =
 {
@@ -20,7 +20,6 @@ u8 opacity = 0;
 u8 init_chunking()
 {
     MC_C_ALLOC(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
-    MC_C_ALLOC(chunkTab, CHUNK_BUF_ELEMENTS * sizeof(void*));
     return 0;
 
 cleanup:
@@ -31,7 +30,6 @@ cleanup:
 void free_chunking()
 {
     MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
-    MC_C_FREE(chunkTab, CHUNK_BUF_ELEMENTS * sizeof(void*));
 }
 
 //TODO: check chunk-border block-faces
@@ -94,7 +92,7 @@ void remove_block(Chunk* chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] = 0;
 }
 
-void parse_chunk_states(Chunk* chunk, u16 height)
+void load_chunk(Chunk* chunk)
 {
     if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
         return;
@@ -102,7 +100,7 @@ void parse_chunk_states(Chunk* chunk, u16 height)
     chunk->mat = LoadMaterialDefault();
 
     u16 z = 0; u8 y = 0, x = 0;
-    for (; z < height; ++z)
+    for (; z < worldHeight; ++z)
     {
         for (; y < CHUNK_DIAMETER; ++y)
         {
@@ -131,6 +129,28 @@ void parse_chunk_states(Chunk* chunk, u16 height)
     chunk->state = STATE_CHUNK_LOADED;
 }
 
+void update_chunk() // TODO: make this function
+{
+}
+
+void unload_chunk() // TODO: make this function
+{
+}
+
+void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) // TODO: complete this function
+{
+    for (u16 i = 0; i < 1; ++i)
+    {
+        if (!(chunkBuf[i].state & STATE_CHUNK_LOADED))
+        {
+            load_chunk(&chunkBuf[i]);
+            chunkTab[CHUNK_TAB_CENTER] = &chunkBuf[i];
+            LOGINFO("Chunk[%03d %03d] Loaded, i[%03d]", player_chunk->x, player_chunk->y, i);
+            break;
+        }
+    }
+}
+
 //TODO: revise, might not be needed
 Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag)
 {
@@ -138,18 +158,18 @@ Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag)
     {
         for (u8 x = 0; x < setting.renderDistance * 2; ++x)
         {
-            if (!(chunkBuf[chunkXY(x, y)].state & STATE_CHUNK_LOADED))
+            if (!(chunkBuf[GET_CHUNK_XY(x, y)].state & STATE_CHUNK_LOADED))
             {
                 *state &= ~flag;
                 return NULL;
             }
 
             if (
-                    chunkBuf[chunkXY(x, y)].pos.x == (i32)floorf((f32)coordinates->x / CHUNK_DIAMETER) &&
-                    chunkBuf[chunkXY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER))
+                    chunkBuf[GET_CHUNK_XY(x, y)].pos.x == (i32)floorf((f32)coordinates->x / CHUNK_DIAMETER) &&
+                    chunkBuf[GET_CHUNK_XY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER))
             {
                 *state |= flag;
-                return &chunkBuf[chunkXY(x, y)];
+                return &chunkBuf[GET_CHUNK_XY(x, y)];
             }
         }
     }
@@ -163,11 +183,12 @@ void draw_chunk_buffer(Chunk* chunkBuf)
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
     else opacity = 255;
+
     rlPushMatrix();
     rlSetTexture(cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
-    for (u16 i = 0; i < pow((SETTING_RENDER_DISTANCE_MAX * 2) + 1, 2); ++i)
+    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (chunkBuf[i].state & STATE_CHUNK_LOADED)
             draw_chunk(&chunkBuf[i]);
 
@@ -178,11 +199,10 @@ void draw_chunk_buffer(Chunk* chunkBuf)
 
 void draw_chunk(Chunk* chunk)
 {
-    u16 height = 30; //temp
     rlTranslatef(chunk->pos.x * CHUNK_DIAMETER, chunk->pos.y * CHUNK_DIAMETER, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;
-    for (; z < height; ++z)
+    for (; z < -WORLD_BOTTOM; ++z)
     {
         for (; y < CHUNK_DIAMETER; ++y)
         {
@@ -190,19 +210,15 @@ void draw_chunk(Chunk* chunk)
             {
                 if (chunk->i[z][y][x] & BLOCKFACES)
                     draw_block(chunk->i[z][y][x]);
-                rlTranslatef(1, 0, 0);
+                rlTranslatef(1.0f, 0.0f, 0.0f);
             }
             x = 0;
-            rlTranslatef(-CHUNK_DIAMETER, 1, 0);
+            rlTranslatef(-CHUNK_DIAMETER, 1.0f, 0.0f);
         }
         y = 0;
-        rlTranslatef(0, -CHUNK_DIAMETER, 1);
+        rlTranslatef(0.0f, -CHUNK_DIAMETER, 1.0f);
     }
-    rlTranslatef(
-            (-chunk->pos.x * CHUNK_DIAMETER),
-            (-chunk->pos.y * CHUNK_DIAMETER),
-            (-WORLD_BOTTOM) - height
-            );
+    rlTranslatef((-chunk->pos.x) * CHUNK_DIAMETER, (-chunk->pos.y) * CHUNK_DIAMETER, 0.0f);
 }
 
 // raylib/rmodels.c/DrawCube refactored
@@ -293,11 +309,19 @@ void draw_block(u32 block_state)
     }
 }
 
+// raylib/rmodels.c/DrawLine3D refactored
+void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color)
+{
+    rlColor4ub(color.r, color.g, color.b, color.a);
+    rlVertex3f(pos0.x, pos0.y, pos0.z);
+    rlVertex3f(pos1.x, pos1.y, pos1.z);
+}
+
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_block_wires(v3i32* pos)
+void draw_block_wires(v3i32 pos)
 {
     rlPushMatrix();
-    rlTranslatef(pos->x, pos->y, pos->z);
+    rlTranslatef(pos.x, pos.y, pos.z);
     rlBegin(RL_LINES);
     rlColor4ub(0, 0, 0, 150);
 
@@ -342,70 +366,70 @@ void draw_block_wires(v3i32* pos)
 }
 
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_bounding_box(Vector3* origin, Vector3* scl)
+void draw_bounding_box(Vector3 origin, Vector3 scl)
 {
     rlPushMatrix();
     rlTranslatef(
-            origin->x - (scl->x / 2),
-            origin->y - (scl->y / 2),
-            origin->z);
+            origin.x - (scl.x / 2),
+            origin.y - (scl.y / 2),
+            origin.z);
     rlBegin(RL_LINES);
     rlColor4ub(255, 200, 220, 255);
 
-    rlVertex3f(0.0f,    0.0f,   scl->z);
-    rlVertex3f(scl->x,  0.0f,   scl->z);
+    rlVertex3f(0.0f,    0.0f,   scl.z);
+    rlVertex3f(scl.x,  0.0f,   scl.z);
 
-    rlVertex3f(scl->x,  0.0f,   scl->z);
-    rlVertex3f(scl->x,  scl->y, scl->z);
+    rlVertex3f(scl.x,  0.0f,   scl.z);
+    rlVertex3f(scl.x,  scl.y, scl.z);
 
-    rlVertex3f(scl->x,  scl->y, scl->z);
-    rlVertex3f(0.0f,    scl->y, scl->z);
+    rlVertex3f(scl.x,  scl.y, scl.z);
+    rlVertex3f(0.0f,    scl.y, scl.z);
 
-    rlVertex3f(0.0f,    scl->y, scl->z);
-    rlVertex3f(0.0f,    0.0f,   scl->z);
+    rlVertex3f(0.0f,    scl.y, scl.z);
+    rlVertex3f(0.0f,    0.0f,   scl.z);
 
     rlVertex3f(0.0f,    0.0f,   0.0f);
-    rlVertex3f(scl->x,  0.0f,   0.0f);
+    rlVertex3f(scl.x,  0.0f,   0.0f);
 
-    rlVertex3f(scl->x,  0.0f,   0.0f);
-    rlVertex3f(scl->x,  scl->y, 0.0f);
+    rlVertex3f(scl.x,  0.0f,   0.0f);
+    rlVertex3f(scl.x,  scl.y, 0.0f);
 
-    rlVertex3f(scl->x,  scl->y, 0.0f);
-    rlVertex3f(0.0f,    scl->y, 0.0f);
+    rlVertex3f(scl.x,  scl.y, 0.0f);
+    rlVertex3f(0.0f,    scl.y, 0.0f);
 
-    rlVertex3f(0.0f,    scl->y, 0.0f);
+    rlVertex3f(0.0f,    scl.y, 0.0f);
     rlVertex3f(0.0f,    0.0f,   0.0f);
 
-    rlVertex3f(0.0f,    0.0f,   scl->z);
+    rlVertex3f(0.0f,    0.0f,   scl.z);
     rlVertex3f(0.0f,    0.0f,   0.0f);
 
-    rlVertex3f(scl->x,  0.0f,   scl->z);
-    rlVertex3f(scl->x,  0.0f,   0.0f);
+    rlVertex3f(scl.x,  0.0f,   scl.z);
+    rlVertex3f(scl.x,  0.0f,   0.0f);
 
-    rlVertex3f(scl->x,  scl->y, scl->z);
-    rlVertex3f(scl->x,  scl->y, 0.0f);
+    rlVertex3f(scl.x,  scl.y, scl.z);
+    rlVertex3f(scl.x,  scl.y, 0.0f);
 
-    rlVertex3f(0.0f,    scl->y, scl->z);
-    rlVertex3f(0.0f,    scl->y, 0.0f);
+    rlVertex3f(0.0f,    scl.y, scl.z);
+    rlVertex3f(0.0f,    scl.y, 0.0f);
 
     rlEnd();
     rlPopMatrix();
 }
 
-void draw_bounding_box_clamped(Vector3* origin, Vector3* scl)
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl)
 {
     Vector3 start =
         (Vector3){
-            floorf(origin->x - 2.0f),
-            floorf(origin->y - 2.0f),
-            floorf(origin->z - 1.0f),
+            floorf(origin.x - 2.0f),
+            floorf(origin.y - 2.0f),
+            floorf(origin.z - 1.0f),
         };
 
     Vector3 end =
         (Vector3){
-            ceilf(scl->x + 4.0f),
-            ceilf(scl->y + 4.0f),
-            ceilf(scl->z + 3.0f),
+            ceilf(scl.x + 4.0f),
+            ceilf(scl.y + 4.0f),
+            ceilf(scl.z + 3.0f),
         };
 
     rlPushMatrix();
@@ -447,10 +471,3 @@ void draw_bounding_box_clamped(Vector3* origin, Vector3* scl)
     rlPopMatrix();
 }
 
-// raylib/rmodels.c/DrawLine3D refactored
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color)
-{
-    rlColor4ub(color.r, color.g, color.b, color.a);
-    rlVertex3f(pos_0.x, pos_0.y, pos_0.z);
-    rlVertex3f(pos_1.x, pos_1.y, pos_1.z);
-}

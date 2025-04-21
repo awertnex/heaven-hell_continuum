@@ -20,8 +20,10 @@
 
 #define CHUNK_DIAMETER      32
 #define CHUNK_DATA_SIZE     (sizeof(Chunk)) // truct Chunk
-#define CHUNK_BUF_ROW       ((SETTING_RENDER_DISTANCE_MAX * 2) + 1)
-#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_ROW * CHUNK_BUF_ROW)
+#define CHUNK_BUF_RADIUS    (SETTING_RENDER_DISTANCE_MAX)
+#define CHUNK_BUF_DIAMETER  ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_TAB_CENTER    ((CHUNK_BUF_RADIUS + 1) + ((CHUNK_BUF_RADIUS + 1) * CHUNK_BUF_DIAMETER))
 
 #define WORLD_RADIUS        32767 // (((int16_t top of range) - 1)/2)
 #define WORLD_DIAMETER      ((WORLD_RADIUS * 2) + 1)
@@ -31,9 +33,6 @@
 #define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL)
 #define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS * 2)
 #define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
-
-#define chunkXY(x, y)       (x + (y * CHUNK_DATA_SIZE))
-#define blockXYZ(x, y, z)   (x + (y * CHUNK_DIAMETER) + (z * CHUNK_DIAMETER * CHUNK_DIAMETER))
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
@@ -59,11 +58,14 @@ enum BlockData
     BLOCKLIGHT =    0x1f000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
 
-#define GET_BLOCKID(x)          (((x) & BLOCKID) >> 8)
-#define SET_BLOCKID(x, id)      ((x) = ((x) & ~BLOCKID) | ((id) << 8))
-#define GET_BLOCKSTATE(x)       (((x) & BLOCKSTATE) >> 20)
-#define SET_BLOCKSTATE(x, id)   ((x) = ((x) & ~BLOCKSTATE) | ((id) << 20))
-#define GET_BLOCKDATA(x)        (((x) & BLOCKDATA) >> 8)
+#define GET_CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER))
+#define GET_CHUNK_XY(x, y)          (x + (y * CHUNK_DATA_SIZE))
+#define GET_BLOCK_XYZ(x, y, z)      (x + (y * CHUNK_DIAMETER) + (z * CHUNK_DIAMETER * CHUNK_DIAMETER))
+#define GET_BLOCKID(i)              (((i) & BLOCKID) >> 8)
+#define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
+#define GET_BLOCKSTATE(i)           (((i) & BLOCKSTATE) >> 20)
+#define SET_BLOCKSTATE(i, value)    ((i) = ((i) & ~BLOCKSTATE) | ((value) << 20))
+#define GET_BLOCKDATA(i)            (((i) & BLOCKDATA) >> 8)
 
 enum ChunkStates
 {
@@ -87,7 +89,7 @@ typedef struct Chunk
 // ---- declarations -----------------------------------------------------------
 extern u16 worldHeight;
 extern Chunk* chunkBuf;
-extern void* chunkTab;
+extern void* chunkTab[CHUNK_BUF_ELEMENTS];
 extern Chunk* targetChunk;
 extern struct WorldStats
 {
@@ -99,19 +101,21 @@ extern u8 opacity;
 // ---- signatures -------------------------------------------------------------
 u8 init_chunking();
 void free_chunking();
-void load_chunks();
-void unload_chunks();
+
 void add_block(Chunk* chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk* chunk, u8 x, u8 y, u16 z);
-void parse_chunk_states(Chunk* chunk, u16 height);
+void load_chunk(Chunk* chunk);
+void update_chunk();
+void unload_chunk();
+void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk);
 Chunk* get_chunk(v3i32* coordinates, u16 *state, u16 flag);
 void draw_chunk_buffer(Chunk* chunkBuf);
 void draw_chunk(Chunk* chunk);
 void draw_block(u32 blockStates);
-void draw_block_wires(v3i32* pos);
-void draw_bounding_box(Vector3* origin, Vector3* scl);
-void draw_bounding_box_clamped(Vector3* origin, Vector3* scl);
 void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color);
+void draw_block_wires(v3i32 pos);
+void draw_bounding_box(Vector3 origin, Vector3 scl);
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl);
 
 #define CHUNKING_H
 #endif
