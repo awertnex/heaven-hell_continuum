@@ -1,4 +1,4 @@
-#ifndef CHUNKING_H
+#ifndef MC_C_CHUNKING_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/rlgl.h"
@@ -35,8 +35,7 @@
 #define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
 
 // ---- general ----------------------------------------------------------------
-enum BlockFaces
-{
+enum BlockFaces {
     POSITIVE_X =    0x01,
     NEGATIVE_X =    0x02,
     POSITIVE_Y =    0x04,
@@ -49,8 +48,7 @@ enum BlockFaces
     // COUNTAHEAD: fread(): if (byte[n] & COUNTAHEAD) u32 count = next 4 bytes, fill Chunk.i from Chunk.i[n] to chunk.i[n + count]
 }; /* BlockFaces */
 
-enum BlockData
-{
+enum BlockData {
     BLOCKFACES =    0x0000003f, // 00000000 00000000 00000000 00111111
     BLOCKID =       0x000fff00, // 00000000 00001111 11111111 00000000
     BLOCKSTATE =    0x00f00000, // 00000000 11110000 00000000 00000000
@@ -67,8 +65,7 @@ enum BlockData
 #define SET_BLOCKSTATE(i, value)    ((i) = ((i) & ~BLOCKSTATE) | ((value) << 20))
 #define GET_BLOCKDATA(i)            (((i) & BLOCKDATA) >> 8)
 
-enum ChunkStates
-{
+enum ChunkStates {
     STATE_CHUNK_LOADED = 1,
     STATE_CHUNK_RENDER = 2,
     STATE_CHUNK_DIRTY = 3,
@@ -76,8 +73,7 @@ enum ChunkStates
 
 // TODO: add 'version' byte to the chunk file for evolving the format safely
 // TODO: add chunk slicing
-typedef struct Chunk
-{
+typedef struct Chunk {
     v2i16 pos;
     u32 id;
     u32 i[WORLD_HEIGHT_NORMAL][CHUNK_DIAMETER][CHUNK_DIAMETER];
@@ -91,8 +87,7 @@ extern u16 worldHeight;
 extern Chunk* chunkBuf;
 extern void* chunkTab[CHUNK_BUF_ELEMENTS];
 extern Chunk* targetChunk;
-extern struct WorldStats
-{
+extern struct WorldStats {
     u64 blockCount;
     u64 quadCount;
 } world_stats;
@@ -117,5 +112,6 @@ void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl);
 
-#define CHUNKING_H
+#define MC_C_CHUNKING_H
 #endif
+

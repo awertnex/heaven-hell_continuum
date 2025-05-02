@@ -82,24 +82,18 @@ b8 RaycastBlockHit(v3f32 camera, v3f32 target, u8 targetType, BlockHitInfo *outH
                 x += stepX;
                 tMaxX += tDeltaX;
                 lastAxis = 0;
-            }
-            else
-            {
+            } else {
                 z += stepZ;
                 tMaxZ += tDeltaZ;
                 lastAxis = 2;
             }
-        }
-        else
-        {
+        } else {
             if (tMaxY < tMaxZ)
             {
                 y += stepY;
                 tMaxY += tDeltaY;
                 lastAxis = 1;
-            }
-            else
-            {
+            } else {
                 z += stepZ;
                 tMaxZ += tDeltaZ;
                 lastAxis = 2;

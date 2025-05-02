@@ -25,8 +25,7 @@
 #define PLAYER_SPEED_SNEAK      1.8f
 #define PLAYER_SPEED_SPRINT     4.0f
 
-typedef struct Player
-{
+typedef struct Player {
     str name[100];                  // player in-game name
     Vector3 pos;                    // player current coordinates in world
     Vector3 scl;                    // player size for collision detection
@@ -57,8 +56,7 @@ typedef struct Player
 } Player;
 
 // ---- states -----------------------------------------------------------------
-enum GameStates
-{
+enum GameStates {
     STATE_ACTIVE =                  0x01,
     STATE_PAUSED =                  0x02,
     STATE_SUPER_DEBUG =             0x04,
@@ -69,8 +67,7 @@ enum GameStates
     STATE_WORLD_LOADED =            0x80,
 }; /* GameStates */
 
-enum ContainerStates
-{
+enum ContainerStates {
     CONTR_ANVIL =                   0x00000001,
     CONTR_BEACON =                  0x00000002,
     CONTR_BLAST_FURNACE =           0x00000004,
@@ -98,8 +95,7 @@ enum ContainerStates
     CONTR_TAB_ITEMS_SEARCH =        0x01000000,
 }; /* ContainerStates */
 
-enum PlayerStates
-{
+enum PlayerStates {
     STATE_CAN_JUMP =                0x0001,
     STATE_SNEAKING =                0x0002,
     STATE_SPRINTING =               0x0004,
@@ -139,3 +135,4 @@ void draw_default_grid(Color x, Color y, Color z);
 
 #define MC_C_LOGIC_H
 #endif
+

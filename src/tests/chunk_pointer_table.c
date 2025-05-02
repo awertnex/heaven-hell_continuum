@@ -16,8 +16,7 @@
 #define CHUNK_TABLE_POS_Y (720.0f/2.0f)
 #define rect(x, y, col) DrawRectangleRounded((Rectangle){x + CHUNK_TABLE_POS_X, y + CHUNK_TABLE_POS_Y, 16.0f, 16.0f}, 0.3f, 1, col)
 
-enum ChunkStates
-{
+enum ChunkStates {
     STATE_CHUNK_BUF_ALLOC =     0x1,
     STATE_CHUNK_TAB_ALLOC =     0x2,
 
@@ -25,8 +24,7 @@ enum ChunkStates
     STATE_CHUNK_DIRTY =         0x2,
 };
 
-typedef struct Chunk
-{
+typedef struct Chunk {
     v2i16 pos;
     u32 id;
     u32 i[16][16];
@@ -39,10 +37,8 @@ void *chunkTable;
 
 int allocate_buffers();
 
-void loop()
-{
-    for (u16 i = 0; i < CHUNK_COUNT; ++i)
-    {
+void loop() {
+    for (u16 i = 0; i < CHUNK_COUNT; ++i) {
         if (!(state & (STATE_CHUNK_BUF_ALLOC | STATE_CHUNK_TAB_ALLOC)))
             break;
 
@@ -53,8 +49,7 @@ void loop()
     rect(32.0f, 0.0f, MC_C_BLUE);
 }
 
-int main(void)
-{
+int main(void) {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(1280, 720, "Chunk Pointer Table");
     SetExitKey(KEY_Q);
@@ -62,16 +57,14 @@ int main(void)
     if (allocate_buffers())
         return -1;
 
-    while (!WindowShouldClose())
-    {
+    while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(BLACK);
         loop();
         EndDrawing();
     }
 
-    if (state & STATE_CHUNK_BUF_ALLOC)
-    {
+    if (state & STATE_CHUNK_BUF_ALLOC) {
         free(chunkBuf);
         LOGINFO("%s", "chunkBuf Memory Deallocation Successful");
     }
@@ -79,29 +72,22 @@ int main(void)
     return 0;
 }
 
-int allocate_buffers()
-{
+int allocate_buffers() {
     chunkBuf = (Chunk*) malloc(CHUNK_COUNT*sizeof(Chunk));
     chunkTable = malloc(CHUNK_TABLE_SIZE);
 
-    if (&chunkBuf[0] != NULL)
-    {
+    if (&chunkBuf[0] != NULL) {
         state |= STATE_CHUNK_BUF_ALLOC;
         LOGINFO("%s", "chunkBuf Memory Allocation Successful");
-    }
-    else
-    {
+    } else {
         LOGFATAL("%s", "chunkBuf Memory Allocation Failed, Aborting Process");
         return 1;
     }
 
-    if (&chunkTable[0] != NULL)
-    {
+    if (&chunkTable[0] != NULL) {
         state |= STATE_CHUNK_TAB_ALLOC;
         LOGINFO("%s", "chunkTable Memory Allocation Successful");
-    }
-    else
-    {
+    } else {
         LOGFATAL("%s", "chunkTable Memory Allocation Failed, Aborting Process");
         return 1;
     }

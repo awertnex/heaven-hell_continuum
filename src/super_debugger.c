@@ -4,8 +4,7 @@
 
 // ---- variables --------------------------------------------------------------
 Texture2D texture_super_debugger;
-debug_rect DebugRectangle =
-{
+debug_rect DebugRectangle = {
     .corner_00 =    {0,                 0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_10 =    {SDB_BASE_SIZE,     0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_01 =    {0,                 SDB_BASE_SIZE,      SDB_BASE_SIZE,  SDB_BASE_SIZE},
@@ -21,8 +20,7 @@ Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTO
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 
 // ---- functions --------------------------------------------------------------
-void init_super_debugger(v2f32 renderSize)
-{
+void init_super_debugger(v2f32 renderSize) {
     buttons[BTN_SDB_ADD] = 1;
     buttons[BTN_SDB_SUB] = 1;
 
@@ -33,16 +31,14 @@ void init_super_debugger(v2f32 renderSize)
     DebugRectangle.pos.y = MARGIN + SDB_BASE_SIZE;
 }
 
-void free_super_debugger()
-{
+void free_super_debugger() {
     buttons[BTN_SDB_ADD] = 0;
     buttons[BTN_SDB_SUB] = 0;
 
     UnloadTexture(texture_super_debugger);
 }
 
-void draw_super_debugger(v2f32 renderSize)
-{
+void draw_super_debugger(v2f32 renderSize) {
     if (!(state & STATE_SUPER_DEBUG)) return;
 
     DebugRectangle.scl.y = renderSize.y - ((MARGIN + SDB_BASE_SIZE)*2);
@@ -50,12 +46,9 @@ void draw_super_debugger(v2f32 renderSize)
 
     // ---- draw base ----------------------------------------------------------
     draw_texture_simple(texture_super_debugger, DebugRectangle.rect_center,
-            (v2i16){
-            DebugRectangle.pos.x,
-            DebugRectangle.pos.y},
-            (v2i16){
-            DebugRectangle.scl.x,
-            DebugRectangle.scl.y}, COL_TRANS_MENU);
+            (v2i16){DebugRectangle.pos.x, DebugRectangle.pos.y},
+            (v2i16){DebugRectangle.scl.x, DebugRectangle.scl.y},
+            COL_TRANS_MENU);
     
     // ---- draw edges ---------------------------------------------------------
     draw_texture_simple(texture_super_debugger, DebugRectangle.edge_left,
@@ -92,33 +85,25 @@ void draw_super_debugger(v2f32 renderSize)
             (v2i16){
             DebugRectangle.pos.x - SDB_BASE_SIZE,
             DebugRectangle.pos.y - SDB_BASE_SIZE},
-            (v2i16){
-            1,
-            1},
+            (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_10,
             (v2i16){
             DebugRectangle.pos.x + DebugRectangle.scl.x,
             DebugRectangle.pos.y - SDB_BASE_SIZE},
-            (v2i16){
-            1,
-            1},
+            (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_01,
             (v2i16){
             DebugRectangle.pos.x - SDB_BASE_SIZE,
             DebugRectangle.pos.y + DebugRectangle.scl.y},
-            (v2i16){
-            1,
-            1},
+            (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
     draw_texture(texture_super_debugger, DebugRectangle.corner_11,
             (v2i16){
             DebugRectangle.pos.x + DebugRectangle.scl.x,
             DebugRectangle.pos.y + DebugRectangle.scl.y},
-            (v2i16){
-            1,
-            1},
+            (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
 
     // ---- draw the rest of the stuff -----------------------------------------

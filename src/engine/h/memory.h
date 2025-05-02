@@ -1,4 +1,4 @@
-#pragma once
+#ifndef MC_C_MEMORY_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -29,4 +29,7 @@
         memset((x), 0, (size));                                                 \
         LOGINFO("%s Cleared", #x);                                              \
     }
+
+#define MC_C_MEMORY_H
+#endif
 

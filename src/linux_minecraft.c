@@ -16,13 +16,11 @@
 #include "super_debugger.c"
 #include "engine/logger.c"
 
-int mc_mkdir(const char *path, u16 mode)
-{
+int mc_mkdir(const char *path, u16 mode) {
     return mkdir(path, mode);
 }
 
-void update_debug_strings()
-{
+void update_debug_strings() {
     snprintf(strFPS, 16,                "FPS: %d",                  GetFPS());
     snprintf(strPlayerPos, 32,          "XYZ: %.2f %.2f %.2f",      lily.pos.x, lily.pos.y, lily.pos.z);
     snprintf(strPlayerBlock, 32,        "BLOCK: %.0f %.0f %.0f",    floorf(lily.pos.x), floorf(lily.pos.y), floorf(lily.pos.z));

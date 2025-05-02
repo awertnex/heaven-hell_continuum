@@ -1,4 +1,4 @@
-#ifndef LAUNCHER_H
+#ifndef MC_C_LAUNCHER_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
@@ -11,8 +11,7 @@
 #define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
 
 // ---- states -----------------------------------------------------------------
-enum States
-{
+enum States {
     STATE_ACTIVE =          0x01,
 }; /* States */
 
@@ -33,5 +32,6 @@ void update_launcher();
 void close_launcher();
 void update_launcher_input();
 
-#define LAUNCHER_H
+#define MC_C_LAUNCHER_H
 #endif
+

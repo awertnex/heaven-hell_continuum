@@ -1,4 +1,4 @@
-#ifndef SUPER_DEBUGGER_H
+#ifndef MC_C_SUPER_DEBUGGER_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
@@ -38,5 +38,5 @@ void init_super_debugger(v2f32 renderSize);
 void free_super_debugger();
 void draw_super_debugger(v2f32 renderSize);
 
-#define SUPER_DEBUGGER_H
+#define MC_C_SUPER_DEBUGGER_H
 #endif

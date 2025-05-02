@@ -1,4 +1,4 @@
-#ifndef SETTING_H
+#ifndef MC_C_SETTING_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../engine/h/defines.h"
@@ -28,8 +28,7 @@
 #define SETTING_GUI_SCALE_4                 4.0f
 
 // ---- settings ---------------------------------------------------------------
-typedef struct settings
-{
+typedef struct settings {
     // ---- internal -----------------------------------------------------------
     u8 reachDistance;  // for player reach (arm length basically)
 
@@ -46,5 +45,6 @@ typedef struct settings
 // ---- declarations -----------------------------------------------------------
 extern settings setting;
 
-#define SETTING_H
+#define MC_C_SETTING_H
 #endif
+

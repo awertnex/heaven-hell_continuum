@@ -10,15 +10,13 @@ u16 worldHeight = WORLD_HEIGHT_NORMAL;
 Chunk* chunkBuf = {0};
 void* chunkTab[CHUNK_BUF_ELEMENTS] = {0};
 Chunk* targetChunk = 0; //temp
-struct WorldStats world_stats =
-{
+struct WorldStats world_stats = {
     .blockCount = 0,
     .quadCount = 0,
 };
 u8 opacity = 0;
 
-u8 init_chunking()
-{
+u8 init_chunking() {
     MC_C_ALLOC(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
     return 0;
 
@@ -27,14 +25,12 @@ cleanup:
     return -1;
 }
 
-void free_chunking()
-{
+void free_chunking() {
     MC_C_FREE(chunkBuf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
 }
 
 //TODO: check chunk-border block-faces
-void add_block(Chunk* chunk, u8 x, u8 y, u16 z)
-{
+void add_block(Chunk* chunk, u8 x, u8 y, u16 z) {
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
@@ -66,8 +62,7 @@ void add_block(Chunk* chunk, u8 x, u8 y, u16 z)
 }
 
 //TODO: check chunk barrier faces
-void remove_block(Chunk* chunk, u8 x, u8 y, u16 z)
-{
+void remove_block(Chunk* chunk, u8 x, u8 y, u16 z) {
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
@@ -92,20 +87,16 @@ void remove_block(Chunk* chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] = 0;
 }
 
-void load_chunk(Chunk* chunk)
-{
+void load_chunk(Chunk* chunk) {
     if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
         return;
 
     chunk->mat = LoadMaterialDefault();
 
     u16 z = 0; u8 y = 0, x = 0;
-    for (; z < worldHeight; ++z)
-    {
-        for (; y < CHUNK_DIAMETER; ++y)
-        {
-            for (; x < CHUNK_DIAMETER; ++x)
-            {
+    for (; z < worldHeight; ++z) {
+        for (; y < CHUNK_DIAMETER; ++y) {
+            for (; x < CHUNK_DIAMETER; ++x) {
                 add_block(chunk, x, y, z);
                 if (chunk->i[z][y][x])
                     ++world_stats.blockCount;
@@ -129,20 +120,15 @@ void load_chunk(Chunk* chunk)
     chunk->state = STATE_CHUNK_LOADED;
 }
 
-void update_chunk() // TODO: make this function
-{
+void update_chunk() { // TODO: make this function
 }
 
-void unload_chunk() // TODO: make this function
-{
+void unload_chunk() { // TODO: make this function
 }
 
-void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) // TODO: complete this function
-{
-    for (u16 i = 0; i < 1; ++i)
-    {
-        if (!(chunkBuf[i].state & STATE_CHUNK_LOADED))
-        {
+void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) { // TODO: complete this function
+    for (u16 i = 0; i < 1; ++i) {
+        if (!(chunkBuf[i].state & STATE_CHUNK_LOADED)) {
             load_chunk(&chunkBuf[i]);
             chunkTab[CHUNK_TAB_CENTER] = &chunkBuf[i];
             LOGINFO("Chunk[%03d %03d] Loaded, i[%03d]", player_chunk->x, player_chunk->y, i);
@@ -151,22 +137,17 @@ void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) // TODO: com
     }
 }
 
-Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) // TODO: revise, might not be needed
-{
-    for (u8 y = 0; y < setting.renderDistance * 2; ++y)
-    {
-        for (u8 x = 0; x < setting.renderDistance * 2; ++x)
-        {
-            if (!(chunkBuf[GET_CHUNK_XY(x, y)].state & STATE_CHUNK_LOADED))
-            {
+Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) { // TODO: revise, might not be needed
+    for (u8 y = 0; y < setting.renderDistance * 2; ++y) {
+        for (u8 x = 0; x < setting.renderDistance * 2; ++x) {
+            if (!(chunkBuf[GET_CHUNK_XY(x, y)].state & STATE_CHUNK_LOADED)) {
                 *state &= ~flag;
                 return NULL;
             }
 
             if (
                     chunkBuf[GET_CHUNK_XY(x, y)].pos.x == (i32)floorf((f32)coordinates->x / CHUNK_DIAMETER) &&
-                    chunkBuf[GET_CHUNK_XY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER))
-            {
+                    chunkBuf[GET_CHUNK_XY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER)) {
                 *state |= flag;
                 return &chunkBuf[GET_CHUNK_XY(x, y)];
             }
@@ -177,8 +158,7 @@ Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) // TODO: revise, migh
 
 Texture2D cobblestone;
 Texture2D dirt;
-void draw_chunk_buffer(Chunk* chunkBuf)
-{
+void draw_chunk_buffer(Chunk* chunkBuf) {
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
     else opacity = 255;
@@ -196,17 +176,13 @@ void draw_chunk_buffer(Chunk* chunkBuf)
     rlSetTexture(0); //temp texturing
 }
 
-void draw_chunk(Chunk* chunk)
-{
+void draw_chunk(Chunk* chunk) {
     rlTranslatef(chunk->pos.x * CHUNK_DIAMETER, chunk->pos.y * CHUNK_DIAMETER, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;
-    for (; z < -WORLD_BOTTOM; ++z)
-    {
-        for (; y < CHUNK_DIAMETER; ++y)
-        {
-            for (; x < CHUNK_DIAMETER; ++x)
-            {
+    for (; z < -WORLD_BOTTOM; ++z) {
+        for (; y < CHUNK_DIAMETER; ++y) {
+            for (; x < CHUNK_DIAMETER; ++x) {
                 if (chunk->i[z][y][x] & BLOCKFACES)
                     draw_block(chunk->i[z][y][x]);
                 rlTranslatef(1.0f, 0.0f, 0.0f);
@@ -221,10 +197,8 @@ void draw_chunk(Chunk* chunk)
 }
 
 // raylib/rmodels.c/DrawCube refactored
-void draw_block(u32 block_state)
-{
-    if (block_state & POSITIVE_X)
-    {
+void draw_block(u32 block_state) {
+    if (block_state & POSITIVE_X) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(150, 150, 137, opacity);
         else if (LOGGER_DEBUG)
@@ -237,8 +211,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
     }
 
-    if (block_state & NEGATIVE_X)
-    {
+    if (block_state & NEGATIVE_X) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(135, 135, 123, opacity);
         else if (LOGGER_DEBUG)
@@ -251,8 +224,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
     }
 
-    if (block_state & POSITIVE_Y)
-    {
+    if (block_state & POSITIVE_Y) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(155, 155, 142, opacity);
         else if (LOGGER_DEBUG)
@@ -265,8 +237,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
     }
 
-    if (block_state & NEGATIVE_Y)
-    {
+    if (block_state & NEGATIVE_Y) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(140, 140, 123, opacity);
         else if (LOGGER_DEBUG)
@@ -279,8 +250,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
     }
 
-    if (block_state & POSITIVE_Z)
-    {
+    if (block_state & POSITIVE_Z) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(176, 176, 160, opacity);
         else if (LOGGER_DEBUG)
@@ -293,8 +263,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
     }
 
-    if (block_state & NEGATIVE_Z)
-    {
+    if (block_state & NEGATIVE_Z) {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(115, 115, 104, opacity);
         else if (LOGGER_DEBUG)
@@ -309,16 +278,14 @@ void draw_block(u32 block_state)
 }
 
 // raylib/rmodels.c/DrawLine3D refactored
-void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color)
-{
+void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color) {
     rlColor4ub(color.r, color.g, color.b, color.a);
     rlVertex3f(pos0.x, pos0.y, pos0.z);
     rlVertex3f(pos1.x, pos1.y, pos1.z);
 }
 
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_block_wires(v3i32 pos)
-{
+void draw_block_wires(v3i32 pos) {
     rlPushMatrix();
     rlTranslatef(pos.x, pos.y, pos.z);
     rlBegin(RL_LINES);
@@ -365,8 +332,7 @@ void draw_block_wires(v3i32 pos)
 }
 
 // raylib/rmodels.c/DrawCubeWires refactored
-void draw_bounding_box(Vector3 origin, Vector3 scl)
-{
+void draw_bounding_box(Vector3 origin, Vector3 scl) {
     rlPushMatrix();
     rlTranslatef(
             origin.x - (scl.x / 2),
@@ -415,17 +381,14 @@ void draw_bounding_box(Vector3 origin, Vector3 scl)
     rlPopMatrix();
 }
 
-void draw_bounding_box_clamped(Vector3 origin, Vector3 scl)
-{
-    Vector3 start =
-        (Vector3){
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl) {
+    Vector3 start = (Vector3){
             floorf(origin.x - 2.0f),
             floorf(origin.y - 2.0f),
             floorf(origin.z - 1.0f),
         };
 
-    Vector3 end =
-        (Vector3){
+    Vector3 end = (Vector3){
             ceilf(scl.x + 4.0f),
             ceilf(scl.y + 4.0f),
             ceilf(scl.z + 3.0f),

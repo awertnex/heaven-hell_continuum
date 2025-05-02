@@ -1,4 +1,4 @@
-#ifndef DIR_H
+#ifndef MC_C_DIR_H
 
 #include "main.h"
 #include "../engine/h/defines.h"
@@ -12,8 +12,7 @@
 #endif // PATH_MAX
 // ---- from linux/limits.h ----------------------------------------------------
 
-enum DirectoryStructure
-{
+enum DirectoryStructure {
     MC_C_DIR_BIN = 0,
     MC_C_DIR_SAVES = 1,
     MC_C_DIR_RESOURCES = 2,
@@ -47,5 +46,6 @@ void init_paths();
 void init_instance_directory(str* instanceName, u16* state, u8 STATE_ACTIVE);
 void init_world_directory();
 
-#define DIR_H
+#define MC_C_DIR_H
 #endif
+

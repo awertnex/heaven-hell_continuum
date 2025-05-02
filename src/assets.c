@@ -20,22 +20,19 @@ texture_layout ThreeSideAlt;
 texture_layout FourSide;
 
 Texture2D textures[3] = {0};
-enum TextureNames
-{
+enum TextureNames {
     TEXTURE_BLOCK_GRASS = 0,
     TEXTURE_BLOCK_COBBLESTONE = 1,
     TEXTURE_BLOCK_COBBLED_DEEPSLATE = 2,
 }; /* TextureNames */
-str block_names[3][NAME_MAX] =
-{
+str block_names[3][NAME_MAX] = {
     "grass_block_side.png",
     "cobblestone.png",
     "cobbled_deepslate.png",
 };
 
 // ---- functions --------------------------------------------------------------
-void init_texture_layouts()
-{
+void init_texture_layouts() {
     OneSide =       (texture_layout){0, 0,                  0,                      0,                  0,                  0};
     TwoSide =       (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  baseTextureSize};
     ThreeSide =     (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  (baseTextureSize*2)};
@@ -43,13 +40,11 @@ void init_texture_layouts()
     FourSide =      (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  baseTextureSize,  baseTextureSize,  (baseTextureSize*3)};
 }
 
-void init_textures()
-{
+void init_textures() {
     baseTextureSize = 16;
 
     str string[PATH_MAX + NAME_MAX] = {0};
-    for (u8 i = 0; i < 3; ++i)
-    {
+    for (u8 i = 0; i < 3; ++i) {
         snprintf(string,
                 strlen(mc_c_subpath) + strlen(instanceDirStructure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
                 "%s%s%s",
@@ -59,8 +54,7 @@ void init_textures()
     }
 }
 
-void unload_textures()
-{
+void unload_textures() {
     for (u8 i = 0; i < 3; ++i)
         UnloadTexture(textures[i]);
 }
@@ -68,24 +62,21 @@ void unload_textures()
 // =============================================================================
 // _section_blocks =============================================================
 // =============================================================================
-block BlockGrass = 
-{
+block BlockGrass = {
     Grass,
     BLOCK_STATE_SOLID,
     &ThreeSide,
     &textures[TEXTURE_BLOCK_GRASS],
 }; /* Block Grass */
 
-block BlockCobbleStone =
-{
+block BlockCobbleStone = {
     CobbleStone,
     BLOCK_STATE_SOLID,
     &OneSide,
     &textures[TEXTURE_BLOCK_COBBLESTONE],
 }; /* Block Cobblestone */
 
-block BlockCobbledDeepslate =
-{
+block BlockCobbledDeepslate = {
     CobbledDeepSlate,
     BLOCK_STATE_SOLID,
     &OneSide,
@@ -105,3 +96,4 @@ block BlockCobbledDeepslate =
 // =============================================================================
 // _section_tools ==============================================================
 // =============================================================================
+

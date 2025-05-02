@@ -1,11 +1,10 @@
-#ifndef ASSETS_H
+#ifndef MC_C_ASSETS_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../engine/h/defines.h"
 #include "dir.h"
 
-enum BlockStates
-{
+enum BlockStates {
     BLOCK_STATE_SOLID =     0x1,
     BLOCK_STATE_FLUID =     0x2,
     BLOCK_STATE_EMISSIVE =  0x4,
@@ -18,8 +17,7 @@ enum BlockStates
     BLOCK_STATE_ANIMATES =  0x200,
 }; /* BlockStates */
 
-enum BlockID
-{
+enum BlockID {
     Grass =             1,
     Dirt =              2,
     Stone =             3,
@@ -36,16 +34,14 @@ enum BlockID
     CobbledDeepSlate =  14,
 }; /* BlockID */
 
-typedef struct block
-{
+typedef struct block {
     u8 blockId;
     u16 blockState;
     void *textureLayout;
     void *texture;
 } block;
 
-typedef struct texture_layout
-{
+typedef struct texture_layout {
     u8 px, py, pz;
     u8 nx, ny, nz;
 } texture_layout;
@@ -67,5 +63,6 @@ void init_texture_layouts();
 void init_textures();
 void unload_textures();
 
-#define ASSETS_H
+#define MC_C_ASSETS_H
 #endif
+

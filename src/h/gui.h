@@ -1,4 +1,4 @@
-#ifndef GUI_H
+#ifndef MC_C_GUI_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
@@ -73,8 +73,7 @@ extern u8 *hotbarSlots[9][9];
 
 extern u16 menuIndex;
 extern u16 menuLayer[5];
-enum MenuNames
-{
+enum MenuNames {
     MENU_TITLE = 1,
     MENU_SINGLEPLAYER = 2,
     MENU_MULTIPLAYER = 3,
@@ -90,8 +89,7 @@ enum MenuNames
 // ---- button stuff -----------------------------------------------------------
 #define BTN_COUNT 110
 extern u8 buttons[BTN_COUNT];
-enum ButtonNames
-{
+enum ButtonNames {
     // ---- title screen -------------------------------------------------------
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER = 1,
@@ -287,5 +285,6 @@ void btn_func_back_to_game();
 void btn_func_save_and_quit_to_title();
 void btn_func_back();
 
-#define GUI_H
+#define MC_C_GUI_H
 #endif
+

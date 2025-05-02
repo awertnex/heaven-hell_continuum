@@ -1,18 +1,16 @@
-#pragma once
+#ifndef MC_C_RENDERING_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 #include "../engine/h/defines.h"
 
 // ---- definitions ------------------------------------------------------------
-typedef struct Vertex
-{
+typedef struct Vertex {
     Vector3 pos;
     Vector2 texCoord;
 } Vertex;
 
-typedef struct RenderData
-{
+typedef struct RenderData {
     Vector3 vertices;
     Vector2 textureCoordinates;
 } RenderData;
@@ -26,3 +24,7 @@ void init_rendering();
 void update_rendering();
 void draw_rendering();
 void free_rendering();
+
+#define MC_C_RENDERING_H
+#endif
+
