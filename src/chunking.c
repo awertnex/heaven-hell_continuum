@@ -151,8 +151,7 @@ void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) // TODO: com
     }
 }
 
-//TODO: revise, might not be needed
-Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag)
+Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) // TODO: revise, might not be needed
 {
     for (u8 y = 0; y < setting.renderDistance * 2; ++y)
     {

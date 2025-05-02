@@ -22,20 +22,20 @@ Texture2D textureHUDWidgets;
 Texture2D textureContainerInventory;
 Texture2D textureBackground;
 
-Rectangle hotbar =          {0, 0, 202, 22};
-Rectangle hotbarSelected = {0, 22, 24, 24};
-Rectangle hotbarOffhand =  {24, 22, 22, 24};
-Rectangle crosshair =       {240, 0, 16, 16};
-Rectangle buttonInactive =     {0, 46, 200, 20};
-Rectangle button =              {0, 66, 200, 20};
-Rectangle buttonSelected =     {0, 86, 200, 20};
-Rectangle containerInventory = {0, 0, 176, 184};
-Rectangle containerSlotSize = {0, 0, 16, 16};
-Rectangle rectBackground = {0, 0, 16, 16};
-Rectangle rectBackgroundDark = {16, 0, 16, 16};
+Rectangle hotbar =          {0.0f, 0.0f, 202.0f, 22.0f};
+Rectangle hotbarSelected = {0.0f, 22.0f, 24.0f, 24.0f};
+Rectangle hotbarOffhand =  {24.0f, 22.0f, 22.0f, 24.0f};
+Rectangle crosshair =       {240.0f, 0.0f, 16.0f, 16.0f};
+Rectangle buttonInactive =     {0.0f, 46.0f, 200.0f, 20.0f};
+Rectangle button =              {0.0f, 66.0f, 200.0f, 20.0f};
+Rectangle buttonSelected =     {0.0f, 86.0f, 200.0f, 20.0f};
+Rectangle containerInventory = {0.0f, 0.0f, 176.0f, 184.0f};
+Rectangle containerSlotSize = {0.0f, 0.0f, 16.0f, 16.0f};
+Rectangle rectBackground = {0.0f, 0.0f, 16.0f, 16.0f};
+Rectangle rectBackgroundDark = {16.0f, 0.0f, 16.0f, 16.0f};
 
 v2i16 hotbarPosition;
-f32 hotbarSlotSelected = 1;
+f32 hotbarSlotSelected = 1.0f;
 v2i16 crosshairPosition;
 u16 gameMenuPosition = HEIGHT / 3;
 u8 buttonSpacingVertical = 5;
@@ -147,31 +147,31 @@ void free_gui()
 }
 
 //jump
-void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint) /* scale is based on source.scale*scl */
+void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint) /* scale is based on source.scale * scl */
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
+    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
+    rlNormal3f(0.0f, 0.0f, 1.0f);
 
-    i32 tileWidth = source.width*scl.x;
-    i32 tileHeight = source.height*scl.y;
+    i32 tileWidth = source.width * scl.x;
+    i32 tileHeight = source.height * scl.y;
 
     // top left
-    rlTexCoord2f(source.x/texture.width, source.y/texture.height);
+    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
     // bottom left
-    rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
+    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tileHeight);
 
     // bottom right
-    rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
+    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tileWidth, pos.y + tileHeight);
 
     // top right
-    rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
+    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tileWidth, pos.y);
 }
 
@@ -198,13 +198,13 @@ void update_menus(v2f32 renderSize)
             }
 
             //jump
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 16, 16},
+            draw_texture_a(textureBackground, rectBackground, (Rectangle){0.0f, 0.0f, 16.0f, 16.0f},
                     (v2i16){0, 0}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 24, 16},
+            draw_texture_a(textureBackground, rectBackground, (Rectangle){0.0f, 0.0f, 24.0f, 16.0f},
                     (v2i16){0, 64}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 32, 32},
+            draw_texture_a(textureBackground, rectBackground, (Rectangle){0.0f, 0.0f, 32.0f, 32.0f},
                     (v2i16){0, 128}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
 
@@ -221,35 +221,35 @@ void update_menus(v2f32 renderSize)
             rlBegin(RL_QUADS);
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+                    (v2i16){renderSize.x / 2, gameMenuPosition},
                     1, 1,
                     BTN_SINGLEPLAYER,
                     &btn_func_singleplayer,
                     "Singleplayer");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + ((button.height + buttonSpacingVertical) * setting.guiScale)},
                     1, 1,
                     BTN_MULTIPLAYER,
                     &btn_func_multiplayer,
                     "Multiplayer");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 2) * setting.guiScale)},
                     1, 1,
                     BTN_MINECRAFT_C_REALMS,
                     &btn_func_minecraft_c_realms,
                     "Minecraft.c Realms");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 3) * setting.guiScale)},
                     1, 1,
                     BTN_OPTIONS,
                     &btn_func_options,
                     "Options...");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 4) * setting.guiScale)},
                     1, 1,
                     BTN_QUIT,
                     &btn_func_quit,
@@ -283,7 +283,7 @@ void update_menus(v2f32 renderSize)
             rlBegin(RL_QUADS);
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+                    (v2i16){renderSize.x / 2, gameMenuPosition},
                     1, 1,
                     BTN_DONE,
                     &btn_func_back,
@@ -317,7 +317,7 @@ void update_menus(v2f32 renderSize)
             rlBegin(RL_QUADS);
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+                    (v2i16){renderSize.x / 2, gameMenuPosition},
                     1, 1,
                     BTN_DONE,
                     &btn_func_back,
@@ -344,35 +344,35 @@ void update_menus(v2f32 renderSize)
             rlBegin(RL_QUADS);
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+                    (v2i16){renderSize.x / 2, gameMenuPosition},
                     1, 1,
                     BTN_BACK_TO_GAME,
                     &btn_func_back_to_game,
                     "Back to Game");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + ((button.height + buttonSpacingVertical) * setting.guiScale)},
                     1, 1,
                     BTN_ADVANCEMENTS,
                     &btn_func_options_game,
                     "Advancements");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 2) * setting.guiScale)},
                     1, 1,
                     BTN_GIVE_FEEDBACK,
                     &btn_func_options_game,
                     "Give Feedback");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 3) * setting.guiScale)},
                     1, 1,
                     BTN_OPTIONS_GAME,
                     &btn_func_options_game,
                     "Options...");
 
             draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
+                    (v2i16){renderSize.x / 2, gameMenuPosition + (((button.height + buttonSpacingVertical) * 4) * setting.guiScale)},
                     1, 1,
                     BTN_QUIT,
                     &btn_func_save_and_quit_to_title,
@@ -397,7 +397,7 @@ void draw_hud()
 
     draw_texture(textureHUDWidgets, hotbarSelected,
             (v2i16){
-            hotbarPosition.x - 2 - ((hotbar.width/2)*setting.guiScale) + ((hotbar.height - 2)*setting.guiScale*(hotbarSlotSelected - 1)),
+            hotbarPosition.x - 2 - ((hotbar.width / 2) * setting.guiScale) + ((hotbar.height - 2) * setting.guiScale * (hotbarSlotSelected - 1)),
             hotbarPosition.y + setting.guiScale}, // TODO: revise guiScale mod of selected hotbar position Y
             (v2i16){
             setting.guiScale,
@@ -406,7 +406,7 @@ void draw_hud()
 
     draw_texture(textureHUDWidgets, hotbarOffhand,
             (v2i16){
-            hotbarPosition.x - ((hotbar.width/2)*setting.guiScale) - (hotbar.height*2*setting.guiScale),
+            hotbarPosition.x - ((hotbar.width / 2) * setting.guiScale) - (hotbar.height * 2 * setting.guiScale),
             hotbarPosition.y + setting.guiScale}, 
             (v2i16){
             setting.guiScale,
@@ -425,7 +425,7 @@ void draw_hud()
     rlSetTexture(0);
 }
 
-void draw_containers(Player *player, v2f32 renderSize)
+void draw_containers(Player* player, v2f32 renderSize)
 {
     draw_menu_overlay(renderSize);
     rlBegin(RL_QUADS);
@@ -519,32 +519,32 @@ void draw_containers(Player *player, v2f32 renderSize)
     rlSetTexture(0);
 }
 
-void draw_debug_info(Camera3D *camera)
+void draw_debug_info(Camera3D* camera)
 {
     if (!(state & STATE_DEBUG)) return;
 
     update_debug_strings();
 
     // TODO: rewrite DrawRectangle, get rectangle correct size for font
-    DrawRectangle(MARGIN - 2, MARGIN,                     get_str_width(fontRegular, strFPS,                fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,     get_str_width(fontRegular, strPlayerPos,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*2,   get_str_width(fontRegular, strPlayerBlock,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*3,   get_str_width(fontRegular, strPlayerChunk,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*4,   get_str_width(fontRegular, strPlayerDirection,    fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*5,   get_str_width(fontRegular, strBlockCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*6,   get_str_width(fontRegular, strQuadCount,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,           fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(fontRegular, strFPS,              fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,       get_str_width(fontRegular, strPlayerPos,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 2,   get_str_width(fontRegular, strPlayerBlock,      fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 3,   get_str_width(fontRegular, strPlayerChunk,      fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 4,   get_str_width(fontRegular, strPlayerDirection,  fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 5,   get_str_width(fontRegular, strBlockCount,       fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 6,   get_str_width(fontRegular, strQuadCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 7,   get_str_width(fontRegular, strTriCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight * 8,   get_str_width(fontRegular, strVertexCount,      fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
 
-    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight*2},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight*3},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight*4},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight*5},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight*6},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight*7},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight*8},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                        fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},        fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight * 2},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight * 3},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight * 4},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight * 5},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight * 6},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight * 7},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight * 8},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
@@ -556,7 +556,7 @@ void draw_debug_info(Camera3D *camera)
 }
 
 // raylib/rtext.c/DrawTextEx refactored
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint)
+void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint)
 {
     // spacing: char spacing;
     // alignX: 0 = left, 1 = center, 2 = right;
@@ -565,7 +565,7 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
     switch (alignX)
     {
         case 1:
-            pos.x -= (get_str_width(font, str, font_size, spacing)/2);
+            pos.x -= (get_str_width(font, str, font_size, spacing) / 2);
             break;
 
         case 2:
@@ -576,7 +576,7 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
     switch (alignY)
     {
         case 1:
-            pos.y -= (font_size/1.8f);
+            pos.y -= (font_size / 1.8f);
             break;
 
         case 2:
@@ -589,7 +589,7 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
 
     f32 textOffsetY = 0;
     f32 textOffsetX = 0.0f;
-    f32 scaleFactor = font_size/font.baseSize;
+    f32 scaleFactor = font_size / font.baseSize;
     for (u16 i = 0; i < size;)
     {
         i32 codepointByteCount = 0;
@@ -615,19 +615,19 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
             }
 
             if (font.glyphs[index].advanceX == 0)
-                textOffsetX += ((f32)font.recs[index].width*scaleFactor + spacing);
+                textOffsetX += ((f32)font.recs[index].width * scaleFactor + spacing);
             else
-                textOffsetX += ((f32)font.glyphs[index].advanceX*scaleFactor + spacing);
+                textOffsetX += ((f32)font.glyphs[index].advanceX * scaleFactor + spacing);
         }
         i += codepointByteCount;
     }
 }
 
-float get_str_width(Font font, const str *str, f32 font_size, f32 spacing)
+float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
     f32 textOffsetX = 0.0f;
-    f32 scaleFactor = font_size/font.baseSize;
+    f32 scaleFactor = font_size / font.baseSize;
     for (u16 i = 0; i < TextLength(str);)
     {
         i32 codepointByteCount = 0;
@@ -640,13 +640,13 @@ float get_str_width(Font font, const str *str, f32 font_size, f32 spacing)
         {
             if (font.glyphs[index].advanceX == 0)
             {
-                result += font.recs[index].width*scaleFactor + spacing;
-                textOffsetX += ((f32)font.recs[index].width*scaleFactor + spacing);
+                result += font.recs[index].width * scaleFactor + spacing;
+                textOffsetX += ((f32)font.recs[index].width * scaleFactor + spacing);
             }
             else
             {
-                result += font.glyphs[index].advanceX*scaleFactor + spacing;
-                textOffsetX += ((f32)font.glyphs[index].advanceX*scaleFactor + spacing);
+                result += font.glyphs[index].advanceX * scaleFactor + spacing;
+                textOffsetX += ((f32)font.glyphs[index].advanceX * scaleFactor + spacing);
             }
         }
         i += codepointByteCount;
@@ -655,32 +655,32 @@ float get_str_width(Font font, const str *str, f32 font_size, f32 spacing)
 }
 
 // raylib/rtextures.c/DrawTexturePro refactored
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint) /* scale is based on source.scale*scl */
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint) /* scale is based on source.scale * scl */
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
+    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
     // alignX: 0 = left, 1 = center, 2 = right;
     // alignY: 0 = top, 1 = center, 2 = bottom;
 
     switch (alignX)
     {
         case 1:
-            pos.x -= ((source.width*scl.x)/2);
+            pos.x -= ((source.width * scl.x) / 2);
             break;
 
         case 2:
-            pos.x -= (source.width*scl.x);
+            pos.x -= (source.width * scl.x);
             break;
     };
 
     switch (alignY)
     {
         case 1:
-            pos.y -= ((source.height*scl.y)/2);
+            pos.y -= ((source.height * scl.y) / 2);
             break;
 
         case 2:
-            pos.y -= (source.height*scl.y);
+            pos.y -= (source.height * scl.y);
             break;
     };
 
@@ -688,23 +688,23 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0, 0, 1);
 
-    i32 tileWidth = source.width*scl.x;
-    i32 tileHeight = source.height*scl.y;
+    i32 tileWidth = source.width * scl.x;
+    i32 tileHeight = source.height * scl.y;
 
     // top left
-    rlTexCoord2f(source.x/texture.width, source.y/texture.height);
+    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
     // bottom left
-    rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
+    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tileHeight);
 
     // bottom right
-    rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
+    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tileWidth, pos.y + tileHeight);
 
     // top right
-    rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
+    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tileWidth, pos.y);
 }
 
@@ -829,19 +829,19 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
 
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
+    rlNormal3f(0.0f, 0.0f, 1.0f);
 
-    rlTexCoord2f(source.x/width, source.y/height);
+    rlTexCoord2f(source.x / width, source.y / height);
     rlVertex2f(topLeft.x, topLeft.y);
-    rlTexCoord2f(source.x/width, (source.y + source.height)/height);
+    rlTexCoord2f(source.x / width, (source.y + source.height) / height);
     rlVertex2f(topLeft.x, bottomRight.y);
-    rlTexCoord2f((source.x + source.width)/width, (source.y + source.height)/height);
+    rlTexCoord2f((source.x + source.width) / width, (source.y + source.height) / height);
     rlVertex2f(bottomRight.x, bottomRight.y);
-    rlTexCoord2f((source.x + source.width)/width, source.y/height);
+    rlTexCoord2f((source.x + source.width) / width, source.y / height);
     rlVertex2f(bottomRight.x, topLeft.y);
 }
 
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str *str)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str* str)
 {
     // alignX: 0 = left, 1 = center, 2 = right;
     // alignY: 0 = top, 1 = center, 2 = bottom;
@@ -890,7 +890,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 a
         if (str)
         {
             draw_text(fontRegular, str,
-                    (v2i16){pos.x + ((button.width*setting.guiScale) / 2), pos.y + ((button.height*setting.guiScale) / 2)},
+                    (v2i16){pos.x + ((button.width * setting.guiScale) / 2), pos.y + ((button.height * setting.guiScale) / 2)},
                     fontSize, 1, alignX, alignY, COL_TEXT_DEFAULT);
         }
     }

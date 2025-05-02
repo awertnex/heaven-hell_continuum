@@ -75,9 +75,9 @@ void update_player_states(Player* player)
     {
         player->pos =
             (Vector3){
-                player->spawnPoint.x,
-                player->spawnPoint.y,
-                player->spawnPoint.z,
+                player->spawn_point.x,
+                player->spawn_point.y,
+                player->spawn_point.z,
             };
         player->v.z = 0;
     }
@@ -219,23 +219,23 @@ void player_respawn(Player* player)
     *player =
         (Player){
             .pos = (Vector3){
-                player->spawnPoint.x,
-                player->spawnPoint.y,
-                player->spawnPoint.z},
+                player->spawn_point.x,
+                player->spawn_point.y,
+                player->spawn_point.z},
             .state = 0,
     };
 }
 
-bool check_delta_target(Vector3* coordinates, v3i32* deltaTarget)
+bool check_delta_target(Vector3* coordinates, v3i32* delta_target)
 {
-    if (deltaTarget->x == floorf(coordinates->x) &&
-            deltaTarget->y == floorf(coordinates->y) &&
-            deltaTarget->z == floorf(coordinates->z))
+    if (delta_target->x == floorf(coordinates->x) &&
+            delta_target->y == floorf(coordinates->y) &&
+            delta_target->z == floorf(coordinates->z))
         return false;
 
-    deltaTarget->x = (i32)floorf(coordinates->x);
-    deltaTarget->y = (i32)floorf(coordinates->y);
-    deltaTarget->z = (i32)floorf(coordinates->z);
+    delta_target->x = (i32)floorf(coordinates->x);
+    delta_target->y = (i32)floorf(coordinates->y);
+    delta_target->z = (i32)floorf(coordinates->z);
     return true;
 }
 
@@ -262,7 +262,7 @@ bool is_range_within_v3fi(Vector3* pos, v3i32 start, v3i32 end)
 
 b8 is_ray_intersect(Player* player) //TODO: make the player ray intersection
 {
-    if (targetChunk->i[player->deltaTarget.z][player->deltaTarget.y][player->deltaTarget.x])
+    if (targetChunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
         return true;
     return false;
 }

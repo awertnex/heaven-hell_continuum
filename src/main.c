@@ -56,7 +56,7 @@ Player lily =
         .projection = CAMERA_ORTHOGRAPHIC,
     },
 
-    .spawnPoint = {0.0f, 0.0f, 0.0f},
+    .spawn_point = {0.0f, 0.0f, 0.0f},
 };
 
 // ---- signatures -------------------------------------------------------------
@@ -202,7 +202,7 @@ void init_world(const char* str)
 
 void update_world()
 {
-    gameTick = (floor((get_time_ms() - gameStartTime) * 20)) - (SETTING_DAY_TICKS_MAX * gameDays);
+    gameTick = (floor((get_time_ms() - gameStartTime) * 2000)) - (SETTING_DAY_TICKS_MAX * gameDays);
     if (gameTick >= SETTING_DAY_TICKS_MAX)
         ++gameDays;
 
@@ -219,7 +219,7 @@ void update_world()
     update_player_states(&lily);
     update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
-    update_chunk_buffer(&lily.deltaTarget, &lily.chunk);
+    update_chunk_buffer(&lily.delta_target, &lily.chunk);
     draw_chunk_buffer(chunkBuf);
 
     //TODO: make a function 'index_to_bounding_box()'
@@ -235,17 +235,17 @@ void update_world()
                     (Vector3){lily.chunk.x + ((f32)CHUNK_DIAMETER / 2), lily.chunk.y + ((f32)CHUNK_DIAMETER / 2), WORLD_BOTTOM},
                     (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, worldHeight});
 
-        if (check_delta_target(&lily.camera.target, &lily.deltaTarget))
-            targetChunk = get_chunk(&lily.deltaTarget, &lily.state, STATE_PARSE_TARGET);
+        if (check_delta_target(&lily.camera.target, &lily.delta_target))
+            targetChunk = get_chunk(&lily.delta_target, &lily.state, STATE_PARSE_TARGET);
 
         if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD))
         {
             if (targetChunk->i
-                    [lily.deltaTarget.z - WORLD_BOTTOM]
-                    [lily.deltaTarget.y - (targetChunk->pos.y * CHUNK_DIAMETER)]
-                    [lily.deltaTarget.x - (targetChunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY)
+                    [lily.delta_target.z - WORLD_BOTTOM]
+                    [lily.delta_target.y - (targetChunk->pos.y * CHUNK_DIAMETER)]
+                    [lily.delta_target.x - (targetChunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY)
             {
-                draw_block_wires(lily.deltaTarget);
+                draw_block_wires(lily.delta_target);
                 if (state & STATE_DEBUG_MORE)
                     DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
             }
@@ -358,7 +358,7 @@ void update_input(Player* player)
     if (IsMouseButtonDown(bindAttackOrDestroy))
     {
         if (player->state & STATE_PARSE_TARGET)
-            remove_block(targetChunk, lily.deltaTarget.x, lily.deltaTarget.y, floorf(lily.deltaTarget.z - WORLD_BOTTOM));
+            remove_block(targetChunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
     }
 
     if (IsMouseButtonDown(bindPickBlock))
@@ -368,7 +368,7 @@ void update_input(Player* player)
     if (IsMouseButtonDown(BindUseItemOrPlaceBlock))
     {
         if (player->state & STATE_PARSE_TARGET)
-            add_block(targetChunk, lily.deltaTarget.x, lily.deltaTarget.y, floorf(lily.deltaTarget.z - WORLD_BOTTOM));
+            add_block(targetChunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
     }
 
     // ---- inventory ----------------------------------------------------------
