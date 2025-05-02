@@ -36,9 +36,9 @@ enum LogLevel {
 }; /* LogLevel */
 
 // -----------------------------------------------------------------------------
-str* mc_c_grandpath;
-str* mc_c_subpath;
-str* mc_c_chunkpath;
+str *mc_c_grandpath;
+str *mc_c_subpath;
+str *mc_c_chunkpath;
 str tokens_default[10][8] = {
     "4",    // bytes for chunk->pos;
     "1",    // bytes for each chunk->i;
@@ -46,7 +46,7 @@ str tokens_default[10][8] = {
     "x",    // formatter: repeat 'bytes to the left of x' a 'bytes to the right of x' times;
 };
 
-str** tokens_loaded;
+str **tokens_loaded;
 
 FILE *save_file;
 DIR *dir;

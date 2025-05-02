@@ -18,7 +18,7 @@
     #define EXTENSION       ""
     #define MKDIR_BIN       mkdir("bin/", 0775);
     #define MKDIR_BIN_TESTS mkdir("bin/tests/", 0775);
-char** cmd;
+char **cmd;
 char str_libs[3][24] = {"-lraylib", "-lm", 0};
 
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
@@ -30,7 +30,7 @@ char str_libs[3][24] = {"-lraylib", "-lm", 0};
     #define EXTENSION       ".exe"
     #define MKDIR_BIN       mkdir("bin/");
     #define MKDIR_BIN_TESTS mkdir("bin/tests/");
-char* cmd[64];
+char *cmd[64];
 char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
@@ -53,7 +53,7 @@ void fail_cmd() {
     exit(-1);
 }
 
-int is_dir_exists(const char* path) {
+int is_dir_exists(const char *path) {
     struct stat stats;
     if (stat(path, &stats) == 0)
         if (S_ISDIR(stats.st_mode))
@@ -136,7 +136,7 @@ void execute_cmd() {
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     if (!is_dir_exists(DIR_BIN)) {
         MKDIR_BIN;
         fprintf(stderr, "Directory 'bin/' Created!\n");

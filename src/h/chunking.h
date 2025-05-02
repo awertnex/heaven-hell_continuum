@@ -19,7 +19,7 @@
 #define WORLD_HEIGHT_END    256 // - WORLD_BOTTOM
 
 #define CHUNK_DIAMETER      32
-#define CHUNK_DATA_SIZE     (sizeof(chunk)) // truct chunk
+#define CHUNK_DATA_SIZE     (sizeof(Chunk)) // truct chunk
 #define CHUNK_BUF_RADIUS    (SETTING_RENDER_DISTANCE_MAX)
 #define CHUNK_BUF_DIAMETER  ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
@@ -73,21 +73,21 @@ enum ChunkStates {
 
 // TODO: add 'version' byte to the chunk file for evolving the format safely
 // TODO: add chunk slicing
-typedef struct chunk {
+typedef struct Chunk {
     v2i16 pos;
     u32 id;
     u32 i[WORLD_HEIGHT_NORMAL][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Model model;
     Material mat;
     u8 state;
-} chunk;
+} Chunk;
 
 // ---- declarations -----------------------------------------------------------
 extern u16 world_height;
-extern chunk* chunk_buf;
-extern void* chunk_tab[CHUNK_BUF_ELEMENTS];
-extern chunk* target_chunk;
-extern struct world_stats {
+extern Chunk *chunk_buf;
+extern void *chunk_tab[CHUNK_BUF_ELEMENTS];
+extern Chunk *target_chunk;
+extern struct WorldStats {
     u64 block_count;
     u64 quad_count;
 } world_stats;
@@ -97,15 +97,15 @@ extern u8 opacity;
 u8 init_chunking();
 void free_chunking();
 
-void add_block(chunk* chunk, u8 x, u8 y, u16 z);
-void remove_block(chunk* chunk, u8 x, u8 y, u16 z);
-void load_chunk(chunk* chunk);
+void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void load_chunk(Chunk *chunk);
 void update_chunk();
 void unload_chunk();
-void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk);
-chunk* get_chunk(v3i32* coordinates, u16 *state, u16 flag);
-void draw_chunk_buffer(chunk* chunk_buf);
-void draw_chunk(chunk* chunk);
+void update_chunk_buffer(v3i32 *player_target, v2i16 *player_chunk);
+Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
+void draw_chunk_buffer(Chunk *chunk_buf);
+void draw_chunk(Chunk *chunk);
 void draw_block(u32 block_states);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);

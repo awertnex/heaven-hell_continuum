@@ -43,12 +43,12 @@ v2i16 container_inventory_pos;
 v2i16 container_inventory_first_slot_Pos;
 
 // TODO: you know what TODO
-u8* container_inventory_slots[5][9];
-u8* container_inventory_slots_crafting[5];
-u8* container_inventory_slots_armor[5];
+u8 *container_inventory_slots[5][9];
+u8 *container_inventory_slots_crafting[5];
+u8 *container_inventory_slots_armor[5];
 u8 container_inventory_slots_offhand;
 u8 container_cursor_slot[2];
-u8* hotbar_slots[9][9];
+u8 *hotbar_slots[9][9];
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
@@ -406,7 +406,7 @@ void draw_hud() {
     rlSetTexture(0);
 }
 
-void draw_containers(Player* player, v2f32 render_size) {
+void draw_containers(Player *player, v2f32 render_size) {
     draw_menu_overlay(render_size);
     rlBegin(RL_QUADS);
 
@@ -496,7 +496,7 @@ void draw_containers(Player* player, v2f32 render_size) {
     rlSetTexture(0);
 }
 
-void draw_debug_info(Camera3D* camera) {
+void draw_debug_info(Camera3D *camera) {
     if (!(state & STATE_DEBUG)) return;
 
     update_debug_strings();
@@ -532,7 +532,7 @@ void draw_debug_info(Camera3D* camera) {
 }
 
 // raylib/rtext.c/DrawTextEx refactored
-void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint) {
+void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint) {
     // spacing: char spacing;
     // align_x: 0 = left, 1 = center, 2 = right;
     // align_y: 0 = top, 1 = center, 2 = bottom;
@@ -582,10 +582,10 @@ void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing,
                         font_size, tint);
             }
 
-            if (font.glyphs[index].advance_x == 0)
+            if (font.glyphs[index].advanceX == 0)
                 text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
             else
-                text_offset_x += ((f32)font.glyphs[index].advance_x * scale_factor + spacing);
+                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
         }
         i += codepoint_byte_count;
     }
@@ -603,12 +603,12 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing) {
         if (codepoint == '\n')
             text_offset_x = 0.0f;
         else {
-            if (font.glyphs[index].advance_x == 0) {
+            if (font.glyphs[index].advanceX == 0) {
                 result += font.recs[index].width * scale_factor + spacing;
                 text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
             } else {
-                result += font.glyphs[index].advance_x * scale_factor + spacing;
-                text_offset_x += ((f32)font.glyphs[index].advance_x * scale_factor + spacing);
+                result += font.glyphs[index].advanceX * scale_factor + spacing;
+                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
             }
         }
         i += codepoint_byte_count;
@@ -785,7 +785,7 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
     rlVertex2f(bottom_right.x, top_left.y);
 }
 
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str* str) {
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str) {
     // align_x: 0 = left, 1 = center, 2 = right;
     // align_y: 0 = top, 1 = center, 2 = bottom;
 

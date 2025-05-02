@@ -18,41 +18,41 @@ enum BlockStates {
 }; /* BlockStates */
 
 enum BlockID {
-    Grass =             1,
-    Dirt =              2,
-    Stone =             3,
-    CobbleStone =       4,
-    MossStone =         5,
-    OakWoodLog =        6,
-    OakWoodPlanks =     7,
-    Sand =              8,
-    Glass =             9,
-    NetherRack =        10,
-    BedRock =           11,
-    GlowStone =         12,
-    Deepslate =         13,
-    CobbledDeepSlate =  14,
+    grass =                 1,
+    dirt =                  2,
+    stone =                 3,
+    cobblestone =           4,
+    moss_stone =            5,
+    oak_wood_log =          6,
+    oak_wood_planks =       7,
+    sand =                  8,
+    glass =                 9,
+    nether_rack =           10,
+    bedrock =               11,
+    glow_stone =            12,
+    deepslate =             13,
+    cobbled_deepslate =     14,
 }; /* BlockID */
 
-typedef struct block {
-    u8 blockId;
-    u16 blockState;
-    void *textureLayout;
+typedef struct Block {
+    u8 block_id;
+    u16 block_state;
+    void *texture_layout;
     void *texture;
-} block;
+} Block;
 
-typedef struct texture_layout {
+typedef struct TextureLayout {
     u8 px, py, pz;
     u8 nx, ny, nz;
-} texture_layout;
+} TextureLayout;
 
 // ---- declarations -----------------------------------------------------------
 extern u16 base_texture_size;
-extern texture_layout one_side;
-extern texture_layout two_side;
-extern texture_layout three_side;
-extern texture_layout three_side_alt;
-extern texture_layout four_side;
+extern TextureLayout one_side;
+extern TextureLayout two_side;
+extern TextureLayout three_side;
+extern TextureLayout three_side_alt;
+extern TextureLayout four_side;
 
 extern Texture2D texture_block_grass;
 extern Texture2D texture_block_cobblestone;

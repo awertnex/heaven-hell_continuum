@@ -13,11 +13,11 @@ _section_tools =================================================================
 
 // ---- variables --------------------------------------------------------------
 u16 base_texture_size;
-texture_layout one_side;
-texture_layout two_side;
-texture_layout three_side;
-texture_layout three_side_alt;
-texture_layout four_side;
+TextureLayout one_side;
+TextureLayout two_side;
+TextureLayout three_side;
+TextureLayout three_side_alt;
+TextureLayout four_side;
 
 Texture2D textures[3] = {0};
 enum TextureNames {
@@ -33,11 +33,11 @@ str block_names[3][NAME_MAX] = {
 
 // ---- functions --------------------------------------------------------------
 void init_texture_layouts() {
-    one_side =       (texture_layout){0, 0,                  0,                      0,                  0,                  0};
-    two_side =       (texture_layout){0, 0,                  base_texture_size,      0,                  0,                  base_texture_size};
-    three_side =     (texture_layout){0, 0,                  base_texture_size,      0,                  0,                  (base_texture_size*2)};
-    three_side_alt =  (texture_layout){0, base_texture_size,  (base_texture_size*2),  0,                  base_texture_size,  (base_texture_size*2)};
-    four_side =      (texture_layout){0, base_texture_size,  (base_texture_size*2),  base_texture_size,  base_texture_size,  (base_texture_size*3)};
+    one_side =          (TextureLayout){0, 0,                   0,                      0,                  0,                  0};
+    two_side =          (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  base_texture_size};
+    three_side =        (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  (base_texture_size*2)};
+    three_side_alt =    (TextureLayout){0, base_texture_size,   (base_texture_size*2),  0,                  base_texture_size,  (base_texture_size*2)};
+    four_side =         (TextureLayout){0, base_texture_size,   (base_texture_size*2),  base_texture_size,  base_texture_size,  (base_texture_size*3)};
 }
 
 void init_textures() {
@@ -62,21 +62,21 @@ void unload_textures() {
 // =============================================================================
 // _section_blocks =============================================================
 // =============================================================================
-block block_grass = {
+Block block_grass = {
     grass,
     BLOCK_STATE_SOLID,
     &three_side,
     &textures[TEXTURE_BLOCK_GRASS],
 }; /* Block Grass */
 
-block block_cobblestone = {
+Block block_cobblestone = {
     cobblestone,
     BLOCK_STATE_SOLID,
     &one_side,
     &textures[TEXTURE_BLOCK_COBBLESTONE],
 }; /* Block Cobblestone */
 
-block block_cobbled_deepslate = {
+Block block_cobbled_deepslate = {
     cobbled_deepslate,
     BLOCK_STATE_SOLID,
     &one_side,

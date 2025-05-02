@@ -7,9 +7,9 @@
 #include "engine/h/logger.h"
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
-Chunk* chunk_buf = {0};
-void* chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
-Chunk* target_chunk = 0; //temp
+Chunk *chunk_buf = {0};
+void *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
+Chunk *target_chunk = 0; //temp
 struct WorldStats world_stats = {
     .block_count = 0,
     .quad_count = 0,
@@ -30,7 +30,7 @@ void free_chunking() {
 }
 
 //TODO: check chunk-border block-faces
-void add_block(Chunk* chunk, u8 x, u8 y, u16 z) {
+void add_block(Chunk *chunk, u8 x, u8 y, u16 z) {
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
@@ -62,7 +62,7 @@ void add_block(Chunk* chunk, u8 x, u8 y, u16 z) {
 }
 
 //TODO: check chunk barrier faces
-void remove_block(Chunk* chunk, u8 x, u8 y, u16 z) {
+void remove_block(Chunk *chunk, u8 x, u8 y, u16 z) {
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
@@ -87,7 +87,7 @@ void remove_block(Chunk* chunk, u8 x, u8 y, u16 z) {
     chunk->i[z][y][x] = 0;
 }
 
-void load_chunk(Chunk* chunk) {
+void load_chunk(Chunk *chunk) {
     if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
         return;
 
@@ -126,18 +126,18 @@ void update_chunk() { // TODO: make this function
 void unload_chunk() { // TODO: make this function
 }
 
-void update_chunk_buffer(v3i32* player_target, v2i16* player_chunk) { // TODO: complete this function
+void update_chunk_buffer(v3i32 *player_target, v2i16 *player_chunk) { // TODO: complete this function
     for (u16 i = 0; i < 1; ++i) {
         if (!(chunk_buf[i].state & STATE_CHUNK_LOADED)) {
             load_chunk(&chunk_buf[i]);
             chunk_tab[CHUNK_TAB_CENTER] = &chunk_buf[i];
-            LOGINFO("Chunk[%03d %03d] Loaded, i[%03d]", player_chunk->x, player_chunk->y, i);
+            LOGINFO("chunk[%03d %03d] Loaded, i[%03d]", player_chunk->x, player_chunk->y, i);
             break;
         }
     }
 }
 
-Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) { // TODO: revise, might not be needed
+Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag) { // TODO: revise, might not be needed
     for (u8 y = 0; y < setting.render_distance * 2; ++y) {
         for (u8 x = 0; x < setting.render_distance * 2; ++x) {
             if (!(chunk_buf[GET_CHUNK_XY(x, y)].state & STATE_CHUNK_LOADED)) {
@@ -156,15 +156,15 @@ Chunk* get_chunk(v3i32* coordinates, u16* state, u16 flag) { // TODO: revise, mi
     return NULL;
 }
 
-Texture2D cobblestone;
-Texture2D dirt;
-void draw_chunk_buffer(Chunk* chunk_buf) {
+Texture2D tex_cobblestone;
+Texture2D tex_dirt;
+void draw_chunk_buffer(Chunk *chunk_buf) {
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
     else opacity = 255;
 
     rlPushMatrix();
-    rlSetTexture(cobblestone.id); //temp texturing
+    rlSetTexture(tex_cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
@@ -176,7 +176,7 @@ void draw_chunk_buffer(Chunk* chunk_buf) {
     rlSetTexture(0); //temp texturing
 }
 
-void draw_chunk(Chunk* chunk) {
+void draw_chunk(Chunk *chunk) {
     rlTranslatef(chunk->pos.x * CHUNK_DIAMETER, chunk->pos.y * CHUNK_DIAMETER, WORLD_BOTTOM);
 
     u16 z = 0; u8 y = 0, x = 0;

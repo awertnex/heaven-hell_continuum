@@ -57,10 +57,10 @@ Player lily = {
 
 // ---- signatures -------------------------------------------------------------
 void update_world();
-void update_input(Player* player);
+void update_input(Player *player);
 void draw_skybox();
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     // ---- game init ----------------------------------------------------------
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
@@ -135,8 +135,8 @@ int main(int argc, char** argv) {
     }
 
     // ---- game close ---------------------------------------------------------
-    UnloadTexture(cobblestone); //temp
-    UnloadTexture(dirt); //temp
+    UnloadTexture(tex_cobblestone); //temp
+    UnloadTexture(tex_dirt); //temp
     unload_textures();
     free_chunking();
     free_gui();
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void init_world(const char* str) {
+void init_world(const char *str) {
     rlSetClipPlanes(0.1f, 500.0f);
 
     if (init_chunking() != 0)
@@ -171,8 +171,8 @@ void init_world(const char* str) {
         load_chunk(&chunk_buf[GET_CHUNK_XY(7, 0)]);
         */
 
-        cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
-        dirt =          LoadTexture("resources/textures/blocks/dirt.png");
+        tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
+        tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
 
         lily.state |= STATE_FALLING;
     }
@@ -257,7 +257,7 @@ void update_world() {
     draw_super_debugger(render_size);
 }
 
-void update_input(Player* player) {
+void update_input(Player *player) {
     // ---- jumping ------------------------------------------------------------
     if (IsKeyDown(bind_jump)) {
         if (IsKeyPressed(bind_jump) && get_double_press(player, bind_jump))
@@ -338,34 +338,34 @@ void update_input(Player* player) {
 
     // ---- inventory ----------------------------------------------------------
     if (IsKeyPressed(bind_hotbar_slot_1) || IsKeyPressed(bind_hotbar_slot_kp_1))
-        hotbarSlotSelected = 1;
+        hotbar_slot_selected = 1;
 
     if (IsKeyPressed(bind_hotbar_slot_2) || IsKeyPressed(bind_hotbar_slot_kp_2))
-        hotbarSlotSelected = 2;
+        hotbar_slot_selected = 2;
 
     if (IsKeyPressed(bind_hotbar_slot_3) || IsKeyPressed(bind_hotbar_slot_kp_3))
-        hotbarSlotSelected = 3;
+        hotbar_slot_selected = 3;
 
     if (IsKeyPressed(bind_hotbar_slot_4) || IsKeyPressed(bind_hotbar_slot_kp_4))
-        hotbarSlotSelected = 4;
+        hotbar_slot_selected = 4;
 
     if (IsKeyPressed(bind_hotbar_slot_5) || IsKeyPressed(bind_hotbar_slot_kp_5))
-        hotbarSlotSelected = 5;
+        hotbar_slot_selected = 5;
 
     if (IsKeyPressed(bind_hotbar_slot_6) || IsKeyPressed(bind_hotbar_slot_kp_6))
-        hotbarSlotSelected = 6;
+        hotbar_slot_selected = 6;
 
     if (IsKeyPressed(bind_hotbar_slot_7) || IsKeyPressed(bind_hotbar_slot_kp_7))
-        hotbarSlotSelected = 7;
+        hotbar_slot_selected = 7;
 
     if (IsKeyPressed(bind_hotbar_slot_8) || IsKeyPressed(bind_hotbar_slot_kp_8))
-        hotbarSlotSelected = 8;
+        hotbar_slot_selected = 8;
 
     if (IsKeyPressed(bind_hotbar_slot_9) || IsKeyPressed(bind_hotbar_slot_kp_9))
-        hotbarSlotSelected = 9;
+        hotbar_slot_selected = 9;
 
     if (IsKeyPressed(bind_hotbar_slot_0) || IsKeyPressed(bind_hotbar_slot_kp_0))
-        hotbarSlotSelected = 10;
+        hotbar_slot_selected = 10;
 
     if (IsKeyPressed(bind_open_or_close_inventory)) {
         if (player->container_state & CONTR_INVENTORY && state_menu_depth) {
