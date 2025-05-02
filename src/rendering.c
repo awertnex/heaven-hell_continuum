@@ -12,6 +12,7 @@ void draw_rendering()
 {
 }
 
-void free_rendering() {
+void free_rendering()
+{
 }
 
