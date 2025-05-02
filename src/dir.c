@@ -11,8 +11,8 @@
 str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
 str mc_c_launcher_path[PATH_MAX] = {0};
-str instanceDirStructure[17][NAME_MAX] = {0};
-str worldDirStructure[3][NAME_MAX] = {0};
+str instance_dir_structure[17][NAME_MAX] = {0};
+str world_dir_structure[3][NAME_MAX] = {0};
 
 // ---- functions --------------------------------------------------------------
 void init_paths() {
@@ -50,11 +50,11 @@ void init_instance_directory(str* instance_name, u16* state, u8 FLAG_ACTIVE) {
                     break;
 
                 case 1:
-                    snprintf(instanceDirStructure[j], strlen(string), "%s", string);
+                    snprintf(instance_dir_structure[j], strlen(string), "%s", string);
                     break;
 
                 case 2:
-                    snprintf(worldDirStructure[j], strlen(string), "%s", string);
+                    snprintf(world_dir_structure[j], strlen(string), "%s", string);
                     break;
             }
         }
@@ -77,13 +77,13 @@ void init_instance_directory(str* instance_name, u16* state, u8 FLAG_ACTIVE) {
         LOGINFO("%s", "Building Instance Directory Structure:");
 
         memset(string, 0, PATH_MAX);
-        for (u8 i = 0; i < 255 && instanceDirStructure[i][0] != 0; ++i) {
+        for (u8 i = 0; i < 255 && instance_dir_structure[i][0] != 0; ++i) {
             snprintf(string,
-                    strlen(mc_c_subpath) + strlen(instanceDirStructure[i]),
-                    "%s%s", mc_c_subpath, instanceDirStructure[i]);
+                    strlen(mc_c_subpath) + strlen(instance_dir_structure[i]),
+                    "%s%s", mc_c_subpath, instance_dir_structure[i]);
 
             mc_mkdir(string, 0775);
-            LOGINFO("Directory Created '%s/%s'", instance_name, instanceDirStructure[i]);
+            LOGINFO("Directory Created '%s/%s'", instance_name, instance_dir_structure[i]);
         }
         LOGINFO("Instance Creation Complete '%s'", instance_name);
     } else LOGINFO("Instance Opened '%s'", instance_name);

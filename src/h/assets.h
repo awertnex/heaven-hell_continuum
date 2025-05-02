@@ -47,16 +47,16 @@ typedef struct texture_layout {
 } texture_layout;
 
 // ---- declarations -----------------------------------------------------------
-extern u16 baseTextureSize;
-extern texture_layout OneSide;
-extern texture_layout TwoSide;
-extern texture_layout ThreeSide;
-extern texture_layout ThreeSideAlt;
-extern texture_layout FourSide;
+extern u16 base_texture_size;
+extern texture_layout one_side;
+extern texture_layout two_side;
+extern texture_layout three_side;
+extern texture_layout three_side_alt;
+extern texture_layout four_side;
 
-extern Texture2D textureBlockGrass;
-extern Texture2D textureBlockCobblestone;
-extern Texture2D textureBlockCobbledDeepslate;
+extern Texture2D texture_block_grass;
+extern Texture2D texture_block_cobblestone;
+extern Texture2D texture_block_cobbled_deepslate;
 
 // ---- signatures -------------------------------------------------------------
 void init_texture_layouts();

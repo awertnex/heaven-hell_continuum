@@ -12,32 +12,32 @@
 #endif // PLATFORM
 
 // ---- variables --------------------------------------------------------------
-v2f32 renderSize = {WIDTH, HEIGHT};
+v2f32 render_size = {WIDTH, HEIGHT};
 u16 state = 0;
-u8 stateMenuDepth = 0;
-f64 gameStartTime = 0.0f;
-u64 gameTick = 0;
-u64 gameDays = 0;
+u8 state_menu_depth = 0;
+f64 game_start_time = 0.0f;
+u64 game_tick = 0;
+u64 game_days = 0;
 settings setting = {
-    .reachDistance =        SETTING_REACH_DISTANCE_MAX,
+    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
-    .mouseSensitivity =     SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
-    .renderDistance =       SETTING_RENDER_DISTANCE_DEFAULT,
-    .guiScale =             SETTING_GUI_SCALE_DEFAULT,
+    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
+    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
 Player lily = {
     .name = "Lily",
     .pos = {0.0f},
     .scl = {0.6f, 0.6f, 1.8f},
-    .collisionCheckStart = {0.0f},
-    .collisionCheckEnd = {0.0f},
+    .collision_check_start = {0.0f},
+    .collision_check_end = {0.0f},
     .pitch = -29.0f,
     .yaw = 121.0f,
-    .sinPitch = 0.0f, .cosPitch = 0.0f, .sinYaw = 0.0f, .cosYaw = 0.0f,
-    .eyeHeight = 1.5f,
+    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
+    .eye_height = 1.5f,
     .m = 2.0f,
-    .movementSpeed = 10.0f,
-    .containerState = 0,
+    .movement_speed = 10.0f,
+    .container_state = 0,
     .perspective = 0,
 
     .camera = {
@@ -45,8 +45,8 @@ Player lily = {
         .fovy = 70.0f,
         .projection = CAMERA_PERSPECTIVE,
     },
-    .cameraDistance = SETTING_CAMERA_DISTANCE_MAX,
-    .cameraDebugInfo = {
+    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+    .camera_debug_info = {
         .up.z = 1.0f,
         .fovy = 50.0f,
         .projection = CAMERA_ORTHOGRAPHIC,
@@ -91,28 +91,28 @@ int main(int argc, char** argv) {
     init_fonts();
     init_gui();
     apply_render_settings();
-    update_render_settings(renderSize);
-    init_super_debugger(renderSize);
+    update_render_settings(render_size);
+    init_super_debugger(render_size);
 
-    setting.renderDistance = SETTING_RENDER_DISTANCE_MAX; //temp
-    gameStartTime = get_time_ms();
+    setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
+    game_start_time = get_time_ms();
 
     state |= STATE_ACTIVE;
     while (!WindowShouldClose() && (state & STATE_ACTIVE)) {
         // ---- game loop ------------------------------------------------------
-        mouseDelta = GetMouseDelta();
-        if (!stateMenuDepth && !(state & STATE_SUPER_DEBUG)) {
+        mouse_delta = GetMouseDelta();
+        if (!state_menu_depth && !(state & STATE_SUPER_DEBUG)) {
             disable_cursor;
             center_cursor;
         }
 
         update_input(&lily);
-        update_render_settings(renderSize);
-        renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_render_settings(render_size);
+        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
         BeginDrawing();
         //draw_texture_tiled(); // TODO: draw tiled texture of title screen
         ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
-        update_menus(renderSize);
+        update_menus(render_size);
         if (state & STATE_WORLD_LOADED) {
             draw_skybox();
             update_world();
@@ -121,14 +121,14 @@ int main(int argc, char** argv) {
 
         if (state & STATE_PAUSED) { // TODO: make real pausing instead of using the uncleared bg as still
             BeginDrawing();
-            draw_menu_overlay(renderSize);
+            draw_menu_overlay(render_size);
             EndDrawing();
 
             while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose()) {
-                renderSize = (v2f32){GetRenderWidth(), GetRenderHeight()};
+                render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
                 update_input(&lily);
                 BeginDrawing();
-                update_menus(renderSize);
+                update_menus(render_size);
                 EndDrawing();
             }
         }
@@ -153,22 +153,22 @@ void init_world(const char* str) {
 
     { //temp
         /* temp off
-        chunkBuf[GET_CHUNK_XY(0, 0)].pos = (v2i16){0, 0};
-        chunkBuf[GET_CHUNK_XY(1, 0)].pos = (v2i16){0, -1};
-        chunkBuf[GET_CHUNK_XY(2, 0)].pos = (v2i16){0, -2};
-        chunkBuf[GET_CHUNK_XY(3, 0)].pos = (v2i16){-1, 0};
-        chunkBuf[GET_CHUNK_XY(4, 0)].pos = (v2i16){0, 1};
-        chunkBuf[GET_CHUNK_XY(5, 0)].pos = (v2i16){0, 2};
-        chunkBuf[GET_CHUNK_XY(6, 0)].pos = (v2i16){-1, -1};
-        chunkBuf[GET_CHUNK_XY(7, 0)].pos = (v2i16){1, 0};
-        load_chunk(&chunkBuf[GET_CHUNK_XY(0, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(1, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(2, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(3, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(4, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(5, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(6, 0)]);
-        load_chunk(&chunkBuf[GET_CHUNK_XY(7, 0)]);
+        chunk_buf[GET_CHUNK_XY(0, 0)].pos = (v2i16){0, 0};
+        chunk_buf[GET_CHUNK_XY(1, 0)].pos = (v2i16){0, -1};
+        chunk_buf[GET_CHUNK_XY(2, 0)].pos = (v2i16){0, -2};
+        chunk_buf[GET_CHUNK_XY(3, 0)].pos = (v2i16){-1, 0};
+        chunk_buf[GET_CHUNK_XY(4, 0)].pos = (v2i16){0, 1};
+        chunk_buf[GET_CHUNK_XY(5, 0)].pos = (v2i16){0, 2};
+        chunk_buf[GET_CHUNK_XY(6, 0)].pos = (v2i16){-1, -1};
+        chunk_buf[GET_CHUNK_XY(7, 0)].pos = (v2i16){1, 0};
+        load_chunk(&chunk_buf[GET_CHUNK_XY(0, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(1, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(2, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(3, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(4, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(5, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(6, 0)]);
+        load_chunk(&chunk_buf[GET_CHUNK_XY(7, 0)]);
         */
 
         cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
@@ -187,45 +187,45 @@ void init_world(const char* str) {
 }
 
 void update_world() {
-    gameTick = (floor((get_time_ms() - gameStartTime) * 2000)) - (SETTING_DAY_TICKS_MAX * gameDays);
-    if (gameTick >= SETTING_DAY_TICKS_MAX)
-        ++gameDays;
+    game_tick = (floor((get_time_ms() - game_start_time) * 2000)) - (SETTING_DAY_TICKS_MAX * game_days);
+    if (game_tick >= SETTING_DAY_TICKS_MAX)
+        ++game_days;
 
     if (MODE_COLLIDE)
         update_collision_static(&lily);
 
-    if (stateMenuDepth || (state & STATE_SUPER_DEBUG))
+    if (state_menu_depth || (state & STATE_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
 
     if (state & STATE_DEBUG)
-        update_camera_movements_debug_info(&lily.cameraDebugInfo, &lily);
+        update_camera_movements_debug_info(&lily.camera_debug_info, &lily);
 
     update_player_states(&lily);
     update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
     update_chunk_buffer(&lily.delta_target, &lily.chunk);
-    draw_chunk_buffer(chunkBuf);
+    draw_chunk_buffer(chunk_buf);
 
     //TODO: make a function 'index_to_bounding_box()'
     /*if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {
     }*/
     if (is_range_within_v3fi(&lily.camera.target,
                 (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, worldHeight})) {
+                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, world_height})) {
         if (state & STATE_DEBUG_MORE)
             draw_bounding_box(
                     (Vector3){lily.chunk.x + ((f32)CHUNK_DIAMETER / 2), lily.chunk.y + ((f32)CHUNK_DIAMETER / 2), WORLD_BOTTOM},
-                    (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, worldHeight});
+                    (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, world_height});
 
         if (check_delta_target(&lily.camera.target, &lily.delta_target))
-            targetChunk = get_chunk(&lily.delta_target, &lily.state, STATE_PARSE_TARGET);
+            target_chunk = get_chunk(&lily.delta_target, &lily.state, STATE_PARSE_TARGET);
 
-        if (targetChunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD)) {
-            if (targetChunk->i
+        if (target_chunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD)) {
+            if (target_chunk->i
                     [lily.delta_target.z - WORLD_BOTTOM]
-                    [lily.delta_target.y - (targetChunk->pos.y * CHUNK_DIAMETER)]
-                    [lily.delta_target.x - (targetChunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY) {
+                    [lily.delta_target.y - (target_chunk->pos.y * CHUNK_DIAMETER)]
+                    [lily.delta_target.x - (target_chunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY) {
                 draw_block_wires(lily.delta_target);
                 if (state & STATE_DEBUG_MORE)
                     DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
@@ -249,22 +249,22 @@ void update_world() {
 
     if (state & STATE_HUD) {
         draw_hud();
-        draw_debug_info(&lily.cameraDebugInfo);
-        if (stateMenuDepth && lily.containerState)
-            draw_containers(&lily, renderSize);
+        draw_debug_info(&lily.camera_debug_info);
+        if (state_menu_depth && lily.container_state)
+            draw_containers(&lily, render_size);
     }
 
-    draw_super_debugger(renderSize);
+    draw_super_debugger(render_size);
 }
 
 void update_input(Player* player) {
     // ---- jumping ------------------------------------------------------------
-    if (IsKeyDown(bindJump)) {
-        if (IsKeyPressed(bindJump) && get_double_press(player, bindJump))
+    if (IsKeyDown(bind_jump)) {
+        if (IsKeyPressed(bind_jump) && get_double_press(player, bind_jump))
             player->state ^= STATE_FLYING;
 
         if (player->state & STATE_FLYING)
-            player->pos.z += player->movementSpeed;
+            player->pos.z += player->movement_speed;
 
         if (player->state & STATE_CAN_JUMP) {
             player->v.z += PLAYER_JUMP_HEIGHT;
@@ -273,118 +273,118 @@ void update_input(Player* player) {
     }
 
     // ---- sneaking -----------------------------------------------------------
-    if (IsKeyDown(bindSneak)) {
+    if (IsKeyDown(bind_sneak)) {
         if (player->state & STATE_FLYING)
-            player->pos.z -= player->movementSpeed;
+            player->pos.z -= player->movement_speed;
         else player->state |= STATE_SNEAKING;
     }
 
-    if (IsKeyUp(bindSneak))
+    if (IsKeyUp(bind_sneak))
         player->state &= ~STATE_SNEAKING;
 
     // ---- sprinting ----------------------------------------------------------
-    if (IsKeyDown(bindSprint) && IsKeyDown(bindWalkForwards))
+    if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
         player->state |= STATE_SPRINTING;
 
-    if (IsKeyUp(bindSprint) && IsKeyUp(bindWalkForwards))
+    if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
         player->state &= ~STATE_SPRINTING;
 
     // ---- moving -------------------------------------------------------------
-    if (IsKeyDown(bindStrafeLeft)) {
-        player->v.x -= player->movementSpeed * player->sinYaw;
-        player->v.y += player->movementSpeed * player->cosYaw;
+    if (IsKeyDown(bind_strafe_left)) {
+        player->v.x -= player->movement_speed * player->sin_yaw;
+        player->v.y += player->movement_speed * player->cos_yaw;
     }
 
-    if (IsKeyDown(bindStrafeRight)) {
-        player->v.x += player->movementSpeed * player->sinYaw;
-        player->v.y -= player->movementSpeed * player->cosYaw;
+    if (IsKeyDown(bind_strafe_right)) {
+        player->v.x += player->movement_speed * player->sin_yaw;
+        player->v.y -= player->movement_speed * player->cos_yaw;
     }
 
-    if (IsKeyDown(bindWalkBackwards)) {
-        player->v.x -= player->movementSpeed * player->cosYaw;
-        player->v.y -= player->movementSpeed * player->sinYaw;
+    if (IsKeyDown(bind_walk_backwards)) {
+        player->v.x -= player->movement_speed * player->cos_yaw;
+        player->v.y -= player->movement_speed * player->sin_yaw;
     }
 
-    if (IsKeyDown(bindWalkForwards)) {
-        if (IsKeyPressed(bindWalkForwards) && get_double_press(player, bindWalkForwards))
+    if (IsKeyDown(bind_walk_forwards)) {
+        if (IsKeyPressed(bind_walk_forwards) && get_double_press(player, bind_walk_forwards))
             player->state |= STATE_SPRINTING;
 
-        player->v.x += player->movementSpeed * player->cosYaw;
-        player->v.y += player->movementSpeed * player->sinYaw;
+        player->v.x += player->movement_speed * player->cos_yaw;
+        player->v.y += player->movement_speed * player->sin_yaw;
     }
 
-    player->movementStepLength = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
-    if (player->movementStepLength > 0.0f) {
-        player->v.x /= player->movementStepLength;
-        player->v.y /= player->movementStepLength;
+    player->movement_step_length = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
+    if (player->movement_step_length > 0.0f) {
+        player->v.x /= player->movement_step_length;
+        player->v.y /= player->movement_step_length;
 
-        player->pos.x += player->v.x * player->movementSpeed;
-        player->pos.y += player->v.y * player->movementSpeed;
+        player->pos.x += player->v.x * player->movement_speed;
+        player->pos.y += player->v.y * player->movement_speed;
     }
 
     // ---- gameplay -----------------------------------------------------------
-    if (IsMouseButtonDown(bindAttackOrDestroy)) {
+    if (IsMouseButtonDown(bind_attack_or_destroy)) {
         if (player->state & STATE_PARSE_TARGET)
-            remove_block(targetChunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            remove_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
     }
 
-    if (IsMouseButtonDown(bindPickBlock)) {
+    if (IsMouseButtonDown(bind_pick_block)) {
     }
 
-    if (IsMouseButtonDown(BindUseItemOrPlaceBlock)) {
+    if (IsMouseButtonDown(bind_use_item_or_place_block)) {
         if (player->state & STATE_PARSE_TARGET)
-            add_block(targetChunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            add_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
     }
 
     // ---- inventory ----------------------------------------------------------
-    if (IsKeyPressed(bindHotbarSlot1) || IsKeyPressed(bindHotbarSlotKP1))
+    if (IsKeyPressed(bind_hotbar_slot_1) || IsKeyPressed(bind_hotbar_slot_kp_1))
         hotbarSlotSelected = 1;
 
-    if (IsKeyPressed(bindHotbarSlot2) || IsKeyPressed(bindHotbarSlotKP2))
+    if (IsKeyPressed(bind_hotbar_slot_2) || IsKeyPressed(bind_hotbar_slot_kp_2))
         hotbarSlotSelected = 2;
 
-    if (IsKeyPressed(bindHotbarSlot3) || IsKeyPressed(bindHotbarSlotKP3))
+    if (IsKeyPressed(bind_hotbar_slot_3) || IsKeyPressed(bind_hotbar_slot_kp_3))
         hotbarSlotSelected = 3;
 
-    if (IsKeyPressed(bindHotbarSlot4) || IsKeyPressed(bindHotbarSlotKP4))
+    if (IsKeyPressed(bind_hotbar_slot_4) || IsKeyPressed(bind_hotbar_slot_kp_4))
         hotbarSlotSelected = 4;
 
-    if (IsKeyPressed(bindHotbarSlot5) || IsKeyPressed(bindHotbarSlotKP5))
+    if (IsKeyPressed(bind_hotbar_slot_5) || IsKeyPressed(bind_hotbar_slot_kp_5))
         hotbarSlotSelected = 5;
 
-    if (IsKeyPressed(bindHotbarSlot6) || IsKeyPressed(bindHotbarSlotKP6))
+    if (IsKeyPressed(bind_hotbar_slot_6) || IsKeyPressed(bind_hotbar_slot_kp_6))
         hotbarSlotSelected = 6;
 
-    if (IsKeyPressed(bindHotbarSlot7) || IsKeyPressed(bindHotbarSlotKP7))
+    if (IsKeyPressed(bind_hotbar_slot_7) || IsKeyPressed(bind_hotbar_slot_kp_7))
         hotbarSlotSelected = 7;
 
-    if (IsKeyPressed(bindHotbarSlot8) || IsKeyPressed(bindHotbarSlotKP8))
+    if (IsKeyPressed(bind_hotbar_slot_8) || IsKeyPressed(bind_hotbar_slot_kp_8))
         hotbarSlotSelected = 8;
 
-    if (IsKeyPressed(bindHotbarSlot9) || IsKeyPressed(bindHotbarSlotKP9))
+    if (IsKeyPressed(bind_hotbar_slot_9) || IsKeyPressed(bind_hotbar_slot_kp_9))
         hotbarSlotSelected = 9;
 
-    if (IsKeyPressed(bindHotbarSlot0) || IsKeyPressed(bindHotbarSlotKP0))
+    if (IsKeyPressed(bind_hotbar_slot_0) || IsKeyPressed(bind_hotbar_slot_kp_0))
         hotbarSlotSelected = 10;
 
-    if (IsKeyPressed(bindOpenOrCloseInventory)) {
-        if (player->containerState & CONTR_INVENTORY && stateMenuDepth) {
-            stateMenuDepth = 0;
-            player->containerState &= ~CONTR_INVENTORY;
-        } else if (!(player->containerState & CONTR_INVENTORY) && !stateMenuDepth) {
-            stateMenuDepth = 1;
-            player->containerState |= CONTR_INVENTORY;
+    if (IsKeyPressed(bind_open_or_close_inventory)) {
+        if (player->container_state & CONTR_INVENTORY && state_menu_depth) {
+            state_menu_depth = 0;
+            player->container_state &= ~CONTR_INVENTORY;
+        } else if (!(player->container_state & CONTR_INVENTORY) && !state_menu_depth) {
+            state_menu_depth = 1;
+            player->container_state |= CONTR_INVENTORY;
         }
 
-        if (!(player->containerState & CONTR_INVENTORY) && stateMenuDepth)
-            --stateMenuDepth;
+        if (!(player->container_state & CONTR_INVENTORY) && state_menu_depth)
+            --state_menu_depth;
     }
 
     // ---- miscellaneous ------------------------------------------------------
-    if (IsKeyPressed(bindToggleHUD))
+    if (IsKeyPressed(bind_toggle_hud))
         state ^= STATE_HUD;
 
-    if (IsKeyPressed(bindToggleDebug)) {
+    if (IsKeyPressed(bind_toggle_debug)) {
         if (state & STATE_DEBUG)
             state &= ~(STATE_DEBUG | STATE_DEBUG_MORE);
         else state |= STATE_DEBUG;
@@ -393,7 +393,7 @@ void update_input(Player* player) {
             state |= STATE_DEBUG_MORE;
     }
 
-    if (IsKeyPressed(bindToggleFullscreen)) {
+    if (IsKeyPressed(bind_toggle_fullscreen)) {
         state ^= STATE_FULLSCREEN;
 
         if (state & STATE_FULLSCREEN) {
@@ -405,25 +405,25 @@ void update_input(Player* player) {
         }
     }
 
-    if (IsKeyPressed(bindTogglePerspective)) {
+    if (IsKeyPressed(bind_toggle_perspective)) {
         if (player->perspective < 4)
             ++player->perspective;
         else player->perspective = 0;
     }
 
-    if (IsKeyPressed(bindPause) && (state & STATE_WORLD_LOADED)) {
+    if (IsKeyPressed(bind_pause) && (state & STATE_WORLD_LOADED)) {
         if (state & STATE_WORLD_LOADED) {
-            if (!stateMenuDepth) {
-                stateMenuDepth = 1;
-                menuIndex = MENU_GAME;
+            if (!state_menu_depth) {
+                state_menu_depth = 1;
+                menu_index = MENU_GAME;
                 state |= STATE_PAUSED;
-                player->containerState = 0;
+                player->container_state = 0;
                 show_cursor;
             }
-            else if (stateMenuDepth == 1)
+            else if (state_menu_depth == 1)
                 btn_func_back_to_game();
         } else {
-            if (stateMenuDepth == 1)
+            if (state_menu_depth == 1)
                 state &= ~STATE_ACTIVE;
             else btn_func_back();
         }
@@ -436,29 +436,29 @@ void update_input(Player* player) {
 #endif // RELEASE_BUILD
 }
 
-f64 skyboxTime = 0;
-f64 skyboxMidDay = 0;
-f64 skyboxPreBurn = 0;
-f64 skyboxBurn = 0;
-f64 skyboxBurnBoost = 0;
-f64 skyboxMidNight = 0;
-Color skyboxRGBA = {0};
+f64 skybox_time = 0;
+f64 skybox_mid_day = 0;
+f64 skybox_pre_burn = 0;
+f64 skybox_burn = 0;
+f64 skybox_burn_boost = 0;
+f64 skybox_mid_night = 0;
+Color skybox_rgba = {0};
 void draw_skybox()
 {
-    skyboxTime =        (f64)gameTick / SETTING_DAY_TICKS_MAX;
-    skyboxMidDay =      fabs(sinf(1.5f * powf(sinf(skyboxTime * PI), 1.0f)));
-    skyboxPreBurn =     fabs(sinf(powf(sinf((skyboxTime + 0.33) * PI * 1.2f), 16.0f)));
-    skyboxBurn =        fabs(sinf(1.5f * powf(sinf((skyboxTime + 0.124f) * PI * 1.6f), 20.0f)));
-    skyboxBurnBoost =   fabs(powf(sinf((skyboxTime + 0.212f) * PI * 1.4f), 64.0f));
-    skyboxMidNight =    fabs(sinf(powf(2 * cosf(skyboxTime * PI), 3.0f)));
-    skyboxRGBA =
+    skybox_time =        (f64)game_tick / SETTING_DAY_TICKS_MAX;
+    skybox_mid_day =      fabs(sinf(1.5f * powf(sinf(skybox_time * PI), 1.0f)));
+    skybox_pre_burn =     fabs(sinf(powf(sinf((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
+    skybox_burn =        fabs(sinf(1.5f * powf(sinf((skybox_time + 0.124f) * PI * 1.6f), 20.0f)));
+    skybox_burn_boost =   fabs(powf(sinf((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
+    skybox_mid_night =    fabs(sinf(powf(2 * cosf(skybox_time * PI), 3.0f)));
+    skybox_rgba =
         (Color){
-            Clamp((skyboxMidDay * 171) + (skyboxBurn * 85) + (skyboxMidNight * 1) +     (skyboxPreBurn * 13) +  (skyboxBurnBoost * 76), 0, 255),
-            Clamp((skyboxMidDay * 229) + (skyboxBurn * 42) + (skyboxMidNight * 4) +     (skyboxPreBurn * 7) +   (skyboxBurnBoost * 34), 0, 255),
-            Clamp((skyboxMidDay * 255) + (skyboxBurn * 19) + (skyboxMidNight * 14) +    (skyboxPreBurn * 20),                           0, 255),
+            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +     (skybox_pre_burn * 13) +  (skybox_burn_boost * 76), 0, 255),
+            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +     (skybox_pre_burn * 7) +   (skybox_burn_boost * 34), 0, 255),
+            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +    (skybox_pre_burn * 20),                           0, 255),
             255
         };
 
-    ClearBackground(skyboxRGBA);
+    ClearBackground(skybox_rgba);
 }
 

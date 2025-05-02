@@ -20,19 +20,21 @@
 #define THREAD_COUNT 2
 
 // ---- declarations -----------------------------------------------------------
-extern f64 deltaTime;
-extern f64 gameStartTime;
-extern u64 gameTick;
-extern u64 gameDays;
+extern f64 delta_time;
+extern f64 game_start_time;
+extern u64 game_tick;
+extern u64 game_days;
 #define dt GetFrameTime()
 
 extern u16 state;
-extern u8 stateMenuDepth;
+extern u8 state_menu_depth;
 
-extern f64 skyboxMidDay;
-extern f64 skyboxBurn;
-extern f64 skyboxBurnBoost;
-extern f64 skyboxMidNight;
+extern f64 skybox_time;
+extern f64 skybox_mid_day;
+extern f64 skybox_pre_burn;
+extern f64 skybox_burn;
+extern f64 skybox_burn_boost;
+extern f64 skybox_mid_night;
 
 // ---- signatures -------------------------------------------------------------
 int mc_mkdir(const char* path, u16 mode);

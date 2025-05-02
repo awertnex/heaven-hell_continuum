@@ -43,7 +43,7 @@ extern str worldDirStructure[3][NAME_MAX];
 
 // ---- signatures -------------------------------------------------------------
 void init_paths();
-void init_instance_directory(str* instanceName, u16* state, u8 STATE_ACTIVE);
+void init_instance_directory(str* instance_name, u16* state, u8 STATE_ACTIVE);
 void init_world_directory();
 
 #define MC_C_DIR_H

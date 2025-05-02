@@ -6,24 +6,24 @@
 #include "h/chunking.h"
 
 // ---- variables --------------------------------------------------------------
-Vector2 mouseDelta;
+Vector2 mouse_delta;
 
 bool get_double_press(Player* player, KeyboardKey key) {
-    static f64 doublePressStartTime = 0;
-    static KeyboardKey doublePressKey = KEY_NULL;
+    static f64 double_press_start_time = 0;
+    static KeyboardKey double_press_key = KEY_NULL;
 
-    if (((player->state & STATE_DOUBLE_PRESS) && (f64)(get_time_ms() - doublePressStartTime >= 0.25f)) ||
-            key != doublePressKey)
+    if (((player->state & STATE_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f)) ||
+            key != double_press_key)
         player->state &= ~STATE_DOUBLE_PRESS;
     else {
-        doublePressKey = KEY_NULL;
+        double_press_key = KEY_NULL;
         return true;
     }
 
     if (!(player->state & STATE_DOUBLE_PRESS)) {
         player->state |= STATE_DOUBLE_PRESS;
-        doublePressKey = key;
-        doublePressStartTime = get_time_ms();
+        double_press_key = key;
+        double_press_start_time = get_time_ms();
     }
     return false;
 }
@@ -39,22 +39,22 @@ void update_player_states(Player* player) {
 
     if (player->state & STATE_FLYING) {
         player->v = v3fzero;
-        player->movementSpeed = PLAYER_SPEED_FLY * dt;
+        player->movement_speed = PLAYER_SPEED_FLY * dt;
         player->camera.fovy = 80; //TODO: revise (add lerp)
     }
 
     if (player->state & STATE_SNEAKING && !(player->state & STATE_FLYING))
-        player->movementSpeed = PLAYER_SPEED_SNEAK * dt;
+        player->movement_speed = PLAYER_SPEED_SNEAK * dt;
     else if (player->state & STATE_SPRINTING) {
         if (!(player->state & STATE_FLYING)) {
-            player->movementSpeed = PLAYER_SPEED_SPRINT * dt;
+            player->movement_speed = PLAYER_SPEED_SPRINT * dt;
             player->camera.fovy = 75;
         } else {
-            player->movementSpeed = PLAYER_SPEED_FLY_FAST * dt;
+            player->movement_speed = PLAYER_SPEED_FLY_FAST * dt;
             player->camera.fovy = 90;
         }
     } else if (!(player->state & STATE_SNEAKING) && !(player->state & STATE_SPRINTING) && !(player->state & STATE_FLYING)) {
-        player->movementSpeed = PLAYER_SPEED_WALK * dt;
+        player->movement_speed = PLAYER_SPEED_WALK * dt;
         player->camera.fovy = 70;
     }
 
@@ -71,8 +71,8 @@ void update_player_states(Player* player) {
 
 void update_camera_movements_player(Player* player) {
     if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG)) {
-        player->yaw -= (f32)mouseDelta.x * setting.mouseSensitivity;
-        player->pitch -= (f32)mouseDelta.y * setting.mouseSensitivity;
+        player->yaw -= (f32)mouse_delta.x * setting.mouseSensitivity;
+        player->pitch -= (f32)mouse_delta.y * setting.mouseSensitivity;
     }
 
     player->yaw = fmodf(player->yaw, 360.0f);
@@ -107,9 +107,9 @@ void update_camera_movements_player(Player* player) {
 
         case 1: // ---- 3rd person back ----------------------------------------
             player->camera.position = (Vector3){
-                    player->pos.x - ((player->cosYaw * player->cosPitch) * player->cameraDistance),
-                    player->pos.y - ((player->sinYaw * player->cosPitch) * player->cameraDistance),
-                    player->pos.z + player->eyeHeight - (player->sinPitch * player->cameraDistance),
+                    player->pos.x - ((player->cosYaw * player->cosPitch) * player->camera_distance),
+                    player->pos.y - ((player->sinYaw * player->cosPitch) * player->camera_distance),
+                    player->pos.z + player->eyeHeight - (player->sinPitch * player->camera_distance),
                 };
             player->camera.target = (Vector3){
                     player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
@@ -119,9 +119,9 @@ void update_camera_movements_player(Player* player) {
 
         case 2: // ---- 3rd person front ---------------------------------------
             player->camera.position = (Vector3){
-                    player->pos.x + ((player->cosYaw * player->cosPitch) * player->cameraDistance),
-                    player->pos.y + ((player->sinYaw * player->cosPitch) * player->cameraDistance),
-                    player->pos.z + player->eyeHeight + (player->sinPitch * player->cameraDistance),
+                    player->pos.x + ((player->cosYaw * player->cosPitch) * player->camera_distance),
+                    player->pos.y + ((player->sinYaw * player->cosPitch) * player->camera_distance),
+                    player->pos.z + player->eyeHeight + (player->sinPitch * player->camera_distance),
                 };
             player->camera.target = (Vector3){
                     player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
@@ -174,8 +174,8 @@ void kill_player(Player* player) {
     *player = (Player){
             .v = {0.0f},
             .m = 0.0f,
-            .movementSpeed = 0.0f,
-            .containerState = 0,
+            .movement_speed = 0.0f,
+            .container_state = 0,
             .state = STATE_DEAD,
     };
 }
@@ -235,13 +235,13 @@ void give_gravity(Player* player) { // TODO: fix player gravity
 
 /*
 void update_collision_static(Player* player) { // TODO: make AABB collision work
-    player->collisionCheckStart = (Vector3){
+    player->collision_check_start = (Vector3){
             floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
             floorf(player->pos.y - (player->scl.y / 2.0f)) - 1,
             floorf(player->pos.z) - 1,
         };
 
-    player->collisionCheckEnd = (Vector3){
+    player->collision_check_end = (Vector3){
             ceilf(player->scl.x) + 2,
             ceilf(player->scl.y) + 2,
             ceilf(player->scl.z) + 2,
@@ -261,7 +261,7 @@ void update_collision_static(Player* player) { // TODO: make AABB collision work
         } else player->state |= STATE_FALLING;
     }
     //TODO: move to new 'void parse_camera_collisions()'
-    player->cameraDistance = SETTING_CAMERA_DISTANCE_MAX;
+    player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
 }
 */
 
@@ -271,9 +271,9 @@ f64 get_time_ms() {
     return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
-bool get_timer(f64* timeStart, f32 interval) {
-    if (get_time_ms() - *timeStart >= interval) {
-        *timeStart = get_time_ms();
+bool get_timer(f64* time_start, f32 interval) {
+    if (get_time_ms() - *time_start >= interval) {
+        *time_start = get_time_ms();
         return true;
     }
     return false;

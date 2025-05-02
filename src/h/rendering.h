@@ -7,17 +7,17 @@
 // ---- definitions ------------------------------------------------------------
 typedef struct Vertex {
     Vector3 pos;
-    Vector2 texCoord;
+    Vector2 tex_coord;
 } Vertex;
 
 typedef struct RenderData {
     Vector3 vertices;
-    Vector2 textureCoordinates;
+    Vector2 tex_coord;
 } RenderData;
 
 // ---- declarations -----------------------------------------------------------
-extern u32 VAO, VBO, EBO;
-extern u32 textureDirt;
+extern u32 vao, vbo, ebo;
+extern u32 texture_dirt;
 
 // ---- signatures -------------------------------------------------------------
 void init_rendering();

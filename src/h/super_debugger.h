@@ -28,15 +28,16 @@ typedef struct debug_rect
 
 // ---- declarations -----------------------------------------------------------
 extern Texture2D texture_super_debugger;
-extern debug_rect DebugRectangle;
+extern debug_rect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
 // ---- signatures -------------------------------------------------------------
-void init_super_debugger(v2f32 renderSize);
+void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
-void draw_super_debugger(v2f32 renderSize);
+void draw_super_debugger(v2f32 render_size);
 
 #define MC_C_SUPER_DEBUGGER_H
 #endif
+

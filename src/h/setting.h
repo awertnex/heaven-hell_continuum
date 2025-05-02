@@ -30,16 +30,16 @@
 // ---- settings ---------------------------------------------------------------
 typedef struct settings {
     // ---- internal -----------------------------------------------------------
-    u8 reachDistance;  // for player reach (arm length basically)
+    u8 reach_distance;  // for player reach (arm length basically)
 
     // ---- options menu -------------------------------------------------------
     u16 fov;
-    f64 mouseSensitivity;
+    f64 mouse_sensitivity;
 
     // ---- video --------------------------------------------------------------
-    u8 renderDistance;
+    u8 render_distance;
     //TODO: repair
-    f32 guiScale;
+    f32 gui_scale;
 } settings;
 
 // ---- declarations -----------------------------------------------------------

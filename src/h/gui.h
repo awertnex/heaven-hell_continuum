@@ -8,9 +8,10 @@
 
 #define show_cursor                     ShowCursor()
 #define disable_cursor                  DisableCursor()
-#define center_cursor                   SetMousePosition(renderSize.x / 2, renderSize.y / 2)
+#define detect_cursor                   cursor = GetMousePosition();
+#define center_cursor                   SetMousePosition(render_size.x / 2, render_size.y / 2)
 #define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
-#define draw_menu_overlay(renderSize)   DrawRectangle(0, 0, renderSize.x, renderSize.y, COL_MENU_BG_OVERLAY)
+#define draw_menu_overlay(render_size)  DrawRectangle(0, 0, render_size.x, render_size.y, COL_MENU_BG_OVERLAY)
 
 // ---- colors -----------------------------------------------------------------
 #define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xff, 0x46)
@@ -30,49 +31,48 @@
 
 // ---- declarations -----------------------------------------------------------
 extern Vector2 cursor;
-#define detect_cursor cursor = GetMousePosition();
 extern Image mc_c_icon;
 
-extern Font fontRegular;
-extern Font fontBold;
-extern Font fontItalic;
-extern Font fontBoldItalic;
-extern u8 fontSize;
-extern u8 textRowHeight;
+extern Font font_regular;
+extern Font font_bold;
+extern Font font_italic;
+extern Font font_bold_italic;
+extern u8 font_size;
+extern u8 text_row_height;
 
-extern Texture2D textureHUDWidgets;
-extern Texture2D textureContainerInventory;
-extern Texture2D textureBackground;
+extern Texture2D texture_hud_widgets;
+extern Texture2D texture_container_inventory;
+extern Texture2D texture_bg;
 
 extern Rectangle hotbar;
-extern Rectangle hotbarSelected;
-extern Rectangle hotbarOffhand;
+extern Rectangle hotbar_selected;
+extern Rectangle hotbar_offhand;
 extern Rectangle crosshair;
-extern Rectangle buttonInactive;
+extern Rectangle button_inactive;
 extern Rectangle button;
-extern Rectangle buttonSelected;
-extern Rectangle containerInventory;
-extern Rectangle containerSlotSize;
-extern Rectangle rectBackground;
-extern Rectangle rectBackgroundDark;
+extern Rectangle button_selected;
+extern Rectangle container_inventory;
+extern Rectangle container_slot_size;
+extern Rectangle rect_bg;
+extern Rectangle rect_bg_dark;
 
-extern v2i16 hotbarPosition;
-extern f32 hotbarSlotSelected;
-extern v2i16 crosshairPosition;
-extern u16 gameMenuPosition;
-extern u8 buttonSpacingVertical;
-extern v2i16 containerInventoryPosition;
-extern v2i16 containerInventoryFirstSlotPosition;
+extern v2i16 hotbar_pos;
+extern f32 hotbar_slot_selected;
+extern v2i16 crosshair_pos;
+extern u16 game_menu_pos;
+extern u8 button_spacing_vertical;
+extern v2i16 container_inventory_pos;
+extern v2i16 container_inventory_first_slot_pos;
 
-extern u8 *containerInventorySlots[5][9];
-extern u8 *containerInventorySlotsCrafting[5];
-extern u8 *containerInventorySlotsArmor[5];
-extern u8 containerInventorySlotsOffhand;
-extern u8 containerCursorSlot[2];
-extern u8 *hotbarSlots[9][9];
+extern u8 *container_inventory_slots[5][9];
+extern u8 *container_inventory_slots_crafting[5];
+extern u8 *container_inventory_slots_armor[5];
+extern u8 container_inventory_slot_offhand;
+extern u8 container_cursor_slot[2];
+extern u8 *hotbar_slots[9][9];
 
-extern u16 menuIndex;
-extern u16 menuLayer[5];
+extern u16 menu_index;
+extern u16 menu_layer[5];
 enum MenuNames {
     MENU_TITLE = 1,
     MENU_SINGLEPLAYER = 2,
@@ -244,36 +244,36 @@ enum ButtonNames {
 }; /* ButtonNames */
 
 // ---- debug info -------------------------------------------------------------
-extern str strFPS[16];
-extern str strPlayerPosition[32];
-extern str strPlayerBlock[32];
-extern str strPlayerChunk[32];
-extern str strPlayerDirection[32];
-extern str strBlockCount[32];
-extern str strQuadCount[32];
-extern str strTriCount[32];
-extern str strVertexCount[32];
-extern u8 fontSizeDebugInfo;
+extern str str_fps[16];
+extern str str_player_pos[32];
+extern str str_player_block[32];
+extern str str_player_chunk[32];
+extern str str_player_direction[32];
+extern str str_block_count[32];
+extern str str_quad_count[32];
+extern str str_tri_count[32];
+extern str str_vertex_count[32];
+extern u8 font_size_debug_info;
 
 // ---- signatures -------------------------------------------------------------
 void init_fonts();
 void init_gui();
 void apply_render_settings();
-void update_render_settings(v2f32 renderSize);
+void update_render_settings(v2f32 render_size);
 void free_gui();
 
-void update_menus(v2f32 renderSize);
+void update_menus(v2f32 render_size);
 void draw_hud();
 void update_debug_strings();
-void draw_inventory(v2f32 renderSize);
+void draw_inventory(v2f32 render_size);
 void draw_debug_info(Camera3D* camera);
 
-void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint);
-float get_str_width(Font font, const str* str, f32 fontSize, f32 spacing);
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint); /* scale is based on source.scale * scl */
+void draw_text(Font font, const str* str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint);
+float get_str_width(Font font, const str* str, f32 font_size, f32 spacing);
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint); // scale is based on (source.scale * scl)
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint);
-void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); /* scale is based on scl */
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str* str);
+void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint); // scale is based on (scl)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str* str);
 
 void btn_func_singleplayer();
 void btn_func_multiplayer();
