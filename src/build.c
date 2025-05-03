@@ -19,7 +19,7 @@
     #define MKDIR_BIN       mkdir("bin/", 0775);
     #define MKDIR_BIN_TESTS mkdir("bin/tests/", 0775);
 char **cmd;
-char str_libs[3][24] = {"-lraylib", "-lm", 0};
+char str_libs[3][24] = {"-lraylib", "-lm", NULL};
 
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
     #define ALLOC_CMD
@@ -35,14 +35,15 @@ char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", 0};
 #endif // PLATFORM
 
 char str_main[32] = "main.c";
-char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", 0};
-char str_out[3][48] = {"-o", "../bin/minecraft_c", 0};
+char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", NULL};
+char str_out[3][48] = {"-o", "../bin/minecraft_c", NULL};
 char str_tests[4][24] = {
     "chunk_loader",
     "chunk_pointer_table",
     "function_pointer",
-    0,
+    NULL,
 };
+int str_tests_members = (int)(sizeof(str_tests) / sizeof(str_tests[0])) - 1;
 
 void fail_cmd() {
     if (cmd) {
@@ -162,13 +163,17 @@ int main(int argc, char **argv) {
         build_cmd();
         execute_cmd();
         fprintf(stderr, "minecraft.c Launcher Built 'bin/minecraft_c%s'\n", EXTENSION);
+    } else if (!strncmp(argv[1], "list", 4)) {
+        printf("Builds: \n    launcher\nTests:\n");
+        for (int i = 0; i < str_tests_members; ++i) {
+            printf("    %03d: %s\n", i, str_tests[i]);
+        }
     } else if (!strncmp(argv[1], "test", 4)) {
         int test_index = atoi(argv[2]);
-        int str_tests_members = (int)(sizeof(str_tests)/sizeof(str_tests[0]));
         if (!argv[2]) {
             fprintf(stderr, "usage: ./build%s test [n]\n", EXTENSION);
             fail_cmd();
-        } else if ((test_index < 0) || (test_index >= (str_tests_members - 1))) {
+        } else if ((test_index < 0) || (test_index >= (str_tests_members))) {
             fprintf(stderr, "Error: '%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
             fail_cmd();
         }
@@ -178,7 +183,7 @@ int main(int argc, char **argv) {
         snprintf(str_out[1], 48, "../%stest_%s%s", DIR_BIN_TESTS, str_tests[test_index], EXTENSION);
         build_cmd();
         execute_cmd();
-        fprintf(stderr, "test %03d Built 'bin/tests/%s%s'\n", test_index, str_tests[test_index], EXTENSION);
+        fprintf(stderr, "test %03d Built 'bin/tests/test_%s%s'\n", test_index, str_tests[test_index], EXTENSION);
     } else if (!strncmp(argv[1], "help", 6)) {
         fprintf(stderr, "usages:\n  %s\n  %s\n  %s\n  %s\n",
                 "./build launcher   (build the launcher)",
