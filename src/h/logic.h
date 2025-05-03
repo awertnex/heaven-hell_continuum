@@ -10,9 +10,9 @@
 #include "setting.h"
 
 #define GRAVITY (9.7803267715f / 100.0f)
-#define PI 3.14159265358979323846f
-#define MC_C_DEG2RAD 0.017453293f   // (PI / 180.0f)
-#define MC_C_RAD2DEG 57.295779513f  // (180.0f / PI)
+#define MC_C_PI 3.14159265358979323846f
+#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     // 0.017453293f
+#define MC_C_RAD2DEG (180.0f / MC_C_PI)     // 57.295779513f
 
 #define v3izero ((v3i32){0.0f, 0.0f, 0.0f})
 #define v3fzero ((v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f})

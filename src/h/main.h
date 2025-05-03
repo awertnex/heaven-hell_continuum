@@ -17,7 +17,7 @@
 #define MODE_GRAVITY        1
 #define MODE_GRAY_BLOCKS    1
 
-#define THREAD_COUNT 2
+#define THREAD_COUNT 2 // TODO: use for multithreading
 
 // ---- declarations -----------------------------------------------------------
 extern f64 delta_time;
