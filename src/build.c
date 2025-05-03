@@ -156,19 +156,19 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    if (!strncmp(argv[1], "launcher", 8)) {
+    if (!strncmp(argv[1], "launcher", 9)) {
         printf("Building minecraft.c launcher..\n");
         snprintf(str_main, 32, "launcher/launcher.c");
         memset(str_libs[1], 0, sizeof(str_libs[1]));
         build_cmd();
         execute_cmd();
         fprintf(stderr, "minecraft.c Launcher Built 'bin/minecraft_c%s'\n", EXTENSION);
-    } else if (!strncmp(argv[1], "list", 4)) {
+    } else if (!strncmp(argv[1], "list", 5)) {
         printf("Builds: \n    launcher\nTests:\n");
         for (int i = 0; i < str_tests_members; ++i) {
             printf("    %03d: %s\n", i, str_tests[i]);
         }
-    } else if (!strncmp(argv[1], "test", 4)) {
+    } else if (!strncmp(argv[1], "test", 5)) {
         int test_index = atoi(argv[2]);
         if (!argv[2]) {
             fprintf(stderr, "usage: ./build%s test [n]\n", EXTENSION);
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
         build_cmd();
         execute_cmd();
         fprintf(stderr, "test %03d Built 'bin/tests/test_%s%s'\n", test_index, str_tests[test_index], EXTENSION);
-    } else if (!strncmp(argv[1], "help", 6)) {
+    } else if (!strncmp(argv[1], "help", 5)) {
         fprintf(stderr, "usages:\n  %s\n  %s\n  %s\n  %s\n",
                 "./build launcher   (build the launcher)",
                 "./build list       (list all available options and tests)",
