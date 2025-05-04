@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
@@ -10,6 +12,7 @@
 #define MC_C_RED                (Color){0xff, 0x78, 0x78, 0xff}
 #define MC_C_GREEN              (Color){0x78, 0xff, 0x78, 0xff}
 #define MC_C_BLUE               (Color){0x78, 0x78, 0xff, 0xff}
+#define MC_C_OFF                (Color){0x10, 0x10, 0x10, 0xff}
 #define CHUNK_BUF_SIZE          289
 #define CHUNK_BUF_RADIUS        8
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
@@ -17,8 +20,25 @@
 #define CHUNK_TAB_CENTER        ((CHUNK_BUF_RADIUS + 1) + ((CHUNK_BUF_RADIUS + 1) * CHUNK_BUF_DIAMETER))
 #define CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER))
 #define CHUNK_TAB_POS_X         300.0f
-#define CHUNK_TAB_POS_Y         (720.0f / 2.0f)
-#define rect(x, y, col)         DrawRectangleRounded((Rectangle){x + CHUNK_TAB_POS_X, y + CHUNK_TAB_POS_Y, 16.0f, 16.0f}, 0.3f, 1, col)
+#define CHUNK_TAB_POS_Y         200.0f
+#define RECT_SIZE               16.0f
+#define MARGIN                  2.0f
+#define draw_chunk(x, y, col)                                                   \
+    DrawRectangleRounded(                                                       \
+        (Rectangle){                                                            \
+        (f32)(((f32)(x) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_X),             \
+        (f32)(((f32)(y) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_Y),             \
+        RECT_SIZE, RECT_SIZE                                                    \
+        },                                                                      \
+        0.3f, 1, col)
+#define draw_chunk_index(i, col)                                                \
+    DrawRectangleRounded(                                                       \
+        (Rectangle){                                                            \
+        (f32)(((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_X),                 \
+        (f32)((floorf((f32)(i) / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_Y),    \
+        RECT_SIZE, RECT_SIZE                                                    \
+        },                                                                      \
+        0.3f, 1, col)
 
 enum ChunkStates
 {
@@ -49,11 +69,16 @@ void parse_chunks()
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
+        draw_chunk(i % CHUNK_BUF_DIAMETER,
+                floorf((f32)i / CHUNK_BUF_DIAMETER),
+                MC_C_OFF);
         if (chunk_buf[i].state & STATE_CHUNK_LOADED)
-            rect((f32)i, 0.0f, MC_C_RED);
+            draw_chunk(i % CHUNK_BUF_DIAMETER,
+                    floorf((f32)i / CHUNK_BUF_DIAMETER),
+                    MC_C_BLUE);
     }
-    rect(16.0f, 0.0f, MC_C_GREEN);
-    rect(32.0f, 0.0f, MC_C_BLUE);
+    draw_chunk(0, 0, MC_C_GREEN);
+    draw_chunk(16, 1, MC_C_BLUE);
 }
 
 int main(void)
@@ -74,8 +99,7 @@ int main(void)
         ClearBackground(BLACK);
         parse_input();
 
-        printf("%s\n", "what?"); //temp
-        DrawText(TextFormat("Render Distance: %d", render_distance), 200.0f, 200.0f, 16, RAYWHITE);
+        DrawText(TextFormat("Render Distance: %d", render_distance), 10.0f, 10.0f, 24, RAYWHITE);
         parse_chunks();
 
         EndDrawing();
@@ -90,6 +114,7 @@ int main(void)
 void init_chunking()
 {
     MC_C_ALLOC(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+    return;
 
 cleanup:
     free_chunking();
