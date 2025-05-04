@@ -6,9 +6,11 @@
 #include "logger.h"
 
 #define MC_C_ALLOC(x, size)                                                     \
-    if ((x) == NULL) {                                                          \
+    if ((x) == NULL)                                                            \
+    {                                                                           \
         (x) = malloc(size);                                                     \
-        if ((x) == NULL) {                                                      \
+        if ((x) == NULL)                                                        \
+        {                                                                       \
             LOGFATAL("%s %s", #x, "Memory Allocation Failed, Aborting Process");\
             goto cleanup;                                                       \
         }                                                                       \
@@ -17,7 +19,8 @@
     }
 
 #define MC_C_FREE(x, size)                                                      \
-    if ((x)) {                                                                  \
+    if ((x))                                                                    \
+    {                                                                           \
         memset((x), 0, (size));                                                 \
         free((x));                                                              \
         (x) = NULL;                                                             \
@@ -25,10 +28,11 @@
     }
 
 #define MC_C_CLEAR(x, size)                                                     \
-    if ((x)) {                                                                  \
+    if ((x))                                                                    \
+    {                                                                           \
         memset((x), 0, (size));                                                 \
         LOGINFO("%s Cleared", #x);                                              \
-    }
+    }                                                                           \
 
 #define MC_C_MEMORY_H
 #endif

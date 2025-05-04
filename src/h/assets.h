@@ -4,7 +4,8 @@
 #include "../engine/h/defines.h"
 #include "dir.h"
 
-enum BlockStates {
+enum BlockStates
+{
     BLOCK_STATE_SOLID =     0x1,
     BLOCK_STATE_FLUID =     0x2,
     BLOCK_STATE_EMISSIVE =  0x4,
@@ -17,7 +18,8 @@ enum BlockStates {
     BLOCK_STATE_ANIMATES =  0x200,
 }; /* BlockStates */
 
-enum BlockID {
+enum BlockID
+{
     grass =                 1,
     dirt =                  2,
     stone =                 3,
@@ -34,14 +36,16 @@ enum BlockID {
     cobbled_deepslate =     14,
 }; /* BlockID */
 
-typedef struct Block {
+typedef struct Block
+{
     u8 block_id;
     u16 block_state;
     void *texture_layout;
     void *texture;
 } Block;
 
-typedef struct TextureLayout {
+typedef struct TextureLayout
+{
     u8 px, py, pz;
     u8 nx, ny, nz;
 } TextureLayout;

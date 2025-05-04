@@ -11,7 +11,8 @@
 #define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
 
 // ---- states -----------------------------------------------------------------
-enum States {
+enum States
+{
     STATE_ACTIVE =          0x01,
 }; /* States */
 

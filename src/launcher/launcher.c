@@ -12,22 +12,26 @@ v2i16 render_size = {500, 720};
 DIR *dir;
 struct dirent *drnt;
 
-void init_launcher() {
+void init_launcher()
+{
     state |= STATE_ACTIVE;
     SetWindowState(FLAG_MSAA_4X_HINT);
     InitWindow(render_size.x, render_size.y, "minecraft.c Launcher");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-    if (LOGGING_DEBUG) {
+    if (LOGGING_DEBUG)
+    {
         LOGDEBUG("Debugging Enabled");
         SetWindowState(FLAG_WINDOW_TOPMOST);
     }
 }
 
-int main(void) { // ---- main --------------------------------------------------
+int main(void) // ---- main --------------------------------------------------
+{
     init_launcher();
 
-    while (state & STATE_ACTIVE) {
+    while (state & STATE_ACTIVE)
+    {
         update_launcher_input();
         update_launcher();
     }
@@ -36,7 +40,8 @@ int main(void) { // ---- main --------------------------------------------------
     return 0;
 }
 
-void update_launcher() {
+void update_launcher()
+{
     if (IsWindowResized())
         render_size = (v2i16){GetRenderWidth(), GetRenderHeight()};
 
@@ -46,11 +51,13 @@ void update_launcher() {
     EndDrawing();
 }
 
-void update_launcher_input() { //TODO: evaluate instance
+void update_launcher_input() //TODO: evaluate instance
+{
     if (IsKeyPressed(KEY_Q))
         state &= ~STATE_ACTIVE;
 }
 
-void evaluate_instance(str *mc_c_subpath) {
+void evaluate_instance(str *mc_c_subpath)
+{
 }
 

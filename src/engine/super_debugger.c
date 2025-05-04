@@ -4,7 +4,8 @@
 #define SDB_BASE_SIZE   5
 #define SDB_BUTTON_SIZE 14
 
-typedef struct debug_rect {
+typedef struct debug_rect
+{
     Rectangle corner_00;
     Rectangle corner_10;
     Rectangle corner_01;
@@ -18,7 +19,8 @@ typedef struct debug_rect {
     Vector2 scl;
 } debug_rect;
 
-debug_rect debug_rectangle = {
+debug_rect debug_rectangle =
+{
     .corner_00 =    {0,                 0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_10 =    {SDB_BASE_SIZE,     0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_01 =    {0,                 SDB_BASE_SIZE,      SDB_BASE_SIZE,  SDB_BASE_SIZE},
@@ -31,14 +33,16 @@ debug_rect debug_rectangle = {
 };
 
 Texture2D texture_super_debugger;
-void init_super_debugger() {
+void init_super_debugger()
+{
     texture_super_debugger = LoadTexture("resources/gui/container/super_debugger.png");
     debug_rectangle.scl.x = 300;
     debug_rectangle.scl.y = w_height - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = w_width - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
     debug_rectangle.pos.y = MARGIN + SDB_BASE_SIZE;
 }
-void free_super_debugger() {
+void free_super_debugger()
+{
     UnloadTexture(texture_super_debugger);
 }
 
@@ -46,7 +50,8 @@ Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTO
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 u8 button_state_add = BUTTON_ACTIVE;
 u8 button_state_sub = BUTTON_ACTIVE;
-void draw_super_debugger() {
+void draw_super_debugger()
+{
     debug_rectangle.scl.y = w_height - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = w_width - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 

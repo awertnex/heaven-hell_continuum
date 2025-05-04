@@ -4,7 +4,8 @@
 
 // ---- variables --------------------------------------------------------------
 Texture2D texture_super_debugger;
-debug_rect debug_rectangle = {
+debug_rect debug_rectangle =
+{
     .corner_00 =    {0,                 0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_10 =    {SDB_BASE_SIZE,     0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_01 =    {0,                 SDB_BASE_SIZE,      SDB_BASE_SIZE,  SDB_BASE_SIZE},
@@ -20,7 +21,8 @@ Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTO
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 
 // ---- functions --------------------------------------------------------------
-void init_super_debugger(v2f32 render_size) {
+void init_super_debugger(v2f32 render_size)
+{
     buttons[BTN_SDB_ADD] = 1;
     buttons[BTN_SDB_SUB] = 1;
 
@@ -31,14 +33,16 @@ void init_super_debugger(v2f32 render_size) {
     debug_rectangle.pos.y = MARGIN + SDB_BASE_SIZE;
 }
 
-void free_super_debugger() {
+void free_super_debugger()
+{
     buttons[BTN_SDB_ADD] = 0;
     buttons[BTN_SDB_SUB] = 0;
 
     UnloadTexture(texture_super_debugger);
 }
 
-void draw_super_debugger(v2f32 render_size) {
+void draw_super_debugger(v2f32 render_size)
+{
     if (!(state & STATE_SUPER_DEBUG)) return;
 
     debug_rectangle.scl.y = render_size.y - ((MARGIN + SDB_BASE_SIZE)*2);
@@ -52,57 +56,43 @@ void draw_super_debugger(v2f32 render_size) {
     
     // ---- draw edges ---------------------------------------------------------
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_left,
-            (v2i16){
-            debug_rectangle.pos.x - SDB_BASE_SIZE,
-            debug_rectangle.pos.y},
-            (v2i16){
-            SDB_BASE_SIZE,
-            debug_rectangle.scl.y}, COL_TRANS_MENU);
+            (v2i16){debug_rectangle.pos.x - SDB_BASE_SIZE, debug_rectangle.pos.y},
+            (v2i16){SDB_BASE_SIZE, debug_rectangle.scl.y},
+            COL_TRANS_MENU);
+
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_right,
-            (v2i16){
-            debug_rectangle.pos.x + debug_rectangle.scl.x,
-            debug_rectangle.pos.y},
-            (v2i16){
-            SDB_BASE_SIZE,
-            debug_rectangle.scl.y}, COL_TRANS_MENU);
+            (v2i16){debug_rectangle.pos.x + debug_rectangle.scl.x, debug_rectangle.pos.y},
+            (v2i16){SDB_BASE_SIZE, debug_rectangle.scl.y},
+            COL_TRANS_MENU);
+
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_top,
-            (v2i16){
-            debug_rectangle.pos.x,
-            debug_rectangle.pos.y - SDB_BASE_SIZE},
-            (v2i16){
-            debug_rectangle.scl.x,
-            SDB_BASE_SIZE}, COL_TRANS_MENU);
+            (v2i16){debug_rectangle.pos.x, debug_rectangle.pos.y - SDB_BASE_SIZE},
+            (v2i16){debug_rectangle.scl.x, SDB_BASE_SIZE},
+            COL_TRANS_MENU);
+
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_bottom,
-            (v2i16){
-            debug_rectangle.pos.x,
-            debug_rectangle.pos.y + debug_rectangle.scl.y},
-            (v2i16){
-            debug_rectangle.scl.x,
-            SDB_BASE_SIZE}, COL_TRANS_MENU);
+            (v2i16){debug_rectangle.pos.x, debug_rectangle.pos.y + debug_rectangle.scl.y},
+            (v2i16){debug_rectangle.scl.x, SDB_BASE_SIZE},
+            COL_TRANS_MENU);
 
     // ---- draw corners -------------------------------------------------------
     draw_texture(texture_super_debugger, debug_rectangle.corner_00,
-            (v2i16){
-            debug_rectangle.pos.x - SDB_BASE_SIZE,
-            debug_rectangle.pos.y - SDB_BASE_SIZE},
+            (v2i16){debug_rectangle.pos.x - SDB_BASE_SIZE, debug_rectangle.pos.y - SDB_BASE_SIZE},
             (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
+
     draw_texture(texture_super_debugger, debug_rectangle.corner_10,
-            (v2i16){
-            debug_rectangle.pos.x + debug_rectangle.scl.x,
-            debug_rectangle.pos.y - SDB_BASE_SIZE},
+            (v2i16){debug_rectangle.pos.x + debug_rectangle.scl.x, debug_rectangle.pos.y - SDB_BASE_SIZE},
             (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
+
     draw_texture(texture_super_debugger, debug_rectangle.corner_01,
-            (v2i16){
-            debug_rectangle.pos.x - SDB_BASE_SIZE,
-            debug_rectangle.pos.y + debug_rectangle.scl.y},
+            (v2i16){debug_rectangle.pos.x - SDB_BASE_SIZE, debug_rectangle.pos.y + debug_rectangle.scl.y},
             (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
+
     draw_texture(texture_super_debugger, debug_rectangle.corner_11,
-            (v2i16){
-            debug_rectangle.pos.x + debug_rectangle.scl.x,
-            debug_rectangle.pos.y + debug_rectangle.scl.y},
+            (v2i16){debug_rectangle.pos.x + debug_rectangle.scl.x, debug_rectangle.pos.y + debug_rectangle.scl.y},
             (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
 

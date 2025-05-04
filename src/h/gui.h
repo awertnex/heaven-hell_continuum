@@ -73,7 +73,8 @@ extern u8 *hotbar_slots[9][9];
 
 extern u16 menu_index;
 extern u16 menu_layer[5];
-enum MenuNames {
+enum MenuNames
+{
     MENU_TITLE = 1,
     MENU_SINGLEPLAYER = 2,
     MENU_MULTIPLAYER = 3,
@@ -89,7 +90,8 @@ enum MenuNames {
 // ---- button stuff -----------------------------------------------------------
 #define BTN_COUNT 110
 extern u8 buttons[BTN_COUNT];
-enum ButtonNames {
+enum ButtonNames
+{
     // ---- title screen -------------------------------------------------------
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER = 1,

@@ -5,12 +5,14 @@
 #include "../engine/h/defines.h"
 
 // ---- definitions ------------------------------------------------------------
-typedef struct Vertex {
+typedef struct Vertex
+{
     Vector3 pos;
     Vector2 tex_coord;
 } Vertex;
 
-typedef struct RenderData {
+typedef struct RenderData
+{
     Vector3 vertices;
     Vector2 tex_coord;
 } RenderData;

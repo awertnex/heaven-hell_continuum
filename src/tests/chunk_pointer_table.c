@@ -1,96 +1,124 @@
-#include <stdlib.h>
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
 #include "../engine/h/defines.h"
+#include "../engine/h/memory.h"
 #include "../engine/h/logger.h"
 #include "../engine/logger.c"
 
-#define MC_C_RED    (Color){0xff, 0x78, 0x78, 0xff}
-#define MC_C_GREEN  (Color){0x78, 0xff, 0x78, 0xff}
-#define MC_C_BLUE   (Color){0x78, 0x78, 0xff, 0xff}
-#define CHUNK_COUNT         221 // parseable chunks within max render distance
-#define CHUNK_TABLE_SIZE    289 // ((8*2) + 1)^2
-#define CHUNK_TABLE_POS_X 300.0f
-#define CHUNK_TABLE_POS_Y (720.0f/2.0f)
-#define rect(x, y, col) DrawRectangleRounded((Rectangle){x + CHUNK_TABLE_POS_X, y + CHUNK_TABLE_POS_Y, 16.0f, 16.0f}, 0.3f, 1, col)
+#define MC_C_RED                (Color){0xff, 0x78, 0x78, 0xff}
+#define MC_C_GREEN              (Color){0x78, 0xff, 0x78, 0xff}
+#define MC_C_BLUE               (Color){0x78, 0x78, 0xff, 0xff}
+#define CHUNK_BUF_SIZE          289
+#define CHUNK_BUF_RADIUS        8
+#define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_ELEMENTS      (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_TAB_CENTER        ((CHUNK_BUF_RADIUS + 1) + ((CHUNK_BUF_RADIUS + 1) * CHUNK_BUF_DIAMETER))
+#define CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER))
+#define CHUNK_TAB_POS_X         300.0f
+#define CHUNK_TAB_POS_Y         (720.0f / 2.0f)
+#define rect(x, y, col)         DrawRectangleRounded((Rectangle){x + CHUNK_TAB_POS_X, y + CHUNK_TAB_POS_Y, 16.0f, 16.0f}, 0.3f, 1, col)
 
-enum ChunkStates {
-    STATE_CHUNK_BUF_ALLOC =     0x1,
-    STATE_CHUNK_TAB_ALLOC =     0x2,
+enum ChunkStates
+{
+    STATE_ACTIVE =          0x1,
 
-    STATE_CHUNK_LOADED =        0x1,
-    STATE_CHUNK_DIRTY =         0x2,
-};
+    STATE_CHUNK_LOADED =    0x1,
+    STATE_CHUNK_DIRTY =     0x2,
+}; /* Chunk States */
 
-typedef struct Chunk {
+typedef struct Chunk
+{
     v2i16 pos;
     u32 id;
-    u32 i[16][16];
+    u32 i[24][24];
     u8 state;
 } Chunk;
 
 u8 state = 0;
-Chunk *chunk_buf;
-void *chunk_tab;
+u8 render_distance = 1;
+Chunk *chunk_buf = {0};
+void *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
 
-int allocate_buffers();
+void init_chunking();
+void free_chunking();
+void parse_input();
 
-void loop() {
-    for (u16 i = 0; i < CHUNK_COUNT; ++i) {
-        if (!(state & (STATE_CHUNK_BUF_ALLOC | STATE_CHUNK_TAB_ALLOC)))
-            break;
-
-        if (chunk_buf[i*sizeof(Chunk)].state & STATE_CHUNK_LOADED)
+void parse_chunks()
+{
+    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+    {
+        if (chunk_buf[i].state & STATE_CHUNK_LOADED)
             rect((f32)i, 0.0f, MC_C_RED);
     }
     rect(16.0f, 0.0f, MC_C_GREEN);
     rect(32.0f, 0.0f, MC_C_BLUE);
 }
 
-int main(void) {
+int main(void)
+{
+    // ---- main_init ----------------------------------------------------------
+    state = 0 | STATE_ACTIVE;
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(1280, 720, "Chunk Pointer Table");
     SetExitKey(KEY_Q);
 
-    if (allocate_buffers())
-        return -1;
+    init_chunking();
 
-    while (!WindowShouldClose()) {
+    while ((state & STATE_ACTIVE) && (!WindowShouldClose()))
+    {
+        // ---- main_loop ------------------------------------------------------
+
         BeginDrawing();
         ClearBackground(BLACK);
-        loop();
+        parse_input();
+
+        printf("%s\n", "what?"); //temp
+        DrawText(TextFormat("Render Distance: %d", render_distance), 200.0f, 200.0f, 16, RAYWHITE);
+        parse_chunks();
+
         EndDrawing();
     }
 
-    if (state & STATE_CHUNK_BUF_ALLOC) {
-        free(chunk_buf);
-        LOGINFO("%s", "chunk_buf Memory Deallocation Successful");
-    }
+    // ---- main_close ---------------------------------------------------------
     CloseWindow();
+    free_chunking();
     return 0;
 }
 
-int allocate_buffers() {
-    chunk_buf = (Chunk*) malloc(CHUNK_COUNT*sizeof(Chunk));
-    chunk_tab = malloc(CHUNK_TABLE_SIZE);
+void init_chunking()
+{
+    MC_C_ALLOC(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
 
-    if (&chunk_buf[0] != NULL) {
-        state |= STATE_CHUNK_BUF_ALLOC;
-        LOGINFO("%s", "chunk_buf Memory Allocation Successful");
-    } else {
-        LOGFATAL("%s", "chunk_buf Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
-
-    if (&chunk_tab[0] != NULL) {
-        state |= STATE_CHUNK_TAB_ALLOC;
-        LOGINFO("%s", "chunk_tab Memory Allocation Successful");
-    } else {
-        LOGFATAL("%s", "chunk_tab Memory Allocation Failed, Aborting Process");
-        return 1;
-    }
-    return 0;
+cleanup:
+    free_chunking();
+    exit(-1);
 }
 
+void free_chunking()
+{
+    MC_C_FREE(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+}
+
+void parse_input()
+{
+    if (IsKeyPressed(KEY_ONE))
+        render_distance = 1;
+
+    if (IsKeyPressed(KEY_TWO))
+        render_distance = 2;
+
+    if (IsKeyPressed(KEY_THREE))
+        render_distance = 3;
+
+    if (IsKeyPressed(KEY_FOUR))
+        render_distance = 4;
+
+    if (IsKeyPressed(KEY_FIVE))
+        render_distance = 5;
+
+    if (IsKeyPressed(KEY_SIX))
+        render_distance = 6;
+
+}

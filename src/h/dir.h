@@ -12,7 +12,8 @@
 #endif // PATH_MAX
 // ---- from linux/limits.h ----------------------------------------------------
 
-enum DirectoryStructure {
+enum DirectoryStructure
+{
     MC_C_DIR_BIN = 0,
     MC_C_DIR_SAVES = 1,
     MC_C_DIR_RESOURCES = 2,

@@ -3,7 +3,8 @@
 #define VECTOR3_TYPES
 #include "engine/h/defines.h"
 
-typedef struct BlockHitInfo {
+typedef struct BlockHitInfo
+{
     v3i32 block_pos;
     v3i8 face_normal;
     f32 distance;
@@ -22,7 +23,8 @@ inline f32 len_v3f32(v3f32 v);
 inline v3f32 normalize_v3f32(v3f32 v);
 inline f32 dist_v3f32(v3f32 a, v3f32 b);
 
-b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *out_hit) {
+b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *out_hit)
+{
     v3f32 dir = normalize_v3f32(sub_v3f32(target, camera));
     i32 x = (i32)floorf(camera.x);
     i32 y = (i32)floorf(camera.y);
@@ -81,18 +83,24 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
                 x += step_x;
                 t_max_x += t_delta_x;
                 last_axis = 0;
-            } else {
+            }
+            else
+            {
                 z += step_z;
                 t_max_z += t_delta_z;
                 last_axis = 2;
             }
-        } else {
+        }
+        else
+        {
             if (t_max_y < t_max_z)
             {
                 y += step_y;
                 t_max_y += t_delay_y;
                 last_axis = 1;
-            } else {
+            }
+            else
+            {
                 z += step_z;
                 t_max_z += t_delta_z;
                 last_axis = 2;
@@ -127,7 +135,8 @@ inline f64 power(f64 n, u8 exp)
 }
 
 // Approximate sine using Taylor Series
-inline f64 sine(f64 x) {
+inline f64 sine(f64 x)
+{
     while (x > M_PI)
         x -= 2 * M_PI;
     while (x < -M_PI)
@@ -135,28 +144,33 @@ inline f64 sine(f64 x) {
 
     f64 result = 0.0f;
     u8 precision = 10;
-    for (u8 n = 0; n < precision; ++n) {
+    for (u8 n = 0; n < precision; ++n)
+    {
         f64 term = power(-1, n) * power(x, 2*n + 1) / factorial(2*n + 1);
         result += term;
     }
     return result;
 }
 
-inline v3f32 sub_v3f32(v3f32 a, v3f32 b) {
+inline v3f32 sub_v3f32(v3f32 a, v3f32 b)
+{
     return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
 }
 
-inline f32 len_v3f32(v3f32 v) {
+inline f32 len_v3f32(v3f32 v)
+{
     return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
-inline v3f32 normalize_v3f32(v3f32 v) {
+inline v3f32 normalize_v3f32(v3f32 v)
+{
     f32 len = len_v3f32(v);
     if (len == 0) return (v3f32){0.0f};
     return (v3f32){ v.x / len, v.y / len, v.z / len };
 }
 
-inline f32 dist_v3f32(v3f32 a, v3f32 b) {
+inline f32 dist_v3f32(v3f32 a, v3f32 b)
+{
     return len_v3f32(sub_v3f32(a, b));
 }
 

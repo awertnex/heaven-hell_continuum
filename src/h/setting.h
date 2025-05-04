@@ -28,7 +28,8 @@
 #define SETTING_GUI_SCALE_4                 4.0f
 
 // ---- settings ---------------------------------------------------------------
-typedef struct settings {
+typedef struct settings
+{
     // ---- internal -----------------------------------------------------------
     u8 reach_distance;  // for player reach (arm length basically)
 
