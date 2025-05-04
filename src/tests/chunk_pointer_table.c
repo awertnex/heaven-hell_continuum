@@ -69,16 +69,13 @@ void parse_chunks()
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        draw_chunk(i % CHUNK_BUF_DIAMETER,
-                floorf((f32)i / CHUNK_BUF_DIAMETER),
-                MC_C_OFF);
+        draw_chunk_index(i, MC_C_OFF);
         if (chunk_buf[i].state & STATE_CHUNK_LOADED)
-            draw_chunk(i % CHUNK_BUF_DIAMETER,
-                    floorf((f32)i / CHUNK_BUF_DIAMETER),
-                    MC_C_BLUE);
+            draw_chunk_index(i, MC_C_BLUE);
     }
-    draw_chunk(0, 0, MC_C_GREEN);
-    draw_chunk(16, 1, MC_C_BLUE);
+    draw_chunk(0, 0, MC_C_GREEN); //temp
+    draw_chunk(16, 1, MC_C_BLUE); //temp
+    draw_chunk_index(CHUNK_TAB_CENTER, MC_C_RED);
 }
 
 int main(void)
