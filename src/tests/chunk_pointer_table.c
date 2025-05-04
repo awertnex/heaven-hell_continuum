@@ -9,15 +9,16 @@
 #include "../engine/h/logger.h"
 #include "../engine/logger.c"
 
+#define MC_C_OFF                (Color){0x10, 0x10, 0x10, 0xff}
+#define MC_C_GRAY               (Color){0x40, 0x40, 0x40, 0xff}
 #define MC_C_RED                (Color){0xff, 0x78, 0x78, 0xff}
 #define MC_C_GREEN              (Color){0x78, 0xff, 0x78, 0xff}
 #define MC_C_BLUE               (Color){0x78, 0x78, 0xff, 0xff}
-#define MC_C_OFF                (Color){0x10, 0x10, 0x10, 0xff}
 #define CHUNK_BUF_SIZE          289
 #define CHUNK_BUF_RADIUS        8
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_ELEMENTS      (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-#define CHUNK_TAB_CENTER        ((CHUNK_BUF_RADIUS + 1) + ((CHUNK_BUF_RADIUS + 1) * CHUNK_BUF_DIAMETER))
+#define CHUNK_TAB_CENTER        (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
 #define CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER))
 #define CHUNK_TAB_POS_X         300.0f
 #define CHUNK_TAB_POS_Y         200.0f
@@ -64,6 +65,7 @@ void *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
 void init_chunking();
 void free_chunking();
 void parse_input();
+void draw_ruler();
 
 void parse_chunks()
 {
@@ -73,9 +75,6 @@ void parse_chunks()
         if (chunk_buf[i].state & STATE_CHUNK_LOADED)
             draw_chunk_index(i, MC_C_BLUE);
     }
-    draw_chunk(0, 0, MC_C_GREEN); //temp
-    draw_chunk(16, 1, MC_C_BLUE); //temp
-    draw_chunk_index(CHUNK_TAB_CENTER, MC_C_RED);
 }
 
 int main(void)
@@ -98,6 +97,7 @@ int main(void)
 
         DrawText(TextFormat("Render Distance: %d", render_distance), 10.0f, 10.0f, 24, RAYWHITE);
         parse_chunks();
+        draw_ruler();
 
         EndDrawing();
     }
@@ -141,6 +141,36 @@ void parse_input()
         render_distance = 5;
 
     if (IsKeyPressed(KEY_SIX))
+    {
         render_distance = 6;
+        chunk_buf[CHUNK_TAB_CENTER].state |= STATE_CHUNK_LOADED;
+    }
 
 }
+
+void draw_ruler()
+{
+        DrawText("X",
+                CHUNK_TAB_POS_X + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE,
+                CHUNK_TAB_POS_Y - RECT_SIZE,
+                12, MC_C_GRAY);
+
+        DrawText("Y",
+                CHUNK_TAB_POS_X - RECT_SIZE,
+                CHUNK_TAB_POS_Y + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE,
+                12, MC_C_GRAY);
+
+    for (int i = 0; i < CHUNK_BUF_DIAMETER; ++i)
+    {
+        DrawText(TextFormat("%d", i),
+                CHUNK_TAB_POS_X + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE,
+                CHUNK_TAB_POS_Y + (i * (RECT_SIZE + MARGIN)) + 4.0f,
+                12, MC_C_GRAY);
+
+        DrawText(TextFormat("%d", i),
+                CHUNK_TAB_POS_X + (i * (RECT_SIZE + MARGIN)) + 4.0f,
+                CHUNK_TAB_POS_Y + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE,
+                12, MC_C_GRAY);
+    }
+}
+
