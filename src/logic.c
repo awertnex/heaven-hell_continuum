@@ -72,11 +72,10 @@ void update_player_states(Player *player)
     //TODO: revise (actually kill the player)
     if (player->pos.z < WORLD_KILL_Z)
     {
-        player->pos = (Vector3){
+        set_player_block(player,
                 player->spawn_point.x,
                 player->spawn_point.y,
-                player->spawn_point.z,
-            };
+                player->spawn_point.z);
         player->v.z = 0;
     }
 }
@@ -99,8 +98,8 @@ void update_camera_movements_player(Player *player)
     player->sin_yaw =    sinf(player->yaw * MC_C_DEG2RAD);
     player->cos_yaw =    cosf(player->yaw * MC_C_DEG2RAD);
 
-    Vector3 playerCameraUp;
-    playerCameraUp = (Vector3){
+    Vector3 player_camera_up;
+    player_camera_up = (Vector3){
             -player->cos_yaw * player->sin_pitch,
             -player->sin_yaw * player->sin_pitch,
             player->cos_pitch,
@@ -117,7 +116,7 @@ void update_camera_movements_player(Player *player)
                     player->pos.y + ((player->sin_yaw * player->cos_pitch) * setting.reach_distance),
                     player->camera.position.z + (player->sin_pitch * setting.reach_distance),
                 };
-            player->camera.up = playerCameraUp;
+            player->camera.up = player_camera_up;
             break;
 
         case 1: // ---- 3rd person back ----------------------------------------
@@ -129,7 +128,7 @@ void update_camera_movements_player(Player *player)
             player->camera.target = (Vector3){
                     player->pos.x, player->pos.y, player->pos.z + player->eye_height,
                 };
-            player->camera.up = playerCameraUp;
+            player->camera.up = player_camera_up;
             break;
 
         case 2: // ---- 3rd person front ---------------------------------------
@@ -141,7 +140,7 @@ void update_camera_movements_player(Player *player)
             player->camera.target = (Vector3){
                     player->pos.x, player->pos.y, player->pos.z + player->eye_height,
                 };
-            player->camera.up = playerCameraUp;
+            player->camera.up = player_camera_up;
             break;
 
             // TODO: make the stalker camera mode
