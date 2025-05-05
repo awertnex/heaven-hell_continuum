@@ -189,6 +189,16 @@ void update_camera_movements_debug_info(Camera3D *camera, Player *player)
     }
 }
 
+void set_player_pos(Player *player, f32 x, f32 y, f32 z)
+{
+    player->pos = (Vector3){x, y, z};
+}
+
+void set_player_block(Player *player, i32 x, i32 y, i32 z)
+{
+    player->pos = (Vector3){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
+}
+
 void kill_player(Player *player)
 {
     *player = (Player){

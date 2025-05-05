@@ -123,6 +123,8 @@ bool get_double_press(Player *player, KeyboardKey key);
 void update_player_states(Player *player);
 void update_camera_movements_player(Player *player);
 void update_camera_movements_debug_info(Camera3D *camera, Player *player);
+void set_player_pos(Player *player, f32 x, f32 y, f32 z);
+void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void kill_player(Player *player);
 void respawn_player(Player *player);
 b8 check_delta_target(Vector3 *coordinates, v3i32 *delta_target);

@@ -56,7 +56,7 @@ Player lily =
         .projection = CAMERA_ORTHOGRAPHIC,
     },
 
-    .spawn_point = {0.0f, 0.0f, 0.0f},
+    .spawn_point = {0},
 };
 
 // ---- signatures -------------------------------------------------------------
@@ -192,6 +192,7 @@ void init_world(const char *str)
     }
 
     lily.state &= ~STATE_PARSE_TARGET;
+    set_player_block(&lily, 0, 0, 0);
 
     state |= (STATE_HUD | STATE_WORLD_LOADED);
     LOGINFO("%s '%s'", "World Loaded", "Poop Consistency Tester");
@@ -219,7 +220,7 @@ void update_world()
     update_player_states(&lily);
     update_camera_movements_player(&lily);
     BeginMode3D(lily.camera);
-    update_chunk_buffer(&lily.delta_target, &lily.chunk);
+    update_chunk_buf(&lily.chunk);
     draw_chunk_buffer(chunk_buf);
 
     //TODO: make a function 'index_to_bounding_box()'
