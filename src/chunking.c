@@ -137,7 +137,7 @@ void unload_chunk() // TODO: make this function
 {
 }
 
-void update_chunk_buffer(v3i32 *player_target, v2i16 *player_chunk) // TODO: complete this function
+void update_chunk_buf(v2i16 *player_chunk) // TODO: complete this function
 {
     for (u16 i = 0; i < 1; ++i)
     {

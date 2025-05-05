@@ -107,7 +107,7 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void load_chunk(Chunk *chunk);
 void update_chunk();
 void unload_chunk();
-void update_chunk_buffer(v3i32 *player_target, v2i16 *player_chunk);
+void update_chunk_buf(v2i16 *player_chunk);
 Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
 void draw_chunk_buffer(Chunk *chunk_buf);
 void draw_chunk(Chunk *chunk);
