@@ -6,7 +6,6 @@
 #define VECTOR2_TYPES
 #include "../engine/h/defines.h"
 #include "../engine/h/memory.h"
-#include "../engine/h/logger.h"
 #include "../engine/logger.c"
 
 #define MC_C_OFF                    (Color){0x10, 0x10, 0x10, 0xff}
@@ -77,7 +76,7 @@ u8 render_distance = 1;
 u8 data_view = 0;
 Chunk *chunk_buf = {0};
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
-v2i16 player_chunk = {1, -1};
+v2i16 player_chunk = {2, -1};
 
 const v2f32 legend_pos = {CHUNK_TAB_POS_X, 20.0f};
 
@@ -117,11 +116,19 @@ void update_chunk_buf(v2i16 *player_chunk)
         if (is_distance_within(render_distance,
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v2i32){i % CHUNK_BUF_DIAMETER, (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
+        {
             if (chunk_tab[i] == NULL)
                 push_chunk_buf(player_chunk,
                         (v2i16){
                         i % CHUNK_BUF_DIAMETER,
                         (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)});
+        }
+        else if (chunk_tab[i] != NULL)
+            if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
+            {
+                memset(chunk_tab[i], 0, sizeof(Chunk));
+                chunk_tab[i] = NULL;
+            }
     }
 }
 
@@ -236,21 +243,29 @@ void free_chunking()
 
 void parse_input()
 {
+    if (IsKeyPressed(KEY_ENTER))
+        update_chunk_buf(&player_chunk);
+
     if ((IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP)) && render_distance < CHUNK_BUF_RADIUS)
         ++render_distance;
 
     if ((IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN)) && render_distance > 1)
         --render_distance;
 
-    if (IsKeyPressed(KEY_ENTER))
-    {
-        for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
-            update_chunk_buf(&player_chunk);
-    }
-
     if (IsKeyPressed(KEY_TAB))
         data_view = ~data_view;
 
+    if (IsKeyPressed(KEY_D) || IsKeyPressedRepeat(KEY_D))
+        ++player_chunk.x;
+
+    if (IsKeyPressed(KEY_A) || IsKeyPressedRepeat(KEY_A))
+        --player_chunk.x;
+
+    if (IsKeyPressed(KEY_S) || IsKeyPressedRepeat(KEY_S))
+        ++player_chunk.y;
+
+    if (IsKeyPressed(KEY_W) || IsKeyPressedRepeat(KEY_W))
+        --player_chunk.y;
 }
 
 void draw_gui()
@@ -265,16 +280,21 @@ void draw_gui()
             font_size, 1, MC_C_GRAY);
 
     // ---- info ---------------------------------------------------------------
-    DrawTextEx(font, TextFormat("%s\n%s\n%s\n%s",
+    DrawTextEx(font, TextFormat("%s\n%s\n%s\n%s\n%s",
                 "ENTER:  load chunks within render distance",
                 "UP:     increase render distance",
                 "DOWN:   decrease render distance",
-                "TAB:    change data view: index/chunk pos"),
+                "TAB:    change data view: index/chunk pos",
+                "WASD:   change player chunk"),
             (Vector2){10.0f, 10.0f},
             font_size, 1, MC_C_BLUE);
 
     DrawTextEx(font, TextFormat("Render Distance: %d", render_distance),
-            (Vector2){10.0f, 150.0f},
+            (Vector2){10.0f, 180.0f},
+            font_size, 1, MC_C_GREEN);
+
+    DrawTextEx(font, TextFormat("Player Chunk: %d, %d", player_chunk.x, player_chunk.y),
+            (Vector2){400.0f, 180.0f},
             font_size, 1, MC_C_GREEN);
 
     // ---- legend -------------------------------------------------------------

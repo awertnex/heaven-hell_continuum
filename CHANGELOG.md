@@ -23,6 +23,7 @@
 - added secure loading and unloading chunks
 - added more definitions for world size and chunk size for more precision
 - added get/set block data macros
+- added player-position-relative chunk-loading
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
