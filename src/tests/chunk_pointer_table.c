@@ -71,22 +71,27 @@ typedef struct Chunk
 // ---- declarations -----------------------------------------------------------
 Font font;
 f32 font_size = 32;
+f32 font_size_small = 14;
 u8 state = 0;
 u8 render_distance = 1;
+u8 data_view = 0;
 Chunk *chunk_buf = {0};
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
+v2i16 player_chunk = {1, -1};
 
 const v2f32 legend_pos = {CHUNK_TAB_POS_X, 20.0f};
 
 // ---- signatures -------------------------------------------------------------
-u32 get_euclidean_distance(v2i32 start, v2i32 end);
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
+void push_chunk_buf(v2i16 *player_chunk, v2i16 pos);
+void update_chunk_buf(v2i16 *player_chunk);
+void draw_chunk_buf(u16 i);
 void init_chunking();
 void free_chunking();
 void parse_input();
 void draw_gui();
 
-void push_chunk_buf(v2i16 pos)
+void push_chunk_buf(v2i16 *player_chunk, v2i16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
@@ -94,83 +99,89 @@ void push_chunk_buf(v2i16 pos)
         {
             memset(&chunk_buf[i], 0, sizeof(Chunk));
             chunk_buf[i].state |= STATE_CHUNK_LOADED;
-            chunk_buf[i].pos = pos;
+            chunk_buf[i].pos =
+                (v2i16){
+                    player_chunk->x + (pos.x - CHUNK_BUF_RADIUS),
+                    player_chunk->y + (pos.y - CHUNK_BUF_RADIUS)
+                };
             chunk_tab[CHUNK_TAB_INDEX(pos.x, pos.y)] = &chunk_buf[i];
             return;
         }
     }
 }
 
-void load_chunks()
+void update_chunk_buf(v2i16 *player_chunk)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        if (&chunk_buf[i] == NULL) continue;
-
         if (is_distance_within(render_distance,
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v2i32){i % CHUNK_BUF_DIAMETER, (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
-        {
             if (chunk_tab[i] == NULL)
-                push_chunk_buf((v2i16){i % CHUNK_BUF_DIAMETER, (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)});
-        }
+                push_chunk_buf(player_chunk,
+                        (v2i16){
+                        i % CHUNK_BUF_DIAMETER,
+                        (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)});
     }
 }
 
-void update_chunk_buf()
+void draw_chunk_buf(u16 i)
 {
-    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+    draw_chunk_buf_index(i, MC_C_OFF);
+    draw_chunk_tab_index(i, MC_C_OFF);
+
+    if (&chunk_buf[i] != NULL)
     {
         draw_chunk_buf_index(i, MC_C_OFF);
-        draw_chunk_tab_index(i, MC_C_OFF);
-
-        if (&chunk_buf[i] != NULL)
+        if (chunk_buf[i].state & STATE_CHUNK_LOADED)
         {
-            draw_chunk_buf_index(i, MC_C_BLUE);
-            if (chunk_buf[i].state & STATE_CHUNK_LOADED)
-            {
-                draw_chunk_buf_index(i, MC_C_GREEN);
-                DrawTextEx(font, TextFormat("%d", &chunk_buf[i] - &chunk_buf[0]),
-                        (Vector2){
-                        CHUNK_BUF_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
-                        CHUNK_BUF_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
-                        },
-                        font_size, 1, BLACK);
-            }
+            draw_chunk_buf_index(i, MC_C_GREEN);
+            DrawTextEx(font, TextFormat("%d", &chunk_buf[i] - &chunk_buf[0]),
+                    (Vector2){
+                    CHUNK_BUF_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
+                    CHUNK_BUF_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
+                    },
+                    font_size_small, 1, BLACK);
         }
+    }
 
-        if (is_distance_within(render_distance,
-                    (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
-            draw_chunk_tab_index(i, MC_C_RED);
+    if (is_distance_within(render_distance,
+                (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
+                (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
+        draw_chunk_tab_index(i, MC_C_RED);
 
-        if (chunk_tab[i] != NULL)
+    if (chunk_tab[i] != NULL)
+    {
+        if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
         {
-
-            if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
-            {
-                chunk_tab[i]->pos.x = (i % CHUNK_BUF_DIAMETER);
-                chunk_tab[i]->pos.y = (i16)(floorf((f32)i / CHUNK_BUF_DIAMETER));
+            if (is_distance_within(render_distance,
+                        (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
+                        (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
                 draw_chunk_tab_index(i, MC_C_GREEN);
+            else
+                draw_chunk_tab_index(i, MC_C_BLUE);
+
+            if (data_view)
+                DrawTextEx(font, TextFormat("%d,%d", chunk_tab[i]->pos.x, chunk_tab[i]->pos.y),
+                        (Vector2){
+                        CHUNK_TAB_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
+                        CHUNK_TAB_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
+                        },
+                        font_size_small, 1, BLACK);
+            else
                 DrawTextEx(font, TextFormat("%d", chunk_tab[i] - &chunk_buf[0]),
                         (Vector2){
                         CHUNK_TAB_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
                         CHUNK_TAB_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
                         },
-                        font_size, 1, BLACK);
-            }
+                        font_size_small, 1, BLACK);
         }
     }
 }
 
-u32 get_euclidean_distance(v2i32 start, v2i32 end)
-{
-    return (powf(start.x - end.x, 2) + powf(start.y - end.y, 2));
-}
-
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
 {
-    if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) < distance * (distance + 2))
+    if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) < (distance * distance) + 2)
         return TRUE;
     return FALSE;
 }
@@ -194,7 +205,9 @@ int main(void)
         ClearBackground(BLACK);
         parse_input();
 
-        update_chunk_buf();
+        for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+            draw_chunk_buf(i);
+
         draw_gui();
 
         EndDrawing();
@@ -231,8 +244,12 @@ void parse_input()
 
     if (IsKeyPressed(KEY_ENTER))
     {
-        load_chunks();
+        for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+            update_chunk_buf(&player_chunk);
     }
+
+    if (IsKeyPressed(KEY_TAB))
+        data_view = ~data_view;
 
 }
 
@@ -248,20 +265,21 @@ void draw_gui()
             font_size, 1, MC_C_GRAY);
 
     // ---- info ---------------------------------------------------------------
-    DrawTextEx(font, TextFormat("%s\n%s\n%s",
+    DrawTextEx(font, TextFormat("%s\n%s\n%s\n%s",
                 "ENTER:  load chunks within render distance",
                 "UP:     increase render distance",
-                "DOWN:   decrease render distance"),
+                "DOWN:   decrease render distance",
+                "TAB:    change data view: index/chunk pos"),
             (Vector2){10.0f, 10.0f},
             font_size, 1, MC_C_BLUE);
 
     DrawTextEx(font, TextFormat("Render Distance: %d", render_distance),
-            (Vector2){10.0f, 120.0f},
+            (Vector2){10.0f, 150.0f},
             font_size, 1, MC_C_GREEN);
 
     // ---- legend -------------------------------------------------------------
     DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y, RECT_SIZE / 2, RECT_SIZE / 2},
-            0.3f, 1, MC_C_BLUE);
+            0.3f, 1, MC_C_OFF);
 
     DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 2), (RECT_SIZE / 2), (RECT_SIZE / 2)},
             0.3f, 1, MC_C_GREEN);
@@ -269,7 +287,10 @@ void draw_gui()
     DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 4), (RECT_SIZE / 2), (RECT_SIZE / 2)},
             0.3f, 1, MC_C_RED);
 
-    DrawTextEx(font, "Memory Allocated",
+    DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 6), (RECT_SIZE / 2), (RECT_SIZE / 2)},
+            0.3f, 1, MC_C_BLUE);
+
+    DrawTextEx(font, "Usable/Not Null",
             (Vector2){
             legend_pos.x + (RECT_SIZE + MARGIN),
             legend_pos.y},
@@ -285,6 +306,12 @@ void draw_gui()
             (Vector2){
             legend_pos.x + (((RECT_SIZE / 2) + MARGIN) * 2),
             legend_pos.y + ((RECT_SIZE / 2) * 4)},
+            font_size, 1, MC_C_GRAY);
+
+    DrawTextEx(font, "Chunk Loaded, but Out of Render Surface",
+            (Vector2){
+            legend_pos.x + (((RECT_SIZE / 2) + MARGIN) * 2),
+            legend_pos.y + ((RECT_SIZE / 2) * 6)},
             font_size, 1, MC_C_GRAY);
 
     // ---- ruler --------------------------------------------------------------
