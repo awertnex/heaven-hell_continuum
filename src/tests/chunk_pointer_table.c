@@ -69,7 +69,7 @@ u8 render_distance = 1;
 u8 data_view = 0;
 Chunk *chunk_buf = {0};
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
-v2i32 chunk_tab_index = {0};
+v2u32 chunk_tab_index = {0};
 v2i16 player_chunk = {0};
 
 // ---- signatures -------------------------------------------------------------
@@ -103,15 +103,15 @@ void update_chunk_buf(v2i16 *player_chunk)
 {
     for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        chunk_tab_index = (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
+        chunk_tab_index = (v2u32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
 
         if (is_distance_within(render_distance,
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    chunk_tab_index))
+                    (v2i32){chunk_tab_index.x, chunk_tab_index.y}))
         {
             if (chunk_tab[i] == NULL)
                 chunk_tab[i] = push_chunk_buf(player_chunk,
-                        chunk_tab_index);
+                        (v2i32){chunk_tab_index.x, chunk_tab_index.y});
         }
         else if (chunk_tab[i] != NULL)
             if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
@@ -126,7 +126,7 @@ void draw_chunk_buf(u32 i)
 {
     draw_chunk_buf_index(i, MC_C_OFF);
     draw_chunk_tab_index(i, MC_C_OFF);
-    chunk_tab_index = (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
+    chunk_tab_index = (v2u32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
 
     if (&chunk_buf[i] != NULL)
     {
@@ -145,7 +145,7 @@ void draw_chunk_buf(u32 i)
 
     if (is_distance_within(render_distance,
                 (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                chunk_tab_index))
+                (v2i32){chunk_tab_index.x, chunk_tab_index.y}))
         draw_chunk_tab_index(i, MC_C_RED);
 
     if (chunk_tab[i] != NULL)
@@ -154,7 +154,7 @@ void draw_chunk_buf(u32 i)
         {
             if (is_distance_within(render_distance,
                         (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                        chunk_tab_index))
+                        (v2i32){chunk_tab_index.x, chunk_tab_index.y}))
                 draw_chunk_tab_index(i, MC_C_GREEN);
             else
                 draw_chunk_tab_index(i, MC_C_BLUE);

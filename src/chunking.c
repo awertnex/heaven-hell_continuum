@@ -8,8 +8,9 @@
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
 Chunk *chunk_buf = {0};
-void *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
-Chunk *target_chunk = 0; //temp
+Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
+v2u16 chunk_tab_coordinates; // pointer arithmetic redundancy optimization
+Chunk *target_chunk; //temp
 struct WorldStats world_stats =
 {
     .block_count = 0,
@@ -92,43 +93,6 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] = 0;
 }
 
-void load_chunk(Chunk *chunk)
-{
-    if ((chunk->state == STATE_CHUNK_LOADED) && (chunk->state != STATE_CHUNK_DIRTY))
-        return;
-
-    chunk->mat = LoadMaterialDefault();
-
-    u16 z = 0; u8 y = 0, x = 0;
-    for (; z < world_height; ++z)
-    {
-        for (; y < CHUNK_DIAMETER; ++y)
-        {
-            for (; x < CHUNK_DIAMETER; ++x)
-            {
-                add_block(chunk, x, y, z);
-                if (chunk->i[z][y][x])
-                    ++world_stats.block_count;
-                if (chunk->i[z][y][x] & POSITIVE_X)
-                    ++world_stats.quad_count;
-                if (chunk->i[z][y][x] & NEGATIVE_X)
-                    ++world_stats.quad_count;
-                if (chunk->i[z][y][x] & POSITIVE_Y)
-                    ++world_stats.quad_count;
-                if (chunk->i[z][y][x] & NEGATIVE_Y)
-                    ++world_stats.quad_count;
-                if (chunk->i[z][y][x] & POSITIVE_Z)
-                    ++world_stats.quad_count;
-                if (chunk->i[z][y][x] & NEGATIVE_Z)
-                    ++world_stats.quad_count;
-            }
-            x = 0;
-        }
-        y = 0;
-    }
-    chunk->state = STATE_CHUNK_LOADED;
-}
-
 void update_chunk() // TODO: make this function
 {
 }
@@ -137,47 +101,98 @@ void unload_chunk() // TODO: make this function
 {
 }
 
-void update_chunk_buf(v2i16 *player_chunk) // TODO: complete this function
+Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates)
 {
-    for (u16 i = 0; i < 1; ++i)
+    u32 i = 0; u16 z = 0; u8 y = 0, x = 0;
+    for (; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        if (!(chunk_buf[i].state & STATE_CHUNK_LOADED))
+        if (chunk_buf[i].state & STATE_CHUNK_LOADED) continue;
+
+        memset(&chunk_buf[i], 0, sizeof(Chunk));
+        chunk_buf[i] =
+            (Chunk){
+                .pos = (v2i16){
+                    player_chunk->x + (chunk_tab_coordinates.x - CHUNK_BUF_RADIUS),
+                    player_chunk->y + (chunk_tab_coordinates.y - CHUNK_BUF_RADIUS)},
+                .id = (player_chunk->x << 16) + player_chunk->y,
+                .mat = LoadMaterialDefault(),
+                .state = (0 | STATE_CHUNK_LOADED | STATE_CHUNK_RENDER),
+            };
+
+        for (; z < 20; ++z)
         {
-            load_chunk(&chunk_buf[i]);
-            chunk_tab[CHUNK_TAB_CENTER] = &chunk_buf[i];
-            LOGINFO("chunk[%03d %03d] Loaded, i[%03d]", player_chunk->x, player_chunk->y, i);
-            break;
+            for (; y < CHUNK_DIAMETER; ++y)
+            {
+                for (; x < CHUNK_DIAMETER; ++x)
+                {
+                    add_block(&chunk_buf[i], x, y, z);
+                }
+                x = 0;
+            }
+            y = 0;
         }
+        return &chunk_buf[i];
+    }
+    return NULL;
+}
+
+void update_chunk_buf(v2i16 *player_chunk)
+{
+    for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+    {
+        chunk_tab_coordinates =
+            (v2u16){
+                i % CHUNK_BUF_DIAMETER,
+                (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)
+            };
+
+        if (is_distance_within(setting.render_distance,
+                    (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
+                    (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y}))
+        {
+            if (chunk_tab[i] == NULL)
+                chunk_tab[i] =
+                    push_chunk_buf(player_chunk,
+                            chunk_tab_coordinates);
+
+            if (chunk_tab[i] != NULL)
+                LOGINFO("chunk[%03d %03d] Loaded, i[%03d]",
+                        chunk_tab[i]->pos.x,
+                        chunk_tab[i]->pos.y,
+                        i);
+        }
+        else if (chunk_tab[i] != NULL) // TODO: implement chunk unloading elsewhere
+            if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
+            {
+                memset(chunk_tab[i], 0, sizeof(Chunk));
+                chunk_tab[i] = NULL;
+            }
     }
 }
 
 Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag) // TODO: revise, might not be needed
 {
-    for (u8 y = 0; y < setting.render_distance * 2; ++y)
+    v2i32 coordinates_parsed =
     {
-        for (u8 x = 0; x < setting.render_distance * 2; ++x)
-        {
-            if (!(chunk_buf[GET_CHUNK_XY(x, y)].state & STATE_CHUNK_LOADED))
-            {
-                *state &= ~flag;
-                return NULL;
-            }
+        floorf((f32)coordinates->x / CHUNK_DIAMETER),
+        floorf((f32)coordinates->y / CHUNK_DIAMETER),
+    };
 
-            if (
-                    chunk_buf[GET_CHUNK_XY(x, y)].pos.x == (i32)floorf((f32)coordinates->x / CHUNK_DIAMETER) &&
-                    chunk_buf[GET_CHUNK_XY(x, y)].pos.y == (i32)floorf((f32)coordinates->y / CHUNK_DIAMETER))
+    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+        if (chunk_tab[i] != NULL)
+            if (chunk_tab[i]->pos.x == coordinates_parsed.x &&
+                    chunk_tab[i]->pos.y == coordinates_parsed.y)
             {
                 *state |= flag;
-                return &chunk_buf[GET_CHUNK_XY(x, y)];
+                return chunk_tab[i];
             }
-        }
-    }
+    *state &= ~flag;
     return NULL;
 }
 
 Texture2D tex_cobblestone;
 Texture2D tex_dirt;
-void draw_chunk_buffer(Chunk *chunk_buf)
+void draw_chunk_buf()
 {
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
@@ -188,7 +203,7 @@ void draw_chunk_buffer(Chunk *chunk_buf)
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
-        if (chunk_buf[i].state & STATE_CHUNK_LOADED)
+        if (chunk_buf[i].state & STATE_CHUNK_RENDER)
             draw_chunk(&chunk_buf[i]);
 
     rlEnd();

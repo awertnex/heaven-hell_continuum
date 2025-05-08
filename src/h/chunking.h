@@ -29,8 +29,8 @@
 #define WORLD_DIAMETER      ((WORLD_RADIUS * 2) + 1)
 #define WORLD_AREA          (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
 #define WORLD_MAX_CHUNKS    (WORLD_AREA / CHUNK_DIAMETER)
-#define CHUNK_MAX_BLOCKS    (CHUNK_DIAMETER * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL)
-#define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL)
+#define CHUNK_MAX_BLOCKS    (CHUNK_DIAMETER * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL) // TODO: revise
+#define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * WORLD_HEIGHT_NORMAL) // TODO: revise
 #define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS * 2)
 #define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
 
@@ -59,7 +59,6 @@ enum BlockData
 }; /* BlockData */
 
 #define GET_CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER))
-#define GET_CHUNK_XY(x, y)          (x + (y * CHUNK_DATA_SIZE))
 #define GET_BLOCK_XYZ(x, y, z)      (x + (y * CHUNK_DIAMETER) + (z * CHUNK_DIAMETER * CHUNK_DIAMETER))
 #define GET_BLOCKID(i)              (((i) & BLOCKID) >> 8)
 #define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
@@ -69,9 +68,9 @@ enum BlockData
 
 enum ChunkStates
 {
-    STATE_CHUNK_LOADED = 1,
-    STATE_CHUNK_RENDER = 2,
-    STATE_CHUNK_DIRTY = 3,
+    STATE_CHUNK_LOADED =    0x01,
+    STATE_CHUNK_RENDER =    0x02,
+    STATE_CHUNK_DIRTY =     0x04,
 }; /* ChunkStates */
 
 // TODO: add 'version' byte to the chunk file for evolving the format safely
@@ -89,7 +88,8 @@ typedef struct Chunk
 // ---- declarations -----------------------------------------------------------
 extern u16 world_height;
 extern Chunk *chunk_buf;
-extern void *chunk_tab[CHUNK_BUF_ELEMENTS];
+extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];
+extern v2u16 chunk_tab_index; // pointer arithmetic redundancy optimization
 extern Chunk *target_chunk;
 extern struct WorldStats
 {
@@ -104,12 +104,11 @@ void free_chunking();
 
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void load_chunk(Chunk *chunk);
-void update_chunk();
 void unload_chunk();
+Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates);
 void update_chunk_buf(v2i16 *player_chunk);
 Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
-void draw_chunk_buffer(Chunk *chunk_buf);
+void draw_chunk_buf();
 void draw_chunk(Chunk *chunk);
 void draw_block(u32 block_states);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);

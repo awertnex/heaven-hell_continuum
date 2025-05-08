@@ -34,9 +34,15 @@ bool get_double_press(Player *player, KeyboardKey key)
 void update_player_states(Player *player)
 {
     player->chunk = (v2i16){
-            ((i32)floorf((f32)player->pos.x / CHUNK_DIAMETER)) * CHUNK_DIAMETER,
-            ((i32)floorf((f32)player->pos.y / CHUNK_DIAMETER)) * CHUNK_DIAMETER,
+            floorf((f32)player->pos.x / CHUNK_DIAMETER),
+            floorf((f32)player->pos.y / CHUNK_DIAMETER),
         };
+
+    if ((lily.delta_chunk.x != lily.chunk.x) || (lily.delta_chunk.y != lily.chunk.y))
+    {
+        player->state |= STATE_CHUNK_BUF_DIRTY;
+        lily.delta_chunk = lily.chunk;
+    }
 
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
@@ -252,6 +258,13 @@ bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
             pos->y < start.y || pos->y > end.y ||
             pos->z < start.z || pos->z > end.z) return false;
     return true;
+}
+
+b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
+{
+    if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) < (distance * distance) + 2)
+        return TRUE;
+    return FALSE;
 }
 
 b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection

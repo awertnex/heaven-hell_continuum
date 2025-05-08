@@ -112,6 +112,7 @@ enum PlayerStates
     STATE_PARSE_TARGET =            0x0200,
     STATE_VELOCITY_DIRTY =          0x0400,
     STATE_DEAD =                    0x0800,
+    STATE_CHUNK_BUF_DIRTY =         0x1000,
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
@@ -131,6 +132,7 @@ b8 check_delta_target(Vector3 *coordinates, v3i32 *delta_target);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
+b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void give_gravity(Player *player);
 void update_collision_static(Player *player);

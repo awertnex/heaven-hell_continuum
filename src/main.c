@@ -219,9 +219,15 @@ void update_world()
 
     update_player_states(&lily);
     update_camera_movements_player(&lily);
+
+    if (lily.state & STATE_CHUNK_BUF_DIRTY)
+    {
+        update_chunk_buf(&lily.chunk);
+        lily.state &= ~STATE_CHUNK_BUF_DIRTY;
+    }
+
     BeginMode3D(lily.camera);
-    update_chunk_buf(&lily.chunk);
-    draw_chunk_buffer(chunk_buf);
+    draw_chunk_buf();
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
