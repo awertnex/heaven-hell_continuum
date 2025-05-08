@@ -17,21 +17,14 @@
 #define CHUNK_BUF_DIAMETER          ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_ELEMENTS          (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_TAB_CENTER            (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
-#define CHUNK_TAB_INDEX(x, y)       (x + (y * CHUNK_BUF_DIAMETER))
 #define CHUNK_BUF_POS_X             50.0f
 #define CHUNK_BUF_POS_Y             250.0f
 #define CHUNK_TAB_POS_X             700.0f
 #define CHUNK_TAB_POS_Y             CHUNK_BUF_POS_Y
 #define RECT_SIZE                   32.0f
 #define MARGIN                      2.0f
-#define draw_chunk(x, y, col)                                                   \
-    DrawRectangleRounded(                                                       \
-        (Rectangle){                                                            \
-        (f32)(((f32)(x) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_X),             \
-        (f32)(((f32)(y) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_Y),             \
-        RECT_SIZE, RECT_SIZE                                                    \
-        },                                                                      \
-        0.3f, 1, col)
+#define LEGEND_POS_X                CHUNK_TAB_POS_X
+#define LEGEND_POS_Y                20.0f
 
 #define draw_chunk_buf_index(i, col)                                            \
     DrawRectangleRounded(                                                       \
@@ -42,7 +35,7 @@
         },                                                                      \
         0.3f, 1, col)
 
-#define draw_chunk_tab_index(i, col)                                                \
+#define draw_chunk_tab_index(i, col)                                            \
     DrawRectangleRounded(                                                       \
         (Rectangle){                                                            \
         (f32)(((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_X),                 \
@@ -59,7 +52,7 @@ enum ChunkStates
     STATE_CHUNK_DIRTY =     0x2,
 }; /* Chunk States */
 
-typedef struct Chunk
+typedef struct // Chunk
 {
     v2i16 pos;
     u32 id;
@@ -75,25 +68,23 @@ u8 state = 0;
 u8 render_distance = 1;
 u8 data_view = 0;
 Chunk *chunk_buf = {0};
-Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {0};
-v2i16 player_chunk = {2, -1};
-
-const v2f32 legend_pos = {CHUNK_TAB_POS_X, 20.0f};
+Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
+v2i32 chunk_tab_index = {0};
+v2i16 player_chunk = {0};
 
 // ---- signatures -------------------------------------------------------------
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
-void push_chunk_buf(v2i16 *player_chunk, v2i16 pos);
+Chunk *push_chunk_buf(v2i16 *player_chunk, v2i32 pos);
 void update_chunk_buf(v2i16 *player_chunk);
-void draw_chunk_buf(u16 i);
+void draw_chunk_buf(u32 i);
 void init_chunking();
 void free_chunking();
 void parse_input();
 void draw_gui();
 
-void push_chunk_buf(v2i16 *player_chunk, v2i16 pos)
+Chunk *push_chunk_buf(v2i16 *player_chunk, v2i32 pos)
 {
-    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
-    {
+    for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (chunk_buf[i].state ^ STATE_CHUNK_LOADED)
         {
             memset(&chunk_buf[i], 0, sizeof(Chunk));
@@ -103,25 +94,24 @@ void push_chunk_buf(v2i16 *player_chunk, v2i16 pos)
                     player_chunk->x + (pos.x - CHUNK_BUF_RADIUS),
                     player_chunk->y + (pos.y - CHUNK_BUF_RADIUS)
                 };
-            chunk_tab[CHUNK_TAB_INDEX(pos.x, pos.y)] = &chunk_buf[i];
-            return;
+            return &chunk_buf[i];
         }
-    }
+    return NULL;
 }
 
 void update_chunk_buf(v2i16 *player_chunk)
 {
-    for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
+        chunk_tab_index = (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
+
         if (is_distance_within(render_distance,
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    (v2i32){i % CHUNK_BUF_DIAMETER, (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
+                    chunk_tab_index))
         {
             if (chunk_tab[i] == NULL)
-                push_chunk_buf(player_chunk,
-                        (v2i16){
-                        i % CHUNK_BUF_DIAMETER,
-                        (i16)floorf((f32)i / CHUNK_BUF_DIAMETER)});
+                chunk_tab[i] = push_chunk_buf(player_chunk,
+                        chunk_tab_index);
         }
         else if (chunk_tab[i] != NULL)
             if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
@@ -132,10 +122,11 @@ void update_chunk_buf(v2i16 *player_chunk)
     }
 }
 
-void draw_chunk_buf(u16 i)
+void draw_chunk_buf(u32 i)
 {
     draw_chunk_buf_index(i, MC_C_OFF);
     draw_chunk_tab_index(i, MC_C_OFF);
+    chunk_tab_index = (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)};
 
     if (&chunk_buf[i] != NULL)
     {
@@ -145,8 +136,8 @@ void draw_chunk_buf(u16 i)
             draw_chunk_buf_index(i, MC_C_GREEN);
             DrawTextEx(font, TextFormat("%d", &chunk_buf[i] - &chunk_buf[0]),
                     (Vector2){
-                    CHUNK_BUF_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
-                    CHUNK_BUF_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
+                    CHUNK_BUF_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
+                    CHUNK_BUF_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
         }
@@ -154,7 +145,7 @@ void draw_chunk_buf(u16 i)
 
     if (is_distance_within(render_distance,
                 (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
+                chunk_tab_index))
         draw_chunk_tab_index(i, MC_C_RED);
 
     if (chunk_tab[i] != NULL)
@@ -163,7 +154,7 @@ void draw_chunk_buf(u16 i)
         {
             if (is_distance_within(render_distance,
                         (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                        (v2i32){i % CHUNK_BUF_DIAMETER, (i32)floorf((f32)i / CHUNK_BUF_DIAMETER)}))
+                        chunk_tab_index))
                 draw_chunk_tab_index(i, MC_C_GREEN);
             else
                 draw_chunk_tab_index(i, MC_C_BLUE);
@@ -171,15 +162,15 @@ void draw_chunk_buf(u16 i)
             if (data_view)
                 DrawTextEx(font, TextFormat("%d,%d", chunk_tab[i]->pos.x, chunk_tab[i]->pos.y),
                         (Vector2){
-                        CHUNK_TAB_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
-                        CHUNK_TAB_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
+                        CHUNK_TAB_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
+                        CHUNK_TAB_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
                         },
                         font_size_small, 1, BLACK);
             else
-                DrawTextEx(font, TextFormat("%d", chunk_tab[i] - &chunk_buf[0]),
+                DrawTextEx(font, TextFormat("%d", chunk_tab[i] - chunk_buf),
                         (Vector2){
-                        CHUNK_TAB_POS_X + ((i % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)),
-                        CHUNK_TAB_POS_Y + (floorf((f32)i / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN))
+                        CHUNK_TAB_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
+                        CHUNK_TAB_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
                         },
                         font_size_small, 1, BLACK);
         }
@@ -199,6 +190,7 @@ int main(void)
     state = (0 | STATE_ACTIVE);
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(1400, 920, "Chunk Pointer Table");
+    SetTargetFPS(30);
     SetExitKey(KEY_Q);
 
     font = LoadFont("fonts/code_saver_regular.otf");
@@ -294,44 +286,44 @@ void draw_gui()
             font_size, 1, MC_C_GREEN);
 
     DrawTextEx(font, TextFormat("Player Chunk: %d, %d", player_chunk.x, player_chunk.y),
-            (Vector2){400.0f, 180.0f},
+            (Vector2){LEGEND_POS_X, 180.0f},
             font_size, 1, MC_C_GREEN);
 
     // ---- legend -------------------------------------------------------------
-    DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y, RECT_SIZE / 2, RECT_SIZE / 2},
+    DrawRectangleRounded((Rectangle){LEGEND_POS_X, LEGEND_POS_Y, RECT_SIZE / 2, RECT_SIZE / 2},
             0.3f, 1, MC_C_OFF);
 
-    DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 2), (RECT_SIZE / 2), (RECT_SIZE / 2)},
+    DrawRectangleRounded((Rectangle){LEGEND_POS_X, LEGEND_POS_Y + ((RECT_SIZE / 2) * 2), (RECT_SIZE / 2), (RECT_SIZE / 2)},
             0.3f, 1, MC_C_GREEN);
 
-    DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 4), (RECT_SIZE / 2), (RECT_SIZE / 2)},
+    DrawRectangleRounded((Rectangle){LEGEND_POS_X, LEGEND_POS_Y + ((RECT_SIZE / 2) * 4), (RECT_SIZE / 2), (RECT_SIZE / 2)},
             0.3f, 1, MC_C_RED);
 
-    DrawRectangleRounded((Rectangle){legend_pos.x, legend_pos.y + ((RECT_SIZE / 2) * 6), (RECT_SIZE / 2), (RECT_SIZE / 2)},
+    DrawRectangleRounded((Rectangle){LEGEND_POS_X, LEGEND_POS_Y + ((RECT_SIZE / 2) * 6), (RECT_SIZE / 2), (RECT_SIZE / 2)},
             0.3f, 1, MC_C_BLUE);
 
     DrawTextEx(font, "Usable/Not Null",
             (Vector2){
-            legend_pos.x + (RECT_SIZE + MARGIN),
-            legend_pos.y},
+            LEGEND_POS_X + (RECT_SIZE + MARGIN),
+            LEGEND_POS_Y},
             font_size, 1, MC_C_GRAY);
 
     DrawTextEx(font, "Chunk Loaded",
             (Vector2){
-            legend_pos.x + (((RECT_SIZE / 2) + MARGIN) * 2),
-            legend_pos.y + ((RECT_SIZE / 2) * 2)},
+            LEGEND_POS_X + (((RECT_SIZE / 2) + MARGIN) * 2),
+            LEGEND_POS_Y + ((RECT_SIZE / 2) * 2)},
             font_size, 1, MC_C_GRAY);
 
     DrawTextEx(font, "Render Surface",
             (Vector2){
-            legend_pos.x + (((RECT_SIZE / 2) + MARGIN) * 2),
-            legend_pos.y + ((RECT_SIZE / 2) * 4)},
+            LEGEND_POS_X + (((RECT_SIZE / 2) + MARGIN) * 2),
+            LEGEND_POS_Y + ((RECT_SIZE / 2) * 4)},
             font_size, 1, MC_C_GRAY);
 
     DrawTextEx(font, "Chunk Loaded, but Out of Render Surface",
             (Vector2){
-            legend_pos.x + (((RECT_SIZE / 2) + MARGIN) * 2),
-            legend_pos.y + ((RECT_SIZE / 2) * 6)},
+            LEGEND_POS_X + (((RECT_SIZE / 2) + MARGIN) * 2),
+            LEGEND_POS_Y + ((RECT_SIZE / 2) * 6)},
             font_size, 1, MC_C_GRAY);
 
     // ---- ruler --------------------------------------------------------------
@@ -347,7 +339,7 @@ void draw_gui()
             CHUNK_TAB_POS_Y + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE},
             font_size, 1, MC_C_GRAY);
 
-    for (int i = 0; i < CHUNK_BUF_DIAMETER; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_DIAMETER; ++i)
     {
         DrawTextEx(font, TextFormat("%d", i),
             (Vector2){
