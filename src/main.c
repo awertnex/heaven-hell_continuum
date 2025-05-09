@@ -18,6 +18,7 @@ u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
 u64 game_tick = 0;
 u64 game_days = 0;
+
 settings setting =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
@@ -26,6 +27,7 @@ settings setting =
     .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
+
 Player lily =
 {
     .name = "Lily",
@@ -77,7 +79,7 @@ int main(int argc, char **argv)
 
     if (argc > 1)
     {
-        if (strncmp(argv[1], "instance ", 9) && argv[2][0])
+        if (strncmp(argv[1], "instance ", 10) && argv[2][0])
         {
             for (u8 i = 2; i < argc; ++i)
             {
@@ -102,7 +104,6 @@ int main(int argc, char **argv)
     update_render_settings(render_size);
     init_super_debugger(render_size);
 
-    setting.render_distance = SETTING_RENDER_DISTANCE_MAX; //temp
     game_start_time = get_time_ms();
 
     state |= STATE_ACTIVE;
@@ -165,32 +166,13 @@ void init_world(const char *str)
     if (init_chunking() != 0)
         state &= ~STATE_ACTIVE;
 
-    { //temp
-        /* temp off
-        chunk_buf[GET_CHUNK_XY(0, 0)].pos = (v2i16){0, 0};
-        chunk_buf[GET_CHUNK_XY(1, 0)].pos = (v2i16){0, -1};
-        chunk_buf[GET_CHUNK_XY(2, 0)].pos = (v2i16){0, -2};
-        chunk_buf[GET_CHUNK_XY(3, 0)].pos = (v2i16){-1, 0};
-        chunk_buf[GET_CHUNK_XY(4, 0)].pos = (v2i16){0, 1};
-        chunk_buf[GET_CHUNK_XY(5, 0)].pos = (v2i16){0, 2};
-        chunk_buf[GET_CHUNK_XY(6, 0)].pos = (v2i16){-1, -1};
-        chunk_buf[GET_CHUNK_XY(7, 0)].pos = (v2i16){1, 0};
-        load_chunk(&chunk_buf[GET_CHUNK_XY(0, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(1, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(2, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(3, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(4, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(5, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(6, 0)]);
-        load_chunk(&chunk_buf[GET_CHUNK_XY(7, 0)]);
-        */
+    update_player_states(&lily);
+    update_chunk_buf(&lily.chunk);
 
-        tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
-        tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
+    tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
+    tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
 
-        lily.state |= STATE_FALLING;
-    }
-
+    lily.state |= STATE_FALLING;
     lily.state &= ~STATE_PARSE_TARGET;
     set_player_block(&lily, 0, 0, 0);
 
@@ -227,7 +209,7 @@ void update_world()
     }
 
     BeginMode3D(lily.camera);
-    draw_chunk_buf();
+    draw_chunk_tab();
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
@@ -238,7 +220,10 @@ void update_world()
     {
         if (state & STATE_DEBUG_MORE)
             draw_bounding_box(
-                    (Vector3){lily.chunk.x + ((f32)CHUNK_DIAMETER / 2), lily.chunk.y + ((f32)CHUNK_DIAMETER / 2), WORLD_BOTTOM},
+                    (Vector3){
+                    (lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                    (lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                    WORLD_BOTTOM},
                     (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, world_height});
 
         if (check_delta_target(&lily.camera.target, &lily.delta_target))

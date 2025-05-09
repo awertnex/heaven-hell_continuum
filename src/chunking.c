@@ -7,9 +7,10 @@
 #include "engine/h/logger.h"
 
 u16 world_height = WORLD_HEIGHT_NORMAL;
-Chunk *chunk_buf = {0};
-Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
-v2u16 chunk_tab_coordinates; // pointer arithmetic redundancy optimization
+Chunk *chunk_buf = {0};                         // chunk buffer, raw chunk data
+Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};  // chunk pointer look-up table
+Chunk *chunk_reg[CHUNK_BUF_DIAMETER] = {NULL};  // register for chunks on edge of render distance facing one direction
+v2u16 chunk_tab_coordinates;                    // pointer arithmetic redundancy optimization
 Chunk *target_chunk; //temp
 struct WorldStats world_stats =
 {
@@ -64,6 +65,9 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
     else chunk->i[z][y][x] |= NEGATIVE_Z;
 
     chunk->i[z][y][x] |= NOT_EMPTY;
+
+    if (GET_BLOCK_INDEX(x, y, z) >= chunk->block_parse_limit)
+        chunk->block_parse_limit = GET_BLOCK_INDEX(x, y, z);
 }
 
 //TODO: check chunk barrier faces
@@ -93,11 +97,11 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
     chunk->i[z][y][x] = 0;
 }
 
-void update_chunk() // TODO: make this function
+void generate_chunk(Chunk *chunk) // TODO: make this function
 {
 }
 
-void unload_chunk() // TODO: make this function
+void unload_chunk(Chunk *chunk) // TODO: make this function
 {
 }
 
@@ -114,23 +118,15 @@ Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates)
                 .pos = (v2i16){
                     player_chunk->x + (chunk_tab_coordinates.x - CHUNK_BUF_RADIUS),
                     player_chunk->y + (chunk_tab_coordinates.y - CHUNK_BUF_RADIUS)},
-                .id = (player_chunk->x << 16) + player_chunk->y,
                 .mat = LoadMaterialDefault(),
-                .state = (0 | STATE_CHUNK_LOADED | STATE_CHUNK_RENDER),
+                .state = 0 | STATE_CHUNK_LOADED | STATE_CHUNK_RENDER,
             };
-
-        for (; z < 20; ++z)
-        {
-            for (; y < CHUNK_DIAMETER; ++y)
-            {
-                for (; x < CHUNK_DIAMETER; ++x)
-                {
+        chunk_buf[i].id = ((chunk_buf[i].pos.x & 0xffff) << 16) + (chunk_buf[i].pos.y & 0xffff);
+        for (; z < 3; ++z)
+            for (y = 0; y < CHUNK_DIAMETER; ++y)
+                for (x = 0; x < CHUNK_DIAMETER; ++x)
                     add_block(&chunk_buf[i], x, y, z);
-                }
-                x = 0;
-            }
-            y = 0;
-        }
+
         return &chunk_buf[i];
     }
     return NULL;
@@ -151,15 +147,18 @@ void update_chunk_buf(v2i16 *player_chunk)
                     (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y}))
         {
             if (chunk_tab[i] == NULL)
+            {
                 chunk_tab[i] =
                     push_chunk_buf(player_chunk,
                             chunk_tab_coordinates);
 
-            if (chunk_tab[i] != NULL)
-                LOGINFO("chunk[%03d %03d] Loaded, i[%03d]",
-                        chunk_tab[i]->pos.x,
-                        chunk_tab[i]->pos.y,
-                        i);
+                if (chunk_tab[i] != NULL)
+                    LOGINFO("Chunk Loaded 'id[%08x] pos[%03d %03d] i[%03d]'",
+                            chunk_tab[i]->id,
+                            chunk_tab[i]->pos.x,
+                            chunk_tab[i]->pos.y,
+                            i);
+            }
         }
         else if (chunk_tab[i] != NULL) // TODO: implement chunk unloading elsewhere
             if (chunk_tab[i]->state & STATE_CHUNK_LOADED)
@@ -190,55 +189,61 @@ Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag) // TODO: revise, migh
     return NULL;
 }
 
-Texture2D tex_cobblestone;
-Texture2D tex_dirt;
-void draw_chunk_buf()
+Texture2D tex_cobblestone; //temp texturing
+Texture2D tex_dirt; //temp texturing
+void draw_chunk_tab()
 {
     if (state & STATE_DEBUG_MORE)
         opacity = 200;
-    else opacity = 255;
+    else
+        opacity = 255;
 
     rlPushMatrix();
     rlSetTexture(tex_cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
+    v2f32 chunk_pos = {0};
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
-        if (chunk_buf[i].state & STATE_CHUNK_RENDER)
-            draw_chunk(&chunk_buf[i]);
+    {
+        if (chunk_tab[i] == NULL) continue;
+        if (!(chunk_tab[i]->state & STATE_CHUNK_RENDER)) continue;
+
+        chunk_pos =
+            (v2f32){
+                chunk_tab[i]->pos.x * CHUNK_DIAMETER,
+                chunk_tab[i]->pos.y * CHUNK_DIAMETER};
+
+        rlTranslatef(chunk_pos.x, chunk_pos.y, WORLD_BOTTOM);
+
+        for (u32 j = 0; j <= chunk_tab[i]->block_parse_limit; ++j)
+        {
+            if (chunk_tab[i]->i[GET_BLOCK_Z(j)][GET_BLOCK_Y(j)][GET_BLOCK_X(j)] & BLOCKFACES)
+                draw_block(chunk_tab[i]->i[GET_BLOCK_Z(j)][GET_BLOCK_Y(j)][GET_BLOCK_X(j)]);
+            rlTranslatef(1.0f, 0.0f, 0.0f);
+
+            if (GET_BLOCK_X(j) == (CHUNK_DIAMETER - 1))
+            {
+                rlTranslatef(-CHUNK_DIAMETER, 1.0f, 0.0f);
+                if (GET_BLOCK_Y(j) == (CHUNK_DIAMETER - 1))
+                    rlTranslatef(0.0f, -CHUNK_DIAMETER, 1.0f);
+            }
+        }
+
+        rlTranslatef(
+                -GET_BLOCK_X(chunk_tab[i]->block_parse_limit + 1) - (chunk_pos.x),
+                -GET_BLOCK_Y(chunk_tab[i]->block_parse_limit + 1) - (chunk_pos.y),
+                -GET_BLOCK_Z(chunk_tab[i]->block_parse_limit + 1) - WORLD_BOTTOM);
+    }
 
     rlEnd();
     rlPopMatrix();
     rlSetTexture(0); //temp texturing
 }
 
-void draw_chunk(Chunk *chunk)
-{
-    rlTranslatef(chunk->pos.x * CHUNK_DIAMETER, chunk->pos.y * CHUNK_DIAMETER, WORLD_BOTTOM);
-
-    u16 z = 0; u8 y = 0, x = 0;
-    for (; z < -WORLD_BOTTOM; ++z)
-    {
-        for (; y < CHUNK_DIAMETER; ++y)
-        {
-            for (; x < CHUNK_DIAMETER; ++x)
-            {
-                if (chunk->i[z][y][x] & BLOCKFACES)
-                    draw_block(chunk->i[z][y][x]);
-                rlTranslatef(1.0f, 0.0f, 0.0f);
-            }
-            x = 0;
-            rlTranslatef(-CHUNK_DIAMETER, 1.0f, 0.0f);
-        }
-        y = 0;
-        rlTranslatef(0.0f, -CHUNK_DIAMETER, 1.0f);
-    }
-    rlTranslatef((-chunk->pos.x) * CHUNK_DIAMETER, (-chunk->pos.y) * CHUNK_DIAMETER, 0.0f);
-}
-
 // raylib/rmodels.c/DrawCube refactored
-void draw_block(u32 block_state)
+void draw_block(u32 block)
 {
-    if (block_state & POSITIVE_X)
+    if (block & POSITIVE_X)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(150, 150, 137, opacity);
@@ -252,7 +257,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
     }
 
-    if (block_state & NEGATIVE_X)
+    if (block & NEGATIVE_X)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(135, 135, 123, opacity);
@@ -266,7 +271,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
     }
 
-    if (block_state & POSITIVE_Y)
+    if (block & POSITIVE_Y)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(155, 155, 142, opacity);
@@ -280,7 +285,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
     }
 
-    if (block_state & NEGATIVE_Y)
+    if (block & NEGATIVE_Y)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(140, 140, 123, opacity);
@@ -294,7 +299,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
     }
 
-    if (block_state & POSITIVE_Z)
+    if (block & POSITIVE_Z)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(176, 176, 160, opacity);
@@ -308,7 +313,7 @@ void draw_block(u32 block_state)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
     }
 
-    if (block_state & NEGATIVE_Z)
+    if (block & NEGATIVE_Z)
     {
         if (MODE_GRAY_BLOCKS)
             rlColor4ub(115, 115, 104, opacity);
