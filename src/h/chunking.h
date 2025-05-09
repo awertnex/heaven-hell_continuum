@@ -35,8 +35,7 @@
 #define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
 
 // ---- getters & setters ------------------------------------------------------
-#define GET_CHUNK_TAB_INDEX(x, y)   (x + (y * CHUNK_BUF_DIAMETER)) // TODO: revise, might not be needed
-#define GET_BLOCK_INDEX(x, y, z)    (u32)(x + (y * CHUNK_DIAMETER) + (z * CHUNK_DIAMETER * CHUNK_DIAMETER))
+#define GET_BLOCK_INDEX(x, y, z)    (u32)((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
 #define GET_BLOCK_X(i)              ((u32)((i) % CHUNK_DIAMETER))
 #define GET_BLOCK_Y(i)              ((u32)floorf((f32)(i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
 #define GET_BLOCK_Z(i)              ((u32)floorf((f32)(i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
@@ -113,9 +112,9 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void generate_chunk(Chunk *chunk);
 void unload_chunk(Chunk *chunk);
 Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates);
-void update_chunk_buf(v2i16 *player_chunk);
-Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
+void update_chunk_tab(v2i16 *player_chunk);
 void draw_chunk_tab();
+Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag); // TODO: revise, might not be needed
 void draw_chunk(Chunk *chunk);
 void draw_block(u32 block);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);

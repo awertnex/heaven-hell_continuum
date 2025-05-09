@@ -167,7 +167,7 @@ void init_world(const char *str)
         state &= ~STATE_ACTIVE;
 
     update_player_states(&lily);
-    update_chunk_buf(&lily.chunk);
+    update_chunk_tab(&lily.chunk);
 
     tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
     tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
@@ -204,7 +204,7 @@ void update_world()
 
     if (lily.state & STATE_CHUNK_BUF_DIRTY)
     {
-        update_chunk_buf(&lily.chunk);
+        update_chunk_tab(&lily.chunk);
         lily.state &= ~STATE_CHUNK_BUF_DIRTY;
     }
 
@@ -357,7 +357,9 @@ void update_input(Player *player)
     if (IsMouseButtonDown(bind_use_item_or_place_block))
     {
         if (player->state & STATE_PARSE_TARGET)
+        {
             add_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+        }
     }
 
     // ---- inventory ----------------------------------------------------------

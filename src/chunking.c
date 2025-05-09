@@ -34,7 +34,7 @@ void free_chunking()
     MC_C_FREE(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
 }
 
-//TODO: check chunk-border block-faces
+// TODO: check chunk barrier faces
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_DIAMETER;
@@ -70,7 +70,7 @@ void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
         chunk->block_parse_limit = GET_BLOCK_INDEX(x, y, z);
 }
 
-//TODO: check chunk barrier faces
+// TODO: check chunk barrier faces
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
     x %= CHUNK_DIAMETER;
@@ -122,6 +122,7 @@ Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates)
                 .state = 0 | STATE_CHUNK_LOADED | STATE_CHUNK_RENDER,
             };
         chunk_buf[i].id = ((chunk_buf[i].pos.x & 0xffff) << 16) + (chunk_buf[i].pos.y & 0xffff);
+
         for (; z < 3; ++z)
             for (y = 0; y < CHUNK_DIAMETER; ++y)
                 for (x = 0; x < CHUNK_DIAMETER; ++x)
@@ -132,7 +133,7 @@ Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates)
     return NULL;
 }
 
-void update_chunk_buf(v2i16 *player_chunk)
+void update_chunk_tab(v2i16 *player_chunk)
 {
     for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
@@ -202,18 +203,15 @@ void draw_chunk_tab()
     rlSetTexture(tex_cobblestone.id); //temp texturing
     rlBegin(RL_QUADS);
 
-    v2f32 chunk_pos = {0};
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
         if (chunk_tab[i] == NULL) continue;
         if (!(chunk_tab[i]->state & STATE_CHUNK_RENDER)) continue;
 
-        chunk_pos =
-            (v2f32){
-                chunk_tab[i]->pos.x * CHUNK_DIAMETER,
-                chunk_tab[i]->pos.y * CHUNK_DIAMETER};
-
-        rlTranslatef(chunk_pos.x, chunk_pos.y, WORLD_BOTTOM);
+        rlTranslatef(
+                (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
+                (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
+                (f32)WORLD_BOTTOM);
 
         for (u32 j = 0; j <= chunk_tab[i]->block_parse_limit; ++j)
         {
@@ -223,16 +221,16 @@ void draw_chunk_tab()
 
             if (GET_BLOCK_X(j) == (CHUNK_DIAMETER - 1))
             {
-                rlTranslatef(-CHUNK_DIAMETER, 1.0f, 0.0f);
+                rlTranslatef(-(f32)CHUNK_DIAMETER, 1.0f, 0.0f);
                 if (GET_BLOCK_Y(j) == (CHUNK_DIAMETER - 1))
-                    rlTranslatef(0.0f, -CHUNK_DIAMETER, 1.0f);
+                    rlTranslatef(0.0f, -(f32)CHUNK_DIAMETER, 1.0f);
             }
         }
 
         rlTranslatef(
-                -GET_BLOCK_X(chunk_tab[i]->block_parse_limit + 1) - (chunk_pos.x),
-                -GET_BLOCK_Y(chunk_tab[i]->block_parse_limit + 1) - (chunk_pos.y),
-                -GET_BLOCK_Z(chunk_tab[i]->block_parse_limit + 1) - WORLD_BOTTOM);
+                -(f32)GET_BLOCK_X(chunk_tab[i]->block_parse_limit + 1) - (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
+                -(f32)GET_BLOCK_Y(chunk_tab[i]->block_parse_limit + 1) - (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
+                -(f32)GET_BLOCK_Z(chunk_tab[i]->block_parse_limit + 1) - (f32)WORLD_BOTTOM);
     }
 
     rlEnd();
