@@ -88,11 +88,12 @@ void update_player_states(Player *player)
 
 void update_camera_movements_player(Player *player)
 {
-    if (!(state_menu_depth) && !(state & STATE_SUPER_DEBUG))
-    {
-        player->yaw -= (f32)mouse_delta.x * setting.mouse_sensitivity;
-        player->pitch -= (f32)mouse_delta.y * setting.mouse_sensitivity;
-    }
+    if (state & STATE_PARSE_CURSOR)
+        if (!(state_menu_depth) && !(state & STATE_SUPER_DEBUG))
+        {
+            player->yaw -= (f32)mouse_delta.x * setting.mouse_sensitivity;
+            player->pitch -= (f32)mouse_delta.y * setting.mouse_sensitivity;
+        }
 
     player->yaw = fmodf(player->yaw, 360.0f);
     if (player->yaw < 0.0f) player->yaw += 360.0f;

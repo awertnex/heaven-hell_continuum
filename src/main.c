@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 
     game_start_time = get_time_ms();
 
-    state |= STATE_ACTIVE;
+    state |= STATE_ACTIVE | STATE_PARSE_CURSOR;
     while (!WindowShouldClose() && (state & STATE_ACTIVE))
     {
         // ---- game loop ------------------------------------------------------
@@ -115,6 +115,12 @@ int main(int argc, char **argv)
         {
             disable_cursor;
             center_cursor;
+        }
+
+        if (!(state & STATE_PARSE_CURSOR))
+        {
+            state |= STATE_PARSE_CURSOR;
+            mouse_delta = (Vector2){0.0f, 0.0f};
         }
 
         update_input(&lily);
@@ -347,7 +353,9 @@ void update_input(Player *player)
     if (IsMouseButtonDown(bind_attack_or_destroy))
     {
         if (player->state & STATE_PARSE_TARGET)
+        {
             remove_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+        }
     }
 
     if (IsMouseButtonDown(bind_pick_block))
@@ -426,6 +434,7 @@ void update_input(Player *player)
     if (IsKeyPressed(bind_toggle_fullscreen))
     {
         state ^= STATE_FULLSCREEN;
+        state &= ~STATE_PARSE_CURSOR;
 
         if (state & STATE_FULLSCREEN)
         {

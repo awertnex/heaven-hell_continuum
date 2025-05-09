@@ -59,14 +59,15 @@ typedef struct Player
 // ---- states -----------------------------------------------------------------
 enum GameStates
 {
-    STATE_ACTIVE =                  0x01,
-    STATE_PAUSED =                  0x02,
-    STATE_SUPER_DEBUG =             0x04,
-    STATE_DEBUG =                   0x08,
-    STATE_DEBUG_MORE =              0x10,
-    STATE_HUD =                     0x20,
-    STATE_FULLSCREEN =              0x40,
-    STATE_WORLD_LOADED =            0x80,
+    STATE_ACTIVE =                  0x0001,
+    STATE_PAUSED =                  0x0002,
+    STATE_SUPER_DEBUG =             0x0004,
+    STATE_DEBUG =                   0x0008,
+    STATE_DEBUG_MORE =              0x0010,
+    STATE_HUD =                     0x0020,
+    STATE_FULLSCREEN =              0x0040,
+    STATE_WORLD_LOADED =            0x0080,
+    STATE_PARSE_CURSOR =            0x0100,
 }; /* GameStates */
 
 enum ContainerStates
