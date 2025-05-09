@@ -95,6 +95,22 @@ void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
         chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] |= POSITIVE_Z) : 0;
 
     chunk->i[z][y][x] = 0;
+
+    if (GET_BLOCK_INDEX(x, y, z) == chunk->block_parse_limit)
+        for (u16 i = chunk->block_parse_limit; i >= 0; --i)
+        {
+            if (i == 0)
+            {
+                chunk->block_parse_limit = 0;
+                break;
+            }
+
+            if (chunk->i[GET_BLOCK_Z(i)][GET_BLOCK_Y(i)][GET_BLOCK_X(i)])
+            {
+                chunk->block_parse_limit = i;
+                break;
+            }
+        }
 }
 
 void generate_chunk(Chunk *chunk) // TODO: make this function
