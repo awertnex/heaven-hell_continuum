@@ -37,10 +37,11 @@ char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", NULL};
 char str_main[32] = "main.c";
 char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", NULL};
 char str_out[3][48] = {"-o", "../bin/minecraft_c", NULL};
-char str_tests[4][24] =
+char str_tests[5][24] =
 {
     "chunk_loader",
     "chunk_pointer_table",
+    "chunk_tab_shift",
     "function_pointer",
     NULL,
 };
