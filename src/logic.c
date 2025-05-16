@@ -38,11 +38,8 @@ void update_player_states(Player *player)
             floorf((f32)player->pos.y / CHUNK_DIAMETER),
         };
 
-    if ((lily.delta_chunk.x != lily.chunk.x) || (lily.delta_chunk.y != lily.chunk.y))
-    {
+    if ((lily.delta_chunk.x - lily.chunk.x) || (lily.delta_chunk.y - lily.chunk.y))
         player->state |= STATE_CHUNK_BUF_DIRTY;
-        lily.delta_chunk = lily.chunk;
-    }
 
     if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
         give_gravity(player);
@@ -205,6 +202,18 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z)
     player->pos = (Vector3){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
 }
 
+void set_delta_target(Vector3 *coordinates, v3i32 *delta_target)
+{
+    if ((f32)delta_target->x != floorf(coordinates->x)
+            || (f32)delta_target->y != floorf(coordinates->y)
+            || (f32)delta_target->z != floorf(coordinates->z))
+        *delta_target =
+            (v3i32){
+                (i32)floorf(coordinates->x),
+                (i32)floorf(coordinates->y),
+                (i32)floorf(coordinates->z)};
+}
+
 void kill_player(Player *player)
 {
     *player = (Player){
@@ -227,19 +236,6 @@ void player_respawn(Player *player)
     };
 }
 
-bool check_delta_target(Vector3 *coordinates, v3i32 *delta_target)
-{
-    if (delta_target->x == floorf(coordinates->x) &&
-            delta_target->y == floorf(coordinates->y) &&
-            delta_target->z == floorf(coordinates->z))
-        return false;
-
-    delta_target->x = (i32)floorf(coordinates->x);
-    delta_target->y = (i32)floorf(coordinates->y);
-    delta_target->z = (i32)floorf(coordinates->z);
-    return true;
-}
-
 bool is_range_within_ff(f32 *pos, f32 start, f32 end)
 {
     if (*pos < start || *pos > end) return false;
@@ -255,9 +251,9 @@ bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end)
 
 bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
 {
-    if (pos->x < start.x || pos->x > end.x ||
-            pos->y < start.y || pos->y > end.y ||
-            pos->z < start.z || pos->z > end.z) return false;
+    if ((i32)pos->x < start.x || (i32)pos->x > end.x ||
+            (i32)pos->y < start.y || (i32)pos->y > end.y ||
+            (i32)pos->z < start.z || (i32)pos->z > end.z) return false;
     return true;
 }
 
@@ -270,8 +266,8 @@ b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
 
 b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
 {
-    if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
-        return true;
+    //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
+        //return true;
     return false;
 }
 

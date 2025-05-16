@@ -69,23 +69,24 @@ enum BlockData
     BLOCKLIGHT =    0x1f000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
 
-enum ChunkStates
+enum ChunkFlags
 {
-    STATE_CHUNK_LOADED =    0x01,
-    STATE_CHUNK_RENDER =    0x02,
-    STATE_CHUNK_DIRTY =     0x04,
-}; /* ChunkStates */
+    FLAG_CHUNK_LOADED =     0x01,
+    FLAG_CHUNK_RENDER =     0x02,
+    FLAG_CHUNK_DIRTY =      0x04,
+}; /* ChunkFlags */
 
 // TODO: add 'version' byte to the chunk file for evolving the format safely
 // TODO: add chunk slicing
-typedef struct Chunk
+typedef struct /* Chunk */
 {
     v2i16 pos;                                  // (world X Y) / CHUNK_DIAMETER
     u32 id;                                     // (pos.x << 16) + pos.y
     u32 i[WORLD_HEIGHT_NORMAL - WORLD_BOTTOM][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Model model;
     Material mat;
-    u8 state;
+    u8 flag;
+    u8 edge_value;                              // chunk marking for chunk_tab shifting logic
     u32 block_parse_limit;                      // final occurrence of non-air blocks in chunk
 } Chunk;
 
@@ -93,9 +94,8 @@ typedef struct Chunk
 extern u16 world_height;
 extern Chunk *chunk_buf;                        // chunk buffer, raw chunk data
 extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];    // chunk pointer look-up table
-extern Chunk *chunk_reg[CHUNK_BUF_DIAMETER];    // register for chunks on edge of render distance facing one direction
-extern v2u16 chunk_tab_index;                   // pointer arithmetic redundancy optimization
-extern Chunk *target_chunk;
+extern v2u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
+extern u16 chunk_tab_index;                     // player relative chunk tab access
 extern struct WorldStats
 {
     u64 block_count;
@@ -110,17 +110,18 @@ void free_chunking();
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void generate_chunk(Chunk *chunk);
-void unload_chunk(Chunk *chunk);
-Chunk *push_chunk_buf(v2i16 *player_chunk, v2u16 chunk_tab_coordinates);
-void update_chunk_tab(v2i16 *player_chunk);
-void draw_chunk_tab();
+Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
+Chunk *pop_chunk_buf(u16 chunk_tab_index);
+void update_chunk_tab(v2i16 player_chunk);
+void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
+u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 coordinates);
 Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag); // TODO: revise, might not be needed
-void draw_chunk(Chunk *chunk);
+void draw_chunk_tab();
 void draw_block(u32 block);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);
-void draw_bounding_box(Vector3 origin, Vector3 scl);
-void draw_bounding_box_clamped(Vector3 origin, Vector3 scl);
+void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
 
 #define MC_C_CHUNKING_H
 #endif

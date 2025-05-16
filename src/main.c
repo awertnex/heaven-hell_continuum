@@ -173,7 +173,7 @@ void init_world(const char *str)
         state &= ~STATE_ACTIVE;
 
     update_player_states(&lily);
-    update_chunk_tab(&lily.chunk);
+    update_chunk_tab(lily.chunk);
 
     tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
     tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
@@ -181,6 +181,11 @@ void init_world(const char *str)
     lily.state |= STATE_FALLING;
     lily.state &= ~STATE_PARSE_TARGET;
     set_player_block(&lily, 0, 0, 0);
+    lily.delta_target =
+        (v3i32){
+            lily.camera.target.x,
+            lily.camera.target.y,
+            lily.camera.target.z};
 
     state |= (STATE_HUD | STATE_WORLD_LOADED);
     LOGINFO("%s '%s'", "World Loaded", "Poop Consistency Tester");
@@ -210,7 +215,7 @@ void update_world()
 
     if (lily.state & STATE_CHUNK_BUF_DIRTY)
     {
-        update_chunk_tab(&lily.chunk);
+        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         lily.state &= ~STATE_CHUNK_BUF_DIRTY;
     }
 
@@ -220,32 +225,34 @@ void update_world()
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
     //{}
+    if (state & STATE_DEBUG_MORE) // ---- Player Chunk Bounding Box ------------
+        draw_bounding_box(
+                (Vector3){
+                (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                (f32)WORLD_BOTTOM},
+                (Vector3){(f32)CHUNK_DIAMETER, (f32)CHUNK_DIAMETER, (f32)world_height},
+                ORANGE);
+
     if (is_range_within_v3fi(&lily.camera.target,
                 (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
                 (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, world_height}))
     {
-        if (state & STATE_DEBUG_MORE)
-            draw_bounding_box(
-                    (Vector3){
-                    (lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                    (lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                    WORLD_BOTTOM},
-                    (Vector3){CHUNK_DIAMETER, CHUNK_DIAMETER, world_height});
-
-        if (check_delta_target(&lily.camera.target, &lily.delta_target))
-            target_chunk = get_chunk(&lily.delta_target, &lily.state, STATE_PARSE_TARGET);
-
-        if (target_chunk != NULL && lily.state & STATE_PARSE_TARGET && (state & STATE_HUD))
+        set_delta_target(&lily.camera.target, &lily.delta_target);
+        chunk_tab_index = get_chunk_tab_index(lily.chunk, lily.delta_target);
+        if (chunk_tab[chunk_tab_index] != NULL && (state & STATE_HUD))
         {
-            if (target_chunk->i
+            if (chunk_tab[chunk_tab_index]->i
                     [lily.delta_target.z - WORLD_BOTTOM]
-                    [lily.delta_target.y - (target_chunk->pos.y * CHUNK_DIAMETER)]
-                    [lily.delta_target.x - (target_chunk->pos.x * CHUNK_DIAMETER)] & NOT_EMPTY)
+                    [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
+                    [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
+                    & NOT_EMPTY)
             {
                 draw_block_wires(lily.delta_target);
                 if (state & STATE_DEBUG_MORE)
                     DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
-            } else if (state & STATE_DEBUG_MORE)
+            }
+            else if (state & STATE_DEBUG_MORE)
                 DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
         }
     }
@@ -257,8 +264,8 @@ void update_world()
           printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
-        draw_bounding_box(lily.pos, lily.scl);
-        draw_bounding_box_clamped(lily.pos, lily.scl); //temp AABB collision
+        draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
+        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); //temp AABB collision
         draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 
@@ -352,9 +359,9 @@ void update_input(Player *player)
     // ---- gameplay -----------------------------------------------------------
     if (IsMouseButtonDown(bind_attack_or_destroy))
     {
-        if (player->state & STATE_PARSE_TARGET)
+        if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
         {
-            remove_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            remove_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
         }
     }
 
@@ -364,9 +371,9 @@ void update_input(Player *player)
 
     if (IsMouseButtonDown(bind_use_item_or_place_block))
     {
-        if (player->state & STATE_PARSE_TARGET)
+        if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
         {
-            add_block(target_chunk, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            add_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
         }
     }
 

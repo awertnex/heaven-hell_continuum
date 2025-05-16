@@ -14,7 +14,6 @@
 #define MC_C_OVERWRITE              (Color){0xff, 0x80, 0x37, 0xff}
 #define MC_C_GREEN                  (Color){0x78, 0xff, 0x78, 0xff}
 #define MC_C_LIGHT_GREEN            (Color){0x78, 0xff, 0x78, 0xb8}
-#define MC_C_DARK_GREEN             (Color){0x78, 0xff, 0x78, 0x56}
 #define MC_C_BLUE                   (Color){0x78, 0x78, 0xff, 0xff}
 
 #define CHUNK_BUF_RADIUS            8
@@ -24,10 +23,8 @@
 
 #define CHUNK_BUF_POS_X             50.0f
 #define CHUNK_BUF_POS_Y             250.0f
-#define CHUNK_TAB_POS_X             890.0f
+#define CHUNK_TAB_POS_X             700.0f
 #define CHUNK_TAB_POS_Y             CHUNK_BUF_POS_Y
-#define CHUNK_REG_POS_X             700.0f
-#define CHUNK_REG_POS_Y             CHUNK_BUF_POS_Y
 #define RECT_SIZE                   32.0f
 #define MARGIN                      2.0f
 #define LEGEND_POS_X                CHUNK_TAB_POS_X
@@ -46,14 +43,6 @@
         (Rectangle){                                                            \
         (f32)((((i) % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_X),               \
         (f32)((floorf((f32)(i) / CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_TAB_POS_Y),    \
-        RECT_SIZE, RECT_SIZE},                                                  \
-        0.3f, 1, col)
-
-#define draw_chunk_reg_index(i, col)                                            \
-    DrawRectangleRounded(                                                       \
-        (Rectangle){                                                            \
-        CHUNK_REG_POS_X,                                                        \
-        (f32)((((i) % CHUNK_BUF_DIAMETER) * (RECT_SIZE + MARGIN)) + CHUNK_REG_POS_Y),   \
         RECT_SIZE, RECT_SIZE},                                                  \
         0.3f, 1, col)
 
@@ -87,7 +76,6 @@ u8 render_distance = 1;
 u8 data_view = 0;
 Chunk *chunk_buf = {0};
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
-Chunk *chunk_reg[CHUNK_BUF_DIAMETER] = {NULL};
 v2u16 chunk_tab_coordinates = {0};
 u8 chunk_parse_lock = 0;
 u8 shift_direction = 1;
@@ -148,9 +136,6 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
     if (chunk_parse_lock) return;
     chunk_parse_lock = 1;
 
-    const u8 EDGE = 1;
-    const u8 TARGET = 2;
-
     v2i16 delta = {
         player_chunk.x - player_delta_chunk->x,
         player_chunk.y - player_delta_chunk->y};
@@ -161,7 +146,6 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
     v2u16 index = {0};
     u16 mirror_index = 0;
     u16 target_index = 0;
-    u16 chunk_reg_index = 0;
     u8 is_on_edge = 0;
 
     player_delta_chunk->x += ((direction == 1) - (direction == 2));
@@ -180,14 +164,12 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
         {
             case 1: // ---- positive x -----------------------------------------
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                chunk_reg_index = index.y;
                 is_on_edge =
                     (index.x == 0) ? 1 : (chunk_tab[i - 1] == NULL);
                 break;
 
             case 2: // ---- negative x -----------------------------------------
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                chunk_reg_index = index.y;
                 is_on_edge =
                     (index.x == CHUNK_BUF_DIAMETER - 1) ? 1 : (chunk_tab[i + 1] == NULL);
                 break;
@@ -195,7 +177,6 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
             case 3: // ---- positive y -----------------------------------------
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                chunk_reg_index = index.x;
                 is_on_edge =
                     (index.y == 0) ? 1 : (chunk_tab[i - CHUNK_BUF_DIAMETER] == NULL);
                 break;
@@ -203,7 +184,6 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
             case 4: // ---- negative y -----------------------------------------
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                chunk_reg_index = index.x;
                 is_on_edge =
                     (index.y == CHUNK_BUF_DIAMETER - 1) ? 1 :
                     (chunk_tab[i + CHUNK_BUF_DIAMETER] == NULL);
@@ -212,12 +192,10 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 
         if (is_on_edge)
         {
-            chunk_reg[chunk_reg_index] = chunk_tab[i];
-            chunk_tab[i]->flag &= ~FLAG_CHUNK_LOADED;
             chunk_tab[i]->flag &= ~FLAG_CHUNK_RENDER;
-            chunk_tab[i]->edge_value = EDGE;
+            chunk_tab[i]->flag &= ~FLAG_CHUNK_LOADED;
             if (chunk_tab[mirror_index] != NULL)
-                chunk_tab[mirror_index]->edge_value = TARGET;
+                chunk_tab[mirror_index]->edge_value = 1;
         }
     }
 
@@ -232,38 +210,30 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
         {
             case 1: // ---- positive x -----------------------------------------
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                chunk_reg_index = index.y;
                 target_index = (index.x == CHUNK_BUF_DIAMETER - 1) ? i : i + 1;
                 break;
 
             case 2: // ---- negative x -----------------------------------------
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                chunk_reg_index = index.y;
                 target_index = (index.x == 0) ? i : i - 1;
                 break;
 
             case 3: // ---- positive y -----------------------------------------
                 mirror_index = 
                     ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                chunk_reg_index = index.x;
                 target_index = (index.y == CHUNK_BUF_DIAMETER - 1) ? i : i + CHUNK_BUF_DIAMETER;
                 break;
 
             case 4: // ---- negative y -----------------------------------------
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                chunk_reg_index = index.x;
                 target_index = (index.y == 0) ? i : i - CHUNK_BUF_DIAMETER;
                 break;
         }
 
         chunk_tab[i] = chunk_tab[target_index];
-        if (chunk_tab[i]->edge_value == TARGET)
-        {
-            chunk_tab[target_index] = chunk_reg[chunk_reg_index];
+        if (chunk_tab[i]->edge_value)
             chunk_tab[target_index] = NULL;
-            chunk_reg[chunk_reg_index] = NULL;
-        }
     }
     update_chunk_tab(*player_delta_chunk);
     chunk_parse_lock = 0;
@@ -279,10 +249,8 @@ void draw_chunk_buf(u32 i)
         draw_chunk_buf_index(i, MC_C_OFF);
         if (chunk_buf[i].flag & FLAG_CHUNK_LOADED)
         {
-            if (chunk_buf[i].edge_value == 1)
+            if (chunk_buf[i].edge_value)
                 draw_chunk_buf_index(i, MC_C_LIGHT_GREEN);
-            else if (chunk_buf[i].edge_value == 2)
-                draw_chunk_buf_index(i, MC_C_DARK_GREEN);
             else
                 draw_chunk_buf_index(i, MC_C_GREEN);
 
@@ -304,10 +272,8 @@ void draw_chunk_buf(u32 i)
 
     if (chunk_tab[i] != NULL)
     {
-        if (chunk_tab[i]->edge_value == 1)
+        if (chunk_tab[i]->edge_value)
             draw_chunk_tab_index(i, MC_C_LIGHT_GREEN);
-        else if (chunk_tab[i]->edge_value == 2)
-            draw_chunk_tab_index(i, MC_C_DARK_GREEN);
         else
             draw_chunk_tab_index(i, MC_C_GREEN);
 
@@ -326,34 +292,6 @@ void draw_chunk_buf(u32 i)
                     },
                     font_size_small, 1, BLACK);
     }
-
-    if (i >= CHUNK_BUF_DIAMETER) return;
-
-    draw_chunk_reg_index(i, MC_C_OFF);
-    if (chunk_reg[i] != NULL)
-    {
-        if (chunk_reg[i]->edge_value == 1)
-            draw_chunk_reg_index(i, MC_C_LIGHT_GREEN);
-        else if (chunk_reg[i]->edge_value == 2)
-            draw_chunk_reg_index(i, MC_C_DARK_GREEN);
-        else
-            draw_chunk_reg_index(i, MC_C_GREEN);
-
-        if (data_view)
-            DrawTextEx(font, TextFormat(" %d,%d", chunk_reg[i]->pos.x, chunk_reg[i]->pos.y),
-                    (Vector2){
-                    CHUNK_REG_POS_X,
-                    CHUNK_REG_POS_Y + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN))
-                    },
-                    font_size_small, 1, BLACK);
-        else
-            DrawTextEx(font, TextFormat(" %d", chunk_reg[i] - chunk_buf),
-                    (Vector2){
-                    CHUNK_REG_POS_X,
-                    CHUNK_REG_POS_Y + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN))
-                    },
-                    font_size_small, 1, BLACK);
-    }
 }
 
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
@@ -368,7 +306,7 @@ int main(void)
     // ---- main_init ----------------------------------------------------------
     flag = FLAG_ACTIVE;
     SetConfigFlags(FLAG_MSAA_4X_HINT);
-    InitWindow(1570, 920, "Chunk Pointer Table");
+    InitWindow(1400, 920, "Chunk Pointer Table");
     SetTargetFPS(30);
     SetExitKey(KEY_Q);
 
@@ -460,10 +398,6 @@ void draw_gui()
             (Vector2){CHUNK_BUF_POS_X, CHUNK_BUF_POS_Y - font_size},
             font_size, 1, MC_C_GRAY);
 
-    DrawTextEx(font, "Chunk Reg",
-            (Vector2){CHUNK_REG_POS_X, CHUNK_REG_POS_Y - font_size},
-            font_size, 1, MC_C_GRAY);
-
     DrawTextEx(font, "Chunk Tab",
             (Vector2){CHUNK_TAB_POS_X, CHUNK_TAB_POS_Y - font_size},
             font_size, 1, MC_C_GRAY);
@@ -546,12 +480,6 @@ void draw_gui()
                 (Vector2){
                 CHUNK_TAB_POS_X + (i * (RECT_SIZE + MARGIN)) + 4.0f,
                 CHUNK_TAB_POS_Y + (CHUNK_BUF_DIAMETER * (RECT_SIZE + MARGIN)) + RECT_SIZE},
-                font_size, 1, MC_C_GRAY);
-
-        DrawTextEx(font, TextFormat("%d", i),
-                (Vector2){
-                CHUNK_REG_POS_X + (RECT_SIZE * 2) + MARGIN,
-                CHUNK_REG_POS_Y + (i * (RECT_SIZE + MARGIN)) + 4.0f},
                 font_size, 1, MC_C_GRAY);
     }
 }
