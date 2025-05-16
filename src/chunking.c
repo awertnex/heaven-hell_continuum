@@ -295,8 +295,8 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 
 u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target)
 {
-    return (player_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
-        + (((player_target.y / CHUNK_DIAMETER) - player_chunk.y
+    return (i16)floorf((f32)player_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
+        + (((i16)floorf((f32)player_target.y / CHUNK_DIAMETER) - player_chunk.y
                 + CHUNK_BUF_RADIUS) * CHUNK_BUF_DIAMETER);
 }
 
