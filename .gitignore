@@ -3,6 +3,7 @@ bin/
 files/
 ref/
 demos/
+test_environment/
 
 # Notes
 NOTES.md
