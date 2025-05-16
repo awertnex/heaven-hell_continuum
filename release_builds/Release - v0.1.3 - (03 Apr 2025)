@@ -1,0 +1,69 @@
+**First release of minecraft.c, the minecraft clone written completely in C, including the build system.\
+It runs fine on linux, up to this point I did not test it on windows or did any development for it to run on windows, but starting now.**
+- - - -
+### Why another minecraft clone?
+- it is primarily for me to learn the C language and programming, also minecraft is my favorite game, its world generation has always fascinated me since the first time I ever played it, and now I wanted to pick it a part and see how it works
+- I thought "minecraft is mainly written in Java.... what if it was written 100% in C? how FAST would it run?" as I was playing it, and I wanted it to run on a potato, so I hope I can do that
+
+## Features
+- 5 camera modes:
+    - 1st person
+    - 3rd person, back
+    - 3rd person, front
+    - panorama (anchors camera to a random block 100 blocks away from the player and targets player, changes anchor block if player is too close or too far)
+    - spectator (like 'spectator mode' in minecraft, except you exit the player and roam with just the camera)
+- 10 hotbar slots, access the last one with the keyboard key '0'
+- change hotbar slots with numpad keys as well
+- break and place blocks
+- the game is Z-up instead of minecraft's Y-up coordinate format
+
+## Download
+- all builds can be found below as `.zip` or `.tar.gz` files
+- windows is not yet supported
+
+## Build from Source
+#### linux - debian-based
+```
+git clone --depth=1 --branch v0.1.3 https://github.com/awertnex/minecraft.c.git
+cd minecraft.c/
+./build
+```
+if `./build` gives errors or is outdated, then:
+```
+cc build.c -o build -std=c99; ./build
+```
+the cflag `-std=c99` is optional but preferred.\
+if build successful, run minecraft.c with `./minecraft_c`
+
+**additional commands**
+- build launcher with `./build launcher` and run with `./launcher`
+    - the launcher creates a directory 'minecraft.c/' in your 'HOME' directory
+    - all minecraft.c instances will be stored in 'minecraft.c/instances/'
+    - the default path to 'minecraft.c/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
+- list available tests with `./build list`
+    - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
+- build test [n] with `./build test [n]`
+    - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
+- help `./build --help`
+
+## Notes
+- chunk loading is hard-coded and not flexible, you can only build 20 blocks high in chunk 'x: 0, y: 0', and highest block +1 doesn't care if it's not parsed, it will not draw (as intended) but it will delete the top face of the block under it (as intended, but shouldn't do that if it's not parsed yet)
+- player target is not a raycaster, it's an xyz position (meaning whichever block is 5 blocks away from your face is the target, doesn't matter if there are closer blocks in front of you)
+- camera modes aren't fully implemented
+    - 1, 2 and 3 never change camera distance from player based on blocks behind them
+    - panorama anchors and never changes anchor
+    - spectator anchors and doesn't move or rotate the camera but moves and rotates the player
+- launcher works fine,because there's nothing, just a window (and parses main 'minecraft.c' directory
+- basically this version is a skeletal structure, kinda
+- the way this codebase is very clunky makes me rest easy at night knowing I feed AI garbage code
+
+## Bugs (linux)
+- gui elements don't follow render scale changes (fullscreen and resize window frame)
+- clicking 'Options..' menu shows its buttons and the buttons of the screen before, but only the 'Options..' buttons work
+- small enough mouse movements don't register and won't move the player's camera
+- collision is funky, player sticks to the ground and can't jump, no matter how far up you are you'll teleport above the block if you stop flying and there's a block under you
+- moving the window frame doesn't pause the game and continuously pulls at your mouse
+- unfocusing the window and focusing back while the game is unpaused launches camera into a spiral
+
+## Bugs (windows)
+- doesn't build
