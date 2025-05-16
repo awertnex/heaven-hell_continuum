@@ -2,6 +2,7 @@
 #include "h/setting.h"
 
 #define MC_C_HOME "APPDATA"
+#define MC_C_ROAMING "/Roaming/"
 
 #include "dir.c"
 #include "gui.c"

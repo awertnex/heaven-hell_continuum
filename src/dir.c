@@ -17,11 +17,21 @@ str world_dir_structure[3][NAME_MAX] = {0};
 // ---- functions --------------------------------------------------------------
 void init_paths()
 {
-    snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 14, "%s/Roaming/minecraft.c/", getenv(MC_C_HOME));
+#if RELEASE_MODE
+    snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
+            "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); // TODO: test if ROAMING is correct
+
     if (!mc_mkdir(mc_c_grandpath, 0775))
         LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
     else
-        LOGINFO("Main Directory Path '%s/minecraft.c/'", getenv("HOME"));
+        LOGINFO("Main Directory Path '%s/%sminecraft.c/'", getenv("HOME"), MC_C_ROAMING);
+#else
+    snprintf(mc_c_grandpath, 3,
+            "%s", "./");
+
+    LOGINFO("%s", "Test Environment Directory Path 'instance/'");
+#endif // RELEASE_MODE
+
 }
 
 FILE *instance;
@@ -99,6 +109,8 @@ void init_instance_directory(str *instance_name, u16 *state, u8 FLAG_ACTIVE)
         }
         LOGINFO("Instance Creation Complete '%s'", instance_name);
     } else LOGINFO("Instance Opened '%s'", instance_name);
+
+    return;
 
     // TODO: make an instance executable and launch it using the launcher screen
 cleanup:

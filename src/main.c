@@ -72,23 +72,19 @@ int main(int argc, char **argv)
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
 
+    state |= STATE_ACTIVE | STATE_PARSE_CURSOR;
     init_paths();
     //TODO: load textures
     //init_texture_layouts();
     //init_textures();
 
-    if (argc > 1)
-    {
-        if (strncmp(argv[1], "instance ", 10) && argv[2][0])
-        {
-            for (u8 i = 2; i < argc; ++i)
-            {
-                init_instance_directory(argv[i], &state, STATE_ACTIVE);
-                if (!(state & STATE_ACTIVE))
-                    return -1;
-            }
-        }
-    }
+#if RELEASE_BUILD
+    init_instance_directory("new_instance", &state, STATE_ACTIVE);
+#else
+    init_instance_directory("test_environment", &state, STATE_ACTIVE);
+#endif // RELEASE_BUILD
+    if (!(state & STATE_ACTIVE))
+        return -1;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
@@ -106,7 +102,6 @@ int main(int argc, char **argv)
 
     game_start_time = get_time_ms();
 
-    state |= STATE_ACTIVE | STATE_PARSE_CURSOR;
     while (!WindowShouldClose() && (state & STATE_ACTIVE))
     {
         // ---- game loop ------------------------------------------------------

@@ -5,6 +5,7 @@
 #include "h/setting.h"
 
 #define MC_C_HOME "HOME"
+#define MC_C_ROAMING
 
 #include "dir.c"
 #include "gui.c"
