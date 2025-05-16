@@ -11,61 +11,61 @@
 // ---- variables --------------------------------------------------------------
 Vector2 cursor;
 Image mc_c_icon;
-Font fontRegular;
-Font fontBold;
-Font fontItalic;
-Font fontBoldItalic;
-u8 fontSize = 0;
-u8 textRowHeight = 0;
+Font font_regular;
+Font font_bold;
+Font font_italic;
+Font font_bold_italic;
+u8 font_size = 0;
+u8 text_row_height = 0;
 
-Texture2D textureHUDWidgets;
-Texture2D textureContainerInventory;
-Texture2D textureBackground;
+Texture2D texture_hud_widgets;
+Texture2D texture_container_inventory;
+Texture2D texture_bg;
 
-Rectangle hotbar =          {0, 0, 202, 22};
-Rectangle hotbarSelected = {0, 22, 24, 24};
-Rectangle hotbarOffhand =  {24, 22, 22, 24};
-Rectangle crosshair =       {240, 0, 16, 16};
-Rectangle buttonInactive =     {0, 46, 200, 20};
-Rectangle button =              {0, 66, 200, 20};
-Rectangle buttonSelected =     {0, 86, 200, 20};
-Rectangle containerInventory = {0, 0, 176, 184};
-Rectangle containerSlotSize = {0, 0, 16, 16};
-Rectangle rectBackground = {0, 0, 16, 16};
-Rectangle rectBackgroundDark = {16, 0, 16, 16};
+Rectangle hotbar =              {0.0f, 0.0f, 202.0f, 22.0f};
+Rectangle hotbar_selected =     {0.0f, 22.0f, 24.0f, 24.0f};
+Rectangle hotbar_offhand =      {24.0f, 22.0f, 22.0f, 24.0f};
+Rectangle crosshair =           {240.0f, 0.0f, 16.0f, 16.0f};
+Rectangle button_inactive =     {0.0f, 46.0f, 200.0f, 20.0f};
+Rectangle button =              {0.0f, 66.0f, 200.0f, 20.0f};
+Rectangle button_selected =     {0.0f, 86.0f, 200.0f, 20.0f};
+Rectangle container_inventory = {0.0f, 0.0f, 176.0f, 184.0f};
+Rectangle container_slot_size = {0.0f, 0.0f, 16.0f, 16.0f};
+Rectangle rect_bg =             {0.0f, 0.0f, 16.0f, 16.0f};
+Rectangle rect_bg_dark =        {16.0f, 0.0f, 16.0f, 16.0f};
 
-v2i16 hotbarPosition;
-f32 hotbarSlotSelected = 1;
-v2i16 crosshairPosition;
-u16 gameMenuPosition = HEIGHT/3;
-u8 buttonSpacingVertical = 5;
-v2i16 containerInventoryPosition;
-v2i16 containerInventoryFirstSlotPosition;
+v2i16 hotbar_pos;
+f32 hotbar_slot_selected = 1.0f;
+v2i16 crosshair_pos;
+u16 game_menu_pos = HEIGHT / 3;
+u8 button_spacing_vertical = 5;
+v2i16 container_inventory_pos;
+v2i16 container_inventory_first_slot_Pos;
 
 // TODO: you know what TODO
-u8 *containerInventorySlots[5][9];
-u8 *containerInventorySlotsCrafting[5];
-u8 *containerInventorySlotsArmor[5];
-u8 containerInventorySlotsOffhand;
-u8 containerCursorSlot[2];
-u8 *hotbarSlots[9][9];
+u8 *container_inventory_slots[5][9];
+u8 *container_inventory_slots_crafting[5];
+u8 *container_inventory_slots_armor[5];
+u8 container_inventory_slots_offhand;
+u8 container_cursor_slot[2];
+u8 *hotbar_slots[9][9];
 
-u16 menuIndex;
-u16 menuLayer[5] = {0};
+u16 menu_index;
+u16 menu_layer[5] = {0};
 u8 buttons[BTN_COUNT];
 static b8 check_menu_ready;
 
 // ---- debug info -------------------------------------------------------------
-str strFPS[16];
-str strPlayerPos[32];
-str strPlayerBlock[32];
-str strPlayerChunk[32];
-str strPlayerDirection[32];
-str strBlockCount[32];
-str strQuadCount[32];
-str strTriCount[32];
-str strVertexCount[32];
-u8 fontSizeDebugInfo = 22;
+str str_fps[16];
+str str_player_pos[32];
+str str_player_block[32];
+str str_player_chunk[32];
+str str_player_direction[32];
+str str_block_count[32];
+str str_quad_count[32];
+str str_tri_count[32];
+str str_vertex_count[32];
+u8 font_size_debug_info = 22;
 
 // ---- functions --------------------------------------------------------------
 static void print_menu_layers()
@@ -83,20 +83,20 @@ static void print_menu_layers()
         "MENU_GAME",
         "MENU_DEATH",
     };
+
     printf("menu layers:\n");
     for (u8 i = 0; i < 9; ++i)
-    {
-        printf("layer %1d: %s\n", i, menu_names[menuLayer[i]]);
-    }
+        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
+
     putchar('\n');
 }
 
 void init_fonts()
 {
-    fontRegular =       LoadFont("fonts/minecraft_regular.otf");
-    fontBold =          LoadFont("fonts/minecraft_bold.otf");
-    fontItalic =        LoadFont("fonts/minecraft_italic.otf");
-    fontBoldItalic =    LoadFont("fonts/minecraft_bold_italic.otf");
+    font_regular =      LoadFont("fonts/minecraft_regular.otf");
+    font_bold =         LoadFont("fonts/minecraft_bold.otf");
+    font_italic =       LoadFont("fonts/minecraft_italic.otf");
+    font_bold_italic =  LoadFont("fonts/minecraft_bold_italic.otf");
 }
 
 void init_gui()
@@ -104,83 +104,91 @@ void init_gui()
     mc_c_icon = LoadImage("resources/logo/128x128.png");
     SetWindowIcon(mc_c_icon);
 
-    textureHUDWidgets =         LoadTexture("resources/gui/widgets.png");
-    textureContainerInventory = LoadTexture("resources/gui/containers/inventory.png");
-    textureBackground =         LoadTexture("resources/gui/bg_options.png");
+    texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
+    texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
+    texture_bg =                    LoadTexture("resources/gui/bg_options.png");
 
-    menuIndex = MENU_TITLE;
-    stateMenuDepth = 1;
+    menu_index = MENU_TITLE;
+    state_menu_depth = 1;
     memset(buttons, 0, BTN_COUNT);
 }
 
 void apply_render_settings()
 {
-    setting.guiScale = SETTING_GUI_SCALE_DEFAULT;
-    fontSize = 14*setting.guiScale;
-    textRowHeight = 8*setting.guiScale;
+    setting = (settings){
+            .reach_distance =       SETTING_REACH_DISTANCE_MAX,
+            .fov =                  SETTING_FOV_DEFAULT,
+            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
+            .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+            .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
+        };
+    font_size = 14 * setting.gui_scale;
+    text_row_height = 8 * setting.gui_scale;
 }
 
-void update_render_settings(v2f32 renderSize)
+void update_render_settings(v2f32 render_size)
 {
-    hotbarPosition =                (v2i16){renderSize.x/2, renderSize.y - (2*setting.guiScale)};
-    crosshairPosition =             (v2i16){renderSize.x/2, renderSize.y/2};
-    containerInventoryPosition =    (v2i16){renderSize.x/2, renderSize.y/2};
+    hotbar_pos =                (v2i16){render_size.x / 2, render_size.y - (2 * setting.gui_scale)};
+    crosshair_pos =             (v2i16){render_size.x / 2, render_size.y / 2};
+    container_inventory_pos =   (v2i16){render_size.x / 2, render_size.y / 2};
 }
 
 void free_gui()
 {
     UnloadImage(mc_c_icon);
-    UnloadFont(fontRegular);
-    UnloadFont(fontBold);
-    UnloadFont(fontItalic);
-    UnloadFont(fontBoldItalic);
-    UnloadTexture(textureHUDWidgets);
-    UnloadTexture(textureContainerInventory);
-    UnloadTexture(textureBackground);
+    UnloadFont(font_regular);
+    UnloadFont(font_bold);
+    UnloadFont(font_italic);
+    UnloadFont(font_bold_italic);
+    UnloadTexture(texture_hud_widgets);
+    UnloadTexture(texture_container_inventory);
+    UnloadTexture(texture_bg);
 }
 
 //jump
-void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint) /* scale is based on source.scale*scl */
+void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
+    // scale is based on (source.scale * scl)
+
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
+    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
+    rlNormal3f(0.0f, 0.0f, 1.0f);
 
-    i32 tileWidth = source.width*scl.x;
-    i32 tileHeight = source.height*scl.y;
+    i32 tile_width = source.width * scl.x;
+    i32 tile_height = source.height * scl.y;
 
     // top left
-    rlTexCoord2f(source.x/texture.width, source.y/texture.height);
+    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
     // bottom left
-    rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x, pos.y + tileHeight);
+    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
+    rlVertex2f(pos.x, pos.y + tile_height);
 
     // bottom right
-    rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y + tileHeight);
+    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
+    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
 
     // top right
-    rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y);
+    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
+    rlVertex2f(pos.x + tile_width, pos.y);
 }
 
-void update_menus(v2f32 renderSize)
+void update_menus(v2f32 render_size)
 {
-    if (!menuIndex)
+    if (!menu_index)
         return;
 
     detect_cursor;
-    switch (menuIndex)
+    switch (menu_index)
     {
         case MENU_TITLE:
             if (!check_menu_ready)
             {
-                menuLayer[stateMenuDepth] = MENU_TITLE;
-                menuIndex = MENU_TITLE;
+                menu_layer[state_menu_depth] = MENU_TITLE;
+                menu_index = MENU_TITLE;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_SINGLEPLAYER] = 1;
                 buttons[BTN_MULTIPLAYER] = 1;
@@ -191,58 +199,56 @@ void update_menus(v2f32 renderSize)
             }
 
             //jump
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 16, 16},
+            draw_texture_a(texture_bg, rect_bg, (Rectangle){0.0f, 0.0f, 16.0f, 16.0f},
                     (v2i16){0, 0}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 24, 16},
+            draw_texture_a(texture_bg, rect_bg, (Rectangle){0.0f, 0.0f, 24.0f, 16.0f},
                     (v2i16){0, 64}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
-            draw_texture_a(textureBackground, rectBackground, (Rectangle){0, 0, 32, 32},
+            draw_texture_a(texture_bg, rect_bg, (Rectangle){0.0f, 0.0f, 32.0f, 32.0f},
                     (v2i16){0, 128}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
 
-            draw_text(fontRegular, MC_C_VERSION,
-                    (v2i16){6, renderSize.y - 3},
-                    fontSize, 2, 0, 2, COL_TEXT_DEFAULT);
+            draw_text(font_regular, MC_C_VERSION,
+                    (v2i16){6, render_size.y - 3},
+                    font_size, 2, 0, 2, COL_TEXT_DEFAULT);
 
-            draw_text(fontRegular, MC_C_AUTHOR,
-                    (v2i16){
-                    renderSize.x - 2,
-                    renderSize.y - 3},
-                    fontSize, 2, 2, 2, COL_TEXT_DEFAULT);
+            draw_text(font_regular, MC_C_AUTHOR,
+                    (v2i16){render_size.x - 2, render_size.y - 3},
+                    font_size, 2, 2, 2, COL_TEXT_DEFAULT);
 
             rlBegin(RL_QUADS);
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos},
                     1, 1,
                     BTN_SINGLEPLAYER,
                     &btn_func_singleplayer,
                     "Singleplayer");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + ((button.height + button_spacing_vertical) * setting.gui_scale)},
                     1, 1,
                     BTN_MULTIPLAYER,
                     &btn_func_multiplayer,
                     "Multiplayer");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 2) * setting.gui_scale)},
                     1, 1,
                     BTN_MINECRAFT_C_REALMS,
                     &btn_func_minecraft_c_realms,
                     "Minecraft.c Realms");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
                     1, 1,
                     BTN_OPTIONS,
                     &btn_func_options,
                     "Options...");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 4) * setting.gui_scale)},
                     1, 1,
                     BTN_QUIT,
                     &btn_func_quit,
@@ -255,7 +261,7 @@ void update_menus(v2f32 renderSize)
         case MENU_OPTIONS:
             if (!check_menu_ready)
             {
-                menuLayer[stateMenuDepth] = MENU_OPTIONS;
+                menu_layer[state_menu_depth] = MENU_OPTIONS;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
@@ -275,8 +281,8 @@ void update_menus(v2f32 renderSize)
 
             rlBegin(RL_QUADS);
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos},
                     1, 1,
                     BTN_DONE,
                     &btn_func_back,
@@ -289,7 +295,7 @@ void update_menus(v2f32 renderSize)
         case MENU_OPTIONS_GAME:
             if (!check_menu_ready)
             {
-                menuLayer[stateMenuDepth] = MENU_OPTIONS_GAME;
+                menu_layer[state_menu_depth] = MENU_OPTIONS_GAME;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
@@ -309,8 +315,8 @@ void update_menus(v2f32 renderSize)
 
             rlBegin(RL_QUADS);
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos},
                     1, 1,
                     BTN_DONE,
                     &btn_func_back,
@@ -324,7 +330,7 @@ void update_menus(v2f32 renderSize)
         case MENU_GAME:
             if (!check_menu_ready)
             {
-                menuLayer[stateMenuDepth] = MENU_GAME;
+                menu_layer[state_menu_depth] = MENU_GAME;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_BACK_TO_GAME] = 1;
                 buttons[BTN_ADVANCEMENTS] = 1;
@@ -336,36 +342,36 @@ void update_menus(v2f32 renderSize)
 
             rlBegin(RL_QUADS);
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos},
                     1, 1,
                     BTN_BACK_TO_GAME,
                     &btn_func_back_to_game,
                     "Back to Game");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + ((button.height + buttonSpacingVertical)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + ((button.height + button_spacing_vertical) * setting.gui_scale)},
                     1, 1,
                     BTN_ADVANCEMENTS,
                     &btn_func_options_game,
                     "Advancements");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*2)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 2) * setting.gui_scale)},
                     1, 1,
                     BTN_GIVE_FEEDBACK,
                     &btn_func_options_game,
                     "Give Feedback");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*3)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
                     1, 1,
                     BTN_OPTIONS_GAME,
                     &btn_func_options_game,
                     "Options...");
 
-            draw_button(textureHUDWidgets, button,
-                    (v2i16){renderSize.x/2, gameMenuPosition + (((button.height + buttonSpacingVertical)*4)*setting.guiScale)},
+            draw_button(texture_hud_widgets, button,
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 4) * setting.gui_scale)},
                     1, 1,
                     BTN_QUIT,
                     &btn_func_save_and_quit_to_title,
@@ -381,49 +387,41 @@ void draw_hud()
 {
     rlBegin(RL_QUADS);
 
-    draw_texture(textureHUDWidgets, hotbar,
-            hotbarPosition, 
-            (v2i16){
-            setting.guiScale,
-            setting.guiScale},
+    draw_texture(texture_hud_widgets, hotbar,
+            hotbar_pos,
+            (v2i16){setting.gui_scale, setting.gui_scale},
             1, 2, COL_TEXTURE_DEFAULT);
 
-    draw_texture(textureHUDWidgets, hotbarSelected,
+    draw_texture(texture_hud_widgets, hotbar_selected,
             (v2i16){
-            hotbarPosition.x - 2 - ((hotbar.width/2)*setting.guiScale) + ((hotbar.height - 2)*setting.guiScale*(hotbarSlotSelected - 1)),
-            hotbarPosition.y + setting.guiScale}, // TODO: revise guiScale mod of selected hotbar position Y
-            (v2i16){
-            setting.guiScale,
-            setting.guiScale},
+            hotbar_pos.x - 2 - ((hotbar.width / 2) * setting.gui_scale) + ((hotbar.height - 2) * setting.gui_scale * (hotbar_slot_selected - 1)),
+            hotbar_pos.y + setting.gui_scale}, // TODO: revise gui_scale mod of selected hotbar position Y
+            (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
-    draw_texture(textureHUDWidgets, hotbarOffhand,
+    draw_texture(texture_hud_widgets, hotbar_offhand,
             (v2i16){
-            hotbarPosition.x - ((hotbar.width/2)*setting.guiScale) - (hotbar.height*2*setting.guiScale),
-            hotbarPosition.y + setting.guiScale}, 
-            (v2i16){
-            setting.guiScale,
-            setting.guiScale},
+            hotbar_pos.x - ((hotbar.width / 2) * setting.gui_scale) - (hotbar.height * 2 * setting.gui_scale),
+            hotbar_pos.y + setting.gui_scale}, 
+            (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
     if (!(state & STATE_DEBUG))
-        draw_texture(textureHUDWidgets, crosshair,
-                crosshairPosition, 
-                (v2i16){
-                setting.guiScale,
-                setting.guiScale},
+        draw_texture(texture_hud_widgets, crosshair,
+                crosshair_pos, 
+                (v2i16){setting.gui_scale, setting.gui_scale},
                 0, 0, COL_TEXTURE_DEFAULT);
 
     rlEnd();
     rlSetTexture(0);
 }
 
-void draw_containers(Player *player, v2f32 renderSize)
+void draw_containers(Player *player, v2f32 render_size)
 {
-    draw_menu_overlay(renderSize);
+    draw_menu_overlay(render_size);
     rlBegin(RL_QUADS);
 
-    switch (player->containerState)
+    switch (player->container_state)
     {
         case CONTR_ANVIL:
             break;
@@ -471,12 +469,10 @@ void draw_containers(Player *player, v2f32 renderSize)
             break;
 
         case CONTR_INVENTORY:
-            draw_texture(textureContainerInventory,
-                    containerInventory,
-                    containerInventoryPosition, 
-                    (v2i16){
-                    setting.guiScale,
-                    setting.guiScale},
+            draw_texture(texture_container_inventory,
+                    container_inventory,
+                    container_inventory_pos, 
+                    (v2i16){setting.gui_scale, setting.gui_scale},
                     1, 1, COL_TEXTURE_DEFAULT);
             break;
 
@@ -519,25 +515,25 @@ void draw_debug_info(Camera3D *camera)
     update_debug_strings();
 
     // TODO: rewrite DrawRectangle, get rectangle correct size for font
-    DrawRectangle(MARGIN - 2, MARGIN,                     get_str_width(fontRegular, strFPS,                fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight,     get_str_width(fontRegular, strPlayerPos,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*2,   get_str_width(fontRegular, strPlayerBlock,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*3,   get_str_width(fontRegular, strPlayerChunk,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*4,   get_str_width(fontRegular, strPlayerDirection,    fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*5,   get_str_width(fontRegular, strBlockCount,         fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*6,   get_str_width(fontRegular, strQuadCount,          fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*7,   get_str_width(fontRegular, strTriCount,           fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + textRowHeight*8,   get_str_width(fontRegular, strVertexCount,        fontSizeDebugInfo, 1), textRowHeight, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(font_regular, str_fps,                font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height,     get_str_width(font_regular, str_player_pos,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 2, get_str_width(font_regular, str_player_block,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 3, get_str_width(font_regular, str_player_chunk,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 4, get_str_width(font_regular, str_player_direction,   font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 5, get_str_width(font_regular, str_block_count,        font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 6, get_str_width(font_regular, str_quad_count,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 7, get_str_width(font_regular, str_tri_count,          font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 8, get_str_width(font_regular, str_vertex_count,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
 
-    draw_text(fontRegular, strFPS,              (v2i16){MARGIN, MARGIN},                    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerPos,        (v2i16){MARGIN, MARGIN + textRowHeight},    fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerBlock,      (v2i16){MARGIN, MARGIN + textRowHeight*2},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerChunk,      (v2i16){MARGIN, MARGIN + textRowHeight*3},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strPlayerDirection,  (v2i16){MARGIN, MARGIN + textRowHeight*4},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strBlockCount,       (v2i16){MARGIN, MARGIN + textRowHeight*5},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strQuadCount,        (v2i16){MARGIN, MARGIN + textRowHeight*6},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strTriCount,         (v2i16){MARGIN, MARGIN + textRowHeight*7},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(fontRegular, strVertexCount,      (v2i16){MARGIN, MARGIN + textRowHeight*8},  fontSizeDebugInfo, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_fps,                (v2i16){MARGIN, MARGIN},                        font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_player_pos,         (v2i16){MARGIN, MARGIN + text_row_height},      font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_player_block,       (v2i16){MARGIN, MARGIN + text_row_height * 2},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_player_chunk,       (v2i16){MARGIN, MARGIN + text_row_height * 3},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_player_direction,   (v2i16){MARGIN, MARGIN + text_row_height * 4},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_block_count,        (v2i16){MARGIN, MARGIN + text_row_height * 5},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_quad_count,         (v2i16){MARGIN, MARGIN + text_row_height * 6},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_tri_count,          (v2i16){MARGIN, MARGIN + text_row_height * 7},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_vertex_count,       (v2i16){MARGIN, MARGIN + text_row_height * 8},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
@@ -549,16 +545,16 @@ void draw_debug_info(Camera3D *camera)
 }
 
 // raylib/rtext.c/DrawTextEx refactored
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 alignX, u8 alignY, Color tint)
+void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
 {
     // spacing: char spacing;
-    // alignX: 0 = left, 1 = center, 2 = right;
-    // alignY: 0 = top, 1 = center, 2 = bottom;
+    // align_x: 0 = left, 1 = center, 2 = right;
+    // align_y: 0 = top, 1 = center, 2 = bottom;
 
-    switch (alignX)
+    switch (align_x)
     {
         case 1:
-            pos.x -= (get_str_width(font, str, font_size, spacing)/2);
+            pos.x -= (get_str_width(font, str, font_size, spacing) / 2);
             break;
 
         case 2:
@@ -566,10 +562,10 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
             break;
     };
 
-    switch (alignY)
+    switch (align_y)
     {
         case 1:
-            pos.y -= (font_size/1.8f);
+            pos.y -= (font_size / 1.8f);
             break;
 
         case 2:
@@ -580,100 +576,102 @@ void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing,
     if (font.texture.id == 0) font = GetFontDefault();
     u16 size = TextLength(str);
 
-    f32 textOffsetY = 0;
-    f32 textOffsetX = 0.0f;
-    f32 scaleFactor = font_size/font.baseSize;
+    f32 text_offset_y = 0;
+    f32 text_offset_x = 0.0f;
+    f32 scale_factor = font_size / font.baseSize;
     for (u16 i = 0; i < size;)
     {
-        i32 codepointByteCount = 0;
-        u16 codepoint = GetCodepointNext(&str[i], &codepointByteCount);
+        i32 codepoint_byte_count = 0;
+        u16 codepoint = GetCodepointNext(&str[i], &codepoint_byte_count);
         u8 index = GetGlyphIndex(font, codepoint);
 
         if (codepoint == '\n')
         {
-            textOffsetY += (font_size + 2);
-            textOffsetX = 0.0f;
+            text_offset_y += (font_size + 2);
+            text_offset_x = 0.0f;
         }
         else
         {
             if ((codepoint != ' ') && (codepoint != '\t'))
             {
-                DrawTextCodepoint(fontBold, codepoint,
-                        (Vector2){pos.x + textOffsetX + 1, pos.y + textOffsetY + 1},
+                DrawTextCodepoint(font_bold, codepoint,
+                        (Vector2){pos.x + text_offset_x + 1, pos.y + text_offset_y + 1},
                         font_size, ColorAlpha(ColorBrightness(tint, -0.1f), 0.4f));
 
                 DrawTextCodepoint(font, codepoint,
-                        (Vector2){pos.x + textOffsetX, pos.y + textOffsetY},
+                        (Vector2){pos.x + text_offset_x, pos.y + text_offset_y},
                         font_size, tint);
             }
 
             if (font.glyphs[index].advanceX == 0)
-                textOffsetX += ((f32)font.recs[index].width*scaleFactor + spacing);
+                text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
             else
-                textOffsetX += ((f32)font.glyphs[index].advanceX*scaleFactor + spacing);
+                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
         }
-        i += codepointByteCount;
+        i += codepoint_byte_count;
     }
 }
 
-float get_str_width(Font font, const str *str, f32 font_size, f32 spacing)
+float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
-    f32 textOffsetX = 0.0f;
-    f32 scaleFactor = font_size/font.baseSize;
+    f32 text_offset_x = 0.0f;
+    f32 scale_factor = font_size / font.baseSize;
     for (u16 i = 0; i < TextLength(str);)
     {
-        i32 codepointByteCount = 0;
-        u16 codepoint = GetCodepointNext(&str[i], &codepointByteCount);
+        i32 codepoint_byte_count = 0;
+        u16 codepoint = GetCodepointNext(&str[i], &codepoint_byte_count);
         u8 index = GetGlyphIndex(font, codepoint);
 
         if (codepoint == '\n')
-            textOffsetX = 0.0f;
+            text_offset_x = 0.0f;
         else
         {
             if (font.glyphs[index].advanceX == 0)
             {
-                result += font.recs[index].width*scaleFactor + spacing;
-                textOffsetX += ((f32)font.recs[index].width*scaleFactor + spacing);
+                result += font.recs[index].width * scale_factor + spacing;
+                text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
             }
             else
             {
-                result += font.glyphs[index].advanceX*scaleFactor + spacing;
-                textOffsetX += ((f32)font.glyphs[index].advanceX*scaleFactor + spacing);
+                result += font.glyphs[index].advanceX * scale_factor + spacing;
+                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
             }
         }
-        i += codepointByteCount;
+        i += codepoint_byte_count;
     }
     return result + 4;
 }
 
 // raylib/rtextures.c/DrawTexturePro refactored
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 alignX, u8 alignY, Color tint) /* scale is based on source.scale*scl */
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
-    // alignX: 0 = left, 1 = center, 2 = right;
-    // alignY: 0 = top, 1 = center, 2 = bottom;
+    // scale is based on (source.scale * scl)
 
-    switch (alignX)
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
+    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
+    // align_x: 0 = left, 1 = center, 2 = right;
+    // align_y: 0 = top, 1 = center, 2 = bottom;
+
+    switch (align_x)
     {
         case 1:
-            pos.x -= ((source.width*scl.x)/2);
+            pos.x -= ((source.width * scl.x) / 2);
             break;
 
         case 2:
-            pos.x -= (source.width*scl.x);
+            pos.x -= (source.width * scl.x);
             break;
     };
 
-    switch (alignY)
+    switch (align_y)
     {
         case 1:
-            pos.y -= ((source.height*scl.y)/2);
+            pos.y -= ((source.height * scl.y) / 2);
             break;
 
         case 2:
-            pos.y -= (source.height*scl.y);
+            pos.y -= (source.height * scl.y);
             break;
     };
 
@@ -681,24 +679,24 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0, 0, 1);
 
-    i32 tileWidth = source.width*scl.x;
-    i32 tileHeight = source.height*scl.y;
+    i32 tile_width = source.width * scl.x;
+    i32 tile_height = source.height * scl.y;
 
     // top left
-    rlTexCoord2f(source.x/texture.width, source.y/texture.height);
+    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
     // bottom left
-    rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x, pos.y + tileHeight);
+    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
+    rlVertex2f(pos.x, pos.y + tile_height);
 
     // bottom right
-    rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y + tileHeight);
+    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
+    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
 
     // top right
-    rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y);
+    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
+    rlVertex2f(pos.x + tile_width, pos.y);
 }
 
 //jump
@@ -713,8 +711,8 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0, 0, 1);
 
-    i32 tileWidth = source.width*scl.x;
-    i32 tileHeight = source.height*scl.y;
+    i32 tile_width = source.width*scl.x;
+    i32 tile_height = source.height*scl.y;
 
     // top left
     rlTexCoord2f(source.x/texture.width, source.y/texture.height);
@@ -722,51 +720,46 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
 
     // bottom left
     rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x, pos.y + tileHeight);
+    rlVertex2f(pos.x, pos.y + tile_height);
     
     // bottom right
     rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y + tileHeight);
+    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
 
     // top right
     rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
-    rlVertex2f(pos.x + tileWidth, pos.y);
+    rlVertex2f(pos.x + tile_width, pos.y);
 
 
-    if ((dest.width < tileWidth) && (dest.height < tileHeight))
+    if ((dest.width < tile_width) && (dest.height < tile_height))
     {
-        DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tileWidth)*source.width, ((float)dest.height/tileHeight)*source.height},
+        DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, ((float)dest.height/tile_height)*source.height},
                     (Rectangle){dest.x, dest.y, dest.width, dest.height}, origin, rotation, tint);
     }
-    else if (dest.width <= tileWidth)
+    else if (dest.width <= tile_width)
     {
         // Tiled vertically (one column)
         int dy = 0;
-        for (;dy+tileHeight < dest.height; dy += tileHeight)
-        {
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tileWidth)*source.width, source.height}, (Rectangle){dest.x, dest.y + dy, dest.width, (float)tileHeight}, origin, rotation, tint);
-        }
+        for (;dy+tile_height < dest.height; dy += tile_height)
+            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, source.height}, (Rectangle){dest.x, dest.y + dy, dest.width, (float)tile_height}, origin, rotation, tint);
 
         // Fit last tile
         if (dy < dest.height)
-        {
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tileWidth)*source.width, ((float)(dest.height - dy)/tileHeight)*source.height},
+            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, ((float)(dest.height - dy)/tile_height)*source.height},
                         (Rectangle){dest.x, dest.y + dy, dest.width, dest.height - dy}, origin, rotation, tint);
-        }
+
     }
-    else if (dest.height <= tileHeight)
+    else if (dest.height <= tile_height)
     {
         // Tiled horizontally (one row)
         int dx = 0;
-        for (;dx+tileWidth < dest.width; dx += tileWidth)
-        {
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)dest.height/tileHeight)*source.height}, (Rectangle){dest.x + dx, dest.y, (float)tileWidth, dest.height}, origin, rotation, tint);
-        }
+        for (;dx+tile_width < dest.width; dx += tile_width)
+            DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)dest.height/tile_height)*source.height}, (Rectangle){dest.x + dx, dest.y, (float)tile_width, dest.height}, origin, rotation, tint);
 
         // Fit last tile
         if (dx < dest.width)
         {
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tileWidth)*source.width, ((float)dest.height/tileHeight)*source.height},
+            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, ((float)dest.height/tile_height)*source.height},
                         (Rectangle){dest.x + dx, dest.y, dest.width - dx, dest.height}, origin, rotation, tint);
         }
     }
@@ -774,172 +767,160 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
     {
         // Tiled both horizontally and vertically (rows and columns)
         int dx = 0;
-        for (;dx+tileWidth < dest.width; dx += tileWidth)
+        for (;dx+tile_width < dest.width; dx += tile_width)
         {
             int dy = 0;
-            for (;dy+tileHeight < dest.height; dy += tileHeight)
-            {
-                DrawTexturePro(texture, source, (Rectangle){dest.x + dx, dest.y + dy, (float)tileWidth, (float)tileHeight}, origin, rotation, tint);
-            }
+            for (;dy+tile_height < dest.height; dy += tile_height)
+                DrawTexturePro(texture, source, (Rectangle){dest.x + dx, dest.y + dy, (float)tile_width, (float)tile_height}, origin, rotation, tint);
 
             if (dy < dest.height)
-            {
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)(dest.height - dy)/tileHeight)*source.height},
-                    (Rectangle){dest.x + dx, dest.y + dy, (float)tileWidth, dest.height - dy}, origin, rotation, tint);
-            }
+                DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)(dest.height - dy)/tile_height)*source.height},
+                    (Rectangle){dest.x + dx, dest.y + dy, (float)tile_width, dest.height - dy}, origin, rotation, tint);
         }
 
         // Fit last column of tiles
         if (dx < dest.width)
         {
             int dy = 0;
-            for (;dy+tileHeight < dest.height; dy += tileHeight)
-            {
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tileWidth)*source.width, source.height},
-                        (Rectangle){dest.x + dx, dest.y + dy, dest.width - dx, (float)tileHeight}, origin, rotation, tint);
-            }
+            for (;dy+tile_height < dest.height; dy += tile_height)
+                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, source.height},
+                        (Rectangle){dest.x + dx, dest.y + dy, dest.width - dx, (float)tile_height}, origin, rotation, tint);
 
             // Draw final tile in the bottom right corner
             if (dy < dest.height)
-            {
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tileWidth)*source.width, ((float)(dest.height - dy)/tileHeight)*source.height},
+                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, ((float)(dest.height - dy)/tile_height)*source.height},
                     (Rectangle){dest.x + dx, dest.y + dy, dest.width - dx, dest.height - dy}, origin, rotation, tint);
-            }
         }
     }
 }
 */
 
 // raylib/rtextures.c/DrawTexturePro refactored
-void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint) /* scale is based on scl */
+void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
+    // scale is based on (scl)
+
     if (texture.id <= 0) return;
     f32 width = (f32)texture.width;
     f32 height = (f32)texture.height;
 
-    Vector2 topLeft =       (Vector2){pos.x,            pos.y};
-    Vector2 bottomRight =   (Vector2){pos.x + scl.x,    pos.y + scl.y};
+    Vector2 top_left =       (Vector2){pos.x,            pos.y};
+    Vector2 bottom_right =   (Vector2){pos.x + scl.x,    pos.y + scl.y};
 
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
+    rlNormal3f(0.0f, 0.0f, 1.0f);
 
-    rlTexCoord2f(source.x/width, source.y/height);
-    rlVertex2f(topLeft.x, topLeft.y);
-    rlTexCoord2f(source.x/width, (source.y + source.height)/height);
-    rlVertex2f(topLeft.x, bottomRight.y);
-    rlTexCoord2f((source.x + source.width)/width, (source.y + source.height)/height);
-    rlVertex2f(bottomRight.x, bottomRight.y);
-    rlTexCoord2f((source.x + source.width)/width, source.y/height);
-    rlVertex2f(bottomRight.x, topLeft.y);
+    rlTexCoord2f(source.x / width, source.y / height);
+    rlVertex2f(top_left.x, top_left.y);
+    rlTexCoord2f(source.x / width, (source.y + source.height) / height);
+    rlVertex2f(top_left.x, bottom_right.y);
+    rlTexCoord2f((source.x + source.width) / width, (source.y + source.height) / height);
+    rlVertex2f(bottom_right.x, bottom_right.y);
+    rlTexCoord2f((source.x + source.width) / width, source.y / height);
+    rlVertex2f(bottom_right.x, top_left.y);
 }
 
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 alignX, u8 alignY, u8 btn_state, void (*func)(), const str *str)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
-    // alignX: 0 = left, 1 = center, 2 = right;
-    // alignY: 0 = top, 1 = center, 2 = bottom;
+    // align_x: 0 = left, 1 = center, 2 = right;
+    // align_y: 0 = top, 1 = center, 2 = bottom;
 
-    switch (alignX)
+    switch (align_x)
     {
         case 1:
-            pos.x -= ((button.width*setting.guiScale)/2);
+            pos.x -= ((button.width * setting.gui_scale) / 2);
             break;
 
         case 2:
-            pos.x -= (button.width*setting.guiScale);
+            pos.x -= (button.width * setting.gui_scale);
             break;
     };
 
-    switch (alignY)
+    switch (align_y)
     {
         case 1:
-            pos.y -= ((button.height*setting.guiScale)/2);
+            pos.y -= ((button.height * setting.gui_scale) / 2);
             break;
 
         case 2:
-            pos.y -= (button.height*setting.guiScale);
+            pos.y -= (button.height * setting.gui_scale);
             break;
     };
 
     if (buttons[btn_state])
     {
-        if (cursor.x > pos.x && cursor.x < pos.x + (button.width*setting.guiScale)
-                && cursor.y > pos.y && cursor.y < pos.y + (button.height*setting.guiScale))
+        if (cursor.x > pos.x && cursor.x < pos.x + (button.width * setting.gui_scale)
+                && cursor.y > pos.y && cursor.y < pos.y + (button.height * setting.gui_scale))
         {
             draw_texture(texture, button, pos,
-                    (v2i16){setting.guiScale, setting.guiScale},
+                    (v2i16){setting.gui_scale, setting.gui_scale},
                     0, 0, ColorTint(COL_TEXTURE_DEFAULT, TINT_BUTTON_HOVER));
 
             if (IsMouseButtonPressed(0))
                 func();
         }
         else
-        {
             draw_texture(texture, button, pos, 
-                    (v2i16){setting.guiScale, setting.guiScale},
+                    (v2i16){setting.gui_scale, setting.gui_scale},
                     0, 0, COL_TEXTURE_DEFAULT);
-        }
 
         if (str)
-        {
-            draw_text(fontRegular, str,
-                    (v2i16){pos.x + ((button.width*setting.guiScale)/2), pos.y + ((button.height*setting.guiScale)/2)},
-                    fontSize, 1, alignX, alignY, COL_TEXT_DEFAULT);
-        }
-    }
-    else draw_texture(texture, buttonInactive, pos, 
-            (v2i16){
-            setting.guiScale,
-            setting.guiScale},
+            draw_text(font_regular, str,
+                    (v2i16){pos.x + ((button.width * setting.gui_scale) / 2), pos.y + ((button.height * setting.gui_scale) / 2)},
+                    font_size, 1, align_x, align_y, COL_TEXT_DEFAULT);
+
+    } else draw_texture(texture, button_inactive, pos, 
+            (v2i16){setting.gui_scale, setting.gui_scale},
             0, 0, COL_TEXTURE_DEFAULT);
 }
 
 void btn_func_singleplayer()
 {
-    menuIndex = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
-    stateMenuDepth = 0; //TODO: set actual value (2)
+    menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
+    state_menu_depth = 0; //TODO: set actual value (2)
     check_menu_ready = 0;
     state &= ~STATE_PAUSED; //temp
 
-    init_world(); //temp
+    init_world("Poop Consistency Tester"); //temp
 }
 
 void btn_func_multiplayer()
 {
-    menuIndex = MENU_MULTIPLAYER;
-    stateMenuDepth = 2;
+    menu_index = MENU_MULTIPLAYER;
+    state_menu_depth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_minecraft_c_realms()
 {
-    menuIndex = MENU_MINECRAFT_C_REALMS;
-    stateMenuDepth = 2;
+    menu_index = MENU_MINECRAFT_C_REALMS;
+    state_menu_depth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_options()
 {
-    menuIndex = MENU_OPTIONS;
-    stateMenuDepth = 2;
+    menu_index = MENU_OPTIONS;
+    state_menu_depth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_options_game()
 {
-    menuIndex = MENU_OPTIONS_GAME;
-    stateMenuDepth = 2;
+    menu_index = MENU_OPTIONS_GAME;
+    state_menu_depth = 2;
     check_menu_ready = 0;
 }
 
 void btn_func_back_to_game()
 {
-    menuIndex = 0;
-    stateMenuDepth = 0;
+    menu_index = 0;
+    state_menu_depth = 0;
     check_menu_ready = 0;
     state &= ~STATE_PAUSED;
     lily.state &= ~STATE_MENU_OPEN;
-    lily.containerState = 0;
+    lily.container_state = 0;
 }
 
 void btn_func_quit()
@@ -949,8 +930,8 @@ void btn_func_quit()
 
 void btn_func_save_and_quit_to_title()
 {
-    menuIndex = MENU_TITLE;
-    stateMenuDepth = 1;
+    menu_index = MENU_TITLE;
+    state_menu_depth = 1;
     check_menu_ready = 0;
     // TODO: save and unload world
     state &= ~STATE_WORLD_LOADED;
@@ -959,8 +940,9 @@ void btn_func_save_and_quit_to_title()
 
 void btn_func_back()
 {
-    menuLayer[stateMenuDepth] = 0;
-    --stateMenuDepth;
-    menuIndex = menuLayer[stateMenuDepth];
+    menu_layer[state_menu_depth] = 0;
+    --state_menu_depth;
+    menu_index = menu_layer[state_menu_depth];
     check_menu_ready = 0;
 }
+

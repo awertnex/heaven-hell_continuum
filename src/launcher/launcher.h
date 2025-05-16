@@ -1,9 +1,9 @@
-#ifndef LAUNCHER_H
+#ifndef MC_C_LAUNCHER_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
 #define VECTOR2_TYPES
-#include "../h/defines.h"
+#include "../engine/h/defines.h"
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -33,5 +33,6 @@ void update_launcher();
 void close_launcher();
 void update_launcher_input();
 
-#define LAUNCHER_H
+#define MC_C_LAUNCHER_H
 #endif
+

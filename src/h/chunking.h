@@ -1,29 +1,49 @@
-#ifndef CHUNKING_H
+#ifndef MC_C_CHUNKING_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 #include "main.h"
 #include "setting.h"
 
 // ---- world stuff ------------------------------------------------------------
-#define WORLD_KILL_Z        -128
-#define WORLD_BOTTOM        -69
+#define WORLD_KILL_Z        (-128)
+#define WORLD_BOTTOM        (-69)
 #define WORLD_SEA_LEVEL     62
 #define WORLD_HEIGHT_NORMAL 420 // - WORLD_BOTTOM
 #define WORLD_HEIGHT_HELL   365 // - WORLD_BOTTOM
 #define WORLD_HEIGHT_END    256 // - WORLD_BOTTOM
-#define CHUNK_SIZE          64
-#define WORLD_SIZE          CHUNK_SIZE*32767 // in each cardinal direction
 
-#define MAX_CHUNK_BLOCKS    1720320     // CHUNK_SIZE*CHUNK_ZIZE*WORLD_HEIGHT_NORMAL
-#define MAX_CHUNK_QUADS     5160960     // (CHUNK_SIZE/2)*CHUNK_SIZE*WORLD_HEIGHT_NORMAL
-#define MAX_CHUNK_TRIS      10321920    // (MAX_CHUNK_QUADS/2)
-#define MAX_CHUNK_VERTICES  20643840    // (MAX_CHUNK_QUADS*4)
+#define CHUNK_DIAMETER      32
+#define CHUNK_DATA_SIZE     (sizeof(Chunk)) // struct chunk
+#define CHUNK_BUF_RADIUS    (SETTING_RENDER_DISTANCE_MAX)
+#define CHUNK_BUF_DIAMETER  ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_TAB_CENTER    (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
+
+#define WORLD_RADIUS        32767 // (((int16_t top of range) - 1)/2)
+#define WORLD_DIAMETER      ((WORLD_RADIUS * 2) + 1)
+#define WORLD_AREA          (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
+#define WORLD_MAX_CHUNKS    (WORLD_AREA / CHUNK_DIAMETER)
+#define CHUNK_MAX_BLOCKS    (CHUNK_DIAMETER * CHUNK_DIAMETER * (WORLD_HEIGHT_NORMAL - WORLD_BOTTOM))
+#define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * (WORLD_HEIGHT_NORMAL) - WORLD_BOTTOM)
+#define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS * 2)
+#define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
+
+// ---- getters & setters ------------------------------------------------------
+#define GET_BLOCK_INDEX(x, y, z)    (u32)((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
+#define GET_BLOCK_X(i)              ((u32)((i) % CHUNK_DIAMETER))
+#define GET_BLOCK_Y(i)              ((u32)floorf((f32)(i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
+#define GET_BLOCK_Z(i)              ((u32)floorf((f32)(i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
+#define GET_BLOCKID(id)             (((id) & BLOCKID) >> 8)
+#define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
+#define GET_BLOCKSTATE(state)       (((i) & BLOCKSTATE) >> 20)
+#define SET_BLOCKSTATE(i, value)    ((i) = ((i) & ~BLOCKSTATE) | ((value) << 20))
+#define GET_BLOCKDATA(i)            (((i) & BLOCKDATA) >> 8)
 
 // ---- general ----------------------------------------------------------------
 enum BlockFaces
@@ -36,62 +56,73 @@ enum BlockFaces
     NEGATIVE_Z =    0x20,
     NOT_EMPTY =     0x40,
     COUNTAHEAD =    0x80,
-    // COUNTAHEAD: fwrite(): if ((Chunk.i[n] & NOT_EMPTY) && Chunk.info[n] == Chunk.info[n - 1]) loop: u32 count++, compare again; if comparison fails, byte[n] |= COUNTAHEAD; 4 bytes[n + 1] = count;
-    // COUNTAHEAD: fread(): if (byte[n] & COUNTAHEAD) u32 count = next 4 bytes, fill Chunk.i from Chunk.i[n] to chunk.i[n + count]
+    // COUNTAHEAD: fwrite(): if ((chunk.i[n] & NOT_EMPTY) && chunk.info[n] == chunk.info[n - 1]) loop: u32 count++, compare again; if comparison fails, byte[n] |= COUNTAHEAD; 4 bytes[n + 1] = count;
+    // COUNTAHEAD: fread(): if (byte[n] & COUNTAHEAD) u32 count = next 4 bytes, fill chunk.i from chunk.i[n] to chunk.i[n + count]
 }; /* BlockFaces */
 
 enum BlockData
 {
-    BLOCKFACES =    0x0000003F, // 00000000 00000000 00000000 00111111
-    BLOCKID =       0x000FFF00, // 00000000 00001111 11111111 00000000
-    BLOCKSTATE =    0x00F00000, // 00000000 11110000 00000000 00000000
-    BLOCKLIGHT =    0x1F000000, // 00011111 00000000 00000000 00000000
+    BLOCKFACES =    0x0000003f, // 00000000 00000000 00000000 00111111
+    BLOCKID =       0x000fff00, // 00000000 00001111 11111111 00000000
+    BLOCKSTATE =    0x00f00000, // 00000000 11110000 00000000 00000000
+    BLOCKDATA =     0x00ffff00, // 00000000 11111111 11111111 00000000
+    BLOCKLIGHT =    0x1f000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
 
-enum ChunkStates
+enum ChunkFlags
 {
-    STATE_CHUNK_LOADED =    0x1,
-    STATE_CHUNK_DIRTY =     0x2,
-};
+    FLAG_CHUNK_LOADED =     0x01,
+    FLAG_CHUNK_RENDER =     0x02,
+    FLAG_CHUNK_DIRTY =      0x04,
+}; /* ChunkFlags */
 
-typedef struct ChunkMesh // TODO: finish ChunkMesh struct
+// TODO: add 'version' byte to the chunk file for evolving the format safely
+// TODO: add chunk slicing
+typedef struct /* Chunk */
 {
-} ChunkMesh;
-
-typedef struct Chunk
-{
-    v2i16 pos;
-    u32 id;
-    u32 i[WORLD_HEIGHT_NORMAL][CHUNK_SIZE][CHUNK_SIZE];
-    ChunkMesh mesh;
-    u8 state;
-    /*TODO: replace 'loaded' with a 'chunk_table' array of pointers to 'chunk_buf'
-      addresses and update pointer addresses as player enters or exits chunks */
+    v2i16 pos;                                  // (world X Y) / CHUNK_DIAMETER
+    u32 id;                                     // (pos.x << 16) + pos.y
+    u32 i[WORLD_HEIGHT_NORMAL - WORLD_BOTTOM][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    Model model;
+    Material mat;
+    u8 flag;
+    u8 edge_value;                              // chunk marking for chunk_tab shifting logic
+    u32 block_parse_limit;                      // final occurrence of non-air blocks in chunk
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
-extern u16 worldHeight;
-extern Chunk chunkBuf[(SETTING_RENDER_DISTANCE_MAX*2) + 1][(SETTING_RENDER_DISTANCE_MAX*2) + 1];
-extern Chunk *targetChunk;
-extern u64 blockCount; //debug mode
-extern u64 quadCount; //debug mode
+extern u16 world_height;
+extern Chunk *chunk_buf;                        // chunk buffer, raw chunk data
+extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];    // chunk pointer look-up table
+extern v2u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
+extern u16 chunk_tab_index;                     // player relative chunk tab access
+extern struct WorldStats
+{
+    u64 block_count;
+    u64 quad_count;
+} world_stats;
 extern u8 opacity;
 
 // ---- signatures -------------------------------------------------------------
-void init_chunking();
-void load_chunks();
-void unload_chunks();
+u8 init_chunking();
+void free_chunking();
+
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void parse_chunk_states(Chunk *chunk, u16 height);
-Chunk* get_chunk(v3i32 *coordinates, u16 *state, u16 flag);
-void draw_chunk_buffer(Chunk *chunkBuf);
-void draw_chunk(Chunk *chunk, u16 height);
-void draw_block(u32 blockStates);
-void draw_block_wires(v3i32 *pos);
-void draw_bounding_box(Vector3 *origin, Vector3 *scl);
-void draw_bounding_box_clamped(Vector3 *origin, Vector3 *scl);
-void draw_line_3d(v3i32 pos0, v3i32 pos1, Color color);
+void generate_chunk(Chunk *chunk);
+Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
+Chunk *pop_chunk_buf(u16 chunk_tab_index);
+void update_chunk_tab(v2i16 player_chunk);
+void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
+u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 coordinates);
+Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag); // TODO: revise, might not be needed
+void draw_chunk_tab();
+void draw_block(u32 block);
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
+void draw_block_wires(v3i32 pos);
+void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
 
-#define CHUNKING_H
+#define MC_C_CHUNKING_H
 #endif
+

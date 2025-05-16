@@ -1,15 +1,15 @@
-#ifndef MINECRAFT_H
+#ifndef MC_C_H
 
 #define MC_C_VERSION "Minecraft.c 0.1.4"
 #define MC_C_AUTHOR "Author: Lily Awertnex"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 // ---- platform layer ---------------------------------------------------------
-#define WIDTH 1280
-#define HEIGHT 720
+#define WIDTH 854
+#define HEIGHT 480
 #define MARGIN 20
 
 #define MODE_DEBUG          1
@@ -17,24 +17,29 @@
 #define MODE_GRAVITY        1
 #define MODE_GRAY_BLOCKS    1
 
+#define THREAD_COUNT 2 // TODO: use for multithreading
+
 // ---- declarations -----------------------------------------------------------
-extern f64 deltaTime;
-static f64 gameStartTime;
-static u64 gameTick;
-static u64 gameDays;
+extern f64 delta_time;
+extern f64 game_start_time;
+extern u64 game_tick;
+extern u64 game_days;
 #define dt GetFrameTime()
 
 extern u16 state;
-extern u8 stateMenuDepth;
+extern u8 state_menu_depth;
 
-extern f64 skyboxMidDay;
-extern f64 skyboxBurn;
-extern f64 skyboxBurnBoost;
-extern f64 skyboxMidNight;
+extern f64 skybox_time;
+extern f64 skybox_mid_day;
+extern f64 skybox_pre_burn;
+extern f64 skybox_burn;
+extern f64 skybox_burn_boost;
+extern f64 skybox_mid_night;
 
 // ---- signatures -------------------------------------------------------------
-int mc_mkdir(const char *path, u16 mode);
-void init_world();
+int mc_c_mkdir(str *path, u16 mode);
+void init_world(str *str);
 
-#define MINECRAFT_H
+#define MC_C_H
 #endif
+

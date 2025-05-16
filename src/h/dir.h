@@ -1,7 +1,7 @@
-#ifndef DIR_H
+#ifndef MC_C_DIR_H
 
 #include "main.h"
-#include "defines.h"
+#include "../engine/h/defines.h"
 
 // ---- from linux/limits.h ----------------------------------------------------
 #ifndef NAME_MAX
@@ -10,6 +10,7 @@
 #ifndef PATH_MAX
     #define PATH_MAX    4096
 #endif // PATH_MAX
+// ---- from linux/limits.h ----------------------------------------------------
 
 enum DirectoryStructure
 {
@@ -38,13 +39,14 @@ enum DirectoryStructure
 extern str mc_c_grandpath[PATH_MAX];
 extern str mc_c_subpath[PATH_MAX];
 extern str mc_c_launcher_path[PATH_MAX];
-extern str instanceDirStructure[17][NAME_MAX];
-extern str worldDirStructure[3][NAME_MAX];
+extern str instance_dir_structure[17][NAME_MAX];
+extern str world_dir_structure[3][NAME_MAX];
 
 // ---- signatures -------------------------------------------------------------
 void init_paths();
-void init_instance_directory(str *instanceName, u16 *state, u8 STATE_ACTIVE);
-void init_world_directory();
+void init_instance_directory(str *instance_name, u16 *state, u8 STATE_ACTIVE);
+void init_world_directory(str *world_name);
 
-#define DIR_H
+#define MC_C_DIR_H
 #endif
+

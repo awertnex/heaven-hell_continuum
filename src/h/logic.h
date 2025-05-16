@@ -1,4 +1,4 @@
-#ifndef LOGIC_H
+#ifndef MC_C_LOGIC_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 #include "../dependencies/raylib-5.5/src/raymath.h"
@@ -6,66 +6,68 @@
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 #include "setting.h"
 
-#define GRAVITY (9.7803267715f/100.0f)
-#define PI 3.14159265358979323846f
-#define MC_C_DEG2RAD 0.017453293f   // PI/180.0f
-#define MC_C_RAD2DEG 57.295779513f  // 180.0f/PI
+#define GRAVITY (9.7803267715f / 100.0f)
+#define MC_C_PI 3.14159265358979323846f
+#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     // 0.017453293f
+#define MC_C_RAD2DEG (180.0f / MC_C_PI)     // 57.295779513f
 
-#define sqr(x) ((x)*(x))
-#define v3izero ((v3i32){0, 0, 0})
+#define v3izero ((v3i32){0.0f, 0.0f, 0.0f})
 #define v3fzero ((v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f})
 
 // ---- player defaults --------------------------------------------------------
 #define PLAYER_JUMP_HEIGHT      1.25f
 #define PLAYER_SPEED_WALK       3.0f
 #define PLAYER_SPEED_FLY        10.0f
-#define PLAYER_SPEED_FLY_FAST   40.0f
+#define PLAYER_SPEED_FLY_FAST   30.0f
 #define PLAYER_SPEED_SNEAK      1.8f
 #define PLAYER_SPEED_SPRINT     4.0f
 
 typedef struct Player
 {
-    str name[100];              // player in-game name
-    Vector3 pos;                // player current coordinates in world
-    Vector3 scl;                // player size for collision detection
-    Vector3 collisionCheckStart;
-    Vector3 collisionCheckEnd;
-    f32 pitch, yaw;             // for player camera direction and target
-    f32 sinPitch, cosPitch;     // processed player pitch angles
-    f32 sinYaw, cosYaw;         // processed player yaw angles
-    f32 eyeHeight;              // height of player camera, usually
-    v3f32 v;                    // velocity
-    f32 m;                      // mass
-    f32 movementSpeed;          // depends on enum: PlayerStates
-    f32 movementStepLength;
-    u64 containerState;         // enum: ContainerStates
-    u8 perspective;             // camera perspective mode
-    u16 state;                  // enum: PlayerStates
+    str name[100];                  // player in-game name
+    Vector3 pos;                    // player current coordinates in world
+    Vector3 scl;                    // player size for collision detection
+    Vector3 collision_check_start;
+    Vector3 collision_check_end;
+    f32 pitch, yaw;                 // for player camera direction and target
+    f32 sin_pitch, cos_pitch;       // processed player pitch angles
+    f32 sin_yaw, cos_yaw;           // processed player yaw angles
+    f32 eye_height;                 // height of player camera, usually
+    v3f32 v;                        // velocity
+    f32 m;                          // mass
+    f32 movement_speed;             // depends on enum: PlayerStates
+    f32 movement_step_length;
+    u64 container_state;            // enum: ContainerStates
+    u8 perspective;                 // camera perspective mode
+    u16 state;                      // enum: PlayerStates
 
     Camera3D camera;
-    f32 cameraDistance;         // for camera collision detection
-    Camera3D cameraDebugInfo;
+    f32 camera_distance;            // for camera collision detection
+    Camera3D camera_debug_info;
 
-    v3i32 lastTarget;
-    v3i32 lastPos;              // for collision tunneling prevention
+    v3i32 delta_pos;                // for collision tunneling prevention
+    v3i32 delta_target;
+    v2i16 chunk;                    // current chunk player is in
+    v2i16 delta_chunk;              // previous chunk player was in
 
-    v3i32 spawnPoint;
+    v3i32 spawn_point;
 } Player;
 
 // ---- states -----------------------------------------------------------------
 enum GameStates
 {
-    STATE_ACTIVE =                  0x01,
-    STATE_PAUSED =                  0x02,
-    STATE_SUPER_DEBUG =             0x04,
-    STATE_DEBUG =                   0x08,
-    STATE_DEBUG_MORE =              0x10,
-    STATE_HUD =                     0x20,
-    STATE_FULLSCREEN =              0x40,
-    STATE_WORLD_LOADED =            0x80,
+    STATE_ACTIVE =                  0x0001,
+    STATE_PAUSED =                  0x0002,
+    STATE_SUPER_DEBUG =             0x0004,
+    STATE_DEBUG =                   0x0008,
+    STATE_DEBUG_MORE =              0x0010,
+    STATE_HUD =                     0x0020,
+    STATE_FULLSCREEN =              0x0040,
+    STATE_WORLD_LOADED =            0x0080,
+    STATE_PARSE_CURSOR =            0x0100,
 }; /* GameStates */
 
 enum ContainerStates
@@ -109,31 +111,37 @@ enum PlayerStates
     STATE_FALLING =                 0x0080,
     STATE_DOUBLE_PRESS =            0x0100,
     STATE_PARSE_TARGET =            0x0200,
-    STATE_DEAD =                    0x0400,
+    STATE_VELOCITY_DIRTY =          0x0400,
+    STATE_DEAD =                    0x0800,
+    STATE_CHUNK_BUF_DIRTY =         0x1000,
 }; /* PlayerStates */
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
-extern Vector2 mouseDelta;
+extern Vector2 mouse_delta;
 
 // ---- signatures -------------------------------------------------------------
 bool get_double_press(Player *player, KeyboardKey key);
 void update_player_states(Player *player);
 void update_camera_movements_player(Player *player);
 void update_camera_movements_debug_info(Camera3D *camera, Player *player);
+void set_player_pos(Player *player, f32 x, f32 y, f32 z);
+void set_player_block(Player *player, i32 x, i32 y, i32 z);
+void set_delta_target(Vector3 *coordinates, v3i32 *delta_target);
 void kill_player(Player *player);
 void respawn_player(Player *player);
-b8 check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
+b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void give_gravity(Player *player);
 void update_collision_static(Player *player);
 f64 get_time_ms();
-b8 get_timer(f64 *timeStart, f32 interval);
+b8 get_timer(f64 *time_start, f32 interval);
 
 void draw_default_grid(Color x, Color y, Color z);
 
-#define LOGIC_H
+#define MC_C_LOGIC_H
 #endif
+

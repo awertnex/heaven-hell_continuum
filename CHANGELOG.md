@@ -1,7 +1,7 @@
 # changelog
 
 ## v0.2.0 (DD MMM 2025)
-- - - -
+
 - added skybox colors for day/night cycle
 - fixed menu buttons not disappearing after leaving menu (forgot to clear background)
 - added windows support for building launcher and tests
@@ -18,9 +18,20 @@
 - fixed window close bugs
 - fixed menu input events
 - added <shift> + <F3> combination for special debug (e.g. draw bounding boxes)
+- fixed bug mouse movement not registering with intended precision
+- added secure malloc, free and zero memory
+- added secure loading and unloading chunks
+- added more definitions for world size and chunk size for more precision
+- added get/set block data macros
+- added player-position-relative chunk-loading
+- added render-distance-based chunk loading
+- added block_parse_limit optimization to limit block parsing to last non-air block in chunk block array
+- added chunk_tab shifting to correct player targeting
+- added world directory structure creation
 
+- - -
 ## v0.1.4-alpha (08 Apr 2025)
-- - - -
+
 - added windows support for build tool
 - created minecraft.c logo 'resources/logo/'
 - added platform layer C files 'linux_minecraft.c' and 'windows_minecraft.c'
@@ -29,14 +40,15 @@
 - added day/night cycle
 - added compiled release_build for windows
 
+- - -
 ## v0.1.3 (03 Apr 2025)
-- - - -
+
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard
 - changed original resources to avoid copyright
 - made build system more difficult to read but easier to use (not tested on windows)
 
-- - - -
+- - -
 ## v0.1.2 (01 Apr 2025)
 
 #### changes
@@ -56,7 +68,7 @@
 - changed build system from Bash to C
 - made 'defines.h' a local file
 
-- - - -
+- - -
 ## v0.1.1 (27 Mar 2025)
 
 #### changes
@@ -72,7 +84,7 @@
 - made the codebase a lot more readable
 - added delta time
 
-- - - -
+- - -
 ## v0.1.0 (24 Mar 2025)
 
 **first version, as I have started this project long before I version-controlled it with git**

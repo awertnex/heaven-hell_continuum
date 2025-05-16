@@ -10,7 +10,7 @@
 #include "../dependencies/raylib-5.5/src/rlgl.h"
 
 #define VECTOR2_TYPES
-#include "../h/defines.h"
+#include "../engine/h/defines.h"
 
 #define NAME_MAX         255	/* # chars in a file name */
 #define PATH_MAX        4096	/* # chars in a path name including nul */
@@ -22,9 +22,9 @@
 
 u8 active = 1;
 u8 text_vertical_spacing = 25;
-u8 fontSize = 18;
+u8 font_size = 18;
 str logger[256] = {0};
-str log_level[3][16] = 
+str log_level[3][16] =
 {
     "ERROR",
     "WARNING",
@@ -38,9 +38,9 @@ enum LogLevel
 }; /* LogLevel */
 
 // -----------------------------------------------------------------------------
-str* mc_c_grandpath;
-str* mc_c_subpath;
-str* mc_c_chunkpath;
+str *mc_c_grandpath;
+str *mc_c_subpath;
+str *mc_c_chunkpath;
 str tokens_default[10][8] =
 {
     "4",    // bytes for chunk->pos;
@@ -49,7 +49,7 @@ str tokens_default[10][8] =
     "x",    // formatter: repeat 'bytes to the left of x' a 'bytes to the right of x' times;
 };
 
-str** tokens_loaded;
+str **tokens_loaded;
 
 FILE *save_file;
 DIR *dir;
@@ -270,24 +270,25 @@ void gui()
     BeginDrawing();
     ClearBackground(DARKGRAY);
 
-    DrawText("Controls:", 10, 10, fontSize, RAYWHITE);
-    DrawText("Loaded Chunk:", 500, 10, fontSize, RAYWHITE);
-    DrawText("Directory:", 1100, 10, fontSize, RAYWHITE);
-    DrawText("1: read chunk directory", 10, 10 + text_vertical_spacing, fontSize, RAYWHITE);
-    DrawText("2: load & read chunk file", 10, 10 + (text_vertical_spacing*2), fontSize, RAYWHITE);
-    DrawText("3: read chunk file", 10, 10 + (text_vertical_spacing*3), fontSize, RAYWHITE);
-    DrawText("4: unload chunk", 10, 10 + (text_vertical_spacing*4), fontSize, RAYWHITE);
+    DrawText("Controls:", 10, 10, font_size, RAYWHITE);
+    DrawText("Loaded Chunk:", 500, 10, font_size, RAYWHITE);
+    DrawText("Directory:", 1100, 10, font_size, RAYWHITE);
+    DrawText("1: read chunk directory", 10, 10 + text_vertical_spacing, font_size, RAYWHITE);
+    DrawText("2: load & read chunk file", 10, 10 + (text_vertical_spacing*2), font_size, RAYWHITE);
+    DrawText("3: read chunk file", 10, 10 + (text_vertical_spacing*3), font_size, RAYWHITE);
+    DrawText("4: unload chunk", 10, 10 + (text_vertical_spacing*4), font_size, RAYWHITE);
 
     for (u8 i = 0; i < 10; ++i)
-        DrawText(tokens_loaded[i], 500, 10 + ((i + 1)*text_vertical_spacing), fontSize, RAYWHITE);
+        DrawText(tokens_loaded[i], 500, 10 + ((i + 1)*text_vertical_spacing), font_size, RAYWHITE);
     for (u16 i = 0; i < 32; ++i)
-        DrawText(files[i], 1100, 10 + ((i + 1)*text_vertical_spacing), fontSize, RAYWHITE);
+        DrawText(files[i], 1100, 10 + ((i + 1)*text_vertical_spacing), font_size, RAYWHITE);
 
     rlBegin(RL_QUADS);
 
     DrawRectangle(0, 670, 1280, 50, (Color){70, 70, 70, 255});
     rlEnd();
-    DrawText(logger, 20, 690, fontSize, (Color){245, 185, 185, 255});
+    DrawText(logger, 20, 690, font_size, (Color){245, 185, 185, 255});
 
     EndDrawing();
 }
+

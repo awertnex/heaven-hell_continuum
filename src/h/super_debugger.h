@@ -1,10 +1,10 @@
-#ifndef SUPER_DEBUGGER_H
+#ifndef MC_C_SUPER_DEBUGGER_H
 
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 #include "gui.h"
 
 #define SDB_ROW_HEIGHT  22
@@ -28,15 +28,16 @@ typedef struct debug_rect
 
 // ---- declarations -----------------------------------------------------------
 extern Texture2D texture_super_debugger;
-extern debug_rect DebugRectangle;
+extern debug_rect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
 // ---- signatures -------------------------------------------------------------
-void init_super_debugger(v2f32 renderSize);
+void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
-void draw_super_debugger(v2f32 renderSize);
+void draw_super_debugger(v2f32 render_size);
 
-#define SUPER_DEBUGGER_H
+#define MC_C_SUPER_DEBUGGER_H
 #endif
+

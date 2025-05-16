@@ -3,7 +3,7 @@
 #include "../dependencies/raylib-5.5/src/raylib.h"
 
 #include "launcher.h"
-#include "../h/logger.h"
+#include "../engine/h/logger.h"
 #include "../h/dir.h"
 
 u8 state = 0;
@@ -26,7 +26,7 @@ void init_launcher()
     }
 }
 
-int main(void) // ---- main ----------------------------------------------------
+int main(void) // ---- main --------------------------------------------------
 {
     init_launcher();
 
@@ -51,8 +51,7 @@ void update_launcher()
     EndDrawing();
 }
 
-//TODO: evaluate instance
-void update_launcher_input()
+void update_launcher_input() //TODO: evaluate instance
 {
     if (IsKeyPressed(KEY_Q))
         state &= ~STATE_ACTIVE;
@@ -61,3 +60,4 @@ void update_launcher_input()
 void evaluate_instance(str *mc_c_subpath)
 {
 }
+

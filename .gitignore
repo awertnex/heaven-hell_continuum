@@ -1,7 +1,9 @@
 # Directories
+bin/
 files/
 ref/
 demos/
+test_instance/
 
 # Notes
 NOTES.md

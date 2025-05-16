@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "../dependencies/raylib-5.5/src/raylib.h"
-#include "../h/defines.h"
+#include "../engine/h/defines.h"
 
 void test_binary_operators()
 {
@@ -22,9 +22,9 @@ void test_gravity_vs_jump_height()
 {
 	f32 height = 1, pos = 0, fall = height;
 	for (u8 i = 0; i < 100 && parse; ++i)
-	{
+    {
 		if (pos < 0)
-		{
+        {
 			pos = 0;
 			parse = 0;
 		}
@@ -40,7 +40,7 @@ void test_state_checking_speed()
 	arr[1999] = 49;
 	arr[399999998] = 48;
 	for (u32 o = 0; o < 400000000; ++o)
-	{
+    {
 		if (arr[o])
 			printf("value: %c\n", arr[o]);
 	}

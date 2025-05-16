@@ -12,12 +12,12 @@ _section_tools =================================================================
 #include "h/dir.h"
 
 // ---- variables --------------------------------------------------------------
-u16 baseTextureSize;
-texture_layout OneSide;
-texture_layout TwoSide;
-texture_layout ThreeSide;
-texture_layout ThreeSideAlt;
-texture_layout FourSide;
+u16 base_texture_size;
+TextureLayout one_side;
+TextureLayout two_side;
+TextureLayout three_side;
+TextureLayout three_side_alt;
+TextureLayout four_side;
 
 Texture2D textures[3] = {0};
 enum TextureNames
@@ -36,24 +36,24 @@ str block_names[3][NAME_MAX] =
 // ---- functions --------------------------------------------------------------
 void init_texture_layouts()
 {
-    OneSide =       (texture_layout){0, 0,                  0,                      0,                  0,                  0};
-    TwoSide =       (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  baseTextureSize};
-    ThreeSide =     (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  (baseTextureSize*2)};
-    ThreeSideAlt =  (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  0,                  baseTextureSize,  (baseTextureSize*2)};
-    FourSide =      (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  baseTextureSize,  baseTextureSize,  (baseTextureSize*3)};
+    one_side =          (TextureLayout){0, 0,                   0,                      0,                  0,                  0};
+    two_side =          (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  base_texture_size};
+    three_side =        (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  (base_texture_size*2)};
+    three_side_alt =    (TextureLayout){0, base_texture_size,   (base_texture_size*2),  0,                  base_texture_size,  (base_texture_size*2)};
+    four_side =         (TextureLayout){0, base_texture_size,   (base_texture_size*2),  base_texture_size,  base_texture_size,  (base_texture_size*3)};
 }
 
 void init_textures()
 {
-    baseTextureSize = 16;
+    base_texture_size = 16;
 
     str string[PATH_MAX + NAME_MAX] = {0};
     for (u8 i = 0; i < 3; ++i)
     {
         snprintf(string,
-                strlen(mc_c_subpath) + strlen(instanceDirStructure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
+                strlen(mc_c_subpath) + strlen(instance_dir_structure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
                 "%s%s%s",
-                mc_c_subpath, instanceDirStructure[MC_C_DIR_BLOCK], block_names[i]);
+                mc_c_subpath, instance_dir_structure[MC_C_DIR_BLOCK], block_names[i]);
 
         textures[i] = LoadTexture(string);
     }
@@ -68,27 +68,27 @@ void unload_textures()
 // =============================================================================
 // _section_blocks =============================================================
 // =============================================================================
-block BlockGrass = 
+Block block_grass =
 {
-    Grass,
+    grass,
     BLOCK_STATE_SOLID,
-    &ThreeSide,
+    &three_side,
     &textures[TEXTURE_BLOCK_GRASS],
 }; /* Block Grass */
 
-block BlockCobbleStone =
+Block block_cobblestone =
 {
-    CobbleStone,
+    cobblestone,
     BLOCK_STATE_SOLID,
-    &OneSide,
+    &one_side,
     &textures[TEXTURE_BLOCK_COBBLESTONE],
 }; /* Block Cobblestone */
 
-block BlockCobbledDeepslate =
+Block block_cobbled_deepslate =
 {
-    CobbledDeepSlate,
+    cobbled_deepslate,
     BLOCK_STATE_SOLID,
-    &OneSide,
+    &one_side,
     &textures[TEXTURE_BLOCK_COBBLED_DEEPSLATE],
 }; /* Block Cobbled Deepslate */
 
@@ -105,3 +105,4 @@ block BlockCobbledDeepslate =
 // =============================================================================
 // _section_tools ==============================================================
 // =============================================================================
+

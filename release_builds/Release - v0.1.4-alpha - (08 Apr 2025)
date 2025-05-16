@@ -1,25 +1,13 @@
-<h1 align="center">
-  <img src="resources/logo/128x128.png" alt="minecraft.c">
-</h1>
+**Second release of minecraft.c, this is the windows-support release.**
+- - - -
 
-**a 1:1 minecraft clone but in C99, with minimal library usage if any.
+## Download
+- all builds can be found below as `.zip` or `.tar.gz` files
 
-## dependencies
-- [raylib](https://github.com/raysan5/raylib) by [raysan5](https://github.com/raysan5)
-
-
-## downloads
-- [v0.1.4_linux-x86_64.tar.gz](https://github.com/awertnex/minecraft.c/releases/download/v0.1.4-alpha/minecraft_c-v0.1.4-linux-x86_64.tar.gz)
-- [v0.1.4_linux-x86_64.zip](https://github.com/awertnex/minecraft.c/releases/download/v0.1.4-alpha/minecraft_c-v0.1.4-linux-x86_64.zip)
-- [v0.1.4_win64.zip](https://github.com/awertnex/minecraft.c/releases/download/v0.1.4-alpha/minecraft_c-v0.1.4-win64.zip)
-- unzip and launch
-
-
-## build from source
-
+## Build from Source
 ### linux - debian-based:
 ```bash
-git clone --depth=1 https://github.com/awertnex/minecraft.c.git
+git clone --depth=1 --branch v0.1.4-alpha https://github.com/awertnex/minecraft.c.git
 cd minecraft.c/
 cc build.c -std=c99 -o build # -std=c99 optional, but preferred
 ./build
@@ -35,19 +23,19 @@ if build successful, run minecraft.c with `./minecraft_c`\
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
 - build test [n] with `./build test [n]`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
-- help `./build help`
+- help `./build --help`
 
 
 ### windows (using mingw/gcc):
 
 **requirements**
-- a c compiler, 'cc' or 'gcc' (or MSVC, the visual studio c/c++ compiler)
+- a c compiler, 'cc' or 'gcc' (or MSVC, the c/c++ compiler that comes with visual studio)
     - download `gcc` for windows from [sourceforge/gcc-win64](https://www.sourceforge.net/projects/gcc-win64/)
     - extract it and move the extracted folder somewhere like `C:\` (preferrably) or `C:\Program Files`
     - add the path of the `bin` folder inside to the `path` environment variable
 
 ```command
-git clone --depth=1 https://github.com/awertnex/minecraft.c.git
+git clone --depth=1 --branch v0.1.4-alpha https://github.com/awertnex/minecraft.c.git
 cd minecraft.c
 gcc .\build.c -std=c99 -o build.exe
 .\build.exe
@@ -65,8 +53,21 @@ cflag `-std=c99` optional, but preferred
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to list
 - build test [n] with `build test [n]`
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to execute by index [n]
-- help `build help`
+- help `build --help`
 
-## Contributors (alpha testing - windows)
-- [sofia](https://github.com/EdgySofia666)
+## Notes
+- chunk loading is hard-coded and not flexible, you can only build 20 blocks high in chunk 'x: 0, y: 0', and highest parsed block +1 still deletes the top face of the block below if placed
+- player target is not a raycaster, it's an xyz position (meaning whichever block is 5 blocks away from your face is the target
+- camera modes aren't fully implemented
+    - 1, 2 and 3 never change camera distance from player based on blocks behind them
+    - panorama anchors and never changes anchor
+    - spectator anchors and doesn't move or rotate the camera but moves and rotates the player
+- launcher works fine,because there's nothing, just a window (and parses main 'minecraft.c' directory
 
+## Bugs
+- gui elements don't follow render scale changes (fullscreen and resize window frame)
+- clicking 'Options..' menu shows its buttons and the buttons of the screen before, but only the 'Options..' buttons work
+- small enough mouse movements don't register and won't move the player's camera
+- collision is funky, player sticks to the ground and can't jump, no matter how far up you are you'll teleport above the block if you stop flying and there's a block under you
+- moving the window frame doesn't pause the game and continuously pulls at your mouse
+- unfocusing the window and focusing back while the game is unpaused launches camera into a spiral
