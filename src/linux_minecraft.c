@@ -17,7 +17,7 @@
 #include "super_debugger.c"
 #include "engine/logger.c"
 
-int mc_mkdir(const char *path, u16 mode)
+int mc_c_mkdir(str *path, u16 mode)
 {
     return mkdir(path, mode);
 }

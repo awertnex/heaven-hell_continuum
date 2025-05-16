@@ -37,8 +37,8 @@ extern f64 skybox_burn_boost;
 extern f64 skybox_mid_night;
 
 // ---- signatures -------------------------------------------------------------
-int mc_mkdir(const char *path, u16 mode);
-void init_world(const char *str);
+int mc_c_mkdir(str *path, u16 mode);
+void init_world(str *str);
 
 #define MC_C_H
 #endif

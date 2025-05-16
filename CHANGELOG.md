@@ -27,6 +27,7 @@
 - added render-distance-based chunk loading
 - added block_parse_limit optimization to limit block parsing to last non-air block in chunk block array
 - added chunk_tab shifting to correct player targeting
+- added world directory structure creation
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)

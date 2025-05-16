@@ -79,9 +79,9 @@ int main(int argc, char **argv)
     //init_textures();
 
 #if RELEASE_BUILD
-    init_instance_directory("new_instance", &state, STATE_ACTIVE);
+    init_instance_directory("new_instance", &state, STATE_ACTIVE); // TODO: make editable instance name
 #else
-    init_instance_directory("test_environment", &state, STATE_ACTIVE);
+    init_instance_directory("test_instance", &state, STATE_ACTIVE);
 #endif // RELEASE_BUILD
     if (!(state & STATE_ACTIVE))
         return -1;
@@ -160,8 +160,15 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void init_world(const char *str)
+void init_world(str *str)
 {
+    if (strlen(str) == 0)
+    {
+        LOGERROR("%s", "World Requires a Name, World Creation Aborted");
+        return;
+    }
+    init_world_directory(str);
+
     rlSetClipPlanes(0.1f, 500.0f);
 
     if (init_chunking() != 0)
@@ -183,7 +190,6 @@ void init_world(const char *str)
             lily.camera.target.z};
 
     state |= (STATE_HUD | STATE_WORLD_LOADED);
-    LOGINFO("%s '%s'", "World Loaded", "Poop Consistency Tester");
 
     disable_cursor;
     center_cursor;
