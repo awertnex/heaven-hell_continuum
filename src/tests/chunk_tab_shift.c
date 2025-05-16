@@ -88,7 +88,7 @@ u8 data_view = 0;
 Chunk *chunk_buf = {0};
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};
 Chunk *chunk_reg[CHUNK_BUF_DIAMETER] = {NULL};
-v2u32 chunk_tab_index = {0};
+v2u16 chunk_tab_coordinates = {0};
 u8 chunk_parse_lock = 0;
 u8 shift_direction = 1;
 v2i16 player_chunk = {0};
@@ -96,7 +96,7 @@ v2i16 player_delta_chunk = {0};
 
 // ---- signatures -------------------------------------------------------------
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
-Chunk *push_chunk_buf(v2i16 player_chunk, v2u32 pos);
+Chunk *push_chunk_buf(v2i16 player_chunk, v2u16 pos);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
 void draw_chunk_buf(u32 i);
@@ -105,7 +105,7 @@ void free_chunking();
 void parse_input();
 void draw_gui();
 
-Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u32 pos)
+Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (!(chunk_buf[i].flag & FLAG_CHUNK_LOADED))
@@ -126,13 +126,13 @@ void update_chunk_tab(v2i16 player_delta_chunk)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        chunk_tab_index = (v2u32){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
+        chunk_tab_coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
         if (is_distance_within(render_distance,
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    (v2i32){chunk_tab_index.x, chunk_tab_index.y}))
+                    (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y}))
         {
             if (chunk_tab[i] == NULL)
-                chunk_tab[i] = push_chunk_buf(player_delta_chunk, chunk_tab_index);
+                chunk_tab[i] = push_chunk_buf(player_delta_chunk, chunk_tab_coordinates);
         }
         else if (chunk_tab[i] != NULL)
             if (chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
@@ -271,7 +271,7 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 
 void draw_chunk_buf(u32 i)
 {
-    chunk_tab_index = (v2u32){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
+    chunk_tab_coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
 
     draw_chunk_buf_index(i, MC_C_OFF);
     if (&chunk_buf[i] != NULL)
@@ -288,8 +288,8 @@ void draw_chunk_buf(u32 i)
 
             DrawTextEx(font, TextFormat(" %d", &chunk_buf[i] - &chunk_buf[0]),
                     (Vector2){
-                    CHUNK_BUF_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
-                    CHUNK_BUF_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
+                    CHUNK_BUF_POS_X + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN)),
+                    CHUNK_BUF_POS_Y + (chunk_tab_coordinates.y * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
         }
@@ -299,7 +299,7 @@ void draw_chunk_buf(u32 i)
     if ((chunk_tab[i] == NULL)
             && is_distance_within(render_distance,
                 (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                (v2i32){chunk_tab_index.x, chunk_tab_index.y}))
+                (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y}))
         draw_chunk_tab_index(i, MC_C_RED);
 
     if (chunk_tab[i] != NULL)
@@ -314,15 +314,15 @@ void draw_chunk_buf(u32 i)
         if (data_view)
             DrawTextEx(font, TextFormat(" %d\n %d", chunk_tab[i]->pos.x, chunk_tab[i]->pos.y),
                     (Vector2){
-                    CHUNK_TAB_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
-                    CHUNK_TAB_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
+                    CHUNK_TAB_POS_X + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN)),
+                    CHUNK_TAB_POS_Y + (chunk_tab_coordinates.y * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
         else
             DrawTextEx(font, TextFormat(" %d", chunk_tab[i] - chunk_buf),
                     (Vector2){
-                    CHUNK_TAB_POS_X + (chunk_tab_index.x * (RECT_SIZE + MARGIN)),
-                    CHUNK_TAB_POS_Y + (chunk_tab_index.y * (RECT_SIZE + MARGIN))
+                    CHUNK_TAB_POS_X + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN)),
+                    CHUNK_TAB_POS_Y + (chunk_tab_coordinates.y * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
     }
@@ -343,14 +343,14 @@ void draw_chunk_buf(u32 i)
             DrawTextEx(font, TextFormat(" %d,%d", chunk_reg[i]->pos.x, chunk_reg[i]->pos.y),
                     (Vector2){
                     CHUNK_REG_POS_X,
-                    CHUNK_REG_POS_Y + (chunk_tab_index.x * (RECT_SIZE + MARGIN))
+                    CHUNK_REG_POS_Y + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
         else
             DrawTextEx(font, TextFormat(" %d", chunk_reg[i] - chunk_buf),
                     (Vector2){
                     CHUNK_REG_POS_X,
-                    CHUNK_REG_POS_Y + (chunk_tab_index.x * (RECT_SIZE + MARGIN))
+                    CHUNK_REG_POS_Y + (chunk_tab_coordinates.x * (RECT_SIZE + MARGIN))
                     },
                     font_size_small, 1, BLACK);
     }
