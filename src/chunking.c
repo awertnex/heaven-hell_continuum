@@ -117,6 +117,14 @@ void generate_chunk(Chunk *chunk) // TODO: make this function
 {
 }
 
+void serialize_chunk(Chunk *chunk, str *world_name) // TODO: make this function
+{
+}
+
+void deserialize_chunk(Chunk *chunk, str *world_name) // TODO: make this function
+{
+}
+
 Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
@@ -135,10 +143,14 @@ Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
         chunk_buf[i].id = ((chunk_buf[i].pos.x & 0xffff) << 16) + (chunk_buf[i].pos.y & 0xffff);
 
         u16 z = 0; u8 y = 0, x = 0;
-        for (; z < 3; ++z)
+        for (; z < 10; ++z)
             for (y = 0; y < CHUNK_DIAMETER; ++y)
                 for (x = 0; x < CHUNK_DIAMETER; ++x)
-                    add_block(&chunk_buf[i], x, y, z);
+                {
+                    if (z <= (u16)((sinf(((f32)x + (chunk_buf[i].pos.x * CHUNK_DIAMETER)) / 5) + 1) * 5)
+                    && z <= (u16)((sinf(((f32)y + (chunk_buf[i].pos.y * CHUNK_DIAMETER)) / 5) + 1) * 5))
+                        add_block(&chunk_buf[i], x, y, z);
+                }
 
         return &chunk_buf[i];
     }

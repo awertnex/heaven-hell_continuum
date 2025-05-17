@@ -12,6 +12,7 @@ str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
 str mc_c_launcher_path[PATH_MAX] = {0};
 str mc_c_world_path[PATH_MAX] = {0};
+str mc_c_chunkpath[PATH_MAX] = {0};
 str instance_dir_structure[17][NAME_MAX] = {0};
 str world_dir_structure[3][NAME_MAX] = {0};
 u16 instance_arr_memb = sizeof(instance_dir_structure) / sizeof(instance_dir_structure[0]);

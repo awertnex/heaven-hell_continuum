@@ -1,6 +1,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
+#include <pthread.h>
 
 #include "dependencies/raylib-5.5/src/raylib.h"
 #include "dependencies/raylib-5.5/src/rlgl.h"
@@ -18,6 +19,7 @@ u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
 u64 game_tick = 0;
 u64 game_days = 0;
+pthread_t thrd_chunk_handler;
 
 settings setting =
 {
@@ -65,6 +67,7 @@ Player lily =
 void update_world();
 void update_input(Player *player);
 void draw_skybox();
+void *chunk_handler();
 
 int main(int argc, char **argv)
 {
@@ -150,6 +153,7 @@ int main(int argc, char **argv)
     }
 
     // ---- game close ---------------------------------------------------------
+    pthread_join(thrd_chunk_handler, NULL);
     UnloadTexture(tex_cobblestone); //temp
     UnloadTexture(tex_dirt); //temp
     unload_textures();
@@ -213,7 +217,6 @@ void update_world()
 
     update_player_states(&lily);
     update_camera_movements_player(&lily);
-
     if (lily.state & STATE_CHUNK_BUF_DIRTY)
     {
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
@@ -516,5 +519,26 @@ void draw_skybox()
         };
 
     ClearBackground(skybox_rgba);
+}
+
+struct /* Chunk Handler Args */
+{
+    v2i16 player_delta_chunk;
+    u8 lock;
+} chunk_handler_args;
+void *chunk_handler()
+{
+    chunk_handler_args.player_delta_chunk = lily.delta_chunk;
+    chunk_handler_args.lock = 1;
+    while (!WindowShouldClose() && (state & STATE_ACTIVE))
+    {
+        LOGINFO("Delta[%03d %03d]", chunk_handler_args.player_delta_chunk.x, chunk_handler_args.player_delta_chunk.y);
+        if (!(lily.state & STATE_CHUNK_BUF_DIRTY)) continue;
+
+        chunk_handler_args.lock = 0;
+        shift_chunk_tab(lily.chunk, &chunk_handler_args.player_delta_chunk);
+        lily.state &= ~STATE_CHUNK_BUF_DIRTY;
+    }
+    return NULL;
 }
 

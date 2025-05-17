@@ -46,26 +46,24 @@
 #define GET_BLOCKDATA(i)            (((i) & BLOCKDATA) >> 8)
 
 // ---- general ----------------------------------------------------------------
-enum BlockFaces
+enum BlockFlags
 {
-    POSITIVE_X =    0x01,
-    NEGATIVE_X =    0x02,
-    POSITIVE_Y =    0x04,
-    NEGATIVE_Y =    0x08,
-    POSITIVE_Z =    0x10,
-    NEGATIVE_Z =    0x20,
-    NOT_EMPTY =     0x40,
-    COUNTAHEAD =    0x80,
-    // COUNTAHEAD: fwrite(): if ((chunk.i[n] & NOT_EMPTY) && chunk.info[n] == chunk.info[n - 1]) loop: u32 count++, compare again; if comparison fails, byte[n] |= COUNTAHEAD; 4 bytes[n + 1] = count;
-    // COUNTAHEAD: fread(): if (byte[n] & COUNTAHEAD) u32 count = next 4 bytes, fill chunk.i from chunk.i[n] to chunk.i[n + count]
-}; /* BlockFaces */
+    POSITIVE_X =    0x00010000, // 00000000 00000001 00000000 00000000
+    NEGATIVE_X =    0x00020000, // 00000000 00000010 00000000 00000000
+    POSITIVE_Y =    0x00040000, // 00000000 00000100 00000000 00000000
+    NEGATIVE_Y =    0x00080000, // 00000000 00001000 00000000 00000000
+    POSITIVE_Z =    0x00100000, // 00000000 00010000 00000000 00000000
+    NEGATIVE_Z =    0x00200000, // 00000000 00100000 00000000 00000000
+    NOT_EMPTY =     0x00400000, // 00000000 01000000 00000000 00000000
+    RLE_TRIGGER =   0x00008000, // 00000000 00000000 10000000 00000000 run-length encoding
+}; /* BlockFlags */
 
 enum BlockData
 {
-    BLOCKFACES =    0x0000003f, // 00000000 00000000 00000000 00111111
-    BLOCKID =       0x000fff00, // 00000000 00001111 11111111 00000000
-    BLOCKSTATE =    0x00f00000, // 00000000 11110000 00000000 00000000
-    BLOCKDATA =     0x00ffff00, // 00000000 11111111 11111111 00000000
+    BLOCKFACES =    0x003f0000, // 00000000 00111111 00000000 00000000
+    BLOCKID =       0x000003ff, // 00000000 00000000 00000011 11111111
+    BLOCKSTATE =    0x00007c00, // 00000000 00000000 01111100 00000000
+    BLOCKDATA =     0x00007fff, // 00000000 00000000 01111111 11111111
     BLOCKLIGHT =    0x1f000000, // 00011111 00000000 00000000 00000000
 }; /* BlockData */
 
@@ -110,12 +108,13 @@ void free_chunking();
 void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void generate_chunk(Chunk *chunk);
+void serialize_chunk(Chunk *chunk, str *world_name);
+void deserialize_chunk(Chunk *chunk, str *world_name);
 Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
 Chunk *pop_chunk_buf(u16 chunk_tab_index);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
 u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 coordinates);
-Chunk *get_chunk(v3i32 *coordinates, u16 *state, u16 flag); // TODO: revise, might not be needed
 void draw_chunk_tab();
 void draw_block(u32 block);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
