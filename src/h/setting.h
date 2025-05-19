@@ -28,7 +28,7 @@
 #define SETTING_GUI_SCALE_4                 4.0f
 
 // ---- settings ---------------------------------------------------------------
-typedef struct settings
+typedef struct Settings
 {
     // ---- internal -----------------------------------------------------------
     u8 reach_distance;  // for player reach (arm length basically)
@@ -41,10 +41,10 @@ typedef struct settings
     u8 render_distance;
     //TODO: repair
     f32 gui_scale;
-} settings;
+} Settings;
 
 // ---- declarations -----------------------------------------------------------
-extern settings setting;
+extern Settings setting;
 
 #define MC_C_SETTING_H
 #endif

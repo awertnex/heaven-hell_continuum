@@ -35,10 +35,11 @@
 #define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
 
 // ---- getters & setters ------------------------------------------------------
-#define GET_BLOCK_INDEX(x, y, z)    (u32)((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
-#define GET_BLOCK_X(i)              ((u32)((i) % CHUNK_DIAMETER))
-#define GET_BLOCK_Y(i)              ((u32)floorf((f32)(i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
-#define GET_BLOCK_Z(i)              ((u32)floorf((f32)(i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
+#define GET_BLOCK_INDEX(x, y, z)    ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
+#define GET_BLOCK_X(i)              ((i) % CHUNK_DIAMETER)
+#define GET_BLOCK_Y(i)              (((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
+#define GET_BLOCK_Z(i)              (((i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
+#define GET_MIRROR_AXIS(axis)       ((axis) + CHUNK_DIAMETER - 1 - ((axis) * 2))
 #define GET_BLOCKID(id)             (((id) & BLOCKID) >> 8)
 #define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
 #define GET_BLOCKSTATE(state)       (((i) & BLOCKSTATE) >> 20)
@@ -72,20 +73,18 @@ enum ChunkFlags
     FLAG_CHUNK_LOADED =     0x01,
     FLAG_CHUNK_RENDER =     0x02,
     FLAG_CHUNK_DIRTY =      0x04,
+    FLAG_CHUNK_EDGE =       0x08,   // chunk marking for chunk_tab shifting logic
 }; /* ChunkFlags */
 
-// TODO: add 'version' byte to the chunk file for evolving the format safely
 // TODO: add chunk slicing
-typedef struct /* Chunk */
+typedef struct Chunk
 {
-    v2i16 pos;                                  // (world X Y) / CHUNK_DIAMETER
-    u32 id;                                     // (pos.x << 16) + pos.y
-    u32 i[WORLD_HEIGHT_NORMAL - WORLD_BOTTOM][CHUNK_DIAMETER][CHUNK_DIAMETER];
-    Model model;
-    Material mat;
+    v2i16 pos;                      // (world X Y) / CHUNK_DIAMETER
+    u32 id;                         // (pos.x << 16) + pos.y
+    u32 block[WORLD_HEIGHT_NORMAL - WORLD_BOTTOM][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    Mesh mesh;
     u8 flag;
-    u8 edge_value;                              // chunk marking for chunk_tab shifting logic
-    u32 block_parse_limit;                      // final occurrence of non-air blocks in chunk
+    u32 block_parse_limit;          // final occurrence of non-air blocks in chunk
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
@@ -105,9 +104,9 @@ extern u8 opacity;
 u8 init_chunking();
 void free_chunking();
 
-void add_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void remove_block(Chunk *chunk, u8 x, u8 y, u16 z);
-void generate_chunk(Chunk *chunk);
+void add_block(u16 index, u8 x, u8 y, u16 z);
+void remove_block(u16 index, u8 x, u8 y, u16 z);
+void generate_chunk(u16 index);
 void serialize_chunk(Chunk *chunk, str *world_name);
 void deserialize_chunk(Chunk *chunk, str *world_name);
 Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
@@ -115,8 +114,8 @@ Chunk *pop_chunk_buf(u16 chunk_tab_index);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
 u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 coordinates);
-void draw_chunk_tab();
-void draw_block(u32 block);
+void draw_chunk_tab(Texture *tex);
+void draw_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
