@@ -3,8 +3,8 @@
 #include "h/logic.h"
 
 // ---- variables --------------------------------------------------------------
-Texture2D texture_super_debugger;
-debug_rect debug_rectangle =
+Texture texture_super_debugger;
+DebugRect debug_rectangle =
 {
     .corner_00 =    {0,                 0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_10 =    {SDB_BASE_SIZE,     0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
