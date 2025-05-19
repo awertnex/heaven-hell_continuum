@@ -115,7 +115,7 @@ void init_gui()
 
 void apply_render_settings()
 {
-    setting = (settings){
+    setting = (Settings){
             .reach_distance =       SETTING_REACH_DISTANCE_MAX,
             .fov =                  SETTING_FOV_DEFAULT,
             .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
@@ -935,7 +935,6 @@ void btn_func_save_and_quit_to_title()
     check_menu_ready = 0;
     // TODO: save and unload world
     state &= ~STATE_WORLD_LOADED;
-    state &= ~STATE_PAUSED;
 }
 
 void btn_func_back()
