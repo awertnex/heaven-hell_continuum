@@ -12,7 +12,7 @@
     #include "windows_minecraft.c"
 #endif // PLATFORM
 
-// ---- variables --------------------------------------------------------------
+// ---- declarations -----------------------------------------------------------
 v2f32 render_size = {WIDTH, HEIGHT};
 u16 state = 0;
 u8 state_menu_depth = 0;
@@ -21,7 +21,7 @@ u64 game_tick = 0;
 u64 game_days = 0;
 pthread_t thrd_chunk_handler;
 
-settings setting =
+Settings setting =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
@@ -69,30 +69,27 @@ void update_input(Player *player);
 void draw_skybox();
 void *chunk_handler();
 
-int main(int argc, char **argv)
+int main(void)
 {
-    // ---- game init ----------------------------------------------------------
+    // ---- init main ----------------------------------------------------------
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
 
-    state |= STATE_ACTIVE | STATE_PARSE_CURSOR;
+    state = STATE_ACTIVE | STATE_PARSE_CURSOR | STATE_PAUSED;
     init_paths();
-    //TODO: load textures
-    //init_texture_layouts();
-    //init_textures();
-
 #if RELEASE_BUILD
-    init_instance_directory("new_instance", &state, STATE_ACTIVE); // TODO: make editable instance name
+    init_instance_directory("new_instance"); // TODO: make editable instance name
 #else
-    init_instance_directory("test_instance", &state, STATE_ACTIVE);
+    init_instance_directory("test_instance");
 #endif // RELEASE_BUILD
-    if (!(state & STATE_ACTIVE))
-        return -1;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
+
+    init_textures();
+
 #if !RELEASE_BUILD
     SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
 #endif // RELEASE_BUILD
@@ -104,85 +101,121 @@ int main(int argc, char **argv)
     init_super_debugger(render_size);
 
     game_start_time = get_time_ms();
+    // -------------------------------------------------------------------------
 
-    while (!WindowShouldClose() && (state & STATE_ACTIVE))
+loop_menu_title: // ---- loop menu title ---------------------------------------
+    mouse_delta = GetMouseDelta();
+    if (!(state & STATE_PARSE_CURSOR)) // for fullscreen cursor jump prevention
     {
-        // ---- game loop ------------------------------------------------------
-        mouse_delta = GetMouseDelta();
-        if (!state_menu_depth && !(state & STATE_SUPER_DEBUG))
-        {
-            disable_cursor;
-            center_cursor;
-        }
-
-        if (!(state & STATE_PARSE_CURSOR))
-        {
-            state |= STATE_PARSE_CURSOR;
-            mouse_delta = (Vector2){0.0f, 0.0f};
-        }
-
-        update_input(&lily);
-        update_render_settings(render_size);
-        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        BeginDrawing();
-        //draw_texture_tiled(); // TODO: draw tiled texture of title screen
-        ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
-        update_menus(render_size);
-        if (state & STATE_WORLD_LOADED)
-        {
-            draw_skybox();
-            update_world();
-        }
-        EndDrawing();
-
-        if (state & STATE_PAUSED) // TODO: make real pausing instead of using the uncleared bg as still
-        {
-            BeginDrawing();
-            draw_menu_overlay(render_size);
-            EndDrawing();
-
-            while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose())
-            {
-                render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-                update_input(&lily);
-                BeginDrawing();
-                update_menus(render_size);
-                EndDrawing();
-            }
-        }
+        state |= STATE_PARSE_CURSOR;
+        mouse_delta = (Vector2){0.0f, 0.0f};
     }
 
-    // ---- game close ---------------------------------------------------------
+    update_input(&lily);
+    update_render_settings(render_size);
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    BeginDrawing();
+    //draw_texture_tiled(); // TODO: draw tiled texture of title screen
+    ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
+    update_menus(render_size);
+    EndDrawing();
+
+    if (!(state & STATE_PAUSED) && (state & STATE_WORLD_LOADED))
+        goto loop_main;
+
+    if (!(state & STATE_ACTIVE) || WindowShouldClose())
+        goto cleanup;
+
+    goto loop_menu_title;
+    // -------------------------------------------------------------------------
+
+init_menu_world: // ---- init menu world ---------------------------------------
+    // TODO: make real pausing instead of using the uncleared bg as still
+    BeginDrawing();
+    draw_menu_overlay(render_size);
+    EndDrawing();
+    // -------------------------------------------------------------------------
+
+loop_menu_world: // ---- loop menu world ---------------------------------------
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    update_render_settings(render_size);
+    update_input(&lily);
+    BeginDrawing();
+    update_menus(render_size);
+    EndDrawing();
+
+    if (!(state & STATE_WORLD_LOADED))
+        goto loop_menu_title;
+
+    if (!(state & STATE_PAUSED) && (state & STATE_WORLD_LOADED))
+        goto loop_main;
+
+    if (!(state & STATE_ACTIVE) || WindowShouldClose())
+        goto cleanup;
+
+    goto loop_menu_world;
+    // -------------------------------------------------------------------------
+
+loop_main: // ---- main loop ---------------------------------------------------
+    mouse_delta = GetMouseDelta();
+    if (!state_menu_depth && !(state & STATE_SUPER_DEBUG))
+    {
+        disable_cursor;
+        center_cursor;
+    }
+
+    if (!(state & STATE_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+    {
+        state |= STATE_PARSE_CURSOR;
+        mouse_delta = (Vector2){0.0f, 0.0f};
+    }
+
+    update_input(&lily);
+    update_render_settings(render_size);
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    BeginDrawing();
+    if (state & STATE_WORLD_LOADED)
+    {
+        draw_skybox();
+        update_world();
+    }
+    EndDrawing();
+
+    if (!(state & STATE_WORLD_LOADED))
+        goto loop_menu_title;
+
+    if (state & STATE_PAUSED)
+        goto init_menu_world;
+
+    if (!(state & STATE_ACTIVE) || WindowShouldClose())
+        goto cleanup;
+
+    goto loop_main;
+    // -------------------------------------------------------------------------
+
+cleanup: // ---- cleanup -------------------------------------------------------
     pthread_join(thrd_chunk_handler, NULL);
-    UnloadTexture(tex_cobblestone); //temp
-    UnloadTexture(tex_dirt); //temp
     unload_textures();
     free_chunking();
     free_gui();
     free_super_debugger();
     CloseWindow();
+    // -------------------------------------------------------------------------
+
     return 0;
 }
 
 void init_world(str *str)
 {
-    if (strlen(str) == 0)
-    {
-        LOGERROR("%s", "World Requires a Name, World Creation Aborted");
-        return;
-    }
+    if (strlen(str) == 0) return;
+
     init_world_directory(str);
-
     rlSetClipPlanes(0.1f, 500.0f);
-
     if (init_chunking() != 0)
         state &= ~STATE_ACTIVE;
 
-    update_player_states(&lily);
+    update_player(&lily);
     update_chunk_tab(lily.chunk);
-
-    tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
-    tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
 
     lily.state |= STATE_FALLING;
     lily.state &= ~STATE_PARSE_TARGET;
@@ -212,10 +245,7 @@ void update_world()
         show_cursor;
     else disable_cursor;
 
-    if (state & STATE_DEBUG)
-        update_camera_movements_debug_info(&lily.camera_debug_info, &lily);
-
-    update_player_states(&lily);
+    update_player(&lily);
     update_camera_movements_player(&lily);
     if (lily.state & STATE_CHUNK_BUF_DIRTY)
     {
@@ -224,7 +254,7 @@ void update_world()
     }
 
     BeginMode3D(lily.camera);
-    draw_chunk_tab();
+    draw_chunk_tab(&block[stone].texture);
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
@@ -242,11 +272,11 @@ void update_world()
                 (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
                 (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, world_height}))
     {
-        set_delta_target(&lily.camera.target, &lily.delta_target);
+        update_delta_target(&lily.camera.target, &lily.delta_target);
         chunk_tab_index = get_chunk_tab_index(lily.chunk, lily.delta_target);
         if (chunk_tab[chunk_tab_index] != NULL && (state & STATE_HUD))
         {
-            if (chunk_tab[chunk_tab_index]->i
+            if (chunk_tab[chunk_tab_index]->block
                     [lily.delta_target.z - WORLD_BOTTOM]
                     [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
                     [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
@@ -365,7 +395,7 @@ void update_input(Player *player)
     {
         if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
         {
-            remove_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            remove_block(chunk_tab_index, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
         }
     }
 
@@ -377,7 +407,7 @@ void update_input(Player *player)
     {
         if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
         {
-            add_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            add_block(chunk_tab_index, lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
         }
     }
 
@@ -505,17 +535,23 @@ f64 skybox_mid_night = 0;
 Color skybox_rgba = {0};
 void draw_skybox()
 {
-    skybox_time =        (f64)game_tick / SETTING_DAY_TICKS_MAX;
-    skybox_mid_day =      fabs(sinf(1.5f * powf(sinf(skybox_time * PI), 1.0f)));
-    skybox_pre_burn =     fabs(sinf(powf(sinf((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
-    skybox_burn =        fabs(sinf(1.5f * powf(sinf((skybox_time + 0.124f) * PI * 1.6f), 20.0f)));
-    skybox_burn_boost =   fabs(powf(sinf((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox_mid_night =    fabs(sinf(powf(2 * cosf(skybox_time * PI), 3.0f)));
-    skybox_rgba = (Color){
-            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +     (skybox_pre_burn * 13) +  (skybox_burn_boost * 76), 0, 255),
-            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +     (skybox_pre_burn * 7) +   (skybox_burn_boost * 34), 0, 255),
-            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +    (skybox_pre_burn * 20),                           0, 255),
-            255
+    skybox_time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
+    skybox_mid_day =    fabs(sin(1.5f * pow(sin(skybox_time * PI), 1.0f)));
+    skybox_pre_burn =   fabs(sin(pow(sin((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
+    skybox_burn =       fabs(sin(1.5f * pow(sin((skybox_time + 0.124f) * PI * 1.6f), 32.0f)));
+    skybox_burn_boost = fabs(pow(sin((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
+    skybox_mid_night =  fabs(sin(pow(2 * cos(skybox_time * PI), 3.0f)));
+    skybox_rgba =
+        (Color){
+            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +
+                    (skybox_pre_burn * 13) + (skybox_burn_boost * 76), 0, 255),
+
+            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +
+                    (skybox_pre_burn * 7) + (skybox_burn_boost * 34), 0, 255),
+
+            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +
+                    (skybox_pre_burn * 20), 0, 255),
+            255,
         };
 
     ClearBackground(skybox_rgba);

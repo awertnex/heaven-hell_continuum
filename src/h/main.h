@@ -15,7 +15,6 @@
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
-#define MODE_GRAY_BLOCKS    1
 
 #define THREAD_COUNT 2 // TODO: use for multithreading
 
