@@ -56,21 +56,25 @@ typedef struct Player
     v3i32 spawn_point;
 } Player;
 
-// ---- states -----------------------------------------------------------------
-enum GameStates
+// ---- flags ------------------------------------------------------------------
+enum StateFlags
 {
-    STATE_ACTIVE =                  0x0001,
-    STATE_PAUSED =                  0x0002,
-    STATE_SUPER_DEBUG =             0x0004,
-    STATE_DEBUG =                   0x0008,
-    STATE_DEBUG_MORE =              0x0010,
-    STATE_HUD =                     0x0020,
-    STATE_FULLSCREEN =              0x0040,
-    STATE_WORLD_LOADED =            0x0080,
-    STATE_PARSE_CURSOR =            0x0100,
-}; /* GameStates */
+    FLAG_ACTIVE =                   0x0001,
+    FLAG_PAUSED =                   0x0002,
+    FLAG_PARSE_CURSOR =             0x0004,
+    FLAG_HUD =                      0x0008,
+    FLAG_DEBUG =                    0x0010,
+    FLAG_DEBUG_MORE =               0x0020,
+    FLAG_SUPER_DEBUG =              0x0040,
+    FLAG_FULLSCREEN =               0x0080,
+    FLAG_MENU_OPEN =                0x0100,
+    FLAG_DOUBLE_PRESS =             0x0200,
+    FLAG_PARSE_TARGET =             0x0400,
+    FLAG_WORLD_LOADED =             0x0800,
+    FLAG_CHUNK_BUF_DIRTY =          0x1000,
+}; /* StateFlags */
 
-enum ContainerStates
+enum ContainerFlags
 {
     CONTR_ANVIL =                   0x00000001,
     CONTR_BEACON =                  0x00000002,
@@ -97,41 +101,38 @@ enum ContainerStates
     CONTR_TAB_INVENTORY =           0x00400000,
     CONTR_TAB_ITEMS =               0x00800000,
     CONTR_TAB_ITEMS_SEARCH =        0x01000000,
-}; /* ContainerStates */
+}; /* ContainerFlags */
 
-enum PlayerStates
+enum PlayerFlags
 {
-    STATE_CAN_JUMP =                0x0001,
-    STATE_SNEAKING =                0x0002,
-    STATE_SPRINTING =               0x0004,
-    STATE_FLYING =                  0x0008,
-    STATE_SWIMMING =                0x0010,
-    STATE_MENU_OPEN =               0x0020,
-    STATE_HUNGRY =                  0x0040,
-    STATE_FALLING =                 0x0080,
-    STATE_DOUBLE_PRESS =            0x0100,
-    STATE_PARSE_TARGET =            0x0200,
-    STATE_VELOCITY_DIRTY =          0x0400,
-    STATE_DEAD =                    0x0800,
-    STATE_CHUNK_BUF_DIRTY =         0x1000,
-}; /* PlayerStates */
+    FLAG_CAN_JUMP =                 0x0001,
+    FLAG_SNEAKING =                 0x0002,
+    FLAG_SPRINTING =                0x0004,
+    FLAG_FLYING =                   0x0008,
+    FLAG_SWIMMING =                 0x0010,
+    FLAG_FALLING =                  0x0020,
+    FLAG_VELOCITY_DIRTY =           0x0040,
+    FLAG_HUNGRY =                   0x0080,
+    FLAG_DEAD =                     0x0100,
+}; /* PlayerFlags */
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
 extern Vector2 mouse_delta;
 
 // ---- signatures -------------------------------------------------------------
-bool get_double_press(Player *player, KeyboardKey key);
+bool get_double_press(KeyboardKey key);
 void update_player(Player *player);
 void update_camera_movements_player(Player *player);
+void update_player_target(Vector3 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
-void update_delta_target(Vector3 *coordinates, v3i32 *delta_target);
 void kill_player(Player *player);
 void respawn_player(Player *player);
 b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
 b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
-b8 is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end);
+b8 is_range_within_v3fi(v3f32 *pos, v3i32 start, v3i32 end);
+b8 is_range_within_v3i(v3i32 *pos, v3i32 start, v3i32 end);
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void update_gravity(Player *player);

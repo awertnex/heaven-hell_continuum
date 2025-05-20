@@ -7,7 +7,7 @@
 #define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 
-// ---- platform layer ---------------------------------------------------------
+// ---- definitions ------------------------------------------------------------
 #define WIDTH 854
 #define HEIGHT 480
 #define MARGIN 20
@@ -17,6 +17,7 @@
 #define MODE_GRAVITY        1
 
 #define THREAD_COUNT 2 // TODO: use for multithreading
+#define SHOULD_EXIT !(state & FLAG_ACTIVE) || WindowShouldClose()
 
 // ---- declarations -----------------------------------------------------------
 extern f64 delta_time;

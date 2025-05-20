@@ -406,7 +406,7 @@ void draw_hud()
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
-    if (!(state & STATE_DEBUG))
+    if (!(state & FLAG_DEBUG))
         draw_texture(texture_hud_widgets, crosshair,
                 crosshair_pos, 
                 (v2i16){setting.gui_scale, setting.gui_scale},
@@ -510,7 +510,7 @@ void draw_containers(Player *player, v2f32 render_size)
 
 void draw_debug_info(Camera3D *camera)
 {
-    if (!(state & STATE_DEBUG)) return;
+    if (!(state & FLAG_DEBUG)) return;
 
     update_debug_strings();
 
@@ -880,7 +880,7 @@ void btn_func_singleplayer()
     menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
     state_menu_depth = 0; //TODO: set actual value (2)
     check_menu_ready = 0;
-    state &= ~STATE_PAUSED; //temp
+    state &= ~FLAG_PAUSED; //temp
 
     init_world("Poop Consistency Tester"); //temp
 }
@@ -918,14 +918,14 @@ void btn_func_back_to_game()
     menu_index = 0;
     state_menu_depth = 0;
     check_menu_ready = 0;
-    state &= ~STATE_PAUSED;
-    lily.state &= ~STATE_MENU_OPEN;
+    state &= ~FLAG_PAUSED;
+    lily.state &= ~FLAG_MENU_OPEN;
     lily.container_state = 0;
 }
 
 void btn_func_quit()
 {
-    state &= ~STATE_ACTIVE;
+    state &= ~FLAG_ACTIVE;
 }
 
 void btn_func_save_and_quit_to_title()
@@ -934,7 +934,7 @@ void btn_func_save_and_quit_to_title()
     state_menu_depth = 1;
     check_menu_ready = 0;
     // TODO: save and unload world
-    state &= ~STATE_WORLD_LOADED;
+    state &= ~FLAG_WORLD_LOADED;
 }
 
 void btn_func_back()

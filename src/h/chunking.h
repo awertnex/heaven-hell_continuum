@@ -11,28 +11,29 @@
 #include "setting.h"
 
 // ---- world stuff ------------------------------------------------------------
-#define WORLD_KILL_Z        (-128)
-#define WORLD_BOTTOM        (-69)
-#define WORLD_SEA_LEVEL     62
-#define WORLD_HEIGHT_NORMAL 420 // - WORLD_BOTTOM
-#define WORLD_HEIGHT_HELL   365 // - WORLD_BOTTOM
-#define WORLD_HEIGHT_END    256 // - WORLD_BOTTOM
+#define WORLD_BOTTOM                (-69)
+#define WORLD_KILL_Z                (WORLD_BOTTOM - 100)
+#define WORLD_SEA_LEVEL             62
+#define CHUNK_HEIGHT                420
+#define CHUNK_HEIGHT_NORMAL         (CHUNK_HEIGHT - WORLD_BOTTOM)
+#define CHUNK_HEIGHT_HELL           (365 - WORLD_BOTTOM)
+#define CHUNK_HEIGHT_HEAVEN         WORLD_HEIGHT_NORMAL
 
-#define CHUNK_DIAMETER      32
-#define CHUNK_DATA_SIZE     (sizeof(Chunk)) // struct chunk
-#define CHUNK_BUF_RADIUS    (SETTING_RENDER_DISTANCE_MAX)
-#define CHUNK_BUF_DIAMETER  ((CHUNK_BUF_RADIUS * 2) + 1)
-#define CHUNK_BUF_ELEMENTS  (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-#define CHUNK_TAB_CENTER    (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
+#define CHUNK_DIAMETER              32
+#define CHUNK_DATA_SIZE             (sizeof(Chunk)) // struct chunk
+#define CHUNK_BUF_RADIUS            (SETTING_RENDER_DISTANCE_MAX)
+#define CHUNK_BUF_DIAMETER          ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_ELEMENTS          (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_TAB_CENTER            (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
 
-#define WORLD_RADIUS        32767 // (((int16_t top of range) - 1)/2)
-#define WORLD_DIAMETER      ((WORLD_RADIUS * 2) + 1)
-#define WORLD_AREA          (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
-#define WORLD_MAX_CHUNKS    (WORLD_AREA / CHUNK_DIAMETER)
-#define CHUNK_MAX_BLOCKS    (CHUNK_DIAMETER * CHUNK_DIAMETER * (WORLD_HEIGHT_NORMAL - WORLD_BOTTOM))
-#define CHUNK_MAX_QUADS     ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * (WORLD_HEIGHT_NORMAL) - WORLD_BOTTOM)
-#define CHUNK_MAX_TRIS      (CHUNK_MAX_QUADS * 2)
-#define CHUNK_MAX_VERTS     (CHUNK_MAX_QUADS * 4)
+#define WORLD_RADIUS                32767 // (((int16_t top of range) - 1)/2)
+#define WORLD_DIAMETER              ((WORLD_RADIUS * 2) + 1)
+#define WORLD_AREA                  (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
+#define WORLD_MAX_CHUNKS            (WORLD_AREA / CHUNK_DIAMETER)
+#define CHUNK_MAX_BLOCKS            (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_HEIGHT_NORMAL)
+#define CHUNK_MAX_QUADS             ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * CHUNK_HEIGHT_NORMAL)
+#define CHUNK_MAX_TRIS              (CHUNK_MAX_QUADS * 2)
+#define CHUNK_MAX_VERTS             (CHUNK_MAX_QUADS * 4)
 
 // ---- getters & setters ------------------------------------------------------
 #define GET_BLOCK_INDEX(x, y, z)    ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
@@ -81,7 +82,7 @@ typedef struct Chunk
 {
     v2i16 pos;                      // (world X Y) / CHUNK_DIAMETER
     u32 id;                         // (pos.x << 16) + pos.y
-    u32 block[WORLD_HEIGHT_NORMAL - WORLD_BOTTOM][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    u32 block[CHUNK_HEIGHT_NORMAL][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;
     u32 block_parse_limit;          // final occurrence of non-air blocks in chunk
@@ -113,7 +114,7 @@ Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
 Chunk *pop_chunk_buf(u16 chunk_tab_index);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
-u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 coordinates);
+u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target);
 void draw_chunk_tab(Texture *tex);
 void draw_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);

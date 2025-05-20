@@ -6,7 +6,7 @@
 #include "engine/h/memory.h"
 #include "engine/h/logger.h"
 
-u16 world_height = WORLD_HEIGHT_NORMAL;
+u16 world_height = CHUNK_HEIGHT_NORMAL;
 Chunk *chunk_buf = {0};                         // chunk buffer, raw chunk data
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};  // chunk pointer look-up table
 v2u16 chunk_tab_coordinates;                    // pointer arithmetic redundancy optimization
@@ -151,7 +151,7 @@ void remove_block(u16 index, u8 x, u8 y, u16 z)
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
-    if (x < CHUNK_DIAMETER - 1)
+    if (x == CHUNK_DIAMETER - 1)
     {
         is_on_edge =
             (chunk_tab_coordinates.x == CHUNK_BUF_DIAMETER - 1) ||
@@ -166,7 +166,7 @@ void remove_block(u16 index, u8 x, u8 y, u16 z)
     else chunk_tab[index]->block[z][y][x + 1] ?
         (chunk_tab[index]->block[z][y][x + 1] |= NEGATIVE_X) : 0;
 
-    if (x > 0)
+    if (x == 0)
     {
         is_on_edge =
             (chunk_tab_coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
@@ -174,13 +174,13 @@ void remove_block(u16 index, u8 x, u8 y, u16 z)
         {
             mirror_index = GET_MIRROR_AXIS(x);
             (chunk_tab[index - 1]->block[z][y][mirror_index]) ?
-                (chunk_tab[index - 1]->block[z][y][mirror_index] |= NEGATIVE_X) : 0;
+                (chunk_tab[index - 1]->block[z][y][mirror_index] |= POSITIVE_X) : 0;
         }
     }
     else chunk_tab[index]->block[z][y][x - 1] ?
         (chunk_tab[index]->block[z][y][x - 1] |= POSITIVE_X) : 0;
 
-    if (y < CHUNK_DIAMETER - 1)
+    if (y == CHUNK_DIAMETER - 1)
     {
         is_on_edge =
             (chunk_tab_coordinates.y == CHUNK_BUF_DIAMETER - 1) ||
@@ -195,7 +195,7 @@ void remove_block(u16 index, u8 x, u8 y, u16 z)
     else chunk_tab[index]->block[z][y + 1][x] ?
         (chunk_tab[index]->block[z][y + 1][x] |= NEGATIVE_Y) : 0;
 
-    if (y > 0)
+    if (y == 0)
     {
         is_on_edge =
             (chunk_tab_coordinates.y == 0) || (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
@@ -315,7 +315,6 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
         player_chunk.x - player_delta_chunk->x,
         player_chunk.y - player_delta_chunk->y};
 
-    // TODO: teleportation segfault still happens after "re-gen if great player_delta_chunk"
     if (!is_distance_within(SETTING_RENDER_DISTANCE_DEFAULT,
             (v2i32){player_chunk.x, player_chunk.y},
             (v2i32){player_delta_chunk->x, player_delta_chunk->y}))
@@ -431,16 +430,16 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
     chunk_parse_lock = 0;
 }
 
-u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target)
+u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_delta_target)
 {
-    return (i16)floorf((f32)player_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
-        + (((i16)floorf((f32)player_target.y / CHUNK_DIAMETER) - player_chunk.y
+    return (i16)floorf((f32)player_delta_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
+        + (((i16)floorf((f32)player_delta_target.y / CHUNK_DIAMETER) - player_chunk.y
                 + CHUNK_BUF_RADIUS) * CHUNK_BUF_DIAMETER);
 }
 
 void draw_chunk_tab(Texture *tex)
 {
-    if (state & STATE_DEBUG_MORE)
+    if (state & FLAG_DEBUG_MORE)
         opacity = 200;
     else
         opacity = 255;

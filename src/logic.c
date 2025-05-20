@@ -8,23 +8,23 @@
 // ---- variables --------------------------------------------------------------
 Vector2 mouse_delta;
 
-bool get_double_press(Player *player, KeyboardKey key)
+bool get_double_press(KeyboardKey key)
 {
     static f64 double_press_start_time = 0;
     static KeyboardKey double_press_key = KEY_NULL;
 
-    if (((player->state & STATE_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f)) ||
+    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f)) ||
             key != double_press_key)
-        player->state &= ~STATE_DOUBLE_PRESS;
+        state &= ~FLAG_DOUBLE_PRESS;
     else
     {
         double_press_key = KEY_NULL;
         return true;
     }
 
-    if (!(player->state & STATE_DOUBLE_PRESS))
+    if (!(state & FLAG_DOUBLE_PRESS))
     {
-        player->state |= STATE_DOUBLE_PRESS;
+        state |= FLAG_DOUBLE_PRESS;
         double_press_key = key;
         double_press_start_time = get_time_ms();
     }
@@ -39,23 +39,23 @@ void update_player(Player *player)
         };
 
     if ((lily.delta_chunk.x - lily.chunk.x) || (lily.delta_chunk.y - lily.chunk.y))
-        player->state |= STATE_CHUNK_BUF_DIRTY;
+        state |= FLAG_CHUNK_BUF_DIRTY;
 
-    if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
+    if (!(player->state & FLAG_CAN_JUMP) && !(player->state & FLAG_FLYING))
         update_gravity(player);
 
-    if (player->state & STATE_FLYING)
+    if (player->state & FLAG_FLYING)
     {
         player->v = v3fzero;
         player->movement_speed = PLAYER_SPEED_FLY * dt;
         player->camera.fovy = 80; //TODO: revise (add lerp)
     }
 
-    if (player->state & STATE_SNEAKING && !(player->state & STATE_FLYING))
+    if (player->state & FLAG_SNEAKING && !(player->state & FLAG_FLYING))
         player->movement_speed = PLAYER_SPEED_SNEAK * dt;
-    else if (player->state & STATE_SPRINTING)
+    else if (player->state & FLAG_SPRINTING)
     {
-        if (!(player->state & STATE_FLYING))
+        if (!(player->state & FLAG_FLYING))
         {
             player->movement_speed = PLAYER_SPEED_SPRINT * dt;
             player->camera.fovy = 75;
@@ -66,7 +66,7 @@ void update_player(Player *player)
             player->camera.fovy = 90;
         }
     }
-    else if (!(player->state & STATE_SNEAKING) && !(player->state & STATE_SPRINTING) && !(player->state & STATE_FLYING))
+    else if (!(player->state & FLAG_SNEAKING) && !(player->state & FLAG_SPRINTING) && !(player->state & FLAG_FLYING))
     {
         player->movement_speed = PLAYER_SPEED_WALK * dt;
         player->camera.fovy = 70;
@@ -85,8 +85,8 @@ void update_player(Player *player)
 
 void update_camera_movements_player(Player *player)
 {
-    if (state & STATE_PARSE_CURSOR)
-        if (!(state_menu_depth) && !(state & STATE_SUPER_DEBUG))
+    if (state & FLAG_PARSE_CURSOR)
+        if (!(state_menu_depth) && !(state & FLAG_SUPER_DEBUG))
         {
             player->yaw -= (f32)mouse_delta.x * setting.mouse_sensitivity;
             player->pitch -= (f32)mouse_delta.y * setting.mouse_sensitivity;
@@ -159,7 +159,7 @@ void update_camera_movements_player(Player *player)
     }
 
     // ---- camera_debug_mode --------------------------------------------------
-    if (!(state & STATE_DEBUG)) return;
+    if (!(state & FLAG_DEBUG)) return;
     switch (player->perspective)
     {
         case 0: // ---- 1st person ---------------------------------------------
@@ -194,6 +194,18 @@ void update_camera_movements_player(Player *player)
     }
 }
 
+void update_player_target(Vector3 *player_target, v3i32 *player_delta_target)
+{
+    if ((i32)player_delta_target->x != floorf(player_target->x)
+            || (i32)player_delta_target->y != floorf(player_target->y)
+            || (i32)player_delta_target->z != floorf(player_target->z))
+        *player_delta_target =
+            (v3i32){
+                (i32)floorf(player_target->x),
+                (i32)floorf(player_target->y),
+                (i32)floorf(player_target->z)};
+}
+
 void set_player_pos(Player *player, f32 x, f32 y, f32 z)
 {
     player->pos = (Vector3){x, y, z};
@@ -204,38 +216,24 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z)
     player->pos = (Vector3){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
 }
 
-void update_delta_target(Vector3 *coordinates, v3i32 *delta_target)
-{
-    if ((f32)delta_target->x != floorf(coordinates->x)
-            || (f32)delta_target->y != floorf(coordinates->y)
-            || (f32)delta_target->z != floorf(coordinates->z))
-        *delta_target =
-            (v3i32){
-                (i32)floorf(coordinates->x),
-                (i32)floorf(coordinates->y),
-                (i32)floorf(coordinates->z)};
-}
-
 void kill_player(Player *player)
 {
-    *player = (Player){
-            .v = {0.0f},
-            .m = 0.0f,
-            .movement_speed = 0.0f,
-            .container_state = 0,
-            .state = STATE_DEAD,
-    };
+    player->v = (v3f32){0.0f};
+    player->m = 0.0f;
+    player->movement_speed = 0.0f;
+    player->container_state = 0;
+    player->state = FLAG_DEAD;
 }
 
 void player_respawn(Player *player)
 {
-    *player = (Player){
-            .pos = (Vector3){
-                player->spawn_point.x,
-                player->spawn_point.y,
-                player->spawn_point.z},
-            .state = 0,
-    };
+    player->pos =
+        (Vector3){
+            player->spawn_point.x,
+            player->spawn_point.y,
+            player->spawn_point.z
+        };
+    player->state = 0;
 }
 
 bool is_range_within_ff(f32 *pos, f32 start, f32 end)
@@ -253,11 +251,20 @@ bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end)
     return TRUE;
 }
 
-bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
+bool is_range_within_v3fi(v3f32 *pos, v3i32 start, v3i32 end)
 {
     if ((i32)pos->x < start.x || (i32)pos->x > end.x ||
             (i32)pos->y < start.y || (i32)pos->y > end.y ||
             (i32)pos->z < start.z || (i32)pos->z > end.z)
+        return FALSE;
+    return TRUE;
+}
+
+bool is_range_within_v3i(v3i32 *pos, v3i32 start, v3i32 end)
+{
+    if (pos->x < start.x || pos->x > end.x ||
+            pos->y < start.y || pos->y > end.y ||
+            pos->z < start.z || pos->z > end.z)
         return FALSE;
     return TRUE;
 }
@@ -278,7 +285,7 @@ b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
 
 void update_gravity(Player *player) // TODO: fix player gravity
 {
-    if (player->state & STATE_FALLING)
+    if (player->state & FLAG_FALLING)
         player->v.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->m * dt);
     player->pos.z += player->v.z;
     //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
@@ -299,8 +306,8 @@ void update_collision_static(player *player) // TODO: make AABB collision work
             ceilf(player->scl.z) + 2,
         };
 
-    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
-    if ((player->state & STATE_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
+    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
+    if ((player->state & FLAG_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
     {
         if (target_chunk->i
                 [z - 1 - WORLD_BOTTOM]
@@ -309,10 +316,10 @@ void update_collision_static(player *player) // TODO: make AABB collision work
         {
             player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
             player->v.z = 0;
-            if (player->state & STATE_FLYING) player->state &= ~STATE_FLYING;
-            player->state |= STATE_CAN_JUMP;
-            player->state &= ~STATE_FALLING;
-        } else player->state |= STATE_FALLING;
+            if (player->state & FLAG_FLYING) player->state &= ~FLAG_FLYING;
+            player->state |= FLAG_CAN_JUMP;
+            player->state &= ~FLAG_FALLING;
+        } else player->state |= FLAG_FALLING;
     }
     //TODO: move to new 'void parse_camera_collisions()'
     player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;

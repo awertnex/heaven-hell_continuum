@@ -43,8 +43,6 @@ void free_super_debugger()
 
 void draw_super_debugger(v2f32 render_size)
 {
-    if (!(state & STATE_SUPER_DEBUG)) return;
-
     debug_rectangle.scl.y = render_size.y - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = render_size.x - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 
