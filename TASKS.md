@@ -19,4 +19,4 @@ TASKS:
 - [x] fix fullscreen, still not going back to original size on toggle off (10 May 2025)
 - [x] fix fullscreen affecting mouse delta (10 May 2025)
 - [ ] fix hollow states at top of chunk
-- [ ] fix remove_block block_parse_limit math
+- [x] fix remove_block block_parse_limit math (21 May 2025)
