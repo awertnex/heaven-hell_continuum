@@ -13,8 +13,8 @@ bool get_double_press(KeyboardKey key)
     static f64 double_press_start_time = 0;
     static KeyboardKey double_press_key = KEY_NULL;
 
-    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f)) ||
-            key != double_press_key)
+    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f))
+            || (key != double_press_key))
         state &= ~FLAG_DOUBLE_PRESS;
     else
     {
@@ -38,10 +38,12 @@ void update_player(Player *player)
             floorf((f32)player->pos.y / CHUNK_DIAMETER),
         };
 
-    if ((lily.delta_chunk.x - lily.chunk.x) || (lily.delta_chunk.y - lily.chunk.y))
+    if ((lily.delta_chunk.x - lily.chunk.x)
+            || (lily.delta_chunk.y - lily.chunk.y))
         state |= FLAG_CHUNK_BUF_DIRTY;
 
-    if (!(player->state & FLAG_CAN_JUMP) && !(player->state & FLAG_FLYING))
+    if (!(player->state & FLAG_CAN_JUMP)
+            && !(player->state & FLAG_FLYING))
         update_gravity(player);
 
     if (player->state & FLAG_FLYING)
@@ -51,7 +53,8 @@ void update_player(Player *player)
         player->camera.fovy = 80; //TODO: revise (add lerp)
     }
 
-    if (player->state & FLAG_SNEAKING && !(player->state & FLAG_FLYING))
+    if ((player->state & FLAG_SNEAKING)
+            && !(player->state & FLAG_FLYING))
         player->movement_speed = PLAYER_SPEED_SNEAK * dt;
     else if (player->state & FLAG_SPRINTING)
     {
@@ -66,7 +69,9 @@ void update_player(Player *player)
             player->camera.fovy = 90;
         }
     }
-    else if (!(player->state & FLAG_SNEAKING) && !(player->state & FLAG_SPRINTING) && !(player->state & FLAG_FLYING))
+    else if (!(player->state & FLAG_SNEAKING)
+            && !(player->state & FLAG_SPRINTING)
+            && !(player->state & FLAG_FLYING))
     {
         player->movement_speed = PLAYER_SPEED_WALK * dt;
         player->camera.fovy = 70;
@@ -218,7 +223,7 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z)
 
 void kill_player(Player *player)
 {
-    player->v = (v3f32){0.0f};
+    player->v = v3fzero;
     player->m = 0.0f;
     player->movement_speed = 0.0f;
     player->container_state = 0;
@@ -236,35 +241,42 @@ void player_respawn(Player *player)
     player->state = 0;
 }
 
-bool is_range_within_ff(f32 *pos, f32 start, f32 end)
+b8 is_range_within_i(i32 pos, i32 start, i32 end)
 {
-    if (*pos < start || *pos > end)
+    if (pos < start || pos > end)
         return FALSE;
     return TRUE;
 }
 
-bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end)
+b8 is_range_within_f(f32 pos, f32 start, f32 end)
 {
-    if (pos->x < start.x || pos->x > end.x ||
-            pos->y < start.y || pos->y > end.y)
+    if (pos < start || pos > end)
         return FALSE;
     return TRUE;
 }
 
-bool is_range_within_v3fi(v3f32 *pos, v3i32 start, v3i32 end)
+b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end)
 {
-    if ((i32)pos->x < start.x || (i32)pos->x > end.x ||
-            (i32)pos->y < start.y || (i32)pos->y > end.y ||
-            (i32)pos->z < start.z || (i32)pos->z > end.z)
+    if (pos.x < start.x || pos.x > end.x
+            || pos.y < start.y || pos.y > end.y)
         return FALSE;
     return TRUE;
 }
 
-bool is_range_within_v3i(v3i32 *pos, v3i32 start, v3i32 end)
+b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end)
 {
-    if (pos->x < start.x || pos->x > end.x ||
-            pos->y < start.y || pos->y > end.y ||
-            pos->z < start.z || pos->z > end.z)
+    if (pos.x < start.x || pos.x > end.x
+            || pos.y < start.y || pos.y > end.y
+            || pos.z < start.z || pos.z > end.z)
+        return FALSE;
+    return TRUE;
+}
+
+b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end)
+{
+    if ((i32)pos.x < start.x || (i32)pos.x > end.x
+            || (i32)pos.y < start.y || (i32)pos.y > end.y
+            || (i32)pos.z < start.z || (i32)pos.z > end.z)
         return FALSE;
     return TRUE;
 }
@@ -307,7 +319,8 @@ void update_collision_static(player *player) // TODO: make AABB collision work
         };
 
     Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
-    if ((player->state & FLAG_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
+    if ((player->state & FLAG_PARSE_COLLISION_FEET)
+        && player->pos.z > WORLD_BOTTOM)
     {
         if (target_chunk->i
                 [z - 1 - WORLD_BOTTOM]
