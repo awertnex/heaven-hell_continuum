@@ -129,10 +129,11 @@ void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void kill_player(Player *player);
 void respawn_player(Player *player);
-b8 is_range_within_ff(f32 *pos, f32 start, f32 end);
-b8 is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end);
-b8 is_range_within_v3fi(v3f32 *pos, v3i32 start, v3i32 end);
-b8 is_range_within_v3i(v3i32 *pos, v3i32 start, v3i32 end);
+b8 is_range_within_i(i32 pos, i32 start, i32 end);
+b8 is_range_within_f(f32 pos, f32 start, f32 end);
+b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end);
+b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end);
+b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end);
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
 b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
 void update_gravity(Player *player);

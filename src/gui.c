@@ -146,12 +146,13 @@ void free_gui()
 }
 
 //jump
+// scale = (source.scale * scl);
 void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
-    // scale is based on (source.scale * scl)
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
 
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0.0f, 0.0f, 1.0f);
@@ -544,13 +545,11 @@ void draw_debug_info(Camera3D *camera)
     EndMode3D();
 }
 
-// raylib/rtext.c/DrawTextEx refactored
+// raylib/rtext.c/DrawTextEx refactored;
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
 {
-    // spacing: char spacing;
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
-
     switch (align_x)
     {
         case 1:
@@ -643,15 +642,15 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
     return result + 4;
 }
 
-// raylib/rtextures.c/DrawTexturePro refactored
+// raylib/rtextures.c/DrawTexturePro refactored;
+// scale = (source.scale * scl);
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
-    // scale is based on (source.scale * scl)
-
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
 
     switch (align_x)
     {
@@ -701,12 +700,14 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
 
 //jump
 // TODO: make draw_texture_tiled()
-// raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored
+// raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
 /*
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
+
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0, 0, 1);
@@ -795,11 +796,10 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
 }
 */
 
-// raylib/rtextures.c/DrawTexturePro refactored
+// raylib/rtextures.c/DrawTexturePro refactored;
+// scale = (scl);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
-    // scale is based on (scl)
-
     if (texture.id <= 0) return;
     f32 width = (f32)texture.width;
     f32 height = (f32)texture.height;
@@ -821,11 +821,10 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
     rlVertex2f(bottom_right.x, top_left.y);
 }
 
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
-
     switch (align_x)
     {
         case 1:
@@ -850,8 +849,10 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
 
     if (buttons[btn_state])
     {
-        if (cursor.x > pos.x && cursor.x < pos.x + (button.width * setting.gui_scale)
-                && cursor.y > pos.y && cursor.y < pos.y + (button.height * setting.gui_scale))
+        if (is_range_within_f(cursor.x,
+                    pos.x, pos.x + (button.width * setting.gui_scale))
+                && is_range_within_f(cursor.y,
+                    pos.y, pos.y + (button.height * setting.gui_scale)))
         {
             draw_texture(texture, button, pos,
                     (v2i16){setting.gui_scale, setting.gui_scale},
