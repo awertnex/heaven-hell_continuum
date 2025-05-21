@@ -12,13 +12,13 @@
 
 // ---- world stuff ------------------------------------------------------------
 #define WORLD_BOTTOM                (-69)
-#define WORLD_KILL_Z                (WORLD_BOTTOM - 100)
+#define WORLD_KILL_Z                (WORLD_BOTTOM - 128)
 #define WORLD_SEA_LEVEL             62
-#define CHUNK_HEIGHT                420
-#define CHUNK_HEIGHT_NORMAL         (CHUNK_HEIGHT - WORLD_BOTTOM)
-#define CHUNK_HEIGHT_HELL           (365 - WORLD_BOTTOM)
-#define CHUNK_HEIGHT_HEAVEN         WORLD_HEIGHT_NORMAL
+#define WORLD_HEIGHT_NORMAL         420
+#define WORLD_HEIGHT_HEAVEN         WORLD_HEIGHT_NORMAL
+#define WORLD_HEIGHT_HELL           365
 
+#define CHUNK_LENGTH                (WORLD_HEIGHT_NORMAL - WORLD_BOTTOM)
 #define CHUNK_DIAMETER              32
 #define CHUNK_DATA_SIZE             (sizeof(Chunk)) // struct chunk
 #define CHUNK_BUF_RADIUS            (SETTING_RENDER_DISTANCE_MAX)
@@ -30,17 +30,15 @@
 #define WORLD_DIAMETER              ((WORLD_RADIUS * 2) + 1)
 #define WORLD_AREA                  (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
 #define WORLD_MAX_CHUNKS            (WORLD_AREA / CHUNK_DIAMETER)
-#define CHUNK_MAX_BLOCKS            (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_HEIGHT_NORMAL)
-#define CHUNK_MAX_QUADS             ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * CHUNK_HEIGHT_NORMAL)
-#define CHUNK_MAX_TRIS              (CHUNK_MAX_QUADS * 2)
-#define CHUNK_MAX_VERTS             (CHUNK_MAX_QUADS * 4)
+#define CHUNK_MAX_BLOCKS            (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_LENGTH)
+#define CHUNK_MAX_QUADS             ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * CHUNK_LENGTH)
 
 // ---- getters & setters ------------------------------------------------------
-#define GET_BLOCK_INDEX(x, y, z)    ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER))
+#define GET_BLOCK_INDEX(z, y, x)    (((z) * CHUNK_DIAMETER * CHUNK_DIAMETER) + ((y) * CHUNK_DIAMETER) + (x))
 #define GET_BLOCK_X(i)              ((i) % CHUNK_DIAMETER)
 #define GET_BLOCK_Y(i)              (((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
 #define GET_BLOCK_Z(i)              (((i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
-#define GET_MIRROR_AXIS(axis)       ((axis) + CHUNK_DIAMETER - 1 - ((axis) * 2))
+#define GET_MIRROR_AXIS(axis)       (CHUNK_DIAMETER - 1 - (axis))
 #define GET_BLOCKID(id)             (((id) & BLOCKID) >> 8)
 #define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
 #define GET_BLOCKSTATE(state)       (((i) & BLOCKSTATE) >> 20)
@@ -82,24 +80,24 @@ typedef struct Chunk
 {
     v2i16 pos;                      // (world X Y) / CHUNK_DIAMETER
     u32 id;                         // (pos.x << 16) + pos.y
-    u32 block[CHUNK_HEIGHT_NORMAL][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    u32 block[CHUNK_LENGTH][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;
     u32 block_parse_limit;          // final occurrence of non-air blocks in chunk
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
-extern u16 world_height;
 extern Chunk *chunk_buf;                        // chunk buffer, raw chunk data
 extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];    // chunk pointer look-up table
 extern v2u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
 extern u16 chunk_tab_index;                     // player relative chunk tab access
-extern struct WorldStats
+extern struct Globals
 {
+    u16 world_height;
+    u8 opacity;
     u64 block_count;
     u64 quad_count;
-} world_stats;
-extern u8 opacity;
+} globals;
 
 // ---- signatures -------------------------------------------------------------
 u8 init_chunking();
@@ -111,7 +109,7 @@ void generate_chunk(u16 index);
 void serialize_chunk(Chunk *chunk, str *world_name);
 void deserialize_chunk(Chunk *chunk, str *world_name);
 Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
-Chunk *pop_chunk_buf(u16 chunk_tab_index);
+Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
 u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target);
