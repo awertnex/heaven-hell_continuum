@@ -9,7 +9,6 @@
 
 #include "main.h"
 #include "setting.h"
-
 // ---- world stuff ------------------------------------------------------------
 #define WORLD_BOTTOM                (-69)
 #define WORLD_KILL_Z                (WORLD_BOTTOM - 128)
@@ -26,24 +25,12 @@
 #define CHUNK_BUF_ELEMENTS          (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_TAB_CENTER            (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
 
-#define WORLD_RADIUS                32767 // (((int16_t top of range) - 1)/2)
+#define WORLD_RADIUS                32767 // (((int16_t range max) - 1)/2)
 #define WORLD_DIAMETER              ((WORLD_RADIUS * 2) + 1)
 #define WORLD_AREA                  (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
 #define WORLD_MAX_CHUNKS            (WORLD_AREA / CHUNK_DIAMETER)
 #define CHUNK_MAX_BLOCKS            (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_LENGTH)
 #define CHUNK_MAX_QUADS             ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * CHUNK_LENGTH)
-
-// ---- getters & setters ------------------------------------------------------
-#define GET_BLOCK_INDEX(z, y, x)    (((z) * CHUNK_DIAMETER * CHUNK_DIAMETER) + ((y) * CHUNK_DIAMETER) + (x))
-#define GET_BLOCK_X(i)              ((i) % CHUNK_DIAMETER)
-#define GET_BLOCK_Y(i)              (((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER)
-#define GET_BLOCK_Z(i)              (((i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)))
-#define GET_MIRROR_AXIS(axis)       (CHUNK_DIAMETER - 1 - (axis))
-#define GET_BLOCKID(id)             (((id) & BLOCKID) >> 8)
-#define SET_BLOCKID(i, value)       ((i) = ((i) & ~BLOCKID) | ((value) << 8))
-#define GET_BLOCKSTATE(state)       (((i) & BLOCKSTATE) >> 20)
-#define SET_BLOCKSTATE(i, value)    ((i) = ((i) & ~BLOCKSTATE) | ((value) << 20))
-#define GET_BLOCKDATA(i)            (((i) & BLOCKDATA) >> 8)
 
 // ---- general ----------------------------------------------------------------
 enum BlockFlags
@@ -90,6 +77,7 @@ typedef struct Chunk
 extern Chunk *chunk_buf;                        // chunk buffer, raw chunk data
 extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];    // chunk pointer look-up table
 extern v2u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
+extern v3u32 block_coordinates;                 // pointer arithmetic redundancy optimization
 extern u16 chunk_tab_index;                     // player relative chunk tab access
 extern struct Globals
 {
@@ -98,6 +86,35 @@ extern struct Globals
     u64 block_count;
     u64 quad_count;
 } globals;
+
+// ---- getters & setters ------------------------------------------------------
+static inline u32 get_block_index(u8 x, u8 y, u16 z)
+{return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
+
+static inline v3u32 get_block_coordinates(u32 i)
+{return (v3u32){
+    (i) % CHUNK_DIAMETER,
+        ((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER,
+        (i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)};
+}
+
+static inline u8 get_mirror_axis(u8 axis)
+{return (CHUNK_DIAMETER - 1 - (axis));}
+
+static inline u16 get_block_id(u32 i)
+{return ((i) & BLOCKID);}
+
+static inline void set_block_id(u32 i, u16 id)
+{(i) = ((i) & ~BLOCKID) | (id);}
+
+static inline u16 get_block_state(u32 i)
+{return (((i) & BLOCKSTATE) >> 10);}
+
+static inline void set_block_state(u32 i, u16 state)
+{((i) = ((i) & ~BLOCKSTATE) | ((state) << 10));}
+
+static inline u32 get_block_data(u32 i)
+{return ((i) & BLOCKDATA);}
 
 // ---- signatures -------------------------------------------------------------
 u8 init_chunking();
