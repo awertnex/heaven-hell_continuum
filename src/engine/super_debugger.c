@@ -1,4 +1,4 @@
-#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "../dependencies/raylib-5.5/include/raylib.h"
 
 #define SDB_ROW_HEIGHT  22
 #define SDB_BASE_SIZE   5

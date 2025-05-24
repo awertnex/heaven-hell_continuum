@@ -1,6 +1,6 @@
 #ifndef MC_C_KEYMAPS_H
 
-#include "dependencies/raylib-5.5/src/raylib.h"
+#include "dependencies/raylib-5.5/include/raylib.h"
 
 // ---- movement ---------------------------------------------------------------
 KeyboardKey bind_jump =                     KEY_SPACE;

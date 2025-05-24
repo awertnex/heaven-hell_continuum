@@ -3,8 +3,8 @@
 #include <math.h>
 #include <pthread.h>
 
-#include "dependencies/raylib-5.5/src/raylib.h"
-#include "dependencies/raylib-5.5/src/rlgl.h"
+#include "dependencies/raylib-5.5/include/raylib.h"
+#include "dependencies/raylib-5.5/include/rlgl.h"
 
 #if defined __linux__
     #include "linux_minecraft.c"
