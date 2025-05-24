@@ -17,14 +17,17 @@
 
 ## build from source
 
+### Important note: for development build, RELEASE_BUILD in `src/engine/h/logger.h` should be `0` before building.
+
 ### linux - debian-based:
+
 ```bash
 git clone --depth=1 https://github.com/awertnex/minecraft.c.git
 cd minecraft.c/
-cc build.c -std=c99 -o build # -std=c99 optional, but preferred
+cc src/build.c -std=c99 -o build # -std=c99 optional, but preferred
 ./build
 ```
-if build successful, run minecraft.c with `./minecraft_c`\
+if build successful, run minecraft.c with `./bin/minecraft_c`\
 
 **additional commands**
 - build launcher with `./build launcher` and run with `./launcher`
@@ -49,11 +52,10 @@ if build successful, run minecraft.c with `./minecraft_c`\
 ```command
 git clone --depth=1 https://github.com/awertnex/minecraft.c.git
 cd minecraft.c
-gcc .\build.c -std=c99 -o build.exe
+gcc .\src\build.c -std=c99 -o build.exe
 .\build.exe
-.\minecraft_c.exe
 ```
-if build successful, run minecraft.c with `minecraft_c.exe`\
+if build successful, run minecraft.c with `.\bin\minecraft_c.exe`\
 cflag `-std=c99` optional, but preferred
 
 **additional commands**
