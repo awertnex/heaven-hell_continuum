@@ -7,7 +7,6 @@
 #define VECTOR2_TYPES
 #define VECTOR3_TYPES
 #include "../engine/h/defines.h"
-#include "setting.h"
 
 #define GRAVITY (9.7803267715f / 100.0f)
 #define MC_C_PI 3.14159265358979323846f
@@ -21,7 +20,7 @@
 #define PLAYER_JUMP_HEIGHT      1.25f
 #define PLAYER_SPEED_WALK       3.0f
 #define PLAYER_SPEED_FLY        10.0f
-#define PLAYER_SPEED_FLY_FAST   1000.0f
+#define PLAYER_SPEED_FLY_FAST   40.0f
 #define PLAYER_SPEED_SNEAK      1.8f
 #define PLAYER_SPEED_SPRINT     4.0f
 
@@ -74,35 +73,6 @@ enum StateFlags
     FLAG_CHUNK_BUF_DIRTY =          0x1000,
 }; /* StateFlags */
 
-enum ContainerFlags
-{
-    CONTR_ANVIL =                   0x00000001,
-    CONTR_BEACON =                  0x00000002,
-    CONTR_BLAST_FURNACE =           0x00000004,
-    CONTR_BREWING_STAND =           0x00000008,
-    CONTR_CARTOGRAPHY_TABLE =       0x00000010,
-    CONTR_CHEST =                   0x00000020,
-    CONTR_CHEST_LARGE =             0x00000040,
-    CONTR_CRAFTING_TABLE =          0x00000080,
-    CONTR_DISPENSER =               0x00000100,
-    CONTR_ENCHANTING_TABLE =        0x00000200,
-    CONTR_FURNACE =                 0x00000400,
-    CONTR_GAMEMODE_SWITCHER =       0x00000800,
-    CONTR_GRINDSTONE =              0x00001000,
-    CONTR_HOPPER =                  0x00002000,
-    CONTR_HORSE =                   0x00004000,
-    CONTR_INVENTORY =               0x00008000,
-    CONTR_LEGACY_SMITHING =         0x00010000,
-    CONTR_LOOM =                    0x00020000,
-    CONTR_SMITHING =                0x00040000,
-    CONTR_SMOKER =                  0x00080000,
-    CONTR_STONECUTTER =             0x00100000,
-    CONTR_VILLAGER =                0x00200000,
-    CONTR_TAB_INVENTORY =           0x00400000,
-    CONTR_TAB_ITEMS =               0x00800000,
-    CONTR_TAB_ITEMS_SEARCH =        0x01000000,
-}; /* ContainerFlags */
-
 enum PlayerFlags
 {
     FLAG_CAN_JUMP =                 0x0001,
@@ -115,6 +85,35 @@ enum PlayerFlags
     FLAG_HUNGRY =                   0x0080,
     FLAG_DEAD =                     0x0100,
 }; /* PlayerFlags */
+
+enum ContainerStates
+{
+    STATE_CONTR_ANVIL,
+    STATE_CONTR_BEACON,
+    STATE_CONTR_BLAST_FURNACE,
+    STATE_CONTR_BREWING_STAND,
+    STATE_CONTR_CARTOGRAPHY_TABLE,
+    STATE_CONTR_CHEST,
+    STATE_CONTR_CHEST_LARGE,
+    STATE_CONTR_CRAFTING_TABLE,
+    STATE_CONTR_DISPENSER,
+    STATE_CONTR_ENCHANTING_TABLE,
+    STATE_CONTR_FURNACE,
+    STATE_CONTR_GAMEMODE_SWITCHER,
+    STATE_CONTR_GRINDSTONE,
+    STATE_CONTR_HOPPER,
+    STATE_CONTR_HORSE,
+    STATE_CONTR_INVENTORY,
+    STATE_CONTR_LEGACY_SMITHING,
+    STATE_CONTR_LOOM,
+    STATE_CONTR_SMITHING,
+    STATE_CONTR_SMOKER,
+    STATE_CONTR_STONECUTTER,
+    STATE_CONTR_VILLAGER,
+    STATE_CONTR_TAB_INVENTORY,
+    STATE_CONTR_TAB_ITEMS,
+    STATE_CONTR_TAB_ITEMS_SEARCH,
+}; /* ContainerStates */
 
 // ---- declarations -----------------------------------------------------------
 extern Player lily;
@@ -129,13 +128,15 @@ void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void kill_player(Player *player);
 void respawn_player(Player *player);
+
 b8 is_range_within_i(i32 pos, i32 start, i32 end);
 b8 is_range_within_f(f32 pos, f32 start, f32 end);
 b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end);
 b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end);
 b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
-b8 is_ray_intersect(Player *player); //TODO: make better ray_intersect checking
+b8 is_ray_intersect(Player *player);
+
 void update_gravity(Player *player);
 void update_collision_static(Player *player);
 f64 get_time_ms();

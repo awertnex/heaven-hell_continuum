@@ -424,52 +424,52 @@ void draw_containers(Player *player, v2f32 render_size)
 
     switch (player->container_state)
     {
-        case CONTR_ANVIL:
+        case STATE_CONTR_ANVIL:
             break;
 
-        case CONTR_BEACON:
+        case STATE_CONTR_BEACON:
             break;
 
-        case CONTR_BLAST_FURNACE:
+        case STATE_CONTR_BLAST_FURNACE:
             break;
 
-        case CONTR_BREWING_STAND:
+        case STATE_CONTR_BREWING_STAND:
             break;
 
-        case CONTR_CARTOGRAPHY_TABLE:
+        case STATE_CONTR_CARTOGRAPHY_TABLE:
             break;
 
-        case CONTR_CHEST:
+        case STATE_CONTR_CHEST:
             break;
 
-        case CONTR_CHEST_LARGE:
+        case STATE_CONTR_CHEST_LARGE:
             break;
 
-        case CONTR_CRAFTING_TABLE:
+        case STATE_CONTR_CRAFTING_TABLE:
             break;
 
-        case CONTR_DISPENSER:
+        case STATE_CONTR_DISPENSER:
             break;
 
-        case CONTR_ENCHANTING_TABLE:
+        case STATE_CONTR_ENCHANTING_TABLE:
             break;
 
-        case CONTR_FURNACE:
+        case STATE_CONTR_FURNACE:
             break;
 
-        case CONTR_GAMEMODE_SWITCHER:
+        case STATE_CONTR_GAMEMODE_SWITCHER:
             break;
 
-        case CONTR_GRINDSTONE:
+        case STATE_CONTR_GRINDSTONE:
             break;
 
-        case CONTR_HOPPER:
+        case STATE_CONTR_HOPPER:
             break;
 
-        case CONTR_HORSE:
+        case STATE_CONTR_HORSE:
             break;
 
-        case CONTR_INVENTORY:
+        case STATE_CONTR_INVENTORY:
             draw_texture(texture_container_inventory,
                     container_inventory,
                     container_inventory_pos, 
@@ -477,31 +477,31 @@ void draw_containers(Player *player, v2f32 render_size)
                     1, 1, COL_TEXTURE_DEFAULT);
             break;
 
-        case CONTR_LEGACY_SMITHING:
+        case STATE_CONTR_LEGACY_SMITHING:
             break;
 
-        case CONTR_LOOM:
+        case STATE_CONTR_LOOM:
             break;
 
-        case CONTR_SMITHING:
+        case STATE_CONTR_SMITHING:
             break;
 
-        case CONTR_SMOKER:
+        case STATE_CONTR_SMOKER:
             break;
 
-        case CONTR_STONECUTTER:
+        case STATE_CONTR_STONECUTTER:
             break;
 
-        case CONTR_VILLAGER:
+        case STATE_CONTR_VILLAGER:
             break;
 
-        case CONTR_TAB_INVENTORY:
+        case STATE_CONTR_TAB_INVENTORY:
             break;
 
-        case CONTR_TAB_ITEMS:
+        case STATE_CONTR_TAB_ITEMS:
             break;
 
-        case CONTR_TAB_ITEMS_SEARCH:
+        case STATE_CONTR_TAB_ITEMS_SEARCH:
             break;
     }
 

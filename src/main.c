@@ -265,6 +265,7 @@ void update_world()
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
+        update_chunk_tab(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
 
@@ -326,9 +327,7 @@ void update_input(Player *player)
             player->pos.z -= player->movement_speed;
         else player->state |= FLAG_SNEAKING;
     }
-
-    if (IsKeyUp(bind_sneak))
-        player->state &= ~FLAG_SNEAKING;
+    else player->state &= ~FLAG_SNEAKING;
 
     // ---- sprinting ----------------------------------------------------------
     if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
@@ -439,18 +438,18 @@ void update_input(Player *player)
 
     if (IsKeyPressed(bind_open_or_close_inventory))
     {
-        if ((player->container_state & CONTR_INVENTORY) && state_menu_depth)
+        if ((player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
         {
             state_menu_depth = 0;
-            player->container_state &= ~CONTR_INVENTORY;
+            player->container_state &= ~STATE_CONTR_INVENTORY;
         }
-        else if (!(player->container_state & CONTR_INVENTORY) && !state_menu_depth)
+        else if (!(player->container_state & STATE_CONTR_INVENTORY) && !state_menu_depth)
         {
             state_menu_depth = 1;
-            player->container_state |= CONTR_INVENTORY;
+            player->container_state |= STATE_CONTR_INVENTORY;
         }
 
-        if (!(player->container_state & CONTR_INVENTORY) && state_menu_depth)
+        if (!(player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
             --state_menu_depth;
     }
 
@@ -534,7 +533,7 @@ void draw_world()
                 (Vector3){
                 (f32)CHUNK_DIAMETER,
                 (f32)CHUNK_DIAMETER,
-                (f32)WORLD_BOTTOM + (f32)globals.world_height},
+                (f32)(f32)globals.world_height - WORLD_BOTTOM},
                 ORANGE);
 
     // ---- player target bounding box -----------------------------------------
@@ -550,10 +549,12 @@ void draw_world()
         {
             draw_block_wires(lily.delta_target);
             if (state & FLAG_DEBUG_MORE)
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
+                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+                        lily.camera.target, RED);
         }
         else if (state & FLAG_DEBUG_MORE)
-            DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
+            DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+                    lily.camera.target, GREEN);
     }
 
     if (state & FLAG_DEBUG_MORE)
@@ -565,7 +566,6 @@ void draw_world()
         DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
         draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
         draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); //temp AABB collision
-        draw_default_grid(COL_X, COL_Y, COL_Z);
     }
 }
 
