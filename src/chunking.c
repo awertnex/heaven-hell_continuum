@@ -6,20 +6,20 @@
 #include "engine/h/memory.h"
 #include "engine/h/logger.h"
 
-u16 world_height = WORLD_HEIGHT_NORMAL;
 Chunk *chunk_buf = {0};                         // chunk buffer, raw chunk data
 Chunk *chunk_tab[CHUNK_BUF_ELEMENTS] = {NULL};  // chunk pointer look-up table
 v2u16 chunk_tab_coordinates;                    // pointer arithmetic redundancy optimization
+v3u32 block_coordinates;                        // pointer arithmetic redundancy optimization
 u16 chunk_tab_index = 0;                        // player relative chunk tab access
-u8 chunk_parse_lock = 0;
-struct WorldStats world_stats =
+struct Globals globals =
 {
+    .world_height = WORLD_HEIGHT_NORMAL,
+    .opacity = 0,
     .block_count = 0,
     .quad_count = 0,
 };
-u8 opacity = 0;
 
-u8 init_chunking()
+u8 init_chunking(void)
 {
     MC_C_ALLOC(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
     return 0;
@@ -29,94 +29,251 @@ cleanup:
     return -1;
 }
 
-void free_chunking()
+void free_chunking(void)
 {
     MC_C_FREE(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
 }
 
-// TODO: check chunk barrier faces
-void add_block(Chunk *chunk, u8 x, u8 y, u16 z)
+// index = (chunk_tab index);
+void add_block(u16 index, u8 x, u8 y, u16 z)
 {
+    chunk_tab_coordinates = (v2u16){index % CHUNK_BUF_DIAMETER, index / CHUNK_BUF_DIAMETER};
+    u16 mirror_index = {0};
+    u8 is_on_edge = 0;
+
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
-    if (x < CHUNK_DIAMETER - 1)
-        chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] &= ~NEGATIVE_X) : (chunk->i[z][y][x] |= POSITIVE_X);
-    else chunk->i[z][y][x] |= POSITIVE_X;
+    if (x == CHUNK_DIAMETER - 1)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.x == CHUNK_BUF_DIAMETER - 1)
+            || (chunk_tab[index + 1] == NULL);
+        if (is_on_edge)
+            chunk_tab[index]->block[z][y][x] |= POSITIVE_X;
+        else
+        {
+            mirror_index = get_mirror_axis(x);
+            (chunk_tab[index + 1]->block[z][y][mirror_index])
+                ? (chunk_tab[index + 1]->block[z][y][mirror_index] &= ~NEGATIVE_X)
+                : (chunk_tab[index]->block[z][y][x] |= POSITIVE_X);
+        }
+    }
+    else chunk_tab[index]->block[z][y][x + 1]
+        ? (chunk_tab[index]->block[z][y][x + 1] &= ~NEGATIVE_X)
+            : (chunk_tab[index]->block[z][y][x] |= POSITIVE_X);
 
-    if (x > 0)
-        chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] &= ~POSITIVE_X) : (chunk->i[z][y][x] |= NEGATIVE_X);
-    else chunk->i[z][y][x] |= NEGATIVE_X;
+    if (x == 0)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
+        if (is_on_edge)
+            chunk_tab[index]->block[z][y][x] |= NEGATIVE_X;
+        else
+        {
+            mirror_index = get_mirror_axis(x);
+            (chunk_tab[index - 1]->block[z][y][mirror_index])
+                ? (chunk_tab[index - 1]->block[z][y][mirror_index] &= ~POSITIVE_X)
+                : (chunk_tab[index]->block[z][y][x] |= NEGATIVE_X);
+        }
+    }
+    else chunk_tab[index]->block[z][y][x - 1]
+        ? (chunk_tab[index]->block[z][y][x - 1] &= ~POSITIVE_X)
+            : (chunk_tab[index]->block[z][y][x] |= NEGATIVE_X);
 
-    if (y < CHUNK_DIAMETER - 1)
-        chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] &= ~NEGATIVE_Y) : (chunk->i[z][y][x] |= POSITIVE_Y);
-    else chunk->i[z][y][x] |= POSITIVE_Y;
+    if (y == CHUNK_DIAMETER - 1)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.y == CHUNK_BUF_DIAMETER - 1)
+            || (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
+        if (is_on_edge)
+            chunk_tab[index]->block[z][y][x] |= POSITIVE_Y;
+        else
+        {
+            mirror_index = get_mirror_axis(y);
+            (chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][mirror_index][x])
+                ? (chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][mirror_index][x] &= ~NEGATIVE_Y)
+                : (chunk_tab[index]->block[z][y][x] |= POSITIVE_Y);
+        }
+    }
+    else chunk_tab[index]->block[z][y + 1][x]
+        ? (chunk_tab[index]->block[z][y + 1][x] &= ~NEGATIVE_Y)
+            : (chunk_tab[index]->block[z][y][x] |= POSITIVE_Y);
 
-    if (y > 0)
-        chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] &= ~POSITIVE_Y) : (chunk->i[z][y][x] |= NEGATIVE_Y);
-    else chunk->i[z][y][x] |= NEGATIVE_Y;
+    if (y == 0)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.y == 0)
+            || (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
+        if (is_on_edge)
+            chunk_tab[index]->block[z][y][x] |= NEGATIVE_Y;
+        else
+        {
+            mirror_index = get_mirror_axis(y);
+            (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][mirror_index][x])
+                ? (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][mirror_index][x] &= ~POSITIVE_Y)
+                : (chunk_tab[index]->block[z][y][x] |= NEGATIVE_Y);
+        }
+    }
+    else chunk_tab[index]->block[z][y - 1][x]
+        ? (chunk_tab[index]->block[z][y - 1][x] &= ~POSITIVE_Y)
+            : (chunk_tab[index]->block[z][y][x] |= NEGATIVE_Y);
 
-    if (z < world_height - 1)
-        chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] &= ~NEGATIVE_Z) : (chunk->i[z][y][x] |= POSITIVE_Z);
-    else chunk->i[z][y][x] |= POSITIVE_Z;
+    if (z == globals.world_height - WORLD_BOTTOM - 1)
+    {
+        chunk_tab[index]->block[z][y][x] |= POSITIVE_Z;
+    }
+    else chunk_tab[index]->block[z + 1][y][x]
+        ? (chunk_tab[index]->block[z + 1][y][x] &= ~NEGATIVE_Z)
+            : (chunk_tab[index]->block[z][y][x] |= POSITIVE_Z);
     
-    if (z > 0)
-        chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] &= ~POSITIVE_Z) : (chunk->i[z][y][x] |= NEGATIVE_Z);
-    else chunk->i[z][y][x] |= NEGATIVE_Z;
+    if (z == 0)
+    {
+        chunk_tab[index]->block[z][y][x] |= NEGATIVE_Z;
+    }
+    else chunk_tab[index]->block[z - 1][y][x]
+        ? (chunk_tab[index]->block[z - 1][y][x] &= ~POSITIVE_Z)
+            : (chunk_tab[index]->block[z][y][x] |= NEGATIVE_Z);
 
-    chunk->i[z][y][x] |= NOT_EMPTY;
+    chunk_tab[index]->block[z][y][x] |= NOT_EMPTY;
 
-    if (GET_BLOCK_INDEX(x, y, z) >= chunk->block_parse_limit)
-        chunk->block_parse_limit = GET_BLOCK_INDEX(x, y, z);
+    if (get_block_index(x, y, z) >= chunk_tab[index]->block_parse_limit)
+        chunk_tab[index]->block_parse_limit = get_block_index(x, y, z);
 }
 
-// TODO: check chunk barrier faces
-void remove_block(Chunk *chunk, u8 x, u8 y, u16 z)
+// index = (chunk_tab index);
+void remove_block(u16 index, u8 x, u8 y, u16 z)
 {
+    chunk_tab_coordinates = (v2u16){index % CHUNK_BUF_DIAMETER, index / CHUNK_BUF_DIAMETER};
+    u16 mirror_index = {0};
+    u8 is_on_edge = 0;
+
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
 
-    if (x < CHUNK_DIAMETER - 1)
-        chunk->i[z][y][x + 1] ? (chunk->i[z][y][x + 1] |= NEGATIVE_X) : 0;
+    if (x == CHUNK_DIAMETER - 1)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.x == CHUNK_BUF_DIAMETER - 1)
+            || (chunk_tab[index + 1] == NULL);
+        if (!is_on_edge)
+        {
+            mirror_index = get_mirror_axis(x);
+            (chunk_tab[index + 1]->block[z][y][mirror_index])
+                ? (chunk_tab[index + 1]->block[z][y][mirror_index] |= NEGATIVE_X)
+                : 0;
+        }
+    }
+    else chunk_tab[index]->block[z][y][x + 1]
+        ? (chunk_tab[index]->block[z][y][x + 1] |= NEGATIVE_X) : 0;
 
-    if (x > 0)
-        chunk->i[z][y][x - 1] ? (chunk->i[z][y][x - 1] |= POSITIVE_X) : 0;
+    if (x == 0)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
+        if (!is_on_edge)
+        {
+            mirror_index = get_mirror_axis(x);
+            (chunk_tab[index - 1]->block[z][y][mirror_index])
+                ? (chunk_tab[index - 1]->block[z][y][mirror_index] |= POSITIVE_X) : 0;
+        }
+    }
+    else chunk_tab[index]->block[z][y][x - 1]
+        ? (chunk_tab[index]->block[z][y][x - 1] |= POSITIVE_X) : 0;
 
-    if (y < CHUNK_DIAMETER - 1)
-        chunk->i[z][y + 1][x] ? (chunk->i[z][y + 1][x] |= NEGATIVE_Y) : 0;
+    if (y == CHUNK_DIAMETER - 1)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.y == CHUNK_BUF_DIAMETER - 1)
+            || (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
+        if (!is_on_edge)
+        {
+            mirror_index = get_mirror_axis(y);
+            (chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][mirror_index][x])
+                ? (chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][mirror_index][x] |= NEGATIVE_Y)
+                : 0;
+        }
+    }
+    else chunk_tab[index]->block[z][y + 1][x]
+        ? (chunk_tab[index]->block[z][y + 1][x] |= NEGATIVE_Y) : 0;
 
-    if (y > 0)
-        chunk->i[z][y - 1][x] ? (chunk->i[z][y - 1][x] |= POSITIVE_Y) : 0;
+    if (y == 0)
+    {
+        is_on_edge =
+            (chunk_tab_coordinates.y == 0)
+            || (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
+        if (!is_on_edge)
+        {
+            mirror_index = get_mirror_axis(y);
+            (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][mirror_index][x])
+                ? (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][mirror_index][x] |= POSITIVE_Y)
+                : 0;
+        }
+    }
+    else chunk_tab[index]->block[z][y - 1][x]
+        ? (chunk_tab[index]->block[z][y - 1][x] |= POSITIVE_Y) : 0;
 
-    if (z < world_height - 1)
-        chunk->i[z + 1][y][x] ? (chunk->i[z + 1][y][x] |= NEGATIVE_Z) : 0;
+    if (z < globals.world_height - WORLD_BOTTOM - 1)
+        chunk_tab[index]->block[z + 1][y][x]
+            ? (chunk_tab[index]->block[z + 1][y][x] |= NEGATIVE_Z) : 0;
     
     if (z > 0)
-        chunk->i[z - 1][y][x] ? (chunk->i[z - 1][y][x] |= POSITIVE_Z) : 0;
+        chunk_tab[index]->block[z - 1][y][x]
+            ? (chunk_tab[index]->block[z - 1][y][x] |= POSITIVE_Z) : 0;
 
-    chunk->i[z][y][x] = 0;
+    chunk_tab[index]->block[z][y][x] = 0;
 
-    if (GET_BLOCK_INDEX(x, y, z) == chunk->block_parse_limit)
-        for (u16 i = chunk->block_parse_limit; i >= 0; --i)
+    if (get_block_index(x, y, z) == chunk_tab[index]->block_parse_limit)
+    {
+        for (u32 i = chunk_tab[index]->block_parse_limit;
+                i < CHUNK_MAX_BLOCKS && i >= 0; --i)
         {
             if (i == 0)
             {
-                chunk->block_parse_limit = 0;
+                chunk_tab[index]->block_parse_limit = 0;
                 break;
             }
 
-            if (chunk->i[GET_BLOCK_Z(i)][GET_BLOCK_Y(i)][GET_BLOCK_X(i)])
+            block_coordinates = get_block_coordinates(i);
+            if (chunk_tab[index]->block[block_coordinates.z][block_coordinates.y][block_coordinates.x])
             {
-                chunk->block_parse_limit = i;
+                chunk_tab[index]->block_parse_limit = i;
                 break;
             }
         }
+    }
 }
 
-void generate_chunk(Chunk *chunk) // TODO: make this function
+// index = (chunk_tab index);
+void generate_chunk(u16 index) // TODO: make this function
+{
+    u16 sin_x = 0, sin_y = 0;
+
+    u16 z = 0; u8 y = 0, x = 0;
+    for (; z < 20; ++z)
+        for (y = 0; y < CHUNK_DIAMETER; ++y)
+            for (x = 0; x < CHUNK_DIAMETER; ++x)
+            {
+                sin_x = (u16)((sin(((f32)x + (chunk_tab[index]->pos.x * CHUNK_DIAMETER))
+                                / 15) + 1) * 10) + 2;
+                sin_y = (u16)((sin(((f32)y + (chunk_tab[index]->pos.y * CHUNK_DIAMETER))
+                                / 15) + 1) * 10) + 2;
+
+                if (z <= sin_x && z <= sin_y)
+                    add_block(index, x, y, z);
+            }
+}
+
+// TODO: add 'version' byte for serialization
+void serialize_chunk(Chunk *chunk, str *world_name) // TODO: make this function
 {
 }
 
+void deserialize_chunk(Chunk *chunk, str *world_name) // TODO: make this function
+{
+}
+
+// pos = (chunk_tab coordinates);
 Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
@@ -129,32 +286,18 @@ Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
                 .pos = (v2i16){
                     player_delta_chunk.x + (pos.x - CHUNK_BUF_RADIUS),
                     player_delta_chunk.y + (pos.y - CHUNK_BUF_RADIUS)},
-                .mat = LoadMaterialDefault(),
                 .flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER,
             };
         chunk_buf[i].id = ((chunk_buf[i].pos.x & 0xffff) << 16) + (chunk_buf[i].pos.y & 0xffff);
-
-        u16 z = 0; u8 y = 0, x = 0;
-        for (; z < 3; ++z)
-            for (y = 0; y < CHUNK_DIAMETER; ++y)
-                for (x = 0; x < CHUNK_DIAMETER; ++x)
-                    add_block(&chunk_buf[i], x, y, z);
-
         return &chunk_buf[i];
     }
     return NULL;
 }
 
-Chunk *pop_chunk_buf(u16 chunk_tab_index)
+// index = (chunk_tab index);
+Chunk *pop_chunk_buf(u16 index)
 {
-    memset(chunk_tab[chunk_tab_index]->i, 0, chunk_tab[chunk_tab_index]->block_parse_limit + 1);
-    *chunk_tab[chunk_tab_index] =
-        (Chunk){
-            .pos = (v2i16){0},
-            .id = 0,
-            .flag = 0,
-        };
-
+    *chunk_tab[index] = (Chunk){0};
     return NULL;
 }
 
@@ -171,32 +314,37 @@ void update_chunk_tab(v2i16 player_delta_chunk)
                 chunk_tab[i] = push_chunk_buf(player_delta_chunk, chunk_tab_coordinates);
 
             if (chunk_tab[i] != NULL)
-                LOGINFO("Chunk Loaded 'id[%08x] pos[%03d %03d] i[%03d]'",
-                        chunk_tab[i]->id,
-                        chunk_tab[i]->pos.x,
-                        chunk_tab[i]->pos.y,
-                        i);
+                generate_chunk(i); // TODO: grab chunks from disk if previously generated
         }
-        else if (chunk_tab[i] != NULL)
-            if (chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
+        else if ((chunk_tab[i] != NULL) && (chunk_tab[i]->flag & FLAG_CHUNK_LOADED))
                 chunk_tab[i] = pop_chunk_buf(i);
     }
 }
 
-// directions: 1 = px, 2 = nx, 3 = py, 4 = ny
+// directions = (1 = positive x, 2 = negative x, 3 = positive y, 4 = negative y);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 {
-    if (chunk_parse_lock) return;
-    chunk_parse_lock = 1;
-
     v2i16 delta = {
         player_chunk.x - player_delta_chunk->x,
         player_chunk.y - player_delta_chunk->y};
+
+    if (!is_distance_within(SETTING_RENDER_DISTANCE_DEFAULT,
+            (v2i32){player_chunk.x, player_chunk.y},
+            (v2i32){player_delta_chunk->x, player_delta_chunk->y}))
+    {
+        for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
+            if (chunk_tab[i] != NULL)
+                chunk_tab[i] = pop_chunk_buf(i);
+
+        *player_delta_chunk = player_chunk;
+        return;
+    }
+
     u8 direction =
         (delta.x > 0) ? 1 : (delta.x < 0) ? 2 :
         (delta.y > 0) ? 3 : (delta.y < 0) ? 4 : 0;
     i8 increment = (direction == 1 || direction == 3) - (direction == 2 || direction == 4);
-    v2u16 index = {0};
+    v2u16 coordinates = {0};
     u16 mirror_index = 0;
     u16 target_index = 0;
     u8 is_on_edge = 0;
@@ -206,40 +354,40 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (chunk_tab[i] != NULL)
-            chunk_tab[i]->edge_value = 0;
+            chunk_tab[i]->flag &= ~FLAG_CHUNK_EDGE;
 
     // ---- mark chunks on-edge ------------------------------------------------
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
         if (chunk_tab[i] == NULL) continue;
-        index = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
+        coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
         switch (direction)
         {
             case 1: // ---- positive x -----------------------------------------
-                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
+                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 is_on_edge =
-                    (index.x == 0) ? 1 : (chunk_tab[i - 1] == NULL);
+                    (coordinates.x == 0) || (chunk_tab[i - 1] == NULL);
                 break;
 
             case 2: // ---- negative x -----------------------------------------
-                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
+                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 is_on_edge =
-                    (index.x == CHUNK_BUF_DIAMETER - 1) ? 1 : (chunk_tab[i + 1] == NULL);
+                    (coordinates.x == CHUNK_BUF_DIAMETER - 1) || (chunk_tab[i + 1] == NULL);
                 break;
 
             case 3: // ---- positive y -----------------------------------------
                 mirror_index =
-                    ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
+                    ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER) + coordinates.x;
                 is_on_edge =
-                    (index.y == 0) ? 1 : (chunk_tab[i - CHUNK_BUF_DIAMETER] == NULL);
+                    (coordinates.y == 0) || (chunk_tab[i - CHUNK_BUF_DIAMETER] == NULL);
                 break;
 
             case 4: // ---- negative y -----------------------------------------
                 mirror_index =
-                    ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
+                    ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER) + coordinates.x;
                 is_on_edge =
-                    (index.y == CHUNK_BUF_DIAMETER - 1) ? 1 :
-                    (chunk_tab[i + CHUNK_BUF_DIAMETER] == NULL);
+                    (coordinates.y == CHUNK_BUF_DIAMETER - 1)
+                    || (chunk_tab[i + CHUNK_BUF_DIAMETER] == NULL);
                 break;
         }
 
@@ -248,7 +396,7 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
             chunk_tab[i]->flag &= ~FLAG_CHUNK_RENDER;
             chunk_tab[i]->flag &= ~FLAG_CHUNK_LOADED;
             if (chunk_tab[mirror_index] != NULL)
-                chunk_tab[mirror_index]->edge_value = 1;
+                chunk_tab[mirror_index]->flag |= FLAG_CHUNK_EDGE;
         }
     }
 
@@ -258,65 +406,60 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
             i += increment)
     {
         if (chunk_tab[i] == NULL) continue;
-        index = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
+        coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
         switch (direction)
         {
             case 1: // ---- positive x -----------------------------------------
-                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                target_index = (index.x == CHUNK_BUF_DIAMETER - 1) ? i : i + 1;
+                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
+                target_index = (coordinates.x == CHUNK_BUF_DIAMETER - 1) ? i : i + 1;
                 break;
 
             case 2: // ---- negative x -----------------------------------------
-                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (index.x * 2);
-                target_index = (index.x == 0) ? i : i - 1;
+                mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
+                target_index = (coordinates.x == 0) ? i : i - 1;
                 break;
 
             case 3: // ---- positive y -----------------------------------------
                 mirror_index = 
-                    ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                target_index = (index.y == CHUNK_BUF_DIAMETER - 1) ? i : i + CHUNK_BUF_DIAMETER;
+                    ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER) + coordinates.x;
+                target_index = (coordinates.y == CHUNK_BUF_DIAMETER - 1) ? i : i + CHUNK_BUF_DIAMETER;
                 break;
 
             case 4: // ---- negative y -----------------------------------------
                 mirror_index =
-                    ((CHUNK_BUF_DIAMETER - 1 - index.y) * CHUNK_BUF_DIAMETER) + index.x;
-                target_index = (index.y == 0) ? i : i - CHUNK_BUF_DIAMETER;
+                    ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER) + coordinates.x;
+                target_index = (coordinates.y == 0) ? i : i - CHUNK_BUF_DIAMETER;
                 break;
         }
 
         chunk_tab[i] = chunk_tab[target_index];
-        if (chunk_tab[i]->edge_value)
+        if (chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
             chunk_tab[target_index] = NULL;
     }
-
-    update_chunk_tab(*player_delta_chunk);
-    chunk_parse_lock = 0;
 }
 
-u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target)
+u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_delta_target)
 {
-    return (i16)floorf((f32)player_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
-        + (((i16)floorf((f32)player_target.y / CHUNK_DIAMETER) - player_chunk.y
+    return (i16)floorf((f32)player_delta_target.x / CHUNK_DIAMETER) - player_chunk.x + CHUNK_BUF_RADIUS
+        + (((i16)floorf((f32)player_delta_target.y / CHUNK_DIAMETER) - player_chunk.y
                 + CHUNK_BUF_RADIUS) * CHUNK_BUF_DIAMETER);
 }
 
-Texture2D tex_cobblestone; //temp texturing
-Texture2D tex_dirt; //temp texturing
-void draw_chunk_tab()
+void draw_chunk_tab(Texture *tex /* temp texturing */)
 {
-    if (state & STATE_DEBUG_MORE)
-        opacity = 200;
+    if (state & FLAG_DEBUG_MORE)
+        globals.opacity = 200;
     else
-        opacity = 255;
+        globals.opacity = 255;
 
     rlPushMatrix();
-    rlSetTexture(tex_cobblestone.id); //temp texturing
+    rlSetTexture(tex->id); //temp texturing
     rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
-        if (chunk_tab[i] == NULL) continue;
-        if (!(chunk_tab[i]->flag & FLAG_CHUNK_RENDER)) continue;
+        if ((chunk_tab[i] == NULL) || !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
+            continue;
 
         rlTranslatef(
                 (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
@@ -325,22 +468,26 @@ void draw_chunk_tab()
 
         for (u32 j = 0; j <= chunk_tab[i]->block_parse_limit; ++j)
         {
-            if (chunk_tab[i]->i[GET_BLOCK_Z(j)][GET_BLOCK_Y(j)][GET_BLOCK_X(j)] & BLOCKFACES)
-                draw_block(chunk_tab[i]->i[GET_BLOCK_Z(j)][GET_BLOCK_Y(j)][GET_BLOCK_X(j)]);
-            rlTranslatef(1.0f, 0.0f, 0.0f);
+            block_coordinates = get_block_coordinates(j);
+            draw_block(chunk_tab[i],
+                    block_coordinates.x,
+                    block_coordinates.y,
+                    block_coordinates.z);
 
-            if (GET_BLOCK_X(j) == (CHUNK_DIAMETER - 1))
+            rlTranslatef(1.0f, 0.0f, 0.0f);
+            if (block_coordinates.x == CHUNK_DIAMETER - 1)
             {
                 rlTranslatef(-(f32)CHUNK_DIAMETER, 1.0f, 0.0f);
-                if (GET_BLOCK_Y(j) == (CHUNK_DIAMETER - 1))
+                if (block_coordinates.y == CHUNK_DIAMETER - 1)
                     rlTranslatef(0.0f, -(f32)CHUNK_DIAMETER, 1.0f);
             }
         }
 
+        block_coordinates = get_block_coordinates(chunk_tab[i]->block_parse_limit + 1);
         rlTranslatef(
-                -(f32)GET_BLOCK_X(chunk_tab[i]->block_parse_limit + 1) - (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
-                -(f32)GET_BLOCK_Y(chunk_tab[i]->block_parse_limit + 1) - (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
-                -(f32)GET_BLOCK_Z(chunk_tab[i]->block_parse_limit + 1) - (f32)WORLD_BOTTOM);
+                -(f32)block_coordinates.x - (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
+                -(f32)block_coordinates.y - (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
+                -(f32)block_coordinates.z - (f32)WORLD_BOTTOM);
     }
 
     rlEnd();
@@ -348,15 +495,14 @@ void draw_chunk_tab()
     rlSetTexture(0); //temp texturing
 }
 
-// raylib/rmodels.c/DrawCube refactored
-void draw_block(u32 block)
+// raylib/rmodels.c/DrawCube refactored;
+void draw_block(Chunk *chunk, u8 x, u8 y, u16 z)
 {
-    if (block & POSITIVE_X)
+    if (chunk->block[z][y][x] & POSITIVE_X)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(150, 150, 137, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(200, 210, 90, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(150, 150, 137, globals.opacity);
+        else rlColor4ub(200, 210, 90, globals.opacity);
         
         rlNormal3f(1.0f, 0.0f, 0.0f); //temp texturing
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
@@ -365,12 +511,11 @@ void draw_block(u32 block)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
     }
 
-    if (block & NEGATIVE_X)
+    if (chunk->block[z][y][x] & NEGATIVE_X)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(135, 135, 123, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(236, 17, 90, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(135, 135, 123, globals.opacity);
+        else rlColor4ub(236, 17, 90, globals.opacity);
 
         rlNormal3f(-1.0f, 0.0f, 0.0f);
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
@@ -379,12 +524,11 @@ void draw_block(u32 block)
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
     }
 
-    if (block & POSITIVE_Y)
+    if (chunk->block[z][y][x] & POSITIVE_Y)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(155, 155, 142, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(200, 248, 246, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(155, 155, 142, globals.opacity);
+        else rlColor4ub(200, 248, 246, globals.opacity);
 
         rlNormal3f(0.0f, 1.0f, 0.0f);
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
@@ -393,12 +537,11 @@ void draw_block(u32 block)
         rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
     }
 
-    if (block & NEGATIVE_Y)
+    if (chunk->block[z][y][x] & NEGATIVE_Y)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(140, 140, 123, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(28, 14, 50, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(140, 140, 123, globals.opacity);
+        else rlColor4ub(28, 14, 50, globals.opacity);
 
         rlNormal3f(0.0f, -1.0f, 0.0f);
         rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
@@ -407,12 +550,11 @@ void draw_block(u32 block)
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
     }
 
-    if (block & POSITIVE_Z)
+    if (chunk->block[z][y][x] & POSITIVE_Z)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(176, 176, 160, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(250, 18, 5, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(176, 176, 160, globals.opacity);
+        else rlColor4ub(250, 18, 5, globals.opacity);
 
         rlNormal3f(0.0f, 0.0f, 1.0f);
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
@@ -421,12 +563,11 @@ void draw_block(u32 block)
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
     }
 
-    if (block & NEGATIVE_Z)
+    if (chunk->block[z][y][x] & NEGATIVE_Z)
     {
-        if (MODE_GRAY_BLOCKS)
-            rlColor4ub(115, 115, 104, opacity);
-        else if (LOGGER_DEBUG)
-            rlColor4ub(200, 40, 203, opacity);
+        if (LOGGER_DEBUG)
+            rlColor4ub(115, 115, 104, globals.opacity);
+        else rlColor4ub(200, 40, 203, globals.opacity);
 
         rlNormal3f(0.0f, 0.0f, -1.0f);
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
@@ -436,7 +577,7 @@ void draw_block(u32 block)
     }
 }
 
-// raylib/rmodels.c/DrawLine3D refactored
+// raylib/rmodels.c/DrawLine3D refactored;
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color)
 {
     rlColor4ub(color.r, color.g, color.b, color.a);
@@ -444,7 +585,7 @@ void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color)
     rlVertex3f(pos_1.x, pos_1.y, pos_1.z);
 }
 
-// raylib/rmodels.c/DrawCubeWires refactored
+// raylib/rmodels.c/DrawCubeWires refactored;
 void draw_block_wires(v3i32 pos)
 {
     rlPushMatrix();
@@ -492,7 +633,7 @@ void draw_block_wires(v3i32 pos)
     rlPopMatrix();
 }
 
-// raylib/rmodels.c/DrawCubeWires refactored
+// raylib/rmodels.c/DrawCubeWires refactored;
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col)
 {
     rlPushMatrix();

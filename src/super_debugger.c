@@ -3,8 +3,8 @@
 #include "h/logic.h"
 
 // ---- variables --------------------------------------------------------------
-Texture2D texture_super_debugger;
-debug_rect debug_rectangle =
+Texture texture_super_debugger;
+DebugRect debug_rectangle =
 {
     .corner_00 =    {0,                 0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
     .corner_10 =    {SDB_BASE_SIZE,     0,                  SDB_BASE_SIZE,  SDB_BASE_SIZE},
@@ -43,8 +43,6 @@ void free_super_debugger()
 
 void draw_super_debugger(v2f32 render_size)
 {
-    if (!(state & STATE_SUPER_DEBUG)) return;
-
     debug_rectangle.scl.y = render_size.y - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = render_size.x - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 

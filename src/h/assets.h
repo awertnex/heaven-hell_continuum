@@ -20,28 +20,28 @@ enum BlockStates
 
 enum BlockID
 {
-    grass =                 1,
-    dirt =                  2,
-    stone =                 3,
-    cobblestone =           4,
-    moss_stone =            5,
-    oak_wood_log =          6,
-    oak_wood_planks =       7,
-    sand =                  8,
-    glass =                 9,
-    nether_rack =           10,
-    bedrock =               11,
-    glow_stone =            12,
-    deepslate =             13,
-    cobbled_deepslate =     14,
+    grass = 0,
+    dirt,
+    stone,
+    cobblestone,
+    moss_stone,
+    oak_wood_log,
+    oak_wood_planks,
+    sand,
+    glass,
+    nether_rack,
+    bedrock,
+    glow_stone,
+    deepslate,
+    cobbled_deepslate,
 }; /* BlockID */
 
 typedef struct Block
 {
-    u8 block_id;
+    str *name;
     u16 block_state;
     void *texture_layout;
-    void *texture;
+    Texture texture;
 } Block;
 
 typedef struct TextureLayout
@@ -57,13 +57,9 @@ extern TextureLayout two_side;
 extern TextureLayout three_side;
 extern TextureLayout three_side_alt;
 extern TextureLayout four_side;
-
-extern Texture2D texture_block_grass;
-extern Texture2D texture_block_cobblestone;
-extern Texture2D texture_block_cobbled_deepslate;
+extern Block block[1023];               // standard block array
 
 // ---- signatures -------------------------------------------------------------
-void init_texture_layouts();
 void init_textures();
 void unload_textures();
 

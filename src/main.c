@@ -1,6 +1,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <math.h>
+#include <pthread.h>
 
 #include "dependencies/raylib-5.5/src/raylib.h"
 #include "dependencies/raylib-5.5/src/rlgl.h"
@@ -11,15 +12,16 @@
     #include "windows_minecraft.c"
 #endif // PLATFORM
 
-// ---- variables --------------------------------------------------------------
+// ---- declarations -----------------------------------------------------------
 v2f32 render_size = {WIDTH, HEIGHT};
 u16 state = 0;
 u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
 u64 game_tick = 0;
 u64 game_days = 0;
+pthread_t thrd_chunk_handler;
 
-settings setting =
+Settings setting =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
@@ -63,33 +65,33 @@ Player lily =
 
 // ---- signatures -------------------------------------------------------------
 void update_world();
+void *chunk_handler();
 void update_input(Player *player);
 void draw_skybox();
+void draw_world();
+void draw_gui();
 
-int main(int argc, char **argv)
+int main(void)
 {
-    // ---- game init ----------------------------------------------------------
+    // ---- init start main ----------------------------------------------------
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
 
-    state |= STATE_ACTIVE | STATE_PARSE_CURSOR;
+    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED;
     init_paths();
-    //TODO: load textures
-    //init_texture_layouts();
-    //init_textures();
-
 #if RELEASE_BUILD
-    init_instance_directory("new_instance", &state, STATE_ACTIVE); // TODO: make editable instance name
+    init_instance_directory("new_instance"); // TODO: make editable instance name
 #else
-    init_instance_directory("test_instance", &state, STATE_ACTIVE);
+    init_instance_directory("test_instance");
 #endif // RELEASE_BUILD
-    if (!(state & STATE_ACTIVE))
-        return -1;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(WIDTH, HEIGHT, "minecraft.c");
     SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
+
+    init_textures();
+
 #if !RELEASE_BUILD
     SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
 #endif // RELEASE_BUILD
@@ -101,87 +103,132 @@ int main(int argc, char **argv)
     init_super_debugger(render_size);
 
     game_start_time = get_time_ms();
+    // ---- init end main ------------------------------------------------------
 
-    while (!WindowShouldClose() && (state & STATE_ACTIVE))
+section_loop_menu_title: // ---- loop start menu title -------------------------
+    mouse_delta = GetMouseDelta();
+    if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
     {
-        // ---- game loop ------------------------------------------------------
-        mouse_delta = GetMouseDelta();
-        if (!state_menu_depth && !(state & STATE_SUPER_DEBUG))
-        {
-            disable_cursor;
-            center_cursor;
-        }
+        state |= FLAG_PARSE_CURSOR;
+        mouse_delta = (Vector2){0.0f, 0.0f};
+    }
 
-        if (!(state & STATE_PARSE_CURSOR))
-        {
-            state |= STATE_PARSE_CURSOR;
-            mouse_delta = (Vector2){0.0f, 0.0f};
-        }
+    update_input(&lily);
+    update_render_settings(render_size);
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
-        update_input(&lily);
-        update_render_settings(render_size);
-        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        BeginDrawing();
+    BeginDrawing();
+    {
         //draw_texture_tiled(); // TODO: draw tiled texture of title screen
         ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
         update_menus(render_size);
-        if (state & STATE_WORLD_LOADED)
-        {
-            draw_skybox();
-            update_world();
-        }
-        EndDrawing();
+    }
+    EndDrawing();
 
-        if (state & STATE_PAUSED) // TODO: make real pausing instead of using the uncleared bg as still
-        {
-            BeginDrawing();
-            draw_menu_overlay(render_size);
-            EndDrawing();
+    if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+        goto section_loop_game;
 
-            while ((state & STATE_PAUSED) && (state & STATE_ACTIVE) && !WindowShouldClose())
-            {
-                render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-                update_input(&lily);
-                BeginDrawing();
-                update_menus(render_size);
-                EndDrawing();
-            }
-        }
+    if (SHOULD_EXIT)
+        goto cleanup;
+
+    goto section_loop_menu_title;
+    // ---- loop end menu title ------------------------------------------------
+
+section_init_menu_world: // ---- init start menu world -------------------------
+    // TODO: make real pausing instead of using the uncleared bg as still
+    BeginDrawing();
+    draw_menu_overlay(render_size);
+    EndDrawing();
+    // ---- init end menu world ------------------------------------------------
+
+section_loop_menu_world: // ---- loop start menu world -------------------------
+    update_input(&lily);
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    update_render_settings(render_size);
+
+    BeginDrawing();
+    update_menus(render_size);
+    EndDrawing();
+
+    if (!(state & FLAG_WORLD_LOADED))
+        goto section_loop_menu_title;
+
+    if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+        goto section_loop_game;
+
+    if (SHOULD_EXIT)
+        goto cleanup;
+
+    goto section_loop_menu_world;
+    // ---- loop end menu world ------------------------------------------------
+
+section_loop_game: // ---- loop start game -------------------------------------
+    mouse_delta = GetMouseDelta();
+    if (!state_menu_depth && !(state & FLAG_SUPER_DEBUG))
+    {
+        disable_cursor;
+        center_cursor;
     }
 
-    // ---- game close ---------------------------------------------------------
-    UnloadTexture(tex_cobblestone); //temp
-    UnloadTexture(tex_dirt); //temp
+    if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+    {
+        state |= FLAG_PARSE_CURSOR;
+        mouse_delta = (Vector2){0.0f, 0.0f};
+    }
+
+    update_input(&lily);
+    update_render_settings(render_size);
+    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+    update_world();
+
+    BeginDrawing();
+    {
+        BeginMode3D(lily.camera);
+        draw_skybox();
+        draw_chunk_tab(&block[dirt].texture);
+        draw_world();
+        EndMode3D();
+    }
+    draw_gui();
+    EndDrawing();
+
+    if (!(state & FLAG_WORLD_LOADED))
+        goto section_loop_menu_title;
+
+    if (state & FLAG_PAUSED)
+        goto section_init_menu_world;
+
+    if (SHOULD_EXIT)
+        goto cleanup;
+
+    goto section_loop_game;
+    // ---- loop end game ------------------------------------------------------
+
+cleanup: // ---- cleanup -------------------------------------------------------
+    //pthread_join(thrd_chunk_handler, NULL); //temp off
     unload_textures();
     free_chunking();
     free_gui();
     free_super_debugger();
     CloseWindow();
+    // -------------------------------------------------------------------------
+
     return 0;
 }
 
 void init_world(str *str)
 {
-    if (strlen(str) == 0)
-    {
-        LOGERROR("%s", "World Requires a Name, World Creation Aborted");
-        return;
-    }
+    if (strlen(str) == 0) return;
+
     init_world_directory(str);
-
     rlSetClipPlanes(0.1f, 500.0f);
-
     if (init_chunking() != 0)
-        state &= ~STATE_ACTIVE;
+        state &= ~FLAG_ACTIVE;
 
-    update_player_states(&lily);
+    update_player(&lily);
     update_chunk_tab(lily.chunk);
 
-    tex_cobblestone =   LoadTexture("resources/textures/blocks/stone.png");
-    tex_dirt =          LoadTexture("resources/textures/blocks/dirt.png");
-
-    lily.state |= STATE_FALLING;
-    lily.state &= ~STATE_PARSE_TARGET;
+    lily.state |= FLAG_FALLING;
     set_player_block(&lily, 0, 0, 0);
     lily.delta_target =
         (v3i32){
@@ -189,7 +236,7 @@ void init_world(str *str)
             lily.camera.target.y,
             lily.camera.target.z};
 
-    state |= (STATE_HUD | STATE_WORLD_LOADED);
+    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
 
     disable_cursor;
     center_cursor;
@@ -201,86 +248,58 @@ void update_world()
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
-    if (MODE_COLLIDE)
-        update_collision_static(&lily);
-
-    if (state_menu_depth || (state & STATE_SUPER_DEBUG))
+    if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
 
-    if (state & STATE_DEBUG)
-        update_camera_movements_debug_info(&lily.camera_debug_info, &lily);
-
-    update_player_states(&lily);
+    update_player(&lily);
+    update_player_target(&lily.camera.target, &lily.delta_target);
     update_camera_movements_player(&lily);
+    if (MODE_COLLIDE)
+        update_collision_static(&lily);
 
-    if (lily.state & STATE_CHUNK_BUF_DIRTY)
+    chunk_tab_index = get_chunk_tab_index(lily.chunk, lily.delta_target);
+    (chunk_tab_index > CHUNK_BUF_ELEMENTS)
+        ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
+
+    if (state & FLAG_CHUNK_BUF_DIRTY)
     {
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        lily.state &= ~STATE_CHUNK_BUF_DIRTY;
+        update_chunk_tab(lily.delta_chunk);
+        state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
 
-    BeginMode3D(lily.camera);
-    draw_chunk_tab();
+    // ---- player targeting ---------------------------------------------------
+    if (is_range_within_v3i(lily.delta_target,
+                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
+                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, globals.world_height}))
+        state |= FLAG_PARSE_TARGET;
+    else state &= ~FLAG_PARSE_TARGET;
 
     //TODO: make a function 'index_to_bounding_box()'
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
     //{}
-    if (state & STATE_DEBUG_MORE) // ---- Player Chunk Bounding Box ------------
-        draw_bounding_box(
-                (Vector3){
-                (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)WORLD_BOTTOM},
-                (Vector3){(f32)CHUNK_DIAMETER, (f32)CHUNK_DIAMETER, (f32)world_height},
-                ORANGE);
+}
 
-    if (is_range_within_v3fi(&lily.camera.target,
-                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, world_height}))
+struct /* Chunk Handler Args */
+{
+    v2i16 player_delta_chunk;
+    u8 lock;
+} chunk_handler_args;
+void *chunk_handler()
+{
+    chunk_handler_args.player_delta_chunk = lily.delta_chunk;
+    chunk_handler_args.lock = 1;
+    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
-        set_delta_target(&lily.camera.target, &lily.delta_target);
-        chunk_tab_index = get_chunk_tab_index(lily.chunk, lily.delta_target);
-        if (chunk_tab[chunk_tab_index] != NULL && (state & STATE_HUD))
-        {
-            if (chunk_tab[chunk_tab_index]->i
-                    [lily.delta_target.z - WORLD_BOTTOM]
-                    [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
-                    [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
-                    & NOT_EMPTY)
-            {
-                draw_block_wires(lily.delta_target);
-                if (state & STATE_DEBUG_MORE)
-                    DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, RED);
-            }
-            else if (state & STATE_DEBUG_MORE)
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}), lily.camera.target, GREEN);
-        }
+        LOGINFO("Delta[%03d %03d]", chunk_handler_args.player_delta_chunk.x, chunk_handler_args.player_delta_chunk.y);
+        if (!(state & FLAG_CHUNK_BUF_DIRTY)) continue;
+
+        chunk_handler_args.lock = 0;
+        shift_chunk_tab(lily.chunk, &chunk_handler_args.player_delta_chunk);
+        state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
-
-    if (state & STATE_DEBUG_MORE)
-    {
-        /*temp
-          draw_block_wires(&target_coordinates_feet);
-          printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
-          */
-        DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
-        draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
-        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); //temp AABB collision
-        draw_default_grid(COL_X, COL_Y, COL_Z);
-    }
-
-    EndMode3D();
-
-    if (state & STATE_HUD)
-    {
-        draw_hud();
-        draw_debug_info(&lily.camera_debug_info);
-        if (state_menu_depth && lily.container_state)
-            draw_containers(&lily, render_size);
-    }
-
-    draw_super_debugger(render_size);
+    return NULL;
 }
 
 void update_input(Player *player)
@@ -288,36 +307,34 @@ void update_input(Player *player)
     // ---- jumping ------------------------------------------------------------
     if (IsKeyDown(bind_jump))
     {
-        if (IsKeyPressed(bind_jump) && get_double_press(player, bind_jump))
-            player->state ^= STATE_FLYING;
+        if (IsKeyPressed(bind_jump) && get_double_press(bind_jump))
+            player->state ^= FLAG_FLYING;
 
-        if (player->state & STATE_FLYING)
+        if (player->state & FLAG_FLYING)
             player->pos.z += player->movement_speed;
 
-        if (player->state & STATE_CAN_JUMP)
+        if (player->state & FLAG_CAN_JUMP)
         {
             player->v.z += PLAYER_JUMP_HEIGHT;
-            player->state &= ~STATE_CAN_JUMP;
+            player->state &= ~FLAG_CAN_JUMP;
         }
     }
 
     // ---- sneaking -----------------------------------------------------------
     if (IsKeyDown(bind_sneak))
     {
-        if (player->state & STATE_FLYING)
+        if (player->state & FLAG_FLYING)
             player->pos.z -= player->movement_speed;
-        else player->state |= STATE_SNEAKING;
+        else player->state |= FLAG_SNEAKING;
     }
-
-    if (IsKeyUp(bind_sneak))
-        player->state &= ~STATE_SNEAKING;
+    else player->state &= ~FLAG_SNEAKING;
 
     // ---- sprinting ----------------------------------------------------------
     if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
-        player->state |= STATE_SPRINTING;
+        player->state |= FLAG_SPRINTING;
 
     if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
-        player->state &= ~STATE_SPRINTING;
+        player->state &= ~FLAG_SPRINTING;
 
     // ---- moving -------------------------------------------------------------
     if (IsKeyDown(bind_strafe_left))
@@ -340,8 +357,8 @@ void update_input(Player *player)
 
     if (IsKeyDown(bind_walk_forwards))
     {
-        if (IsKeyPressed(bind_walk_forwards) && get_double_press(player, bind_walk_forwards))
-            player->state |= STATE_SPRINTING;
+        if (IsKeyPressed(bind_walk_forwards) && get_double_press(bind_walk_forwards))
+            player->state |= FLAG_SPRINTING;
 
         player->v.x += player->movement_speed * player->cos_yaw;
         player->v.y += player->movement_speed * player->sin_yaw;
@@ -360,9 +377,14 @@ void update_input(Player *player)
     // ---- gameplay -----------------------------------------------------------
     if (IsMouseButtonDown(bind_attack_or_destroy))
     {
-        if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
+        if ((state & FLAG_PARSE_TARGET)
+                && !(state & FLAG_CHUNK_BUF_DIRTY)
+                && (chunk_tab[chunk_tab_index] != NULL))
         {
-            remove_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            remove_block(chunk_tab_index,
+                    lily.delta_target.x,
+                    lily.delta_target.y,
+                    lily.delta_target.z - WORLD_BOTTOM);
         }
     }
 
@@ -372,9 +394,14 @@ void update_input(Player *player)
 
     if (IsMouseButtonDown(bind_use_item_or_place_block))
     {
-        if (chunk_tab[chunk_tab_index] != NULL && !(lily.state & STATE_CHUNK_BUF_DIRTY))
+        if ((state & FLAG_PARSE_TARGET)
+                && !(state & FLAG_CHUNK_BUF_DIRTY)
+                && (chunk_tab[chunk_tab_index] != NULL))
         {
-            add_block(chunk_tab[chunk_tab_index], lily.delta_target.x, lily.delta_target.y, floorf(lily.delta_target.z - WORLD_BOTTOM));
+            add_block(chunk_tab_index,
+                    lily.delta_target.x,
+                    lily.delta_target.y,
+                    lily.delta_target.z - WORLD_BOTTOM);
         }
     }
 
@@ -411,40 +438,41 @@ void update_input(Player *player)
 
     if (IsKeyPressed(bind_open_or_close_inventory))
     {
-        if (player->container_state & CONTR_INVENTORY && state_menu_depth)
+        if ((player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
         {
             state_menu_depth = 0;
-            player->container_state &= ~CONTR_INVENTORY;
-        } else if (!(player->container_state & CONTR_INVENTORY) && !state_menu_depth)
+            player->container_state &= ~STATE_CONTR_INVENTORY;
+        }
+        else if (!(player->container_state & STATE_CONTR_INVENTORY) && !state_menu_depth)
         {
             state_menu_depth = 1;
-            player->container_state |= CONTR_INVENTORY;
+            player->container_state |= STATE_CONTR_INVENTORY;
         }
 
-        if (!(player->container_state & CONTR_INVENTORY) && state_menu_depth)
+        if (!(player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
             --state_menu_depth;
     }
 
     // ---- miscellaneous ------------------------------------------------------
     if (IsKeyPressed(bind_toggle_hud))
-        state ^= STATE_HUD;
+        state ^= FLAG_HUD;
 
     if (IsKeyPressed(bind_toggle_debug))
     {
-        if (state & STATE_DEBUG)
-            state &= ~(STATE_DEBUG | STATE_DEBUG_MORE);
-        else state |= STATE_DEBUG;
+        if (state & FLAG_DEBUG)
+            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+        else state |= FLAG_DEBUG;
 
-        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & STATE_DEBUG))
-            state |= STATE_DEBUG_MORE;
+        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & FLAG_DEBUG))
+            state |= FLAG_DEBUG_MORE;
     }
 
     if (IsKeyPressed(bind_toggle_fullscreen))
     {
-        state ^= STATE_FULLSCREEN;
-        state &= ~STATE_PARSE_CURSOR;
+        state ^= FLAG_FULLSCREEN;
+        state &= ~FLAG_PARSE_CURSOR;
 
-        if (state & STATE_FULLSCREEN)
+        if (state & FLAG_FULLSCREEN)
         {
             ToggleBorderlessWindowed();
             SetConfigFlags(FLAG_FULLSCREEN_MODE);
@@ -463,15 +491,15 @@ void update_input(Player *player)
         else player->perspective = 0;
     }
 
-    if (IsKeyPressed(bind_pause) && (state & STATE_WORLD_LOADED))
+    if (IsKeyPressed(bind_pause) && (state & FLAG_WORLD_LOADED))
     {
-        if (state & STATE_WORLD_LOADED)
+        if (state & FLAG_WORLD_LOADED)
         {
             if (!state_menu_depth)
             {
                 state_menu_depth = 1;
                 menu_index = MENU_GAME;
-                state |= STATE_PAUSED;
+                state |= FLAG_PAUSED;
                 player->container_state = 0;
                 show_cursor;
             }
@@ -481,16 +509,64 @@ void update_input(Player *player)
         else
         {
             if (state_menu_depth == 1)
-                state &= ~STATE_ACTIVE;
+                state &= ~FLAG_ACTIVE;
             else btn_func_back();
         }
     }
 
     // ---- debug --------------------------------------------------------------
-#if (RELEASE_BUILD == 0)
+#if !RELEASE_BUILD
     if (IsKeyPressed(KEY_TAB))
-        state ^= STATE_SUPER_DEBUG;
+        state ^= FLAG_SUPER_DEBUG;
 #endif // RELEASE_BUILD
+}
+
+void draw_world()
+{
+    // ---- player chunk bounding box ------------------------------------------
+    if (state & FLAG_DEBUG_MORE)
+        draw_bounding_box(
+                (Vector3){
+                (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
+                (f32)WORLD_BOTTOM},
+                (Vector3){
+                (f32)CHUNK_DIAMETER,
+                (f32)CHUNK_DIAMETER,
+                (f32)(f32)globals.world_height - WORLD_BOTTOM},
+                ORANGE);
+
+    // ---- player target bounding box -----------------------------------------
+    if ((state & FLAG_PARSE_TARGET)
+            && (state & FLAG_HUD)
+            && chunk_tab[chunk_tab_index] != NULL)
+    {
+        if (chunk_tab[chunk_tab_index]->block
+                [lily.delta_target.z - WORLD_BOTTOM]
+                [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
+                [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
+                & NOT_EMPTY)
+        {
+            draw_block_wires(lily.delta_target);
+            if (state & FLAG_DEBUG_MORE)
+                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+                        lily.camera.target, RED);
+        }
+        else if (state & FLAG_DEBUG_MORE)
+            DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+                    lily.camera.target, GREEN);
+    }
+
+    if (state & FLAG_DEBUG_MORE)
+    {
+        /*temp
+          draw_block_wires(&target_coordinates_feet);
+          printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
+          */
+        DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
+        draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
+        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); //temp AABB collision
+    }
 }
 
 f64 skybox_time = 0;
@@ -502,19 +578,40 @@ f64 skybox_mid_night = 0;
 Color skybox_rgba = {0};
 void draw_skybox()
 {
-    skybox_time =        (f64)game_tick / SETTING_DAY_TICKS_MAX;
-    skybox_mid_day =      fabs(sinf(1.5f * powf(sinf(skybox_time * PI), 1.0f)));
-    skybox_pre_burn =     fabs(sinf(powf(sinf((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
-    skybox_burn =        fabs(sinf(1.5f * powf(sinf((skybox_time + 0.124f) * PI * 1.6f), 20.0f)));
-    skybox_burn_boost =   fabs(powf(sinf((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox_mid_night =    fabs(sinf(powf(2 * cosf(skybox_time * PI), 3.0f)));
-    skybox_rgba = (Color){
-            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +     (skybox_pre_burn * 13) +  (skybox_burn_boost * 76), 0, 255),
-            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +     (skybox_pre_burn * 7) +   (skybox_burn_boost * 34), 0, 255),
-            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +    (skybox_pre_burn * 20),                           0, 255),
-            255
+    skybox_time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
+    skybox_mid_day =    fabs(sin(1.5f * pow(sin(skybox_time * PI), 1.0f)));
+    skybox_pre_burn =   fabs(sin(pow(sin((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
+    skybox_burn =       fabs(sin(1.5f * pow(sin((skybox_time + 0.124f) * PI * 1.6f), 32.0f)));
+    skybox_burn_boost = fabs(pow(sin((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
+    skybox_mid_night =  fabs(sin(pow(2 * cos(skybox_time * PI), 3.0f)));
+    skybox_rgba =
+        (Color){
+            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +
+                    (skybox_pre_burn * 13) + (skybox_burn_boost * 76), 0, 255),
+
+            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +
+                    (skybox_pre_burn * 7) + (skybox_burn_boost * 34), 0, 255),
+
+            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +
+                    (skybox_pre_burn * 20), 0, 255),
+            255,
         };
 
     ClearBackground(skybox_rgba);
+}
+
+void draw_gui()
+{
+    if (state & FLAG_HUD)
+    {
+        draw_hud();
+        draw_debug_info(&lily.camera_debug_info);
+    }
+
+    if (state_menu_depth && lily.container_state)
+        draw_containers(&lily, render_size);
+
+    if (state & FLAG_SUPER_DEBUG)
+        draw_super_debugger(render_size);
 }
 

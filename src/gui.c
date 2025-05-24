@@ -115,7 +115,7 @@ void init_gui()
 
 void apply_render_settings()
 {
-    setting = (settings){
+    setting = (Settings){
             .reach_distance =       SETTING_REACH_DISTANCE_MAX,
             .fov =                  SETTING_FOV_DEFAULT,
             .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
@@ -146,12 +146,13 @@ void free_gui()
 }
 
 //jump
+// scale = (source.scale * scl);
 void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
-    // scale is based on (source.scale * scl)
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
 
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0.0f, 0.0f, 1.0f);
@@ -406,7 +407,7 @@ void draw_hud()
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
-    if (!(state & STATE_DEBUG))
+    if (!(state & FLAG_DEBUG))
         draw_texture(texture_hud_widgets, crosshair,
                 crosshair_pos, 
                 (v2i16){setting.gui_scale, setting.gui_scale},
@@ -423,52 +424,52 @@ void draw_containers(Player *player, v2f32 render_size)
 
     switch (player->container_state)
     {
-        case CONTR_ANVIL:
+        case STATE_CONTR_ANVIL:
             break;
 
-        case CONTR_BEACON:
+        case STATE_CONTR_BEACON:
             break;
 
-        case CONTR_BLAST_FURNACE:
+        case STATE_CONTR_BLAST_FURNACE:
             break;
 
-        case CONTR_BREWING_STAND:
+        case STATE_CONTR_BREWING_STAND:
             break;
 
-        case CONTR_CARTOGRAPHY_TABLE:
+        case STATE_CONTR_CARTOGRAPHY_TABLE:
             break;
 
-        case CONTR_CHEST:
+        case STATE_CONTR_CHEST:
             break;
 
-        case CONTR_CHEST_LARGE:
+        case STATE_CONTR_CHEST_LARGE:
             break;
 
-        case CONTR_CRAFTING_TABLE:
+        case STATE_CONTR_CRAFTING_TABLE:
             break;
 
-        case CONTR_DISPENSER:
+        case STATE_CONTR_DISPENSER:
             break;
 
-        case CONTR_ENCHANTING_TABLE:
+        case STATE_CONTR_ENCHANTING_TABLE:
             break;
 
-        case CONTR_FURNACE:
+        case STATE_CONTR_FURNACE:
             break;
 
-        case CONTR_GAMEMODE_SWITCHER:
+        case STATE_CONTR_GAMEMODE_SWITCHER:
             break;
 
-        case CONTR_GRINDSTONE:
+        case STATE_CONTR_GRINDSTONE:
             break;
 
-        case CONTR_HOPPER:
+        case STATE_CONTR_HOPPER:
             break;
 
-        case CONTR_HORSE:
+        case STATE_CONTR_HORSE:
             break;
 
-        case CONTR_INVENTORY:
+        case STATE_CONTR_INVENTORY:
             draw_texture(texture_container_inventory,
                     container_inventory,
                     container_inventory_pos, 
@@ -476,31 +477,31 @@ void draw_containers(Player *player, v2f32 render_size)
                     1, 1, COL_TEXTURE_DEFAULT);
             break;
 
-        case CONTR_LEGACY_SMITHING:
+        case STATE_CONTR_LEGACY_SMITHING:
             break;
 
-        case CONTR_LOOM:
+        case STATE_CONTR_LOOM:
             break;
 
-        case CONTR_SMITHING:
+        case STATE_CONTR_SMITHING:
             break;
 
-        case CONTR_SMOKER:
+        case STATE_CONTR_SMOKER:
             break;
 
-        case CONTR_STONECUTTER:
+        case STATE_CONTR_STONECUTTER:
             break;
 
-        case CONTR_VILLAGER:
+        case STATE_CONTR_VILLAGER:
             break;
 
-        case CONTR_TAB_INVENTORY:
+        case STATE_CONTR_TAB_INVENTORY:
             break;
 
-        case CONTR_TAB_ITEMS:
+        case STATE_CONTR_TAB_ITEMS:
             break;
 
-        case CONTR_TAB_ITEMS_SEARCH:
+        case STATE_CONTR_TAB_ITEMS_SEARCH:
             break;
     }
 
@@ -510,7 +511,7 @@ void draw_containers(Player *player, v2f32 render_size)
 
 void draw_debug_info(Camera3D *camera)
 {
-    if (!(state & STATE_DEBUG)) return;
+    if (!(state & FLAG_DEBUG)) return;
 
     update_debug_strings();
 
@@ -544,13 +545,11 @@ void draw_debug_info(Camera3D *camera)
     EndMode3D();
 }
 
-// raylib/rtext.c/DrawTextEx refactored
+// raylib/rtext.c/DrawTextEx refactored;
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
 {
-    // spacing: char spacing;
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
-
     switch (align_x)
     {
         case 1:
@@ -643,15 +642,15 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
     return result + 4;
 }
 
-// raylib/rtextures.c/DrawTexturePro refactored
+// raylib/rtextures.c/DrawTexturePro refactored;
+// scale = (source.scale * scl);
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
-    // scale is based on (source.scale * scl)
-
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0.0f) || (source.height == 0.0f)) return;
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
 
     switch (align_x)
     {
@@ -701,12 +700,14 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
 
 //jump
 // TODO: make draw_texture_tiled()
-// raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored
+// raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
 /*
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)) return;
-    if ((source.width == 0) || (source.height == 0)) return;
+    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
+            || (source.width == 0.0f) || (source.height == 0.0f))
+        return;
+
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0, 0, 1);
@@ -795,11 +796,10 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
 }
 */
 
-// raylib/rtextures.c/DrawTexturePro refactored
+// raylib/rtextures.c/DrawTexturePro refactored;
+// scale = (scl);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
-    // scale is based on (scl)
-
     if (texture.id <= 0) return;
     f32 width = (f32)texture.width;
     f32 height = (f32)texture.height;
@@ -821,11 +821,10 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
     rlVertex2f(bottom_right.x, top_left.y);
 }
 
+// align_x = (0 = left, 1 = center, 2 = right);
+// align_y = (0 = top, 1 = center, 2 = bottom);
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
-    // align_x: 0 = left, 1 = center, 2 = right;
-    // align_y: 0 = top, 1 = center, 2 = bottom;
-
     switch (align_x)
     {
         case 1:
@@ -850,8 +849,10 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
 
     if (buttons[btn_state])
     {
-        if (cursor.x > pos.x && cursor.x < pos.x + (button.width * setting.gui_scale)
-                && cursor.y > pos.y && cursor.y < pos.y + (button.height * setting.gui_scale))
+        if (is_range_within_f(cursor.x,
+                    pos.x, pos.x + (button.width * setting.gui_scale))
+                && is_range_within_f(cursor.y,
+                    pos.y, pos.y + (button.height * setting.gui_scale)))
         {
             draw_texture(texture, button, pos,
                     (v2i16){setting.gui_scale, setting.gui_scale},
@@ -880,7 +881,7 @@ void btn_func_singleplayer()
     menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
     state_menu_depth = 0; //TODO: set actual value (2)
     check_menu_ready = 0;
-    state &= ~STATE_PAUSED; //temp
+    state &= ~FLAG_PAUSED; //temp
 
     init_world("Poop Consistency Tester"); //temp
 }
@@ -918,14 +919,14 @@ void btn_func_back_to_game()
     menu_index = 0;
     state_menu_depth = 0;
     check_menu_ready = 0;
-    state &= ~STATE_PAUSED;
-    lily.state &= ~STATE_MENU_OPEN;
+    state &= ~FLAG_PAUSED;
+    lily.state &= ~FLAG_MENU_OPEN;
     lily.container_state = 0;
 }
 
 void btn_func_quit()
 {
-    state &= ~STATE_ACTIVE;
+    state &= ~FLAG_ACTIVE;
 }
 
 void btn_func_save_and_quit_to_title()
@@ -934,8 +935,7 @@ void btn_func_save_and_quit_to_title()
     state_menu_depth = 1;
     check_menu_ready = 0;
     // TODO: save and unload world
-    state &= ~STATE_WORLD_LOADED;
-    state &= ~STATE_PAUSED;
+    state &= ~FLAG_WORLD_LOADED;
 }
 
 void btn_func_back()

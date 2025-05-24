@@ -11,7 +11,7 @@
 #define SDB_BASE_SIZE   5
 #define SDB_BUTTON_SIZE 14
 
-typedef struct debug_rect
+typedef struct DebugRect
 {
     Rectangle corner_00;
     Rectangle corner_10;
@@ -24,11 +24,11 @@ typedef struct debug_rect
     Rectangle rect_center;
     Vector2 pos;
     Vector2 scl;
-} debug_rect;
+} DebugRect;
 
 // ---- declarations -----------------------------------------------------------
-extern Texture2D texture_super_debugger;
-extern debug_rect debug_rectangle;
+extern Texture texture_super_debugger;
+extern DebugRect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;

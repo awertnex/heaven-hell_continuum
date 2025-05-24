@@ -16,11 +16,14 @@
     #define NULL_CMD        (cmd = NULL)
     #define COMPILER        "cc"
     #define EXTENSION       ""
-    #define MKDIR_BIN       mkdir("bin/", 0775);
-    #define MKDIR_BIN_TESTS mkdir("bin/tests/", 0775);
+    #define MKDIR(dir)      mkdir(dir, 0775);
 char **cmd;
-char str_libs[3][24] = {"-lraylib", "-lm", NULL};
-
+char str_libs[3][24] =
+{
+    "-lraylib",
+    "-lm",
+    NULL
+};
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
     #define ALLOC_CMD
     #define ZERO_CMD
@@ -28,22 +31,43 @@ char str_libs[3][24] = {"-lraylib", "-lm", NULL};
     #define NULL_CMD
     #define COMPILER        "gcc"
     #define EXTENSION       ".exe"
-    #define MKDIR_BIN       mkdir("bin/");
-    #define MKDIR_BIN_TESTS mkdir("bin/tests/");
+    #define MKDIR(dir)      mkdir(dir);
 char *cmd[64];
-char str_libs[5][24] = {"-lraylib", "-lgdi32", "-lwinmm", "-lm", NULL};
+char str_libs[5][24] =
+{
+    "-lraylib",
+    "-lgdi32",
+    "-lwinmm",
+    "-lm",
+    NULL
+};
 #endif // PLATFORM
 
 char str_main[32] = "main.c";
-char str_cflags[8][24] = {"-Wall", "-Wextra", "-ggdb", "-Wno-missing-braces", "-Wpedantic", "-std=c99", "-fno-builtin", NULL};
-char str_out[3][48] = {"-o", "../bin/minecraft_c", NULL};
+char str_cflags[9][24] =
+{
+    "-std=c99",
+    "-ggdb",
+    "-Wall",
+    "-Wextra",
+    "-Wno-missing-braces",
+    "-Wpedantic",
+    "-fno-builtin",
+    NULL
+};
+char str_out[3][48] =
+{
+    "-o",
+    "../bin/minecraft_c",
+    NULL
+};
 char str_tests[5][24] =
 {
     "chunk_loader",
     "chunk_pointer_table",
     "chunk_tab_shift",
     "function_pointer",
-    NULL,
+    NULL
 };
 int str_tests_members = (int)(sizeof(str_tests) / sizeof(str_tests[0])) - 1;
 
@@ -160,13 +184,13 @@ int main(int argc, char **argv)
 {
     if (!is_dir_exists(DIR_BIN))
     {
-        MKDIR_BIN;
+        MKDIR(DIR_BIN);
         fprintf(stderr, "Directory 'bin/' Created!\n");
     }
 
     if (!is_dir_exists(DIR_BIN_TESTS))
     {
-        MKDIR_BIN_TESTS;
+        MKDIR(DIR_BIN_TESTS);
         fprintf(stderr, "Directory 'bin/tests/' Created!\n");
     }
 
