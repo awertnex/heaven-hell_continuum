@@ -306,9 +306,10 @@ void update_chunk_tab(v2i16 player_delta_chunk)
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
         chunk_tab_coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
-        if (is_distance_within(setting.render_distance,
+        if (get_distance(
                     (v2i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y}))
+                    (v2i32){chunk_tab_coordinates.x, chunk_tab_coordinates.y})
+                < ((u32)powf(setting.render_distance, 2) + 2))
         {
             if (chunk_tab[i] == NULL)
                 chunk_tab[i] = push_chunk_buf(player_delta_chunk, chunk_tab_coordinates);
@@ -321,16 +322,16 @@ void update_chunk_tab(v2i16 player_delta_chunk)
     }
 }
 
-// directions = (1 = positive x, 2 = negative x, 3 = positive y, 4 = negative y);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 {
     v2i16 delta = {
         player_chunk.x - player_delta_chunk->x,
         player_chunk.y - player_delta_chunk->y};
 
-    if (!is_distance_within(SETTING_RENDER_DISTANCE_DEFAULT,
+    if (get_distance(
             (v2i32){player_chunk.x, player_chunk.y},
-            (v2i32){player_delta_chunk->x, player_delta_chunk->y}))
+            (v2i32){player_delta_chunk->x, player_delta_chunk->y})
+            > (u32)powf(SETTING_RENDER_DISTANCE_DEFAULT, 2) + 2)
     {
         for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
             if (chunk_tab[i] != NULL)
@@ -340,6 +341,7 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
         return;
     }
 
+    // direction = (1 = x, 2 = -x, 3 = y, 4 = -y, 5 = z, 6 = -z);
     u8 direction =
         (delta.x > 0) ? 1 : (delta.x < 0) ? 2 :
         (delta.y > 0) ? 3 : (delta.y < 0) ? 4 : 0;

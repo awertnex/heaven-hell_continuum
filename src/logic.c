@@ -241,6 +241,11 @@ void player_respawn(Player *player)
     player->state = 0;
 }
 
+u32 get_distance(v2i32 a, v2i32 b)
+{
+    return powf(a.x - b.x, 2) + powf(a.y - b.y, 2);
+}
+
 b8 is_range_within_i(i32 pos, i32 start, i32 end)
 {
     if (pos < start || pos > end)
@@ -279,13 +284,6 @@ b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end)
             || (i32)pos.z < start.z || (i32)pos.z > end.z)
         return FALSE;
     return TRUE;
-}
-
-b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
-{
-    if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) < (distance * distance) + 2)
-        return TRUE;
-    return FALSE;
 }
 
 b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
