@@ -73,7 +73,7 @@ void draw_gui();
 
 int main(void)
 {
-    // ---- init start main ----------------------------------------------------
+    // ---- init main ----------------------------------------------------------
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
 
@@ -103,115 +103,102 @@ int main(void)
     init_super_debugger(render_size);
 
     game_start_time = get_time_ms();
-    // ---- init end main ------------------------------------------------------
 
-section_loop_menu_title: // ---- loop start menu title -------------------------
-    mouse_delta = GetMouseDelta();
-    if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+section_menu_title: // ---------------------------------------------------------
+    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
-        state |= FLAG_PARSE_CURSOR;
-        mouse_delta = (Vector2){0.0f, 0.0f};
+        mouse_delta = GetMouseDelta();
+        if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+        {
+            state |= FLAG_PARSE_CURSOR;
+            mouse_delta = (Vector2){0.0f, 0.0f};
+        }
+
+        update_input(&lily);
+        update_render_settings(render_size);
+        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+
+        BeginDrawing();
+        {
+            //draw_texture_tiled(); // TODO: draw tiled texture of title screen
+            ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
+            update_menus(render_size);
+        }
+        EndDrawing();
+
+        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+            goto section_main;
     }
 
-    update_input(&lily);
-    update_render_settings(render_size);
-    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-
-    BeginDrawing();
-    {
-        //draw_texture_tiled(); // TODO: draw tiled texture of title screen
-        ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
-        update_menus(render_size);
-    }
-    EndDrawing();
-
-    if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
-        goto section_loop_game;
-
-    if (SHOULD_EXIT)
-        goto cleanup;
-
-    goto section_loop_menu_title;
-    // ---- loop end menu title ------------------------------------------------
-
-section_init_menu_world: // ---- init start menu world -------------------------
-    // TODO: make real pausing instead of using the uncleared bg as still
+section_menu_world: // ---------------------------------------------------------
+                    // TODO: make real pausing instead of using the uncleared bg as still
     BeginDrawing();
     draw_menu_overlay(render_size);
     EndDrawing();
-    // ---- init end menu world ------------------------------------------------
 
-section_loop_menu_world: // ---- loop start menu world -------------------------
-    update_input(&lily);
-    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-    update_render_settings(render_size);
-
-    BeginDrawing();
-    update_menus(render_size);
-    EndDrawing();
-
-    if (!(state & FLAG_WORLD_LOADED))
-        goto section_loop_menu_title;
-
-    if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
-        goto section_loop_game;
-
-    if (SHOULD_EXIT)
-        goto cleanup;
-
-    goto section_loop_menu_world;
-    // ---- loop end menu world ------------------------------------------------
-
-section_loop_game: // ---- loop start game -------------------------------------
-    mouse_delta = GetMouseDelta();
-    if (!state_menu_depth && !(state & FLAG_SUPER_DEBUG))
+    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
-        disable_cursor;
-        center_cursor;
+        update_input(&lily);
+        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_render_settings(render_size);
+
+        BeginDrawing();
+        update_menus(render_size);
+        EndDrawing();
+
+        if (!(state & FLAG_WORLD_LOADED))
+            goto section_menu_title;
+
+        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+            break;
     }
 
-    if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+section_main: // ---------------------------------------------------------------
+    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
-        state |= FLAG_PARSE_CURSOR;
-        mouse_delta = (Vector2){0.0f, 0.0f};
+        mouse_delta = GetMouseDelta();
+        if (!state_menu_depth && !(state & FLAG_SUPER_DEBUG))
+        {
+            disable_cursor;
+            center_cursor;
+        }
+
+        if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+        {
+            state |= FLAG_PARSE_CURSOR;
+            mouse_delta = (Vector2){0.0f, 0.0f};
+        }
+
+        update_input(&lily);
+        update_render_settings(render_size);
+        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_world();
+
+        BeginDrawing();
+        {
+            BeginMode3D(lily.camera);
+            draw_skybox();
+            draw_chunk_tab(&block[dirt].texture);
+            draw_world();
+            EndMode3D();
+        }
+        draw_gui();
+        EndDrawing();
+
+        if (!(state & FLAG_WORLD_LOADED))
+            goto section_menu_title;
+
+        if (state & FLAG_PAUSED)
+            goto section_menu_world;
     }
 
-    update_input(&lily);
-    update_render_settings(render_size);
-    render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-    update_world();
-
-    BeginDrawing();
-    {
-        BeginMode3D(lily.camera);
-        draw_skybox();
-        draw_chunk_tab(&block[dirt].texture);
-        draw_world();
-        EndMode3D();
-    }
-    draw_gui();
-    EndDrawing();
-
-    if (!(state & FLAG_WORLD_LOADED))
-        goto section_loop_menu_title;
-
-    if (state & FLAG_PAUSED)
-        goto section_init_menu_world;
-
-    if (SHOULD_EXIT)
-        goto cleanup;
-
-    goto section_loop_game;
-    // ---- loop end game ------------------------------------------------------
-
-cleanup: // ---- cleanup -------------------------------------------------------
+    // ---- section_cleanup ----------------------------------------------------
     //pthread_join(thrd_chunk_handler, NULL); //temp off
     unload_textures();
     free_chunking();
     free_gui();
     free_super_debugger();
     CloseWindow();
-    // -------------------------------------------------------------------------
 
     return 0;
 }
