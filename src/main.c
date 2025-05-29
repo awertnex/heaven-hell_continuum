@@ -245,8 +245,8 @@ void update_world()
     if (MODE_COLLIDE)
         update_collision_static(&lily);
 
-    chunk_tab_index = get_chunk_tab_index(lily.chunk, lily.delta_target);
-    (chunk_tab_index > CHUNK_BUF_ELEMENTS)
+    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
+    (chunk_tab_index >= CHUNK_BUF_ELEMENTS)
         ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
 
     if (state & FLAG_CHUNK_BUF_DIRTY)

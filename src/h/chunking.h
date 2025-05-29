@@ -129,7 +129,7 @@ Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
 Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v2i16 player_chunk);
 void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
-u16 get_chunk_tab_index(v2i16 player_chunk, v3i32 player_target);
+u16 get_target_chunk_index(v2i16 player_chunk, v3i32 player_delta_target);
 void draw_chunk_tab(Texture *tex);
 void draw_block(Chunk *chunk, u8 x, u8 y, u16 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
