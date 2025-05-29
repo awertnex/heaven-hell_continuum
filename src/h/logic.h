@@ -37,16 +37,18 @@ typedef struct Player
     f32 eye_height;                 // height of player camera, usually
     v3f32 v;                        // velocity
     f32 m;                          // mass
-    f32 movement_speed;             // depends on enum: PlayerStates
+    f32 movement_speed;             // depends on enum: PlayerFlags
     f32 movement_step_length;
-    u64 container_state;            // enum: ContainerStates
+    u64 container_state;            // enum: ContainerFlags
     u8 perspective;                 // camera perspective mode
-    u16 state;                      // enum: PlayerStates
+    u16 state;                      // enum: PlayerFlags
 
     Camera camera;
     f32 camera_distance;            // for camera collision detection
     Camera camera_debug_info;
 
+    // TODO: do player overflow
+    u8 overflow;                    // player at world edge, enum: PlayerFlags
     v3i32 delta_pos;                // for collision tunneling prevention
     v3i32 delta_target;
     v2i16 chunk;                    // current chunk player is in
@@ -84,6 +86,13 @@ enum PlayerFlags
     FLAG_VELOCITY_DIRTY =           0x0040,
     FLAG_HUNGRY =                   0x0080,
     FLAG_DEAD =                     0x0100,
+
+    FLAG_OVERFLOW_X =               0x0001,
+    FLAG_OVERFLOW_Y =               0x0002,
+    FLAG_OVERFLOW_Z =               0x0004,
+    FLAG_OVERFLOW_DIRECTION_X =     0x0008,
+    FLAG_OVERFLOW_DIRECTION_Y =     0x0010,
+    FLAG_OVERFLOW_DIRECTION_Z =     0x0020,
 }; /* PlayerFlags */
 
 enum ContainerStates
