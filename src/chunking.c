@@ -702,7 +702,7 @@ void draw_bounding_box(Vector3 origin, Vector3 scl, Color col)
     rlTranslatef(
             origin.x - (scl.x / 2),
             origin.y - (scl.y / 2),
-            origin.z);
+            origin.z - (scl.z / 2));
     rlBegin(RL_LINES);
     rlColor4ub(col.r, col.g, col.b, col.a);
 

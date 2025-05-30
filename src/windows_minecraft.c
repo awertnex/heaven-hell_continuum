@@ -24,7 +24,10 @@ void update_debug_strings()
     snprintf(str_fps, 16,                "FPS: %d",                 GetFPS());
     snprintf(str_player_pos, 32,          "XYZ: %.2f %.2f %.2f",    lily.pos.x, lily.pos.y, lily.pos.z);
     snprintf(str_player_block, 32,        "BLOCK: %.0f %.0f %.0f",  floorf(lily.pos.x), floorf(lily.pos.y), floorf(lily.pos.z));
-    snprintf(str_player_chunk, 32,        "CHUNK: %d %d",           (i16)floorf(lily.pos.x / CHUNK_DIAMETER), (i16)floorf(lily.pos.y / CHUNK_DIAMETER));
+    snprintf(str_player_chunk, 48,        "CHUNK: %d %d %d",
+            (i16)floorf(lily.pos.x / CHUNK_DIAMETER),
+            (i16)floorf(lily.pos.y / CHUNK_DIAMETER),
+            (i16)floorf(lily.pos.z / CHUNK_DIAMETER));
     snprintf(str_player_direction, 32,    "YAW: %.1f PITCH: %.1f",  lily.yaw, lily.pitch);
     snprintf(str_block_count, 32,         "BLOCKS: %lld",           globals.block_count);
     snprintf(str_quad_count, 32,          "QUADS: %lld",            globals.quad_count);

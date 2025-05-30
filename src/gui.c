@@ -59,7 +59,7 @@ static b8 check_menu_ready;
 str str_fps[16];
 str str_player_pos[32];
 str str_player_block[32];
-str str_player_chunk[32];
+str str_player_chunk[48];
 str str_player_direction[32];
 str str_block_count[32];
 str str_quad_count[32];
@@ -538,9 +538,9 @@ void draw_debug_info(Camera3D *camera)
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
-    draw_line_3d(v3izero, (v3i32){1, 0, 0}, COL_X);
-    draw_line_3d(v3izero, (v3i32){0, 1, 0}, COL_Y);
-    draw_line_3d(v3izero, (v3i32){0, 0, 1}, COL_Z);
+    draw_line_3d(v3izero, (v3i32){1.0f, 0.0f, 0.0f}, COL_X);
+    draw_line_3d(v3izero, (v3i32){0.0f, 1.0f, 0.0f}, COL_Y);
+    draw_line_3d(v3izero, (v3i32){0.0f, 0.0f, 1.0f}, COL_Z);
     rlEnd();
     EndMode3D();
 }

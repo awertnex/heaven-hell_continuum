@@ -249,7 +249,7 @@ enum ButtonNames
 extern str str_fps[16];
 extern str str_player_pos[32];
 extern str str_player_block[32];
-extern str str_player_chunk[32];
+extern str str_player_chunk[48];
 extern str str_player_direction[32];
 extern str str_block_count[32];
 extern str str_quad_count[32];
