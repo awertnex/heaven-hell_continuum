@@ -10,27 +10,24 @@
 #include "main.h"
 #include "setting.h"
 // ---- world stuff ------------------------------------------------------------
-#define WORLD_BOTTOM                (-69)
-#define WORLD_KILL_Z                (WORLD_BOTTOM - 128)
-#define WORLD_SEA_LEVEL             62
-#define WORLD_HEIGHT_NORMAL         420
-#define WORLD_HEIGHT_HEAVEN         WORLD_HEIGHT_NORMAL
-#define WORLD_HEIGHT_HELL           365
-
-#define CHUNK_LENGTH                (WORLD_HEIGHT_NORMAL - WORLD_BOTTOM)
 #define CHUNK_DIAMETER              32
-#define CHUNK_DATA_SIZE             (sizeof(Chunk)) // struct chunk
-#define CHUNK_BUF_RADIUS            (SETTING_RENDER_DISTANCE_MAX)
-#define CHUNK_BUF_DIAMETER          ((CHUNK_BUF_RADIUS * 2) + 1)
-#define CHUNK_BUF_ELEMENTS          (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-#define CHUNK_TAB_CENTER            (CHUNK_BUF_RADIUS + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER))
+#define CHUNK_VOLUME                (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
-#define WORLD_RADIUS                32767 // (((int16_t range max) - 1)/2)
+#define WORLD_SEA_LEVEL             62
+#define WORLD_RADIUS                2048    // chunk count
+#define WORLD_RADIUS_VERTICAL       64      // chunk count
 #define WORLD_DIAMETER              ((WORLD_RADIUS * 2) + 1)
-#define WORLD_AREA                  (CHUNK_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER)
-#define WORLD_MAX_CHUNKS            (WORLD_AREA / CHUNK_DIAMETER)
-#define CHUNK_MAX_BLOCKS            (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_LENGTH)
-#define CHUNK_MAX_QUADS             ((CHUNK_DIAMETER / 2) * CHUNK_DIAMETER * CHUNK_LENGTH)
+#define WORLD_DIAMETER_VERTICAL     ((WORLD_RADIUS_VERTICAL * 2) + 1)
+#define WORLD_MAX_CHUNKS            (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
+
+#define CHUNK_BUF_RADIUS            SETTING_RENDER_DISTANCE_MAX
+#define CHUNK_BUF_DIAMETER          ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_LAYER             (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_BUF_VOLUME            (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define CHUNK_TAB_CENTER \
+    (CHUNK_BUF_RADIUS \
+     + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) \
+     + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
 // ---- general ----------------------------------------------------------------
 enum BlockFlags
@@ -62,36 +59,33 @@ enum ChunkFlags
     FLAG_CHUNK_EDGE =       0x08,   // chunk marking for chunk_tab shifting logic
 }; /* ChunkFlags */
 
-// TODO: add chunk slicing
 typedef struct Chunk
 {
-    v2i16 pos;                      // (world X Y) / CHUNK_DIAMETER
-    u32 id;                         // (pos.x << 16) + pos.y
-    u32 block[CHUNK_LENGTH][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    v3i16 pos;                      // (world XYZ) / CHUNK_DIAMETER
+    u64 id;                         // (pos.x << 32) + (pos.y << 16) + pos.z
+    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;
-    u32 block_parse_limit;          // final occurrence of non-air blocks in chunk
 } Chunk;
 
 // ---- declarations -----------------------------------------------------------
 extern Chunk *chunk_buf;                        // chunk buffer, raw chunk data
-extern Chunk *chunk_tab[CHUNK_BUF_ELEMENTS];    // chunk pointer look-up table
-extern v2u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
+extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];      // chunk pointer look-up table
+extern v3u16 chunk_tab_coordinates;             // pointer arithmetic redundancy optimization
 extern v3u32 block_coordinates;                 // pointer arithmetic redundancy optimization
 extern u16 chunk_tab_index;                     // player relative chunk tab access
 extern struct Globals
 {
-    u16 world_height;
     u8 opacity;
     u64 block_count;
     u64 quad_count;
 } globals;
 
 // ---- getters & setters ------------------------------------------------------
-static inline u32 get_block_index(u8 x, u8 y, u16 z)
+static inline u16 get_block_index(u8 x, u8 y, u8 z)
 {return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
 
-static inline v3u32 get_block_coordinates(u32 i)
+static inline v3u32 get_block_coordinates(u16 i)
 {return (v3u32){
     (i) % CHUNK_DIAMETER,
         ((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER,
@@ -120,18 +114,18 @@ static inline u32 get_block_data(u32 i)
 u8 init_chunking();
 void free_chunking();
 
-void add_block(u16 index, u8 x, u8 y, u16 z);
-void remove_block(u16 index, u8 x, u8 y, u16 z);
+void add_block(u16 index, u32 x, u32 y, u32 z);
+void remove_block(u16 index, u32 x, u32 y, u32 z);
 void generate_chunk(u16 index);
 void serialize_chunk(Chunk *chunk, str *world_name);
 void deserialize_chunk(Chunk *chunk, str *world_name);
-Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos);
+Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos);
 Chunk *pop_chunk_buf(u16 index);
-void update_chunk_tab(v2i16 player_chunk);
-void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk);
-u16 get_target_chunk_index(v2i16 player_chunk, v3i32 player_delta_target);
+void update_chunk_tab(v3i16 player_chunk);
+void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
+u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
 void draw_chunk_tab(Texture *tex);
-void draw_block(Chunk *chunk, u8 x, u8 y, u16 z);
+void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);

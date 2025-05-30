@@ -215,7 +215,8 @@ void init_world(str *str)
     update_player(&lily);
     update_chunk_tab(lily.chunk);
 
-    lily.state |= FLAG_FALLING;
+    //lily.state |= FLAG_FALLING; //temp off
+    lily.state |= FLAG_FLYING; //temp
     set_player_block(&lily, 0, 0, 0);
     lily.delta_target =
         (v3i32){
@@ -246,7 +247,7 @@ void update_world()
         update_collision_static(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
-    (chunk_tab_index >= CHUNK_BUF_ELEMENTS)
+    (chunk_tab_index >= CHUNK_BUF_VOLUME)
         ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
@@ -258,8 +259,8 @@ void update_world()
 
     // ---- player targeting ---------------------------------------------------
     if (is_range_within_v3i(lily.delta_target,
-                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, WORLD_BOTTOM},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, globals.world_height}))
+                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
+                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
         state |= FLAG_PARSE_TARGET;
     else state &= ~FLAG_PARSE_TARGET;
 
@@ -270,7 +271,7 @@ void update_world()
 
 struct /* Chunk Handler Args */
 {
-    v2i16 player_delta_chunk;
+    v3i16 player_delta_chunk;
     u8 lock;
 } chunk_handler_args;
 void *chunk_handler()
@@ -371,7 +372,7 @@ void update_input(Player *player)
             remove_block(chunk_tab_index,
                     lily.delta_target.x,
                     lily.delta_target.y,
-                    lily.delta_target.z - WORLD_BOTTOM);
+                    lily.delta_target.z);
         }
     }
 
@@ -388,7 +389,7 @@ void update_input(Player *player)
             add_block(chunk_tab_index,
                     lily.delta_target.x,
                     lily.delta_target.y,
-                    lily.delta_target.z - WORLD_BOTTOM);
+                    lily.delta_target.z);
         }
     }
 
@@ -516,11 +517,11 @@ void draw_world()
                 (Vector3){
                 (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
                 (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)WORLD_BOTTOM},
+                (f32)(lily.chunk.z * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2)},
                 (Vector3){
                 (f32)CHUNK_DIAMETER,
                 (f32)CHUNK_DIAMETER,
-                (f32)(f32)globals.world_height - WORLD_BOTTOM},
+                (f32)CHUNK_DIAMETER},
                 ORANGE);
 
     // ---- player target bounding box -----------------------------------------
@@ -529,7 +530,7 @@ void draw_world()
             && chunk_tab[chunk_tab_index] != NULL)
     {
         if (chunk_tab[chunk_tab_index]->block
-                [lily.delta_target.z - WORLD_BOTTOM]
+                [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER)]
                 [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
                 [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
                 & NOT_EMPTY)

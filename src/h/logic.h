@@ -51,8 +51,8 @@ typedef struct Player
     u8 overflow;                    // player at world edge, enum: PlayerFlags
     v3i32 delta_pos;                // for collision tunneling prevention
     v3i32 delta_target;
-    v2i16 chunk;                    // current chunk player is in
-    v2i16 delta_chunk;              // previous chunk player was in
+    v3i16 chunk;                    // current chunk player is in
+    v3i16 delta_chunk;              // previous chunk player was in
 
     v3i32 spawn_point;
 } Player;
@@ -135,10 +135,10 @@ void update_camera_movements_player(Player *player);
 void update_player_target(Vector3 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
-void kill_player(Player *player);
-void respawn_player(Player *player);
+void player_kill(Player *player);
+void player_respawn(Player *player);
 
-u32 get_distance(v2i32 a, v2i32 b);
+u32 get_distance(v3i32 a, v3i32 b);
 b8 is_range_within_i(i32 pos, i32 start, i32 end);
 b8 is_range_within_f(f32 pos, f32 start, f32 end);
 b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end);

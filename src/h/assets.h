@@ -4,7 +4,7 @@
 #include "../engine/h/defines.h"
 #include "dir.h"
 
-enum BlockStates
+enum BlockStateFlags
 {
     BLOCK_STATE_SOLID =     0x1,
     BLOCK_STATE_FLUID =     0x2,
@@ -16,11 +16,11 @@ enum BlockStates
     BLOCK_STATE_SLOW =      0x80,
     BLOCK_STATE_QUICK =     0x100,
     BLOCK_STATE_ANIMATES =  0x200,
-}; /* BlockStates */
+}; /* BlockStateFlags */
 
 enum BlockID
 {
-    grass = 0,
+    grass,
     dirt,
     stone,
     cobblestone,

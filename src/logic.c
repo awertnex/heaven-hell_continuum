@@ -33,13 +33,15 @@ bool get_double_press(KeyboardKey key)
 
 void update_player(Player *player)
 {
-    player->chunk = (v2i16){
+    player->chunk = (v3i16){
             floorf((f32)player->pos.x / CHUNK_DIAMETER),
             floorf((f32)player->pos.y / CHUNK_DIAMETER),
+            floorf((f32)player->pos.z / CHUNK_DIAMETER),
         };
 
     if ((lily.delta_chunk.x - lily.chunk.x)
-            || (lily.delta_chunk.y - lily.chunk.y))
+            || (lily.delta_chunk.y - lily.chunk.y)
+            || (lily.delta_chunk.z - lily.chunk.z))
         state |= FLAG_CHUNK_BUF_DIRTY;
 
     if (!(player->state & FLAG_CAN_JUMP)
@@ -75,16 +77,6 @@ void update_player(Player *player)
     {
         player->movement_speed = PLAYER_SPEED_WALK * dt;
         player->camera.fovy = 70;
-    }
-
-    //TODO: revise (actually kill the player)
-    if (player->pos.z < WORLD_KILL_Z)
-    {
-        set_player_block(player,
-                player->spawn_point.x,
-                player->spawn_point.y,
-                player->spawn_point.z);
-        player->v.z = 0;
     }
 }
 
@@ -221,7 +213,7 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z)
     player->pos = (Vector3){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
 }
 
-void kill_player(Player *player)
+void player_kill(Player *player)
 {
     player->v = v3fzero;
     player->m = 0.0f;
@@ -241,9 +233,11 @@ void player_respawn(Player *player)
     player->state = 0;
 }
 
-u32 get_distance(v2i32 a, v2i32 b)
+u32 get_distance(v3i32 a, v3i32 b)
 {
-    return powf(a.x - b.x, 2) + powf(a.y - b.y, 2);
+    return powf(a.x - b.x, 2)
+        + powf(a.y - b.y, 2)
+        + powf(a.z - b.z, 2);
 }
 
 b8 is_range_within_i(i32 pos, i32 start, i32 end)
