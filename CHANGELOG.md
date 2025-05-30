@@ -29,6 +29,7 @@
 - added chunk_tab shifting to correct player targeting
 - added world directory structure creation
 - added basic terrain generation
+- changed chunking system from 2d to 3d chunks (took me like 20 minutes)
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
