@@ -13,7 +13,6 @@
 #include "logic.c"
 #include "assets.c"
 #include "keymaps.c"
-#include "rendering.c"
 #include "super_debugger.c"
 #include "engine/logger.c"
 

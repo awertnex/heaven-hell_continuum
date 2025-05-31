@@ -22,7 +22,6 @@ pthread_t thrd_chunk_handler;
 
 Settings setting =
 {
-    .render_size =          (v2f32){854, 480},
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
     .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
@@ -85,6 +84,7 @@ int main(void)
     init_instance_directory("test_instance");
 #endif // RELEASE_BUILD
 
+    setting.render_size = (v2f32){854, 480};
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(setting.render_size.x, setting.render_size.y, "minecraft.c");
     SetExitKey(KEY_PAUSE);

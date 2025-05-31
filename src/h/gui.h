@@ -9,7 +9,7 @@
 #define show_cursor                     ShowCursor()
 #define disable_cursor                  DisableCursor()
 #define detect_cursor                   cursor = GetMousePosition();
-#define center_cursor                   SetMousePosition(render_size.x / 2, render_size.y / 2)
+#define center_cursor                   SetMousePosition(setting.render_size.x / 2, setting.render_size.y / 2)
 #define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
 #define draw_menu_overlay(render_size)  DrawRectangle(0, 0, render_size.x, render_size.y, COL_MENU_BG_OVERLAY)
 

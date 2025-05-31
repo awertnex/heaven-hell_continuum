@@ -37,7 +37,7 @@ Rectangle rect_bg_dark =        {16.0f, 0.0f, 16.0f, 16.0f};
 v2i16 hotbar_pos;
 f32 hotbar_slot_selected = 1.0f;
 v2i16 crosshair_pos;
-u16 game_menu_pos = HEIGHT / 3;
+u16 game_menu_pos;
 u8 button_spacing_vertical = 5;
 v2i16 container_inventory_pos;
 v2i16 container_inventory_first_slot_Pos;
@@ -107,6 +107,8 @@ void init_gui()
     texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
     texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
     texture_bg =                    LoadTexture("resources/gui/bg_options.png");
+
+    game_menu_pos = setting.render_size.y / 3;
 
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
