@@ -32,6 +32,7 @@ str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] =
     "resources/textures/logo/",
     "resources/textures/misc/",
     "resources/textures/paintings/",
+    "resources/shaders/",
     "resources/sounds/",
     "resources/info/",
     "saves/",

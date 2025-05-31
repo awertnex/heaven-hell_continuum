@@ -13,7 +13,6 @@
 #endif // PLATFORM
 
 // ---- declarations -----------------------------------------------------------
-v2f32 render_size = {WIDTH, HEIGHT};
 u16 state = 0;
 u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
@@ -23,6 +22,7 @@ pthread_t thrd_chunk_handler;
 
 Settings setting =
 {
+    .render_size =          (v2f32){854, 480},
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
     .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
@@ -86,7 +86,7 @@ int main(void)
 #endif // RELEASE_BUILD
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(WIDTH, HEIGHT, "minecraft.c");
+    InitWindow(setting.render_size.x, setting.render_size.y, "minecraft.c");
     SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
 
@@ -99,8 +99,8 @@ int main(void)
     init_fonts();
     init_gui();
     apply_render_settings();
-    update_render_settings(render_size);
-    init_super_debugger(render_size);
+    update_render_settings(setting.render_size);
+    init_super_debugger(setting.render_size);
 
     game_start_time = get_time_ms();
 
@@ -115,14 +115,14 @@ section_menu_title: // ---------------------------------------------------------
         }
 
         update_input(&lily);
-        update_render_settings(render_size);
-        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_render_settings(setting.render_size);
+        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
 
         BeginDrawing();
         {
             //draw_texture_tiled(); // TODO: draw tiled texture of title screen
             ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
-            update_menus(render_size);
+            update_menus(setting.render_size);
         }
         EndDrawing();
 
@@ -133,17 +133,17 @@ section_menu_title: // ---------------------------------------------------------
 section_menu_world: // ---------------------------------------------------------
                     // TODO: make real pausing instead of using the uncleared bg as still
     BeginDrawing();
-    draw_menu_overlay(render_size);
+    draw_menu_overlay(setting.render_size);
     EndDrawing();
 
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
         update_input(&lily);
-        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        update_render_settings(render_size);
+        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_render_settings(setting.render_size);
 
         BeginDrawing();
-        update_menus(render_size);
+        update_menus(setting.render_size);
         EndDrawing();
 
         if (!(state & FLAG_WORLD_LOADED))
@@ -170,8 +170,8 @@ section_main: // ---------------------------------------------------------------
         }
 
         update_input(&lily);
-        update_render_settings(render_size);
-        render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
+        update_render_settings(setting.render_size);
+        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
         update_world();
 
         BeginDrawing();
@@ -597,9 +597,9 @@ void draw_gui()
     }
 
     if (state_menu_depth && lily.container_state)
-        draw_containers(&lily, render_size);
+        draw_containers(&lily, setting.render_size);
 
     if (state & FLAG_SUPER_DEBUG)
-        draw_super_debugger(render_size);
+        draw_super_debugger(setting.render_size);
 }
 

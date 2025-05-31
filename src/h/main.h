@@ -8,8 +8,6 @@
 #include "../engine/h/defines.h"
 
 // ---- definitions ------------------------------------------------------------
-#define WIDTH 854
-#define HEIGHT 480
 #define MARGIN 20
 
 #define MODE_DEBUG          1

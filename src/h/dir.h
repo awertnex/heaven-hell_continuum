@@ -31,11 +31,12 @@ enum Directories
     DIR_LOGO =              10,
     DIR_MISC =              11,
     DIR_PAINTINGS =         12,
-    DIR_SOUNDS =            13,
-    DIR_INFO =              14,
-    DIR_SAVES =             15,
-    DIR_SCREENSHOTS =       16,
-    DIR_TEXT =              17,
+    DIR_SHADERS =           13,
+    DIR_SOUNDS =            14,
+    DIR_INFO =              15,
+    DIR_SAVES =             16,
+    DIR_SCREENSHOTS =       17,
+    DIR_TEXT =              18,
 
     /* World Directories */
     DIR_ADVANCEMENTS =      0,
@@ -46,7 +47,7 @@ enum Directories
 }; /* Directories */
 
 #define GRANDPATH_DIR_COUNT 1
-#define INSTANCE_DIR_COUNT  18
+#define INSTANCE_DIR_COUNT  19
 #define WORLD_DIR_COUNT     5
 
 // ---- declarations -----------------------------------------------------------

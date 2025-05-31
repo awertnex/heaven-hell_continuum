@@ -1,6 +1,8 @@
 #ifndef MC_C_SETTING_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
+
+#define VECTOR2_TYPES
 #include "../engine/h/defines.h"
 
 // ---- internal ---------------------------------------------------------------
@@ -31,6 +33,7 @@
 typedef struct Settings
 {
     // ---- internal -----------------------------------------------------------
+    v2f32 render_size;
     u8 reach_distance;  // for player reach (arm length basically)
 
     // ---- options menu -------------------------------------------------------
@@ -39,7 +42,6 @@ typedef struct Settings
 
     // ---- video --------------------------------------------------------------
     u8 render_distance;
-    //TODO: repair
     f32 gui_scale;
 } Settings;
 

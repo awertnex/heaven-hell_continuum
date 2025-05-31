@@ -11,7 +11,7 @@
         (x) = malloc(size);                                                     \
         if ((x) == NULL)                                                        \
         {                                                                       \
-            LOGFATAL("%s %s", #x, "Memory Allocation Failed, Aborting Process");\
+            LOGFATAL("%s %s", #x, "Memory Allocation Failed, Process Aborted"); \
             goto cleanup;                                                       \
         }                                                                       \
         memset((x), 0, (size));                                                 \
@@ -27,7 +27,7 @@
         LOGINFO("%s Unloaded", #x);                                             \
     }
 
-#define MC_C_CLEAR(x, size)                                                     \
+#define MC_C_CLEAR_MEM(x, size)                                                 \
     if ((x))                                                                    \
     {                                                                           \
         memset((x), 0, (size));                                                 \
