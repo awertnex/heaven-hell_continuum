@@ -45,7 +45,7 @@ typedef struct Camera
 
 // ---- declarations -----------------------------------------------------------
 extern Shader vertex_shader, fragment_shader;
-extern GLuint vao, vbo, ebo, shader_program;
+extern GLuint shader_program;
 
 // ---- signatures -------------------------------------------------------------
 int init_glfw();
@@ -56,7 +56,7 @@ void update_rendering();
 void draw_rendering();
 void free_rendering();
 
-void bind_buffers();
+void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo);
 int load_shader_from_disk(Shader *shader);
 int init_shader(Shader *shader);
 int init_shader_program();

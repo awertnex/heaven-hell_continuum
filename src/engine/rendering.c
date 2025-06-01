@@ -6,18 +6,43 @@
 #include "logger.c"
 
 // ---- declarations -----------------------------------------------------------
-GLuint vao, vbo, ebo, shader_program;
+GLuint shader_program;
 const unsigned int shader_attribute = 0;
 
-GLfloat quad_vertices[12] =
+GLfloat coordinate_vertices[30] =
+{
+    0.0f, 0.0f, 0.0f,
+    0.0f, 0.2f, 0.0f,
+    1.0f, 0.2f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+
+    0.0f, 0.0f, 0.2f,
+    0.0f, 2.0f, 0.2f,
+    0.0f, 2.0f, 0.0f,
+
+    0.0f, 0.0f, 3.0f,
+    0.2f, 0.0f, 3.0f,
+    0.2f, 0.0f, 0.0f,
+};
+
+GLuint coordinate_indices[18] =
+{
+    0, 1, 2, 2, 3, 0,
+    0, 4, 5, 5, 6, 0,
+    0, 7, 8, 8, 9, 0,
+};
+
+GLfloat vertices[18] =
 {
     0.0f, 0.0f, 0.0f,
     1.0f, 0.0f, 0.0f,
     1.0f, 1.0f, 0.0f,
     0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 1.0f,
+    1.0f, 1.0f, 1.0f,
 };
 
-GLuint quad_indices[6] = {0, 1, 2, 2, 3, 0};
+GLuint indices[12] = {0, 1, 2, 2, 3, 0, 2, 3, 4, 4, 5, 2};
 
 // ---- functions --------------------------------------------------------------
 int init_glfw()
@@ -60,30 +85,18 @@ int init_glew(Window *render)
     return 0;
 }
 
-void update_rendering()
+void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo)
 {
-}
+    glGenVertexArrays(1, vao);
+    glBindVertexArray(*vao);
 
-void draw_rendering()
-{
-}
+    glGenBuffers(1, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(coordinate_vertices), coordinate_vertices, GL_STATIC_DRAW);
 
-void free_rendering()
-{
-}
-
-void bind_buffers()
-{
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), quad_indices, GL_STATIC_DRAW);
+    glGenBuffers(1, ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(coordinate_indices), coordinate_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);

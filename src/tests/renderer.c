@@ -1,3 +1,4 @@
+#define VECTOR4_TYPES
 #define MATRIX4_TYPES
 #include "../engine/rendering.c"
 
@@ -6,7 +7,7 @@
 // ---- declarations -----------------------------------------------------------
 Window render =
 {
-    .size = {1280, 720},
+    .size = {854, 480},
     .title = "glfw_window",
 };
 
@@ -28,10 +29,6 @@ Shader fragment_shader =
 
 struct /* uniform */
 {
-    int cursor_pos;
-    int render_size;
-    int matrix_model;
-    int matrix_view;
     int matrix_projection;
 } uniform;
 
@@ -43,6 +40,7 @@ struct /* matrix */
 } matrix;
 
 f64 sinpitch, cospitch, sinyaw, cosyaw;
+GLuint vao, vbo, ebo;
 
 // ---- signatures -------------------------------------------------------------
 void error_callback(int error, const char* message)
@@ -51,12 +49,13 @@ void error_callback(int error, const char* message)
 }
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
+void update_cursor_delta();
 void bind_shader_uniforms();
 void update_camera_movement();
 void update_camera_transforms();
 void update_shader_uniforms();
 void draw_graphics();
-void update_input();
+void update_input(GLFWwindow *win);
 
 int main(void)
 {
@@ -73,7 +72,7 @@ int main(void)
     glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
     glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
 
-    bind_buffers();
+    bind_mesh(&vao, &vbo, &ebo);
     if (init_shaders() != 0)
         goto cleanup;
 
@@ -81,19 +80,15 @@ int main(void)
 
     camera =
         (Camera){
-            .pos = (v3f32){0.0f, 1.0f, 0.0f},
-            .rot = (v3f32){0.0f, 0.0f, 0.0f},
+            .pos = (v3f32){-1.0f, -0.5f, 0.5f},
+            .rot = (v3f32){0.0f, 0.0f, -100.0f},
             .fov = 70.0f,
         };
 
     // ---- main loop ----------------------------------------------------------
     while (!glfwWindowShouldClose(render.window))
     {
-        if (render.cursor_last.x != render.cursor.x)
-            render.cursor_delta.x = render.cursor.x - render.cursor_last.x;
-        if (render.cursor_last.y != render.cursor.y)
-            render.cursor_delta.y = render.cursor.y - render.cursor_last.y;
-        glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
+        update_cursor_delta();
 
         update_camera_movement();
         update_camera_transforms();
@@ -103,7 +98,7 @@ int main(void)
         render.cursor_delta.y = 0.0f;
         glfwSwapBuffers(render.window);
         glfwPollEvents();
-        update_input();
+        update_input(render.window);
     }
 
 cleanup: // --------------------------------------------------------------------
@@ -123,6 +118,15 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     glViewport(0, 0, width, height);
 }
 
+void update_cursor_delta()
+{
+    if (render.cursor_last.x != render.cursor.x)
+        render.cursor_delta.x = render.cursor.x - render.cursor_last.x;
+    if (render.cursor_last.y != render.cursor.y)
+        render.cursor_delta.y = render.cursor.y - render.cursor_last.y;
+    glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
+}
+
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
     glfwGetCursorPos(window, &render.cursor.x, &render.cursor.y);
@@ -130,15 +134,6 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 void bind_shader_uniforms()
 {
-    uniform.cursor_pos =
-        glGetUniformLocation(shader_program, "cursor_pos");
-    uniform.render_size =
-        glGetUniformLocation(shader_program, "render_size");
-
-    uniform.matrix_model = 
-        glGetUniformLocation(shader_program, "mat_model");
-    uniform.matrix_view = 
-        glGetUniformLocation(shader_program, "mat_view");
     uniform.matrix_projection = 
         glGetUniformLocation(shader_program, "mat_projection");
 }
@@ -146,15 +141,15 @@ void bind_shader_uniforms()
 void update_camera_movement()
 {
     camera.rot.x -= render.cursor_delta.y;
-    camera.rot.z -= render.cursor_delta.x;
+    camera.rot.z += render.cursor_delta.x;
 
     camera.rot.z = fmod(camera.rot.z, 360.0f);
     if (camera.rot.z < 0.0f) camera.rot.z += 360.0f;
     if (camera.rot.x > 90.0f) camera.rot.x = 90.0f;
     else if (camera.rot.x < -90.0f) camera.rot.x = -90.0f;
 
-    sinpitch =  sin(camera.rot.x * DEG2RAD);
-    cospitch =  cos(camera.rot.x * DEG2RAD);
+    sinpitch =  sin((camera.rot.x + 90.0f) * DEG2RAD);
+    cospitch =  cos((camera.rot.x + 90.0f) * DEG2RAD);
     sinyaw =    sin(camera.rot.z * DEG2RAD);
     cosyaw =    cos(camera.rot.z * DEG2RAD);
 }
@@ -166,32 +161,46 @@ void update_camera_transforms()
             1.0f, 0.0f, 0.0f, -camera.pos.x,
             0.0f, 1.0f, 0.0f, -camera.pos.y,
             0.0f, 0.0f, 1.0f, -camera.pos.z,
-            0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, -1.0f,
         };
 
-    matrix.view =
-        (m4f32){
-            cosyaw,    -sinyaw,             0.0f,       0.0f,
-            sinyaw,     cosyaw + cospitch,  -sinpitch,  0.0f,
-            0.0f,       sinpitch,           cospitch,   0.0f,
-            0.0f,       0.0f,               0.0f,       1.0f,
-        };
+    matrix.view = matrix_multiply(
+            (m4f32){ // ---- rotation x ----------------------------------------
+            1.0f,   0.0f,       0.0f,       0.0f,
+            0.0f,   cospitch,   -sinpitch,  0.0f,
+            0.0f,   sinpitch,   cospitch,   0.0f,
+            0.0f,   0.0f,       0.0f,       1.0f,
+            },
+            (m4f32){ // ---- rotation z ----------------------------------------
+            cosyaw, -sinyaw,    0.0f,   0.0f,
+            sinyaw, cosyaw,     0.0f,   0.0f,
+            0.0f,   0.0f,       1.0f,   0.0f,
+            0.0f,   0.0f,       0.0f,   1.0f,
+            });
+
+    matrix.view = matrix_multiply(matrix.view, matrix.model);
+
+    f32 clip_far = GL_CLIP_DISTANCE0;
+    f32 clip_near = 0.01f;
+
+    f32 ratio = (f32)render.size.y / (f32)render.size.x;
+    f32 fov = 1.0f / tanf(camera.fov / 2.0f);
+    f32 clip = clip_far / (clip_far - clip_near);
+    f32 offset = (-clip_far * clip_near) / (clip_far - clip_near);
 
     matrix.projection =
         (m4f32){
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
+            ratio * fov, 0.0f, 0.0f, 0.0f,
+            0.0f, fov, 0.0f, 0.0f,
+            0.0f, 0.0f, clip, offset,
             0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
         };
+
+    matrix.projection = matrix_multiply(matrix.projection, matrix.view);
 }
 
 void update_shader_uniforms()
 {
-    glUniform2f(uniform.cursor_pos, render.cursor.x, render.cursor.y);
-    glUniform2f(uniform.render_size, render.size.x, render.size.y);
-    glUniformMatrix4fv(uniform.matrix_model, 1, GL_TRUE, (GLfloat*)&matrix.model);
-    glUniformMatrix4fv(uniform.matrix_view, 1, GL_TRUE, (GLfloat*)&matrix.view);
     glUniformMatrix4fv(uniform.matrix_projection, 1, GL_TRUE, (GLfloat*)&matrix.projection);
 }
 
@@ -204,46 +213,51 @@ void draw_graphics()
 
     // ---- draw ---------------------------------------------------------------
     update_shader_uniforms();
+
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
 }
 
-void update_input()
+f64 movement_speed = 0.1f;
+void update_input(GLFWwindow *win)
 {
     // ---- movement -----------------------------------------------------------
-    if (glfwGetKey(render.window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera.pos.x += 0.1f;
+        camera.pos.x += (movement_speed * cosyaw);
+        camera.pos.y -= (movement_speed * sinyaw);
     }
 
-    if (glfwGetKey(render.window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
     {
-        camera.pos.x -= 0.1f;
+        camera.pos.x -= (movement_speed * cosyaw);
+        camera.pos.y += (movement_speed * sinyaw);
     }
 
-    if (glfwGetKey(render.window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
     {
-        camera.pos.y += 0.1f;
+        camera.pos.x += (movement_speed * sinyaw);
+        camera.pos.y += (movement_speed * cosyaw);
     }
 
-    if (glfwGetKey(render.window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
     {
-        camera.pos.y -= 0.1f;
+        camera.pos.x -= (movement_speed * sinyaw);
+        camera.pos.y -= (movement_speed * cosyaw);
     }
 
-    if (glfwGetKey(render.window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        camera.pos.z += 0.1f;
+        camera.pos.z += movement_speed;
     }
 
-    if (glfwGetKey(render.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        camera.pos.z -= 0.1f;
+        camera.pos.z -= movement_speed;
     }
 
     // ---- debug --------------------------------------------------------------
-    if ((glfwGetKey(render.window, GLFW_KEY_ESCAPE) == GLFW_PRESS
-                || glfwGetKey(render.window, GLFW_KEY_Q)) == GLFW_PRESS)
-        glfwSetWindowShouldClose(render.window, GL_TRUE);
+    if (glfwGetKey(win, GLFW_KEY_PAUSE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(win, GL_TRUE);
 }
 
