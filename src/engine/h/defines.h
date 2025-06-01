@@ -193,6 +193,18 @@ typedef struct v4f64
 
 #endif // VECTOR4_TYPES
 
+#ifdef MATRIX4_TYPES
+// ---- matrix4f ---------------------------------------------------------------
+typedef struct m4f32
+{
+    f32 m0, m4, m8, m12;
+    f32 m1, m5, m9, m13;
+    f32 m2, m6, m10, m14;
+    f32 m3, m7, m11, m15;
+} m4f32;
+
+#endif // MATRIX4_TYPES
+
 #define DEFINES_H
 #endif
 

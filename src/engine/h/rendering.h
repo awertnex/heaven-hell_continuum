@@ -15,6 +15,8 @@ typedef struct Window
     GLFWwindow *window;
     GLFWimage icon;
     v2f64 cursor;
+    v2f64 cursor_last;
+    v2f64 cursor_delta;
     v2i32 size;
     char title[20];
 } Window;
@@ -37,7 +39,7 @@ typedef struct Shader
 typedef struct Camera
 {
     v3f32 pos;
-    v3f32 target;
+    v3f32 rot;
     f32 fov;
 } Camera;
 

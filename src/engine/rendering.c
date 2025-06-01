@@ -2,31 +2,18 @@
 #include <stdlib.h>
 
 #include "h/rendering.h"
+#include "math.c"
 #include "logger.c"
 
 // ---- declarations -----------------------------------------------------------
-Shader vertex_shader =
-{
-    .file_name = "shaders/shader.vert",
-    .shader = 0,
-    .type = GL_VERTEX_SHADER,
-};
-
-Shader fragment_shader =
-{
-    .file_name = "shaders/shader.frag",
-    .shader = 0,
-    .type = GL_FRAGMENT_SHADER,
-};
-
 GLuint vao, vbo, ebo, shader_program;
 const unsigned int shader_attribute = 0;
 
 GLfloat quad_vertices[12] =
 {
-    1.0f, 1.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
     0.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    1.0f, 1.0f, 0.0f,
     0.0f, 1.0f, 0.0f,
 };
 
