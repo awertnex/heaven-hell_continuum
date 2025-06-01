@@ -30,15 +30,17 @@ cc src/build.c -std=c99 -o build # -std=c99 optional, but preferred
 if build successful, run minecraft.c with `./bin/minecraft_c`\
 
 **additional commands**
+- help `./build -h` or `./build --help`
 - build launcher with `./build launcher` and run with `./launcher`
     - the launcher creates a directory 'minecraft.c/' in your 'HOME' directory
     - all minecraft.c instances will be stored in 'minecraft.c/instances/'
     - the default path to 'minecraft.c/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
-- list available tests with `./build list`
+- list available tests with `./build -l` or `./build --list`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
+- show build command with `./build -v` or `./build --verbose`
+- append <arg> to build command with `./build -a <arg>`
 - build test [n] with `./build test [n]`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
-- help `./build help`
 
 
 ### windows (using mingw/gcc):
@@ -59,15 +61,17 @@ if build successful, run minecraft.c with `.\bin\minecraft_c.exe`\
 cflag `-std=c99` optional, but preferred
 
 **additional commands**
-- build launcher with `.\build launcher` and run with `.\launcher.exe`
+- help `.\build.exe -h` or `.\build.exe --help`
+- build launcher with `.\build.exe launcher` and run with `.\launcher.exe`
     - the launcher creates a folder 'minecraft.c' in your 'appdata' folder
     - all minecraft.c instances will be stored in 'minecraft.c\instances'
     - the default path to 'minecraft.c' can be changed from the file 'dir.c' in the function 'init_paths()' before building
-- list available tests with `build list`
+- list available tests with `.\build.exe -l` or `.\build.exe --list`
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to list
-- build test [n] with `build test [n]`
+- show build command with `.\build.exe -v` or `.\build.exe --verbose`
+- append <arg> to build command with `.\build.exe -a <arg>`
+- build test [n] with `.\build.exe test [n]`
     - this command searches the folder '.\src\tests' and loads all `.c` file names into an array to execute by index [n]
-- help `build help`
 
 ## Contributors (alpha testing - windows)
 - [sofia](https://github.com/EdgySofia666)
