@@ -11,36 +11,14 @@ int uniform_cursor_pos;
 int uniform_render_size;
 
 // ---- signatures -------------------------------------------------------------
-static void draw_graphics();
-
-// ---- callbacks --------------------------------------------------------------
 void error_callback(int error, const char* message)
 {
     LOGERROR("%s", message);
 }
-
-static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    render.size = (v2i32){width, height};
-    glViewport(0, 0, width, height);
-}
-
-static void gl_cursor_pos_callback(GLFWwindow* window, double cursor_x, double cursor_y)
-{
-    glfwGetCursorPos(window, &render.cursor.x, &render.cursor.y);
-}
-
-static void gl_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    // ---- movement -----------------------------------------------------------
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        LOGINFO("%s", "movement");
-
-    // ---- debug --------------------------------------------------------------
-    if ((glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS
-                || glfwGetKey(window, GLFW_KEY_Q)) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-}
+static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
+static void gl_cursor_pos_callback(GLFWwindow* window, double cursor_x, double cursor_y);
+static void gl_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+static void draw_graphics();
 
 int main(void)
 {
