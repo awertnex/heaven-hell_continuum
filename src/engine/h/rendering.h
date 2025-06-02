@@ -39,8 +39,10 @@ typedef struct Shader
 typedef struct Camera
 {
     v3f32 pos;
-    v3f32 rot;
+    v3f64 rot;
     f32 fov;
+    f32 far;
+    f32 near;
 } Camera;
 
 // ---- declarations -----------------------------------------------------------

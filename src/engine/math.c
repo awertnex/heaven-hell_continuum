@@ -1,5 +1,15 @@
 #include "h/math.h"
 
+f32 clamp_f32(f32 val, f32 min, f32 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
+f64 clamp_f64(f64 val, f64 min, f64 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
 m4f32 matrix_add(m4f32 a, m4f32 b)
 {
     return (m4f32){

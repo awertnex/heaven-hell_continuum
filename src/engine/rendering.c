@@ -9,27 +9,37 @@
 GLuint shader_program;
 const unsigned int shader_attribute = 0;
 
-GLfloat coordinate_vertices[30] =
+const GLfloat thickness = 0.1f;
+GLfloat coordinate_vertices[39] =
 {
     0.0f, 0.0f, 0.0f,
-    0.0f, 0.2f, 0.0f,
-    1.0f, 0.2f, 0.0f,
+    thickness, thickness, 0.0f,
+    thickness, 0.0f, thickness,
+    0.0f, thickness, thickness,
+
     1.0f, 0.0f, 0.0f,
+    1.0f, thickness, 0.0f,
+    1.0f, 0.0f, thickness,
 
-    0.0f, 0.0f, 0.2f,
-    0.0f, 2.0f, 0.2f,
-    0.0f, 2.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    thickness, 1.0f, 0.0f,
+    0.0f, 1.0f, thickness,
 
-    0.0f, 0.0f, 3.0f,
-    0.2f, 0.0f, 3.0f,
-    0.2f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f,
+    thickness, 0.0f, 1.0f,
+    0.0f, thickness, 1.0f,
 };
 
-GLuint coordinate_indices[18] =
+GLuint coordinate_indices[36] =
 {
-    0, 1, 2, 2, 3, 0,
-    0, 4, 5, 5, 6, 0,
-    0, 7, 8, 8, 9, 0,
+    0, 2, 6, 6, 4, 0,
+    0, 4, 5, 5, 1, 0,
+
+    0, 1, 8, 8, 7, 0,
+    0, 7, 9, 9, 3, 0,
+
+    0, 3, 12, 12, 10, 0,
+    0, 10, 11, 11, 2, 0,
 };
 
 GLfloat vertices[18] =
