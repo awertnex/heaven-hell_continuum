@@ -30,6 +30,7 @@
 - added world directory structure creation
 - added basic terrain generation
 - changed chunking system from 2d to 3d chunks (took me like 20 minutes)
+- added basic 3d renderer in opengl
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
