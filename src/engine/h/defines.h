@@ -197,10 +197,11 @@ typedef struct v4f64
 // ---- matrix4f ---------------------------------------------------------------
 typedef struct m4f32
 {
-    f32 m0, m4, m8, m12;
-    f32 m1, m5, m9, m13;
-    f32 m2, m6, m10, m14;
-    f32 m3, m7, m11, m15;
+    f32
+        a11, a12, a13, a14,
+        a21, a22, a23, a24,
+        a31, a32, a33, a34,
+        a41, a42, a43, a44;
 } m4f32;
 
 #endif // MATRIX4_TYPES

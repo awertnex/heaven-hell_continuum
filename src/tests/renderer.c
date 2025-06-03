@@ -1,5 +1,3 @@
-#define VECTOR4_TYPES
-#define MATRIX4_TYPES
 #include "../engine/rendering.c"
 
 #define DIR_SHADERS "src/engine/shaders/"
@@ -29,7 +27,7 @@ Shader fragment_shader =
 
 struct /* uniform */
 {
-    int matrix_perspective;
+    int matrix_projection;
 } uniform;
 
 struct /* matrix */
@@ -37,7 +35,6 @@ struct /* matrix */
     m4f32 model;
     m4f32 view;
     m4f32 projection;
-    m4f32 perspective;
 } matrix;
 
 f64 sinpitch, cospitch, sinyaw, cosyaw;
@@ -53,12 +50,12 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 // ---- signatures -------------------------------------------------------------
 void update_cursor_delta();
-void bind_shader_uniforms();
-void update_camera_movement();
-void update_camera_perspective(Camera *camera);
-void update_shader_uniforms();
-void draw_graphics();
 void update_input(GLFWwindow *win);
+void bind_shader_uniforms();
+void update_shader_uniforms();
+void update_camera_movement(Camera *camera);
+void update_camera_perspective(Camera *camera);
+void draw_graphics();
 
 int main(void)
 {
@@ -82,13 +79,13 @@ int main(void)
     bind_shader_uniforms();
 
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
     camera =
         (Camera){
-            .pos = (v3f32){-1.0f, -0.5f, 0.5f},
-            .rot = (v3f64){-1.0f, 0.0f, 57.0f},
+            .pos = (v3f32){-0.5f, -0.5f, -0.5f},
+            .rot = (v3f64){45.0f, 0.0f, 315.0f},
             .fov = 45.0f,
             .far = 1000.0f,
             .near = 0.05f,
@@ -97,16 +94,16 @@ int main(void)
     // ---- main loop ----------------------------------------------------------
     while (!glfwWindowShouldClose(render.window))
     {
-        printf("     xyz[%7.2f %7.2f %7.2f]\npitchyaw[%7.2lf %7.2lf        ]\n\n", //temp
+        update_cursor_delta();
+        printf("     xyz[%7.2f %7.2f %7.2f]\npitchyaw[%7.2lf %7.2lf        ]\ndelta[%7.2f %7.2f]\n\n", //temp
                 camera.pos.x,
                 camera.pos.y,
                 camera.pos.z,
-                camera.rot.x,
-                camera.rot.z);
-
-        update_cursor_delta();
-
-        update_camera_movement();
+                camera.rot.y,
+                camera.rot.z,
+                render.cursor_delta.x,
+                render.cursor_delta.y);
+        update_camera_movement(&camera);
         update_camera_perspective(&camera);
         draw_graphics();
 
@@ -134,6 +131,11 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     glViewport(0, 0, width, height);
 }
 
+static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    glfwGetCursorPos(window, &render.cursor.x, &render.cursor.y);
+}
+
 void update_cursor_delta()
 {
     if (render.cursor_last.x != render.cursor.x)
@@ -143,129 +145,32 @@ void update_cursor_delta()
     glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
 }
 
-static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    glfwGetCursorPos(window, &render.cursor.x, &render.cursor.y);
-}
-
-void bind_shader_uniforms()
-{
-    uniform.matrix_perspective= 
-        glGetUniformLocation(shader_program, "mat_perspective");
-}
-
-void update_camera_movement()
-{
-    static const f64 PITCH_MAX = 90.0f;
-    static const f64 YAW_MAX = 360.0f;
-
-    camera.rot.x -= render.cursor_delta.y;
-    camera.rot.z += render.cursor_delta.x;
-
-    camera.rot.z = fmod(camera.rot.z, YAW_MAX);
-    if (camera.rot.z < 0.0f) camera.rot.z += YAW_MAX;
-    camera.rot.x = clamp_f64(camera.rot.x, -PITCH_MAX, PITCH_MAX);
-
-    sinpitch =  sin((camera.rot.x + PITCH_MAX) * DEG2RAD);
-    cospitch =  cos((camera.rot.x + PITCH_MAX) * DEG2RAD);
-    sinyaw =    sin(camera.rot.z * DEG2RAD);
-    cosyaw =    cos(camera.rot.z * DEG2RAD);
-}
-
-void update_camera_perspective(Camera *camera)
-{
-    // ---- rotation: x --------------------------------------------------------
-    matrix.view =
-        (m4f32){
-            1.0f,   0.0f,       0.0f,       0.0f,
-            0.0f,   cospitch,   -sinpitch,  0.0f,
-            0.0f,   sinpitch,   cospitch,   0.0f,
-            0.0f,   0.0f,       0.0f,       1.0f,
-        };
-
-    // ---- rotation: z --------------------------------------------------------
-    matrix.view = matrix_multiply(matrix.view,
-            (m4f32){
-            cosyaw, -sinyaw,    0.0f,       0.0f,
-            sinyaw, cosyaw,     0.0f,       0.0f,
-            0.0f,   0.0f,       1.0f,       0.0f,
-            0.0f,   0.0f,       0.0f,       1.0f,
-            });
-
-    // ---- translation --------------------------------------------------------
-    matrix.view = matrix_multiply(matrix.view,
-            (m4f32){
-            1.0f,   0.0f,       0.0f,       -camera->pos.x,
-            0.0f,   1.0f,       0.0f,       -camera->pos.y,
-            0.0f,   0.0f,       1.0f,       -camera->pos.z,
-            0.0f,   0.0f,       0.0f,       -1.0f,
-            });
-
-    // ---- projection ---------------------------------------------------------
-    f32 far = camera->far;
-    f32 near = camera->near;
-
-    f32 ratio = (f32)render.size.y / (f32)render.size.x;
-    f32 fov = 1.0f / tanf(camera->fov * DEG2RAD);
-    f32 clip = far / (far - near);
-    f32 offset = (-far * near) / (far - near);
-
-    matrix.projection =
-        (m4f32){
-            ratio * fov,    0.0f,   0.0f,   0.0f,
-            0.0f,                   fov,    0.0f,   0.0f,
-            0.0f,           0.0f,   clip,   offset,
-            0.0f,           0.0f,   1.0f,   0.0f,
-        };
-
-    matrix.perspective = matrix_multiply(matrix.projection, matrix.view);
-}
-
-void update_shader_uniforms()
-{
-    glUniformMatrix4fv(uniform.matrix_perspective, 1, GL_TRUE, (GLfloat*)&matrix.perspective);
-}
-
-void draw_graphics()
-{
-    // ---- ready shaders ------------------------------------------------------
-    glClearColor(0.69f, 0.86f, 0.9f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(shader_program);
-
-    // ---- draw ---------------------------------------------------------------
-    update_shader_uniforms();
-
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-}
-
 f64 movement_speed = 0.04f;
 void update_input(GLFWwindow *win)
 {
     // ---- movement -----------------------------------------------------------
     if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera.pos.x += (movement_speed * cosyaw);
-        camera.pos.y -= (movement_speed * sinyaw);
+        camera.pos.x += (movement_speed * sinyaw);
+        camera.pos.y += (movement_speed * cosyaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.pos.x -= (movement_speed * sinyaw);
+        camera.pos.y -= (movement_speed * cosyaw);
+    }
+
+    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
     {
         camera.pos.x -= (movement_speed * cosyaw);
         camera.pos.y += (movement_speed * sinyaw);
     }
 
-    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camera.pos.x += (movement_speed * sinyaw);
-        camera.pos.y += (movement_speed * cosyaw);
-    }
-
     if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
     {
-        camera.pos.x -= (movement_speed * sinyaw);
-        camera.pos.y -= (movement_speed * cosyaw);
+        camera.pos.x += (movement_speed * cosyaw);
+        camera.pos.y -= (movement_speed * sinyaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS)
@@ -283,103 +188,246 @@ void update_input(GLFWwindow *win)
         glfwSetWindowShouldClose(win, GL_TRUE);
 }
 
+void bind_shader_uniforms()
+{
+    uniform.matrix_projection = 
+        glGetUniformLocation(shader_program, "mat_projection");
+}
+
+void update_shader_uniforms()
+{
+    glUniformMatrix4fv(uniform.matrix_projection, 1, GL_FALSE, (GLfloat*)&matrix.projection);
+}
+
+void update_camera_movement(Camera *camera)
+{
+    const f64 ANGLE = 90.0f;
+    const f64 RANGE = 360.0f;
+
+    camera->rot.y += render.cursor_delta.y;
+    camera->rot.z += render.cursor_delta.x;
+
+    camera->rot.z = fmod(camera->rot.z, RANGE);
+    if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
+    camera->rot.y = clamp_f64(camera->rot.y, -ANGLE, ANGLE);
+
+    sinpitch =  sin((camera->rot.y) * DEG2RAD);
+    cospitch =  cos((camera->rot.y) * DEG2RAD);
+    sinyaw =    sin((camera->rot.z) * DEG2RAD);
+    cosyaw =    cos((camera->rot.z) * DEG2RAD);
+}
+
+void update_camera_perspective(Camera *camera)
+{
+    // ---- translation --------------------------------------------------------
+    matrix.view =
+        (m4f32){
+            1.0f,           0.0f,           0.0f,           0.0f,
+            0.0f,           1.0f,           0.0f,           0.0f,
+            0.0f,           0.0f,           -1.0f,          0.0f,
+            -camera->pos.x, -camera->pos.y, camera->pos.z,  1.0f,
+        };
+
+    // ---- rotation: yaw ------------------------------------------------------
+    matrix.view = matrix_multiply(matrix.view,
+            (m4f32){
+            cosyaw,     sinyaw, 0.0f, 0.0f,
+            -sinyaw,    cosyaw, 0.0f, 0.0f,
+            0.0f,       0.0f,   1.0f, 0.0f,
+            0.0f,       0.0f,   0.0f, 1.0f,
+            });
+
+    // ---- rotation: pitch ----------------------------------------------------
+    matrix.view = matrix_multiply(matrix.view,
+            (m4f32){
+            cospitch,   0.0f,   -sinpitch,  0.0f,
+            0.0f,       1.0f,   0.0f,       0.0f,
+            sinpitch,   0.0f,   cospitch,   0.0f,
+            0.0f,       0.0f,   0.0f,       1.0f,
+            });
+
+    // ---- orientation: z-up, rh ----------------------------------------------
+    matrix.view = matrix_multiply(matrix.view,
+            (m4f32){
+            0.0f,   0.0f, 1.0f, 0.0f,
+            1.0f,   0.0f, 0.0f, 0.0f,
+            0.0f,   1.0f, 0.0f, 0.0f,
+            0.0f,   0.0f, 0.0f, 1.0f,
+            });
+
+    // ---- projection ---------------------------------------------------------
+    f32 ratio = (f32)render.size.x / (f32)render.size.y;
+    f32 fov = tanf(camera->fov * DEG2RAD);
+    f32 far = camera->far;
+    f32 near = camera->near;
+    f32 clip = (far + near) / (far - near);
+    f32 offset = -(2.0f * far * near) / (far - near);
+
+    matrix.projection = matrix_multiply(matrix.view,
+            (m4f32){
+            1.0f / (ratio * fov),   0.0f,       0.0f,   0.0f,
+            0.0f,                   1.0f / fov, 0.0f,   0.0f,
+            0.0f,                   0.0f,       clip,   -1.0f,
+            0.0f,                   0.0f,       offset, 0.0f,
+            });
+}
+
+void draw_graphics()
+{
+    // ---- ready shaders ------------------------------------------------------
+    glClearColor(0.69f, 0.86f, 0.9f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(shader_program);
+
+    // ---- draw ---------------------------------------------------------------
+    update_shader_uniforms();
+
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+}
+
 
 /*
-	frustumLH_ZO(left, right, bottom, top, nearVal, farVal)
-	{
-		matrix[0][0] = (2 * nearVal) / (right - left);
-		matrix[1][1] = (2 * nearVal) / (top - bottom);
-		matrix[2][0] = -(right + left) / (right - left);
-		matrix[2][1] = -(top + bottom) / (top - bottom);
-		matrix[2][2] = farVal / (farVal - nearVal);
-		matrix[2][3] = 1;
-		matrix[3][2] = -(farVal * nearVal) / (farVal - nearVal);
-	}
+   frustumLH_ZO(left, right, bottom, top, nearVal, farVal)
+   {
+   m00 = (2 * nearVal) / (right - left);
+   m11 = (2 * nearVal) / (top - bottom);
+   m20 = -(right + left) / (right - left);
+   m21 = -(top + bottom) / (top - bottom);
+   m22 = farVal / (farVal - nearVal);
+   m32 = -(farVal * nearVal) / (farVal - nearVal);
 
-	frustumLH_NO(T left, T right, T bottom, T top, T nearVal, T farVal)
-	{
-		matrix[0][0] = (2 * nearVal) / (right - left);
-		matrix[1][1] = (2 * nearVal) / (top - bottom);
-		matrix[2][0] = -(right + left) / (right - left);
-		matrix[2][1] = -(top + bottom) / (top - bottom);
-		matrix[2][2] = (farVal + nearVal) / (farVal - nearVal);
-		matrix[2][3] = 1;
-		matrix[3][2] = - (2 * farVal * nearVal) / (farVal - nearVal);
-	}
+   matrix =
+   {
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 1, 0,
+   };
+   }
 
-	frustumRH_ZO(T left, T right, T bottom, T top, T nearVal, T farVal)
-	{
-		matrix[0][0] = (2 * nearVal) / (right - left);
-		matrix[1][1] = (2 * nearVal) / (top - bottom);
-		matrix[2][0] = (right + left) / (right - left);
-		matrix[2][1] = (top + bottom) / (top - bottom);
-		matrix[2][2] = farVal / (nearVal - farVal);
-		matrix[2][3] = -1;
-		matrix[3][2] = -(farVal * nearVal) / (farVal - nearVal);
-	}
+   frustumLH_NO(left, right, bottom, top, nearVal, farVal)
+   {
+    m00 = (2 * nearVal) / (right - left);
+    m11 = (2 * nearVal) / (top - bottom);
+    m20 = -(right + left) / (right - left);
+    m21 = -(top + bottom) / (top - bottom);
+    m22 = (farVal + nearVal) / (farVal - nearVal);
+    m32 = - (2 * farVal * nearVal) / (farVal - nearVal);
 
-	frustumRH_NO(T left, T right, T bottom, T top, T nearVal, T farVal)
-	{
-		matrix[0][0] = (2 * nearVal) / (right - left);
-		matrix[1][1] = (2 * nearVal) / (top - bottom);
-		matrix[2][0] = (right + left) / (right - left);
-		matrix[2][1] = (top + bottom) / (top - bottom);
-		matrix[2][2] = - (farVal + nearVal) / (farVal - nearVal);
-		matrix[2][3] = -1;
-		matrix[3][2] = - (2 * farVal * nearVal) / (farVal - nearVal);
-	}
+   matrix =
+   {
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 1, 0,
+   };
+   }
+
+   frustumRH_ZO(left, right, bottom, top, nearVal, farVal)
+   {
+    m00 = (2 * nearVal) / (right - left);
+    m11 = (2 * nearVal) / (top - bottom);
+    m20 = (right + left) / (right - left);
+    m21 = (top + bottom) / (top - bottom);
+    m22 = farVal / (nearVal - farVal);
+    m32 = -(farVal * nearVal) / (farVal - nearVal);
+
+   matrix =
+   {
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, -1, 0,
+   };
+   }
+
+   frustumRH_NO(left, right, bottom, top, nearVal, farVal)
+   {
+    m00 = (2 * nearVal) / (right - left);
+    m11 = (2 * nearVal) / (top - bottom);
+    m20 = (right + left) / (right - left);
+    m21 = (top + bottom) / (top - bottom);
+    m22 = - (farVal + nearVal) / (farVal - nearVal);
+    m32 = - (2 * farVal * nearVal) / (farVal - nearVal);
+
+   matrix =
+   {
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, 0, 0,
+   0, 0, -1, 0,
+   };
+}
 
 
-	perspectiveRH_ZO(T fovy, T aspect, T cNear, T cFar)
-	{
-		assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
+perspectiveRH_ZO(fovy, aspect, cNear, cFar)
+{
+    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
 
-		T const fov = tan(fovy / 2);
+    fov = tan(fovy / 2);
+    clip = cFar / (cNear - cFar);
+    offset = -(cFar * cNear) / (cFar - cNear);
 
-		matrix[0][0] = 1 / (aspect * fov);
-		matrix[1][1] = 1 / (fov);
-		matrix[2][2] = cFar / (cNear - cFar);
-		matrix[2][3] = - 1;
-		matrix[3][2] = -(cFar * cNear) / (cFar - cNear);
-	}
+    matrix =
+    {
+        1 / (aspect * fov), 0,          0,      0,
+        0,                  1 / fov,    0,      0,
+        0,                  0,          clip,   offset,
+        0,                  0,          -1,     0,
+    };
 
-	perspectiveRH_NO(T fovy, T aspect, T cNear, T cFar)
-	{
-		assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
+}
 
-		T const fov = tan(fovy / 2);
+perspectiveRH_NO(fovy, aspect, cNear, cFar)
+{
+    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
 
-		matrix[0][0] = 1 / (aspect * fov);
-		matrix[1][1] = 1 / (fov);
-		matrix[2][2] = - (cFar + cNear) / (cFar - cNear);
-		matrix[2][3] = - 1;
-		matrix[3][2] = - (2 * cFar * cNear) / (cFar - cNear);
-	}
+    fov = tan(fovy / 2);
+    clip = - (cFar + cNear) / (cFar - cNear);
+    offset = - (2 * cFar * cNear) / (cFar - cNear);
 
-	perspectiveLH_ZO(T fovy, T aspect, T cNear, T cFar)
-	{
-		assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
+    matrix =
+    {
+        1 / (aspect * fov), 0,          0,      0,
+        0,                  1 / fov,    0,      0,
+        0,                  0,          clip,   offset,
+        0,                  0,          -1,     0,
+    };
+}
 
-		T const fov = tan(fovy / 2);
+perspectiveLH_ZO(fovy, aspect, cNear, cFar)
+{
+    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
 
-		matrix[0][0] = 1 / (aspect * fov);
-		matrix[1][1] = 1 / (fov);
-		matrix[2][2] = cFar / (cFar - cNear);
-		matrix[2][3] = 1;
-		matrix[3][2] = -(cFar * cNear) / (cFar - cNear);
-	}
+    fov = tan(fovy / 2);
+    clip = cFar / (cFar - cNear);
+    offset = -(cFar * cNear) / (cFar - cNear);
 
-	perspectiveLH_NO(T fovy, T aspect, T cNear, T cFar)
-	{
-		assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
+    matrix =
+    {
+        1 / (aspect * fov), 0,          0,      0,
+        0,                  1 / fov,    0,      0,
+        0,                  0,          clip,   offset,
+        0,                  0,          1,      0,
+    };
+}
 
-		T const fov = tan(fovy / 2);
+perspectiveLH_NO(T fovy, T aspect, T cNear, T cFar)
+{
+    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
 
-		matrix[0][0] = 1 / (aspect * fov);
-		matrix[1][1] = 1 / (fov);
-		matrix[2][2] = (cFar + cNear) / (cFar - cNear);
-		matrix[2][3] = 1;
-		matrix[3][2] = - (2 * cFar * cNear) / (cFar - cNear);
-	}
+    const fov = tan(fovy / 2);
+    clip = (cFar + cNear) / (cFar - cNear);
+    offset = - (2 * cFar * cNear) / (cFar - cNear);
+
+    matrix =
+    {
+        1 / (aspect * fov), 0,          0,      0,
+        0,                  1 / fov,    0,      0,
+        0,                  0,          clip,   offset,
+        0,                  0,          1,      0,
+    };
+}
 */
 

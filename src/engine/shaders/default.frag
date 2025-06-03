@@ -1,7 +1,7 @@
 #version 330 core
 
 #ifdef GL_ES
-precision lowp float;
+precision mediump float;
 #endif // GL_ES
 
 // ---- declarations -----------------------------------------------------------

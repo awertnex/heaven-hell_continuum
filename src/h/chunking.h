@@ -10,7 +10,7 @@
 #include "main.h"
 #include "setting.h"
 // ---- world stuff ------------------------------------------------------------
-#define CHUNK_DIAMETER              32
+#define CHUNK_DIAMETER              16
 #define CHUNK_VOLUME                (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
 #define WORLD_SEA_LEVEL             62

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define VECTOR4_TYPES
+#define MATRIX4_TYPES
 #include "h/rendering.h"
 #include "math.c"
 #include "logger.c"
