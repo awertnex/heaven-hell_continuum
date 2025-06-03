@@ -79,30 +79,29 @@ int main(void)
     bind_shader_uniforms();
 
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
 
     camera =
         (Camera){
             .pos = (v3f32){-0.5f, -0.5f, -0.5f},
-            .rot = (v3f64){45.0f, 0.0f, 315.0f},
-            .fov = 45.0f,
+            .rot = (v3f64){0.0f, 35.0f, 315.0f},
+            .fov = 70.0f,
             .far = 1000.0f,
             .near = 0.05f,
         };
+    //camera.pos = (v3f32){0.0f, 0.0f, 0.0f};
+    //camera.rot = (v3f64){0.0f, 0.0f, 0.0f};
 
+    glfwSetCursorPos(render.window, 3.0f, 3.0f);
     // ---- main loop ----------------------------------------------------------
     while (!glfwWindowShouldClose(render.window))
     {
         update_cursor_delta();
-        printf("     xyz[%7.2f %7.2f %7.2f]\npitchyaw[%7.2lf %7.2lf        ]\ndelta[%7.2f %7.2f]\n\n", //temp
-                camera.pos.x,
-                camera.pos.y,
-                camera.pos.z,
-                camera.rot.y,
-                camera.rot.z,
-                render.cursor_delta.x,
-                render.cursor_delta.y);
+        LOGINFO("  cursor[%7.2f %7.2f      ]", render.cursor.x, render.cursor.y);
+        LOGINFO("   delta[%7.2f %7.2f      ]", render.cursor_delta.x, render.cursor_delta.y);
+        LOGINFO("     xyz[%7.2f %7.2f %7.2f]", camera.pos.x, camera.pos.y, camera.pos.z);
+        LOGINFO("pitchyaw[      %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
         update_camera_movement(&camera);
         update_camera_perspective(&camera);
         draw_graphics();
@@ -221,12 +220,12 @@ void update_camera_perspective(Camera *camera)
 {
     // ---- translation --------------------------------------------------------
     matrix.view =
-        (m4f32){
+            (m4f32){
             1.0f,           0.0f,           0.0f,           0.0f,
             0.0f,           1.0f,           0.0f,           0.0f,
-            0.0f,           0.0f,           -1.0f,          0.0f,
-            -camera->pos.x, -camera->pos.y, camera->pos.z,  1.0f,
-        };
+            0.0f,           0.0f,           1.0f,           0.0f,
+            -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
+            };
 
     // ---- rotation: yaw ------------------------------------------------------
     matrix.view = matrix_multiply(matrix.view,
@@ -240,35 +239,35 @@ void update_camera_perspective(Camera *camera)
     // ---- rotation: pitch ----------------------------------------------------
     matrix.view = matrix_multiply(matrix.view,
             (m4f32){
-            cospitch,   0.0f,   -sinpitch,  0.0f,
+            cospitch,   0.0f,   sinpitch,   0.0f,
             0.0f,       1.0f,   0.0f,       0.0f,
-            sinpitch,   0.0f,   cospitch,   0.0f,
+            -sinpitch,  0.0f,   cospitch,   0.0f,
             0.0f,       0.0f,   0.0f,       1.0f,
             });
 
-    // ---- orientation: z-up, rh ----------------------------------------------
+    // ---- orientation: z-up --------------------------------------------------
     matrix.view = matrix_multiply(matrix.view,
-            (m4f32){
-            0.0f,   0.0f, 1.0f, 0.0f,
-            1.0f,   0.0f, 0.0f, 0.0f,
+        (m4f32){
+            0.0f,   0.0f, -1.0f, 0.0f,
+            -1.0f,  0.0f, 0.0f, 0.0f,
             0.0f,   1.0f, 0.0f, 0.0f,
             0.0f,   0.0f, 0.0f, 1.0f,
-            });
+        });
 
     // ---- projection ---------------------------------------------------------
     f32 ratio = (f32)render.size.x / (f32)render.size.y;
-    f32 fov = tanf(camera->fov * DEG2RAD);
+    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
     f32 far = camera->far;
     f32 near = camera->near;
-    f32 clip = (far + near) / (far - near);
+    f32 clip = -(far + near) / (far - near);
     f32 offset = -(2.0f * far * near) / (far - near);
 
     matrix.projection = matrix_multiply(matrix.view,
             (m4f32){
-            1.0f / (ratio * fov),   0.0f,       0.0f,   0.0f,
-            0.0f,                   1.0f / fov, 0.0f,   0.0f,
-            0.0f,                   0.0f,       clip,   -1.0f,
-            0.0f,                   0.0f,       offset, 0.0f,
+            fov / ratio,    0.0f,   0.0f,   0.0f,
+            0.0f,           fov,    0.0f,   0.0f,
+            0.0f,           0.0f,   clip,   -1.0f,
+            0.0f,           0.0f,   offset, 0.0f,
             });
 }
 

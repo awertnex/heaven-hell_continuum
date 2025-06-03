@@ -5,11 +5,11 @@
 
 static str log_tag[5][13] =
 {
-    "MC_C_FATAL",
-    "MC_C_WARNING",
-    "MC_C_ERROR",
-    "MC_C_INFO",
-    "MC_C_DEBUG",
+    "FATAL",
+    "WARNING",
+    "ERROR",
+    "INFO",
+    "DEBUG",
 };
 
 b8 init_logger()
