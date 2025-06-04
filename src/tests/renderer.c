@@ -32,7 +32,9 @@ struct /* uniform */
 
 struct /* matrix */
 {
-    m4f32 model;
+    m4f32 translation;
+    m4f32 rotation;
+    m4f32 orientation;
     m4f32 view;
     m4f32 projection;
 } matrix;
@@ -85,27 +87,39 @@ int main(void)
     camera =
         (Camera){
             .pos = (v3f32){-0.5f, -0.5f, -0.5f},
-            .rot = (v3f64){0.0f, 35.0f, 315.0f},
+            .rot = (v3f64){0.0f, 35.0f, 135.0f},
             .fov = 70.0f,
-            .far = 1000.0f,
+            .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
         };
-    //camera.pos = (v3f32){0.0f, 0.0f, 0.0f};
-    //camera.rot = (v3f64){0.0f, 0.0f, 0.0f};
 
-    glfwSetCursorPos(render.window, 3.0f, 3.0f);
+    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
     // ---- main loop ----------------------------------------------------------
     while (!glfwWindowShouldClose(render.window))
     {
         update_cursor_delta();
-        LOGINFO("  cursor[%7.2f %7.2f      ]", render.cursor.x, render.cursor.y);
-        LOGINFO("   delta[%7.2f %7.2f      ]", render.cursor_delta.x, render.cursor_delta.y);
+        LOGINFO("  cursor[%7.2f %7.2f        ]", render.cursor.x, render.cursor.y);
+        LOGINFO("   delta[%7.2f %7.2f        ]", render.cursor_delta.x, render.cursor_delta.y);
         LOGINFO("     xyz[%7.2f %7.2f %7.2f]", camera.pos.x, camera.pos.y, camera.pos.z);
-        LOGINFO("pitchyaw[      %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
+        LOGINFO("pitchyaw[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
         update_camera_movement(&camera);
         update_camera_perspective(&camera);
         draw_graphics();
 
+        if (render.cursor_delta.x > 2.0f
+                || render.cursor_delta.x < -2.0f
+                || render.cursor_delta.y > 2.0f
+                || render.cursor_delta.y < -2.0f
+                || render.cursor.x > (render.size.x / 2.0f) + 2.0f
+                || render.cursor.x < (render.size.x / 2.0f) - 2.0f
+                || render.cursor.y > (render.size.y / 2.0f) + 2.0f
+                || render.cursor.y < (render.size.y / 2.0f) - 2.0f
+                )
+        {
+            glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
+            glfwGetCursorPos(render.window, &render.cursor.x, &render.cursor.y);
+            glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
+        }
         render.cursor_delta.x = 0.0f;
         render.cursor_delta.y = 0.0f;
         glfwSwapBuffers(render.window);
@@ -219,25 +233,25 @@ void update_camera_movement(Camera *camera)
 void update_camera_perspective(Camera *camera)
 {
     // ---- translation --------------------------------------------------------
-    matrix.view =
-            (m4f32){
+    matrix.translation =
+        (m4f32){
             1.0f,           0.0f,           0.0f,           0.0f,
             0.0f,           1.0f,           0.0f,           0.0f,
             0.0f,           0.0f,           1.0f,           0.0f,
             -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
-            };
+        };
 
     // ---- rotation: yaw ------------------------------------------------------
-    matrix.view = matrix_multiply(matrix.view,
-            (m4f32){
+    matrix.rotation =
+        (m4f32){
             cosyaw,     sinyaw, 0.0f, 0.0f,
             -sinyaw,    cosyaw, 0.0f, 0.0f,
             0.0f,       0.0f,   1.0f, 0.0f,
             0.0f,       0.0f,   0.0f, 1.0f,
-            });
+        };
 
     // ---- rotation: pitch ----------------------------------------------------
-    matrix.view = matrix_multiply(matrix.view,
+    matrix.rotation = matrix_multiply(matrix.rotation,
             (m4f32){
             cospitch,   0.0f,   sinpitch,   0.0f,
             0.0f,       1.0f,   0.0f,       0.0f,
@@ -246,13 +260,18 @@ void update_camera_perspective(Camera *camera)
             });
 
     // ---- orientation: z-up --------------------------------------------------
-    matrix.view = matrix_multiply(matrix.view,
+    matrix.orientation =
         (m4f32){
             0.0f,   0.0f, -1.0f, 0.0f,
             -1.0f,  0.0f, 0.0f, 0.0f,
             0.0f,   1.0f, 0.0f, 0.0f,
             0.0f,   0.0f, 0.0f, 1.0f,
-        });
+        };
+
+    // ---- view ---------------------------------------------------------------
+    matrix.view =
+        matrix_multiply(matrix.translation,
+            matrix_multiply(matrix.rotation, matrix.orientation));
 
     // ---- projection ---------------------------------------------------------
     f32 ratio = (f32)render.size.x / (f32)render.size.y;
@@ -261,12 +280,13 @@ void update_camera_perspective(Camera *camera)
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
     f32 offset = -(2.0f * far * near) / (far - near);
+    printf("clipz[%8.6f]\nclipw[%8.6f]\n\n", clip, offset);
 
     matrix.projection = matrix_multiply(matrix.view,
             (m4f32){
             fov / ratio,    0.0f,   0.0f,   0.0f,
             0.0f,           fov,    0.0f,   0.0f,
-            0.0f,           0.0f,   clip,   -1.0f,
+            0.0f,           0.0f,   clip,  -1.0f,
             0.0f,           0.0f,   offset, 0.0f,
             });
 }
@@ -285,64 +305,9 @@ void draw_graphics()
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 }
 
-
 /*
-   frustumLH_ZO(left, right, bottom, top, nearVal, farVal)
-   {
-   m00 = (2 * nearVal) / (right - left);
-   m11 = (2 * nearVal) / (top - bottom);
-   m20 = -(right + left) / (right - left);
-   m21 = -(top + bottom) / (top - bottom);
-   m22 = farVal / (farVal - nearVal);
-   m32 = -(farVal * nearVal) / (farVal - nearVal);
-
-   matrix =
-   {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 1, 0,
-   };
-   }
-
-   frustumLH_NO(left, right, bottom, top, nearVal, farVal)
-   {
-    m00 = (2 * nearVal) / (right - left);
-    m11 = (2 * nearVal) / (top - bottom);
-    m20 = -(right + left) / (right - left);
-    m21 = -(top + bottom) / (top - bottom);
-    m22 = (farVal + nearVal) / (farVal - nearVal);
-    m32 = - (2 * farVal * nearVal) / (farVal - nearVal);
-
-   matrix =
-   {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 1, 0,
-   };
-   }
-
-   frustumRH_ZO(left, right, bottom, top, nearVal, farVal)
-   {
-    m00 = (2 * nearVal) / (right - left);
-    m11 = (2 * nearVal) / (top - bottom);
-    m20 = (right + left) / (right - left);
-    m21 = (top + bottom) / (top - bottom);
-    m22 = farVal / (nearVal - farVal);
-    m32 = -(farVal * nearVal) / (farVal - nearVal);
-
-   matrix =
-   {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, -1, 0,
-   };
-   }
-
-   frustumRH_NO(left, right, bottom, top, nearVal, farVal)
-   {
+void frustumRH_NO(f32 left, f32 right, f32 bottom, f32 top, f32 nearVal, f32 farVal)
+{
     m00 = (2 * nearVal) / (right - left);
     m11 = (2 * nearVal) / (top - bottom);
     m20 = (right + left) / (right - left);
@@ -350,82 +315,29 @@ void draw_graphics()
     m22 = - (farVal + nearVal) / (farVal - nearVal);
     m32 = - (2 * farVal * nearVal) / (farVal - nearVal);
 
-   matrix =
-   {
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, 0, 0,
-   0, 0, -1, 0,
-   };
+    m4f32 matrix =
+    {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, -1, 0,
+    };
 }
 
-
-perspectiveRH_ZO(fovy, aspect, cNear, cFar)
+void perspectiveRH_NO(f32 fovy, f32 aspect, f32 cNear, f32 cFar)
 {
-    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
+    if (fabs(aspect) <= 0.01f) return;
 
-    fov = tan(fovy / 2);
-    clip = cFar / (cNear - cFar);
-    offset = -(cFar * cNear) / (cFar - cNear);
+    f32 fov = tan(fovy / 2);
+    f32 clip = - (cFar + cNear) / (cFar - cNear);
+    f32 offset = - (2 * cFar * cNear) / (cFar - cNear);
 
-    matrix =
+    m4f32 matrix =
     {
         1 / (aspect * fov), 0,          0,      0,
         0,                  1 / fov,    0,      0,
         0,                  0,          clip,   offset,
         0,                  0,          -1,     0,
-    };
-
-}
-
-perspectiveRH_NO(fovy, aspect, cNear, cFar)
-{
-    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
-
-    fov = tan(fovy / 2);
-    clip = - (cFar + cNear) / (cFar - cNear);
-    offset = - (2 * cFar * cNear) / (cFar - cNear);
-
-    matrix =
-    {
-        1 / (aspect * fov), 0,          0,      0,
-        0,                  1 / fov,    0,      0,
-        0,                  0,          clip,   offset,
-        0,                  0,          -1,     0,
-    };
-}
-
-perspectiveLH_ZO(fovy, aspect, cNear, cFar)
-{
-    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
-
-    fov = tan(fovy / 2);
-    clip = cFar / (cFar - cNear);
-    offset = -(cFar * cNear) / (cFar - cNear);
-
-    matrix =
-    {
-        1 / (aspect * fov), 0,          0,      0,
-        0,                  1 / fov,    0,      0,
-        0,                  0,          clip,   offset,
-        0,                  0,          1,      0,
-    };
-}
-
-perspectiveLH_NO(T fovy, T aspect, T cNear, T cFar)
-{
-    assert(abs(aspect - std::numeric_limits<T>::epsilon()) > 0);
-
-    const fov = tan(fovy / 2);
-    clip = (cFar + cNear) / (cFar - cNear);
-    offset = - (2 * cFar * cNear) / (cFar - cNear);
-
-    matrix =
-    {
-        1 / (aspect * fov), 0,          0,      0,
-        0,                  1 / fov,    0,      0,
-        0,                  0,          clip,   offset,
-        0,                  0,          1,      0,
     };
 }
 */

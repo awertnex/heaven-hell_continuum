@@ -11,7 +11,7 @@
 GLuint shader_program;
 const unsigned int shader_attribute = 0;
 
-const GLfloat thickness = 0.1f;
+const GLfloat thickness = 0.05f;
 GLfloat coordinate_vertices[39] =
 {
     0.0f, 0.0f, 0.0f,
