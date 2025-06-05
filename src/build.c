@@ -6,11 +6,10 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#include "engine/h/math.h"
-
 #define DIR_BIN             "bin/"
 #define DIR_BIN_TESTS       "bin/tests/"
 #define CMD_LEN             128
+#define arr_len(arr)        (sizeof(arr) / sizeof(arr[0]))
 
 #if defined __linux__
     #define ALLOC_CMD       (cmd = (char**) malloc(CMD_LEN * sizeof(char*)))
@@ -53,9 +52,9 @@ char str_libs[6][24] =
     "-lwinmm",
     "-lm",
 };
-#endif // PLATFORM
+#endif /* PLATFORM */
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 int cmd_pos = 0;
 char str_main[32] = "main.c";
 char str_cflags[7][24] =
@@ -82,7 +81,7 @@ char str_tests[5][24] =
     "renderer",
 };
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 int compare_argv(char *arg, int argc, char **argv);
 int push_argv(int argc, char **argv);
 int is_dir_exists(const char *path);
@@ -188,7 +187,7 @@ build_main:
     return -1;
 }
 
-// ---- functions --------------------------------------------------------------
+/* ---- functions ----------------------------------------------------------- */
 int compare_argv(char *arg, int argc, char **argv)
 {
     for (int i = 1; i < argc; ++i)
@@ -267,19 +266,19 @@ void build_cmd(int argc, char **argv)
     ALLOC_CMD;
     ZERO_CMD;
 
-    // ---- main ---------------------------------------------------------------
+    /* ---- main ------------------------------------------------------------ */
     push_cmd(COMPILER);
     push_cmd(str_main);
 
-    // ---- cflags -------------------------------------------------------------
+    /* ---- cflags ---------------------------------------------------------- */
     for (int i = 0; i < arr_len(str_cflags); ++i)
         push_cmd(str_cflags[i]);
 
-    // ---- libs ---------------------------------------------------------------
+    /* ---- libs ------------------------------------------------------------ */
     for (int i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
-    // ---- out ----------------------------------------------------------------
+    /* ---- out ------------------------------------------------------------- */
     for (int i = 0; i < arr_len(str_out); ++i)
         push_cmd(str_out[i]);
 }

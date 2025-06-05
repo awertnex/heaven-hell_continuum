@@ -7,16 +7,16 @@
 #define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 
-// ---- definitions ------------------------------------------------------------
+/* ---- definitions --------------------------------------------------------- */
 #define MARGIN 20
 
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
 
-#define THREAD_COUNT 2 // TODO: use for multithreading
+#define THREAD_COUNT 2 /* TODO: use for multithreading */
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern f64 delta_time;
 extern f64 game_start_time;
 extern u64 game_tick;
@@ -33,7 +33,7 @@ extern f64 skybox_burn;
 extern f64 skybox_burn_boost;
 extern f64 skybox_mid_night;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 int mc_c_mkdir(str *path, u16 mode);
 void init_world(str *str);
 

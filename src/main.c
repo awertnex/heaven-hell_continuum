@@ -10,9 +10,9 @@
     #include "linux_minecraft.c"
 #elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
     #include "windows_minecraft.c"
-#endif // PLATFORM
+#endif /* PLATFORM */
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 u16 state = 0;
 u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
@@ -62,7 +62,7 @@ Player lily =
     .spawn_point = {0},
 };
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 void update_world();
 void *chunk_handler();
 void update_input(Player *player);
@@ -72,17 +72,17 @@ void draw_gui();
 
 int main(void)
 {
-    // ---- init main ----------------------------------------------------------
+    /* ---- init main ------------------------------------------------------- */
     if (MODE_DEBUG)
         LOGINFO("%s", "Debugging Enabled");
 
     state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED;
     init_paths();
 #if RELEASE_BUILD
-    init_instance_directory("new_instance"); // TODO: make editable instance name
+    init_instance_directory("new_instance"); /* TODO: make editable instance name */
 #else
     init_instance_directory("test_instance");
-#endif // RELEASE_BUILD
+#endif /* RELEASE_BUILD */
 
     setting.render_size = (v2f32){854, 480};
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
@@ -93,8 +93,8 @@ int main(void)
     init_textures();
 
 #if !RELEASE_BUILD
-    SetTargetFPS(60); // TODO: make release-build FPS depend on video settings
-#endif // RELEASE_BUILD
+    SetTargetFPS(60); /* TODO: make release-build FPS depend on video settings */
+#endif /* RELEASE_BUILD */
 
     init_fonts();
     init_gui();
@@ -104,11 +104,11 @@ int main(void)
 
     game_start_time = get_time_ms();
 
-section_menu_title: // ---------------------------------------------------------
+section_menu_title: /* ------------------------------------------------------ */
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
         mouse_delta = GetMouseDelta();
-        if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+        if (!(state & FLAG_PARSE_CURSOR)) /* for fullscreen cursor jump prevention */
         {
             state |= FLAG_PARSE_CURSOR;
             mouse_delta = (Vector2){0.0f, 0.0f};
@@ -120,8 +120,8 @@ section_menu_title: // ---------------------------------------------------------
 
         BeginDrawing();
         {
-            //draw_texture_tiled(); // TODO: draw tiled texture of title screen
-            ClearBackground(DARKBROWN); // TODO: make actual panoramic scene
+            //draw_texture_tiled(); /* TODO: draw tiled texture of title screen */
+            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
             update_menus(setting.render_size);
         }
         EndDrawing();
@@ -130,8 +130,8 @@ section_menu_title: // ---------------------------------------------------------
             goto section_main;
     }
 
-section_menu_world: // ---------------------------------------------------------
-                    // TODO: make real pausing instead of using the uncleared bg as still
+section_menu_world: /* ------------------------------------------------------ */
+                    /* TODO: make real pausing instead of using the uncleared bg as still */
     BeginDrawing();
     draw_menu_overlay(setting.render_size);
     EndDrawing();
@@ -153,7 +153,7 @@ section_menu_world: // ---------------------------------------------------------
             break;
     }
 
-section_main: // ---------------------------------------------------------------
+section_main: /* ------------------------------------------------------------ */
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
         mouse_delta = GetMouseDelta();
@@ -163,7 +163,7 @@ section_main: // ---------------------------------------------------------------
             center_cursor;
         }
 
-        if (!(state & FLAG_PARSE_CURSOR)) // for fullscreen cursor jump prevention
+        if (!(state & FLAG_PARSE_CURSOR)) /* for fullscreen cursor jump prevention */
         {
             state |= FLAG_PARSE_CURSOR;
             mouse_delta = (Vector2){0.0f, 0.0f};
@@ -192,8 +192,8 @@ section_main: // ---------------------------------------------------------------
             goto section_menu_world;
     }
 
-    // ---- section_cleanup ----------------------------------------------------
-    //pthread_join(thrd_chunk_handler, NULL); //temp off
+    /* ---- section_cleanup ------------------------------------------------- */
+    //pthread_join(thrd_chunk_handler, NULL); /*temp off*/
     unload_textures();
     free_chunking();
     free_gui();
@@ -215,8 +215,8 @@ void init_world(str *str)
     update_player(&lily);
     update_chunk_tab(lily.chunk);
 
-    //lily.state |= FLAG_FALLING; //temp off
-    lily.state |= FLAG_FLYING; //temp
+    //lily.state |= FLAG_FALLING; /*temp off*/
+    lily.state |= FLAG_FLYING; /*temp*/
     set_player_block(&lily, 0, 0, 0);
     lily.delta_target =
         (v3i32){
@@ -257,16 +257,15 @@ void update_world()
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
 
-    // ---- player targeting ---------------------------------------------------
+    /* ---- player targeting ------------------------------------------------ */
     if (is_range_within_v3i(lily.delta_target,
                 (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
                 (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
         state |= FLAG_PARSE_TARGET;
     else state &= ~FLAG_PARSE_TARGET;
 
-    //TODO: make a function 'index_to_bounding_box()'
-    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit)
-    //{}
+    /* TODO: make a function 'index_to_bounding_box()' */
+    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {}
 }
 
 struct /* Chunk Handler Args */
@@ -292,7 +291,7 @@ void *chunk_handler()
 
 void update_input(Player *player)
 {
-    // ---- jumping ------------------------------------------------------------
+    /* ---- jumping --------------------------------------------------------- */
     if (IsKeyDown(bind_jump))
     {
         if (IsKeyPressed(bind_jump) && get_double_press(bind_jump))
@@ -308,7 +307,7 @@ void update_input(Player *player)
         }
     }
 
-    // ---- sneaking -----------------------------------------------------------
+    /* ---- sneaking -------------------------------------------------------- */
     if (IsKeyDown(bind_sneak))
     {
         if (player->state & FLAG_FLYING)
@@ -317,14 +316,14 @@ void update_input(Player *player)
     }
     else player->state &= ~FLAG_SNEAKING;
 
-    // ---- sprinting ----------------------------------------------------------
+    /* ---- sprinting ------------------------------------------------------- */
     if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
         player->state |= FLAG_SPRINTING;
 
     if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
         player->state &= ~FLAG_SPRINTING;
 
-    // ---- moving -------------------------------------------------------------
+    /* ---- moving ---------------------------------------------------------- */
     if (IsKeyDown(bind_strafe_left))
     {
         player->v.x -= player->movement_speed * player->sin_yaw;
@@ -362,7 +361,7 @@ void update_input(Player *player)
         player->pos.y += player->v.y * player->movement_speed;
     }
 
-    // ---- gameplay -----------------------------------------------------------
+    /* ---- gameplay -------------------------------------------------------- */
     if (IsMouseButtonDown(bind_attack_or_destroy))
     {
         if ((state & FLAG_PARSE_TARGET)
@@ -393,7 +392,7 @@ void update_input(Player *player)
         }
     }
 
-    // ---- inventory ----------------------------------------------------------
+    /* ---- inventory ------------------------------------------------------- */
     if (IsKeyPressed(bind_hotbar_slot_1) || IsKeyPressed(bind_hotbar_slot_kp_1))
         hotbar_slot_selected = 1;
 
@@ -441,7 +440,7 @@ void update_input(Player *player)
             --state_menu_depth;
     }
 
-    // ---- miscellaneous ------------------------------------------------------
+    /* ---- miscellaneous --------------------------------------------------- */
     if (IsKeyPressed(bind_toggle_hud))
         state ^= FLAG_HUD;
 
@@ -502,16 +501,16 @@ void update_input(Player *player)
         }
     }
 
-    // ---- debug --------------------------------------------------------------
+    /* ---- debug ----------------------------------------------------------- */
 #if !RELEASE_BUILD
     if (IsKeyPressed(KEY_TAB))
         state ^= FLAG_SUPER_DEBUG;
-#endif // RELEASE_BUILD
+#endif /* RELEASE_BUILD */
 }
 
 void draw_world()
 {
-    // ---- player chunk bounding box ------------------------------------------
+    /* ---- player chunk bounding box --------------------------------------- */
     if (state & FLAG_DEBUG_MORE)
         draw_bounding_box(
                 (Vector3){
@@ -524,7 +523,7 @@ void draw_world()
                 (f32)CHUNK_DIAMETER},
                 ORANGE);
 
-    // ---- player target bounding box -----------------------------------------
+    /* ---- player target bounding box -------------------------------------- */
     if ((state & FLAG_PARSE_TARGET)
             && (state & FLAG_HUD)
             && chunk_tab[chunk_tab_index] != NULL)
@@ -553,7 +552,7 @@ void draw_world()
           */
         DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
         draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
-        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); //temp AABB collision
+        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); /*temp AABB collision*/
     }
 }
 

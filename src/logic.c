@@ -5,7 +5,7 @@
 #include "h/logic.h"
 #include "h/chunking.h"
 
-// ---- variables --------------------------------------------------------------
+/* ---- variables ----------------------------------------------------------- */
 Vector2 mouse_delta;
 
 bool get_double_press(KeyboardKey key)
@@ -52,7 +52,7 @@ void update_player(Player *player)
     {
         player->v = v3fzero;
         player->movement_speed = PLAYER_SPEED_FLY * dt;
-        player->camera.fovy = 80; //TODO: revise (add lerp)
+        player->camera.fovy = 80; /* TODO: revise (add lerp) */
     }
 
     if ((player->state & FLAG_SNEAKING)
@@ -108,7 +108,7 @@ void update_camera_movements_player(Player *player)
 
     switch (player->perspective)
     {
-        case 0: // ---- 1st person ---------------------------------------------
+        case 0: /* ---- 1st person ------------------------------------------ */
             player->camera.position =
                 (Vector3){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             player->camera.target =
@@ -120,7 +120,7 @@ void update_camera_movements_player(Player *player)
             player->camera.up = player_camera_up;
             break;
 
-        case 1: // ---- 3rd person back ----------------------------------------
+        case 1: /* ---- 3rd person back ------------------------------------- */
             player->camera.position =
                 (Vector3){
                     player->pos.x - ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
@@ -132,7 +132,7 @@ void update_camera_movements_player(Player *player)
             player->camera.up = player_camera_up;
             break;
 
-        case 2: // ---- 3rd person front ---------------------------------------
+        case 2: /* ---- 3rd person front ------------------------------------ */
             player->camera.position =
                 (Vector3){
                     player->pos.x + ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
@@ -144,23 +144,23 @@ void update_camera_movements_player(Player *player)
             player->camera.up = player_camera_up;
             break;
 
-            // TODO: make the stalker camera mode
-        case 3: // ---- stalker ------------------------------------------------
+            /* TODO: make the stalker camera mode */
+        case 3: /* ---- stalker --------------------------------------------- */
             player->camera.target =
                 (Vector3){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             break;
 
-            // TODO: make the spectator camera mode
-        case 4: // ---- spectator ----------------------------------------------
+            /* TODO: make the spectator camera mode */
+        case 4: /* ---- spectator ------------------------------------------- */
             break;
     }
 
-    // ---- camera_debug_mode --------------------------------------------------
+    /* ---- camera_debug_mode ----------------------------------------------- */
     if (!(state & FLAG_DEBUG)) return;
     switch (player->perspective)
     {
-        case 0: // ---- 1st person ---------------------------------------------
-        case 1: // ---- 3rd person back ----------------------------------------
+        case 0: /* ---- 1st person ------------------------------------------ */
+        case 1: /* ---- 3rd person back ------------------------------------- */
             player->camera_debug_info.position =
                 (Vector3){
                     -player->cos_yaw * player->cos_pitch,
@@ -170,7 +170,7 @@ void update_camera_movements_player(Player *player)
             player->camera_debug_info.target = Vector3Zero();
             player->camera_debug_info.up = player_camera_up;
             break;
-        case 2: // ---- 3rd person front ---------------------------------------
+        case 2: /* ---- 3rd person front ------------------------------------ */
             player->camera_debug_info.position =
                 (Vector3){
                     player->cos_yaw * player->cos_pitch,
@@ -181,12 +181,12 @@ void update_camera_movements_player(Player *player)
             player->camera_debug_info.up = player_camera_up;
             break;
 
-            // TODO: make the stalker camera mode
-        case 3: // ---- stalker ------------------------------------------------
+            /* TODO: make the stalker camera mode */
+        case 3: /* ---- stalker --------------------------------------------- */
             break;
 
-            // TODO: make the spectator camera mode
-        case 4: // ---- spectator ----------------------------------------------
+            /* TODO: make the spectator camera mode */
+        case 4: /* ---- spectator ------------------------------------------- */
             break;
     }
 }
@@ -280,23 +280,23 @@ b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end)
     return TRUE;
 }
 
-b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
+b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 {
     //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
         //return true;
     return false;
 }
 
-void update_gravity(Player *player) // TODO: fix player gravity
+void update_gravity(Player *player) /* TODO: fix player gravity */
 {
     if (player->state & FLAG_FALLING)
         player->v.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->m * dt);
     player->pos.z += player->v.z;
-    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
+    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); /*temp*/
 }
 
-/*
-void update_collision_static(player *player) // TODO: make AABB collision work
+//void update_collision_static(player *player) /* TODO: make AABB collision work */
+    /*
 {
     player->collision_check_start = (Vector3){
             floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
@@ -326,7 +326,7 @@ void update_collision_static(player *player) // TODO: make AABB collision work
             player->state &= ~FLAG_FALLING;
         } else player->state |= FLAG_FALLING;
     }
-    //TODO: move to new 'void parse_camera_collisions()'
+    // TODO: move to new 'void parse_camera_collisions()'
     player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
 }
 */

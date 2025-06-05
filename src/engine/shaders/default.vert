@@ -2,15 +2,12 @@
 
 layout (location = 0) in vec3 vertex_pos;
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 uniform mat4 mat_projection;
 out vec4 vertex_color;
-vec4 position;
 
 void main()
 {
     vertex_color = vec4(vertex_pos, 1.0) * 20.0;
-
-    position = mat_projection * vec4(vertex_pos, 1.0);
-    gl_Position = vec4(position.xyz / position.w, 1.0);
+    gl_Position = mat_projection * vec4(vertex_pos, 1.0);
 }

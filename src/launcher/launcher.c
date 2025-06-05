@@ -24,7 +24,7 @@ void init_launcher()
     }
 }
 
-int main(void) // ---- main --------------------------------------------------
+int main(void) /* ---- main ------------------------------------------------- */
 {
     init_launcher();
 
@@ -49,7 +49,7 @@ void update_launcher()
     EndDrawing();
 }
 
-void update_launcher_input() //TODO: evaluate instance
+void update_launcher_input() /* TODO: evaluate instance */
 {
     if (IsKeyPressed(KEY_Q))
         state &= ~STATE_ACTIVE;

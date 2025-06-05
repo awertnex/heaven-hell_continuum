@@ -55,12 +55,12 @@ void draw_super_debugger()
     debug_rectangle.scl.y = w_height - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = w_width - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 
-    // ---- draw base ----------------------------------------------------------
+    /* ---- draw base ------------------------------------------------------- */
     draw_texture_simple(texture_super_debugger, debug_rectangle.rect_center,
             (Vector2){debug_rectangle.pos.x, debug_rectangle.pos.y},
             (Vector2){debug_rectangle.scl.x, debug_rectangle.scl.y}, COL_TRANS_MENU);
     
-    // ---- draw edges ---------------------------------------------------------
+    /* ---- draw edges ------------------------------------------------------ */
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_left,
             (Vector2){
             debug_rectangle.pos.x - SDB_BASE_SIZE,
@@ -90,7 +90,7 @@ void draw_super_debugger()
             debug_rectangle.scl.x,
             SDB_BASE_SIZE}, COL_TRANS_MENU);
 
-    // ---- draw corners -------------------------------------------------------
+    /* ---- draw corners ---------------------------------------------------- */
     draw_texture(texture_super_debugger, debug_rectangle.corner_00,
             (Vector2){
             debug_rectangle.pos.x - SDB_BASE_SIZE,
@@ -112,7 +112,7 @@ void draw_super_debugger()
             debug_rectangle.pos.y + debug_rectangle.scl.y},
             (Vector2){1, 1}, COL_TRANS_MENU);
 
-    // ---- draw the rest of the stuff -----------------------------------------
+    /* ---- draw the rest of the stuff -------------------------------------- */
     draw_button(texture_super_debugger, debug_button_add,
             (Vector2){
             debug_rectangle.pos.x + ((debug_rectangle.scl.x/3)*2),

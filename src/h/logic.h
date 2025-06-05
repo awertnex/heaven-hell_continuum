@@ -10,13 +10,13 @@
 
 #define GRAVITY (9.7803267715f / 100.0f)
 #define MC_C_PI 3.14159265358979323846f
-#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     // 0.017453293f
-#define MC_C_RAD2DEG (180.0f / MC_C_PI)     // 57.295779513f
+#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     /* 0.017453293f */
+#define MC_C_RAD2DEG (180.0f / MC_C_PI)     /* 57.295779513f */
 
 #define v3izero ((v3i32){0.0f, 0.0f, 0.0f})
 #define v3fzero ((v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f})
 
-// ---- player defaults --------------------------------------------------------
+/* ---- player defaults ----------------------------------------------------- */
 #define PLAYER_JUMP_HEIGHT      1.25f
 #define PLAYER_SPEED_WALK       3.0f
 #define PLAYER_SPEED_FLY        10.0f
@@ -26,38 +26,38 @@
 
 typedef struct Player
 {
-    str name[100];                  // player in-game name
-    Vector3 pos;                    // player current coordinates in world
-    Vector3 scl;                    // player size for collision detection
+    str name[100];                  /* player in-game name */
+    Vector3 pos;                    /* player current coordinates in world */
+    Vector3 scl;                    /* player size for collision detection */
     Vector3 collision_check_start;
     Vector3 collision_check_end;
-    f32 pitch, yaw;                 // for player camera direction and target
-    f32 sin_pitch, cos_pitch;       // processed player pitch angles
-    f32 sin_yaw, cos_yaw;           // processed player yaw angles
-    f32 eye_height;                 // height of player camera, usually
-    v3f32 v;                        // velocity
-    f32 m;                          // mass
-    f32 movement_speed;             // depends on enum: PlayerFlags
+    f32 pitch, yaw;                 /* for player camera direction and target */
+    f32 sin_pitch, cos_pitch;       /* processed player pitch angles */
+    f32 sin_yaw, cos_yaw;           /* processed player yaw angles */
+    f32 eye_height;                 /* height of player camera, usually */
+    v3f32 v;                        /* velocity */
+    f32 m;                          /* mass */
+    f32 movement_speed;             /* depends on enum: PlayerFlags */
     f32 movement_step_length;
-    u64 container_state;            // enum: ContainerFlags
-    u8 perspective;                 // camera perspective mode
-    u16 state;                      // enum: PlayerFlags
+    u64 container_state;            /* enum: ContainerFlags */
+    u8 perspective;                 /* camera perspective mode */
+    u16 state;                      /* enum: PlayerFlags */
 
     Camera camera;
-    f32 camera_distance;            // for camera collision detection
+    f32 camera_distance;            /* for camera collision detection */
     Camera camera_debug_info;
 
-    // TODO: do player overflow
-    u8 overflow;                    // player at world edge, enum: PlayerFlags
-    v3i32 delta_pos;                // for collision tunneling prevention
+    /* TODO: do player overflow */
+    u8 overflow;                    /* player at world edge, enum: PlayerFlags */
+    v3i32 delta_pos;                /* for collision tunneling prevention */
     v3i32 delta_target;
-    v3i16 chunk;                    // current chunk player is in
-    v3i16 delta_chunk;              // previous chunk player was in
+    v3i16 chunk;                    /* current chunk player is in */
+    v3i16 delta_chunk;              /* previous chunk player was in */
 
     v3i32 spawn_point;
 } Player;
 
-// ---- flags ------------------------------------------------------------------
+/* ---- flags --------------------------------------------------------------- */
 enum StateFlags
 {
     FLAG_ACTIVE =                   0x0001,
@@ -124,11 +124,11 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern Player lily;
 extern Vector2 mouse_delta;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 bool get_double_press(KeyboardKey key);
 void update_player(Player *player);
 void update_camera_movements_player(Player *player);
