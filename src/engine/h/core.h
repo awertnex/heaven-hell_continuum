@@ -1,4 +1,4 @@
-#ifndef MC_C_RENDERING_H
+#ifndef MC_C_CORE_H
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -9,13 +9,12 @@
 #define VECTOR3_TYPES
 #include "defines.h"
 
-// ---- definitions ------------------------------------------------------------
+/* ---- definitions --------------------------------------------------------- */
 typedef struct Window
 {
     GLFWwindow *window;
     GLFWimage icon;
     v2f64 cursor;
-    v2f64 cursor_last;
     v2f64 cursor_delta;
     v2i32 size;
     char title[20];
@@ -39,17 +38,17 @@ typedef struct Shader
 typedef struct Camera
 {
     v3f32 pos;
-    v3f64 rot;
+    v3f32 rot;
     f32 fov;
     f32 far;
     f32 near;
 } Camera;
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern Shader vertex_shader, fragment_shader;
 extern GLuint shader_program;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 int init_glfw();
 int init_window(Window *render);
 int init_glew(Window *render);
@@ -58,12 +57,12 @@ void update_rendering();
 void draw_rendering();
 void free_rendering();
 
-void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo);
+void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo, u32 vertex_count, u32 index_count);
 int load_shader_from_disk(Shader *shader);
 int init_shader(Shader *shader);
 int init_shader_program();
 int init_shaders();
 
-#define MC_C_RENDERING_H
+#define MC_C_CORE_H
 #endif
 

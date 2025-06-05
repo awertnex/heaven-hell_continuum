@@ -1,8 +1,8 @@
-#include "../engine/rendering.c"
+#include "../engine/core.c"
 
 #define DIR_SHADERS "src/engine/shaders/"
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 Window render =
 {
     .size = {854, 480},
@@ -37,12 +37,14 @@ struct /* matrix */
     m4f32 orientation;
     m4f32 view;
     m4f32 projection;
+    m4f32 gizmo;
 } matrix;
 
-f64 sinpitch, cospitch, sinyaw, cosyaw;
-GLuint vao, vbo, ebo;
+f32 sinpitch, cospitch, sinyaw, cosyaw;
+GLuint vao0, vbo0, ebo0;
+GLuint vao1, vbo1, ebo1;
 
-// ---- callbacks --------------------------------------------------------------
+/* ---- callbacks ----------------------------------------------------------- */
 void error_callback(int error, const char* message)
 {
     LOGERROR("%s", message);
@@ -50,8 +52,7 @@ void error_callback(int error, const char* message)
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
 
-// ---- signatures -------------------------------------------------------------
-void update_cursor_delta();
+/* ---- signatures ---------------------------------------------------------- */
 void update_input(GLFWwindow *win);
 void bind_shader_uniforms();
 void update_shader_uniforms();
@@ -62,6 +63,7 @@ void draw_graphics();
 int main(void)
 {
     glfwSetErrorCallback(error_callback);
+    /*temp*/ render.size = (v2i32){1080, 720};
 
     if (init_glfw() != 0)
         return -1;
@@ -70,11 +72,27 @@ int main(void)
     if (init_glew(&render) != 0)
         return -1;
 
-    // ---- set callbacks ------------------------------------------------------
+    glfwSwapInterval(1); /* VSync */
+
+    /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
+
+    /* ---- set mouse input ------------------------------------------------- */
+    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported())
+    {
+        glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        LOGINFO("Raw Mouse Motion Enabled\n");
+    }
+    else LOGERROR("Raw Mouse Motion Not Supported\n");
+    glfwGetCursorPos(render.window, &render.cursor.x, &render.cursor.y);
+    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
+
+    /* ---- set callbacks --------------------------------------------------- */
     glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
     glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
 
-    bind_mesh(&vao, &vbo, &ebo);
+    /* ---- graphics -------------------------------------------------------- */
+    bind_mesh(&vao0, &vbo0, &ebo0, VERTEX_DATA_GIZMO, INDEX_COUNT_GIZMO);
     if (init_shaders() != 0)
         goto cleanup;
 
@@ -86,52 +104,35 @@ int main(void)
 
     camera =
         (Camera){
-            .pos = (v3f32){-0.5f, -0.5f, -0.5f},
-            .rot = (v3f64){0.0f, 35.0f, 135.0f},
+            .pos = (v3f32){-0.5f, -0.5f, 0.5f},
+            .rot = (v3f32){0.0f, 0.0f, 315.0f},
             .fov = 70.0f,
             .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
         };
 
-    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
-    // ---- main loop ----------------------------------------------------------
+    /* ---- main loop ------------------------------------------------------- */
     while (!glfwWindowShouldClose(render.window))
     {
-        update_cursor_delta();
-        LOGINFO("  cursor[%7.2f %7.2f        ]", render.cursor.x, render.cursor.y);
-        LOGINFO("   delta[%7.2f %7.2f        ]", render.cursor_delta.x, render.cursor_delta.y);
+        LOGINFO("  cursor[%7.2lf %7.2lf        ]", render.cursor.x, render.cursor.y);
+        LOGINFO("   delta[%7.2lf %7.2lf        ]", render.cursor_delta.x, render.cursor_delta.y);
         LOGINFO("     xyz[%7.2f %7.2f %7.2f]", camera.pos.x, camera.pos.y, camera.pos.z);
         LOGINFO("pitchyaw[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
         update_camera_movement(&camera);
+        render.cursor_delta = (v2f64){0.0f, 0.0f};
         update_camera_perspective(&camera);
         draw_graphics();
 
-        if (render.cursor_delta.x > 2.0f
-                || render.cursor_delta.x < -2.0f
-                || render.cursor_delta.y > 2.0f
-                || render.cursor_delta.y < -2.0f
-                || render.cursor.x > (render.size.x / 2.0f) + 2.0f
-                || render.cursor.x < (render.size.x / 2.0f) - 2.0f
-                || render.cursor.y > (render.size.y / 2.0f) + 2.0f
-                || render.cursor.y < (render.size.y / 2.0f) - 2.0f
-                )
-        {
-            glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
-            glfwGetCursorPos(render.window, &render.cursor.x, &render.cursor.y);
-            glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
-        }
-        render.cursor_delta.x = 0.0f;
-        render.cursor_delta.y = 0.0f;
         glfwSwapBuffers(render.window);
         glfwPollEvents();
         update_input(render.window);
     }
 
-cleanup: // --------------------------------------------------------------------
+cleanup: /* ----------------------------------------------------------------- */
 
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
+    glDeleteVertexArrays(1, &vao0);
+    glDeleteBuffers(1, &vbo0);
+    glDeleteBuffers(1, &ebo0);
     glDeleteProgram(shader_program);
     glfwDestroyWindow(render.window);
     glfwTerminate();
@@ -146,22 +147,14 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    glfwGetCursorPos(window, &render.cursor.x, &render.cursor.y);
-}
-
-void update_cursor_delta()
-{
-    if (render.cursor_last.x != render.cursor.x)
-        render.cursor_delta.x = render.cursor.x - render.cursor_last.x;
-    if (render.cursor_last.y != render.cursor.y)
-        render.cursor_delta.y = render.cursor.y - render.cursor_last.y;
-    glfwGetCursorPos(render.window, &render.cursor_last.x, &render.cursor_last.y);
+    render.cursor_delta = (v2f64){xpos - render.cursor.x, ypos - render.cursor.y};
+    render.cursor = (v2f64){xpos, ypos};
 }
 
 f64 movement_speed = 0.04f;
 void update_input(GLFWwindow *win)
 {
-    // ---- movement -----------------------------------------------------------
+    /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
     {
         camera.pos.x += (movement_speed * sinyaw);
@@ -196,7 +189,7 @@ void update_input(GLFWwindow *win)
         camera.pos.z -= movement_speed;
     }
 
-    // ---- debug --------------------------------------------------------------
+    /* ---- debug ----------------------------------------------------------- */
     if (glfwGetKey(win, GLFW_KEY_PAUSE) == GLFW_PRESS)
         glfwSetWindowShouldClose(win, GL_TRUE);
 }
@@ -214,25 +207,25 @@ void update_shader_uniforms()
 
 void update_camera_movement(Camera *camera)
 {
-    const f64 ANGLE = 90.0f;
-    const f64 RANGE = 360.0f;
+    const f32 ANGLE = 90.0f;
+    const f32 RANGE = 360.0f;
 
     camera->rot.y += render.cursor_delta.y;
     camera->rot.z += render.cursor_delta.x;
 
     camera->rot.z = fmod(camera->rot.z, RANGE);
     if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
-    camera->rot.y = clamp_f64(camera->rot.y, -ANGLE, ANGLE);
+    camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
 
-    sinpitch =  sin((camera->rot.y) * DEG2RAD);
-    cospitch =  cos((camera->rot.y) * DEG2RAD);
-    sinyaw =    sin((camera->rot.z) * DEG2RAD);
-    cosyaw =    cos((camera->rot.z) * DEG2RAD);
+    sinpitch =  sinf((camera->rot.y) * DEG2RAD);
+    cospitch =  cosf((camera->rot.y) * DEG2RAD);
+    sinyaw =    sinf((camera->rot.z) * DEG2RAD);
+    cosyaw =    cosf((camera->rot.z) * DEG2RAD);
 }
 
 void update_camera_perspective(Camera *camera)
 {
-    // ---- translation --------------------------------------------------------
+    /* ---- translation ----------------------------------------------------- */
     matrix.translation =
         (m4f32){
             1.0f,           0.0f,           0.0f,           0.0f,
@@ -241,7 +234,7 @@ void update_camera_perspective(Camera *camera)
             -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
         };
 
-    // ---- rotation: yaw ------------------------------------------------------
+    /* ---- rotation: yaw --------------------------------------------------- */
     matrix.rotation =
         (m4f32){
             cosyaw,     sinyaw, 0.0f, 0.0f,
@@ -250,7 +243,7 @@ void update_camera_perspective(Camera *camera)
             0.0f,       0.0f,   0.0f, 1.0f,
         };
 
-    // ---- rotation: pitch ----------------------------------------------------
+    /* ---- rotation: pitch ------------------------------------------------- */
     matrix.rotation = matrix_multiply(matrix.rotation,
             (m4f32){
             cospitch,   0.0f,   sinpitch,   0.0f,
@@ -259,7 +252,7 @@ void update_camera_perspective(Camera *camera)
             0.0f,       0.0f,   0.0f,       1.0f,
             });
 
-    // ---- orientation: z-up --------------------------------------------------
+    /* ---- orientation: z-up ----------------------------------------------- */
     matrix.orientation =
         (m4f32){
             0.0f,   0.0f, -1.0f, 0.0f,
@@ -268,19 +261,18 @@ void update_camera_perspective(Camera *camera)
             0.0f,   0.0f, 0.0f, 1.0f,
         };
 
-    // ---- view ---------------------------------------------------------------
+    /* ---- view ------------------------------------------------------------ */
     matrix.view =
         matrix_multiply(matrix.translation,
             matrix_multiply(matrix.rotation, matrix.orientation));
 
-    // ---- projection ---------------------------------------------------------
+    /* ---- projection ------------------------------------------------------ */
     f32 ratio = (f32)render.size.x / (f32)render.size.y;
     f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
     f32 far = camera->far;
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
     f32 offset = -(2.0f * far * near) / (far - near);
-    printf("clipz[%8.6f]\nclipw[%8.6f]\n\n", clip, offset);
 
     matrix.projection = matrix_multiply(matrix.view,
             (m4f32){
@@ -293,52 +285,15 @@ void update_camera_perspective(Camera *camera)
 
 void draw_graphics()
 {
-    // ---- ready shaders ------------------------------------------------------
+    /* ---- ready shaders --------------------------------------------------- */
     glClearColor(0.69f, 0.86f, 0.9f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shader_program);
 
-    // ---- draw ---------------------------------------------------------------
+    /* ---- draw ------------------------------------------------------------ */
     update_shader_uniforms();
 
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(vao0);
+    glDrawElements(GL_TRIANGLES, 90, GL_UNSIGNED_INT, 0);
 }
-
-/*
-void frustumRH_NO(f32 left, f32 right, f32 bottom, f32 top, f32 nearVal, f32 farVal)
-{
-    m00 = (2 * nearVal) / (right - left);
-    m11 = (2 * nearVal) / (top - bottom);
-    m20 = (right + left) / (right - left);
-    m21 = (top + bottom) / (top - bottom);
-    m22 = - (farVal + nearVal) / (farVal - nearVal);
-    m32 = - (2 * farVal * nearVal) / (farVal - nearVal);
-
-    m4f32 matrix =
-    {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, -1, 0,
-    };
-}
-
-void perspectiveRH_NO(f32 fovy, f32 aspect, f32 cNear, f32 cFar)
-{
-    if (fabs(aspect) <= 0.01f) return;
-
-    f32 fov = tan(fovy / 2);
-    f32 clip = - (cFar + cNear) / (cFar - cNear);
-    f32 offset = - (2 * cFar * cNear) / (cFar - cNear);
-
-    m4f32 matrix =
-    {
-        1 / (aspect * fov), 0,          0,      0,
-        0,                  1 / fov,    0,      0,
-        0,                  0,          clip,   offset,
-        0,                  0,          -1,     0,
-    };
-}
-*/
 

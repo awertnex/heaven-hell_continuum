@@ -3,16 +3,20 @@
 
 #define VECTOR4_TYPES
 #define MATRIX4_TYPES
-#include "h/rendering.h"
+#include "h/core.h"
 #include "math.c"
 #include "logger.c"
 
-// ---- declarations -----------------------------------------------------------
+/* ---- definitions --------------------------------------------------------- */
+#define VERTEX_DATA_GIZMO   51
+#define INDEX_COUNT_GIZMO   90
+
+/* ---- declarations -------------------------------------------------------- */
 GLuint shader_program;
 const unsigned int shader_attribute = 0;
 
 const GLfloat thickness = 0.05f;
-GLfloat coordinate_vertices[39] =
+GLfloat gizmo_vertices[VERTEX_DATA_GIZMO] =
 {
     0.0f, 0.0f, 0.0f,
     thickness, thickness, 0.0f,
@@ -30,9 +34,14 @@ GLfloat coordinate_vertices[39] =
     0.0f, 0.0f, 1.0f,
     thickness, 0.0f, 1.0f,
     0.0f, thickness, 1.0f,
+
+    thickness, thickness, thickness,
+    1.0f, thickness, thickness,
+    thickness, 1.0f, thickness,
+    thickness, thickness, 1.0f,
 };
 
-GLuint coordinate_indices[36] =
+GLuint gizmo_indices[INDEX_COUNT_GIZMO] =
 {
     0, 2, 6, 6, 4, 0,
     0, 4, 5, 5, 1, 0,
@@ -42,21 +51,19 @@ GLuint coordinate_indices[36] =
 
     0, 3, 12, 12, 10, 0,
     0, 10, 11, 11, 2, 0,
+
+    2, 13, 14, 14, 6, 2,
+    3, 9, 15, 15, 13, 3,
+    2, 11, 16, 16, 13, 2,
+    13, 16, 12, 12, 3, 13,
+    4, 6, 14, 14, 5, 4,
+    7, 8, 15, 15, 9, 7,
+    10, 12, 16, 16, 11, 10,
+    1, 5, 14, 14, 13, 1,
+    1, 13, 15, 15, 8, 1,
 };
 
-GLfloat vertices[18] =
-{
-    0.0f, 0.0f, 0.0f,
-    1.0f, 0.0f, 0.0f,
-    1.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f,
-};
-
-GLuint indices[12] = {0, 1, 2, 2, 3, 0, 2, 3, 4, 4, 5, 2};
-
-// ---- functions --------------------------------------------------------------
+/* ---- functions ----------------------------------------------------------- */
 int init_glfw()
 {
     if (!glfwInit())
@@ -97,18 +104,18 @@ int init_glew(Window *render)
     return 0;
 }
 
-void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo)
+void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo, u32 vertex_count, u32 index_count)
 {
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
 
     glGenBuffers(1, vbo);
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(coordinate_vertices), coordinate_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(GLfloat), gizmo_vertices, GL_STATIC_DRAW);
 
     glGenBuffers(1, ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(coordinate_indices), coordinate_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), gizmo_indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);

@@ -6,14 +6,14 @@
 #define MATRIX4_TYPES
 #include "defines.h"
 
-// ---- definitions ------------------------------------------------------------
+/* ---- definitions --------------------------------------------------------- */
 #define PI              3.14159265358979323846f
-#define DEG2RAD         (PI / 180.0f)   // 0.017453293f
-#define RAD2DEG         (180.0f / PI)   // 0.017453293f
+#define DEG2RAD         (PI / 180.0f)   /* 0.017453293f */
+#define RAD2DEG         (180.0f / PI)   /* 0.017453293f */
 
 #define arr_len(arr)    (sizeof(arr) / sizeof(arr[0]))
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 f32 clamp_f32(f32 val, f32 min, f32 max);
 f64 clamp_f64(f64 val, f64 min, f64 max);
 
