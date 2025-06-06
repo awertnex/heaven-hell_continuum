@@ -258,23 +258,25 @@ Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
     {
         if (chunk_buf[i].flag & FLAG_CHUNK_LOADED) continue;
 
-        memset(&chunk_buf[i], 0, sizeof(Chunk));
-        chunk_buf[i] =
-            (Chunk){
-                .pos =
-                    (v3i16){
-                        player_delta_chunk.x + (pos.x - CHUNK_BUF_RADIUS),
-                        player_delta_chunk.y + (pos.y - CHUNK_BUF_RADIUS),
-                        player_delta_chunk.z + (pos.z - CHUNK_BUF_RADIUS),
-                    },
-                .flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER,
+        MC_C_CLEAR_MEM(&chunk_buf[i], sizeof(Chunk));
+        chunk_buf[i].pos =
+            (v3i16){
+                player_delta_chunk.x + (pos.x - CHUNK_BUF_RADIUS),
+                player_delta_chunk.y + (pos.y - CHUNK_BUF_RADIUS),
+                player_delta_chunk.z + (pos.z - CHUNK_BUF_RADIUS),
             };
-        chunk_buf[i].id =
-            ((u64)(chunk_buf[i].pos.x & 0xffff) << 32)
-            + ((u64)(chunk_buf[i].pos.y & 0xffff) << 16)
-            + ((u64)chunk_buf[i].pos.z & 0xffff);
+
+        chunk_buf[i].id = 0
+            | ((u64)(chunk_buf[i].pos.x & 0xffff) << 32)
+            | ((u64)(chunk_buf[i].pos.y & 0xffff) << 16)
+            | ((u64)(chunk_buf[i].pos.z & 0xffff));
+
+        chunk_buf[i].flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER;
+
         return &chunk_buf[i];
     }
+
+    LOGERROR("%s", "chunk_buf Full");
     return NULL;
 }
 
