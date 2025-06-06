@@ -1,4 +1,5 @@
 #ifndef MC_C_LAUNCHER_H
+#define MC_C_LAUNCHER_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 
@@ -33,6 +34,5 @@ void update_launcher();
 void close_launcher();
 void update_launcher_input();
 
-#define MC_C_LAUNCHER_H
-#endif
+#endif /* MC_C_LAUNCHER_H */
 

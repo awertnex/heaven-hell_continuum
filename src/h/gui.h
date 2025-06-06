@@ -1,4 +1,5 @@
 #ifndef MC_C_GUI_H
+#define MC_C_GUI_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 
@@ -287,6 +288,5 @@ void btn_func_back_to_game();
 void btn_func_save_and_quit_to_title();
 void btn_func_back();
 
-#define MC_C_GUI_H
-#endif
+#endif /* MC_C_GUI_H */
 

@@ -1,4 +1,5 @@
 #ifndef MC_C_H
+#define MC_C_H
 
 #define MC_C_VERSION "Minecraft.c 0.1.4"
 #define MC_C_AUTHOR "Author: Lily Awertnex"
@@ -37,6 +38,5 @@ extern f64 skybox_mid_night;
 int mc_c_mkdir(str *path, u16 mode);
 void init_world(str *str);
 
-#define MC_C_H
-#endif
+#endif /* MC_C_MAIN_H */
 

@@ -1,4 +1,5 @@
 #ifndef MC_C_LOGIC_H
+#define MC_C_LOGIC_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../dependencies/raylib-5.5/include/raymath.h"
@@ -153,6 +154,5 @@ b8 get_timer(f64 *time_start, f32 interval);
 
 void draw_default_grid(Color x, Color y, Color z);
 
-#define MC_C_LOGIC_H
-#endif
+#endif /* MC_C_LOGIC_H */
 

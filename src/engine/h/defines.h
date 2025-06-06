@@ -1,4 +1,5 @@
 #ifndef DEFINES_H
+#define DEFINES_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -206,6 +207,5 @@ typedef struct m4f32
 
 #endif /* MATRIX4_TYPES */
 
-#define DEFINES_H
-#endif
+#endif /* DEFINES_H */
 

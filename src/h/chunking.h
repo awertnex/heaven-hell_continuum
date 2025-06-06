@@ -1,4 +1,5 @@
 #ifndef MC_C_CHUNKING_H
+#define MC_C_CHUNKING_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../dependencies/raylib-5.5/include/rlgl.h"
@@ -133,6 +134,5 @@ void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
 
-#define MC_C_CHUNKING_H
-#endif
+#endif /* MC_C_CHUNKING_H */
 

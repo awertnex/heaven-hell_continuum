@@ -1,4 +1,5 @@
 #ifndef MC_C_MATH_H
+#define MC_C_MATH_H
 
 #include <math.h>
 
@@ -22,6 +23,5 @@ m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
 
-#define MC_C_MATH_H
-#endif
+#endif /* MATH_H */
 

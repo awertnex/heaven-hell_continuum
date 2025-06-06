@@ -1,4 +1,5 @@
 #ifndef MC_C_SETTING_H
+#define MC_C_SETTING_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 
@@ -48,6 +49,5 @@ typedef struct Settings
 /* ---- declarations -------------------------------------------------------- */
 extern Settings setting;
 
-#define MC_C_SETTING_H
-#endif
+#endif /* MC_C_SETTING_H */
 

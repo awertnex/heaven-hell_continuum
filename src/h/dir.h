@@ -1,4 +1,5 @@
 #ifndef MC_C_DIR_H
+#define MC_C_DIR_H
 
 #include "main.h"
 #include "../engine/h/defines.h"
@@ -64,6 +65,5 @@ int is_dir_exists(const char *path);
 int init_instance_directory(str *instance_name);
 void init_world_directory(str *world_name);
 
-#define MC_C_DIR_H
-#endif
+#endif /* MC_C_DIR_H */
 
