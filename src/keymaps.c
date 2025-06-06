@@ -1,4 +1,5 @@
 #ifndef MC_C_KEYMAPS_H
+#define MC_C_KEYMAPS_H
 
 #include "dependencies/raylib-5.5/include/raylib.h"
 
@@ -58,6 +59,5 @@ KeyboardKey bind_right =                    KEY_RIGHT;
 KeyboardKey bind_down =                     KEY_DOWN;
 KeyboardKey bind_up =                       KEY_UP;
 
-#define MC_C_KEYMAPS_H
-#endif
+#endif /* MC_C_KEYMAPS_H */
 
