@@ -5,17 +5,10 @@
 #include "../dependencies/raylib-5.5/include/raymath.h"
 #include "../dependencies/raylib-5.5/include/rlgl.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
+#include "../engine/h/math.h"
 #include "../engine/h/defines.h"
 
 #define GRAVITY (9.7803267715f / 100.0f)
-#define MC_C_PI 3.14159265358979323846f
-#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     /* 0.017453293f */
-#define MC_C_RAD2DEG (180.0f / MC_C_PI)     /* 57.295779513f */
-
-#define v3izero ((v3i32){0.0f, 0.0f, 0.0f})
-#define v3fzero ((v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f})
 
 /* ---- player defaults ----------------------------------------------------- */
 #define PLAYER_JUMP_HEIGHT      1.25f

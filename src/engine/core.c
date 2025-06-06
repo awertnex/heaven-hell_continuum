@@ -1,67 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define VECTOR4_TYPES
-#define MATRIX4_TYPES
 #include "h/core.h"
+#include "h/memory.h"
 #include "math.c"
 #include "logger.c"
-
-/* ---- definitions --------------------------------------------------------- */
-#define VERTEX_DATA_GIZMO   51
-#define INDEX_COUNT_GIZMO   90
-
-/* ---- declarations -------------------------------------------------------- */
-GLuint shader_program;
-const unsigned int shader_attribute = 0;
-
-const GLfloat thickness = 0.05f;
-GLfloat gizmo_vertices[VERTEX_DATA_GIZMO] =
-{
-    0.0f, 0.0f, 0.0f,
-    thickness, thickness, 0.0f,
-    thickness, 0.0f, thickness,
-    0.0f, thickness, thickness,
-
-    1.0f, 0.0f, 0.0f,
-    1.0f, thickness, 0.0f,
-    1.0f, 0.0f, thickness,
-
-    0.0f, 1.0f, 0.0f,
-    thickness, 1.0f, 0.0f,
-    0.0f, 1.0f, thickness,
-
-    0.0f, 0.0f, 1.0f,
-    thickness, 0.0f, 1.0f,
-    0.0f, thickness, 1.0f,
-
-    thickness, thickness, thickness,
-    1.0f, thickness, thickness,
-    thickness, 1.0f, thickness,
-    thickness, thickness, 1.0f,
-};
-
-GLuint gizmo_indices[INDEX_COUNT_GIZMO] =
-{
-    0, 2, 6, 6, 4, 0,
-    0, 4, 5, 5, 1, 0,
-
-    0, 1, 8, 8, 7, 0,
-    0, 7, 9, 9, 3, 0,
-
-    0, 3, 12, 12, 10, 0,
-    0, 10, 11, 11, 2, 0,
-
-    2, 13, 14, 14, 6, 2,
-    3, 9, 15, 15, 13, 3,
-    2, 11, 16, 16, 13, 2,
-    13, 16, 12, 12, 3, 13,
-    4, 6, 14, 14, 5, 4,
-    7, 8, 15, 15, 9, 7,
-    10, 12, 16, 16, 11, 10,
-    1, 5, 14, 14, 13, 1,
-    1, 13, 15, 15, 8, 1,
-};
 
 /* ---- functions ----------------------------------------------------------- */
 int init_glfw()
@@ -104,27 +47,6 @@ int init_glew(Window *render)
     return 0;
 }
 
-void bind_mesh(GLuint *vao, GLuint *vbo, GLuint *ebo, u32 vertex_count, u32 index_count)
-{
-    glGenVertexArrays(1, vao);
-    glBindVertexArray(*vao);
-
-    glGenBuffers(1, vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(GLfloat), gizmo_vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_count * sizeof(GLuint), gizmo_indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
 int load_shader_from_disk(Shader *shader)
 {
     FILE *shader_file;
@@ -144,6 +66,7 @@ int load_shader_from_disk(Shader *shader)
     }
     shader->source[i] = '\0';
     fclose(shader_file);
+
     return 0;
 }
 
@@ -154,51 +77,189 @@ int init_shader(Shader *shader)
 
     const GLchar *shader_source_loaded = shader->source;
 
-    shader->shader = glCreateShader(shader->type);
-    glShaderSource(shader->shader, 1, &shader_source_loaded, NULL);
-    glCompileShader(shader->shader);
+    shader->id = glCreateShader(shader->type);
+    glShaderSource(shader->id, 1, &shader_source_loaded, NULL);
+    glCompileShader(shader->id);
 
-    char infoLog[512];
-    glGetShaderiv(shader->shader, GL_COMPILE_STATUS, &shader->loaded);
+    glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
     if (!shader->loaded)
     {
-        glGetShaderInfoLog(shader->loaded, 512, NULL, infoLog);
-        LOGERROR("SHADER: %s '%s'", infoLog, shader->file_name);
+        char log[512];
+        glGetShaderInfoLog(shader->id, 512, NULL, log);
+        LOGERROR("SHADER: '%s' %s", shader->file_name, log);
         return -1;
     }
-    else LOGDEBUG("SHADER: %d '%s' Loaded", shader->loaded, shader->file_name);
+    else LOGDEBUG("SHADER: %d '%s' Loaded", shader->id, shader->file_name);
+
     return 0;
 }
 
-int init_shader_program()
+int init_shader_program(ShaderProgram *program)
 {
-    shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader.shader);
-    glAttachShader(shader_program, fragment_shader.shader);
-    glLinkProgram(shader_program);
+    if (init_shader(&program->vertex) != 0
+            || init_shader(&program->fragment) != 0)
+        return -1;
 
-    int success;
-    char infoLog[512];
-    glGetProgramiv(shader_program, GL_COMPILE_STATUS, &success);
-    if (!success)
+    program->id = glCreateProgram();
+    glAttachShader(program->id, program->vertex.id);
+    glAttachShader(program->id, program->fragment.id);
+    glLinkProgram(program->id);
+
+    glGetProgramiv(program->id, GL_LINK_STATUS, &program->loaded);
+    if (!program->loaded)
     {
-        glGetProgramInfoLog(shader_program, 512, NULL, infoLog);
-        LOGERROR("SHADER PROGRAM: %s", infoLog);
+        char log[512];
+        glGetProgramInfoLog(program->id, 512, NULL, log);
+        LOGERROR("SHADER PROGRAM: %s", log);
         return -1;
     }
-    else LOGDEBUG("SHADER PROGRAM: %d", success);
+    else LOGDEBUG("SHADER PROGRAM: %d Loaded", program->id);
+
+    if (program->vertex.loaded)
+        glDeleteShader(program->vertex.id);
+    if (program->fragment.loaded)
+        glDeleteShader(program->fragment.id);
+
     return 0;
 }
 
-int init_shaders()
+/* usage = GL_<x>_DRAW; */
+int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data)
 {
-    if (init_shader(&vertex_shader) != 0
-            || init_shader(&fragment_shader) != 0
-            || init_shader_program() != 0)
-        return -1;
+    MC_C_ALLOC(mesh->vbo_data, sizeof(GLfloat) * vbo_len);
+    MC_C_ALLOC(mesh->ebo_data, sizeof(GLuint) * ebo_len);
 
-    glDeleteShader(vertex_shader.shader);
-    glDeleteShader(fragment_shader.shader);
+    mesh->vbo_len = vbo_len;
+    mesh->ebo_len = ebo_len;
+
+    memcpy(mesh->vbo_data, vbo_data, sizeof(GLfloat) * vbo_len);
+    memcpy(mesh->ebo_data, ebo_data, sizeof(GLuint) * ebo_len);
+
+    /* ---- bind mesh ------------------------------------------------------- */
+    glGenVertexArrays(1, &mesh->vao);
+    glGenBuffers(1, &mesh->vbo);
+    glGenBuffers(1, &mesh->ebo);
+
+    glBindVertexArray(mesh->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+
+    glBufferData(GL_ARRAY_BUFFER, mesh->vbo_len * sizeof(GLfloat), mesh->vbo_data, usage);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo_len * sizeof(GLuint), mesh->ebo_data, usage);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
     return 0;
+
+cleanup:
+    MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
+    return -1;
+}
+
+void draw_mesh(Mesh *mesh)
+{
+    glBindVertexArray(mesh->vao);
+    glDrawElements(GL_TRIANGLES, mesh->ebo_len, GL_UNSIGNED_INT, 0);
+}
+
+void delete_mesh(Mesh *mesh)
+{
+    MC_C_CLEAR_MEM(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
+    MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
+
+    MC_C_CLEAR_MEM(mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len);
+    MC_C_FREE(mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len);
+
+    glDeleteVertexArrays(1, &mesh->vao);
+    glDeleteBuffers(1, &mesh->vbo);
+    glDeleteBuffers(1, &mesh->ebo);
+};
+
+void update_camera_movement(v2f64 cursor_delta, Camera *camera)
+{
+    const f32 ANGLE = 90.0f;
+    const f32 RANGE = 360.0f;
+
+    camera->rot.y += cursor_delta.y;
+    camera->rot.z += cursor_delta.x;
+
+    camera->rot.z = fmod(camera->rot.z, RANGE);
+    if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
+    camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
+
+    camera->sin_pitch = sinf((camera->rot.y) * DEG2RAD);
+    camera->cos_pitch = cosf((camera->rot.y) * DEG2RAD);
+    camera->sin_yaw =   sinf((camera->rot.z) * DEG2RAD);
+    camera->cos_yaw =   cosf((camera->rot.z) * DEG2RAD);
+}
+
+void update_camera_perspective(Window *win, Camera *camera, Projection *projection)
+{
+    f32 spch = camera->sin_pitch;
+    f32 cpch = camera->cos_pitch;
+    f32 syaw = camera->sin_yaw;
+    f32 cyaw = camera->cos_yaw;
+
+    /* ---- translation ----------------------------------------------------- */
+    projection->translation =
+        (m4f32){
+            1.0f,           0.0f,           0.0f,           0.0f,
+            0.0f,           1.0f,           0.0f,           0.0f,
+            0.0f,           0.0f,           1.0f,           0.0f,
+            -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
+        };
+
+    /* ---- rotation: yaw --------------------------------------------------- */
+    projection->rotation =
+        (m4f32){
+            cyaw,   syaw, 0.0f, 0.0f,
+            -syaw,  cyaw, 0.0f, 0.0f,
+            0.0f,   0.0f, 1.0f, 0.0f,
+            0.0f,   0.0f, 0.0f, 1.0f,
+        };
+
+    /* ---- rotation: pitch ------------------------------------------------- */
+    projection->rotation = matrix_multiply(projection->rotation,
+            (m4f32){
+            cpch,   0.0f, spch, 0.0f,
+            0.0f,   1.0f, 0.0f, 0.0f,
+            -spch,  0.0f, cpch, 0.0f,
+            0.0f,   0.0f, 0.0f, 1.0f,
+            });
+
+    /* ---- orientation: z-up ----------------------------------------------- */
+    projection->orientation =
+        (m4f32){
+            0.0f,   0.0f, -1.0f, 0.0f,
+            -1.0f,  0.0f, 0.0f, 0.0f,
+            0.0f,   1.0f, 0.0f, 0.0f,
+            0.0f,   0.0f, 0.0f, 1.0f,
+        };
+
+    /* ---- view ------------------------------------------------------------ */
+    projection->view =
+        matrix_multiply(projection->translation,
+                matrix_multiply(projection->rotation, projection->orientation));
+
+    /* ---- projection ------------------------------------------------------ */
+    f32 ratio = camera->ratio;
+    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
+    f32 far = camera->far;
+    f32 near = camera->near;
+    f32 clip = -(far + near) / (far - near);
+    f32 offset = -(2.0f * far * near) / (far - near);
+
+    projection->projection = matrix_multiply(projection->view,
+            (m4f32){
+            fov / ratio,    0.0f,   0.0f,   0.0f,
+            0.0f,           fov,    0.0f,   0.0f,
+            0.0f,           0.0f,   clip,  -1.0f,
+            0.0f,           0.0f,   offset, 0.0f,
+            });
 }
 

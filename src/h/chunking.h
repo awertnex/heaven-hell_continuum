@@ -4,8 +4,6 @@
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../dependencies/raylib-5.5/include/rlgl.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 
 #include "main.h"

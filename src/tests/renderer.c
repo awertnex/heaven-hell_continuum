@@ -11,18 +11,34 @@ Window render =
 
 Camera camera = {0};
 
-Shader vertex_shader =
+ShaderProgram shader_program_default =
 {
-    .file_name = DIR_SHADERS"default.vert",
-    .shader = 0,
-    .type = GL_VERTEX_SHADER,
+    .vertex =
+    {
+        .file_name = DIR_SHADERS"default.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADERS"default.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
 };
 
-Shader fragment_shader =
+ShaderProgram shader_program_gizmo =
 {
-    .file_name = DIR_SHADERS"default.frag",
-    .shader = 0,
-    .type = GL_FRAGMENT_SHADER,
+    .vertex =
+    {
+        .file_name = DIR_SHADERS"gizmo.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADERS"gizmo.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
 };
 
 struct /* uniform */
@@ -32,17 +48,18 @@ struct /* uniform */
 
 struct /* matrix */
 {
-    m4f32 translation;
-    m4f32 rotation;
-    m4f32 orientation;
-    m4f32 view;
-    m4f32 projection;
     m4f32 gizmo;
 } matrix;
 
-f32 sinpitch, cospitch, sinyaw, cosyaw;
-GLuint vao0, vbo0, ebo0;
-GLuint vao1, vbo1, ebo1;
+Projection projection = {0};
+
+#define VBO_LEN_COH     24
+#define EBO_LEN_COH     36
+Mesh cube_of_happiness = {0};
+
+#define VBO_LEN_GIZMO   51
+#define EBO_LEN_GIZMO   90
+Mesh gizmo = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
 void error_callback(int error, const char* message)
@@ -53,17 +70,16 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
 
 /* ---- signatures ---------------------------------------------------------- */
-void update_input(GLFWwindow *win);
-void bind_shader_uniforms();
+void update_input(GLFWwindow *win, Camera *camera);
+void bind_shader_uniforms(ShaderProgram *shader_program);
 void update_shader_uniforms();
-void update_camera_movement(Camera *camera);
-void update_camera_perspective(Camera *camera);
+void generate_standard_meshes();
 void draw_graphics();
 
 int main(void)
 {
     glfwSetErrorCallback(error_callback);
-    /*temp*/ render.size = (v2i32){1080, 720};
+    /*temp*/ render.size = (v2i32){1080, 820};
 
     if (init_glfw() != 0)
         return -1;
@@ -92,11 +108,13 @@ int main(void)
     glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
 
     /* ---- graphics -------------------------------------------------------- */
-    bind_mesh(&vao0, &vbo0, &ebo0, VERTEX_DATA_GIZMO, INDEX_COUNT_GIZMO);
-    if (init_shaders() != 0)
+    generate_standard_meshes();
+    if (init_shader_program(&shader_program_default) != 0
+            || init_shader_program(&shader_program_gizmo) != 0)
         goto cleanup;
 
-    bind_shader_uniforms();
+    bind_shader_uniforms(&shader_program_gizmo);
+    bind_shader_uniforms(&shader_program_default);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -118,22 +136,22 @@ int main(void)
         LOGINFO("   delta[%7.2lf %7.2lf        ]", render.cursor_delta.x, render.cursor_delta.y);
         LOGINFO("     xyz[%7.2f %7.2f %7.2f]", camera.pos.x, camera.pos.y, camera.pos.z);
         LOGINFO("pitchyaw[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
-        update_camera_movement(&camera);
+        update_camera_movement(render.cursor_delta, &camera);
         render.cursor_delta = (v2f64){0.0f, 0.0f};
-        update_camera_perspective(&camera);
+        update_camera_perspective(&render, &camera, &projection);
         draw_graphics();
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
-        update_input(render.window);
+        update_input(render.window, &camera);
     }
 
 cleanup: /* ----------------------------------------------------------------- */
 
-    glDeleteVertexArrays(1, &vao0);
-    glDeleteBuffers(1, &vbo0);
-    glDeleteBuffers(1, &ebo0);
-    glDeleteProgram(shader_program);
+    delete_mesh(&cube_of_happiness);
+    delete_mesh(&gizmo);
+    glDeleteProgram(shader_program_default.id);
+    glDeleteProgram(shader_program_gizmo.id);
     glfwDestroyWindow(render.window);
     glfwTerminate();
     return 0;
@@ -152,41 +170,41 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 }
 
 f64 movement_speed = 0.04f;
-void update_input(GLFWwindow *win)
+void update_input(GLFWwindow *win, Camera *camera)
 {
     /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera.pos.x += (movement_speed * sinyaw);
-        camera.pos.y += (movement_speed * cosyaw);
+        camera->pos.x += (movement_speed * camera->sin_yaw);
+        camera->pos.y += (movement_speed * camera->cos_yaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
     {
-        camera.pos.x -= (movement_speed * sinyaw);
-        camera.pos.y -= (movement_speed * cosyaw);
+        camera->pos.x -= (movement_speed * camera->sin_yaw);
+        camera->pos.y -= (movement_speed * camera->cos_yaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
     {
-        camera.pos.x -= (movement_speed * cosyaw);
-        camera.pos.y += (movement_speed * sinyaw);
+        camera->pos.x -= (movement_speed * camera->cos_yaw);
+        camera->pos.y += (movement_speed * camera->sin_yaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
     {
-        camera.pos.x += (movement_speed * cosyaw);
-        camera.pos.y -= (movement_speed * sinyaw);
+        camera->pos.x += (movement_speed * camera->cos_yaw);
+        camera->pos.y -= (movement_speed * camera->sin_yaw);
     }
 
     if (glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        camera.pos.z += movement_speed;
+        camera->pos.z += movement_speed;
     }
 
     if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        camera.pos.z -= movement_speed;
+        camera->pos.z -= movement_speed;
     }
 
     /* ---- debug ----------------------------------------------------------- */
@@ -194,106 +212,106 @@ void update_input(GLFWwindow *win)
         glfwSetWindowShouldClose(win, GL_TRUE);
 }
 
-void bind_shader_uniforms()
+void bind_shader_uniforms(ShaderProgram *shader_program)
 {
     uniform.matrix_projection = 
-        glGetUniformLocation(shader_program, "mat_projection");
+        glGetUniformLocation(shader_program->id, "mat_projection");
 }
 
 void update_shader_uniforms()
 {
-    glUniformMatrix4fv(uniform.matrix_projection, 1, GL_FALSE, (GLfloat*)&matrix.projection);
+    glUniformMatrix4fv(uniform.matrix_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
 }
 
-void update_camera_movement(Camera *camera)
+void generate_standard_meshes()
 {
-    const f32 ANGLE = 90.0f;
-    const f32 RANGE = 360.0f;
+    GLfloat vbo_data_coh[] =
+    {
+        1.0f, 1.0f, 1.0f,
+        2.0f, 1.0f, 1.0f,
+        1.0f, 2.0f, 1.0f,
+        2.0f, 2.0f, 1.0f,
+        1.0f, 1.0f, 2.0f,
+        2.0f, 1.0f, 2.0f,
+        1.0f, 2.0f, 2.0f,
+        2.0f, 2.0f, 2.0f,
+    };
 
-    camera->rot.y += render.cursor_delta.y;
-    camera->rot.z += render.cursor_delta.x;
+    GLuint ebo_data_coh[] =
+    {
+        0, 4, 5, 5, 1, 0,
+        1, 5, 7, 7, 3, 1,
+        3, 7, 6, 6, 2, 3,
+        2, 6, 4, 4, 0, 2,
+        4, 6, 7, 7, 5, 4,
+        0, 1, 3, 3, 2, 0,
+    };
+    
+    const float THIC = 0.03f;
+    GLfloat vbo_data_gizmo[] =
+    {
+        0.0f, 0.0f, 0.0f,
+        THIC, THIC, 0.0f,
+        THIC, 0.0f, THIC,
+        0.0f, THIC, THIC,
+        1.0f, 0.0f, 0.0f,
+        1.0f, THIC, 0.0f,
+        1.0f, 0.0f, THIC,
+        0.0f, 1.0f, 0.0f,
+        THIC, 1.0f, 0.0f,
+        0.0f, 1.0f, THIC,
+        0.0f, 0.0f, 1.0f,
+        THIC, 0.0f, 1.0f,
+        0.0f, THIC, 1.0f,
+        THIC, THIC, THIC,
+        1.0f, THIC, THIC,
+        THIC, 1.0f, THIC,
+        THIC, THIC, 1.0f,
+    };
 
-    camera->rot.z = fmod(camera->rot.z, RANGE);
-    if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
-    camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
+    GLuint ebo_data_gizmo[] =
+    {
+        0, 2, 6, 6, 4, 0,
+        0, 4, 5, 5, 1, 0,
+        0, 1, 8, 8, 7, 0,
+        0, 7, 9, 9, 3, 0,
+        0, 3, 12, 12, 10, 0,
+        0, 10, 11, 11, 2, 0,
+        2, 13, 14, 14, 6, 2,
+        3, 9, 15, 15, 13, 3,
+        2, 11, 16, 16, 13, 2,
+        13, 16, 12, 12, 3, 13,
+        4, 6, 14, 14, 5, 4,
+        7, 8, 15, 15, 9, 7,
+        10, 12, 16, 16, 11, 10,
+        1, 5, 14, 14, 13, 1,
+        1, 13, 15, 15, 8, 1,
+    };
 
-    sinpitch =  sinf((camera->rot.y) * DEG2RAD);
-    cospitch =  cosf((camera->rot.y) * DEG2RAD);
-    sinyaw =    sinf((camera->rot.z) * DEG2RAD);
-    cosyaw =    cosf((camera->rot.z) * DEG2RAD);
-}
+    generate_mesh(&cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
+            vbo_data_coh, ebo_data_coh);
 
-void update_camera_perspective(Camera *camera)
-{
-    /* ---- translation ----------------------------------------------------- */
-    matrix.translation =
-        (m4f32){
-            1.0f,           0.0f,           0.0f,           0.0f,
-            0.0f,           1.0f,           0.0f,           0.0f,
-            0.0f,           0.0f,           1.0f,           0.0f,
-            -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
-        };
-
-    /* ---- rotation: yaw --------------------------------------------------- */
-    matrix.rotation =
-        (m4f32){
-            cosyaw,     sinyaw, 0.0f, 0.0f,
-            -sinyaw,    cosyaw, 0.0f, 0.0f,
-            0.0f,       0.0f,   1.0f, 0.0f,
-            0.0f,       0.0f,   0.0f, 1.0f,
-        };
-
-    /* ---- rotation: pitch ------------------------------------------------- */
-    matrix.rotation = matrix_multiply(matrix.rotation,
-            (m4f32){
-            cospitch,   0.0f,   sinpitch,   0.0f,
-            0.0f,       1.0f,   0.0f,       0.0f,
-            -sinpitch,  0.0f,   cospitch,   0.0f,
-            0.0f,       0.0f,   0.0f,       1.0f,
-            });
-
-    /* ---- orientation: z-up ----------------------------------------------- */
-    matrix.orientation =
-        (m4f32){
-            0.0f,   0.0f, -1.0f, 0.0f,
-            -1.0f,  0.0f, 0.0f, 0.0f,
-            0.0f,   1.0f, 0.0f, 0.0f,
-            0.0f,   0.0f, 0.0f, 1.0f,
-        };
-
-    /* ---- view ------------------------------------------------------------ */
-    matrix.view =
-        matrix_multiply(matrix.translation,
-            matrix_multiply(matrix.rotation, matrix.orientation));
-
-    /* ---- projection ------------------------------------------------------ */
-    f32 ratio = (f32)render.size.x / (f32)render.size.y;
-    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
-    f32 far = camera->far;
-    f32 near = camera->near;
-    f32 clip = -(far + near) / (far - near);
-    f32 offset = -(2.0f * far * near) / (far - near);
-
-    matrix.projection = matrix_multiply(matrix.view,
-            (m4f32){
-            fov / ratio,    0.0f,   0.0f,   0.0f,
-            0.0f,           fov,    0.0f,   0.0f,
-            0.0f,           0.0f,   clip,  -1.0f,
-            0.0f,           0.0f,   offset, 0.0f,
-            });
+    generate_mesh(&gizmo, GL_STATIC_DRAW, VBO_LEN_GIZMO, EBO_LEN_GIZMO,
+            vbo_data_gizmo, ebo_data_gizmo);
 }
 
 void draw_graphics()
 {
-    /* ---- ready shaders --------------------------------------------------- */
+    /* ---- ready ----------------------------------------------------------- */
     glClearColor(0.69f, 0.86f, 0.9f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(shader_program);
-
-    /* ---- draw ------------------------------------------------------------ */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
     update_shader_uniforms();
 
-    glBindVertexArray(vao0);
-    glDrawElements(GL_TRIANGLES, 90, GL_UNSIGNED_INT, 0);
+    /* ---- draw ------------------------------------------------------------ */
+    glUseProgram(shader_program_default.id);
+    draw_mesh(&cube_of_happiness);
+
+    glUseProgram(shader_program_gizmo.id);
+    draw_mesh(&gizmo);
+
+    /* ---- flush ----------------------------------------------------------- */
+    glDisable(GL_DEPTH_TEST);
+    glBindVertexArray(0);
 }
 

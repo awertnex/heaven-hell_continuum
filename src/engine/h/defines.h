@@ -26,7 +26,6 @@ typedef char		str;
 typedef bool        b8;
 typedef bool        b32;
 
-#ifdef VECTOR2_TYPES
 /* ---- vector2u ------------------------------------------------------------ */
 typedef struct v2u8
 {
@@ -80,9 +79,6 @@ typedef struct v2f64
 	f64 x, y;
 } v2f64;
 
-#endif /* VECTOR2_TYPES */
-
-#ifdef VECTOR3_TYPES
 /* ---- vector3u ------------------------------------------------------------ */
 typedef struct v3u8
 {
@@ -136,9 +132,6 @@ typedef struct v3f64
 	f64 x, y, z;
 } v3f64;
 
-#endif /* VECTOR3_TYPES */
-
-#ifdef VECTOR4_TYPES
 /* ---- vector4u ------------------------------------------------------------ */
 typedef struct v4u8
 {
@@ -192,9 +185,6 @@ typedef struct v4f64
 	f64 x, y, z, w;
 } v4f64;
 
-#endif /* VECTOR4_TYPES */
-
-#ifdef MATRIX4_TYPES
 /* ---- matrix4f ------------------------------------------------------------ */
 typedef struct m4f32
 {
@@ -204,8 +194,6 @@ typedef struct m4f32
         a31, a32, a33, a34,
         a41, a42, a43, a44;
 } m4f32;
-
-#endif /* MATRIX4_TYPES */
 
 #endif /* DEFINES_H */
 

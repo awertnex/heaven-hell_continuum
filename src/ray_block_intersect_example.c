@@ -1,6 +1,5 @@
 #include <math.h>
 
-#define VECTOR3_TYPES
 #include "engine/h/defines.h"
 
 typedef struct BlockHitInfo
