@@ -1,16 +1,17 @@
 #ifndef MC_C_DIR_H
+#define MC_C_DIR_H
 
 #include "main.h"
 #include "../engine/h/defines.h"
 
-// ---- from linux/limits.h ----------------------------------------------------
+/* ---- from linux/limits.h ------------------------------------------------- */
 #ifndef NAME_MAX
     #define NAME_MAX    255
-#endif // NAME_MAX
+#endif /* NAME_MAX */
 #ifndef PATH_MAX
     #define PATH_MAX    4096
-#endif // PATH_MAX
-// ---- from linux/limits.h ----------------------------------------------------
+#endif /* PATH_MAX */
+/* ---- from linux/limits.h ------------------------------------------------- */
 
 enum Directories
 {
@@ -31,11 +32,12 @@ enum Directories
     DIR_LOGO =              10,
     DIR_MISC =              11,
     DIR_PAINTINGS =         12,
-    DIR_SOUNDS =            13,
-    DIR_INFO =              14,
-    DIR_SAVES =             15,
-    DIR_SCREENSHOTS =       16,
-    DIR_TEXT =              17,
+    DIR_SHADERS =           13,
+    DIR_SOUNDS =            14,
+    DIR_INFO =              15,
+    DIR_SAVES =             16,
+    DIR_SCREENSHOTS =       17,
+    DIR_TEXT =              18,
 
     /* World Directories */
     DIR_ADVANCEMENTS =      0,
@@ -46,10 +48,10 @@ enum Directories
 }; /* Directories */
 
 #define GRANDPATH_DIR_COUNT 1
-#define INSTANCE_DIR_COUNT  18
+#define INSTANCE_DIR_COUNT  19
 #define WORLD_DIR_COUNT     5
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern str mc_c_grandpath[PATH_MAX];
 extern str mc_c_subpath[PATH_MAX];
 extern str mc_c_launcher_path[PATH_MAX];
@@ -57,12 +59,11 @@ extern str grandpath_dir[GRANDPATH_DIR_COUNT][NAME_MAX];
 extern str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX];
 extern str world_dir[WORLD_DIR_COUNT][NAME_MAX];
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 void init_paths();
 int is_dir_exists(const char *path);
 int init_instance_directory(str *instance_name);
 void init_world_directory(str *world_name);
 
-#define MC_C_DIR_H
-#endif
+#endif /* MC_C_DIR_H */
 

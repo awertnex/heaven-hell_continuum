@@ -2,7 +2,7 @@
 #include "h/gui.h"
 #include "h/logic.h"
 
-// ---- variables --------------------------------------------------------------
+/* ---- variables ----------------------------------------------------------- */
 Texture texture_super_debugger;
 DebugRect debug_rectangle =
 {
@@ -20,7 +20,7 @@ DebugRect debug_rectangle =
 Rectangle debug_button_add = {SDB_BASE_SIZE*2,                      0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 Rectangle debug_button_sub = {(SDB_BASE_SIZE*2) + SDB_BUTTON_SIZE,  0, SDB_BUTTON_SIZE, SDB_BUTTON_SIZE};
 
-// ---- functions --------------------------------------------------------------
+/* ---- functions ----------------------------------------------------------- */
 void init_super_debugger(v2f32 render_size)
 {
     buttons[BTN_SDB_ADD] = 1;
@@ -46,13 +46,13 @@ void draw_super_debugger(v2f32 render_size)
     debug_rectangle.scl.y = render_size.y - ((MARGIN + SDB_BASE_SIZE)*2);
     debug_rectangle.pos.x = render_size.x - debug_rectangle.scl.x - MARGIN - (SDB_BASE_SIZE*2);
 
-    // ---- draw base ----------------------------------------------------------
+    /* ---- draw base ------------------------------------------------------- */
     draw_texture_simple(texture_super_debugger, debug_rectangle.rect_center,
             (v2i16){debug_rectangle.pos.x, debug_rectangle.pos.y},
             (v2i16){debug_rectangle.scl.x, debug_rectangle.scl.y},
             COL_TRANS_MENU);
     
-    // ---- draw edges ---------------------------------------------------------
+    /* ---- draw edges ------------------------------------------------------ */
     draw_texture_simple(texture_super_debugger, debug_rectangle.edge_left,
             (v2i16){debug_rectangle.pos.x - SDB_BASE_SIZE, debug_rectangle.pos.y},
             (v2i16){SDB_BASE_SIZE, debug_rectangle.scl.y},
@@ -73,7 +73,7 @@ void draw_super_debugger(v2f32 render_size)
             (v2i16){debug_rectangle.scl.x, SDB_BASE_SIZE},
             COL_TRANS_MENU);
 
-    // ---- draw corners -------------------------------------------------------
+    /* ---- draw corners ---------------------------------------------------- */
     draw_texture(texture_super_debugger, debug_rectangle.corner_00,
             (v2i16){debug_rectangle.pos.x - SDB_BASE_SIZE, debug_rectangle.pos.y - SDB_BASE_SIZE},
             (v2i16){1, 1},
@@ -94,7 +94,7 @@ void draw_super_debugger(v2f32 render_size)
             (v2i16){1, 1},
             0, 0, COL_TRANS_MENU);
 
-    // ---- draw the rest of the stuff -----------------------------------------
+    /* ---- draw the rest of the stuff -------------------------------------- */
     /* temp
     draw_button(texture_super_debugger, debug_button_add,
             (v2i16){

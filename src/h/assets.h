@@ -1,10 +1,11 @@
 #ifndef MC_C_ASSETS_H
+#define MC_C_ASSETS_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../engine/h/defines.h"
 #include "dir.h"
 
-enum BlockStates
+enum BlockStateFlags
 {
     BLOCK_STATE_SOLID =     0x1,
     BLOCK_STATE_FLUID =     0x2,
@@ -16,11 +17,11 @@ enum BlockStates
     BLOCK_STATE_SLOW =      0x80,
     BLOCK_STATE_QUICK =     0x100,
     BLOCK_STATE_ANIMATES =  0x200,
-}; /* BlockStates */
+}; /* BlockStateFlags */
 
 enum BlockID
 {
-    grass = 0,
+    grass,
     dirt,
     stone,
     cobblestone,
@@ -50,19 +51,18 @@ typedef struct TextureLayout
     u8 nx, ny, nz;
 } TextureLayout;
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern u16 base_texture_size;
 extern TextureLayout one_side;
 extern TextureLayout two_side;
 extern TextureLayout three_side;
 extern TextureLayout three_side_alt;
 extern TextureLayout four_side;
-extern Block block[1023];               // standard block array
+extern Block block[1023];               /* standard block array */
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 void init_textures();
 void unload_textures();
 
-#define MC_C_ASSETS_H
-#endif
+#endif /* MC_C_ASSETS_H */
 

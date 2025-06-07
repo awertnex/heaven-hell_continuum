@@ -1,19 +1,18 @@
 #ifndef MC_C_GUI_H
+#define MC_C_GUI_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 
 #define show_cursor                     ShowCursor()
 #define disable_cursor                  DisableCursor()
 #define detect_cursor                   cursor = GetMousePosition();
-#define center_cursor                   SetMousePosition(render_size.x / 2, render_size.y / 2)
+#define center_cursor                   SetMousePosition(setting.render_size.x / 2, setting.render_size.y / 2)
 #define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
 #define draw_menu_overlay(render_size)  DrawRectangle(0, 0, render_size.x, render_size.y, COL_MENU_BG_OVERLAY)
 
-// ---- colors -----------------------------------------------------------------
+/* ---- colors -------------------------------------------------------------- */
 #define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xff, 0x46)
 #define COL_TEXTURE_DEFAULT color(0xff, 0xff, 0xff, 0xff, 0xff)
 #define COL_TEXT_DEFAULT    color(0xff, 0xff, 0xff, 0xe6, 0xff)
@@ -29,7 +28,7 @@
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
 #define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern Vector2 cursor;
 extern Image mc_c_icon;
 
@@ -87,19 +86,19 @@ enum MenuNames
 
 }; /* MenuNames */
 
-// ---- button stuff -----------------------------------------------------------
+/* ---- button stuff -------------------------------------------------------- */
 #define BTN_COUNT 110
 extern u8 buttons[BTN_COUNT];
 enum ButtonNames
 {
-    // ---- title screen -------------------------------------------------------
+    /* ---- title screen ---------------------------------------------------- */
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER = 1,
     BTN_MINECRAFT_C_REALMS = 2,
     BTN_OPTIONS = 3,
     BTN_QUIT = 4,
 
-    // ---- game menu ----------------------------------------------------------
+    /* ---- game menu ------------------------------------------------------- */
     BTN_BACK_TO_GAME = 0,
     BTN_ADVANCEMENTS = 1,
     BTN_STATISTICS = 2,
@@ -108,7 +107,7 @@ enum ButtonNames
     BTN_OPTIONS_GAME = 6,
     BTN_OPEN_TO_LAN = 7,
 
-    // ---- options ------------------------------------------------------------
+    /* ---- options --------------------------------------------------------- */
     BTN_DONE = 0,
     BTN_FOV = 1,
     BTN_ONLINE = 2,
@@ -124,7 +123,7 @@ enum ButtonNames
     BTN_TELEMETRY_DATA = 12,
     BTN_CREDITS_N_ATTRIBUTION = 13,
 
-    // ---- inventory ----------------------------------------------------------
+    /* ---- inventory ------------------------------------------------------- */
     BTN_INV_1 = 0,
     BTN_INV_2 = 1,
     BTN_INV_3 = 2,
@@ -159,7 +158,7 @@ enum ButtonNames
     BTN_SHIELD = 31,
     BTN_OFFHAND = 32,
 
-    // ---- hotbar slots -------------------------------------------------------
+    /* ---- hotbar slots ---------------------------------------------------- */
     BTN_HOTBAR_1 = 33,
     BTN_HOTBAR_2 = 34,
     BTN_HOTBAR_3 = 35,
@@ -170,7 +169,7 @@ enum ButtonNames
     BTN_HOTBAR_8 = 40,
     BTN_HOTBAR_9 = 41,
 
-    // ---- functional ---------------------------------------------------------
+    /* ---- functional ------------------------------------------------------ */
     BTN_ITEM_IN_1 = 42,
     BTN_ITEM_IN_2 = 43,
     BTN_ITEM_IN_3 = 44,
@@ -184,7 +183,7 @@ enum ButtonNames
     BTN_ITEM_OUT_2 = 52,
     BTN_ITEM_OUT_3 = 53,
 
-    // ---- containers ---------------------------------------------------------
+    /* ---- containers ------------------------------------------------------ */
     BTN_CONTAINER_1 = 54,
     BTN_CONTAINER_2 = 55,
     BTN_CONTAINER_3 = 56,
@@ -240,16 +239,16 @@ enum ButtonNames
     BTN_CONTAINER_53 = 106,
     BTN_CONTAINER_54 = 107,
 
-    // ---- super debugger (SDB) -----------------------------------------------
+    /* ---- super debugger (SDB) -------------------------------------------- */
     BTN_SDB_ADD = 108,
     BTN_SDB_SUB = 109,
 }; /* ButtonNames */
 
-// ---- debug info -------------------------------------------------------------
+/* ---- debug info ---------------------------------------------------------- */
 extern str str_fps[16];
 extern str str_player_pos[32];
 extern str str_player_block[32];
-extern str str_player_chunk[32];
+extern str str_player_chunk[48];
 extern str str_player_direction[32];
 extern str str_block_count[32];
 extern str str_quad_count[32];
@@ -257,7 +256,7 @@ extern str str_tri_count[32];
 extern str str_vertex_count[32];
 extern u8 font_size_debug_info;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 void init_fonts();
 void init_gui();
 void apply_render_settings();
@@ -287,6 +286,5 @@ void btn_func_back_to_game();
 void btn_func_save_and_quit_to_title();
 void btn_func_back();
 
-#define MC_C_GUI_H
-#endif
+#endif /* MC_C_GUI_H */
 

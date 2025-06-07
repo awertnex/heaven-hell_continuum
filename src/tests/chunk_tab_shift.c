@@ -3,7 +3,6 @@
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../dependencies/raylib-5.5/include/rlgl.h"
 
-#define VECTOR2_TYPES
 #include "../engine/h/defines.h"
 #include "../engine/h/memory.h"
 #include "../engine/logger.c"

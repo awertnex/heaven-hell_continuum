@@ -12,7 +12,6 @@
 #include "../chunking.c"
 #include "../dir.c"
 
-#define VECTOR2_TYPES
 #include "../engine/h/defines.h"
 #include "../engine/logger.c"
 

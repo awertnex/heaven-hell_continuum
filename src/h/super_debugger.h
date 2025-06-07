@@ -1,9 +1,8 @@
 #ifndef MC_C_SUPER_DEBUGGER_H
+#define MC_C_SUPER_DEBUGGER_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
 #include "../engine/h/defines.h"
 #include "gui.h"
 
@@ -26,18 +25,17 @@ typedef struct DebugRect
     Vector2 scl;
 } DebugRect;
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern Texture texture_super_debugger;
 extern DebugRect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
 void draw_super_debugger(v2f32 render_size);
 
-#define MC_C_SUPER_DEBUGGER_H
-#endif
+#endif /* MC_C_SUPER_DEBUGGER_H */
 

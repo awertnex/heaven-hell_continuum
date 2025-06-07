@@ -1,22 +1,16 @@
 #ifndef MC_C_LOGIC_H
+#define MC_C_LOGIC_H
 
 #include "../dependencies/raylib-5.5/include/raylib.h"
 #include "../dependencies/raylib-5.5/include/raymath.h"
 #include "../dependencies/raylib-5.5/include/rlgl.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
+#include "../engine/h/math.h"
 #include "../engine/h/defines.h"
 
 #define GRAVITY (9.7803267715f / 100.0f)
-#define MC_C_PI 3.14159265358979323846f
-#define MC_C_DEG2RAD (MC_C_PI / 180.0f)     // 0.017453293f
-#define MC_C_RAD2DEG (180.0f / MC_C_PI)     // 57.295779513f
 
-#define v3izero ((v3i32){0.0f, 0.0f, 0.0f})
-#define v3fzero ((v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f})
-
-// ---- player defaults --------------------------------------------------------
+/* ---- player defaults ----------------------------------------------------- */
 #define PLAYER_JUMP_HEIGHT      1.25f
 #define PLAYER_SPEED_WALK       3.0f
 #define PLAYER_SPEED_FLY        10.0f
@@ -26,36 +20,38 @@
 
 typedef struct Player
 {
-    str name[100];                  // player in-game name
-    Vector3 pos;                    // player current coordinates in world
-    Vector3 scl;                    // player size for collision detection
+    str name[100];                  /* player in-game name */
+    Vector3 pos;                    /* player current coordinates in world */
+    Vector3 scl;                    /* player size for collision detection */
     Vector3 collision_check_start;
     Vector3 collision_check_end;
-    f32 pitch, yaw;                 // for player camera direction and target
-    f32 sin_pitch, cos_pitch;       // processed player pitch angles
-    f32 sin_yaw, cos_yaw;           // processed player yaw angles
-    f32 eye_height;                 // height of player camera, usually
-    v3f32 v;                        // velocity
-    f32 m;                          // mass
-    f32 movement_speed;             // depends on enum: PlayerStates
+    f32 pitch, yaw;                 /* for player camera direction and target */
+    f32 sin_pitch, cos_pitch;       /* processed player pitch angles */
+    f32 sin_yaw, cos_yaw;           /* processed player yaw angles */
+    f32 eye_height;                 /* height of player camera, usually */
+    v3f32 v;                        /* velocity */
+    f32 m;                          /* mass */
+    f32 movement_speed;             /* depends on enum: PlayerFlags */
     f32 movement_step_length;
-    u64 container_state;            // enum: ContainerStates
-    u8 perspective;                 // camera perspective mode
-    u16 state;                      // enum: PlayerStates
+    u64 container_state;            /* enum: ContainerFlags */
+    u8 perspective;                 /* camera perspective mode */
+    u16 state;                      /* enum: PlayerFlags */
 
     Camera camera;
-    f32 camera_distance;            // for camera collision detection
+    f32 camera_distance;            /* for camera collision detection */
     Camera camera_debug_info;
 
-    v3i32 delta_pos;                // for collision tunneling prevention
+    /* TODO: do player overflow */
+    u8 overflow;                    /* player at world edge, enum: PlayerFlags */
+    v3i32 delta_pos;                /* for collision tunneling prevention */
     v3i32 delta_target;
-    v2i16 chunk;                    // current chunk player is in
-    v2i16 delta_chunk;              // previous chunk player was in
+    v3i16 chunk;                    /* current chunk player is in */
+    v3i16 delta_chunk;              /* previous chunk player was in */
 
     v3i32 spawn_point;
 } Player;
 
-// ---- flags ------------------------------------------------------------------
+/* ---- flags --------------------------------------------------------------- */
 enum StateFlags
 {
     FLAG_ACTIVE =                   0x0001,
@@ -84,6 +80,13 @@ enum PlayerFlags
     FLAG_VELOCITY_DIRTY =           0x0040,
     FLAG_HUNGRY =                   0x0080,
     FLAG_DEAD =                     0x0100,
+
+    FLAG_OVERFLOW_X =               0x0001,
+    FLAG_OVERFLOW_Y =               0x0002,
+    FLAG_OVERFLOW_Z =               0x0004,
+    FLAG_OVERFLOW_DIRECTION_X =     0x0008,
+    FLAG_OVERFLOW_DIRECTION_Y =     0x0010,
+    FLAG_OVERFLOW_DIRECTION_Z =     0x0020,
 }; /* PlayerFlags */
 
 enum ContainerStates
@@ -115,26 +118,26 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-// ---- declarations -----------------------------------------------------------
+/* ---- declarations -------------------------------------------------------- */
 extern Player lily;
 extern Vector2 mouse_delta;
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 bool get_double_press(KeyboardKey key);
 void update_player(Player *player);
 void update_camera_movements_player(Player *player);
 void update_player_target(Vector3 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
-void kill_player(Player *player);
-void respawn_player(Player *player);
+void player_kill(Player *player);
+void player_respawn(Player *player);
 
+u32 get_distance(v3i32 a, v3i32 b);
 b8 is_range_within_i(i32 pos, i32 start, i32 end);
 b8 is_range_within_f(f32 pos, f32 start, f32 end);
 b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end);
 b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end);
 b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end);
-b8 is_distance_within(u16 distance, v2i32 start, v2i32 end);
 b8 is_ray_intersect(Player *player);
 
 void update_gravity(Player *player);
@@ -144,6 +147,5 @@ b8 get_timer(f64 *time_start, f32 interval);
 
 void draw_default_grid(Color x, Color y, Color z);
 
-#define MC_C_LOGIC_H
-#endif
+#endif /* MC_C_LOGIC_H */
 

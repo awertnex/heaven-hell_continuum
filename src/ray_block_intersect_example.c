@@ -1,6 +1,5 @@
 #include <math.h>
 
-#define VECTOR3_TYPES
 #include "engine/h/defines.h"
 
 typedef struct BlockHitInfo
@@ -14,7 +13,7 @@ typedef struct BlockHitInfo
 #define MAX_REACH_DISTANCE 5.0f
 u8 block_buf[16][16][16] = {1};
 
-// ---- signatures -------------------------------------------------------------
+/* ---- signatures ---------------------------------------------------------- */
 inline u64 factorial(i32 n);
 inline f64 power(f64 n, u8 exp);
 inline f64 sine(f64 x);
@@ -56,12 +55,12 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
 
             if (dist <= MAX_REACH_DISTANCE)
             {
-                // Fill out hit info
+                /* Fill out hit info */
                 out_hit->block_pos = (v3i32){x, y, z};
                 out_hit->distance = dist;
                 out_hit->hit = true;
 
-                // Determine face normal
+                /* Determine face normal */
                 v3i8 normal = {0};
                 switch (last_axis)
                 {
@@ -75,7 +74,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
             }
         }
 
-        // Step to next voxel
+        /* Step to next voxel */
         if (t_max_x < t_max_y)
         {
             if (t_max_x < t_max_z)
@@ -107,7 +106,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
             }
         }
 
-        // Optional: early exit
+        /* Optional: early exit */
         v3f32 blockCenter = (v3f32){x + 0.5f, y + 0.5f, z + 0.5f};
         if (dist_v3f32(camera, blockCenter) > MAX_REACH_DISTANCE)
             break;
@@ -134,7 +133,7 @@ inline f64 power(f64 n, u8 exp)
     return result;
 }
 
-// Approximate sine using Taylor Series
+/* Approximate sine using Taylor Series */
 inline f64 sine(f64 x)
 {
     while (x > M_PI)
@@ -166,7 +165,7 @@ inline v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
     if (len == 0) return (v3f32){0.0f};
-    return (v3f32){ v.x / len, v.y / len, v.z / len };
+    return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
 inline f32 dist_v3f32(v3f32 a, v3f32 b)

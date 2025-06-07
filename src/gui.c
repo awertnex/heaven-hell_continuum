@@ -8,7 +8,7 @@
 #include "h/chunking.h"
 #include "h/logic.h"
 
-// ---- variables --------------------------------------------------------------
+/* ---- variables ----------------------------------------------------------- */
 Vector2 cursor;
 Image mc_c_icon;
 Font font_regular;
@@ -37,12 +37,12 @@ Rectangle rect_bg_dark =        {16.0f, 0.0f, 16.0f, 16.0f};
 v2i16 hotbar_pos;
 f32 hotbar_slot_selected = 1.0f;
 v2i16 crosshair_pos;
-u16 game_menu_pos = HEIGHT / 3;
+u16 game_menu_pos;
 u8 button_spacing_vertical = 5;
 v2i16 container_inventory_pos;
 v2i16 container_inventory_first_slot_Pos;
 
-// TODO: you know what TODO
+/* TODO: you know what TODO */
 u8 *container_inventory_slots[5][9];
 u8 *container_inventory_slots_crafting[5];
 u8 *container_inventory_slots_armor[5];
@@ -55,11 +55,11 @@ u16 menu_layer[5] = {0};
 u8 buttons[BTN_COUNT];
 static b8 check_menu_ready;
 
-// ---- debug info -------------------------------------------------------------
+/* ---- debug info ---------------------------------------------------------- */
 str str_fps[16];
 str str_player_pos[32];
 str str_player_block[32];
-str str_player_chunk[32];
+str str_player_chunk[48];
 str str_player_direction[32];
 str str_block_count[32];
 str str_quad_count[32];
@@ -67,7 +67,7 @@ str str_tri_count[32];
 str str_vertex_count[32];
 u8 font_size_debug_info = 22;
 
-// ---- functions --------------------------------------------------------------
+/* ---- functions ----------------------------------------------------------- */
 static void print_menu_layers()
 {
     static str menu_names[10][24] =
@@ -108,6 +108,8 @@ void init_gui()
     texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
     texture_bg =                    LoadTexture("resources/gui/bg_options.png");
 
+    game_menu_pos = setting.render_size.y / 3;
+
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
     memset(buttons, 0, BTN_COUNT);
@@ -145,8 +147,8 @@ void free_gui()
     UnloadTexture(texture_bg);
 }
 
-//jump
-// scale = (source.scale * scl);
+/*jump*/
+/* scale = (source.scale * scl); */
 void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
@@ -160,19 +162,19 @@ void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 p
     i32 tile_width = source.width * scl.x;
     i32 tile_height = source.height * scl.y;
 
-    // top left
+    /* top left */
     rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
-    // bottom left
+    /* bottom left */
     rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tile_height);
 
-    // bottom right
+    /* bottom right */
     rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y + tile_height);
 
-    // top right
+    /* top right */
     rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y);
 }
@@ -199,7 +201,7 @@ void update_menus(v2f32 render_size)
                 check_menu_ready = 1;
             }
 
-            //jump
+            /*jump*/
             draw_texture_a(texture_bg, rect_bg, (Rectangle){0.0f, 0.0f, 16.0f, 16.0f},
                     (v2i16){0, 0}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
@@ -396,7 +398,7 @@ void draw_hud()
     draw_texture(texture_hud_widgets, hotbar_selected,
             (v2i16){
             hotbar_pos.x - 2 - ((hotbar.width / 2) * setting.gui_scale) + ((hotbar.height - 2) * setting.gui_scale * (hotbar_slot_selected - 1)),
-            hotbar_pos.y + setting.gui_scale}, // TODO: revise gui_scale mod of selected hotbar position Y
+            hotbar_pos.y + setting.gui_scale}, /* TODO: revise gui_scale mod of selected hotbar position Y */
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
@@ -515,7 +517,7 @@ void draw_debug_info(Camera3D *camera)
 
     update_debug_strings();
 
-    // TODO: rewrite DrawRectangle, get rectangle correct size for font
+    /* TODO: rewrite DrawRectangle, get rectangle correct size for font */
     DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(font_regular, str_fps,                font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
     DrawRectangle(MARGIN - 2, MARGIN + text_row_height,     get_str_width(font_regular, str_player_pos,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
     DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 2, get_str_width(font_regular, str_player_block,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
@@ -538,16 +540,16 @@ void draw_debug_info(Camera3D *camera)
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
-    draw_line_3d(v3izero, (v3i32){1, 0, 0}, COL_X);
-    draw_line_3d(v3izero, (v3i32){0, 1, 0}, COL_Y);
-    draw_line_3d(v3izero, (v3i32){0, 0, 1}, COL_Z);
+    draw_line_3d(v3izero, (v3i32){1.0f, 0.0f, 0.0f}, COL_X);
+    draw_line_3d(v3izero, (v3i32){0.0f, 1.0f, 0.0f}, COL_Y);
+    draw_line_3d(v3izero, (v3i32){0.0f, 0.0f, 1.0f}, COL_Z);
     rlEnd();
     EndMode3D();
 }
 
-// raylib/rtext.c/DrawTextEx refactored;
-// align_x = (0 = left, 1 = center, 2 = right);
-// align_y = (0 = top, 1 = center, 2 = bottom);
+/* raylib/rtext.c/DrawTextEx refactored;
+   align_x = (0 = left, 1 = center, 2 = right);
+   align_y = (0 = top, 1 = center, 2 = bottom); */
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
 {
     switch (align_x)
@@ -642,10 +644,10 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
     return result + 4;
 }
 
-// raylib/rtextures.c/DrawTexturePro refactored;
-// scale = (source.scale * scl);
-// align_x = (0 = left, 1 = center, 2 = right);
-// align_y = (0 = top, 1 = center, 2 = bottom);
+/* raylib/rtextures.c/DrawTexturePro refactored;
+   scale = (source.scale * scl);
+   align_x = (0 = left, 1 = center, 2 = right);
+   align_y = (0 = top, 1 = center, 2 = bottom); */
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
@@ -681,26 +683,26 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
     i32 tile_width = source.width * scl.x;
     i32 tile_height = source.height * scl.y;
 
-    // top left
+    /* top left */
     rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
 
-    // bottom left
+    /* bottom left */
     rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tile_height);
 
-    // bottom right
+    /* bottom right */
     rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y + tile_height);
 
-    // top right
+    /* top right */
     rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y);
 }
 
-//jump
-// TODO: make draw_texture_tiled()
-// raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
+/*jump*/
+/* TODO: make draw_texture_tiled() */
+/* raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored; */
 /*
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
@@ -796,8 +798,8 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
 }
 */
 
-// raylib/rtextures.c/DrawTexturePro refactored;
-// scale = (scl);
+/* raylib/rtextures.c/DrawTexturePro refactored;
+   scale = (scl); */
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
     if (texture.id <= 0) return;
@@ -821,8 +823,8 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
     rlVertex2f(bottom_right.x, top_left.y);
 }
 
-// align_x = (0 = left, 1 = center, 2 = right);
-// align_y = (0 = top, 1 = center, 2 = bottom);
+/* align_x = (0 = left, 1 = center, 2 = right);
+   align_y = (0 = top, 1 = center, 2 = bottom); */
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
     switch (align_x)
@@ -878,12 +880,12 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
 
 void btn_func_singleplayer()
 {
-    menu_index = 0; //TODO: set actual value (MENU_SINGLEPLAYER)
-    state_menu_depth = 0; //TODO: set actual value (2)
+    menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
+    state_menu_depth = 0; /* TODO: set actual value (2) */
     check_menu_ready = 0;
-    state &= ~FLAG_PAUSED; //temp
+    state &= ~FLAG_PAUSED; /*temp*/
 
-    init_world("Poop Consistency Tester"); //temp
+    init_world("Poop Consistency Tester"); /*temp*/
 }
 
 void btn_func_multiplayer()
@@ -934,7 +936,7 @@ void btn_func_save_and_quit_to_title()
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
     check_menu_ready = 0;
-    // TODO: save and unload world
+    /* TODO: save and unload world */
     state &= ~FLAG_WORLD_LOADED;
 }
 

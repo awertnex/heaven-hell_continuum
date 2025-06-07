@@ -32,6 +32,7 @@ str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] =
     "resources/textures/logo/",
     "resources/textures/misc/",
     "resources/textures/paintings/",
+    "resources/shaders/",
     "resources/sounds/",
     "resources/info/",
     "saves/",
@@ -47,12 +48,12 @@ str world_dir[WORLD_DIR_COUNT][NAME_MAX] =
     "player_data/",
 };
 
-// ---- functions --------------------------------------------------------------
+/* ---- functions ----------------------------------------------------------- */
 void init_paths()
 {
 #if RELEASE_MODE
     snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
-            "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); // TODO: test if ROAMING is correct
+            "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
 
     if (!mc_c_mkdir(mc_c_grandpath, 0775))
         LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
@@ -60,7 +61,7 @@ void init_paths()
         LOGINFO("Main Directory Path '%s/%sminecraft.c/'", getenv("HOME"), MC_C_ROAMING);
 #else
     LOGINFO("%s", "Test Instance Directory Path 'test_instance/'");
-#endif // RELEASE_MODE
+#endif /* RELEASE_MODE */
 }
 
 int is_dir_exists(const char *path)
@@ -106,7 +107,7 @@ int init_instance_directory(str *instance_name)
         }
     }
     LOGINFO("Instance Created '%s'", instance_name);
-    // TODO: create instance binary and show in launcher
+    /* TODO: create instance binary and show in launcher */
     return 0;
 }
 

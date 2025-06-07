@@ -1,4 +1,5 @@
 #ifndef MC_C_LOGGER_H
+#define MC_C_LOGGER_H
 
 #include "defines.h"
 
@@ -48,6 +49,5 @@ void log_output(u8 logLevel, const str* message, ...);
     #define LOGDEBUG(message, ...)
 #endif
 
-#define MC_C_LOGGER_H
-#endif
+#endif /* MC_C_LOGGER_H */
 
