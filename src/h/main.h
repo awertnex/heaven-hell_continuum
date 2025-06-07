@@ -25,13 +25,6 @@ extern u64 game_days;
 extern u16 state;
 extern u8 state_menu_depth;
 
-extern f64 skybox_time;
-extern f64 skybox_mid_day;
-extern f64 skybox_pre_burn;
-extern f64 skybox_burn;
-extern f64 skybox_burn_boost;
-extern f64 skybox_mid_night;
-
 /* ---- signatures ---------------------------------------------------------- */
 int mc_c_mkdir(str *path, u16 mode);
 void init_world(str *str);

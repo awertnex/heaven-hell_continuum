@@ -556,35 +556,39 @@ void draw_world()
     }
 }
 
-f64 skybox_time = 0;
-f64 skybox_mid_day = 0;
-f64 skybox_pre_burn = 0;
-f64 skybox_burn = 0;
-f64 skybox_burn_boost = 0;
-f64 skybox_mid_night = 0;
-Color skybox_rgba = {0};
+struct /* skybox */
+{
+    f64 time;
+    f64 mid_day;
+    f64 pre_burn;
+    f64 burn;
+    f64 burn_boost;
+    f64 mid_night;
+    Color color;
+} skybox = {0};
+
 void draw_skybox()
 {
-    skybox_time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
-    skybox_mid_day =    fabs(sin(1.5f * pow(sin(skybox_time * PI), 1.0f)));
-    skybox_pre_burn =   fabs(sin(pow(sin((skybox_time + 0.33) * PI * 1.2f), 16.0f)));
-    skybox_burn =       fabs(sin(1.5f * pow(sin((skybox_time + 0.124f) * PI * 1.6f), 32.0f)));
-    skybox_burn_boost = fabs(pow(sin((skybox_time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox_mid_night =  fabs(sin(pow(2 * cos(skybox_time * PI), 3.0f)));
-    skybox_rgba =
+    skybox.time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
+    skybox.mid_day =    fabs(sin(1.5f * pow(sin(skybox.time * PI), 1.0f)));
+    skybox.pre_burn =   fabs(sin(pow(sin((skybox.time + 0.33) * PI * 1.2f), 16.0f)));
+    skybox.burn =       fabs(sin(1.5f * pow(sin((skybox.time + 0.124f) * PI * 1.6f), 32.0f)));
+    skybox.burn_boost = fabs(pow(sin((skybox.time + 0.212f) * PI * 1.4f), 64.0f));
+    skybox.mid_night =  fabs(sin(pow(2 * cos(skybox.time * PI), 3.0f)));
+    skybox.color =
         (Color){
-            Clamp((skybox_mid_day * 171) + (skybox_burn * 85) + (skybox_mid_night * 1) +
-                    (skybox_pre_burn * 13) + (skybox_burn_boost * 76), 0, 255),
+            Clamp((skybox.mid_day * 171) + (skybox.burn * 85) + (skybox.mid_night * 1) +
+                    (skybox.pre_burn * 13) + (skybox.burn_boost * 76), 0, 255),
 
-            Clamp((skybox_mid_day * 229) + (skybox_burn * 42) + (skybox_mid_night * 4) +
-                    (skybox_pre_burn * 7) + (skybox_burn_boost * 34), 0, 255),
+            Clamp((skybox.mid_day * 229) + (skybox.burn * 42) + (skybox.mid_night * 4) +
+                    (skybox.pre_burn * 7) + (skybox.burn_boost * 34), 0, 255),
 
-            Clamp((skybox_mid_day * 255) + (skybox_burn * 19) + (skybox_mid_night * 14) +
-                    (skybox_pre_burn * 20), 0, 255),
+            Clamp((skybox.mid_day * 255) + (skybox.burn * 19) + (skybox.mid_night * 14) +
+                    (skybox.pre_burn * 20), 0, 255),
             255,
         };
 
-    ClearBackground(skybox_rgba);
+    ClearBackground(skybox.color);
 }
 
 void draw_gui()

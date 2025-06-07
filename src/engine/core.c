@@ -152,9 +152,9 @@ int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfl
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     return 0;
 
@@ -171,6 +171,8 @@ void draw_mesh(Mesh *mesh)
 
 void delete_mesh(Mesh *mesh)
 {
+    if (mesh->vbo_data == NULL || mesh->ebo_data == NULL) return;
+
     MC_C_CLEAR_MEM(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
     MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
 
