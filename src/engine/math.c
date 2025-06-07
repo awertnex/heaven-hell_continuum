@@ -18,7 +18,7 @@ m4f32 matrix_add(m4f32 a, m4f32 b)
             ((a.a31) + (b.a31)), ((a.a32) + (b.a32)), ((a.a33) + (b.a33)), ((a.a34) + (b.a34)),
             ((a.a41) + (b.a41)), ((a.a42) + (b.a42)), ((a.a43) + (b.a43)), ((a.a44) + (b.a44)),
     };
-};
+}
 
 m4f32 matrix_subtract(m4f32 a, m4f32 b)
 {
@@ -28,7 +28,7 @@ m4f32 matrix_subtract(m4f32 a, m4f32 b)
             ((a.a31) - (b.a31)), ((a.a32) - (b.a32)), ((a.a33) - (b.a33)), ((a.a34) - (b.a34)),
             ((a.a41) - (b.a41)), ((a.a42) - (b.a42)), ((a.a43) - (b.a43)), ((a.a44) - (b.a44)),
     };
-};
+}
 
 m4f32 matrix_multiply(m4f32 a, m4f32 b)
 {

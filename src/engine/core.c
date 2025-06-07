@@ -7,7 +7,7 @@
 #include "logger.c"
 
 /* ---- functions ----------------------------------------------------------- */
-int init_glfw()
+int init_glfw(void)
 {
     if (!glfwInit())
     {
@@ -33,10 +33,11 @@ int init_window(Window *render)
     }
     glfwMakeContextCurrent(render->window);
     glfwSetWindowIcon(render->window, 1, &render->icon);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
     return 0;
 }
 
-int init_glew(Window *render)
+int init_glew(void)
 {
     if (glewInit() != GLEW_OK)
     {
@@ -96,8 +97,9 @@ int init_shader(Shader *shader)
 
 int init_shader_program(ShaderProgram *program)
 {
-    if (init_shader(&program->vertex) != 0
-            || init_shader(&program->fragment) != 0)
+    if (init_shader(&program->vertex) != 0)
+        return -1;
+    if (init_shader(&program->fragment) != 0)
         return -1;
 
     program->id = glCreateProgram();
@@ -110,10 +112,10 @@ int init_shader_program(ShaderProgram *program)
     {
         char log[512];
         glGetProgramInfoLog(program->id, 512, NULL, log);
-        LOGERROR("SHADER PROGRAM: %s", log);
+        LOGERROR("SHADER PROGRAM: '%s' %s", program->name, log);
         return -1;
     }
-    else LOGDEBUG("SHADER PROGRAM: %d Loaded", program->id);
+    else LOGDEBUG("SHADER PROGRAM: %d '%s' Loaded", program->id, program->name);
 
     if (program->vertex.loaded)
         glDeleteShader(program->vertex.id);
@@ -157,7 +159,7 @@ int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfl
     return 0;
 
 cleanup:
-    MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
+    delete_mesh(mesh);
     return -1;
 }
 
@@ -178,7 +180,7 @@ void delete_mesh(Mesh *mesh)
     glDeleteVertexArrays(1, &mesh->vao);
     glDeleteBuffers(1, &mesh->vbo);
     glDeleteBuffers(1, &mesh->ebo);
-};
+}
 
 void update_camera_movement(v2f64 cursor_delta, Camera *camera)
 {
@@ -188,7 +190,7 @@ void update_camera_movement(v2f64 cursor_delta, Camera *camera)
     camera->rot.y += cursor_delta.y;
     camera->rot.z += cursor_delta.x;
 
-    camera->rot.z = fmod(camera->rot.z, RANGE);
+    camera->rot.z = fmodf(camera->rot.z, RANGE);
     if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
     camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
 
@@ -198,12 +200,19 @@ void update_camera_movement(v2f64 cursor_delta, Camera *camera)
     camera->cos_yaw =   cosf((camera->rot.z) * DEG2RAD);
 }
 
-void update_camera_perspective(Window *win, Camera *camera, Projection *projection)
+void update_camera_perspective(Camera *camera, Projection *projection)
 {
     f32 spch = camera->sin_pitch;
     f32 cpch = camera->cos_pitch;
     f32 syaw = camera->sin_yaw;
     f32 cyaw = camera->cos_yaw;
+
+    f32 ratio = camera->ratio;
+    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
+    f32 far = camera->far;
+    f32 near = camera->near;
+    f32 clip = -(far + near) / (far - near);
+    f32 offset = -(2.0f * far * near) / (far - near);
 
     /* ---- translation ----------------------------------------------------- */
     projection->translation =
@@ -247,19 +256,14 @@ void update_camera_perspective(Window *win, Camera *camera, Projection *projecti
                 matrix_multiply(projection->rotation, projection->orientation));
 
     /* ---- projection ------------------------------------------------------ */
-    f32 ratio = camera->ratio;
-    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
-    f32 far = camera->far;
-    f32 near = camera->near;
-    f32 clip = -(far + near) / (far - near);
-    f32 offset = -(2.0f * far * near) / (far - near);
-
-    projection->projection = matrix_multiply(projection->view,
-            (m4f32){
+    projection->projection =
+        (m4f32){
             fov / ratio,    0.0f,   0.0f,   0.0f,
             0.0f,           fov,    0.0f,   0.0f,
             0.0f,           0.0f,   clip,  -1.0f,
             0.0f,           0.0f,   offset, 0.0f,
-            });
+        };
+
+    projection->perspective = matrix_multiply(projection->view, projection->projection);
 }
 

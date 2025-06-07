@@ -25,14 +25,14 @@
         memset((x), 0, size);\
         free((x));\
         (x) = NULL;\
-        LOGINFO("%s[%p] Unloaded", #x, &(x));\
+        LOGINFO("%s[%p] Unloaded", #x, x);\
     }
 
 #define MC_C_CLEAR_MEM(x, size)\
     if ((x) != NULL)\
     {\
         memset((x), 0, size);\
-        LOGINFO("%s[%p] Cleared", #x, &(x));\
+        LOGINFO("%s[%p] Cleared", #x, x);\
     }
 
 #endif /* MC_C_MEMORY_H */

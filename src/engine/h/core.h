@@ -16,7 +16,7 @@ typedef struct Window
     v2f64 cursor;
     v2f64 cursor_delta;
     v2i32 size;
-    char title[20];
+    char title[128];
 } Window;
 
 typedef struct Mesh
@@ -69,12 +69,13 @@ typedef struct Projection
     m4f32 orientation;
     m4f32 view;
     m4f32 projection;
+    m4f32 perspective;
 } Projection;
 
 /* ---- signatures ---------------------------------------------------------- */
-int init_glfw();
+int init_glfw(void);
 int init_window(Window *render);
-int init_glew(Window *render);
+int init_glew(void);
 
 int load_shader_from_disk(Shader *shader);
 int init_shader(Shader *shader);
@@ -85,7 +86,7 @@ void draw_mesh(Mesh *mesh);
 void delete_mesh(Mesh *mesh);
 
 void update_camera_movement(v2f64 cursor_delta, Camera *camera);
-void update_camera_perspective(Window *win, Camera *camera, Projection *projection);
+void update_camera_perspective(Camera *camera, Projection *projection);
 
 #endif /* MC_C_CORE_H */
 
