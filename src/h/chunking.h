@@ -62,7 +62,7 @@ enum ChunkFlags
 typedef struct Chunk
 {
     v3i16 pos;                      /* (world XYZ) / CHUNK_DIAMETER */
-    u64 id;                         /* (pos.x << 32) + (pos.y << 16) + pos.z */
+    u64 id;                         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;

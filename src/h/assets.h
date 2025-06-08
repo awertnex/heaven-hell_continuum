@@ -16,7 +16,7 @@ enum BlockStateFlags
     BLOCK_STATE_BOUNCY =    0x40,
     BLOCK_STATE_SLOW =      0x80,
     BLOCK_STATE_QUICK =     0x100,
-    BLOCK_STATE_ANIMATES =  0x200,
+    BLOCK_STATE_ANIMATED =  0x200,
 }; /* BlockStateFlags */
 
 enum BlockID
@@ -24,17 +24,8 @@ enum BlockID
     grass,
     dirt,
     stone,
-    cobblestone,
-    moss_stone,
-    oak_wood_log,
-    oak_wood_planks,
     sand,
     glass,
-    nether_rack,
-    bedrock,
-    glow_stone,
-    deepslate,
-    cobbled_deepslate,
 }; /* BlockID */
 
 typedef struct Block
