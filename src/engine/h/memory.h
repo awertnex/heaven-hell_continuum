@@ -9,30 +9,29 @@
 #define MC_C_ALLOC(x, size)\
     if ((x) == NULL)\
     {\
-        (x) = malloc(size);\
+        (x) = calloc(1, size);\
         if ((x) == NULL)\
         {\
-            LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted", #x, &(x));\
+            LOGFATAL("%s[%p] %s\n", #x, x, "Memory Allocation Failed, Process Aborted");\
             goto cleanup;\
         }\
-        memset((x), 0, (size));\
-        LOGINFO("%s Memory Allocated", #x);\
+        LOGDEBUG("%s[%p] %s\n", #x, x, "Memory Allocated");\
     }
 
 #define MC_C_FREE(x, size)\
-    if ((x))\
+    if ((x) != NULL)\
     {\
         memset((x), 0, size);\
         free((x));\
+        LOGDEBUG("%s[%p] %s\n", #x, x, "Unloaded");\
         (x) = NULL;\
-        LOGINFO("%s[%p] Unloaded", #x, x);\
     }
 
 #define MC_C_CLEAR_MEM(x, size)\
     if ((x) != NULL)\
     {\
         memset((x), 0, size);\
-        LOGINFO("%s[%p] Cleared", #x, x);\
+        LOGDEBUG("%s[%p] %s\n", #x, x, "Cleared");\
     }
 
 #endif /* MC_C_MEMORY_H */
