@@ -94,10 +94,10 @@ void update_camera_movements_player(Player *player)
     if (player->pitch > 90.0f) player->pitch = 90.0f;
     else if (player->pitch < -90.0f) player->pitch = -90.0f;
 
-    player->sin_pitch =  sin(player->pitch * MC_C_DEG2RAD);
-    player->cos_pitch =  cos(player->pitch * MC_C_DEG2RAD);
-    player->sin_yaw =    sin(player->yaw * MC_C_DEG2RAD);
-    player->cos_yaw =    cos(player->yaw * MC_C_DEG2RAD);
+    player->sin_pitch =  sin(player->pitch * DEG2RAD);
+    player->cos_pitch =  cos(player->pitch * DEG2RAD);
+    player->sin_yaw =    sin(player->yaw * DEG2RAD);
+    player->cos_yaw =    cos(player->yaw * DEG2RAD);
 
     Vector3 player_camera_up =
     {
