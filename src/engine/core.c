@@ -137,7 +137,7 @@ int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- color buffer ---------------------------------------------------- */
     glGenTextures(1, color_buf);
     glBindTexture(GL_TEXTURE_2D, *color_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, render->size.x, render->size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render->size.x, render->size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -159,9 +159,9 @@ int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    /* ---- mesh data ------------------------------------------------------- */
     if (mesh_fbo == NULL || mesh_fbo->vbo_data != NULL) return 0;
 
-    /* ---- mesh data ------------------------------------------------------- */
     mesh_fbo->vbo_len = 24;
     GLfloat vbo_data[] =
     {
@@ -282,6 +282,15 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
     f32 offset = -(2.0f * far * near) / (far - near);
+
+    /* ---- target ---------------------------------------------------------- */
+    projection->target =
+        (m4f32){
+            1.0f,           0.0f,           0.0f, 0.0f,
+            0.0f,           1.0f,           0.0f, 0.0f,
+            0.0f,           0.0f,           1.0f, 0.0f,
+            -cyaw * -cpch,    syaw * -cpch,    -spch, 1.0f,
+        };
 
     /* ---- translation ----------------------------------------------------- */
     projection->translation =

@@ -64,6 +64,7 @@ typedef struct Camera
 
 typedef struct Projection
 {
+    m4f32 target;
     m4f32 translation;
     m4f32 rotation;
     m4f32 orientation;
