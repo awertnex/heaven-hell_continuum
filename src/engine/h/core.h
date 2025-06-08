@@ -35,7 +35,7 @@ typedef struct Shader
     str *file_name;
     GLuint id;                  /* used by opengl's "glCreateShader()" */
     GLuint type;                /* GL_<x>_SHADER */
-    GLchar source[1024 * 16];   /* shader file source code */
+    GLchar *source;             /* shader file source code */
     GLint loaded;               /* used by opengl's "glGetShaderiv()" */
 } Shader;
 
@@ -73,14 +73,16 @@ typedef struct Projection
 } Projection;
 
 /* ---- signatures ---------------------------------------------------------- */
+str *get_file_contents(const str *file_name);
 int init_glfw(void);
 int init_window(Window *render);
 int init_glew(void);
 
-int load_shader_from_disk(Shader *shader);
 int init_shader(Shader *shader);
 int init_shader_program(ShaderProgram *program);
 
+int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
+int generate_mesh_fbo(Mesh *mesh);
 int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
 void draw_mesh(Mesh *mesh);
 void delete_mesh(Mesh *mesh);

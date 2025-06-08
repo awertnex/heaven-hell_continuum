@@ -6,12 +6,13 @@ uniform float ratio;
 uniform mat4 mat_rotation;
 uniform mat4 mat_orientation;
 mat4 mat_transposition;
-float corner_offset = 0.2;
-float scale = 0.07;
 out vec4 vertex_color;
 
 void main()
 {
+    float corner_offset = 0.2;
+    float scale = 0.07;
+
     mat_transposition = mat4(
             scale / ratio,                  0.0,                    0.0,    0.0,
             0.0,                            scale,                  0.0,    0.0,

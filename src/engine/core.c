@@ -7,11 +7,36 @@
 #include "logger.c"
 
 /* ---- functions ----------------------------------------------------------- */
+str *get_file_contents(const str *file_name)
+{
+    FILE *file;
+    if ((file = fopen(file_name, "r")) == NULL)
+    {
+        LOGERROR("File '%s' Not Found\n", file_name);
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    u64 len = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    str *contents = NULL;
+    MC_C_ALLOC(contents, len + 1);
+    fread(contents, 1, len, file);
+    contents[len] = '\0';
+    fclose(file);
+    return contents;
+
+cleanup:
+    fclose(file);
+    return NULL;
+}
+
 int init_glfw(void)
 {
     if (!glfwInit())
     {
-        LOGFATAL("%s", "Failed to Initialize GLFW, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLFW, Process Aborted");
         glfwTerminate();
         return -1;
     }
@@ -27,10 +52,11 @@ int init_window(Window *render)
     render->window = glfwCreateWindow(render->size.x, render->size.y, render->title, NULL, NULL);
     if (!render->window)
     {
-        LOGFATAL("%s", "Failed to Initialize Window or OpenGL Context, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
         glfwTerminate();
         return -1;
     }
+
     glfwMakeContextCurrent(render->window);
     glfwSetWindowIcon(render->window, 1, &render->icon);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
@@ -41,56 +67,34 @@ int init_glew(void)
 {
     if (glewInit() != GLEW_OK)
     {
-        LOGFATAL("%s", "Failed to Initialize GLEW, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
         glfwTerminate();
         return -1;
     }
     return 0;
 }
 
-int load_shader_from_disk(Shader *shader)
-{
-    FILE *shader_file;
-    if ((shader_file = fopen(shader->file_name, "r")) == NULL)
-    {
-        LOGFATAL("File '%s' Not Found, Process Aborted", shader->file_name);
-        return -1;
-    }
-
-    char c;
-    int i = 0;
-    while ((i < sizeof(shader->source) - 1)
-            && (c = getc(shader_file)) != EOF)
-    {
-        shader->source[i] = c;
-        ++i;
-    }
-    shader->source[i] = '\0';
-    fclose(shader_file);
-
-    return 0;
-}
-
 int init_shader(Shader *shader)
 {
-    if (load_shader_from_disk(shader) != 0)
+    shader->source = get_file_contents(shader->file_name);
+    if (shader->source == NULL)
         return -1;
 
-    const GLchar *shader_source_loaded = shader->source;
-
     shader->id = glCreateShader(shader->type);
-    glShaderSource(shader->id, 1, &shader_source_loaded, NULL);
+    glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
+
+    MC_C_FREE(shader->source, strlen(shader->source));
 
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
     if (!shader->loaded)
     {
-        char log[512];
-        glGetShaderInfoLog(shader->id, 512, NULL, log);
-        LOGERROR("SHADER: '%s' %s", shader->file_name, log);
+        char log[2048];
+        glGetShaderInfoLog(shader->id, 2048, NULL, log);
+        LOGERROR("SHADER: '%s':\n%s\n", shader->file_name, log);
         return -1;
     }
-    else LOGDEBUG("SHADER: %d '%s' Loaded", shader->id, shader->file_name);
+    else LOGINFO("SHADER: %d '%s' Loaded\n", shader->id, shader->file_name);
 
     return 0;
 }
@@ -110,12 +114,12 @@ int init_shader_program(ShaderProgram *program)
     glGetProgramiv(program->id, GL_LINK_STATUS, &program->loaded);
     if (!program->loaded)
     {
-        char log[512];
-        glGetProgramInfoLog(program->id, 512, NULL, log);
-        LOGERROR("SHADER PROGRAM: '%s' %s", program->name, log);
+        char log[2048];
+        glGetProgramInfoLog(program->id, 2048, NULL, log);
+        LOGERROR("SHADER PROGRAM: '%s':\n%s\n", program->name, log);
         return -1;
     }
-    else LOGDEBUG("SHADER PROGRAM: %d '%s' Loaded", program->id, program->name);
+    else LOGDEBUG("SHADER PROGRAM: %d '%s' Loaded\n", program->id, program->name);
 
     if (program->vertex.loaded)
         glDeleteShader(program->vertex.id);
@@ -123,6 +127,75 @@ int init_shader_program(ShaderProgram *program)
         glDeleteShader(program->fragment.id);
 
     return 0;
+}
+
+int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo)
+{
+    glGenFramebuffers(1, fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
+
+    /* ---- color buffer ---------------------------------------------------- */
+    glGenTextures(1, color_buf);
+    glBindTexture(GL_TEXTURE_2D, *color_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, render->size.x, render->size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *color_buf, 0);
+
+    /* ---- render buffer --------------------------------------------------- */
+    glGenRenderbuffers(1, rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, render->size.x, render->size.y);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
+
+    GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        LOGERROR("%d FBO: '%d' Not Complete\n", status, *fbo);
+        return -1;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (mesh_fbo == NULL || mesh_fbo->vbo_data != NULL) return 0;
+
+    /* ---- mesh data ------------------------------------------------------- */
+    mesh_fbo->vbo_len = 24;
+    GLfloat vbo_data[] =
+    {
+        -1.0f, -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f,
+    };
+    MC_C_ALLOC(mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
+    memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
+
+    /* ---- bind mesh ------------------------------------------------------- */
+    glGenVertexArrays(1, &mesh_fbo->vao);
+    glGenBuffers(1, &mesh_fbo->vbo);
+
+    glBindVertexArray(mesh_fbo->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh_fbo->vbo);
+    glBufferData(GL_ARRAY_BUFFER, mesh_fbo->vbo_len * sizeof(GLfloat), mesh_fbo->vbo_data, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    return 0;
+
+cleanup:
+    delete_mesh(mesh_fbo);
+    return -1;
 }
 
 /* usage = GL_<x>_DRAW; */
@@ -155,7 +228,6 @@ int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfl
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     return 0;
 
 cleanup:
@@ -172,13 +244,8 @@ void draw_mesh(Mesh *mesh)
 void delete_mesh(Mesh *mesh)
 {
     if (mesh->vbo_data == NULL || mesh->ebo_data == NULL) return;
-
-    MC_C_CLEAR_MEM(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
     MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
-
-    MC_C_CLEAR_MEM(mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len);
     MC_C_FREE(mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len);
-
     glDeleteVertexArrays(1, &mesh->vao);
     glDeleteBuffers(1, &mesh->vbo);
     glDeleteBuffers(1, &mesh->ebo);
