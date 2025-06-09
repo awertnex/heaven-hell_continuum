@@ -14,13 +14,13 @@ typedef struct BlockHitInfo
 u8 block_buf[16][16][16] = {1};
 
 /* ---- signatures ---------------------------------------------------------- */
-inline u64 factorial(i32 n);
-inline f64 power(f64 n, u8 exp);
-inline f64 sine(f64 x);
-inline v3f32 sub_v3f32(v3f32 a, v3f32 b);
-inline f32 len_v3f32(v3f32 v);
-inline v3f32 normalize_v3f32(v3f32 v);
-inline f32 dist_v3f32(v3f32 a, v3f32 b);
+u64 factorial(i32 n);
+f64 pow_f64(f64 n, u8 exp);
+f64 sine_f64(f64 x);
+v3f32 sub_v3f32(v3f32 a, v3f32 b);
+f32 len_v3f32(v3f32 v);
+v3f32 normalize_v3f32(v3f32 v);
+f32 dist_v3f32(v3f32 a, v3f32 b);
 
 b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *out_hit)
 {
@@ -116,7 +116,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
     return false;
 }
 
-inline u64 factorial(i32 n)
+u64 factorial(i32 n)
 {
     if (n == 0) return 1;
     u64 result = 1;
@@ -125,7 +125,7 @@ inline u64 factorial(i32 n)
     return result;
 }
 
-inline f64 power(f64 n, u8 exp)
+f64 pow_f64(f64 n, u8 exp)
 {
     f64 result = 1.0;
     for (u8 i = 0; i < exp; ++i)
@@ -134,7 +134,7 @@ inline f64 power(f64 n, u8 exp)
 }
 
 /* Approximate sine using Taylor Series */
-inline f64 sine(f64 x)
+f64 sin_f64(f64 x)
 {
     while (x > M_PI)
         x -= 2 * M_PI;
@@ -145,30 +145,30 @@ inline f64 sine(f64 x)
     u8 precision = 10;
     for (u8 n = 0; n < precision; ++n)
     {
-        f64 term = power(-1, n) * power(x, 2*n + 1) / factorial(2*n + 1);
+        f64 term = pow_f64(-1, n) * pow_f64(x, 2*n + 1) / factorial(2*n + 1);
         result += term;
     }
     return result;
 }
 
-inline v3f32 sub_v3f32(v3f32 a, v3f32 b)
+v3f32 sub_v3f32(v3f32 a, v3f32 b)
 {
     return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
 }
 
-inline f32 len_v3f32(v3f32 v)
+f32 len_v3f32(v3f32 v)
 {
     return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
-inline v3f32 normalize_v3f32(v3f32 v)
+v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
     if (len == 0) return (v3f32){0.0f};
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
-inline f32 dist_v3f32(v3f32 a, v3f32 b)
+f32 dist_v3f32(v3f32 a, v3f32 b)
 {
     return len_v3f32(sub_v3f32(a, b));
 }
