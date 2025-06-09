@@ -4,35 +4,53 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "defines.h"
 #include "logger.h"
 
-#define MC_C_ALLOC(x, size)\
-    if ((x) == NULL)\
-    {\
-        (x) = calloc(1, size);\
-        if ((x) == NULL)\
-        {\
-            LOGFATAL("%s[%p] %s\n", #x, x, "Memory Allocation Failed, Process Aborted");\
-            goto cleanup;\
-        }\
-        LOGDEBUG("%s[%p] %s\n", #x, x, "Memory Allocated");\
-    }
+/* 
+ * size = size in bytes;
+ * name = pointer name (for logging);
+ */
+static inline b8 mem_alloc(void **x, u64 size, const str *name)
+{
+    if (*x != NULL) return TRUE;
 
-#define MC_C_FREE(x, size)\
-    if ((x) != NULL)\
-    {\
-        memset((x), 0, size);\
-        free((x));\
-        LOGDEBUG("%s[%p] %s\n", #x, x, "Unloaded");\
-        (x) = NULL;\
+    *x = calloc(1, size);
+    if (*x == NULL)
+    {
+        LOGFATAL("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
+        return FALSE;
     }
+    LOGDEBUG("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Memory Allocated");
 
-#define MC_C_CLEAR_MEM(x, size)\
-    if ((x) != NULL)\
-    {\
-        memset((x), 0, size);\
-        LOGDEBUG("%s[%p] %s\n", #x, x, "Cleared");\
-    }
+    return TRUE;
+}
+
+/* 
+ * size = size in bytes;
+ * name = pointer name (for logging);
+ */
+static inline void mem_free(void **x, u64 size, const str *name)
+{
+    if (*x == NULL) return;
+
+    memset(*x, 0, size);
+    free(*x);
+    LOGDEBUG("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Unloaded");
+    *x = NULL;
+}
+
+/* 
+ * size = size in bytes;
+ * name = pointer name (for logging);
+ */
+static inline void mem_zero(void **x, u64 size, const str *name)
+{
+    if (*x == NULL) return;
+
+    memset(*x, 0, size);
+    LOGDEBUG("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Cleared");
+}
 
 #endif /* MC_C_MEMORY_H */
 
