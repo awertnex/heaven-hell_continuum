@@ -27,8 +27,6 @@ NOTES.md
 *.pch
 
 # Libraries
-*.lib
-*.a
 *.la
 *.lo
 
