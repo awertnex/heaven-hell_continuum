@@ -6,7 +6,8 @@
 #include "math.c"
 #include "logger.c"
 
-/* ---- functions ----------------------------------------------------------- */
+/* ---- section: directory management --------------------------------------- */
+
 str *get_file_contents(const str *file_name)
 {
     FILE *file;
@@ -21,7 +22,8 @@ str *get_file_contents(const str *file_name)
     fseek(file, 0, SEEK_SET);
 
     str *contents = NULL;
-    MC_C_ALLOC(contents, len + 1);
+    if (!mem_alloc((void*)&contents, len + 1, "mesh.vbo_data"))
+        goto cleanup;
     fread(contents, 1, len, file);
     contents[len] = '\0';
     fclose(file);
@@ -31,6 +33,8 @@ cleanup:
     fclose(file);
     return NULL;
 }
+
+/* ---- section: windowing -------------------------------------------------- */
 
 int init_glfw(void)
 {
@@ -47,7 +51,7 @@ int init_glfw(void)
     return 0;
 }
 
-int init_window(Window *render)
+int init_window(Render *render)
 {
     render->window = glfwCreateWindow(render->size.x, render->size.y, render->title, NULL, NULL);
     if (!render->window)
@@ -74,17 +78,21 @@ int init_glew(void)
     return 0;
 }
 
+/* ---- section: shaders ---------------------------------------------------- */
+
 int init_shader(Shader *shader)
 {
     shader->source = get_file_contents(shader->file_name);
     if (shader->source == NULL)
         return -1;
+    if (shader->id)
+        glDeleteShader(shader->id);
 
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
 
-    MC_C_FREE(shader->source, strlen(shader->source));
+    mem_free((void*)&shader->source, strlen(shader->source), "shader.source");
 
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
     if (!shader->loaded)
@@ -105,6 +113,8 @@ int init_shader_program(ShaderProgram *program)
         return -1;
     if (init_shader(&program->fragment) != 0)
         return -1;
+    if (program->id)
+        glDeleteProgram(program->id);
 
     program->id = glCreateProgram();
     glAttachShader(program->id, program->vertex.id);
@@ -129,7 +139,9 @@ int init_shader_program(ShaderProgram *program)
     return 0;
 }
 
-int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo)
+/* ---- section: meat ------------------------------------------------------- */
+
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo)
 {
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
@@ -137,7 +149,7 @@ int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- color buffer ---------------------------------------------------- */
     glGenTextures(1, color_buf);
     glBindTexture(GL_TEXTURE_2D, *color_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render->size.x, render->size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -172,7 +184,8 @@ int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
         1.0f, -1.0f, 1.0f, 0.0f,
         -1.0f, -1.0f, 0.0f, 0.0f,
     };
-    MC_C_ALLOC(mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
+    if (!mem_alloc((void*)&mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len, "mesh_fbo.vbo_data"))
+        goto cleanup;
     memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
 
     /* ---- bind mesh ------------------------------------------------------- */
@@ -198,11 +211,15 @@ cleanup:
     return -1;
 }
 
-/* usage = GL_<x>_DRAW; */
+/* 
+ * usage = GL_<x>_DRAW;
+ */
 int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data)
 {
-    MC_C_ALLOC(mesh->vbo_data, sizeof(GLfloat) * vbo_len);
-    MC_C_ALLOC(mesh->ebo_data, sizeof(GLuint) * ebo_len);
+    if (!mem_alloc((void*)&mesh->vbo_data, sizeof(GLfloat) * vbo_len, "mesh.vbo_data"))
+        goto cleanup;
+    if (!mem_alloc((void*)&mesh->ebo_data, sizeof(GLuint) * ebo_len, "mesh.vbo_data"))
+        goto cleanup;
 
     mesh->vbo_len = vbo_len;
     mesh->ebo_len = ebo_len;
@@ -244,20 +261,19 @@ void draw_mesh(Mesh *mesh)
 void delete_mesh(Mesh *mesh)
 {
     if (mesh->vbo_data == NULL || mesh->ebo_data == NULL) return;
-    MC_C_FREE(mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len);
-    MC_C_FREE(mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len);
+    mem_free((void*)&mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len, "mesh.vbo_data");
+    mem_free((void*)&mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len, "mesh.vbo_data");
     glDeleteVertexArrays(1, &mesh->vao);
     glDeleteBuffers(1, &mesh->vbo);
     glDeleteBuffers(1, &mesh->ebo);
 }
 
-void update_camera_movement(v2f64 cursor_delta, Camera *camera)
+/* ---- section: camera ----------------------------------------------------- */
+
+void update_camera_movement(Camera *camera)
 {
     const f32 ANGLE = 90.0f;
     const f32 RANGE = 360.0f;
-
-    camera->rot.y += cursor_delta.y;
-    camera->rot.z += cursor_delta.x;
 
     camera->rot.z = fmodf(camera->rot.z, RANGE);
     if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
@@ -343,5 +359,24 @@ void update_camera_perspective(Camera *camera, Projection *projection)
         };
 
     projection->perspective = matrix_multiply(projection->view, projection->projection);
+}
+
+/* ---- section: input ------------------------------------------------------ */
+
+v2f64 get_mouse_position(Render *render, v2f64 *mouse_position) /* TODO: get mouse position */
+{
+    return (v2f64){0.0f, 0.0f};
+}
+
+v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get mouse movement */
+{
+    v2f64 delta =
+    {
+        mouse_position.x - mouse_last->x,
+        mouse_position.y - mouse_last->y
+    };
+
+    *mouse_last = mouse_position;
+    return delta;
 }
 

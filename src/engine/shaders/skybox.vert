@@ -9,6 +9,10 @@ uniform mat4 mat_projection;
 
 void main()
 {
-    gl_Position = mat_projection * mat_orientation * mat_rotation * vec4(a_pos, 1.0);
+    gl_Position =
+        mat_projection *
+        mat_orientation *
+        mat_rotation *
+        vec4(a_pos, 1.0);
 }
 

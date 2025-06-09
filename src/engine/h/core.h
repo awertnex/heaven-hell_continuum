@@ -4,20 +4,21 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
+#include "../../include/GLFW/glfw3.h"
 
 #include "defines.h"
 
 /* ---- definitions --------------------------------------------------------- */
-typedef struct Window
+typedef struct Render
 {
     GLFWwindow *window;
     GLFWimage icon;
-    v2f64 cursor;
-    v2f64 cursor_delta;
+    v2f64 mouse_position;
+    v2f64 mouse_last;
+    v2f64 mouse_delta;
     v2i32 size;
     char title[128];
-} Window;
+} Render;
 
 typedef struct Mesh
 {
@@ -76,19 +77,19 @@ typedef struct Projection
 /* ---- signatures ---------------------------------------------------------- */
 str *get_file_contents(const str *file_name);
 int init_glfw(void);
-int init_window(Window *render);
+int init_window(Render *render);
 int init_glew(void);
 
 int init_shader(Shader *shader);
 int init_shader_program(ShaderProgram *program);
 
-int init_fbo(Window *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
 int generate_mesh_fbo(Mesh *mesh);
 int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
 void draw_mesh(Mesh *mesh);
 void delete_mesh(Mesh *mesh);
 
-void update_camera_movement(v2f64 cursor_delta, Camera *camera);
+void update_camera_movement(Camera *camera);
 void update_camera_perspective(Camera *camera, Projection *projection);
 
 #endif /* MC_C_CORE_H */
