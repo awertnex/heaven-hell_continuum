@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#include "../include/raylib.h"
 #include "../engine/h/defines.h"
 
 void test_binary_operators()

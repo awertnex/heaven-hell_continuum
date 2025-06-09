@@ -1,9 +1,9 @@
 #ifndef MC_C_LOGIC_H
 #define MC_C_LOGIC_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
-#include "../dependencies/raylib-5.5/include/raymath.h"
-#include "../dependencies/raylib-5.5/include/rlgl.h"
+#include "../include/raylib.h"
+#include "../include/raymath.h"
+#include "../include/rlgl.h"
 
 #include "../engine/h/math.h"
 #include "../engine/h/defines.h"

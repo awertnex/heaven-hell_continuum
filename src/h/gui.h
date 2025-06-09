@@ -1,7 +1,7 @@
 #ifndef MC_C_GUI_H
 #define MC_C_GUI_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#include "../include/raylib.h"
 
 #include "../engine/h/defines.h"
 

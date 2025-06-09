@@ -1,7 +1,7 @@
 #ifndef MC_C_ASSETS_H
 #define MC_C_ASSETS_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#include "../include/raylib.h"
 #include "../engine/h/defines.h"
 #include "dir.h"
 
