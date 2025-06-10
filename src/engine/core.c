@@ -11,7 +11,6 @@ int init_glfw(void)
     if (!glfwInit())
     {
         LOGFATAL("%s\n", "Failed to Initialize GLFW, Process Aborted");
-        glfwTerminate();
         return -1;
     }
 
@@ -27,7 +26,6 @@ int init_window(Render *render)
     if (!render->window)
     {
         LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
-        glfwTerminate();
         return -1;
     }
 
@@ -42,9 +40,34 @@ int init_glew(void)
     if (glewInit() != GLEW_OK)
     {
         LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
-        glfwTerminate();
         return -1;
     }
+    return 0;
+}
+
+int init_freetype(void)
+{
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft))
+    {
+        LOGFATAL("%s\n", "Failed to Initialize FreeType, Process Aborted");
+        return -1;
+    }
+
+    FT_Face face;
+    str *font = "./fonts/code_saver_regular.otf";
+    if (FT_New_Face(ft, font, 0, &face))
+    {
+        LOGFATAL("Failed to Load Font '%s', Process Aborted", font);
+        return -1;
+    }
+    LOGINFO("Font Loaded '%s'\n", font);
+
+    return 0;
+}
+
+int load_font(const str *file_name)
+{
     return 0;
 }
 
@@ -98,7 +121,7 @@ int init_shader_program(ShaderProgram *program)
         LOGERROR("SHADER PROGRAM: '%s':\n%s\n", program->name, log);
         return -1;
     }
-    else LOGDEBUG("SHADER PROGRAM: %d '%s' Loaded\n", program->id, program->name);
+    else LOGINFO("SHADER PROGRAM: %d '%s' Loaded\n", program->id, program->name);
 
     if (program->vertex.loaded)
         glDeleteShader(program->vertex.id);
@@ -134,7 +157,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGERROR("%d FBO: '%d' Not Complete\n", status, *fbo);
+        LOGFATAL("%d FBO: '%d' Not Complete, Process Aborted\n", status, *fbo);
         return -1;
     }
 

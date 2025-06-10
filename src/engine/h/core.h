@@ -2,12 +2,15 @@
 #define MC_C_ENGINE_CORE_H
 
 #define MC_C_ENGINE_AUTHOR      "Author: Lily Awertnex"
-#define MC_C_ENGINE_NAME        "minecraft.c.engine"
+#define MC_C_ENGINE_NAME        "heaven-hell continuum"
 #define MC_C_ENGINE_VERSION     "0.1.0-alpha"
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
-#include "../../include/GLFW/glfw3.h"
+#include "../../../include/GLFW/glfw3.h"
+#include "../../../include/ft2build.h"
+#include FT_FREETYPE_H
 
 #include "defines.h"
 
@@ -81,6 +84,7 @@ typedef struct Projection
 int init_glfw(void);
 int init_window(Render *render);
 int init_glew(void);
+int init_freetype(void);
 
 int init_shader(Shader *shader);
 int init_shader_program(ShaderProgram *program);
