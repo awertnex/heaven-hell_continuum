@@ -14,7 +14,7 @@
 #define DIR_TESTS           "src/tests/"
 #define CMD_MEMB            512
 
-#if defined __linux__
+#if defined(__linux__) || defined(__linux)
     #define ALLOC_CMD       mem_alloc_memb((void*)&cmd, CMD_MEMB, NAME_MAX, "cmd")
     #define FREE_CMD        mem_free((void*)&cmd, CMD_MEMB * NAME_MAX, "cmd")
     #define COMPILER        "cc"
@@ -36,7 +36,7 @@ str str_libs[11][24] =
     "-lXinerama",
     "-lm",
 };
-#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__
+#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
     #define ALLOC_CMD
     #define FREE_CMD
     #define COMPILER        "gcc"
@@ -69,7 +69,7 @@ enum Flags
 u8 state = 0;
 u16 flags = 0;
 u64 cmd_pos = 0;
-str str_main[48] = "main.c";
+str str_main[48] = DIR_SRC"main.c";
 str str_cflags[7][24] =
 {
     "-std=c99",
@@ -226,16 +226,21 @@ void build_cmd(int argc, char **argv)
             break;
 
         case STATE_LAUNCHER:
+            snprintf(str_main, 48, "%s%s", DIR_LAUNCHER, "launcher.c");
+            push_cmd(str_main);
             push_glob(DIR_LAUNCHER"*.c");
             snprintf(str_out, 48, "./%slauncher%s", DIR_BIN, EXTENSION);
             break;
 
         case STATE_ENGINE:
+            snprintf(str_main, 48, "%s%s", DIR_ENGINE, "main.c");
+            push_cmd(str_main);
             push_glob(DIR_ENGINE"*.c");
             snprintf(str_out, 48, "./%sengine%s", DIR_BIN, EXTENSION);
             break;
 
         default:
+            push_cmd(str_main);
             push_glob(DIR_SRC"*.c");
             break;
     }
@@ -267,6 +272,8 @@ void push_glob(const str *pattern)
 
     for (u64 i = 0; i < glob_buf.gl_pathc; ++i)
     {
+        if (strstr(glob_buf.gl_pathv[i], str_main))
+            continue;
         cmd[cmd_pos] = glob_buf.gl_pathv[i];
         ++cmd_pos;
     }
