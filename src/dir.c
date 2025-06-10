@@ -1,12 +1,11 @@
 #include <stdio.h>
-#include <sys/stat.h>
 #include <string.h>
 #include <dirent.h>
 
+#include "engine/h/core.h"
+#include "engine/h/logger.h"
 #include "h/main.h"
 #include "h/dir.h"
-#include "engine/h/logger.h"
-#include "engine/h/math.h"
 
 FILE *instance;
 str mc_c_grandpath[PATH_MAX] = {0};
@@ -17,6 +16,7 @@ str grandpath_dir[GRANDPATH_DIR_COUNT][NAME_MAX] =
 {
     "instances/",
 };
+
 str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] = 
 {
     "bin/",
@@ -39,6 +39,7 @@ str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] =
     "screenshots/",
     "text/",
 };
+
 str world_dir[WORLD_DIR_COUNT][NAME_MAX] = 
 {
     "advancements/",
@@ -62,15 +63,6 @@ void init_paths()
 #else
     LOGINFO("%s", "Test Instance Directory Path 'test_instance/'");
 #endif /* RELEASE_MODE */
-}
-
-int is_dir_exists(const char *path)
-{
-    struct stat stats;
-    if (stat(path, &stats) == 0)
-        if (S_ISDIR(stats.st_mode))
-            return 1;
-    return 0;
 }
 
 int init_instance_directory(str *instance_name)

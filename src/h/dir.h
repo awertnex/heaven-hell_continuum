@@ -3,15 +3,7 @@
 
 #include "main.h"
 #include "../engine/h/defines.h"
-
-/* ---- from linux/limits.h ------------------------------------------------- */
-#ifndef NAME_MAX
-    #define NAME_MAX    255
-#endif /* NAME_MAX */
-#ifndef PATH_MAX
-    #define PATH_MAX    4096
-#endif /* PATH_MAX */
-/* ---- from linux/limits.h ------------------------------------------------- */
+#include "../engine/h/dir.h"
 
 enum Directories
 {
@@ -61,7 +53,6 @@ extern str world_dir[WORLD_DIR_COUNT][NAME_MAX];
 
 /* ---- signatures ---------------------------------------------------------- */
 void init_paths();
-int is_dir_exists(const char *path);
 int init_instance_directory(str *instance_name);
 void init_world_directory(str *world_name);
 

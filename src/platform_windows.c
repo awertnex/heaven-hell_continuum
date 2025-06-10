@@ -1,17 +1,19 @@
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#ifndef PLATFORM_WINDOWS_INCLUDE
+#define PLATFORM_WINDOWS_INCLUDE
+
 #include "h/main.h"
 #include "h/setting.h"
 
 #define MC_C_HOME "APPDATA"
 #define MC_C_ROAMING "/Roaming/"
 
-#include "dir.c"
-#include "gui.c"
-#include "chunking.c"
-#include "logic.c"
-#include "assets.c"
-#include "keymaps.c"
-#include "super_debugger.c"
-#include "engine/logger.c"
+#include "h/assets.h"
+#include "h/chunking.h"
+#include "h/dir.h"
+#include "h/gui.h"
+#include "h/logic.h"
+#include "h/super_debugger.h"
 
 int mc_c_mkdir(str *path, u16 mode)
 {
@@ -33,4 +35,7 @@ void update_debug_strings()
     snprintf(str_tri_count, 32,           "TRIS: %lld",             globals.quad_count * 2);
     snprintf(str_vertex_count, 32,        "VERTICES: %lld",         globals.quad_count * 6);
 }
+
+#endif /* PLATFORM_WINDOWS_INCLUDE */
+#endif /* PLATFORM_WINDOWS */
 

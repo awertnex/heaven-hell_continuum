@@ -1,38 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "h/core.h"
+#include "h/dir.h"
+#include "h/logger.h"
+#include "h/math.h"
 #include "h/memory.h"
-#include "math.c"
-#include "logger.c"
-
-/* ---- section: directory management --------------------------------------- */
-
-str *get_file_contents(const str *file_name)
-{
-    FILE *file;
-    if ((file = fopen(file_name, "r")) == NULL)
-    {
-        LOGERROR("File '%s' Not Found\n", file_name);
-        return NULL;
-    }
-
-    fseek(file, 0, SEEK_END);
-    u64 len = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    str *contents = NULL;
-    if (!mem_alloc((void*)&contents, len + 1, "mesh.vbo_data"))
-        goto cleanup;
-    fread(contents, 1, len, file);
-    contents[len] = '\0';
-    fclose(file);
-    return contents;
-
-cleanup:
-    fclose(file);
-    return NULL;
-}
 
 /* ---- section: windowing -------------------------------------------------- */
 
@@ -82,8 +52,7 @@ int init_glew(void)
 
 int init_shader(Shader *shader)
 {
-    shader->source = get_file_contents(shader->file_name);
-    if (shader->source == NULL)
+    if ((shader->source = get_file_contents(shader->file_name)) == NULL)
         return -1;
     if (shader->id)
         glDeleteShader(shader->id);
@@ -184,6 +153,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
         1.0f, -1.0f, 1.0f, 0.0f,
         -1.0f, -1.0f, 0.0f, 0.0f,
     };
+
     if (!mem_alloc((void*)&mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len, "mesh_fbo.vbo_data"))
         goto cleanup;
     memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);

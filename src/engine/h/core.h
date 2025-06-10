@@ -1,6 +1,9 @@
-#ifndef MC_C_CORE_H
-#define MC_C_CORE_H
+#ifndef MC_C_ENGINE_CORE_H
+#define MC_C_ENGINE_CORE_H
 
+#define MC_C_ENGINE_AUTHOR      "Author: Lily Awertnex"
+#define MC_C_ENGINE_NAME        "minecraft.c.engine"
+#define MC_C_ENGINE_VERSION     "0.1.0-alpha"
 #define GLEW_STATIC
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
@@ -75,7 +78,6 @@ typedef struct Projection
 } Projection;
 
 /* ---- signatures ---------------------------------------------------------- */
-str *get_file_contents(const str *file_name);
 int init_glfw(void);
 int init_window(Render *render);
 int init_glew(void);
@@ -92,5 +94,5 @@ void delete_mesh(Mesh *mesh);
 void update_camera_movement(Camera *camera);
 void update_camera_perspective(Camera *camera, Projection *projection);
 
-#endif /* MC_C_CORE_H */
+#endif /* MC_C_ENGINE_CORE_H */
 

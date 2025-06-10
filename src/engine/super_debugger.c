@@ -1,4 +1,7 @@
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#ifdef SUPER_DEBUGGER_ENGINE
+#include "../include/raylib.h"
+
+#include "h/super_debugger.h"
 
 #define SDB_ROW_HEIGHT  22
 #define SDB_BASE_SIZE   5
@@ -123,4 +126,6 @@ void draw_super_debugger()
             debug_rectangle.pos.x + ((debug_rectangle.scl.x/3)*2) + (debug_button_add.width*2),
             debug_rectangle.pos.y + (SDB_BASE_SIZE*2)}, &button_state_sub, 0);
 }
+
+#endif
 

@@ -1,5 +1,5 @@
-#ifndef DEFINES_H
-#define DEFINES_H
+#ifndef ENGINE_DEFINES_H
+#define ENGINE_DEFINES_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -195,5 +195,5 @@ typedef struct m4f32
         a41, a42, a43, a44;
 } m4f32;
 
-#endif /* DEFINES_H */
+#endif /* ENGINE_DEFINES_H */
 

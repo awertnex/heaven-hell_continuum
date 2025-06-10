@@ -1,8 +1,9 @@
 #ifndef MC_C_H
 #define MC_C_H
 
-#define MC_C_AUTHOR "Author: Lily Awertnex"
-#define MC_C_VERSION "Minecraft.c 0.1.4"
+#define MC_C_AUTHOR     "Author: Lily Awertnex"
+#define MC_C_NAME       "minecraft.c"
+#define MC_C_VERSION    "0.1.4"
 
 #include "../engine/h/defines.h"
 
@@ -22,7 +23,7 @@ extern u64 game_tick;
 extern u64 game_days;
 #define dt GetFrameTime()
 
-extern u16 state;
+extern u32 state;
 extern u8 state_menu_depth;
 
 /* ---- signatures ---------------------------------------------------------- */

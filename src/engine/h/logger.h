@@ -1,5 +1,5 @@
-#ifndef MC_C_LOGGER_H
-#define MC_C_LOGGER_H
+#ifndef MC_C_ENGINE_LOGGER_H
+#define MC_C_ENGINE_LOGGER_H
 
 #include "defines.h"
 
@@ -44,5 +44,5 @@ void log_output(u8 log_level, const str* format, ...);
     #define LOGTRACE(format, ...)
 #endif
 
-#endif /* MC_C_LOGGER_H */
+#endif /* MC_C_ENGINE_LOGGER_H */
 

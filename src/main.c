@@ -1,19 +1,9 @@
-#include <string.h>
-#include <sys/stat.h>
-#include <math.h>
-#include <pthread.h>
-
-#include "../include/raylib.h"
-#include "../include/rlgl.h"
-
-#if defined __linux__
-    #include "linux_minecraft.c"
-#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
-    #include "windows_minecraft.c"
-#endif /* PLATFORM */
+#include "engine/core.c"
+#include "platform_linux.c"
+#include "platform_windows.c"
 
 /* ---- declarations -------------------------------------------------------- */
-u16 state = 0;
+u32 state = 0;
 u8 state_menu_depth = 0;
 f64 game_start_time = 0.0f;
 u64 game_tick = 0;
@@ -47,15 +37,13 @@ Player lily =
 
     .camera =
     {
-        .up.z = 1.0f,
-        .fovy = 70.0f,
+        .fov = 70.0f,
         .projection = CAMERA_PERSPECTIVE,
     },
     .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
     .camera_debug_info =
     {
-        .up.z = 1.0f,
-        .fovy = 50.0f,
+        .fov = 50.0f,
         .projection = CAMERA_ORTHOGRAPHIC,
     },
 
@@ -86,7 +74,7 @@ int main(void)
 
     setting.render_size = (v2f32){854, 480};
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(setting.render_size.x, setting.render_size.y, "minecraft.c");
+    InitWindow(setting.render_size.x, setting.render_size.y, MC_C_NAME);
     SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
 
