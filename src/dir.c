@@ -12,12 +12,12 @@ str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
 str mc_c_launcher_path[PATH_MAX] = {0};
 str mc_c_world_path[PATH_MAX] = {0};
-str grandpath_dir[GRANDPATH_DIR_COUNT][NAME_MAX] =
+str grandpath_dir[][NAME_MAX] =
 {
     "instances/",
 };
 
-str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] = 
+str instance_dir[][NAME_MAX] = 
 {
     "bin/",
     "models/",
@@ -40,7 +40,7 @@ str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX] =
     "text/",
 };
 
-str world_dir[WORLD_DIR_COUNT][NAME_MAX] = 
+str world_dir[][NAME_MAX] = 
 {
     "advancements/",
     "chunks/",

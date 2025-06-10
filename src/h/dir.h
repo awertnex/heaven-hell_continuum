@@ -7,49 +7,49 @@
 
 enum Directories
 {
+    /* Source Directories */
+    DIR_SOURCE =            0,
+    DIR_SOURCE_SHADERS,
+
     /* Grandpath Directories */
     DIR_INSTANCES =         0,
 
     /* Instance Directories */
     DIR_BIN =               0,
-    DIR_MODELS =            1,
-    DIR_RESOURCES =         2,
-    DIR_TEXTURES =          3,
-    DIR_BLOCKS =            4,
-    DIR_ENVIRONMENT =       5,
-    DIR_ENTITIES =          6,
-    DIR_FONT =              7,
-    DIR_GUI =               8,
-    DIR_ITEMS =             9,
-    DIR_LOGO =              10,
-    DIR_MISC =              11,
-    DIR_PAINTINGS =         12,
-    DIR_SHADERS =           13,
-    DIR_SOUNDS =            14,
-    DIR_INFO =              15,
-    DIR_SAVES =             16,
-    DIR_SCREENSHOTS =       17,
-    DIR_TEXT =              18,
+    DIR_MODELS,
+    DIR_RESOURCES,
+    DIR_TEXTURES,
+    DIR_BLOCKS,
+    DIR_ENVIRONMENT,
+    DIR_ENTITIES,
+    DIR_FONT,
+    DIR_GUI,
+    DIR_ITEMS,
+    DIR_LOGO,
+    DIR_MISC,
+    DIR_PAINTINGS,
+    DIR_SHADERS,
+    DIR_SOUNDS,
+    DIR_INFO,
+    DIR_SAVES,
+    DIR_SCREENSHOTS,
+    DIR_TEXT,
 
     /* World Directories */
     DIR_ADVANCEMENTS =      0,
-    DIR_CHUNKS =            1,
-    DIR_ENTITIES_WORLD =    2,
-    DIR_LOGS =              3,
-    DIR_PLAYER_DATA =       4,
+    DIR_CHUNKS,
+    DIR_ENTITIES_WORLD,
+    DIR_LOGS,
+    DIR_PLAYER_DATA,
 }; /* Directories */
-
-#define GRANDPATH_DIR_COUNT 1
-#define INSTANCE_DIR_COUNT  19
-#define WORLD_DIR_COUNT     5
 
 /* ---- declarations -------------------------------------------------------- */
 extern str mc_c_grandpath[PATH_MAX];
 extern str mc_c_subpath[PATH_MAX];
 extern str mc_c_launcher_path[PATH_MAX];
-extern str grandpath_dir[GRANDPATH_DIR_COUNT][NAME_MAX];
-extern str instance_dir[INSTANCE_DIR_COUNT][NAME_MAX];
-extern str world_dir[WORLD_DIR_COUNT][NAME_MAX];
+extern str grandpath_dir[][NAME_MAX];
+extern str instance_dir[][NAME_MAX];
+extern str world_dir[][NAME_MAX];
 
 /* ---- signatures ---------------------------------------------------------- */
 void init_paths();
