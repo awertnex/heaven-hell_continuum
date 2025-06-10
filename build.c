@@ -22,19 +22,20 @@
     #define MKDIR(dir)      mkdir(dir, 0775);
 str **cmd;
 glob_t glob_buf = {0};
-str str_libs[11][24] =
+str str_libs[][24] =
 {
+    "-lm",
+    //"-lpthread",
     "-lglfw",
     "-lGLEW",
     "-lGL",
-    "-lXrandr",
-    "-lXi",
-    "-lX11",
-    "-lXxf86vm",
-    "-lpthread",
-    "-ldl",
-    "-lXinerama",
-    "-lm",
+    //"-lXrandr",
+    //"-lXi",
+    //"-lX11",
+    //"-lXxf86vm",
+    //"-ldl",
+    //"-lXinerama",
+    "-lfreetype",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
     #define ALLOC_CMD
@@ -46,12 +47,13 @@ str *cmd[CMD_MEMB];
 glob_t glob_buf = {0};
 str str_libs[6][24] =
 {
+    "-lm",
     "-lglfw",
     "-lGLEW",
     "-lGL",
     "-lgdi32",
     "-lwinmm",
-    "-lm",
+    "-lfreetype",
 };
 #endif /* PLATFORM */
 
@@ -69,8 +71,8 @@ enum Flags
 u8 state = 0;
 u16 flags = 0;
 u64 cmd_pos = 0;
-str str_main[48] = DIR_SRC"main.c";
-str str_cflags[7][24] =
+str str_main[] = DIR_SRC"main.c";
+str str_cflags[][24] =
 {
     "-std=c99",
     "-ggdb",
@@ -233,7 +235,6 @@ void build_cmd(int argc, char **argv)
             break;
 
         case STATE_ENGINE:
-            snprintf(str_main, 48, "%s%s", DIR_ENGINE, "main.c");
             push_cmd(str_main);
             push_glob(DIR_ENGINE"*.c");
             snprintf(str_out, 48, "./%sengine%s", DIR_BIN, EXTENSION);
@@ -251,7 +252,7 @@ void build_cmd(int argc, char **argv)
 
     /* ---- libs ------------------------------------------------------------ */
     if (flags & FLAG_INCLUDE_RAYLIB)
-        push_cmd("-lraylib");
+        push_cmd("-L:./lib/libraylib.a");
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
