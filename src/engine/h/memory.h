@@ -9,6 +9,12 @@
 
 #define arr_len(arr)    ((u64)sizeof(arr) / sizeof(arr[0]))
 
+typedef struct str_buf
+{
+    str **entry;
+    u64 count;
+    str *buf;
+} str_buf;
 /* 
  * size = size in bytes;
  * name = pointer name (for logging);
