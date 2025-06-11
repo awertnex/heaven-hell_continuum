@@ -3,6 +3,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
+#include <linux/limits.h>
 
 #include "h/dir.h"
 #include "h/logger.h"
@@ -141,5 +143,25 @@ str *get_path_absolute(const str *path)
         strcat(path_absolute, "/\0");
 
     return path_absolute;
+}
+
+str *get_path_bin_root(void)
+{
+    str path_bin_root[PATH_MAX] = {0};
+    if (!readlink("/proc/self/exe", path_bin_root, PATH_MAX - 1))
+    {
+        LOGFATAL("%s\n", "'/proc/self/exe' Not Found, Process Aborted");
+        return NULL;
+    }
+
+    u64 len = strlen(path_bin_root);
+    path_bin_root[len] = 0;
+    str *result = NULL;
+    if (!mem_alloc((void*)&result, len, "path_bin_root"))
+        return NULL;
+
+    strncpy(result, path_bin_root, PATH_MAX);
+
+    return result;
 }
 
