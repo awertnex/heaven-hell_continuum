@@ -7,6 +7,8 @@
 #include "../engine/h/defines.h"
 #include "../engine/h/dir.h"
 
+#define DIR_MAX     64
+
 /* ---- section: definitions ------------------------------------------------ */
 enum Directories
 {

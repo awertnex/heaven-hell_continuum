@@ -128,7 +128,7 @@ Mesh mesh_gizmo = {0};
 
 void error_callback(int error, const char* message)
 {
-    LOGERROR("%s\n", message);
+    LOGERROR("GLFW: %s\n", message);
 }
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
@@ -150,9 +150,6 @@ void draw_everything();
 
 int main(void)
 {
-    str *str = get_path_bin_root();
-    LOGWARNING("%s\n", str);
-    return 0;
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
@@ -243,8 +240,8 @@ section_menu_world: /* ------------------------------------------------------ */
 section_main: /* ---- section: main loop ------------------------------------ */
     while (!glfwWindowShouldClose(render.window))
     {
-        get_mouse_position(&render, &render.mouse_position);
-        get_mouse_movement(render.mouse_last, &render.mouse_delta);
+        //get_mouse_position(&render, &render.mouse_position);
+        //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
         if (logging) log_stuff();
 

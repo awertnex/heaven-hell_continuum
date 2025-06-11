@@ -4,9 +4,6 @@
 #include <sys/stat.h>
 
 #include "defines.h"
-#include "memory.h"
-
-#define DIR_MAX     64
 
 /* ---- section: signatures ------------------------------------------------- */
 

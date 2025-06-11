@@ -11,7 +11,7 @@ int init_glfw(void)
 {
     if (!glfwInit())
     {
-        LOGFATAL("GLFW: %s\n", "Failed to Initialize, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLFW, Process Aborted");
         return -1;
     }
 
@@ -26,7 +26,7 @@ int init_window(Render *render)
     render->window = glfwCreateWindow(render->size.x, render->size.y, render->title, NULL, NULL);
     if (!render->window)
     {
-        LOGFATAL("GL: %s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
         return -1;
     }
 
@@ -40,66 +40,9 @@ int init_glew(void)
 {
     if (glewInit() != GLEW_OK)
     {
-        LOGFATAL("GLEW: %s\n", "Failed to Initialize, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
         return -1;
     }
-    return 0;
-}
-
-int init_freetype(void)
-{
-    FT_Library ft;
-    if (FT_Init_FreeType(&ft))
-    {
-        LOGFATAL("FREETYPE: %s\n", "Failed to Initialize, Process Aborted");
-        return -1;
-    }
-
-    FT_Face face;
-    str *font = "./fonts/code_saver_regular.otf";
-    if (FT_New_Face(ft, font, 0, &face))
-    {
-        LOGFATAL("Failed to Load Font '%s', Process Aborted\n", font);
-        FT_Done_FreeType(ft);
-        return -1;
-    }
-
-    LOGINFO("Font Loaded '%s'\n", font);
-
-    FT_Set_Pixel_Sizes(face, 0, 48);
-    for (u8 c = 0; c < GLYPH_MAX; c++)
-    {
-        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-            LOGERROR("Failed to Load Glyph '%c'", c);
-
-        glyphs[c] =
-            (Glyph){
-                .size = (v2i16){face->glyph->bitmap.width, face->glyph->bitmap.rows},
-                .bearing = (v2i16){face->glyph->bitmap_left, face->glyph->bitmap_top},
-                .advance = face->glyph->advance.x,
-            };
-
-        glGenTextures(1, &glyphs['X'].id);
-        glBindTexture(GL_TEXTURE_2D, glyphs['X'].id);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        if (glyphs[c].id)
-            LOGDEBUG("Glyph %d '%c' Loaded\n", glyphs['X'].id, c);
-    }
-
-    FT_Done_Face(face);
-    FT_Done_FreeType(ft);
-
-    return 0;
-}
-
-int load_font(const str *file_name)
-{
     return 0;
 }
 
@@ -189,7 +132,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL("%d FBO: '%d' Not Complete, Process Aborted\n", status, *fbo);
+        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", *fbo, status);
         return -1;
     }
 
@@ -327,10 +270,10 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- target ---------------------------------------------------------- */
     projection->target =
         (m4f32){
-            1.0f,           0.0f,           0.0f, 0.0f,
-            0.0f,           1.0f,           0.0f, 0.0f,
-            0.0f,           0.0f,           1.0f, 0.0f,
-            -cyaw * -cpch,    syaw * -cpch,    -spch, 1.0f,
+            1.0f,           0.0f,           0.0f,   0.0f,
+            0.0f,           1.0f,           0.0f,   0.0f,
+            0.0f,           0.0f,           1.0f,   0.0f,
+            -cyaw * -cpch,  syaw * -cpch,   -spch,  1.0f,
         };
 
     /* ---- translation ----------------------------------------------------- */
@@ -363,10 +306,10 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- orientation: z-up ----------------------------------------------- */
     projection->orientation =
         (m4f32){
-            0.0f,   0.0f, -1.0f, 0.0f,
-            -1.0f,  0.0f, 0.0f, 0.0f,
-            0.0f,   1.0f, 0.0f, 0.0f,
-            0.0f,   0.0f, 0.0f, 1.0f,
+            0.0f,   0.0f, -1.0f,    0.0f,
+            -1.0f,  0.0f, 0.0f,     0.0f,
+            0.0f,   1.0f, 0.0f,     0.0f,
+            0.0f,   0.0f, 0.0f,     1.0f,
         };
 
     /* ---- view ------------------------------------------------------------ */
@@ -388,20 +331,20 @@ void update_camera_perspective(Camera *camera, Projection *projection)
 
 /* ---- section: input ------------------------------------------------------ */
 
-v2f64 get_mouse_position(Render *render, v2f64 *mouse_position) /* TODO: get mouse position */
-{
-    return (v2f64){0.0f, 0.0f};
-}
-
-v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get mouse movement */
-{
-    v2f64 delta =
-    {
-        mouse_position.x - mouse_last->x,
-        mouse_position.y - mouse_last->y
-    };
-
-    *mouse_last = mouse_position;
-    return delta;
-}
+//v2f64 get_mouse_position(Render *render, v2f64 *mouse_position) /* TODO: get mouse position */
+//{
+//    return (v2f64){0.0f, 0.0f};
+//}
+//
+//v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get mouse movement */
+//{
+//    v2f64 delta =
+//    {
+//        mouse_position.x - mouse_last->x,
+//        mouse_position.y - mouse_last->y
+//    };
+//
+//    *mouse_last = mouse_position;
+//    return delta;
+//}
 

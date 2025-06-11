@@ -14,7 +14,8 @@
 
 #include "defines.h"
 
-/* ---- definitions --------------------------------------------------------- */
+/* ---- section: definitions ------------------------------------------------ */
+
 typedef struct Render
 {
     GLFWwindow *window;
@@ -80,7 +81,8 @@ typedef struct Projection
     m4f32 perspective;
 } Projection;
 
-/* ---- signatures ---------------------------------------------------------- */
+/* ---- section: signatures ------------------------------------------------- */
+
 int init_glfw(void);
 int init_window(Render *render);
 int init_glew(void);
