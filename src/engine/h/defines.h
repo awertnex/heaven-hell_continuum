@@ -26,6 +26,13 @@ typedef char		str;
 typedef bool        b8;
 typedef bool        b32;
 
+typedef struct str_buf
+{
+    str **entry;
+    u64 count;
+    str *buf;
+} str_buf;
+
 /* ---- vector2u ------------------------------------------------------------ */
 typedef struct v2u8
 {
