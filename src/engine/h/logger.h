@@ -13,6 +13,9 @@
     #define LOGGING_TRACE 1
 #endif
 
+#define IN_MESSAGE_MAX      4096
+#define OUT_MESSAGE_MAX     8192
+
 enum LogLevel
 {
     LOGGER_FATAL = 0,

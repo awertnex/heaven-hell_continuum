@@ -3,7 +3,9 @@
 #include <dirent.h>
 
 #include "engine/h/core.h"
+#include "engine/h/dir.h"
 #include "engine/h/logger.h"
+#include "engine/h/memory.h"
 #include "h/main.h"
 #include "h/dir.h"
 
@@ -12,12 +14,12 @@ str mc_c_grandpath[PATH_MAX] = {0};
 str mc_c_subpath[PATH_MAX] = {0};
 str mc_c_launcher_path[PATH_MAX] = {0};
 str mc_c_world_path[PATH_MAX] = {0};
-str grandpath_dir[][NAME_MAX] =
+const str GRANDPATH_DIR[][NAME_MAX] =
 {
     "instances/",
 };
 
-str instance_dir[][NAME_MAX] = 
+const str INSTANCE_DIR[][NAME_MAX] = 
 {
     "bin/",
     "models/",
@@ -40,7 +42,7 @@ str instance_dir[][NAME_MAX] =
     "text/",
 };
 
-str world_dir[][NAME_MAX] = 
+const str WORLD_DIR[][NAME_MAX] = 
 {
     "advancements/",
     "chunks/",
@@ -56,12 +58,12 @@ void init_paths()
     snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
             "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
 
-    if (!mc_c_mkdir(mc_c_grandpath, 0775))
-        LOGINFO("%s", "Main Directory Created 'HOME/minecraft.c/'");
+    if (!make_dir(mc_c_grandpath, 0775))
+        LOGINFO("%s\n", "Main Directory Created 'HOME/minecraft.c/'");
     else
-        LOGINFO("Main Directory Path '%s/%sminecraft.c/'", getenv("HOME"), MC_C_ROAMING);
+        LOGINFO("Main Directory Path '%s/%sminecraft.c/'\n", getenv("HOME"), MC_C_ROAMING);
 #else
-    LOGINFO("%s", "Test Instance Directory Path 'test_instance/'");
+    LOGINFO("%s\n", "Test Instance Directory Path 'test_instance/'");
 #endif /* RELEASE_MODE */
 }
 
@@ -75,30 +77,30 @@ int init_instance_directory(str *instance_name)
             break;
         }
 
-    if (mc_c_mkdir(mc_c_subpath, 0775))
+    if (make_dir(mc_c_subpath, 0775))
     {
-        LOGINFO("Instance Opened '%s'", instance_name);
+        LOGINFO("Instance Opened '%s'\n", instance_name);
         return 0;
     }
 
     str str_reg[PATH_MAX] = {0};
-    LOGINFO("Instance Directory Created '%s'", mc_c_subpath);
-    LOGINFO("%s", "Building Instance Directory Structure:");
+    LOGINFO("Instance Directory Created '%s'\n", mc_c_subpath);
+    LOGINFO("%s\n", "Building Instance Directory Structure:");
     for (u8 i = 0;
-            (i < 255) && (i < arr_len(instance_dir)) && (instance_dir[i][0] != 0);
+            (i < 255) && (i < arr_len(INSTANCE_DIR)) && (INSTANCE_DIR[i][0] != 0);
             ++i)
     {
         snprintf(str_reg,
-                strlen(mc_c_subpath) + strlen(instance_dir[i]),
-                "%s%s", mc_c_subpath, instance_dir[i]);
+                strlen(mc_c_subpath) + strlen(INSTANCE_DIR[i]),
+                "%s%s", mc_c_subpath, INSTANCE_DIR[i]);
 
         if (!is_dir_exists(str_reg))
         {
-            mc_c_mkdir(str_reg, 0775);
-            LOGINFO("%s", instance_dir[i]);
+            make_dir(str_reg, 0775);
+            LOGINFO("%s\n", INSTANCE_DIR[i]);
         }
     }
-    LOGINFO("Instance Created '%s'", instance_name);
+    LOGINFO("Instance Created '%s'\n", instance_name);
     /* TODO: create instance binary and show in launcher */
     return 0;
 }
@@ -106,27 +108,27 @@ int init_instance_directory(str *instance_name)
 void init_world_directory(str *world_name)
 {
     snprintf(mc_c_world_path, strlen(mc_c_subpath) + 8 + strlen(world_name),
-            "%s%s%s/", mc_c_subpath, instance_dir[DIR_SAVES], world_name);
-    if (mc_c_mkdir(mc_c_world_path, 0775))
+            "%s%s%s/", mc_c_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
+    if (make_dir(mc_c_world_path, 0775))
     {
-        LOGINFO("World Loaded '%s'", world_name);
+        LOGINFO("World Loaded '%s'\n", world_name);
         return;
     }
 
     str str_reg[PATH_MAX] = {0};
-    LOGINFO("World Directory Created '%s'", world_name);
-    LOGINFO("%s", "Building World Directory Structure:");
+    LOGINFO("World Directory Created '%s'\n", world_name);
+    LOGINFO("%s\n", "Building World Directory Structure:");
     for (u8 i = 0;
-            (i < 255) && (i < arr_len(world_dir)) && (world_dir[i][0] != 0);
+            (i < 255) && (i < arr_len(WORLD_DIR)) && (WORLD_DIR[i][0] != 0);
             ++i)
     {
         snprintf(str_reg,
-                strlen(mc_c_world_path) + strlen(world_dir[i]),
-                "%s%s", mc_c_world_path, world_dir[i]);
+                strlen(mc_c_world_path) + strlen(WORLD_DIR[i]),
+                "%s%s", mc_c_world_path, WORLD_DIR[i]);
 
-        mc_c_mkdir(str_reg, 0775);
-        LOGINFO("Directory Created '%s'", world_dir[i]);
+        make_dir(str_reg, 0775);
+        LOGINFO("Directory Created '%s'\n", WORLD_DIR[i]);
     }
-    LOGINFO("World Created '%s'", world_name);
+    LOGINFO("World Created '%s'\n", world_name);
 }
 

@@ -3,6 +3,7 @@
 #include "h/logger.h"
 #include "h/math.h"
 #include "h/memory.h"
+#include "h/text.h"
 
 /* ---- section: windowing -------------------------------------------------- */
 
@@ -10,7 +11,7 @@ int init_glfw(void)
 {
     if (!glfwInit())
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLFW, Process Aborted");
+        LOGFATAL("GLFW: %s\n", "Failed to Initialize, Process Aborted");
         return -1;
     }
 
@@ -25,7 +26,7 @@ int init_window(Render *render)
     render->window = glfwCreateWindow(render->size.x, render->size.y, render->title, NULL, NULL);
     if (!render->window)
     {
-        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
+        LOGFATAL("GL: %s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
         return -1;
     }
 
@@ -39,7 +40,7 @@ int init_glew(void)
 {
     if (glewInit() != GLEW_OK)
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
+        LOGFATAL("GLEW: %s\n", "Failed to Initialize, Process Aborted");
         return -1;
     }
     return 0;
@@ -50,7 +51,7 @@ int init_freetype(void)
     FT_Library ft;
     if (FT_Init_FreeType(&ft))
     {
-        LOGFATAL("%s\n", "Failed to Initialize FreeType, Process Aborted");
+        LOGFATAL("FREETYPE: %s\n", "Failed to Initialize, Process Aborted");
         return -1;
     }
 
@@ -58,10 +59,41 @@ int init_freetype(void)
     str *font = "./fonts/code_saver_regular.otf";
     if (FT_New_Face(ft, font, 0, &face))
     {
-        LOGFATAL("Failed to Load Font '%s', Process Aborted", font);
+        LOGFATAL("Failed to Load Font '%s', Process Aborted\n", font);
+        FT_Done_FreeType(ft);
         return -1;
     }
+
     LOGINFO("Font Loaded '%s'\n", font);
+
+    FT_Set_Pixel_Sizes(face, 0, 48);
+    for (u8 c = 0; c < GLYPH_MAX; c++)
+    {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+            LOGERROR("Failed to Load Glyph '%c'", c);
+
+        glyphs[c] =
+            (Glyph){
+                .size = (v2i16){face->glyph->bitmap.width, face->glyph->bitmap.rows},
+                .bearing = (v2i16){face->glyph->bitmap_left, face->glyph->bitmap_top},
+                .advance = face->glyph->advance.x,
+            };
+
+        glGenTextures(1, &glyphs['X'].id);
+        glBindTexture(GL_TEXTURE_2D, glyphs['X'].id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, face->glyph->bitmap.width, face->glyph->bitmap.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        if (glyphs[c].id)
+            LOGDEBUG("Glyph %d '%c' Loaded\n", glyphs['X'].id, c);
+    }
+
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
 
     return 0;
 }
@@ -91,10 +123,10 @@ int init_shader(Shader *shader)
     {
         char log[2048];
         glGetShaderInfoLog(shader->id, 2048, NULL, log);
-        LOGERROR("SHADER: '%s':\n%s\n", shader->file_name, log);
+        LOGERROR("Shader '%s':\n%s\n", shader->file_name, log);
         return -1;
     }
-    else LOGINFO("SHADER: %d '%s' Loaded\n", shader->id, shader->file_name);
+    else LOGINFO("Shader %d '%s' Loaded\n", shader->id, shader->file_name);
 
     return 0;
 }
@@ -118,10 +150,10 @@ int init_shader_program(ShaderProgram *program)
     {
         char log[2048];
         glGetProgramInfoLog(program->id, 2048, NULL, log);
-        LOGERROR("SHADER PROGRAM: '%s':\n%s\n", program->name, log);
+        LOGERROR("Shader Program '%s':\n%s\n", program->name, log);
         return -1;
     }
-    else LOGINFO("SHADER PROGRAM: %d '%s' Loaded\n", program->id, program->name);
+    else LOGINFO("Shader Program %d '%s' Loaded\n", program->id, program->name);
 
     if (program->vertex.loaded)
         glDeleteShader(program->vertex.id);

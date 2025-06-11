@@ -2,6 +2,7 @@
 #include "h/dir.h"
 
 #include "engine/h/math.h"
+#include "engine/h/memory.h"
 
 /* ---- declarations -------------------------------------------------------- */
 u16 base_texture_size;
@@ -28,7 +29,7 @@ void init_textures()
         block[i].texture =
             LoadTexture(TextFormat("%s%s%s.png",
                         mc_c_subpath,
-                        instance_dir[DIR_BLOCKS],
+                        INSTANCE_DIR[DIR_BLOCKS],
                         block[i].name));
 }
 

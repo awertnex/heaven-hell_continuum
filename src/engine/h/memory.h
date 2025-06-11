@@ -20,10 +20,10 @@ static inline b8 mem_alloc(void **x, u64 size, const str *name)
     *x = calloc(1, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
+        LOGFATAL("%s[%p] %s\n", name, (void*)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
         return FALSE;
     }
-    LOGDEBUG("%s[%p] %s[%lldB]\n", name, (void *)(uintptr_t)(*x), "Memory Allocated", size);
+    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Allocated", size);
 
     return TRUE;
 }
@@ -40,10 +40,10 @@ static inline b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
     *x = calloc(memb, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] %s\n", name, (void *)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
+        LOGFATAL("%s[%p] %s\n", name, (void*)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
         return FALSE;
     }
-    LOGDEBUG("%s[%p] %s[%lldB]\n", name, (void *)(uintptr_t)(*x), "Memory Allocated", memb * size);
+    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Allocated", memb * size);
 
     return TRUE;
 }
@@ -58,7 +58,7 @@ static inline void mem_free(void **x, u64 size, const str *name)
 
     memset(*x, 0, size);
     free(*x);
-    LOGDEBUG("%s[%p] %s[%lldB]\n", name, (void *)(uintptr_t)(*x), "Unloaded", size);
+    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Unloaded", size);
     *x = NULL;
 }
 
@@ -71,7 +71,7 @@ static inline void mem_zero(void **x, u64 size, const str *name)
     if (*x == NULL) return;
 
     memset(*x, 0, size);
-    LOGDEBUG("%s[%p] %s[%lldB]\n", name, (void *)(uintptr_t)(*x), "Memory Cleared", size);
+    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Cleared", size);
 }
 
 #endif /* MC_C_ENGINE_MEMORY_H */

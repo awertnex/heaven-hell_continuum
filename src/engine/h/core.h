@@ -3,7 +3,7 @@
 
 #define MC_C_ENGINE_AUTHOR      "Author: Lily Awertnex"
 #define MC_C_ENGINE_NAME        "heaven-hell continuum"
-#define MC_C_ENGINE_VERSION     "0.1.0-alpha"
+#define MC_C_ENGINE_VERSION     "0.1.0-beta"
 
 #define GLEW_STATIC
 #include <GL/glew.h>

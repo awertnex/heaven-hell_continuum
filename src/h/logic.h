@@ -8,29 +8,28 @@
 #include "../engine/h/math.h"
 #include "../engine/h/defines.h"
 
-#define GRAVITY (9.7803267715f / 100.0f)
+/* ---- section: player defaults -------------------------------------------- */
 
-/* ---- player defaults ----------------------------------------------------- */
-#define PLAYER_JUMP_HEIGHT      1.25f
-#define PLAYER_SPEED_WALK       3.0f
-#define PLAYER_SPEED_FLY        10.0f
-#define PLAYER_SPEED_FLY_FAST   40.0f
-#define PLAYER_SPEED_SNEAK      1.8f
-#define PLAYER_SPEED_SPRINT     4.0f
+const f32 PLAYER_JUMP_HEIGHT =      1.25f;
+const f32 PLAYER_SPEED_WALK =       3.0f;
+const f32 PLAYER_SPEED_FLY =        10.0f;
+const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
+const f32 PLAYER_SPEED_SNEAK =      1.8f;
+const f32 PLAYER_SPEED_SPRINT =     4.0f;
 
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
-    Vector3 pos;                    /* player current coordinates in world */
-    Vector3 scl;                    /* player size for collision detection */
-    Vector3 collision_check_start;
-    Vector3 collision_check_end;
+    v3f32 pos;                      /* player current coordinates in world */
+    v3f32 scl;                      /* player size for collision detection */
+    v3f32 collision_check_start;
+    v3f32 collision_check_end;
     f32 pitch, yaw;                 /* for player camera direction and target */
     f32 sin_pitch, cos_pitch;       /* processed player pitch angles */
     f32 sin_yaw, cos_yaw;           /* processed player yaw angles */
     f32 eye_height;                 /* height of player camera, usually */
-    v3f32 v;                        /* velocity */
-    f32 m;                          /* mass */
+    v3f32 vel;                      /* velocity */
+    f32 mass;                       /* for gravity influence */
     f32 movement_speed;             /* depends on enum: PlayerFlags */
     f32 movement_step_length;
     u64 container_state;            /* enum: ContainerFlags */
@@ -51,7 +50,8 @@ typedef struct Player
     v3i32 spawn_point;
 } Player;
 
-/* ---- flags --------------------------------------------------------------- */
+/* ---- section: flags ------------------------------------------------------ */
+
 enum StateFlags
 {
     FLAG_ACTIVE =                   0x0001,
@@ -118,15 +118,16 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-/* ---- declarations -------------------------------------------------------- */
-extern Player lily;
-extern Vector2 mouse_delta;
+/* ---- section: declarations ----------------------------------------------- */
 
-/* ---- signatures ---------------------------------------------------------- */
+extern Player lily;
+
+/* ---- section: signatures ------------------------------------------------- */
+
 bool get_double_press(KeyboardKey key);
 void update_player(Player *player);
 void update_camera_movements_player(Player *player);
-void update_player_target(Vector3 *player_target, v3i32 *player_delta_target);
+void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void player_kill(Player *player);

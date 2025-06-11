@@ -19,7 +19,7 @@ struct Globals globals =
 
 u8 init_chunking(void)
 {
-    MC_C_ALLOC(chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk));
+    mem_alloc((void*)&chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_buf");
     return 0;
 
 cleanup:
@@ -29,7 +29,7 @@ cleanup:
 
 void free_chunking(void)
 {
-    MC_C_FREE(chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk));
+    mem_free((void*)&chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_buf");
 }
 
 /* index = (chunk_tab index); */
@@ -258,7 +258,7 @@ Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
     {
         if (chunk_buf[i].flag & FLAG_CHUNK_LOADED) continue;
 
-        MC_C_CLEAR_MEM(&chunk_buf[i], sizeof(Chunk));
+        chunk_buf[i] = (Chunk){0};
         chunk_buf[i].pos =
             (v3i16){
                 player_delta_chunk.x + (pos.x - CHUNK_BUF_RADIUS),
@@ -276,7 +276,7 @@ Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
         return &chunk_buf[i];
     }
 
-    LOGERROR("%s", "chunk_buf Full");
+    LOGERROR("%s\n", "chunk_buf Full");
     return NULL;
 }
 

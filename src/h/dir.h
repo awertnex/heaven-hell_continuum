@@ -1,20 +1,23 @@
 #ifndef MC_C_DIR_H
 #define MC_C_DIR_H
 
+#include <linux/limits.h>
+
 #include "main.h"
 #include "../engine/h/defines.h"
 #include "../engine/h/dir.h"
 
+/* ---- section: definitions ------------------------------------------------ */
 enum Directories
 {
-    /* Source Directories */
+    /* ---- source directories ---------------------------------------------- */
     DIR_SOURCE =            0,
     DIR_SOURCE_SHADERS,
 
-    /* Grandpath Directories */
+    /* ---- grandpath directories ------------------------------------------- */
     DIR_INSTANCES =         0,
 
-    /* Instance Directories */
+    /* ---- instance directories -------------------------------------------- */
     DIR_BIN =               0,
     DIR_MODELS,
     DIR_RESOURCES,
@@ -35,7 +38,7 @@ enum Directories
     DIR_SCREENSHOTS,
     DIR_TEXT,
 
-    /* World Directories */
+    /* ---- world directories ----------------------------------------------- */
     DIR_ADVANCEMENTS =      0,
     DIR_CHUNKS,
     DIR_ENTITIES_WORLD,
@@ -43,15 +46,17 @@ enum Directories
     DIR_PLAYER_DATA,
 }; /* Directories */
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 extern str mc_c_grandpath[PATH_MAX];
 extern str mc_c_subpath[PATH_MAX];
 extern str mc_c_launcher_path[PATH_MAX];
-extern str grandpath_dir[][NAME_MAX];
-extern str instance_dir[][NAME_MAX];
-extern str world_dir[][NAME_MAX];
+extern const str GRANDPATH_DIR[][NAME_MAX];
+extern const str INSTANCE_DIR[][NAME_MAX];
+extern const str WORLD_DIR[][NAME_MAX];
 
-/* ---- signatures ---------------------------------------------------------- */
+/* ---- section: signatures ------------------------------------------------- */
+
 void init_paths();
 int init_instance_directory(str *instance_name);
 void init_world_directory(str *world_name);

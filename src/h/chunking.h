@@ -9,7 +9,8 @@
 #include "main.h"
 #include "setting.h"
 
-/* ---- world stuff --------------------------------------------------------- */
+/* ---- section: world stuff ------------------------------------------------ */
+
 #define CHUNK_DIAMETER              16
 #define CHUNK_VOLUME                (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
@@ -29,7 +30,8 @@
      + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) \
      + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
-/* ---- general ------------------------------------------------------------- */
+/* ---- section: general ---------------------------------------------------- */
+
 enum BlockFlags
 {
     POSITIVE_X =    0x00010000, /* 00000000 00000001 00000000 00000000 */
@@ -68,7 +70,8 @@ typedef struct Chunk
     u8 flag;
 } Chunk;
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 extern Chunk *chunk_buf;                        /* chunk buffer, raw chunk data */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];      /* chunk pointer look-up table */
 extern v3u16 chunk_tab_coordinates;             /* pointer arithmetic redundancy optimization */
@@ -81,7 +84,8 @@ extern struct Globals
     u64 quad_count;
 } globals;
 
-/* ---- getters & setters --------------------------------------------------- */
+/* ---- section: getters & setters ------------------------------------------ */
+
 static inline u16 get_block_index(u8 x, u8 y, u8 z)
 {return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
 
@@ -111,7 +115,8 @@ static inline void set_block_state(u32 i, u16 state)
 static inline u32 get_block_data(u32 i)
 {return ((i) & BLOCKDATA);}
 
-/* ---- signatures ---------------------------------------------------------- */
+/* ---- section: signatures ------------------------------------------------- */
+
 u8 init_chunking();
 void free_chunking();
 

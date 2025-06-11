@@ -290,7 +290,7 @@ void update_input(Player *player)
 
         if (player->state & FLAG_CAN_JUMP)
         {
-            player->v.z += PLAYER_JUMP_HEIGHT;
+            player->vel.z += PLAYER_JUMP_HEIGHT;
             player->state &= ~FLAG_CAN_JUMP;
         }
     }
