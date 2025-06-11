@@ -15,11 +15,6 @@
 #include "h/logic.h"
 #include "h/super_debugger.h"
 
-int mc_c_mkdir(str *path, u16 mode)
-{
-    return mkdir(path);
-}
-
 void update_debug_strings()
 {
     snprintf(str_fps, 16,                "FPS: %d",                 GetFPS());
