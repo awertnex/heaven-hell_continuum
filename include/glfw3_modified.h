@@ -29,11 +29,6 @@
 #ifndef _glfw3_h_
 #define _glfw3_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 /*************************************************************************
  * Doxygen documentation
  *************************************************************************/
@@ -180,37 +175,16 @@ extern "C" {
 
 #elif defined(GLFW_INCLUDE_GLCOREARB)
 
- #if defined(__APPLE__)
-
-  #include <OpenGL/gl3.h>
-  #if defined(GLFW_INCLUDE_GLEXT)
-   #include <OpenGL/gl3ext.h>
-  #endif /*GLFW_INCLUDE_GLEXT*/
-
- #else /*__APPLE__*/
-
-  #include <GL/glcorearb.h>
-  #if defined(GLFW_INCLUDE_GLEXT)
-   #include <GL/glext.h>
-  #endif
-
- #endif /*__APPLE__*/
+ #include <GL/glcorearb.h>
+ #if defined(GLFW_INCLUDE_GLEXT)
+  #include <GL/glext.h>
+ #endif
 
 #elif defined(GLFW_INCLUDE_GLU)
 
- #if defined(__APPLE__)
-
-  #if defined(GLFW_INCLUDE_GLU)
-   #include <OpenGL/glu.h>
-  #endif
-
- #else /*__APPLE__*/
-
-  #if defined(GLFW_INCLUDE_GLU)
-   #include <GL/glu.h>
-  #endif
-
- #endif /*__APPLE__*/
+ #if defined(GLFW_INCLUDE_GLU)
+  #include <GL/glu.h>
+ #endif
 
 #elif !defined(GLFW_INCLUDE_NONE) && \
       !defined(__gl_h_) && \
@@ -229,21 +203,10 @@ extern "C" {
       !defined(__gltypes_h_) /*non-standard*/ && \
       !defined(__glee_h_) /*non-standard*/
 
- #if defined(__APPLE__)
-
-  #if !defined(GLFW_INCLUDE_GLEXT)
-   #define GL_GLEXT_LEGACY
-  #endif
-  #include <OpenGL/gl.h>
-
- #else /*__APPLE__*/
-
-  #include <GL/gl.h>
-  #if defined(GLFW_INCLUDE_GLEXT)
-   #include <GL/glext.h>
-  #endif
-
- #endif /*__APPLE__*/
+ #include <GL/gl.h>
+ #if defined(GLFW_INCLUDE_GLEXT)
+  #include <GL/glext.h>
+ #endif
 
 #endif /* OpenGL and OpenGL ES headers */
 
@@ -6551,11 +6514,6 @@ GLFWAPI VkResult glfwCreateWindowSurface(VkInstance instance, GLFWwindow* window
 #endif
 
 /* -------------------- END SYSTEM/COMPILER SPECIFIC --------------------- */
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _glfw3_h_ */
 

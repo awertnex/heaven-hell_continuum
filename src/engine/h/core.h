@@ -6,9 +6,9 @@
 #define ENGINE_VERSION      "0.1.0-beta"
 
 #define GLEW_STATIC
-#include <GL/glew.h>
+#include "../../../include/glew_modified.h"
 #define GLFW_INCLUDE_NONE
-#include "../../../include/GLFW/glfw3.h"
+#include "../../../include/glfw3_modified.h"
 
 #include "defines.h"
 #include "platform.h"

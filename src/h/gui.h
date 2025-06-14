@@ -5,12 +5,18 @@
 
 #include "../engine/h/defines.h"
 
-#define show_cursor                     ShowCursor()
-#define disable_cursor                  DisableCursor()
-#define detect_cursor                   cursor = GetMousePosition();
-#define center_cursor                   SetMousePosition(setting.render_size.x / 2, setting.render_size.y / 2)
-#define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
-#define draw_menu_overlay(render_size)  DrawRectangle(0, 0, render_size.x, render_size.y, COL_MENU_BG_OVERLAY)
+#define show_cursor\
+    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+#define disable_cursor\
+    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#define center_cursor\
+    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
+#define color(r, g, b, v, a)\
+    (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
+#define draw_menu_overlay(render_size)\
+    DrawRectangle(0, 0, render.size.x, render.size.y, COL_MENU_BG_OVERLAY)
+
+#define BTN_COUNT 110
 
 /* ---- section: colors ----------------------------------------------------- */
 
@@ -20,10 +26,6 @@
 #define COL_TEXT_HOVER      color(0xe8, 0xe6, 0x91, 0xe6, 0xff)
 #define COL_TRANS_MENU      color(0xff, 0xff, 0xff, 0xff, 0xbe)
 #define COL_SKYBOX          color(0xa4, 0xe6, 0xff, 0xe6, 0xff)
-#define COL_STATS_0         color(0x4b, 0xc8, 0x64, 0xff, 0xff)
-#define COL_STATS_1         color(0x64, 0xc8, 0x4b, 0xff, 0xff)
-#define COL_STATS_2         color(0xc8, 0x64, 0x4b, 0xff, 0xff)
-#define COL_STATS_3         color(0xc8, 0x4b, 0x5f, 0xff, 0xff)
 #define COL_X               color(0xff, 0x32, 0x32, 0xff, 0xff)
 #define COL_Y               color(0x32, 0xff, 0x32, 0xff, 0xff)
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
@@ -31,133 +33,56 @@
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern Vector2 cursor;
-extern Image game_icon;
-
 extern Font font_regular;
-extern Font font_bold;
-extern Font font_italic;
-extern Font font_bold_italic;
 extern u8 font_size;
+extern u8 font_size_debug_info;
 extern u8 text_row_height;
 
-extern Texture2D texture_hud_widgets;
-extern Texture2D texture_container_inventory;
-extern Texture2D texture_bg;
-
-extern Rectangle hotbar;
-extern Rectangle hotbar_selected;
-extern Rectangle hotbar_offhand;
-extern Rectangle crosshair;
 extern Rectangle button_inactive;
 extern Rectangle button;
 extern Rectangle button_selected;
-extern Rectangle container_inventory;
-extern Rectangle container_slot_size;
-extern Rectangle rect_bg;
-extern Rectangle rect_bg_dark;
 
 extern v2i16 hotbar_pos;
 extern f32 hotbar_slot_selected;
 extern v2i16 crosshair_pos;
-extern u16 game_menu_pos;
-extern u8 button_spacing_vertical;
-extern v2i16 container_inventory_pos;
-extern v2i16 container_inventory_first_slot_pos;
-
-extern u8 *container_inventory_slots[5][9];
-extern u8 *container_inventory_slots_crafting[5];
-extern u8 *container_inventory_slots_armor[5];
-extern u8 container_inventory_slot_offhand;
-extern u8 container_cursor_slot[2];
-extern u8 *hotbar_slots[9][9];
 
 extern u16 menu_index;
 extern u16 menu_layer[5];
+extern b8 is_menu_ready;
+extern u8 buttons[BTN_COUNT];
 enum MenuNames
 {
     MENU_TITLE = 1,
     MENU_SINGLEPLAYER,
     MENU_MULTIPLAYER,
-    MENU_OPTIONS,
-    MENU_OPTIONS_GAME,
-    MENU_VIDEO_SETTINGS,
-    MENU_GAME,
+    MENU_SETTINGS,
+    MENU_SETTINGS_AUDIO,
+    MENU_SETTINGS_VIDEO,
+    MENU_GAME_PAUSE,
     MENU_DEATH,
 
 }; /* MenuNames */
 
 /* ---- section: button stuff ----------------------------------------------- */
 
-#define BTN_COUNT 110
-extern u8 buttons[BTN_COUNT];
 enum ButtonNames
 {
     /* ---- title screen ---------------------------------------------------- */
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER,
-    BTN_OPTIONS,
+    BTN_SETTINGS,
     BTN_QUIT,
 
-    /* ---- game menu ------------------------------------------------------- */
-    BTN_BACK_TO_GAME = 0,
-    BTN_ADVANCEMENTS,
-    BTN_STATISTICS,
-    BTN_GIVE_FEEDBACK,
-    BTN_REPORT_BUGS,
-    BTN_OPTIONS_GAME,
-    BTN_OPEN_TO_LAN,
+    /* ---- world menu ------------------------------------------------------ */
+    BTN_UNPAUSE = 0,
+    BTN_ENABLE_LAN_CONNECTION,
 
-    /* ---- options --------------------------------------------------------- */
+    /* ---- settings -------------------------------------------------------- */
     BTN_DONE = 0,
     BTN_FOV,
-    BTN_ONLINE,
-    BTN_DIFFICULTY,
-    BTN_SKIN_CUSTOMIZATION,
-    BTN_MUSIC_N_SOUNDS,
-    BTN_VIDEO_SETTINGS,
+    BTN_SETTINGS_AUDIO,
+    BTN_SETTINGS_VIDEO,
     BTN_CONTROLS,
-    BTN_LANGUAGE,
-    BTN_CHAT_SETTINGS,
-    BTN_RESOURCE_PACKS,
-    BTN_ACCESSIBILITY_SETTINGS,
-    BTN_TELEMETRY_DATA,
-    BTN_CREDITS_N_ATTRIBUTION,
-
-    /* ---- inventory ------------------------------------------------------- */
-    BTN_INV_1 = 0,
-    BTN_INV_2,
-    BTN_INV_3,
-    BTN_INV_4,
-    BTN_INV_5,
-    BTN_INV_6,
-    BTN_INV_7,
-    BTN_INV_8,
-    BTN_INV_9,
-    BTN_INV_10,
-    BTN_INV_11,
-    BTN_INV_12,
-    BTN_INV_13,
-    BTN_INV_14,
-    BTN_INV_15,
-    BTN_INV_16,
-    BTN_INV_17,
-    BTN_INV_18,
-    BTN_INV_19,
-    BTN_INV_20,
-    BTN_INV_21,
-    BTN_INV_22,
-    BTN_INV_23,
-    BTN_INV_24,
-    BTN_INV_25,
-    BTN_INV_26,
-    BTN_INV_27,
-    BTN_ARMOR_1,
-    BTN_ARMOR_2,
-    BTN_ARMOR_3,
-    BTN_ARMOR_4,
-    BTN_SHIELD,
-    BTN_OFFHAND,
 
     /* ---- hotbar slots ---------------------------------------------------- */
     BTN_HOTBAR_1,
@@ -184,62 +109,6 @@ enum ButtonNames
     BTN_ITEM_OUT_2,
     BTN_ITEM_OUT_3,
 
-    /* ---- containers ------------------------------------------------------ */
-    BTN_CONTAINER_1,
-    BTN_CONTAINER_2,
-    BTN_CONTAINER_3,
-    BTN_CONTAINER_4,
-    BTN_CONTAINER_5,
-    BTN_CONTAINER_6,
-    BTN_CONTAINER_7,
-    BTN_CONTAINER_8,
-    BTN_CONTAINER_9,
-    BTN_CONTAINER_10,
-    BTN_CONTAINER_11,
-    BTN_CONTAINER_12,
-    BTN_CONTAINER_13,
-    BTN_CONTAINER_14,
-    BTN_CONTAINER_15,
-    BTN_CONTAINER_16,
-    BTN_CONTAINER_17,
-    BTN_CONTAINER_18,
-    BTN_CONTAINER_19,
-    BTN_CONTAINER_20,
-    BTN_CONTAINER_21,
-    BTN_CONTAINER_22,
-    BTN_CONTAINER_23,
-    BTN_CONTAINER_24,
-    BTN_CONTAINER_25,
-    BTN_CONTAINER_26,
-    BTN_CONTAINER_27,
-    BTN_CONTAINER_28,
-    BTN_CONTAINER_29,
-    BTN_CONTAINER_30,
-    BTN_CONTAINER_31,
-    BTN_CONTAINER_32,
-    BTN_CONTAINER_33,
-    BTN_CONTAINER_34,
-    BTN_CONTAINER_35,
-    BTN_CONTAINER_36,
-    BTN_CONTAINER_37,
-    BTN_CONTAINER_38,
-    BTN_CONTAINER_39,
-    BTN_CONTAINER_40,
-    BTN_CONTAINER_41,
-    BTN_CONTAINER_42,
-    BTN_CONTAINER_43,
-    BTN_CONTAINER_44,
-    BTN_CONTAINER_45,
-    BTN_CONTAINER_46,
-    BTN_CONTAINER_47,
-    BTN_CONTAINER_48,
-    BTN_CONTAINER_49,
-    BTN_CONTAINER_50,
-    BTN_CONTAINER_51,
-    BTN_CONTAINER_52,
-    BTN_CONTAINER_53,
-    BTN_CONTAINER_54,
-
     /* ---- super debugger (SDB) -------------------------------------------- */
     BTN_SDB_ADD,
     BTN_SDB_SUB,
@@ -262,11 +131,9 @@ extern str str_block_count[32];
 extern str str_quad_count[32];
 extern str str_tri_count[32];
 extern str str_vertex_count[32];
-extern u8 font_size_debug_info;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void init_fonts();
 void init_gui();
 void apply_render_settings();
 void update_render_settings(v2f32 render_size);
@@ -275,7 +142,6 @@ void free_gui();
 void update_menus(v2f32 render_size);
 void draw_hud();
 void update_debug_strings();
-void draw_inventory(v2f32 render_size);
 void draw_debug_info(Camera3D *camera);
 
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint);
@@ -287,12 +153,11 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
 
 void btn_func_singleplayer();
 void btn_func_multiplayer();
-void btn_func_options();
-void btn_func_quit();
-void btn_func_options_game();
-void btn_func_back_to_game();
-void btn_func_save_and_quit_to_title();
+void btn_func_settings();
 void btn_func_back();
+void btn_func_unpause();
+void btn_func_quit_game();
+void btn_func_quit_world();
 
 #endif /* GAME_GUI_H */
 

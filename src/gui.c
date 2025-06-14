@@ -1,86 +1,50 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../include/raylib.h"
-#include "../include/rlgl.h"
-
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
 
-/* ---- variables ----------------------------------------------------------- */
-Vector2 cursor;
-Image game_icon;
+/* ---- section: declarations ----------------------------------------------- */
+
 Font font_regular;
-Font font_bold;
-Font font_italic;
-Font font_bold_italic;
 u8 font_size = 0;
 u8 text_row_height = 0;
 
-Texture2D texture_hud_widgets;
-Texture2D texture_container_inventory;
-Texture2D texture_bg;
-
-Rectangle hotbar =              {0.0f, 0.0f, 202.0f, 22.0f};
-Rectangle hotbar_selected =     {0.0f, 22.0f, 24.0f, 24.0f};
-Rectangle hotbar_offhand =      {24.0f, 22.0f, 22.0f, 24.0f};
-Rectangle crosshair =           {240.0f, 0.0f, 16.0f, 16.0f};
 Rectangle button_inactive =     {0.0f, 46.0f, 200.0f, 20.0f};
 Rectangle button =              {0.0f, 66.0f, 200.0f, 20.0f};
 Rectangle button_selected =     {0.0f, 86.0f, 200.0f, 20.0f};
-Rectangle container_inventory = {0.0f, 0.0f, 176.0f, 184.0f};
-Rectangle container_slot_size = {0.0f, 0.0f, 16.0f, 16.0f};
-Rectangle rect_bg =             {0.0f, 0.0f, 16.0f, 16.0f};
-Rectangle rect_bg_dark =        {16.0f, 0.0f, 16.0f, 16.0f};
 
 v2i16 hotbar_pos;
 f32 hotbar_slot_selected = 1.0f;
 v2i16 crosshair_pos;
-u16 game_menu_pos;
-u8 button_spacing_vertical = 5;
-v2i16 container_inventory_pos;
-v2i16 container_inventory_first_slot_Pos;
-
-/* TODO: you know what TODO */
-u8 *container_inventory_slots[5][9];
-u8 *container_inventory_slots_crafting[5];
-u8 *container_inventory_slots_armor[5];
-u8 container_inventory_slots_offhand;
-u8 container_cursor_slot[2];
-u8 *hotbar_slots[9][9];
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
+b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
-static b8 check_menu_ready;
 
-/* ---- debug info ---------------------------------------------------------- */
-str str_fps[16];
-str str_player_pos[32];
-str str_player_block[32];
-str str_player_chunk[48];
-str str_player_direction[32];
+str str_debug_info[16][128];
 str str_block_count[32];
 str str_quad_count[32];
 str str_tri_count[32];
 str str_vertex_count[32];
 u8 font_size_debug_info = 22;
 
-/* ---- functions ----------------------------------------------------------- */
-static void print_menu_layers()
+/* ---- section: functions -------------------------------------------------- */
+
+void print_menu_layers()
 {
-    static str menu_names[10][24] =
+    str menu_names[10][24] =
     {
         "",
         "MENU_TITLE",
         "MENU_SINGLEPLAYER",
         "MENU_MULTIPLAYER",
-        "MENU_MINECRAFT_C_REALMS",
-        "MENU_OPTIONS",
-        "MENU_OPTIONS_GAME",
-        "MENU_VIDEO_SETTINGS",
-        "MENU_GAME",
+        "MENU_SETTINGS",
+        "MENU_SETTINGS_AUDIO",
+        "MENU_SETTINGS_VIDEO",
+        "MENU_GAME_PAUSE",
         "MENU_DEATH",
     };
 
@@ -91,19 +55,12 @@ static void print_menu_layers()
     putchar('\n');
 }
 
-void init_fonts()
-{
-    font_regular =      LoadFont("fonts/code_saver_regular.otf");
-}
-
 void init_gui()
 {
     game_icon = LoadImage("resources/logo/128x128.png");
     SetWindowIcon(game_icon);
 
-    texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
-    texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
-    texture_bg =                    LoadTexture("resources/gui/bg_options.png");
+    font_regular = LoadFont("resources/fonts/code_saver_regular.otf");
 
     game_menu_pos = setting.render_size.y / 3;
 
@@ -121,6 +78,7 @@ void apply_render_settings()
             .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
             .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
         };
+
     font_size = 14 * setting.gui_scale;
     text_row_height = 8 * setting.gui_scale;
 }
@@ -134,14 +92,7 @@ void update_render_settings(v2f32 render_size)
 
 void free_gui()
 {
-    UnloadImage(game_icon);
     UnloadFont(font_regular);
-    UnloadFont(font_bold);
-    UnloadFont(font_italic);
-    UnloadFont(font_bold_italic);
-    UnloadTexture(texture_hud_widgets);
-    UnloadTexture(texture_container_inventory);
-    UnloadTexture(texture_bg);
 }
 
 /*jump*/
@@ -181,21 +132,19 @@ void update_menus(v2f32 render_size)
     if (!menu_index)
         return;
 
-    detect_cursor;
     switch (menu_index)
     {
         case MENU_TITLE:
-            if (!check_menu_ready)
+            if (!is_menu_ready)
             {
                 menu_layer[state_menu_depth] = MENU_TITLE;
                 menu_index = MENU_TITLE;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_SINGLEPLAYER] = 1;
                 buttons[BTN_MULTIPLAYER] = 1;
-                buttons[BTN_MINECRAFT_C_REALMS] = 1;
-                buttons[BTN_OPTIONS] = 1;
+                buttons[BTN_SETTINGS] = 1;
                 buttons[BTN_QUIT] = 1;
-                check_menu_ready = 1;
+                is_menu_ready = 1;
             }
 
             /*jump*/
@@ -236,9 +185,9 @@ void update_menus(v2f32 render_size)
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 2) * setting.gui_scale)},
                     1, 1,
-                    BTN_OPTIONS,
-                    &btn_func_options,
-                    "Options...");
+                    BTN_SETTINGS,
+                    &btn_func_settings,
+                    "Settings");
 
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
@@ -251,25 +200,17 @@ void update_menus(v2f32 render_size)
             rlSetTexture(0);
             break;
 
-        case MENU_OPTIONS:
-            if (!check_menu_ready)
+        case MENU_SETTINGS:
+            if (!is_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_OPTIONS;
+                menu_layer[state_menu_depth] = MENU_SETTINGS;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
-                buttons[BTN_ONLINE] = 1;
-                buttons[BTN_SKIN_CUSTOMIZATION] = 1;
-                buttons[BTN_MUSIC_N_SOUNDS] = 1;
-                buttons[BTN_VIDEO_SETTINGS] = 1;
+                buttons[BTN_AUDIO] = 1;
+                buttons[BTN_SETTINGS_VIDEO] = 1;
                 buttons[BTN_CONTROLS] = 1;
-                buttons[BTN_LANGUAGE] = 1;
-                buttons[BTN_CHAT_SETTINGS] = 1;
-                buttons[BTN_RESOURCE_PACKS] = 1;
-                buttons[BTN_ACCESSIBILITY_SETTINGS] = 1;
-                buttons[BTN_TELEMETRY_DATA] = 1;
-                buttons[BTN_CREDITS_N_ATTRIBUTION] = 1;
-                check_menu_ready = 1;
+                is_menu_ready = 1;
             }
 
             rlBegin(RL_QUADS);
@@ -285,25 +226,17 @@ void update_menus(v2f32 render_size)
             rlSetTexture(0);
             break;
 
-        case MENU_OPTIONS_GAME:
-            if (!check_menu_ready)
+        case MENU_SETTINGS_GAME:
+            if (!is_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_OPTIONS_GAME;
+                menu_layer[state_menu_depth] = MENU_SETTINGS_GAME;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_DONE] = 1;
                 buttons[BTN_FOV] = 1;
-                buttons[BTN_DIFFICULTY] = 1;
-                buttons[BTN_SKIN_CUSTOMIZATION] = 1;
-                buttons[BTN_MUSIC_N_SOUNDS] = 1;
-                buttons[BTN_VIDEO_SETTINGS] = 1;
+                buttons[BTN_AUDIO] = 1;
+                buttons[BTN_SETTINGS_VIDEO] = 1;
                 buttons[BTN_CONTROLS] = 1;
-                buttons[BTN_LANGUAGE] = 1;
-                buttons[BTN_CHAT_SETTINGS] = 1;
-                buttons[BTN_RESOURCE_PACKS] = 1;
-                buttons[BTN_ACCESSIBILITY_SETTINGS] = 1;
-                buttons[BTN_TELEMETRY_DATA] = 1;
-                buttons[BTN_CREDITS_N_ATTRIBUTION] = 1;
-                check_menu_ready = 1;
+                is_menu_ready = 1;
             }
 
             rlBegin(RL_QUADS);
@@ -320,17 +253,15 @@ void update_menus(v2f32 render_size)
             break;
 
 
-        case MENU_GAME:
-            if (!check_menu_ready)
+        case MENU_GAME_PAUSE:
+            if (!is_menu_ready)
             {
-                menu_layer[state_menu_depth] = MENU_GAME;
+                menu_layer[state_menu_depth] = MENU_GAME_PAUSE;
                 memset(buttons, 0, BTN_COUNT);
-                buttons[BTN_BACK_TO_GAME] = 1;
-                buttons[BTN_ADVANCEMENTS] = 1;
-                buttons[BTN_GIVE_FEEDBACK] = 1;
-                buttons[BTN_OPTIONS_GAME] = 1;
-                buttons[BTN_QUIT] = 1;
-                check_menu_ready = 1;
+                buttons[BTN_UNPAUSE] = 1;
+                buttons[BTN_SETTINGS] = 1;
+                buttons[BTN_QUIT_WORLD] = 1;
+                is_menu_ready = 1;
             }
 
             rlBegin(RL_QUADS);
@@ -338,37 +269,23 @@ void update_menus(v2f32 render_size)
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos},
                     1, 1,
-                    BTN_BACK_TO_GAME,
-                    &btn_func_back_to_game,
-                    "Back to Game");
+                    BTN_UNPAUSE,
+                    &btn_func_unpause,
+                    "Unpause");
 
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos + ((button.height + button_spacing_vertical) * setting.gui_scale)},
                     1, 1,
-                    BTN_ADVANCEMENTS,
-                    &btn_func_options_game,
-                    "Advancements");
-
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 2) * setting.gui_scale)},
-                    1, 1,
-                    BTN_GIVE_FEEDBACK,
-                    &btn_func_options_game,
-                    "Give Feedback");
-
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
-                    1, 1,
-                    BTN_OPTIONS_GAME,
-                    &btn_func_options_game,
-                    "Options...");
+                    BTN_SETTINGS,
+                    &btn_func_settings,
+                    "Settings");
 
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 4) * setting.gui_scale)},
                     1, 1,
                     BTN_QUIT,
-                    &btn_func_save_and_quit_to_title,
-                    "Save and Quit to Title");
+                    &btn_func_quit_world,
+                    "Quit World");
 
             rlEnd();
             rlSetTexture(0);
@@ -409,101 +326,10 @@ void draw_hud()
     rlSetTexture(0);
 }
 
-void draw_containers(Player *player, v2f32 render_size)
-{
-    draw_menu_overlay(render_size);
-    rlBegin(RL_QUADS);
-
-    switch (player->container_state)
-    {
-        case STATE_CONTR_ANVIL:
-            break;
-
-        case STATE_CONTR_BEACON:
-            break;
-
-        case STATE_CONTR_BLAST_FURNACE:
-            break;
-
-        case STATE_CONTR_BREWING_STAND:
-            break;
-
-        case STATE_CONTR_CARTOGRAPHY_TABLE:
-            break;
-
-        case STATE_CONTR_CHEST:
-            break;
-
-        case STATE_CONTR_CHEST_LARGE:
-            break;
-
-        case STATE_CONTR_CRAFTING_TABLE:
-            break;
-
-        case STATE_CONTR_DISPENSER:
-            break;
-
-        case STATE_CONTR_ENCHANTING_TABLE:
-            break;
-
-        case STATE_CONTR_FURNACE:
-            break;
-
-        case STATE_CONTR_GAMEMODE_SWITCHER:
-            break;
-
-        case STATE_CONTR_GRINDSTONE:
-            break;
-
-        case STATE_CONTR_HOPPER:
-            break;
-
-        case STATE_CONTR_HORSE:
-            break;
-
-        case STATE_CONTR_INVENTORY:
-            draw_texture(texture_container_inventory,
-                    container_inventory,
-                    container_inventory_pos, 
-                    (v2i16){setting.gui_scale, setting.gui_scale},
-                    1, 1, COL_TEXTURE_DEFAULT);
-            break;
-
-        case STATE_CONTR_LEGACY_SMITHING:
-            break;
-
-        case STATE_CONTR_LOOM:
-            break;
-
-        case STATE_CONTR_SMITHING:
-            break;
-
-        case STATE_CONTR_SMOKER:
-            break;
-
-        case STATE_CONTR_STONECUTTER:
-            break;
-
-        case STATE_CONTR_VILLAGER:
-            break;
-
-        case STATE_CONTR_TAB_INVENTORY:
-            break;
-
-        case STATE_CONTR_TAB_ITEMS:
-            break;
-
-        case STATE_CONTR_TAB_ITEMS_SEARCH:
-            break;
-    }
-
-    rlEnd();
-    rlSetTexture(0);
-}
-
 void draw_debug_info(Camera3D *camera)
 {
-    if (!(state & FLAG_DEBUG)) return;
+    if (!(state & FLAG_DEBUG))
+        return;
 
     update_debug_strings();
 
@@ -527,14 +353,6 @@ void draw_debug_info(Camera3D *camera)
     draw_text(font_regular, str_quad_count, (v2i16){MARGIN, MARGIN + text_row_height * 6}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
     draw_text(font_regular, str_tri_count, (v2i16){MARGIN, MARGIN + text_row_height * 7}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
     draw_text(font_regular, str_vertex_count, (v2i16){MARGIN, MARGIN + text_row_height * 8}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-
-    BeginMode3D(*camera);
-    rlBegin(RL_LINES);
-    draw_line_3d(v3izero, (v3i32){1.0f, 0.0f, 0.0f}, COL_X);
-    draw_line_3d(v3izero, (v3i32){0.0f, 1.0f, 0.0f}, COL_Y);
-    draw_line_3d(v3izero, (v3i32){0.0f, 0.0f, 1.0f}, COL_Z);
-    rlEnd();
-    EndMode3D();
 }
 
 /* 
@@ -874,7 +692,7 @@ void btn_func_singleplayer()
 {
     menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
-    check_menu_ready = 0;
+    is_menu_ready = 0;
     state &= ~FLAG_PAUSED; /*temp*/
 
     init_world("Poop Consistency Tester"); /*temp*/
@@ -884,43 +702,36 @@ void btn_func_multiplayer()
 {
     menu_index = MENU_MULTIPLAYER;
     state_menu_depth = 2;
-    check_menu_ready = 0;
+    is_menu_ready = 0;
 }
 
-void btn_func_options()
+void btn_func_settings()
 {
-    menu_index = MENU_OPTIONS;
+    menu_index = MENU_SETTINGS;
     state_menu_depth = 2;
-    check_menu_ready = 0;
+    is_menu_ready = 0;
 }
 
-void btn_func_options_game()
+void btn_func_quit_game()
 {
-    menu_index = MENU_OPTIONS_GAME;
-    state_menu_depth = 2;
-    check_menu_ready = 0;
+    state &= ~FLAG_ACTIVE;
 }
 
-void btn_func_back_to_game()
+void btn_func_unpause()
 {
     menu_index = 0;
     state_menu_depth = 0;
-    check_menu_ready = 0;
+    is_menu_ready = 0;
     state &= ~FLAG_PAUSED;
     lily.state &= ~FLAG_MENU_OPEN;
     lily.container_state = 0;
 }
 
-void btn_func_quit()
-{
-    state &= ~FLAG_ACTIVE;
-}
-
-void btn_func_save_and_quit_to_title()
+void btn_func_quit_world()
 {
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
-    check_menu_ready = 0;
+    is_menu_ready = 0;
     /* TODO: save and unload world */
     state &= ~FLAG_WORLD_LOADED;
 }
@@ -930,6 +741,6 @@ void btn_func_back()
     menu_layer[state_menu_depth] = 0;
     --state_menu_depth;
     menu_index = menu_layer[state_menu_depth];
-    check_menu_ready = 0;
+    is_menu_ready = 0;
 }
 

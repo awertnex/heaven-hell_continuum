@@ -175,20 +175,21 @@ int main(void)
     if (init_paths() != 0)
         return -1;
 
-#if RELEASE_BUILD
-    if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
-        return -1;
-#else
-    if (init_instance_directory("test_instance") != 0)
-        return -1;
-#endif /* RELEASE_BUILD */
+    if (RELEASE_BUILD)
+    {
+        if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+            return -1;
+    }
+    else
+    {
+        if (init_instance_directory("test_instance") != 0)
+            return -1;
+    }
 
-    if (0
-            || init_glfw() != 0
-            || init_freetype() != 0
-            || init_window(&render) != 0
-            || init_glew() != 0
-       )
+    if (init_glfw() != 0 ||
+            init_freetype() != 0 ||
+            init_window(&render) != 0 ||
+            init_glew() != 0)
     {
         glfwTerminate();
         return -1;
@@ -223,15 +224,14 @@ int main(void)
 
     /* ---- section: graphics ----------------------------------------------- */
 
-    if (0
-            || init_shader_program(&shader_skybox) != 0
-            || init_shader_program(&shader_default) != 0
-            || init_shader_program(&shader_gizmo) != 0
-            || init_shader_program(&shader_fbo) != 0
-            || init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0
-            || init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0
-            || init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0
-       ) goto cleanup;
+    if (init_shader_program(&shader_skybox) != 0 ||
+            init_shader_program(&shader_default) != 0 ||
+            init_shader_program(&shader_gizmo) != 0 ||
+            init_shader_program(&shader_fbo) != 0 ||
+            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0 ||
+            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0 ||
+            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
+        goto cleanup;
 
     glfwSwapInterval(1); /* vsync */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);

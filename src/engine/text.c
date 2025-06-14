@@ -15,7 +15,7 @@ int init_freetype(void)
     }
 
     FT_Face face;
-    str *font = "./fonts/code_saver_regular.otf";
+    str *font = "./resources/fonts/code_saver_regular.otf";
     if (FT_New_Face(ft, font, 0, &face))
     {
         LOGFATAL("Failed to Load Font '%s', Process Aborted\n", font);
