@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="resources/logo/128x128.png" alt="heaven-hell_continuum">
+  <img src="resources/logo/128x128.png" alt="Heaven-Hell Continuum">
 </h1>
 
 **a voxel game/engine written in C99, with minimal library usage if any.**
@@ -27,14 +27,14 @@ cd heaven-hell_continuum/
 cc build.c -std=c99 -o build # -std=c99 optional, but preferred
 ./build
 ```
-if build successful, run heaven-hell_continuum with `./bin/heaven-hell_continuum`\
+if build successful, run 'Heaven-Hell Continuum' with `./bin/heaven-hell_continuum`\
 
 **additional commands**
 - help `./build help`
 - build launcher with `./build launcher` and run with `./bin/launcher`
-    - the launcher creates a directory 'heaven-hell_continuum/' in your 'HOME' directory
-    - all heaven-hell_continuum instances will be stored in 'heaven-hell_continuum/instances/'
-    - the default path to 'heaven-hell_continuum/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
+    - the launcher creates a directory 'Heaven-Hell Continuum/' in your 'HOME' directory
+    - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances/'
+    - the default path to 'Heaven-Hell Continuum/' can be changed from the file 'dir.c' in the function 'init_paths()' before building
 - build engine with `./build engine` and run with `./bin/engine`
 - list available tests with `./build list`
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
@@ -57,14 +57,14 @@ cd heaven-hell_continuum
 gcc ./src/build.c -std=c99 -o build.exe
 ./build.exe
 ```
-if build successful, run heaven-hell_continuum with `./bin/heaven-hell_continuum.exe` (`-std=c99` optional, but preferred)
+if build successful, run 'Heaven-Hell Continuum' with `./bin/heaven-hell_continuum.exe` (`-std=c99` optional, but preferred)
 
 **additional commands**
 - help `./build.exe help`
 - build launcher with `./build.exe launcher` and run with `./bin/launcher.exe`
-    - the launcher creates a folder 'heaven-hell_continuum' in your 'appdata' folder
-    - all heaven-hell_continuum instances will be stored in 'heaven-hell_continuum/instances'
-    - the default path to 'heaven-hell_continuum' can be changed from the file 'dir.c' in the function 'init_paths()' before building
+    - the launcher creates a folder 'Heaven-Hell Contimuum' in your 'appdata' folder
+    - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances'
+    - the default path to 'Heaven-Hell Continuum' can be changed from the file 'dir.c' in the function 'init_paths()' before building
 - build engine with `./build.exe engine` and run with `./bin/engine.exe`
 - list available tests with `./build.exe list`
     - this command searches the folder './src/tests' and loads all `.c` file names into an array to list

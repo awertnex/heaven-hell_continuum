@@ -2,6 +2,7 @@
 #define MC_C_ENGINE_TEXT_H
 
 #include "core.h"
+
 #include "defines.h"
 
 #define GLYPH_MAX   128

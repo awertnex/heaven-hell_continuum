@@ -197,7 +197,7 @@ int main(void)
     memset(mc_c_chunkpath, 0, PATH_MAX);
     memset(tokens_loaded, 0, 80);
 
-    snprintf(mc_c_grandpath, 64, "%s/minecraft.c/", getenv("HOME"));
+    snprintf(mc_c_grandpath, 64, "%s/Heaven-Hell Continuum/", getenv("HOME"));
     snprintf(mc_c_subpath, 128, "%stest_instance/", mc_c_grandpath);
     snprintf(mc_c_chunkpath, 256, "%schunk/", mc_c_subpath);
 

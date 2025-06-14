@@ -93,10 +93,7 @@ static void print_menu_layers()
 
 void init_fonts()
 {
-    font_regular =      LoadFont("fonts/minecraft_regular.otf");
-    font_bold =         LoadFont("fonts/minecraft_bold.otf");
-    font_italic =       LoadFont("fonts/minecraft_italic.otf");
-    font_bold_italic =  LoadFont("fonts/minecraft_bold_italic.otf");
+    font_regular =      LoadFont("fonts/code_saver_regular.otf");
 }
 
 void init_gui()
@@ -239,19 +236,12 @@ void update_menus(v2f32 render_size)
             draw_button(texture_hud_widgets, button,
                     (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 2) * setting.gui_scale)},
                     1, 1,
-                    BTN_MINECRAFT_C_REALMS,
-                    &btn_func_minecraft_c_realms,
-                    "Minecraft.c Realms");
-
-            draw_button(texture_hud_widgets, button,
-                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
-                    1, 1,
                     BTN_OPTIONS,
                     &btn_func_options,
                     "Options...");
 
             draw_button(texture_hud_widgets, button,
-                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 4) * setting.gui_scale)},
+                    (v2i16){render_size.x / 2, game_menu_pos + (((button.height + button_spacing_vertical) * 3) * setting.gui_scale)},
                     1, 1,
                     BTN_QUIT,
                     &btn_func_quit,
@@ -893,13 +883,6 @@ void btn_func_singleplayer()
 void btn_func_multiplayer()
 {
     menu_index = MENU_MULTIPLAYER;
-    state_menu_depth = 2;
-    check_menu_ready = 0;
-}
-
-void btn_func_minecraft_c_realms()
-{
-    menu_index = MENU_MINECRAFT_C_REALMS;
     state_menu_depth = 2;
     check_menu_ready = 0;
 }

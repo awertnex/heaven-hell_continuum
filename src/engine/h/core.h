@@ -9,7 +9,6 @@
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
 #include "../../../include/GLFW/glfw3.h"
-#include "../../../include/ft2build.h"
 #include FT_FREETYPE_H
 
 #include "defines.h"

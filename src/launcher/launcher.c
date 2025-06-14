@@ -14,7 +14,7 @@ void init_launcher()
 {
     state |= FLAG_ACTIVE;
     SetWindowState(FLAG_MSAA_4X_HINT);
-    InitWindow(render_size.x, render_size.y, "minecraft.c Launcher");
+    InitWindow(render_size.x, render_size.y, "Heaven-Hell Continuum Launcher");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     if (LOGGING_DEBUG)

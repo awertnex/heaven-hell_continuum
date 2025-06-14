@@ -57,12 +57,12 @@ void init_paths()
 {
 #if RELEASE_MODE
     snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
-            "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
+            "%s/%sHeaven-Hell Continuum/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
 
     if (!make_dir(mc_c_grandpath))
-        LOGINFO("%s\n", "Main Directory Created 'HOME/minecraft.c/'");
+        LOGINFO("%s\n", "Main Directory Created 'HOME/Heaven-Hell Continuum/'");
     else
-        LOGINFO("Main Directory Path '%s/%sminecraft.c/'\n", getenv("HOME"), MC_C_ROAMING);
+        LOGINFO("Main Directory Path '%s/%sHeaven-Hell Continuum/'\n", getenv("HOME"), MC_C_ROAMING);
 #else
     LOGINFO("%s\n", "Test Instance Directory Path 'test_instance/'");
 #endif /* RELEASE_MODE */

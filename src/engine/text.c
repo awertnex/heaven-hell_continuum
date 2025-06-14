@@ -1,3 +1,6 @@
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include "h/text.h"
 #include "h/logger.h"
 
@@ -24,7 +27,7 @@ int init_freetype(void)
     LOGINFO("Font Loaded '%s'\n", font);
 
     FT_Set_Pixel_Sizes(face, 0, 48);
-    for (u8 c = 0; c < GLYPH_MAX; c++)
+    for (u8 c = 0; c < GLYPH_MAX; ++c)
     {
         if (FT_Load_Char(face, c, FT_LOAD_RENDER))
             LOGERROR("Failed to Load Glyph '%c'", c);
