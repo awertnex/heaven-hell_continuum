@@ -1,5 +1,5 @@
-#ifndef MC_C_DIR_H
-#define MC_C_DIR_H
+#ifndef GAME_DIR_H
+#define GAME_DIR_H
 
 #include <linux/limits.h>
 
@@ -50,18 +50,19 @@ enum Directories
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern str mc_c_grandpath[PATH_MAX];
-extern str mc_c_subpath[PATH_MAX];
-extern str mc_c_launcher_path[PATH_MAX];
+extern str path_grandpath[PATH_MAX];
+extern str path_subpath[PATH_MAX];
+extern str path_launcherpath[PATH_MAX];
+extern str path_worldpath[PATH_MAX];
 extern const str GRANDPATH_DIR[][NAME_MAX];
 extern const str INSTANCE_DIR[][NAME_MAX];
 extern const str WORLD_DIR[][NAME_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void init_paths();
-int init_instance_directory(str *instance_name);
-void init_world_directory(str *world_name);
+int init_paths();
+int init_instance_directory(const str *instance_name);
+void init_world_directory(const str *world_name);
 
-#endif /* MC_C_DIR_H */
+#endif /* GAME_DIR_H */
 

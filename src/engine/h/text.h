@@ -1,5 +1,5 @@
-#ifndef MC_C_ENGINE_TEXT_H
-#define MC_C_ENGINE_TEXT_H
+#ifndef ENGINE_TEXT_H
+#define ENGINE_TEXT_H
 
 #include "core.h"
 
@@ -21,4 +21,4 @@ extern Glyph glyphs[GLYPH_MAX];
 int load_font(const str *file_name);
 int init_freetype(void);
 
-#endif /* MC_C_ENGINE_TEXT_H */
+#endif /* ENGINE_TEXT_H */

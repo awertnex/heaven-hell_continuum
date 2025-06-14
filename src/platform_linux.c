@@ -1,12 +1,7 @@
-#if defined(__linux__) || defined(__linux)
-#ifndef PLATFORM_LINUX_INCLUDE
-#define PLATFORM_LINUX_INCLUDE
+#include <stdio.h>
+#include <math.h>
 
-#include "h/main.h"
 #include "h/setting.h"
-
-#define MC_C_HOME "HOME"
-#define MC_C_ROAMING ""
 
 #include "h/assets.h"
 #include "h/chunking.h"
@@ -30,7 +25,4 @@ void update_debug_strings(Player *player)
     snprintf(str_tri_count, 32, "TRIS: %ld", globals.quad_count * 2);
     snprintf(str_vertex_count, 32, "VERTICES: %ld", globals.quad_count * 6);
 }
-
-#endif /* PLATFORM_LINUX_INCLUDE */
-#endif /* PLATFORM_LINUX */
 

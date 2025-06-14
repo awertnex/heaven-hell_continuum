@@ -1,12 +1,13 @@
-#ifndef MC_C_H
-#define MC_C_H
+#ifndef GAME_H
+#define GAME_H
 
-#define MC_C_AUTHOR     "Author: Lily Awertnex"
-#define MC_C_NAME       "heaven-hell_continuum"
-#define MC_C_VERSION    "0.2.0-alpha"
+#define GAME_AUTHOR         "Author: Lily Awertnex"
+#define GAME_NAME           "Heaven-Hell Continuum"
+#define GAME_VERSION        "0.2.0-alpha"
 
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
+#include "platform.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
@@ -68,5 +69,5 @@ extern Uniform uniform;
 
 void init_world(str *str);
 
-#endif /* MC_C_MAIN_H */
+#endif /* GAME_MAIN_H */
 

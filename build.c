@@ -2,8 +2,7 @@
 #include <unistd.h>
 #include <glob.h>
 
-#include "src/engine/platform_linux.c"
-#include "src/engine/platform_windows.c"
+#include "src/engine/h/platform.h"
 #include "src/engine/memory.c"
 #include "src/engine/dir.c"
 #include "src/engine/logger.c"
@@ -11,7 +10,6 @@
 #define DIR_BIN         "bin/"
 #define DIR_BIN_TESTS   "bin/tests/"
 #define DIR_SRC         "src/"
-#define DIR_ENGINE      "src/engine/"
 #define DIR_LAUNCHER    "src/launcher/"
 #define DIR_TESTS       "src/tests/"
 #define CMD_MEMB        128
@@ -53,7 +51,6 @@ enum Flags
 {
     STATE_TEST = 1,
     STATE_LAUNCHER,
-    STATE_ENGINE,
 
     FLAG_INCLUDE_RAYLIB =   0x01,
     FLAG_SHOW_CMD =         0x02,
@@ -105,13 +102,11 @@ int main(int argc, char **argv)
     if (compare_argv("list", argc, argv))       list();
     if (compare_argv("test", argc, argv))       state = STATE_TEST;
     if (compare_argv("launcher", argc, argv))   state = STATE_LAUNCHER;
-    if (compare_argv("engine", argc, argv))     state = STATE_ENGINE;
     if (compare_argv("raylib", argc, argv))     flags |= FLAG_INCLUDE_RAYLIB;
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
 
     if (0
             || !is_dir_exists(DIR_SRC)
-            || !is_dir_exists(DIR_ENGINE)
             || !is_dir_exists(DIR_TESTS)
             || !is_dir_exists(DIR_LAUNCHER)
        )
@@ -124,22 +119,21 @@ int main(int argc, char **argv)
     if (!is_dir_exists(DIR_BIN))
     {
         make_dir(DIR_BIN);
-        LOGINFO("Directory '%s' Created", DIR_BIN);
+        LOGINFO("Directory Created '%s'", DIR_BIN);
     }
 
     if (!is_dir_exists(DIR_BIN_TESTS))
     {
         make_dir(DIR_BIN_TESTS);
-        LOGINFO("Directory '%s' Created", DIR_BIN_TESTS);
+        LOGINFO("Directory Created '%s'", DIR_BIN_TESTS);
     }
 
     execute_cmd();
     mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
-    globfree(&glob_buf);
     return 0;
 }
 
-/* ---- functions ----------------------------------------------------------- */
+/* ---- section: functions -------------------------------------------------- */
 u64 compare_argv(str *arg, int argc, char **argv)
 {
     if (argc == 1)
@@ -223,21 +217,13 @@ void build_cmd(int argc, char **argv)
             break;
 
         case STATE_LAUNCHER:
-            snprintf(str_main, NAME_MAX, "%s%s", DIR_LAUNCHER, "launcher.c");
+            snprintf(str_main, NAME_MAX, "%slauncher.c", DIR_LAUNCHER);
             push_cmd(str_main);
-            push_glob(DIR_LAUNCHER"*.c");
             snprintf(str_out, NAME_MAX, "./%slauncher%s", DIR_BIN, EXTENSION);
-            break;
-
-        case STATE_ENGINE:
-            push_cmd(str_main);
-            push_glob(DIR_ENGINE"*.c");
-            snprintf(str_out, NAME_MAX, "./%sengine%s", DIR_BIN, EXTENSION);
             break;
 
         default:
             push_cmd(str_main);
-            push_glob(DIR_SRC"*.c");
             break;
     }
 
@@ -248,6 +234,7 @@ void build_cmd(int argc, char **argv)
     /* ---- libs ------------------------------------------------------------ */
     if (flags & FLAG_INCLUDE_RAYLIB)
         push_cmd("-L:./lib/libraylib.a");
+
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
@@ -258,6 +245,9 @@ void build_cmd(int argc, char **argv)
     cmd.entry[cmd_pos] = NULL;
 }
 
+/*
+ * scrap function, for reference;
+ */
 void push_glob(const str *pattern)
 {
     b8 ret = glob(pattern, 0, NULL, &glob_buf);
@@ -298,7 +288,7 @@ void execute_cmd()
     if (WIFEXITED(status))
     {
         if (status == 0)
-            LOGINFO("'%s' Built\n", str_out);
+            LOGINFO("Built '%s'\n", str_out);
         LOGINFO("Build Exit Code: %d\n", WEXITSTATUS(status));
 
         if (WEXITSTATUS(status))
@@ -311,7 +301,6 @@ void execute_cmd()
     }
 
 cleanup:
-    globfree(&glob_buf);
     fail_cmd();
 }
 

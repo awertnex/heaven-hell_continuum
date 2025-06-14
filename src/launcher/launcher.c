@@ -55,7 +55,7 @@ void update_launcher_input() /* TODO: evaluate instance */
         state &= ~FLAG_ACTIVE;
 }
 
-void evaluate_instance(str *mc_c_subpath)
+void evaluate_instance(str *path)
 {
 }
 

@@ -1,5 +1,5 @@
-#ifndef MC_C_ENGINE_MEMORY_H
-#define MC_C_ENGINE_MEMORY_H
+#ifndef ENGINE_MEMORY_H
+#define ENGINE_MEMORY_H
 
 #include "defines.h"
 
@@ -66,5 +66,5 @@ void swap_bits(char *c1, char *c2, u8 bit_count);
 void swap_strings(str *s1, str *s2);
 void sort_str_buf(str_buf *s_buf);
 
-#endif /* MC_C_ENGINE_MEMORY_H */
+#endif /* ENGINE_MEMORY_H */
 

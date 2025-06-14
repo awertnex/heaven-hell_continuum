@@ -10,7 +10,7 @@
 
 /* ---- variables ----------------------------------------------------------- */
 Vector2 cursor;
-Image mc_c_icon;
+Image game_icon;
 Font font_regular;
 Font font_bold;
 Font font_italic;
@@ -98,8 +98,8 @@ void init_fonts()
 
 void init_gui()
 {
-    mc_c_icon = LoadImage("resources/logo/128x128.png");
-    SetWindowIcon(mc_c_icon);
+    game_icon = LoadImage("resources/logo/128x128.png");
+    SetWindowIcon(game_icon);
 
     texture_hud_widgets =           LoadTexture("resources/gui/widgets.png");
     texture_container_inventory =   LoadTexture("resources/gui/containers/inventory.png");
@@ -134,7 +134,7 @@ void update_render_settings(v2f32 render_size)
 
 void free_gui()
 {
-    UnloadImage(mc_c_icon);
+    UnloadImage(game_icon);
     UnloadFont(font_regular);
     UnloadFont(font_bold);
     UnloadFont(font_italic);
@@ -209,11 +209,11 @@ void update_menus(v2f32 render_size)
                     (v2i16){0, 128}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
 
-            draw_text(font_regular, MC_C_VERSION,
+            draw_text(font_regular, GAME_VERSION,
                     (v2i16){6, render_size.y - 3},
                     font_size, 2, 0, 2, COL_TEXT_DEFAULT);
 
-            draw_text(font_regular, MC_C_AUTHOR,
+            draw_text(font_regular, GAME_AUTHOR,
                     (v2i16){render_size.x - 2, render_size.y - 3},
                     font_size, 2, 2, 2, COL_TEXT_DEFAULT);
 

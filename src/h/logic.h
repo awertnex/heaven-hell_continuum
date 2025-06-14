@@ -1,5 +1,5 @@
-#ifndef MC_C_LOGIC_H
-#define MC_C_LOGIC_H
+#ifndef GAME_LOGIC_H
+#define GAME_LOGIC_H
 
 #include "../engine/h/core.h"
 
@@ -145,5 +145,5 @@ b8 get_timer(f64 *time_start, f32 interval);
 void draw_default_grid(Color x, Color y, Color z);
 #endif // TODO: undef FUCK
 
-#endif /* MC_C_LOGIC_H */
+#endif /* GAME_LOGIC_H */
 

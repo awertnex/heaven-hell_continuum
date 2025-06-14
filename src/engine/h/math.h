@@ -1,5 +1,5 @@
-#ifndef MC_C_ENGINE_MATH_H
-#define MC_C_ENGINE_MATH_H
+#ifndef ENGINE_MATH_H
+#define ENGINE_MATH_H
 
 #include <math.h>
 
@@ -39,5 +39,5 @@ m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
 
-#endif /* MC_C_ENGINE_MATH_H */
+#endif /* ENGINE_MATH_H */
 

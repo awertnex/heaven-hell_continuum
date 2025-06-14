@@ -1,5 +1,5 @@
-#ifndef MC_C_ASSETS_H
-#define MC_C_ASSETS_H
+#ifndef GAME_ASSETS_H
+#define GAME_ASSETS_H
 
 #include "../include/raylib.h"
 #include "../engine/h/defines.h"
@@ -57,5 +57,5 @@ extern Block block[1023];               /* standard block array */
 void init_textures();
 void unload_textures();
 
-#endif /* MC_C_ASSETS_H */
+#endif /* GAME_ASSETS_H */
 
