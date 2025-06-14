@@ -1,5 +1,5 @@
-#ifndef MC_C_GUI_H
-#define MC_C_GUI_H
+#ifndef GAME_GUI_H
+#define GAME_GUI_H
 
 #include "../include/raylib.h"
 
@@ -32,7 +32,7 @@
 /* ---- section: declarations ----------------------------------------------- */
 
 extern Vector2 cursor;
-extern Image mc_c_icon;
+extern Image game_icon;
 
 extern Font font_regular;
 extern Font font_bold;
@@ -294,5 +294,5 @@ void btn_func_back_to_game();
 void btn_func_save_and_quit_to_title();
 void btn_func_back();
 
-#endif /* MC_C_GUI_H */
+#endif /* GAME_GUI_H */
 

@@ -1,5 +1,5 @@
-#ifndef MC_C_SETTING_H
-#define MC_C_SETTING_H
+#ifndef GAME_SETTING_H
+#define GAME_SETTING_H
 
 #include "../engine/h/defines.h"
 
@@ -48,5 +48,5 @@ typedef struct Settings
 
 extern Settings setting;
 
-#endif /* MC_C_SETTING_H */
+#endif /* GAME_SETTING_H */
 

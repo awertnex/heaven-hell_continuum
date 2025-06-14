@@ -1,5 +1,5 @@
-#ifndef MC_C_SUPER_DEBUGGER_H
-#define MC_C_SUPER_DEBUGGER_H
+#ifndef GAME_SUPER_DEBUGGER_H
+#define GAME_SUPER_DEBUGGER_H
 
 #include "../include/raylib.h"
 
@@ -37,5 +37,5 @@ void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
 void draw_super_debugger(v2f32 render_size);
 
-#endif /* MC_C_SUPER_DEBUGGER_H */
+#endif /* GAME_SUPER_DEBUGGER_H */
 

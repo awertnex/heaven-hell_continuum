@@ -1,5 +1,5 @@
-#ifndef MC_C_KEYMAPS_H
-#define MC_C_KEYMAPS_H
+#ifndef GAME_KEYMAPS_H
+#define GAME_KEYMAPS_H
 
 #include "engine/h/core.h"
 
@@ -64,5 +64,5 @@ u32 bind_right =                        GLFW_KEY_RIGHT;
 u32 bind_down =                         GLFW_KEY_DOWN;
 u32 bind_up =                           GLFW_KEY_UP;
 
-#endif /* MC_C_KEYMAPS_H */
+#endif /* GAME_KEYMAPS_H */
 

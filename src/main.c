@@ -18,7 +18,7 @@ b8 logging = 0;
 Render render =
 {
     .size = {854, 480},
-    .title = MC_C_ENGINE_NAME": "MC_C_ENGINE_VERSION,
+    .title = ENGINE_NAME": "ENGINE_VERSION,
 };
 
 Settings setting =
@@ -162,13 +162,11 @@ void draw_everything();
 
 int main(void)
 {
-    str_buf string = {NULL};
-    string = get_dir_contents("./");
-    for (u16 i = 0; i < string.count; ++i)
-        LOGINFO("%s\n", string.entry[i]);
-    return 0;
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
+
+    if (!RELEASE_BUILD)
+        LOGDEBUG("%s\n", "---- DEVELOPMENT BUILD ---------------------------------------------------------");
 
     if (MODE_DEBUG)
         LOGDEBUG("%s\n", "Debugging Enabled");

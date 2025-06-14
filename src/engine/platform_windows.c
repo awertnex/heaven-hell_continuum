@@ -7,7 +7,7 @@
 #include "h/logger.h"
 #include "h/math.h"
 
-int mc_c_mkdir(str *path, u16 mode)
+int make_dir(str *path)
 {
     return mkdir(path);
 }

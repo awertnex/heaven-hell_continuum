@@ -1,5 +1,5 @@
-#ifndef MC_C_CHUNKING_H
-#define MC_C_CHUNKING_H
+#ifndef GAME_CHUNKING_H
+#define GAME_CHUNKING_H
 
 #include "../engine/h/defines.h"
 
@@ -136,5 +136,5 @@ void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
 #endif // TODO: undef FUCK
 
-#endif /* MC_C_CHUNKING_H */
+#endif /* GAME_CHUNKING_H */
 

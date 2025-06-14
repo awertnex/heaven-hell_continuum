@@ -11,10 +11,10 @@
 #include "h/dir.h"
 
 FILE *instance;
-str mc_c_grandpath[PATH_MAX] = {0};
-str mc_c_subpath[PATH_MAX] = {0};
-str mc_c_launcher_path[PATH_MAX] = {0};
-str mc_c_world_path[PATH_MAX] = {0};
+str path_grandpath[PATH_MAX] = {0};
+str path_subpath[PATH_MAX] = {0};
+str path_launcherpath[PATH_MAX] = {0};
+str path_worldpath[PATH_MAX] = {0};
 const str GRANDPATH_DIR[][NAME_MAX] =
 {
     "instances/",
@@ -56,13 +56,13 @@ const str WORLD_DIR[][NAME_MAX] =
 void init_paths()
 {
 #if RELEASE_MODE
-    snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
-            "%s/%sHeaven-Hell Continuum/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
+    snprintf(path_grandpath, strlen(getenv(ENV_HOME)) + 22,
+            "%s/%sHeaven-Hell Continuum/", getenv(ENV_HOME), ENV_ROAMING); /* TODO: test if ROAMING is correct */
 
-    if (!make_dir(mc_c_grandpath))
+    if (!make_dir(path_grandpath))
         LOGINFO("%s\n", "Main Directory Created 'HOME/Heaven-Hell Continuum/'");
     else
-        LOGINFO("Main Directory Path '%s/%sHeaven-Hell Continuum/'\n", getenv("HOME"), MC_C_ROAMING);
+        LOGINFO("Main Directory Path '%s/%sHeaven-Hell Continuum/'\n", getenv("HOME"), ENV_ROAMING);
 #else
     LOGINFO("%s\n", "Test Instance Directory Path 'test_instance/'");
 #endif /* RELEASE_MODE */
@@ -70,30 +70,30 @@ void init_paths()
 
 int init_instance_directory(str *instance_name)
 {
-    snprintf(mc_c_subpath, sizeof(mc_c_subpath), "%s%s", mc_c_grandpath, instance_name);
+    snprintf(path_subpath, sizeof(path_subpath), "%s%s", path_grandpath, instance_name);
     for (u16 i = 0; i < PATH_MAX - 1; ++i)
-        if (mc_c_subpath[i + 1] == 0 && mc_c_subpath[i] != '/')
+        if (path_subpath[i + 1] == 0 && path_subpath[i] != '/')
         {
-            strncat(mc_c_subpath, "/", 2);
+            strncat(path_subpath, "/", 2);
             break;
         }
 
-    if (make_dir(mc_c_subpath))
+    if (make_dir(path_subpath))
     {
         LOGINFO("Instance Opened '%s'\n", instance_name);
         return 0;
     }
 
     str str_reg[PATH_MAX] = {0};
-    LOGINFO("Instance Directory Created '%s'\n", mc_c_subpath);
+    LOGINFO("Instance Directory Created '%s'\n", path_subpath);
     LOGINFO("%s\n", "Building Instance Directory Structure:");
     for (u8 i = 0;
             (i < 255) && (i < arr_len(INSTANCE_DIR)) && (INSTANCE_DIR[i][0] != 0);
             ++i)
     {
         snprintf(str_reg,
-                strlen(mc_c_subpath) + strlen(INSTANCE_DIR[i]),
-                "%s%s", mc_c_subpath, INSTANCE_DIR[i]);
+                strlen(path_subpath) + strlen(INSTANCE_DIR[i]),
+                "%s%s", path_subpath, INSTANCE_DIR[i]);
 
         if (!is_dir_exists(str_reg))
         {
@@ -108,9 +108,9 @@ int init_instance_directory(str *instance_name)
 
 void init_world_directory(str *world_name)
 {
-    snprintf(mc_c_world_path, strlen(mc_c_subpath) + 8 + strlen(world_name),
-            "%s%s%s/", mc_c_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
-    if (make_dir(mc_c_world_path))
+    snprintf(path_worldpath, strlen(path_subpath) + 8 + strlen(world_name),
+            "%s%s%s/", path_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
+    if (make_dir(path_worldpath))
     {
         LOGINFO("World Loaded '%s'\n", world_name);
         return;
@@ -124,8 +124,8 @@ void init_world_directory(str *world_name)
             ++i)
     {
         snprintf(str_reg,
-                strlen(mc_c_world_path) + strlen(WORLD_DIR[i]),
-                "%s%s", mc_c_world_path, WORLD_DIR[i]);
+                strlen(path_worldpath) + strlen(WORLD_DIR[i]),
+                "%s%s", path_worldpath, WORLD_DIR[i]);
 
         make_dir(str_reg);
         LOGINFO("Directory Created '%s'\n", WORLD_DIR[i]);

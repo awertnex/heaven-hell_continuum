@@ -1,15 +1,14 @@
-#ifndef MC_C_ENGINE_CORE_H
-#define MC_C_ENGINE_CORE_H
+#ifndef ENGINE_CORE_H
+#define ENGINE_CORE_H
 
-#define MC_C_ENGINE_AUTHOR      "Author: Lily Awertnex"
-#define MC_C_ENGINE_NAME        "heaven-hell continuum engine"
-#define MC_C_ENGINE_VERSION     "0.1.0-beta"
+#define ENGINE_AUTHOR       "Author: Lily Awertnex"
+#define ENGINE_NAME         "heaven-hell continuum engine"
+#define ENGINE_VERSION      "0.1.0-beta"
 
 #define GLEW_STATIC
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
 #include "../../../include/GLFW/glfw3.h"
-#include FT_FREETYPE_H
 
 #include "defines.h"
 
@@ -99,5 +98,5 @@ void delete_mesh(Mesh *mesh);
 void update_camera_movement(Camera *camera);
 void update_camera_perspective(Camera *camera, Projection *projection);
 
-#endif /* MC_C_ENGINE_CORE_H */
+#endif /* ENGINE_CORE_H */
 

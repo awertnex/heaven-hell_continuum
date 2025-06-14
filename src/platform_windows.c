@@ -1,12 +1,12 @@
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#ifndef PLATFORM_WINDOWS_INCLUDE
-#define PLATFORM_WINDOWS_INCLUDE
+#ifndef PLATFORM_WINDOWS_INCLUDE_GAME
+#define PLATFORM_WINDOWS_INCLUDE_GAME
 
 #include "h/main.h"
 #include "h/setting.h"
 
-#define MC_C_HOME "APPDATA"
-#define MC_C_ROAMING "/Roaming/"
+#define ENV_HOME "APPDATA"
+#define ENV_ROAMING "/Roaming/"
 
 #include "h/assets.h"
 #include "h/chunking.h"
@@ -31,6 +31,6 @@ void update_debug_strings()
     snprintf(str_vertex_count, 32,        "VERTICES: %lld",         globals.quad_count * 6);
 }
 
-#endif /* PLATFORM_WINDOWS_INCLUDE */
-#endif /* PLATFORM_WINDOWS */
+#endif /* PLATFORM_WINDOWS_INCLUDE_GAME */
+#endif /* PLATFORM_WINDOWS_GAME */
 

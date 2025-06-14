@@ -28,7 +28,7 @@ void init_textures()
     for (u16 i = 0; i < arr_len(block) && block[i].name; ++i)
         block[i].texture =
             LoadTexture(TextFormat("%s%s%s.png",
-                        mc_c_subpath,
+                        path_subpath,
                         INSTANCE_DIR[DIR_BLOCKS],
                         block[i].name));
 }

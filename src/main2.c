@@ -74,7 +74,7 @@ int main(void)
 
     setting.render_size = (v2f32){854, 480};
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(setting.render_size.x, setting.render_size.y, MC_C_NAME);
+    InitWindow(setting.render_size.x, setting.render_size.y, GAME_NAME);
     SetExitKey(KEY_PAUSE);
     SetWindowMinSize(640, 480);
 

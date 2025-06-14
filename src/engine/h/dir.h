@@ -1,7 +1,5 @@
-#ifndef MC_C_ENGINE_DIR_H
-#define MC_C_ENGINE_DIR_H
-
-#include <sys/stat.h>
+#ifndef ENGINE_DIR_H
+#define ENGINE_DIR_H
 
 #include "defines.h"
 
@@ -17,4 +15,4 @@ str *get_path_absolute(const str *path);
 str *get_path_bin_root(void);
 void check_slash(str *path);
 
-#endif /* MC_C_ENGINE_DIR_H */
+#endif /* ENGINE_DIR_H */

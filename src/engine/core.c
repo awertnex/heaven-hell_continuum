@@ -1,3 +1,6 @@
+#include <string.h>
+#include <sys/stat.h>
+
 #include "h/core.h"
 #include "h/dir.h"
 #include "h/logger.h"
