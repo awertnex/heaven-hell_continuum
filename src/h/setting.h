@@ -1,8 +1,6 @@
 #ifndef MC_C_SETTING_H
 #define MC_C_SETTING_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
-
 #include "../engine/h/defines.h"
 
 /* ---- internal ------------------------------------------------------------ */
@@ -29,7 +27,8 @@
 #define SETTING_GUI_SCALE_3                 3.0f
 #define SETTING_GUI_SCALE_4                 4.0f
 
-/* ---- settings ------------------------------------------------------------ */
+/* ---- section: settings --------------------------------------------------- */
+
 typedef struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
@@ -45,7 +44,8 @@ typedef struct Settings
     f32 gui_scale;
 } Settings;
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 extern Settings setting;
 
 #endif /* MC_C_SETTING_H */

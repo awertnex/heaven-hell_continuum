@@ -1,7 +1,7 @@
 #ifndef MC_C_GUI_H
 #define MC_C_GUI_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#include "../include/raylib.h"
 
 #include "../engine/h/defines.h"
 
@@ -12,7 +12,8 @@
 #define color(r, g, b, v, a)            (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
 #define draw_menu_overlay(render_size)  DrawRectangle(0, 0, render_size.x, render_size.y, COL_MENU_BG_OVERLAY)
 
-/* ---- colors -------------------------------------------------------------- */
+/* ---- section: colors ----------------------------------------------------- */
+
 #define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xff, 0x46)
 #define COL_TEXTURE_DEFAULT color(0xff, 0xff, 0xff, 0xff, 0xff)
 #define COL_TEXT_DEFAULT    color(0xff, 0xff, 0xff, 0xe6, 0xff)
@@ -28,7 +29,8 @@
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
 #define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 extern Vector2 cursor;
 extern Image mc_c_icon;
 
@@ -86,7 +88,8 @@ enum MenuNames
 
 }; /* MenuNames */
 
-/* ---- button stuff -------------------------------------------------------- */
+/* ---- section: button stuff ----------------------------------------------- */
+
 #define BTN_COUNT 110
 extern u8 buttons[BTN_COUNT];
 enum ButtonNames
@@ -244,19 +247,27 @@ enum ButtonNames
     BTN_SDB_SUB = 109,
 }; /* ButtonNames */
 
-/* ---- debug info ---------------------------------------------------------- */
-extern str str_fps[16];
-extern str str_player_pos[32];
-extern str str_player_block[32];
-extern str str_player_chunk[48];
-extern str str_player_direction[32];
+/* ---- section: debug info ------------------------------------------------- */
+
+enum StringsDebugInfo
+{
+    STR_DEBUG_INFO_FPS = 0,
+    STR_DEBUG_INFO_PLAYER_POS,
+    STR_DEBUG_INFO_PLAYER_BLOCK,
+    STR_DEBUG_INFO_PLAYER_CHUNK,
+    STR_DEBUG_INFO_PLAYER_DIRECTION,
+    STR_DEBUG_INFO_GAME_TICK,
+}; /* StringsDebugInfo */
+
+extern str str_debug_info[16][128];
 extern str str_block_count[32];
 extern str str_quad_count[32];
 extern str str_tri_count[32];
 extern str str_vertex_count[32];
 extern u8 font_size_debug_info;
 
-/* ---- signatures ---------------------------------------------------------- */
+/* ---- section: signatures ------------------------------------------------- */
+
 void init_fonts();
 void init_gui();
 void apply_render_settings();

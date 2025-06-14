@@ -1,19 +1,39 @@
 #include "../engine/core.c"
+#include "../engine/logger.c"
+#include "../engine/dir.c"
+#include "../engine/math.c"
 
-#define DIR_SHADERS "src/engine/shaders/"
+#define DIR_SHADERS "src/shaders/"
 #define SETTING_DAY_TICKS_MAX   24000 /*temp*/
 
 /* ---- declarations -------------------------------------------------------- */
-Window render =
+Render render =
 {
     .size = {854, 480},
     .title = "heaven-hell continuum",
 };
 
+u16 state = 0;
 f64 game_start_time = 0.0f;
 u64 game_tick = 0;
 u64 game_days = 0;
 Camera camera = {0};
+
+ShaderProgram shader_fbo =
+{
+    .name = "fbo",
+    .vertex =
+    {
+        .file_name = DIR_SHADERS"fbo.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADERS"fbo.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
 
 ShaderProgram shader_default =
 {
@@ -27,6 +47,22 @@ ShaderProgram shader_default =
     .fragment =
     {
         .file_name = DIR_SHADERS"default.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
+
+ShaderProgram shader_skybox =
+{
+    .name = "skybox",
+    .vertex =
+    {
+        .file_name = DIR_SHADERS"skybox.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADERS"skybox.frag",
         .type = GL_FRAGMENT_SHADER,
     },
 };
@@ -49,61 +85,101 @@ ShaderProgram shader_gizmo =
 
 Projection projection = {0};
 
+struct /* skybox_data */
+{
+    f32 time;
+    v3f32 sun_rotation;
+    v3f32 color;
+} skybox_data;
+
+
+struct /* uniform_default */
+{
+    int mat_perspective;
+    int camera_position;
+    int sun_rotation;
+    int sky_color;
+} uniform_default;
+
+struct /* uniform_skybox */
+{
+    int camera_position;
+    int mat_rotation;
+    int mat_orientation;
+    int mat_projection;
+    int time;
+    int sun_rotation;
+    int sky_color;
+} uniform_skybox;
+
 struct /* uniform_gizmo */
 {
-    int ratio;
-    int mat_translation;
+    int render_ratio;
+    int mat_target;
     int mat_rotation;
     int mat_orientation;
     int mat_projection;
 } uniform_gizmo;
 
-struct /* uniform_default */
-{
-    int camera_position;
-    int mat_perspective;
-} uniform_default;
+GLuint fbo_skybox;
+GLuint color_buf_skybox;
+GLuint rbo_skybox;
+
+GLuint fbo_world;
+GLuint color_buf_world;
+GLuint rbo_world;
+
+GLuint fbo_hud;
+GLuint color_buf_hud;
+GLuint rbo_hud;
+
+Mesh mesh_fbo = {0};
+
+#define VBO_LEN_SKYBOX  24
+#define EBO_LEN_SKYBOX  36
+Mesh mesh_skybox = {0};
 
 #define VBO_LEN_COH     24
 #define EBO_LEN_COH     36
-Mesh cube_of_happiness = {0};
+Mesh mesh_cube_of_happiness = {0};
 
 #define VBO_LEN_GIZMO   51
 #define EBO_LEN_GIZMO   90
-Mesh gizmo = {0};
+Mesh mesh_gizmo = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
 void error_callback(int error, const char* message)
 {
-    LOGERROR("%s", message);
+    LOGERROR("%s\n", message);
 }
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
+static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 /* ---- signatures ---------------------------------------------------------- */
 void update_input(GLFWwindow *window, Camera *camera);
-void bind_shader_uniforms();
 void generate_standard_meshes();
-void draw_graphics();
-void draw_hud();
-void draw_skybox();
+void bind_shader_uniforms();
 void update_world();
+void draw_skybox();
+void draw_world();
+void draw_hud();
+void draw_everything();
 
 int main(void)
 {
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
-    if (init_glfw() != 0)
-        return -1;
-    if (init_window(&render) != 0)
-        return -1;
-    if (init_glew() != 0)
-        return -1;
+    if (0
+            || init_glfw() != 0
+            || init_window(&render) != 0
+            || init_glew() != 0
+       ) return -1;
 
     game_start_time = glfwGetTime();
-    glfwSwapInterval(1); /* VSync */
 
+    glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
     /* ---- set mouse input ------------------------------------------------- */
@@ -111,29 +187,39 @@ int main(void)
     if (glfwRawMouseMotionSupported())
     {
         glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        LOGINFO("Raw Mouse Motion Enabled\n");
+        LOGINFO("%s\n", "Raw Mouse Motion Enabled");
     }
-    else LOGERROR("Raw Mouse Motion Not Supported\n");
-    glfwGetCursorPos(render.window, &render.cursor.x, &render.cursor.y);
-    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f);
+    else LOGERROR("%s\n", "Raw Mouse Motion Not Supported");
+    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
 
     /* ---- set callbacks --------------------------------------------------- */
     glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
+    gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
+
     glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
+    gl_cursor_pos_callback(render.window, render.mouse_position.x, render.mouse_position.y);
+
+    glfwSetKeyCallback(render.window, gl_key_callback);
+    gl_key_callback(render.window, 0, 0, 0, 0);
 
     /* ---- graphics -------------------------------------------------------- */
-    if (init_shader_program(&shader_default) != 0)
-        goto cleanup;
-    if (init_shader_program(&shader_gizmo) != 0)
-        goto cleanup;
+    if (0
+            || init_shader_program(&shader_skybox) != 0
+            || init_shader_program(&shader_default) != 0
+            || init_shader_program(&shader_gizmo) != 0
+            || init_shader_program(&shader_fbo) != 0
+            || init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0
+            || init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0
+            || init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0
+       ) goto cleanup;
 
+    glfwSwapInterval(1); /* vsync */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
-
-    bind_shader_uniforms();
-    generate_standard_meshes();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     camera =
         (Camera){
@@ -145,27 +231,24 @@ int main(void)
             .near = 0.05f,
         };
 
+    bind_shader_uniforms();
+    generate_standard_meshes();
+
     /* ---- main loop ------------------------------------------------------- */
     while (!glfwWindowShouldClose(render.window))
     {
-        LOGINFO("  cursor[%7.2lf %7.2lf        ]", render.cursor.x, render.cursor.y);
-        LOGINFO("   delta[%7.2lf %7.2lf        ]", render.cursor_delta.x, render.cursor_delta.y);
-        LOGINFO("     xyz[%7.2f %7.2f %7.2f]", camera.pos.x, camera.pos.y, camera.pos.z);
-        LOGINFO("pitchyaw[        %7.2f %7.2f]", camera.rot.y, camera.rot.z);
-        LOGINFO("   ratio[%7.2f                ]\n", camera.ratio);
+        get_mouse_position(&render, &render.mouse_position);
+        get_mouse_movement(render.mouse_last, &render.mouse_delta);
+
+        LOGDEBUG("%s\n", "-------------------------------------]");
+        LOGDEBUG("        mouse[%7.2lf %7.2lf        ]\n", render.mouse_position.x, render.mouse_position.y);
+        LOGDEBUG("        delta[%7.2lf %7.2lf        ]\n", render.mouse_delta.x, render.mouse_delta.y);
+        LOGDEBUG("   camera xyz[%7.2f %7.2f %7.2f]\n", camera.pos.x, camera.pos.y, camera.pos.z);
+        LOGDEBUG("camera yawpch[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
+        LOGDEBUG("        ratio[%7.2f                ]\n\n", camera.ratio);
 
         update_world();
-
-        /* ---- draw -------------------------------------------------------- */
-        draw_skybox();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-
-        glDepthRange(0.1f, 1.0f);
-        draw_graphics();
-
-        glDepthRange(0.0f, 0.1f);
-        draw_hud();
+        draw_everything();
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
@@ -173,9 +256,14 @@ int main(void)
     }
 
 cleanup: /* ----------------------------------------------------------------- */
-    delete_mesh(&cube_of_happiness);
-    delete_mesh(&gizmo);
+    delete_mesh(&mesh_skybox);
+    delete_mesh(&mesh_cube_of_happiness);
+    delete_mesh(&mesh_gizmo);
+    glDeleteFramebuffers(1, &fbo_skybox);
+    glDeleteFramebuffers(1, &fbo_world);
+    glDeleteFramebuffers(1, &fbo_hud);
     glDeleteProgram(shader_default.id);
+    glDeleteProgram(shader_skybox.id);
     glDeleteProgram(shader_gizmo.id);
     glfwDestroyWindow(render.window);
     glfwTerminate();
@@ -185,17 +273,37 @@ cleanup: /* ----------------------------------------------------------------- */
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
-    camera.ratio = (f32)width / height;
+    camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, width, height);
 }
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    render.cursor_delta = (v2f64){xpos - render.cursor.x, ypos - render.cursor.y};
-    render.cursor = (v2f64){xpos, ypos};
+    render.mouse_delta = (v2f64){xpos - render.mouse_position.x, ypos - render.mouse_position.y};
+    render.mouse_position = (v2f64){xpos, ypos};
+
+    camera.rot.y += render.mouse_delta.y;
+    camera.rot.z += render.mouse_delta.x;
 }
 
-f64 movement_speed = 0.04f;
+static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_PAUSE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+
+    if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        init_shader_program(&shader_default);
+
+    if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        else
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+}
+
+f64 movement_speed = 0.08f;
 void update_input(GLFWwindow *window, Camera *camera)
 {
     /* ---- movement -------------------------------------------------------- */
@@ -232,26 +340,32 @@ void update_input(GLFWwindow *window, Camera *camera)
     {
         camera->pos.z -= movement_speed;
     }
-
-    /* ---- debug ----------------------------------------------------------- */
-    if (glfwGetKey(window, GLFW_KEY_PAUSE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-}
-
-void bind_shader_uniforms()
-{
-    uniform_default.mat_perspective = glGetUniformLocation(shader_default.id, "mat_perspective");
-    uniform_default.camera_position = glGetUniformLocation(shader_default.id, "camera_position");
-
-    uniform_gizmo.ratio = glGetUniformLocation(shader_gizmo.id, "ratio");
-    uniform_gizmo.mat_translation = glGetUniformLocation(shader_gizmo.id, "mat_translation");
-    uniform_gizmo.mat_rotation = glGetUniformLocation(shader_gizmo.id, "mat_rotation");
-    uniform_gizmo.mat_orientation = glGetUniformLocation(shader_gizmo.id, "mat_orientation");
-    uniform_gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
 void generate_standard_meshes()
 {
+    GLfloat vbo_data_skybox[] =
+    {
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        -1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+    };
+
+    GLuint ebo_data_skybox[] =
+    {
+        0, 1, 5, 5, 4, 0,
+        1, 3, 7, 7, 5, 1,
+        3, 2, 6, 6, 7, 3,
+        2, 0, 4, 4, 6, 2,
+        4, 5, 7, 7, 6, 4,
+        0, 2, 3, 3, 1, 0,
+    };
+
     GLfloat vbo_data_coh[] =
     {
         1.0f, 1.0f, 1.0f,
@@ -315,85 +429,145 @@ void generate_standard_meshes()
         1, 13, 15, 15, 8, 1,
     };
 
-    if (generate_mesh(&cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
+    if (generate_mesh(&mesh_skybox, GL_STATIC_DRAW, VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
+            vbo_data_skybox, ebo_data_skybox) != 0)
+        goto cleanup;
+    LOGINFO("%s\n", "'Skybox' Mesh Generated");
+
+    if (generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
             vbo_data_coh, ebo_data_coh) != 0)
         goto cleanup;
-    LOGINFO("%s", "'Cube of Happiness' Mesh Generated");
+    LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
 
-    if (generate_mesh(&gizmo, GL_STATIC_DRAW, VBO_LEN_GIZMO, EBO_LEN_GIZMO,
+    if (generate_mesh(&mesh_gizmo, GL_STATIC_DRAW, VBO_LEN_GIZMO, EBO_LEN_GIZMO,
             vbo_data_gizmo, ebo_data_gizmo) != 0)
         goto cleanup;
-    LOGINFO("%s", "'Gizmo' Mesh Generated");
+    LOGINFO("%s\n", "'Gizmo' Mesh Generated");
 
     return;
 
 cleanup:
-    LOGERROR("%s", "oops!");
+    LOGERROR("%s\n", "Mesh Generation Failed");
 }
 
-void draw_graphics()
+void bind_shader_uniforms()
+{
+    uniform_skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
+    uniform_skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
+    uniform_skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
+    uniform_skybox.mat_projection = glGetUniformLocation(shader_skybox.id, "mat_projection");
+    uniform_skybox.sun_rotation = glGetUniformLocation(shader_skybox.id, "sun_rotation");
+    uniform_skybox.sky_color = glGetUniformLocation(shader_skybox.id, "sky_color");
+
+    uniform_default.mat_perspective = glGetUniformLocation(shader_default.id, "mat_perspective");
+    uniform_default.camera_position = glGetUniformLocation(shader_default.id, "camera_position");
+    uniform_default.sun_rotation = glGetUniformLocation(shader_default.id, "sun_rotation");
+    uniform_default.sky_color = glGetUniformLocation(shader_default.id, "sky_color");
+
+    uniform_gizmo.render_ratio = glGetUniformLocation(shader_gizmo.id, "ratio");
+    uniform_gizmo.mat_target = glGetUniformLocation(shader_gizmo.id, "mat_translation");
+    uniform_gizmo.mat_rotation = glGetUniformLocation(shader_gizmo.id, "mat_rotation");
+    uniform_gizmo.mat_orientation = glGetUniformLocation(shader_gizmo.id, "mat_orientation");
+    uniform_gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
+}
+
+void update_world()
+{
+    game_tick = (floor((glfwGetTime() - game_start_time) * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
+    if (game_tick >= SETTING_DAY_TICKS_MAX)
+        ++game_days;
+
+    update_camera_movement(&camera);
+    update_camera_perspective(&camera, &projection);
+}
+
+void draw_skybox()
+{
+    skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
+    skybox_data.sun_rotation = (v3f32){-cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, 12.0f};
+
+    f32 intensity =     0.0039f;
+    f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
+    f32 pre_burn =      fabsf(sinf(powf(sinf((skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
+    f32 burn =          fabsf(sinf(1.5f * powf(sinf((skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
+    f32 burn_boost =    fabsf(powf(sinf((skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+    f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(skybox_data.time * PI), 3.0f)));
+
+    skybox_data.color =
+    (v3f32){
+        (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) + (pre_burn * 13.0f) + (burn_boost * 76.0f),
+        (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) + (pre_burn * 7.0f) + (burn_boost * 34.0f),
+        (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) + (pre_burn * 20.0f),
+    };
+
+    skybox_data.color =
+        (v3f32){
+            clamp_f32(skybox_data.color.x * intensity, 0.0f, 1.0f),
+            clamp_f32(skybox_data.color.y * intensity, 0.0f, 1.0f),
+            clamp_f32(skybox_data.color.z * intensity, 0.0f, 1.0f),
+        };
+
+    glUseProgram(shader_skybox.id);
+    glUniform3fv(uniform_skybox.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniformMatrix4fv(uniform_skybox.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
+    glUniformMatrix4fv(uniform_skybox.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
+    glUniformMatrix4fv(uniform_skybox.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
+    glUniform3fv(uniform_skybox.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform_skybox.sky_color, 1, (GLfloat*)&skybox_data.color);
+    draw_mesh(&mesh_skybox);
+
+    LOGDEBUG("        ticks[%5d                  ]\n", game_tick);
+    LOGDEBUG("  skybox time[%7.2f                ]\n", skybox_data.time);
+    LOGDEBUG(" sun rotation[%7.2f %7.2f %7.2f]\n", skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z);
+    LOGDEBUG("        color[%7.2f %7.2f %7.2f]\n\n\n", skybox_data.color.x, skybox_data.color.y, skybox_data.color.z);
+}
+
+void draw_world()
 {
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform_default.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
     glUniform3fv(uniform_default.camera_position, 1, (GLfloat*)&camera.pos);
-    draw_mesh(&cube_of_happiness);
+    glUniform3fv(uniform_default.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform_default.sky_color, 1, (GLfloat*)&skybox_data.color);
+    draw_mesh(&mesh_cube_of_happiness);
 }
 
 void draw_hud()
 {
     glUseProgram(shader_gizmo.id);
-    glUniform1f(uniform_gizmo.ratio, (GLfloat)camera.ratio);
-    glUniformMatrix4fv(uniform_gizmo.mat_translation, 1, GL_FALSE, (GLfloat*)&projection.translation);
+    glUniform1f(uniform_gizmo.render_ratio, (GLfloat)camera.ratio);
+    glUniformMatrix4fv(uniform_gizmo.mat_target, 1, GL_FALSE, (GLfloat*)&projection.target);
     glUniformMatrix4fv(uniform_gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform_gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
     glUniformMatrix4fv(uniform_gizmo.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
-    draw_mesh(&gizmo);
+    draw_mesh(&mesh_gizmo);
 }
 
-struct /* skybox */
+void draw_everything()
 {
-    f64 time;
-    f64 mid_day;
-    f64 pre_burn;
-    f64 burn;
-    f64 burn_boost;
-    f64 mid_night;
-    f64 intensity;
-    v3f32 color;
-} skybox = {0};
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    draw_skybox();
 
-void draw_skybox()
-{
-    skybox.time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
-    skybox.mid_day =    fabs(sin(1.5f * pow(sin(skybox.time * PI), 1.0f)));
-    skybox.pre_burn =   fabs(sin(pow(sin((skybox.time + 0.33f) * PI * 1.2f), 16.0f)));
-    skybox.burn =       fabs(sin(1.5f * pow(sin((skybox.time + 0.124f) * PI * 1.6f), 32.0f)));
-    skybox.burn_boost = fabs(pow(sin((skybox.time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox.mid_night =  fabs(sin(pow(2.0f * cos(skybox.time * PI), 3.0f)));
-    skybox.intensity = 0.0039f;
-    skybox.color =
-        (v3f32){
-            clamp_f32(((skybox.mid_day * 171.0f) + (skybox.burn * 85.0f) + (skybox.mid_night * 1.0f)
-                    + (skybox.pre_burn * 13.0f) + (skybox.burn_boost * 76.0f)) * skybox.intensity, 0.0f, 1.0f),
-            clamp_f32(((skybox.mid_day * 229.0f) + (skybox.burn * 42.0f) + (skybox.mid_night * 4.0f)
-                    + (skybox.pre_burn * 7.0f) + (skybox.burn_boost * 34.0f)) * skybox.intensity, 0.0f, 1.0f),
-            clamp_f32(((skybox.mid_day * 255.0f) + (skybox.burn * 19.0f) + (skybox.mid_night * 14.0f)
-                    + (skybox.pre_burn * 20.0f)) * skybox.intensity, 0.0f, 1.0f),
-        };
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    draw_world();
 
-    LOGINFO("  skybox[%7.3f %7.3f %7.3f]", skybox.color.x, skybox.color.y, skybox.color.z);
-    LOGINFO("   ticks[%5d                  ]\n\n", game_tick);
-    glClearColor(skybox.color.x, skybox.color.y, skybox.color.z, 1.0f);
-}
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    draw_hud();
 
-void update_world()
-{
-    game_tick = (floor((glfwGetTime() - game_start_time) * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
-    if (game_tick >= SETTING_DAY_TICKS_MAX)
-        ++game_days;
-
-    update_camera_movement(render.cursor_delta, &camera);
-    render.cursor_delta = (v2f64){0.0f, 0.0f};
-    update_camera_perspective(&camera, &projection);
+    /* ---- draw everything ------------------------------------------------- */
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader_fbo.id);
+    glBindVertexArray(mesh_fbo.vao);
+    glDisable(GL_DEPTH_TEST);
+    glBindTexture(GL_TEXTURE_2D, color_buf_skybox);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, color_buf_world);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, color_buf_hud);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 

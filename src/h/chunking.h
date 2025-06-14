@@ -1,15 +1,13 @@
 #ifndef MC_C_CHUNKING_H
 #define MC_C_CHUNKING_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
-#include "../dependencies/raylib-5.5/include/rlgl.h"
-
 #include "../engine/h/defines.h"
 
 #include "main.h"
 #include "setting.h"
 
-/* ---- world stuff --------------------------------------------------------- */
+/* ---- section: world stuff ------------------------------------------------ */
+
 #define CHUNK_DIAMETER              16
 #define CHUNK_VOLUME                (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
@@ -29,7 +27,8 @@
      + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) \
      + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
-/* ---- general ------------------------------------------------------------- */
+/* ---- section: general ---------------------------------------------------- */
+
 enum BlockFlags
 {
     POSITIVE_X =    0x00010000, /* 00000000 00000001 00000000 00000000 */
@@ -62,13 +61,14 @@ enum ChunkFlags
 typedef struct Chunk
 {
     v3i16 pos;                      /* (world XYZ) / CHUNK_DIAMETER */
-    u64 id;                         /* (pos.x << 32) + (pos.y << 16) + pos.z */
+    u64 id;                         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;
 } Chunk;
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 extern Chunk *chunk_buf;                        /* chunk buffer, raw chunk data */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];      /* chunk pointer look-up table */
 extern v3u16 chunk_tab_coordinates;             /* pointer arithmetic redundancy optimization */
@@ -81,7 +81,8 @@ extern struct Globals
     u64 quad_count;
 } globals;
 
-/* ---- getters & setters --------------------------------------------------- */
+/* ---- section: getters & setters ------------------------------------------ */
+
 static inline u16 get_block_index(u8 x, u8 y, u8 z)
 {return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
 
@@ -111,7 +112,8 @@ static inline void set_block_state(u32 i, u16 state)
 static inline u32 get_block_data(u32 i)
 {return ((i) & BLOCKDATA);}
 
-/* ---- signatures ---------------------------------------------------------- */
+/* ---- section: signatures ------------------------------------------------- */
+
 u8 init_chunking();
 void free_chunking();
 
@@ -125,12 +127,14 @@ Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v3i16 player_chunk);
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
+#ifdef FUCK // TODO: undef FUCK
 void draw_chunk_tab(Texture *tex);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
+#endif // TODO: undef FUCK
 
 #endif /* MC_C_CHUNKING_H */
 

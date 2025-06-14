@@ -1,24 +1,25 @@
-#include <string.h>
-#include <sys/stat.h>
-#include <math.h>
-#include <pthread.h>
+#include "engine/h/dir.h"
+#include "engine/h/logger.h"
+#include "engine/h/math.h"
+#include "engine/h/memory.h"
+#include "h/main.h"
+#include "h/dir.h"
+#include "h/setting.h"
+#include "chunking.c"
+#include "keymaps.c"
 
-#include "dependencies/raylib-5.5/include/raylib.h"
-#include "dependencies/raylib-5.5/include/rlgl.h"
+#include "dir.c"
 
-#if defined __linux__
-    #include "linux_minecraft.c"
-#elif defined _WIN32 || defined _WIN64 || defined __CYGWIN__s
-    #include "windows_minecraft.c"
-#endif /* PLATFORM */
+#define DIR_SHADER "./src/shaders/"
 
-/* ---- declarations -------------------------------------------------------- */
-u16 state = 0;
-u8 state_menu_depth = 0;
-f64 game_start_time = 0.0f;
-u64 game_tick = 0;
-u64 game_days = 0;
-pthread_t thrd_chunk_handler;
+/* ---- section: declarations ----------------------------------------------- */
+
+b8 logging = 0;
+Render render =
+{
+    .size = {854, 480},
+    .title = MC_C_ENGINE_NAME": "MC_C_ENGINE_VERSION,
+};
 
 Settings setting =
 {
@@ -29,580 +30,578 @@ Settings setting =
     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
 
-Player lily =
+u32 state = 0;
+f64 game_start_time = 0.0f;
+u64 game_tick = 0;
+u64 game_days = 0;
+Camera camera = {0};
+Projection projection = {0};
+Uniform uniform = {0};
+
+
+ShaderProgram shader_fbo =
 {
-    .name = "Lily",
-    .pos = {0.0f},
-    .scl = {0.6f, 0.6f, 1.8f},
-    .collision_check_start = {0.0f},
-    .collision_check_end = {0.0f},
-    .pitch = -29.0f,
-    .yaw = 121.0f,
-    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
-    .eye_height = 1.5f,
-    .m = 2.0f,
-    .movement_speed = 10.0f,
-    .container_state = 0,
-    .perspective = 0,
-
-    .camera =
+    .name = "fbo",
+    .vertex =
     {
-        .up.z = 1.0f,
-        .fovy = 70.0f,
-        .projection = CAMERA_PERSPECTIVE,
-    },
-    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
-    .camera_debug_info =
-    {
-        .up.z = 1.0f,
-        .fovy = 50.0f,
-        .projection = CAMERA_ORTHOGRAPHIC,
+        .file_name = DIR_SHADER"fbo.vert",
+        .type = GL_VERTEX_SHADER,
     },
 
-    .spawn_point = {0},
+    .fragment =
+    {
+        .file_name = DIR_SHADER"fbo.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
 };
 
-/* ---- signatures ---------------------------------------------------------- */
+ShaderProgram shader_default =
+{
+    .name = "default",
+    .vertex =
+    {
+        .file_name = DIR_SHADER"default.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADER"default.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
+
+ShaderProgram shader_skybox =
+{
+    .name = "skybox",
+    .vertex =
+    {
+        .file_name = DIR_SHADER"skybox.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADER"skybox.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
+
+ShaderProgram shader_gizmo =
+{
+    .name = "gizmo",
+    .vertex =
+    {
+        .file_name = DIR_SHADER"gizmo.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = DIR_SHADER"gizmo.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
+
+struct /* skybox_data */
+{
+    f32 time;
+    v3f32 sun_rotation;
+    v3f32 color;
+} skybox_data;
+
+GLuint fbo_skybox;
+GLuint color_buf_skybox;
+GLuint rbo_skybox;
+
+GLuint fbo_world;
+GLuint color_buf_world;
+GLuint rbo_world;
+
+GLuint fbo_hud;
+GLuint color_buf_hud;
+GLuint rbo_hud;
+
+Mesh mesh_fbo = {0};
+
+#define VBO_LEN_SKYBOX  24
+#define EBO_LEN_SKYBOX  36
+Mesh mesh_skybox = {0};
+
+#define VBO_LEN_COH     24
+#define EBO_LEN_COH     36
+Mesh mesh_cube_of_happiness = {0};
+
+#define VBO_LEN_GIZMO   51
+#define EBO_LEN_GIZMO   90
+Mesh mesh_gizmo = {0};
+
+/* ---- section: callbacks -------------------------------------------------- */
+
+void error_callback(int error, const char* message)
+{
+    LOGERROR("GLFW: %s\n", message);
+}
+static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
+static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
+static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
+/* ---- section: signatures ------------------------------------------------- */
+
+void log_stuff();
+void update_input(GLFWwindow *window, Camera *camera);
+void generate_standard_meshes();
+void bind_shader_uniforms();
 void update_world();
-void *chunk_handler();
-void update_input(Player *player);
 void draw_skybox();
 void draw_world();
-void draw_gui();
+void draw_hud();
+void draw_everything();
+
+/* ---- section: main ------------------------------------------------------- */
 
 int main(void)
 {
-    /* ---- init main ------------------------------------------------------- */
-    if (MODE_DEBUG)
-        LOGINFO("%s", "Debugging Enabled");
+    str_buf string = {NULL};
+    string = get_dir_contents("./");
+    for (u16 i = 0; i < string.count; ++i)
+        LOGINFO("%s\n", string.entry[i]);
+    return 0;
+    glfwSetErrorCallback(error_callback);
+    /*temp*/ render.size = (v2i32){1080, 820};
 
-    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED;
+    if (MODE_DEBUG)
+        LOGDEBUG("%s\n", "Debugging Enabled");
+
     init_paths();
+
 #if RELEASE_BUILD
     init_instance_directory("new_instance"); /* TODO: make editable instance name */
 #else
     init_instance_directory("test_instance");
 #endif /* RELEASE_BUILD */
 
-    setting.render_size = (v2f32){854, 480};
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(setting.render_size.x, setting.render_size.y, "minecraft.c");
-    SetExitKey(KEY_PAUSE);
-    SetWindowMinSize(640, 480);
+    if (0
+            || init_glfw() != 0
+            || init_freetype() != 0
+            || init_window(&render) != 0
+            || init_glew() != 0
+       )
+    {
+        glfwTerminate();
+        return -1;
+    }
 
-    init_textures();
+    game_start_time = glfwGetTime();
 
-#if !RELEASE_BUILD
-    SetTargetFPS(60); /* TODO: make release-build FPS depend on video settings */
-#endif /* RELEASE_BUILD */
+    glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
+    /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
-    init_fonts();
-    init_gui();
-    apply_render_settings();
-    update_render_settings(setting.render_size);
-    init_super_debugger(setting.render_size);
+    /* ---- section: set mouse input ---------------------------------------- */
 
-    game_start_time = get_time_ms();
+    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported())
+    {
+        glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
+    }
+    else LOGERROR("%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
+
+    /* ---- section: set callbacks ------------------------------------------ */
+
+    glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
+    gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
+
+    glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
+    gl_cursor_pos_callback(render.window, render.mouse_position.x, render.mouse_position.y);
+
+    glfwSetKeyCallback(render.window, gl_key_callback);
+    gl_key_callback(render.window, 0, 0, 0, 0);
+
+    /* ---- section: graphics ----------------------------------------------- */
+
+    if (0
+            || init_shader_program(&shader_skybox) != 0
+            || init_shader_program(&shader_default) != 0
+            || init_shader_program(&shader_gizmo) != 0
+            || init_shader_program(&shader_fbo) != 0
+            || init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0
+            || init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0
+            || init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0
+       ) goto cleanup;
+
+    glfwSwapInterval(1); /* vsync */
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    camera =
+        (Camera){
+            .pos = (v3f32){-0.5f, -0.5f, 0.5f},
+            .rot = (v3f32){0.0f, 0.0f, 315.0f},
+            .fov = 70.0f,
+            .ratio = (f32)render.size.x / (f32)render.size.y,
+            .far = GL_CLIP_DISTANCE0,
+            .near = 0.05f,
+        };
+
+    bind_shader_uniforms();
 
 section_menu_title: /* ------------------------------------------------------ */
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
-    {
-        mouse_delta = GetMouseDelta();
-        if (!(state & FLAG_PARSE_CURSOR)) /* for fullscreen cursor jump prevention */
-        {
-            state |= FLAG_PARSE_CURSOR;
-            mouse_delta = (Vector2){0.0f, 0.0f};
-        }
-
-        update_input(&lily);
-        update_render_settings(setting.render_size);
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-
-        BeginDrawing();
-        {
-            //draw_texture_tiled(); /* TODO: draw tiled texture of title screen */
-            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
-            update_menus(setting.render_size);
-        }
-        EndDrawing();
-
-        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
-            goto section_main;
-    }
-
 section_menu_world: /* ------------------------------------------------------ */
-                    /* TODO: make real pausing instead of using the uncleared bg as still */
-    BeginDrawing();
-    draw_menu_overlay(setting.render_size);
-    EndDrawing();
+section_main: /* ---- section: main loop ------------------------------------ */
+    generate_standard_meshes();
 
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
+    while (!glfwWindowShouldClose(render.window))
     {
-        update_input(&lily);
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        update_render_settings(setting.render_size);
+        //get_mouse_position(&render, &render.mouse_position);
+        //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
-        BeginDrawing();
-        update_menus(setting.render_size);
-        EndDrawing();
+        if (logging) log_stuff();
 
-        if (!(state & FLAG_WORLD_LOADED))
-            goto section_menu_title;
-
-        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
-            break;
-    }
-
-section_main: /* ------------------------------------------------------------ */
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
-    {
-        mouse_delta = GetMouseDelta();
-        if (!state_menu_depth && !(state & FLAG_SUPER_DEBUG))
-        {
-            disable_cursor;
-            center_cursor;
-        }
-
-        if (!(state & FLAG_PARSE_CURSOR)) /* for fullscreen cursor jump prevention */
-        {
-            state |= FLAG_PARSE_CURSOR;
-            mouse_delta = (Vector2){0.0f, 0.0f};
-        }
-
-        update_input(&lily);
-        update_render_settings(setting.render_size);
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
         update_world();
+        draw_everything();
 
-        BeginDrawing();
-        {
-            BeginMode3D(lily.camera);
-            draw_skybox();
-            draw_chunk_tab(&block[dirt].texture);
-            draw_world();
-            EndMode3D();
-        }
-        draw_gui();
-        EndDrawing();
-
-        if (!(state & FLAG_WORLD_LOADED))
-            goto section_menu_title;
-
-        if (state & FLAG_PAUSED)
-            goto section_menu_world;
+        glfwSwapBuffers(render.window);
+        glfwPollEvents();
+        update_input(render.window, &camera);
     }
 
-    /* ---- section_cleanup ------------------------------------------------- */
-    //pthread_join(thrd_chunk_handler, NULL); /*temp off*/
-    unload_textures();
-    free_chunking();
-    free_gui();
-    free_super_debugger();
-    CloseWindow();
-
+cleanup: /* ----------------------------------------------------------------- */
+    delete_mesh(&mesh_skybox);
+    delete_mesh(&mesh_cube_of_happiness);
+    delete_mesh(&mesh_gizmo);
+    glDeleteFramebuffers(1, &fbo_skybox);
+    glDeleteFramebuffers(1, &fbo_world);
+    glDeleteFramebuffers(1, &fbo_hud);
+    glDeleteProgram(shader_default.id);
+    glDeleteProgram(shader_skybox.id);
+    glDeleteProgram(shader_gizmo.id);
+    glfwDestroyWindow(render.window);
+    glfwTerminate();
     return 0;
 }
 
-void init_world(str *str)
+static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    if (strlen(str) == 0) return;
+    render.size = (v2i32){width, height};
+    camera.ratio = (f32)width / (f32)height;
+    glViewport(0, 0, width, height);
+}
 
-    init_world_directory(str);
-    rlSetClipPlanes(0.1f, 500.0f);
-    if (init_chunking() != 0)
-        state &= ~FLAG_ACTIVE;
+static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    render.mouse_delta = (v2f64){xpos - render.mouse_position.x, ypos - render.mouse_position.y};
+    render.mouse_position = (v2f64){xpos, ypos};
 
-    update_player(&lily);
-    update_chunk_tab(lily.chunk);
+    camera.rot.y += render.mouse_delta.y;
+    camera.rot.z += render.mouse_delta.x;
+}
 
-    //lily.state |= FLAG_FALLING; /*temp off*/
-    lily.state |= FLAG_FLYING; /*temp*/
-    set_player_block(&lily, 0, 0, 0);
-    lily.delta_target =
-        (v3i32){
-            lily.camera.target.x,
-            lily.camera.target.y,
-            lily.camera.target.z};
+static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_PAUSE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
 
-    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
+    if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        init_shader_program(&shader_default);
 
-    disable_cursor;
-    center_cursor;
+    if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        else
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
+    if (key == GLFW_KEY_L && action == GLFW_PRESS)
+        logging ^= 1;
+}
+
+void log_stuff()
+{
+    LOGDEBUG("%s\n", "-------------------------------------]");
+    LOGDEBUG("        mouse[%7.2lf %7.2lf        ]\n", render.mouse_position.x, render.mouse_position.y);
+    LOGDEBUG("        delta[%7.2lf %7.2lf        ]\n", render.mouse_delta.x, render.mouse_delta.y);
+    LOGDEBUG("   camera xyz[%7.2f %7.2f %7.2f]\n", camera.pos.x, camera.pos.y, camera.pos.z);
+    LOGDEBUG("camera yawpch[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
+    LOGDEBUG("        ratio[%7.2f                ]\n\n", camera.ratio);
+
+    LOGDEBUG("        ticks[%5d                  ]\n", game_tick);
+    LOGDEBUG("  skybox time[%7.2f                ]\n", skybox_data.time);
+    LOGDEBUG(" sun rotation[%7.2f %7.2f %7.2f]\n", skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z);
+    LOGDEBUG("        color[%7.2f %7.2f %7.2f]\n", skybox_data.color.x, skybox_data.color.y, skybox_data.color.z);
+    LOGDEBUG("%s\n\n", "-------------------------------------]");
+
+}
+
+f64 movement_speed = 0.08f;
+void update_input(GLFWwindow *window, Camera *camera)
+{
+    /* ---- jumping --------------------------------------------------------- */
+    if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
+    {
+        camera->pos.z += movement_speed;
+    }
+
+    /* ---- sneaking -------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
+    {
+        camera->pos.z -= movement_speed;
+    }
+
+    /* ---- movement -------------------------------------------------------- */
+    if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
+    {
+        camera->pos.x += (movement_speed * camera->sin_yaw);
+        camera->pos.y += (movement_speed * camera->cos_yaw);
+    }
+
+    if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
+    {
+        camera->pos.x -= (movement_speed * camera->sin_yaw);
+        camera->pos.y -= (movement_speed * camera->cos_yaw);
+    }
+
+    if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
+    {
+        camera->pos.x -= (movement_speed * camera->cos_yaw);
+        camera->pos.y += (movement_speed * camera->sin_yaw);
+    }
+
+    if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
+    {
+        camera->pos.x += (movement_speed * camera->cos_yaw);
+        camera->pos.y -= (movement_speed * camera->sin_yaw);
+    }
+}
+
+void generate_standard_meshes()
+{
+    GLfloat vbo_data_skybox[] =
+    {
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        -1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+    };
+
+    GLuint ebo_data_skybox[] =
+    {
+        0, 1, 5, 5, 4, 0,
+        1, 3, 7, 7, 5, 1,
+        3, 2, 6, 6, 7, 3,
+        2, 0, 4, 4, 6, 2,
+        4, 5, 7, 7, 6, 4,
+        0, 2, 3, 3, 1, 0,
+    };
+
+    GLfloat vbo_data_coh[] =
+    {
+        1.0f, 1.0f, 1.0f,
+        2.0f, 1.0f, 1.0f,
+        1.0f, 2.0f, 1.0f,
+        2.0f, 2.0f, 1.0f,
+        1.0f, 1.0f, 2.0f,
+        2.0f, 1.0f, 2.0f,
+        1.0f, 2.0f, 2.0f,
+        2.0f, 2.0f, 2.0f,
+    };
+
+    GLuint ebo_data_coh[] =
+    {
+        0, 4, 5, 5, 1, 0,
+        1, 5, 7, 7, 3, 1,
+        3, 7, 6, 6, 2, 3,
+        2, 6, 4, 4, 0, 2,
+        4, 6, 7, 7, 5, 4,
+        0, 1, 3, 3, 2, 0,
+    };
+    
+    GLfloat THIC = 0.05f;
+    GLfloat vbo_data_gizmo[] =
+    {
+        0.0f, 0.0f, 0.0f,
+        THIC, THIC, 0.0f,
+        THIC, 0.0f, THIC,
+        0.0f, THIC, THIC,
+        1.0f, 0.0f, 0.0f,
+        1.0f, THIC, 0.0f,
+        1.0f, 0.0f, THIC,
+        0.0f, 1.0f, 0.0f,
+        THIC, 1.0f, 0.0f,
+        0.0f, 1.0f, THIC,
+        0.0f, 0.0f, 1.0f,
+        THIC, 0.0f, 1.0f,
+        0.0f, THIC, 1.0f,
+        THIC, THIC, THIC,
+        1.0f, THIC, THIC,
+        THIC, 1.0f, THIC,
+        THIC, THIC, 1.0f,
+    };
+
+    GLuint ebo_data_gizmo[] =
+    {
+        0, 2, 6, 6, 4, 0,
+        0, 4, 5, 5, 1, 0,
+        0, 1, 8, 8, 7, 0,
+        0, 7, 9, 9, 3, 0,
+        0, 3, 12, 12, 10, 0,
+        0, 10, 11, 11, 2, 0,
+        2, 13, 14, 14, 6, 2,
+        3, 9, 15, 15, 13, 3,
+        2, 11, 16, 16, 13, 2,
+        13, 16, 12, 12, 3, 13,
+        4, 6, 14, 14, 5, 4,
+        7, 8, 15, 15, 9, 7,
+        10, 12, 16, 16, 11, 10,
+        1, 5, 14, 14, 13, 1,
+        1, 13, 15, 15, 8, 1,
+    };
+
+    if (generate_mesh(&mesh_skybox, GL_STATIC_DRAW, VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
+            vbo_data_skybox, ebo_data_skybox) != 0)
+        goto cleanup;
+    LOGINFO("%s\n", "'Skybox' Mesh Generated");
+
+    if (generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
+            vbo_data_coh, ebo_data_coh) != 0)
+        goto cleanup;
+    LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
+
+    if (generate_mesh(&mesh_gizmo, GL_STATIC_DRAW, VBO_LEN_GIZMO, EBO_LEN_GIZMO,
+            vbo_data_gizmo, ebo_data_gizmo) != 0)
+        goto cleanup;
+    LOGINFO("%s\n", "'Gizmo' Mesh Generated");
+
+    return;
+
+cleanup:
+    LOGERROR("%s\n", "Mesh Generation Failed");
+}
+
+void bind_shader_uniforms()
+{
+    uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
+    uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
+    uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
+    uniform.skybox.mat_projection = glGetUniformLocation(shader_skybox.id, "mat_projection");
+    uniform.skybox.sun_rotation = glGetUniformLocation(shader_skybox.id, "sun_rotation");
+    uniform.skybox.sky_color = glGetUniformLocation(shader_skybox.id, "sky_color");
+
+    uniform.defaults.mat_perspective = glGetUniformLocation(shader_default.id, "mat_perspective");
+    uniform.defaults.camera_position = glGetUniformLocation(shader_default.id, "camera_position");
+    uniform.defaults.sun_rotation = glGetUniformLocation(shader_default.id, "sun_rotation");
+    uniform.defaults.sky_color = glGetUniformLocation(shader_default.id, "sky_color");
+
+    uniform.gizmo.render_ratio = glGetUniformLocation(shader_gizmo.id, "ratio");
+    uniform.gizmo.mat_target = glGetUniformLocation(shader_gizmo.id, "mat_translation");
+    uniform.gizmo.mat_rotation = glGetUniformLocation(shader_gizmo.id, "mat_rotation");
+    uniform.gizmo.mat_orientation = glGetUniformLocation(shader_gizmo.id, "mat_orientation");
+    uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
 void update_world()
 {
-    game_tick = (floor((get_time_ms() - game_start_time) * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor((glfwGetTime() - game_start_time) * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
-    if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
-        show_cursor;
-    else disable_cursor;
-
-    update_player(&lily);
-    update_player_target(&lily.camera.target, &lily.delta_target);
-    update_camera_movements_player(&lily);
-    if (MODE_COLLIDE)
-        update_collision_static(&lily);
-
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
-    (chunk_tab_index >= CHUNK_BUF_VOLUME)
-        ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
-
-    if (state & FLAG_CHUNK_BUF_DIRTY)
-    {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        update_chunk_tab(lily.delta_chunk);
-        state &= ~FLAG_CHUNK_BUF_DIRTY;
-    }
-
-    /* ---- player targeting ------------------------------------------------ */
-    if (is_range_within_v3i(lily.delta_target,
-                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
-        state |= FLAG_PARSE_TARGET;
-    else state &= ~FLAG_PARSE_TARGET;
-
-    /* TODO: make a function 'index_to_bounding_box()' */
-    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {}
+    update_camera_movement(&camera);
+    update_camera_perspective(&camera, &projection);
 }
 
-struct /* Chunk Handler Args */
+void draw_skybox()
 {
-    v3i16 player_delta_chunk;
-    u8 lock;
-} chunk_handler_args;
-void *chunk_handler()
-{
-    chunk_handler_args.player_delta_chunk = lily.delta_chunk;
-    chunk_handler_args.lock = 1;
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
-    {
-        LOGINFO("Delta[%03d %03d]", chunk_handler_args.player_delta_chunk.x, chunk_handler_args.player_delta_chunk.y);
-        if (!(state & FLAG_CHUNK_BUF_DIRTY)) continue;
+    skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
+    skybox_data.sun_rotation = (v3f32){-cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, 12.0f};
 
-        chunk_handler_args.lock = 0;
-        shift_chunk_tab(lily.chunk, &chunk_handler_args.player_delta_chunk);
-        state &= ~FLAG_CHUNK_BUF_DIRTY;
-    }
-    return NULL;
-}
+    f32 intensity =     0.0039f;
+    f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
+    f32 pre_burn =      fabsf(sinf(powf(sinf((skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
+    f32 burn =          fabsf(sinf(1.5f * powf(sinf((skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
+    f32 burn_boost =    fabsf(powf(sinf((skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+    f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(skybox_data.time * PI), 3.0f)));
 
-void update_input(Player *player)
-{
-    /* ---- jumping --------------------------------------------------------- */
-    if (IsKeyDown(bind_jump))
-    {
-        if (IsKeyPressed(bind_jump) && get_double_press(bind_jump))
-            player->state ^= FLAG_FLYING;
+    skybox_data.color =
+    (v3f32){
+        (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) + (pre_burn * 13.0f) + (burn_boost * 76.0f),
+        (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) + (pre_burn * 7.0f) + (burn_boost * 34.0f),
+        (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) + (pre_burn * 20.0f),
+    };
 
-        if (player->state & FLAG_FLYING)
-            player->pos.z += player->movement_speed;
+    skybox_data.color =
+        (v3f32){
+            clamp_f32(skybox_data.color.x * intensity, 0.0f, 1.0f),
+            clamp_f32(skybox_data.color.y * intensity, 0.0f, 1.0f),
+            clamp_f32(skybox_data.color.z * intensity, 0.0f, 1.0f),
+        };
 
-        if (player->state & FLAG_CAN_JUMP)
-        {
-            player->v.z += PLAYER_JUMP_HEIGHT;
-            player->state &= ~FLAG_CAN_JUMP;
-        }
-    }
-
-    /* ---- sneaking -------------------------------------------------------- */
-    if (IsKeyDown(bind_sneak))
-    {
-        if (player->state & FLAG_FLYING)
-            player->pos.z -= player->movement_speed;
-        else player->state |= FLAG_SNEAKING;
-    }
-    else player->state &= ~FLAG_SNEAKING;
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
-        player->state |= FLAG_SPRINTING;
-
-    if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
-        player->state &= ~FLAG_SPRINTING;
-
-    /* ---- moving ---------------------------------------------------------- */
-    if (IsKeyDown(bind_strafe_left))
-    {
-        player->v.x -= player->movement_speed * player->sin_yaw;
-        player->v.y += player->movement_speed * player->cos_yaw;
-    }
-
-    if (IsKeyDown(bind_strafe_right))
-    {
-        player->v.x += player->movement_speed * player->sin_yaw;
-        player->v.y -= player->movement_speed * player->cos_yaw;
-    }
-
-    if (IsKeyDown(bind_walk_backwards))
-    {
-        player->v.x -= player->movement_speed * player->cos_yaw;
-        player->v.y -= player->movement_speed * player->sin_yaw;
-    }
-
-    if (IsKeyDown(bind_walk_forwards))
-    {
-        if (IsKeyPressed(bind_walk_forwards) && get_double_press(bind_walk_forwards))
-            player->state |= FLAG_SPRINTING;
-
-        player->v.x += player->movement_speed * player->cos_yaw;
-        player->v.y += player->movement_speed * player->sin_yaw;
-    }
-
-    player->movement_step_length = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
-    if (player->movement_step_length > 0.0f)
-    {
-        player->v.x /= player->movement_step_length;
-        player->v.y /= player->movement_step_length;
-
-        player->pos.x += player->v.x * player->movement_speed;
-        player->pos.y += player->v.y * player->movement_speed;
-    }
-
-    /* ---- gameplay -------------------------------------------------------- */
-    if (IsMouseButtonDown(bind_attack_or_destroy))
-    {
-        if ((state & FLAG_PARSE_TARGET)
-                && !(state & FLAG_CHUNK_BUF_DIRTY)
-                && (chunk_tab[chunk_tab_index] != NULL))
-        {
-            remove_block(chunk_tab_index,
-                    lily.delta_target.x,
-                    lily.delta_target.y,
-                    lily.delta_target.z);
-        }
-    }
-
-    if (IsMouseButtonDown(bind_pick_block))
-    {
-    }
-
-    if (IsMouseButtonDown(bind_use_item_or_place_block))
-    {
-        if ((state & FLAG_PARSE_TARGET)
-                && !(state & FLAG_CHUNK_BUF_DIRTY)
-                && (chunk_tab[chunk_tab_index] != NULL))
-        {
-            add_block(chunk_tab_index,
-                    lily.delta_target.x,
-                    lily.delta_target.y,
-                    lily.delta_target.z);
-        }
-    }
-
-    /* ---- inventory ------------------------------------------------------- */
-    if (IsKeyPressed(bind_hotbar_slot_1) || IsKeyPressed(bind_hotbar_slot_kp_1))
-        hotbar_slot_selected = 1;
-
-    if (IsKeyPressed(bind_hotbar_slot_2) || IsKeyPressed(bind_hotbar_slot_kp_2))
-        hotbar_slot_selected = 2;
-
-    if (IsKeyPressed(bind_hotbar_slot_3) || IsKeyPressed(bind_hotbar_slot_kp_3))
-        hotbar_slot_selected = 3;
-
-    if (IsKeyPressed(bind_hotbar_slot_4) || IsKeyPressed(bind_hotbar_slot_kp_4))
-        hotbar_slot_selected = 4;
-
-    if (IsKeyPressed(bind_hotbar_slot_5) || IsKeyPressed(bind_hotbar_slot_kp_5))
-        hotbar_slot_selected = 5;
-
-    if (IsKeyPressed(bind_hotbar_slot_6) || IsKeyPressed(bind_hotbar_slot_kp_6))
-        hotbar_slot_selected = 6;
-
-    if (IsKeyPressed(bind_hotbar_slot_7) || IsKeyPressed(bind_hotbar_slot_kp_7))
-        hotbar_slot_selected = 7;
-
-    if (IsKeyPressed(bind_hotbar_slot_8) || IsKeyPressed(bind_hotbar_slot_kp_8))
-        hotbar_slot_selected = 8;
-
-    if (IsKeyPressed(bind_hotbar_slot_9) || IsKeyPressed(bind_hotbar_slot_kp_9))
-        hotbar_slot_selected = 9;
-
-    if (IsKeyPressed(bind_hotbar_slot_0) || IsKeyPressed(bind_hotbar_slot_kp_0))
-        hotbar_slot_selected = 10;
-
-    if (IsKeyPressed(bind_open_or_close_inventory))
-    {
-        if ((player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
-        {
-            state_menu_depth = 0;
-            player->container_state &= ~STATE_CONTR_INVENTORY;
-        }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY) && !state_menu_depth)
-        {
-            state_menu_depth = 1;
-            player->container_state |= STATE_CONTR_INVENTORY;
-        }
-
-        if (!(player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
-            --state_menu_depth;
-    }
-
-    /* ---- miscellaneous --------------------------------------------------- */
-    if (IsKeyPressed(bind_toggle_hud))
-        state ^= FLAG_HUD;
-
-    if (IsKeyPressed(bind_toggle_debug))
-    {
-        if (state & FLAG_DEBUG)
-            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
-        else state |= FLAG_DEBUG;
-
-        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & FLAG_DEBUG))
-            state |= FLAG_DEBUG_MORE;
-    }
-
-    if (IsKeyPressed(bind_toggle_fullscreen))
-    {
-        state ^= FLAG_FULLSCREEN;
-        state &= ~FLAG_PARSE_CURSOR;
-
-        if (state & FLAG_FULLSCREEN)
-        {
-            ToggleBorderlessWindowed();
-            SetConfigFlags(FLAG_FULLSCREEN_MODE);
-        }
-        else
-        {
-            SetConfigFlags(~FLAG_FULLSCREEN_MODE);
-            ToggleBorderlessWindowed();
-        }
-    }
-
-    if (IsKeyPressed(bind_toggle_perspective))
-    {
-        if (player->perspective < 4)
-            ++player->perspective;
-        else player->perspective = 0;
-    }
-
-    if (IsKeyPressed(bind_pause) && (state & FLAG_WORLD_LOADED))
-    {
-        if (state & FLAG_WORLD_LOADED)
-        {
-            if (!state_menu_depth)
-            {
-                state_menu_depth = 1;
-                menu_index = MENU_GAME;
-                state |= FLAG_PAUSED;
-                player->container_state = 0;
-                show_cursor;
-            }
-            else if (state_menu_depth == 1)
-                btn_func_back_to_game();
-        }
-        else
-        {
-            if (state_menu_depth == 1)
-                state &= ~FLAG_ACTIVE;
-            else btn_func_back();
-        }
-    }
-
-    /* ---- debug ----------------------------------------------------------- */
-#if !RELEASE_BUILD
-    if (IsKeyPressed(KEY_TAB))
-        state ^= FLAG_SUPER_DEBUG;
-#endif /* RELEASE_BUILD */
+    glUseProgram(shader_skybox.id);
+    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
+    glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
+    glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
+    glUniform3fv(uniform.skybox.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.skybox.sky_color, 1, (GLfloat*)&skybox_data.color);
+    draw_mesh(&mesh_skybox);
 }
 
 void draw_world()
 {
-    /* ---- player chunk bounding box --------------------------------------- */
-    if (state & FLAG_DEBUG_MORE)
-        draw_bounding_box(
-                (Vector3){
-                (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.z * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2)},
-                (Vector3){
-                (f32)CHUNK_DIAMETER,
-                (f32)CHUNK_DIAMETER,
-                (f32)CHUNK_DIAMETER},
-                ORANGE);
-
-    /* ---- player target bounding box -------------------------------------- */
-    if ((state & FLAG_PARSE_TARGET)
-            && (state & FLAG_HUD)
-            && chunk_tab[chunk_tab_index] != NULL)
-    {
-        if (chunk_tab[chunk_tab_index]->block
-                [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER)]
-                [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
-                [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
-                & NOT_EMPTY)
-        {
-            draw_block_wires(lily.delta_target);
-            if (state & FLAG_DEBUG_MORE)
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
-                        lily.camera.target, RED);
-        }
-        else if (state & FLAG_DEBUG_MORE)
-            DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
-                    lily.camera.target, GREEN);
-    }
-
-    if (state & FLAG_DEBUG_MORE)
-    {
-        /*temp
-          draw_block_wires(&target_coordinates_feet);
-          printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
-          */
-        DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
-        draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
-        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); /*temp AABB collision*/
-    }
+    glUseProgram(shader_default.id);
+    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
+    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniform3fv(uniform.defaults.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
+    draw_mesh(&mesh_cube_of_happiness);
 }
 
-struct /* skybox */
+void draw_hud()
 {
-    f64 time;
-    f64 mid_day;
-    f64 pre_burn;
-    f64 burn;
-    f64 burn_boost;
-    f64 mid_night;
-    Color color;
-} skybox = {0};
-
-void draw_skybox()
-{
-    skybox.time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
-    skybox.mid_day =    fabs(sin(1.5f * pow(sin(skybox.time * PI), 1.0f)));
-    skybox.pre_burn =   fabs(sin(pow(sin((skybox.time + 0.33) * PI * 1.2f), 16.0f)));
-    skybox.burn =       fabs(sin(1.5f * pow(sin((skybox.time + 0.124f) * PI * 1.6f), 32.0f)));
-    skybox.burn_boost = fabs(pow(sin((skybox.time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox.mid_night =  fabs(sin(pow(2 * cos(skybox.time * PI), 3.0f)));
-    skybox.color =
-        (Color){
-            Clamp((skybox.mid_day * 171) + (skybox.burn * 85) + (skybox.mid_night * 1) +
-                    (skybox.pre_burn * 13) + (skybox.burn_boost * 76), 0, 255),
-
-            Clamp((skybox.mid_day * 229) + (skybox.burn * 42) + (skybox.mid_night * 4) +
-                    (skybox.pre_burn * 7) + (skybox.burn_boost * 34), 0, 255),
-
-            Clamp((skybox.mid_day * 255) + (skybox.burn * 19) + (skybox.mid_night * 14) +
-                    (skybox.pre_burn * 20), 0, 255),
-            255,
-        };
-
-    ClearBackground(skybox.color);
+    glUseProgram(shader_gizmo.id);
+    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)camera.ratio);
+    glUniformMatrix4fv(uniform.gizmo.mat_target, 1, GL_FALSE, (GLfloat*)&projection.target);
+    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
+    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
+    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
+    draw_mesh(&mesh_gizmo);
 }
 
-void draw_gui()
+void draw_everything()
 {
-    if (state & FLAG_HUD)
-    {
-        draw_hud();
-        draw_debug_info(&lily.camera_debug_info);
-    }
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    draw_skybox();
 
-    if (state_menu_depth && lily.container_state)
-        draw_containers(&lily, setting.render_size);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    draw_world();
 
-    if (state & FLAG_SUPER_DEBUG)
-        draw_super_debugger(setting.render_size);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    draw_hud();
+
+    /* ---- section: draw everything ---------------------------------------- */
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader_fbo.id);
+    glBindVertexArray(mesh_fbo.vao);
+    glDisable(GL_DEPTH_TEST);
+    glBindTexture(GL_TEXTURE_2D, color_buf_skybox);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, color_buf_world);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, color_buf_hud);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 

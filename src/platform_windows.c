@@ -1,0 +1,36 @@
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#ifndef PLATFORM_WINDOWS_INCLUDE
+#define PLATFORM_WINDOWS_INCLUDE
+
+#include "h/main.h"
+#include "h/setting.h"
+
+#define MC_C_HOME "APPDATA"
+#define MC_C_ROAMING "/Roaming/"
+
+#include "h/assets.h"
+#include "h/chunking.h"
+#include "h/dir.h"
+#include "h/gui.h"
+#include "h/logic.h"
+#include "h/super_debugger.h"
+
+void update_debug_strings()
+{
+    snprintf(str_fps, 16,                "FPS: %d",                 GetFPS());
+    snprintf(str_player_pos, 32,          "XYZ: %.2f %.2f %.2f",    lily.pos.x, lily.pos.y, lily.pos.z);
+    snprintf(str_player_block, 32,        "BLOCK: %.0f %.0f %.0f",  floorf(lily.pos.x), floorf(lily.pos.y), floorf(lily.pos.z));
+    snprintf(str_player_chunk, 48,        "CHUNK: %d %d %d",
+            (i16)floorf(lily.pos.x / CHUNK_DIAMETER),
+            (i16)floorf(lily.pos.y / CHUNK_DIAMETER),
+            (i16)floorf(lily.pos.z / CHUNK_DIAMETER));
+    snprintf(str_player_direction, 32,    "YAW: %.1f PITCH: %.1f",  lily.yaw, lily.pitch);
+    snprintf(str_block_count, 32,         "BLOCKS: %lld",           globals.block_count);
+    snprintf(str_quad_count, 32,          "QUADS: %lld",            globals.quad_count);
+    snprintf(str_tri_count, 32,           "TRIS: %lld",             globals.quad_count * 2);
+    snprintf(str_vertex_count, 32,        "VERTICES: %lld",         globals.quad_count * 6);
+}
+
+#endif /* PLATFORM_WINDOWS_INCLUDE */
+#endif /* PLATFORM_WINDOWS */
+

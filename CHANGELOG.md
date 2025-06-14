@@ -2,6 +2,7 @@
 
 ## v0.2.0 (DD MMM 2025)
 
+#### changes
 - added skybox colors for day/night cycle
 - fixed menu buttons not disappearing after leaving menu (forgot to clear background)
 - added windows support for building launcher and tests
@@ -30,11 +31,17 @@
 - added world directory structure creation
 - added basic terrain generation
 - changed chunking system from 2d to 3d chunks (took me like 20 minutes)
+    - removed block_parse_limit optimization, because 3d chunks
 - added basic 3d renderer in opengl
+    - added skybox colors for day/night cycle in renderer
+- simplified build tool
+- localized dependencies' headers and shared libraries
+- changed project name "minecraft.c" -> "heaven-hell_continuum"
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
 
+#### changes
 - added windows support for build tool
 - created minecraft.c logo 'resources/logo/'
 - added platform layer C files 'linux_minecraft.c' and 'windows_minecraft.c'
@@ -46,6 +53,7 @@
 - - -
 ## v0.1.3 (03 Apr 2025)
 
+#### changes
 - fixed segfault while placing or breaking blocks in non-allocated chunk area 
 - switched to C99 standard
 - changed original resources to avoid copyright

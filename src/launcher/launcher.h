@@ -1,7 +1,7 @@
 #ifndef MC_C_LAUNCHER_H
 #define MC_C_LAUNCHER_H
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
+#include "../include/raylib.h"
 
 #include "../engine/h/defines.h"
 
@@ -13,7 +13,7 @@
 /* ---- states -------------------------------------------------------------- */
 enum States
 {
-    STATE_ACTIVE =          0x01,
+    FLAG_ACTIVE =           0x01,
 }; /* States */
 
 /* ---- colors -------------------------------------------------------------- */

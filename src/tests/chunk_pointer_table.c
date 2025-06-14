@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "../dependencies/raylib-5.5/include/raylib.h"
-#include "../dependencies/raylib-5.5/include/rlgl.h"
+#include "../include/raylib.h"
+#include "../include/rlgl.h"
 
 #include "../engine/h/defines.h"
 #include "../engine/h/memory.h"

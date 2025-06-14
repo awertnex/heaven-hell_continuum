@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dependencies/raylib-5.5/include/raylib.h"
-#include "dependencies/raylib-5.5/include/rlgl.h"
+#include "../include/raylib.h"
+#include "../include/rlgl.h"
 
 #include "h/gui.h"
 #include "h/chunking.h"
@@ -518,25 +518,25 @@ void draw_debug_info(Camera3D *camera)
     update_debug_strings();
 
     /* TODO: rewrite DrawRectangle, get rectangle correct size for font */
-    DrawRectangle(MARGIN - 2, MARGIN,                       get_str_width(font_regular, str_fps,                font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height,     get_str_width(font_regular, str_player_pos,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 2, get_str_width(font_regular, str_player_block,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 3, get_str_width(font_regular, str_player_chunk,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 4, get_str_width(font_regular, str_player_direction,   font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 5, get_str_width(font_regular, str_block_count,        font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 6, get_str_width(font_regular, str_quad_count,         font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 7, get_str_width(font_regular, str_tri_count,          font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 8, get_str_width(font_regular, str_vertex_count,       font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_FPS], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_POS], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 2, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_BLOCK], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 3, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_CHUNK], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 4, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_DIRECTION], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 5, get_str_width(font_regular, str_block_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 6, get_str_width(font_regular, str_quad_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 7, get_str_width(font_regular, str_tri_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 8, get_str_width(font_regular, str_vertex_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
 
-    draw_text(font_regular, str_fps,                (v2i16){MARGIN, MARGIN},                        font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_player_pos,         (v2i16){MARGIN, MARGIN + text_row_height},      font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_player_block,       (v2i16){MARGIN, MARGIN + text_row_height * 2},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_player_chunk,       (v2i16){MARGIN, MARGIN + text_row_height * 3},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_player_direction,   (v2i16){MARGIN, MARGIN + text_row_height * 4},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_block_count,        (v2i16){MARGIN, MARGIN + text_row_height * 5},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_quad_count,         (v2i16){MARGIN, MARGIN + text_row_height * 6},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_tri_count,          (v2i16){MARGIN, MARGIN + text_row_height * 7},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_vertex_count,       (v2i16){MARGIN, MARGIN + text_row_height * 8},  font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_FPS], (v2i16){MARGIN, MARGIN}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_POS], (v2i16){MARGIN, MARGIN + text_row_height}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_BLOCK], (v2i16){MARGIN, MARGIN + text_row_height * 2}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_CHUNK], (v2i16){MARGIN, MARGIN + text_row_height * 3}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_DIRECTION], (v2i16){MARGIN, MARGIN + text_row_height * 4}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_block_count, (v2i16){MARGIN, MARGIN + text_row_height * 5}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_quad_count, (v2i16){MARGIN, MARGIN + text_row_height * 6}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_tri_count, (v2i16){MARGIN, MARGIN + text_row_height * 7}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    draw_text(font_regular, str_vertex_count, (v2i16){MARGIN, MARGIN + text_row_height * 8}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
 
     BeginMode3D(*camera);
     rlBegin(RL_LINES);
@@ -547,9 +547,11 @@ void draw_debug_info(Camera3D *camera)
     EndMode3D();
 }
 
-/* raylib/rtext.c/DrawTextEx refactored;
-   align_x = (0 = left, 1 = center, 2 = right);
-   align_y = (0 = top, 1 = center, 2 = bottom); */
+/* 
+ * raylib/rtext.c/DrawTextEx refactored;
+ * align_x = (0 = left, 1 = center, 2 = right);
+ * align_y = (0 = top, 1 = center, 2 = bottom);
+ */
 void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
 {
     switch (align_x)
