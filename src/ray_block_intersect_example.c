@@ -1,6 +1,5 @@
-#include <math.h>
-
 #include "engine/h/defines.h"
+#include "engine/h/math.h"
 
 typedef struct BlockHitInfo
 {
@@ -17,10 +16,6 @@ u8 block_buf[16][16][16] = {1};
 u64 factorial(i32 n);
 f64 pow_f64(f64 n, u8 exp);
 f64 sine_f64(f64 x);
-v3f32 sub_v3f32(v3f32 a, v3f32 b);
-f32 len_v3f32(v3f32 v);
-v3f32 normalize_v3f32(v3f32 v);
-f32 dist_v3f32(v3f32 a, v3f32 b);
 
 b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *out_hit)
 {
@@ -51,7 +46,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
         if (block_buf[z][y][x] == target_type)
         {
             v3f32 center = (v3f32){x + 0.5f, y + 0.5f, z + 0.5f};
-            f32 dist = dist_v3f32(camera, center);
+            f32 dist = distance_v3f32(camera, center);
 
             if (dist <= MAX_REACH_DISTANCE)
             {
@@ -108,7 +103,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
 
         /* Optional: early exit */
         v3f32 blockCenter = (v3f32){x + 0.5f, y + 0.5f, z + 0.5f};
-        if (dist_v3f32(camera, blockCenter) > MAX_REACH_DISTANCE)
+        if (distance_v3f32(camera, blockCenter) > MAX_REACH_DISTANCE)
             break;
     }
 
@@ -136,10 +131,10 @@ f64 pow_f64(f64 n, u8 exp)
 /* Approximate sine using Taylor Series */
 f64 sin_f64(f64 x)
 {
-    while (x > M_PI)
-        x -= 2 * M_PI;
-    while (x < -M_PI)
-        x += 2 * M_PI;
+    while (x > PI)
+        x -= 2 * PI;
+    while (x < -PI)
+        x += 2 * PI;
 
     f64 result = 0.0f;
     u8 precision = 10;
@@ -149,27 +144,5 @@ f64 sin_f64(f64 x)
         result += term;
     }
     return result;
-}
-
-v3f32 sub_v3f32(v3f32 a, v3f32 b)
-{
-    return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
-}
-
-f32 len_v3f32(v3f32 v)
-{
-    return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
-}
-
-v3f32 normalize_v3f32(v3f32 v)
-{
-    f32 len = len_v3f32(v);
-    if (len == 0) return (v3f32){0.0f};
-    return (v3f32){v.x / len, v.y / len, v.z / len};
-}
-
-f32 dist_v3f32(v3f32 a, v3f32 b)
-{
-    return len_v3f32(sub_v3f32(a, b));
 }
 

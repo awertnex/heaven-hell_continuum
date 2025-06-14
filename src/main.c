@@ -1,11 +1,14 @@
 #include "engine/h/dir.h"
 #include "engine/h/logger.h"
 #include "engine/h/math.h"
+#include "engine/h/memory.h"
 #include "h/main.h"
 #include "h/dir.h"
-#include "dir.c"
 #include "h/setting.h"
+#include "chunking.c"
 #include "keymaps.c"
+
+#include "dir.c"
 
 #define DIR_SHADER "./src/shaders/"
 
@@ -16,6 +19,15 @@ Render render =
 {
     .size = {854, 480},
     .title = MC_C_ENGINE_NAME": "MC_C_ENGINE_VERSION,
+};
+
+Settings setting =
+{
+    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
+    .fov =                  SETTING_FOV_DEFAULT,
+    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
+    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
 
 u32 state = 0;
@@ -150,6 +162,11 @@ void draw_everything();
 
 int main(void)
 {
+    str_buf string = {NULL};
+    string = get_dir_contents("./");
+    for (u16 i = 0; i < string.count; ++i)
+        LOGINFO("%s\n", string.entry[i]);
+    return 0;
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
@@ -233,11 +250,12 @@ int main(void)
         };
 
     bind_shader_uniforms();
-    generate_standard_meshes();
 
 section_menu_title: /* ------------------------------------------------------ */
 section_menu_world: /* ------------------------------------------------------ */
 section_main: /* ---- section: main loop ------------------------------------ */
+    generate_standard_meshes();
+
     while (!glfwWindowShouldClose(render.window))
     {
         //get_mouse_position(&render, &render.mouse_position);

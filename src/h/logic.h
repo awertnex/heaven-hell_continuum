@@ -1,12 +1,7 @@
 #ifndef MC_C_LOGIC_H
 #define MC_C_LOGIC_H
 
-#include "../include/raylib.h"
-#include "../include/raymath.h"
-#include "../include/rlgl.h"
-
-#include "../engine/h/math.h"
-#include "../engine/h/defines.h"
+#include "../engine/h/core.h"
 
 /* ---- section: player defaults -------------------------------------------- */
 
@@ -124,7 +119,7 @@ extern Player lily;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-bool get_double_press(KeyboardKey key);
+bool get_double_press(u32 key);
 void update_player(Player *player);
 void update_camera_movements_player(Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
@@ -146,7 +141,9 @@ void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *time_start, f32 interval);
 
+#ifdef FUCK // TODO: undef FUCK
 void draw_default_grid(Color x, Color y, Color z);
+#endif // TODO: undef FUCK
 
 #endif /* MC_C_LOGIC_H */
 

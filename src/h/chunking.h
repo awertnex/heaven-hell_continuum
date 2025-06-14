@@ -1,9 +1,6 @@
 #ifndef MC_C_CHUNKING_H
 #define MC_C_CHUNKING_H
 
-#include "../include/raylib.h"
-#include "../include/rlgl.h"
-
 #include "../engine/h/defines.h"
 
 #include "main.h"
@@ -130,12 +127,14 @@ Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v3i16 player_chunk);
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
+#ifdef FUCK // TODO: undef FUCK
 void draw_chunk_tab(Texture *tex);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
+#endif // TODO: undef FUCK
 
 #endif /* MC_C_CHUNKING_H */
 

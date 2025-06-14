@@ -1,10 +1,9 @@
-#include <math.h>
+#include "engine/h/memory.h"
+#include "engine/h/math.h"
+#include "engine/h/logger.h"
 
 #include "h/chunking.h"
-#include "h/logic.h"
-
-#include "engine/h/memory.h"
-#include "engine/h/logger.h"
+//#include "h/logic.h" // temp off
 
 Chunk *chunk_buf = {0};                         /* chunk buffer, raw chunk data */
 Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {NULL};    /* chunk pointer look-up table */
@@ -19,7 +18,9 @@ struct Globals globals =
 
 u8 init_chunking(void)
 {
-    mem_alloc((void*)&chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_buf");
+    if (!mem_alloc_memb((void*)&chunk_buf, CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
+        goto cleanup;
+
     return 0;
 
 cleanup:
@@ -300,7 +301,7 @@ void update_chunk_tab(v3i16 player_delta_chunk)
                 i / CHUNK_BUF_LAYER,
             };
 
-        if (get_distance(
+        if (distance_v3i32(
                     (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v3i32){coordinates.x, coordinates.y, coordinates.z})
                 < ((u32)powf(setting.render_distance, 2) + 2))
@@ -325,7 +326,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         player_chunk.z - player_delta_chunk->z,
     };
 
-    if (get_distance(
+    if (distance_v3i32(
             (v3i32){player_chunk.x, player_chunk.y, player_chunk.z},
             (v3i32){player_delta_chunk->x, player_delta_chunk->y, player_delta_chunk->z})
             > (u32)powf(SETTING_RENDER_DISTANCE_DEFAULT, 2) + 2)
@@ -505,6 +506,7 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
         + (offset.z * CHUNK_BUF_LAYER);
 }
 
+#ifdef FUCK // TODO: undef FUCK
 void draw_chunk_tab(Texture *tex /*temp texturing*/)
 {
     if (state & FLAG_DEBUG_MORE)
@@ -798,3 +800,4 @@ void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col)
     rlPopMatrix();
 }
 
+#endif // TODO: undef FUCK

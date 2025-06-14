@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <linux/limits.h>
 
+#include "h/platform.h"
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/memory.h"
@@ -102,18 +103,17 @@ str_buf get_dir_contents(const str *dir_name)
     str_buf contents = {NULL};
 
     dir = opendir(dir_name_absolute);
-    while ((entry = readdir(dir)))
+    while ((entry = readdir(dir)) != NULL)
         ++contents.count;
 
     if (!contents.count
-            || !mem_alloc((void*)&contents.entry, contents.count * sizeof(str*), "dir_contents")
-            || !mem_alloc_memb((void*)&contents.buf, contents.count, NAME_MAX, "dir_contents_buffer"))
+            || !mem_alloc_str_buf(&contents, contents.count, NAME_MAX, "dir_contents"))
         goto cleanup;
 
     rewinddir(dir);
     u64 i = 0;
     str path_full[PATH_MAX] = {0};
-    while ((entry = readdir(dir)))
+    while ((entry = readdir(dir)) != NULL)
     {
         contents.entry[i] = contents.buf + (i * NAME_MAX);
         memcpy(contents.entry[i], entry->d_name, NAME_MAX - 1);
@@ -135,6 +135,21 @@ cleanup:
     return (str_buf){NULL};
 }
 
+u64 get_dir_entry_count(const str *dir_name)
+{
+    if (!dir_name || !is_dir_exists(dir_name))
+        return 0;
+
+    DIR *dir = NULL;
+    u64 count;
+    struct dirent *entry;
+    dir = opendir(dir_name);
+
+    while ((entry = readdir(dir)) != NULL)
+        ++count;
+
+    return count;
+}
 str *get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
@@ -147,12 +162,12 @@ str *get_path_absolute(const str *path)
         return NULL;
 
     str path_absolute[PATH_MAX] = {0};
-    if (!realpath(path, path_absolute))
+    if (!_get_path_absolute(path, path_absolute))
         return NULL;
 
     u64 len = strlen(path_absolute);
     str *result = NULL;
-    if (!mem_alloc((void*)&result, len + 1, "path_absolute"))
+    if (!mem_alloc((void*)&result, sizeof(str*) * (len + 1), "path_absolute"))
         return NULL;
 
     strncpy(result, path_absolute, len);
@@ -167,11 +182,8 @@ str *get_path_absolute(const str *path)
 str *get_path_bin_root(void)
 {
     str path_bin_root[PATH_MAX] = {0};
-    if (!readlink("/proc/self/exe", path_bin_root, PATH_MAX - 1))
-    {
-        LOGFATAL("%s\n", "'/proc/self/exe' Not Found, Process Aborted");
+    if (!_get_path_bin_root(path_bin_root))
         return NULL;
-    }
 
     u64 len = strlen(path_bin_root);
     if (len >= PATH_MAX - 1)

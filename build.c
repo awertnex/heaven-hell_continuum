@@ -2,26 +2,23 @@
 #include <unistd.h>
 #include <glob.h>
 
-#include "src/engine/h/memory.h"
+#include "src/engine/platform_linux.c"
+#include "src/engine/platform_windows.c"
+#include "src/engine/memory.c"
 #include "src/engine/dir.c"
 #include "src/engine/logger.c"
 
-#define DIR_BIN             "bin/"
-#define DIR_BIN_TESTS       "bin/tests/"
-#define DIR_SRC             "src/"
-#define DIR_ENGINE          "src/engine/"
-#define DIR_LAUNCHER        "src/launcher/"
-#define DIR_TESTS           "src/tests/"
-#define CMD_MEMB            512
+#define DIR_BIN         "bin/"
+#define DIR_BIN_TESTS   "bin/tests/"
+#define DIR_SRC         "src/"
+#define DIR_ENGINE      "src/engine/"
+#define DIR_LAUNCHER    "src/launcher/"
+#define DIR_TESTS       "src/tests/"
+#define CMD_MEMB        128
 
 #if defined(__linux__) || defined(__linux)
-    #define ALLOC_CMD       mem_alloc_memb((void*)&cmd, CMD_MEMB, NAME_MAX, "cmd")
-    #define FREE_CMD        mem_free((void*)&cmd, CMD_MEMB * NAME_MAX, "cmd")
-    #define COMPILER        "cc"
-    #define EXTENSION       ""
-    #define MKDIR(dir)      mkdir(dir, 0775);
-str **cmd;
-glob_t glob_buf = {0};
+#define COMPILER        "cc"
+#define EXTENSION       ""
 str str_libs[][24] =
 {
     "-lm",
@@ -38,13 +35,8 @@ str str_libs[][24] =
     "-lfreetype",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-    #define ALLOC_CMD
-    #define FREE_CMD
-    #define COMPILER        "gcc"
-    #define EXTENSION       ".exe"
-    #define MKDIR(dir)      mkdir(dir);
-str *cmd[CMD_MEMB];
-glob_t glob_buf = {0};
+#define COMPILER        "gcc"
+#define EXTENSION       ".exe"
 str str_libs[6][24] =
 {
     "-lm",
@@ -67,12 +59,17 @@ enum Flags
     FLAG_SHOW_CMD =         0x02,
 }; /* Flags */
 
-/* ---- declarations -------------------------------------------------------- */
+/* ---- section: declarations ----------------------------------------------- */
+
 u8 state = 0;
 u16 flags = 0;
+str_buf cmd = {NULL};
 u64 cmd_pos = 0;
-str str_main[] = DIR_SRC"main.c";
-str str_cflags[][24] =
+str_buf str_tests = {NULL};
+glob_t glob_buf = {0};
+str str_main[NAME_MAX] = DIR_SRC"main.c";
+
+str str_cflags[][28] =
 {
     "-std=c99",
     "-ggdb",
@@ -82,22 +79,16 @@ str str_cflags[][24] =
     "-Wpedantic",
     "-fno-builtin",
 };
-str str_out[48] = DIR_BIN"minecraft_c";
-str str_tests[5][24] =
-{
-    "chunk_loader",
-    "chunk_pointer_table",
-    "chunk_tab_shift",
-    "function_pointer",
-    "renderer",
-};
 
-/* ---- signatures ---------------------------------------------------------- */
+str str_out[NAME_MAX] = DIR_BIN"heaven-hell_continuum";
+
+/* ---- section: signatures ------------------------------------------------- */
+
 u64 compare_argv(str *arg, int argc, str **argv);
 b8 evaluate_extension(const str *file_name);
-void strip_extension(const str *file_name);
+void strip_extension(const str *file_name, str *dest);
 void show_cmd();
-void push_cmd(str *str);
+void push_cmd(str *string);
 void build_cmd();
 void push_glob(const str *pattern);
 void execute_cmd();
@@ -105,6 +96,8 @@ void fail_cmd();
 void build_test(int argc, char ** argv);
 void help();
 void list();
+
+/* ---- section: main ------------------------------------------------------- */
 
 int main(int argc, char **argv)
 {
@@ -130,17 +123,19 @@ int main(int argc, char **argv)
 
     if (!is_dir_exists(DIR_BIN))
     {
-        MKDIR(DIR_BIN);
+        make_dir(DIR_BIN);
         LOGINFO("Directory '%s' Created", DIR_BIN);
     }
 
     if (!is_dir_exists(DIR_BIN_TESTS))
     {
-        MKDIR(DIR_BIN_TESTS);
+        make_dir(DIR_BIN_TESTS);
         LOGINFO("Directory '%s' Created", DIR_BIN_TESTS);
     }
 
     execute_cmd();
+    mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
+    globfree(&glob_buf);
     return 0;
 }
 
@@ -164,14 +159,14 @@ b8 evaluate_extension(const str *file_name)
     return FALSE;
 }
 
-void strip_extension(const str *file_name)
+void strip_extension(const str *file_name, str *dest) // TODO: make this function
 {
     u64 len = strlen(file_name);
-    str file_name_stripped[NAME_MAX] = {0};
+    str file_name_buf[NAME_MAX] = {0};
     if (len > 2 && strncmp(file_name + len - 2, ".c", 2) == 0)
     {
-        snprintf(file_name_stripped, len - 2, "%s", file_name);
-        file_name = file_name_stripped;
+        snprintf(file_name_buf, len - 1, "%s", file_name);
+        strncpy(dest, file_name_buf, NAME_MAX);
     }
 }
 
@@ -180,29 +175,23 @@ void show_cmd()
     printf("\nCMD:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
     {
-        if (!cmd[i]) break;
-        printf("    %.3d: %s\n", i, cmd[i]);
+        if (!cmd.entry[i]) break;
+        printf("    %.3d: %s\n", i, cmd.entry[i]);
     }
-    putchar('\n');
 }
 
-void push_cmd(str *str)
+void push_cmd(str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
-    {
-        LOGERROR("%s\n", "cmd Full, Process Aborted");
-        show_cmd();
-        fail_cmd();
-    }
+        LOGERROR("%s\n", "cmd Full");
 
-    cmd[cmd_pos] = str;
-    cmd[cmd_pos + 1] = NULL;
+    strncpy(cmd.entry[cmd_pos], string, NAME_MAX);
     ++cmd_pos;
 }
 
 void build_cmd(int argc, char **argv)
 {
-    if (!ALLOC_CMD)
+    if (!mem_alloc_str_buf((str_buf*)&cmd, CMD_MEMB, NAME_MAX, "cmd"))
         fail_cmd();
 
     push_cmd(COMPILER);
@@ -216,28 +205,34 @@ void build_cmd(int argc, char **argv)
             }
 
             u32 test_index = atoi(argv[2]);
-            if ((test_index < 0) || (test_index >= arr_len(str_tests)))
+            str_tests.count = get_dir_entry_count(DIR_TESTS);
+            if (test_index <= 0 || test_index >= str_tests.count)
             {
                 LOGERROR("'%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
                 fail_cmd();
             }
 
-            snprintf(str_main, 48, "%s%s.c", DIR_TESTS, str_tests[test_index]);
-            snprintf(str_out, 48, "./%stest_%s%s", DIR_BIN_TESTS, str_tests[test_index], EXTENSION);
+            if (!mem_alloc_str_buf((str_buf*)&str_tests, str_tests.count, NAME_MAX, "str_tests"))
+                fail_cmd();
+
+
+            sort_str_buf(&str_tests);
+            snprintf(str_main, NAME_MAX, "%s%s.c", DIR_TESTS, str_tests.entry[test_index]);
+            snprintf(str_out, NAME_MAX, "./%stest_%s%s", DIR_BIN_TESTS, str_tests.entry[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
         case STATE_LAUNCHER:
-            snprintf(str_main, 48, "%s%s", DIR_LAUNCHER, "launcher.c");
+            snprintf(str_main, NAME_MAX, "%s%s", DIR_LAUNCHER, "launcher.c");
             push_cmd(str_main);
             push_glob(DIR_LAUNCHER"*.c");
-            snprintf(str_out, 48, "./%slauncher%s", DIR_BIN, EXTENSION);
+            snprintf(str_out, NAME_MAX, "./%slauncher%s", DIR_BIN, EXTENSION);
             break;
 
         case STATE_ENGINE:
             push_cmd(str_main);
             push_glob(DIR_ENGINE"*.c");
-            snprintf(str_out, 48, "./%sengine%s", DIR_BIN, EXTENSION);
+            snprintf(str_out, NAME_MAX, "./%sengine%s", DIR_BIN, EXTENSION);
             break;
 
         default:
@@ -259,6 +254,8 @@ void build_cmd(int argc, char **argv)
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(str_out);
+
+    cmd.entry[cmd_pos] = NULL;
 }
 
 void push_glob(const str *pattern)
@@ -275,7 +272,7 @@ void push_glob(const str *pattern)
     {
         if (strstr(glob_buf.gl_pathv[i], str_main))
             continue;
-        cmd[cmd_pos] = glob_buf.gl_pathv[i];
+        strncpy(cmd.entry[cmd_pos], glob_buf.gl_pathv[i], NAME_MAX);
         ++cmd_pos;
     }
 }
@@ -290,7 +287,7 @@ void execute_cmd()
     }
     else if (pid == 0)
     {
-        execvp(COMPILER, cmd);
+        execvp(COMPILER, cmd.entry);
         LOGERROR("%s\n", "Build Failed, Process Aborted");
         goto cleanup;
     }
@@ -313,9 +310,6 @@ void execute_cmd()
         goto cleanup;
     }
 
-    globfree(&glob_buf);
-    exit(0);
-
 cleanup:
     globfree(&glob_buf);
     fail_cmd();
@@ -323,39 +317,53 @@ cleanup:
 
 void fail_cmd()
 {
-    FREE_CMD;
+    mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
+    mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
     exit(-1);
-}
-
-void build_test(int argc, char ** argv)
-{
 }
 
 void help()
 {
-    LOGINFO("Usage: ./build [options]...\nOptions:\n%s\n%s\n%s\n%s\n%s\n%s\n",
+    LOGINFO("Usage: ./build [options]...\nOptions:\n%s\n%s\n%s\n%s\n",
             "    help       print this help",
             "    list       list all available options and tests",
             "    test [n]   build test 'n' from the 'list' command",
-            "    show       show build command"
-           );
+            "    show       show build command");
 
     exit(0);
 }
 
 void list()
 {
-    printf("Options:\n%s\n%s\n%s\n%s\n%s\n%s\nTests:\n",
-            "    all",
+    printf("Options:\n%s\n%s\n%s\n%s\nTests:\n",
             "    engine",
-            "    main",
             "    launcher",
             "    raylib",
-            "    test"
-          );
+            "    test [n]");
 
-    for (u32 i = 0; i < arr_len(str_tests); ++i)
-        printf("    %03d: %s\n", i, str_tests[i]);
+    str_tests = get_dir_contents(DIR_TESTS);
+    if (!str_tests.loaded)
+    {
+        mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
+        return;
+    }
+
+    str *str_tests_temp = NULL;
+    if (!mem_alloc((void*)&str_tests_temp, NAME_MAX, "str_tests_temp"))
+        return;
+
+    sort_str_buf(&str_tests);
+    for (u32 i = 0; i < str_tests.count; ++i)
+    {
+        if (!evaluate_extension(str_tests.entry[i]))
+            continue;
+
+        strip_extension(str_tests.entry[i], str_tests_temp);
+        printf("    %03d: %s\n", i, str_tests_temp);
+    }
+
+    mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
+    mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
     exit(0);
 }
 

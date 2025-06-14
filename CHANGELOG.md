@@ -36,6 +36,7 @@
     - added skybox colors for day/night cycle in renderer
 - simplified build tool
 - localized dependencies' headers and shared libraries
+- changed project name "minecraft.c" -> "heaven-hell_continuum"
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)

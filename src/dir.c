@@ -3,6 +3,7 @@
 #include <dirent.h>
 
 #include "engine/h/core.h"
+#include "engine/h/platform.h"
 #include "engine/h/dir.h"
 #include "engine/h/logger.h"
 #include "engine/h/memory.h"
@@ -58,7 +59,7 @@ void init_paths()
     snprintf(mc_c_grandpath, strlen(getenv(MC_C_HOME)) + 22,
             "%s/%sminecraft.c/", getenv(MC_C_HOME), MC_C_ROAMING); /* TODO: test if ROAMING is correct */
 
-    if (!make_dir(mc_c_grandpath, 0775))
+    if (!make_dir(mc_c_grandpath))
         LOGINFO("%s\n", "Main Directory Created 'HOME/minecraft.c/'");
     else
         LOGINFO("Main Directory Path '%s/%sminecraft.c/'\n", getenv("HOME"), MC_C_ROAMING);
@@ -77,7 +78,7 @@ int init_instance_directory(str *instance_name)
             break;
         }
 
-    if (make_dir(mc_c_subpath, 0775))
+    if (make_dir(mc_c_subpath))
     {
         LOGINFO("Instance Opened '%s'\n", instance_name);
         return 0;
@@ -96,7 +97,7 @@ int init_instance_directory(str *instance_name)
 
         if (!is_dir_exists(str_reg))
         {
-            make_dir(str_reg, 0775);
+            make_dir(str_reg);
             LOGINFO("%s\n", INSTANCE_DIR[i]);
         }
     }
@@ -109,7 +110,7 @@ void init_world_directory(str *world_name)
 {
     snprintf(mc_c_world_path, strlen(mc_c_subpath) + 8 + strlen(world_name),
             "%s%s%s/", mc_c_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
-    if (make_dir(mc_c_world_path, 0775))
+    if (make_dir(mc_c_world_path))
     {
         LOGINFO("World Loaded '%s'\n", world_name);
         return;
@@ -126,7 +127,7 @@ void init_world_directory(str *world_name)
                 strlen(mc_c_world_path) + strlen(WORLD_DIR[i]),
                 "%s%s", mc_c_world_path, WORLD_DIR[i]);
 
-        make_dir(str_reg, 0775);
+        make_dir(str_reg);
         LOGINFO("Directory Created '%s'\n", WORLD_DIR[i]);
     }
     LOGINFO("World Created '%s'\n", world_name);

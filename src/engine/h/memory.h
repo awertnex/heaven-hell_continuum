@@ -1,78 +1,70 @@
 #ifndef MC_C_ENGINE_MEMORY_H
 #define MC_C_ENGINE_MEMORY_H
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "defines.h"
-#include "logger.h"
 
 #define arr_len(arr)    ((u64)sizeof(arr) / sizeof(arr[0]))
 
 /* 
  * size = size in bytes;
  * name = pointer name (for logging);
+ * returns alloc status as boolean;
  */
-static inline b8 mem_alloc(void **x, u64 size, const str *name)
-{
-    if (*x != NULL) return TRUE;
-
-    *x = calloc(1, size);
-    if (*x == NULL)
-    {
-        LOGFATAL("%s[%p] %s\n", name, (void*)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
-        return FALSE;
-    }
-    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Allocated", size);
-
-    return TRUE;
-}
+b8 mem_alloc(void **x, u64 size, const str *name);
 
 /* 
  * memb = number of members;
  * size = member size in bytes;
  * name = pointer name (for logging);
+ * returns alloc status as boolean;
  */
-static inline b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
-{
-    if (*x != NULL) return TRUE;
+b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name);
 
-    *x = calloc(memb, size);
-    if (*x == NULL)
-    {
-        LOGFATAL("%s[%p] %s\n", name, (void*)(uintptr_t)(*x), "Memory Allocation Failed, Process Aborted");
-        return FALSE;
-    }
-    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Allocated", memb * size);
+/* 
+ * memb = number of members;
+ * size = member size in bytes;
+ * name = pointer name (for logging);
+ * returns alloc status as boolean;
+ */
+b8 mem_alloc_str_buf(str_buf *x, u64 memb, u64 size, const str *name);
 
-    return TRUE;
-}
+/* 
+ * size = size in bytes;
+ * name = pointer name (for logging);
+ * returns realloc status as boolean;
+ */
+b8 mem_realloc(void **x, u64 size, const str *name);
+
+/* 
+ * memb = number of members;
+ * size = member size in bytes;
+ * name = pointer name (for logging);
+ * returns realloc status as boolean;
+ */
+b8 mem_realloc_memb(void **x, u64 memb, u64 size, const str *name);
 
 /* 
  * size = size in bytes;
  * name = pointer name (for logging);
  */
-static inline void mem_free(void **x, u64 size, const str *name)
-{
-    if (*x == NULL) return;
+void mem_free(void **x, u64 size, const str *name);
 
-    memset(*x, 0, size);
-    free(*x);
-    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Unloaded", size);
-    *x = NULL;
-}
+/* 
+ * memb_size = member size in bytes (member count is taken care of);
+ * name = pointer name (for logging);
+ */
+void mem_free_str_buf(str_buf *x, u64 memb_size, const str *name);
 
 /* 
  * size = size in bytes;
  * name = pointer name (for logging);
  */
-static inline void mem_zero(void **x, u64 size, const str *name)
-{
-    if (*x == NULL) return;
+void mem_zero(void **x, u64 size, const str *name);
 
-    memset(*x, 0, size);
-    LOGTRACE("%s[%p] %s[%lldB]\n", name, (void*)(uintptr_t)(*x), "Memory Cleared", size);
-}
+void print_bits(u64 x, u8 bit_count);
+void swap_bits(char *c1, char *c2, u8 bit_count);
+void swap_strings(str *s1, str *s2);
+void sort_str_buf(str_buf *s_buf);
 
 #endif /* MC_C_ENGINE_MEMORY_H */
 

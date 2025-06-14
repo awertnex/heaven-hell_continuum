@@ -1,5 +1,15 @@
 #include "h/math.h"
 
+v3f32 add_v3f32(v3f32 a, v3f32 b)
+{
+    return (v3f32){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+v3f32 sub_v3f32(v3f32 a, v3f32 b)
+{
+    return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
+}
+
 f32 clamp_f32(f32 val, f32 min, f32 max)
 {
     return ((val < min) ? min : ((val > max) ? max : val));
@@ -8,6 +18,69 @@ f32 clamp_f32(f32 val, f32 min, f32 max)
 f64 clamp_f64(f64 val, f64 min, f64 max)
 {
     return ((val < min) ? min : ((val > max) ? max : val));
+}
+
+f32 len_v3f32(v3f32 v)
+{
+    return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+}
+
+v3f32 normalize_v3f32(v3f32 v)
+{
+    f32 len = len_v3f32(v);
+    if (len == 0)
+        return v3fzero;
+
+    return (v3f32){v.x / len, v.y / len, v.z / len};
+}
+
+u32 distance_v3i32(v3i32 a, v3i32 b)
+{
+    return powf(a.x - b.x, 2)
+        + powf(a.y - b.y, 2)
+        + powf(a.z - b.z, 2);
+}
+
+f32 distance_v3f32(v3f32 a, v3f32 b)
+{
+    return powf(a.x - b.x, 2.0f)
+        + powf(a.y - b.y, 2.0f)
+        + powf(a.z - b.z, 2.0f);
+}
+
+b8 is_in_range_i32(i32 pos, i32 start, i32 end)
+{
+    return ((pos - start) >= 0) & ((end - pos) >= 0);
+}
+
+b8 is_in_range_f32(f32 pos, f32 start, f32 end)
+{
+    return ((pos - start) >= 0) & ((end - pos) >= 0);
+}
+
+b8 is_in_area_f32(v2f32 pos, v2f32 start, v2f32 end)
+{
+    return
+        ((pos.x - start.x) >= 0) & ((end.x - pos.x) >= 0) &
+        ((pos.y - start.y) >= 0) & ((end.y - pos.y) >= 0);
+}
+
+b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end)
+{
+    return
+        ((pos.x - start.x) >= 0) & ((end.x - pos.x) >= 0) &
+        ((pos.y - start.y) >= 0) & ((end.y - pos.y) >= 0) &
+        ((pos.z - start.z) >= 0) & ((end.z - pos.z) >= 0);
+}
+
+b8 is_in_volume_f32_i32(v3f32 pos, v3i32 start, v3i32 end)
+{
+    v3i32 pos_i = (v3i32){floor(pos.x), floor(pos.y), floor(pos.z)};
+
+    return
+        ((pos_i.x - start.x) >= 0) & ((end.x - pos_i.x) >= 0) &
+        ((pos_i.y - start.y) >= 0) & ((end.y - pos_i.y) >= 0) &
+        ((pos_i.z - start.z) >= 0) & ((end.z - pos_i.z) >= 0);
 }
 
 m4f32 matrix_add(m4f32 a, m4f32 b)

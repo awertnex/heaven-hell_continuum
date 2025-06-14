@@ -331,20 +331,20 @@ void update_camera_perspective(Camera *camera, Projection *projection)
 
 /* ---- section: input ------------------------------------------------------ */
 
-//v2f64 get_mouse_position(Render *render, v2f64 *mouse_position) /* TODO: get mouse position */
-//{
-//    return (v2f64){0.0f, 0.0f};
-//}
-//
-//v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get mouse movement */
-//{
-//    v2f64 delta =
-//    {
-//        mouse_position.x - mouse_last->x,
-//        mouse_position.y - mouse_last->y
-//    };
-//
-//    *mouse_last = mouse_position;
-//    return delta;
-//}
+v2f64 get_mouse_position(Render *render, v2f64 *mouse_position) /* TODO: get mouse position */
+{
+    return (v2f64){0.0f, 0.0f};
+}
+
+v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get mouse movement */
+{
+    v2f64 delta =
+    {
+        mouse_position.x - mouse_last->x,
+        mouse_position.y - mouse_last->y
+    };
+
+    *mouse_last = mouse_position;
+    return delta;
+}
 

@@ -2,7 +2,7 @@
 #define MC_C_ENGINE_CORE_H
 
 #define MC_C_ENGINE_AUTHOR      "Author: Lily Awertnex"
-#define MC_C_ENGINE_NAME        "heaven-hell continuum"
+#define MC_C_ENGINE_NAME        "heaven-hell continuum engine"
 #define MC_C_ENGINE_VERSION     "0.1.0-beta"
 
 #define GLEW_STATIC
@@ -19,12 +19,12 @@
 typedef struct Render
 {
     GLFWwindow *window;
+    char title[128];
+    v2i32 size;
     GLFWimage icon;
     v2f64 mouse_position;
     v2f64 mouse_last;
     v2f64 mouse_delta;
-    v2i32 size;
-    char title[128];
 } Render;
 
 typedef struct Mesh

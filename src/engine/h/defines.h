@@ -28,8 +28,9 @@ typedef bool        b32;
 
 typedef struct str_buf
 {
-    str **entry;
+    b8 loaded;
     u64 count;
+    str **entry;
     str *buf;
 } str_buf;
 
