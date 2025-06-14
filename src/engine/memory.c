@@ -57,6 +57,7 @@ b8 mem_alloc_str_buf(str_buf *x, u64 memb, u64 size, const str *name)
         ++i;
     }
 
+    x->count = memb;
     x->loaded = TRUE;
     return TRUE;
 }
@@ -120,7 +121,7 @@ void mem_free_str_buf(str_buf *x, u64 memb_size, const str *name)
     {
         memset(x->buf, 0, x->count * memb_size);
         free(x->buf);
-        LOGTRACE("%s.buf[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), memb_size);
+        LOGTRACE("%s.buf[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), x->count * memb_size);
         x->buf = NULL;
     }
 
@@ -128,7 +129,7 @@ void mem_free_str_buf(str_buf *x, u64 memb_size, const str *name)
     {
         memset(x->entry, 0, x->count * memb_size);
         free(x->entry);
-        LOGTRACE("%s.entry[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), memb_size);
+        LOGTRACE("%s.entry[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), x->count);
         x->entry = NULL;
     }
     else return;

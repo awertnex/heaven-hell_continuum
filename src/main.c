@@ -1,14 +1,15 @@
-#include "engine/h/dir.h"
-#include "engine/h/logger.h"
-#include "engine/h/math.h"
-#include "engine/h/memory.h"
 #include "h/main.h"
-#include "h/dir.h"
+#include "engine/core.c"
+#include "engine/dir.c"
+#include "engine/logger.c"
+#include "engine/math.c"
+#include "engine/memory.c"
+#include "engine/text.c"
+
 #include "h/setting.h"
 #include "chunking.c"
-#include "keymaps.c"
-
 #include "dir.c"
+#include "keymaps.c"
 
 #define DIR_SHADER "./src/shaders/"
 
@@ -166,17 +167,20 @@ int main(void)
     /*temp*/ render.size = (v2i32){1080, 820};
 
     if (!RELEASE_BUILD)
-        LOGDEBUG("%s\n", "---- DEVELOPMENT BUILD ---------------------------------------------------------");
+        LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
 
     if (MODE_DEBUG)
         LOGDEBUG("%s\n", "Debugging Enabled");
 
-    init_paths();
+    if (init_paths() != 0)
+        return -1;
 
 #if RELEASE_BUILD
-    init_instance_directory("new_instance"); /* TODO: make editable instance name */
+    if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+        return -1;
 #else
-    init_instance_directory("test_instance");
+    if (init_instance_directory("test_instance") != 0)
+        return -1;
 #endif /* RELEASE_BUILD */
 
     if (0

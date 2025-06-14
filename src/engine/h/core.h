@@ -2,7 +2,7 @@
 #define ENGINE_CORE_H
 
 #define ENGINE_AUTHOR       "Author: Lily Awertnex"
-#define ENGINE_NAME         "heaven-hell continuum engine"
+#define ENGINE_NAME         "Heaven-Hell Continuum Engine"
 #define ENGINE_VERSION      "0.1.0-beta"
 
 #define GLEW_STATIC
@@ -11,6 +11,7 @@
 #include "../../../include/GLFW/glfw3.h"
 
 #include "defines.h"
+#include "platform.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 

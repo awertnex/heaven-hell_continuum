@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 
@@ -8,6 +9,7 @@
 #include "engine/h/logger.h"
 #include "engine/h/memory.h"
 #include "h/main.h"
+#include "h/platform.h"
 #include "h/dir.h"
 
 FILE *instance;
@@ -52,83 +54,117 @@ const str WORLD_DIR[][NAME_MAX] =
     "player_data/",
 };
 
-/* ---- functions ----------------------------------------------------------- */
-void init_paths()
-{
-#if RELEASE_MODE
-    snprintf(path_grandpath, strlen(getenv(ENV_HOME)) + 22,
-            "%s/%sHeaven-Hell Continuum/", getenv(ENV_HOME), ENV_ROAMING); /* TODO: test if ROAMING is correct */
+/* ---- section: functions -------------------------------------------------- */
 
-    if (!make_dir(path_grandpath))
-        LOGINFO("%s\n", "Main Directory Created 'HOME/Heaven-Hell Continuum/'");
+int init_paths()
+{
+    if (RELEASE_BUILD)
+        snprintf(path_grandpath, PATH_MAX,
+                "%s/%sHeaven-Hell Continuum/", getenv(PATH_HOME), PATH_ROAMING);
     else
-        LOGINFO("Main Directory Path '%s/%sHeaven-Hell Continuum/'\n", getenv("HOME"), ENV_ROAMING);
-#else
-    LOGINFO("%s\n", "Test Instance Directory Path 'test_instance/'");
-#endif /* RELEASE_MODE */
+        snprintf(path_grandpath, PATH_MAX,
+                "%sHeaven-Hell Continuum", get_path_bin_root());
+
+    check_slash(path_grandpath);
+
+    if (make_dir(path_grandpath) != 0)
+    {
+        LOGINFO("Main Directory Path '%s'\n", path_grandpath);
+        return 0;
+    }
+
+    if (!is_dir_exists(path_grandpath))
+    {
+        LOGFATAL("Main Directory Creation '%s' Failed, Process Aborted\n", path_grandpath);
+        return -1;
+    }
+
+    LOGINFO("Main Directory Created '%s'\n", path_grandpath);
+
+    str str_reg[PATH_MAX] = {0};
+    LOGINFO("%s\n", "Building Main Directory Structure:");
+    for (u8 i = 0; i < 255 && i < arr_len(GRANDPATH_DIR); ++i)
+    {
+        snprintf(str_reg, PATH_MAX, "%s%s", path_grandpath, GRANDPATH_DIR[i]);
+        make_dir(str_reg);
+
+        if (is_dir_exists(str_reg))
+            LOGINFO("'%s'\n", GRANDPATH_DIR[i]);
+        else
+        {
+            LOGFATAL("Directory Creation Failed '%s', Process Aborted\n", GRANDPATH_DIR[i]);
+            return -1;
+        }
+    }
+
+    LOGINFO("Main Directory Structure Created '%s'\n", path_grandpath);
+
+    return 0;
 }
 
-int init_instance_directory(str *instance_name)
+int init_instance_directory(const str *instance_name)
 {
-    snprintf(path_subpath, sizeof(path_subpath), "%s%s", path_grandpath, instance_name);
-    for (u16 i = 0; i < PATH_MAX - 1; ++i)
-        if (path_subpath[i + 1] == 0 && path_subpath[i] != '/')
-        {
-            strncat(path_subpath, "/", 2);
-            break;
-        }
-
-    if (make_dir(path_subpath))
+    if (!is_dir_exists(path_grandpath))
     {
+        LOGFATAL("Main Directory '%s' Not Found, Instance Creation Failed, Process Aborted\n", path_grandpath);
+        return -1;
+    }
+
+    snprintf(path_subpath, sizeof(path_subpath), "%s%s%s", path_grandpath, GRANDPATH_DIR[DIR_INSTANCES], instance_name);
+    check_slash(path_subpath);
+
+    if (make_dir(path_subpath) != 0)
+    {
+        /* do instance-opening stuff */
         LOGINFO("Instance Opened '%s'\n", instance_name);
         return 0;
     }
 
-    str str_reg[PATH_MAX] = {0};
     LOGINFO("Instance Directory Created '%s'\n", path_subpath);
-    LOGINFO("%s\n", "Building Instance Directory Structure:");
-    for (u8 i = 0;
-            (i < 255) && (i < arr_len(INSTANCE_DIR)) && (INSTANCE_DIR[i][0] != 0);
-            ++i)
-    {
-        snprintf(str_reg,
-                strlen(path_subpath) + strlen(INSTANCE_DIR[i]),
-                "%s%s", path_subpath, INSTANCE_DIR[i]);
 
-        if (!is_dir_exists(str_reg))
-        {
-            make_dir(str_reg);
-            LOGINFO("%s\n", INSTANCE_DIR[i]);
-        }
+    str str_reg[PATH_MAX] = {0};
+    LOGINFO("%s\n", "Building Instance Directory Structure:");
+    for (u8 i = 0; (i < 255) && (i < arr_len(INSTANCE_DIR)); ++i)
+    {
+        snprintf(str_reg, PATH_MAX, "%s%s", path_subpath, INSTANCE_DIR[i]);
+        make_dir(str_reg);
+
+        if (is_dir_exists(str_reg))
+            LOGINFO("'%s'\n", INSTANCE_DIR[i]);
+        else LOGERROR("Directory Creation Failed '%s'\n", INSTANCE_DIR[i]);
     }
+
     LOGINFO("Instance Created '%s'\n", instance_name);
     /* TODO: create instance binary and show in launcher */
+
     return 0;
 }
 
-void init_world_directory(str *world_name)
+void init_world_directory(const str *world_name)
 {
     snprintf(path_worldpath, strlen(path_subpath) + 8 + strlen(world_name),
-            "%s%s%s/", path_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
-    if (make_dir(path_worldpath))
+            "%s%s%s", path_subpath, INSTANCE_DIR[DIR_SAVES], world_name);
+
+    check_slash(path_worldpath);
+
+    if (make_dir(path_worldpath) != 0)
     {
         LOGINFO("World Loaded '%s'\n", world_name);
         return;
     }
 
-    str str_reg[PATH_MAX] = {0};
     LOGINFO("World Directory Created '%s'\n", world_name);
-    LOGINFO("%s\n", "Building World Directory Structure:");
-    for (u8 i = 0;
-            (i < 255) && (i < arr_len(WORLD_DIR)) && (WORLD_DIR[i][0] != 0);
-            ++i)
-    {
-        snprintf(str_reg,
-                strlen(path_worldpath) + strlen(WORLD_DIR[i]),
-                "%s%s", path_worldpath, WORLD_DIR[i]);
 
+    str str_reg[PATH_MAX] = {0};
+    LOGINFO("%s\n", "Building World Directory Structure:");
+    for (u8 i = 0; i < 255 && i < arr_len(WORLD_DIR); ++i)
+    {
+        snprintf(str_reg, PATH_MAX, "%s%s", path_worldpath, WORLD_DIR[i]);
         make_dir(str_reg);
-        LOGINFO("Directory Created '%s'\n", WORLD_DIR[i]);
+
+        if (is_dir_exists(str_reg))
+            LOGINFO("'%s'\n", WORLD_DIR[i]);
+        else LOGERROR("Directory Creation Failed '%s'\n", WORLD_DIR[i]);
     }
     LOGINFO("World Created '%s'\n", world_name);
 }

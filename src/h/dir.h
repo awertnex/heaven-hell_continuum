@@ -60,9 +60,9 @@ extern const str WORLD_DIR[][NAME_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void init_paths();
-int init_instance_directory(str *instance_name);
-void init_world_directory(str *world_name);
+int init_paths();
+int init_instance_directory(const str *instance_name);
+void init_world_directory(const str *world_name);
 
 #endif /* GAME_DIR_H */
 

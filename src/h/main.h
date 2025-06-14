@@ -2,11 +2,12 @@
 #define GAME_H
 
 #define GAME_AUTHOR         "Author: Lily Awertnex"
-#define GAME_NAME           "heaven-hell_continuum"
+#define GAME_NAME           "Heaven-Hell Continuum"
 #define GAME_VERSION        "0.2.0-alpha"
 
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
+#include "platform.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
