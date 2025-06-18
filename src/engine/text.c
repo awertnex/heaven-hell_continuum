@@ -15,7 +15,8 @@ int init_freetype(void)
     }
 
     FT_Face face;
-    str *font = "./resources/fonts/code_saver_regular.otf";
+    str font[PATH_MAX] = {0};
+    snprintf(font, PATH_MAX, "%sresources/fonts/code_saver_regular.otf", get_path_bin_root());
     if (FT_New_Face(ft, font, 0, &face))
     {
         LOGFATAL("Failed to Load Font '%s', Process Aborted\n", font);

@@ -11,15 +11,15 @@
 #include "dir.c"
 #include "keymaps.c"
 
-#define DIR_SHADER "./src/shaders/"
+#define DIR_SHADER "./shaders/"
 
 /* ---- section: declarations ----------------------------------------------- */
 
 b8 logging = 0;
 Render render =
 {
-    .size = {854, 480},
     .title = ENGINE_NAME": "ENGINE_VERSION,
+    .size = {854, 480},
 };
 
 Settings setting =
@@ -175,16 +175,8 @@ int main(void)
     if (init_paths() != 0)
         return -1;
 
-    if (RELEASE_BUILD)
-    {
-        if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
-            return -1;
-    }
-    else
-    {
-        if (init_instance_directory("test_instance") != 0)
-            return -1;
-    }
+    if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+        return -1;
 
     if (init_glfw() != 0 ||
             init_freetype() != 0 ||

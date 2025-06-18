@@ -34,7 +34,7 @@ int init_window(Render *render)
     }
 
     glfwMakeContextCurrent(render->window);
-    glfwSetWindowIcon(render->window, 1, &render->icon);
+    //glfwSetWindowIcon(render->window, 1, &render->icon); /* TODO: set window icon correctly */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     return 0;
 }

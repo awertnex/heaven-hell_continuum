@@ -7,21 +7,23 @@
 #include "src/engine/dir.c"
 #include "src/engine/logger.c"
 
-#define DIR_BIN         "bin/"
-#define DIR_BIN_TESTS   "bin/tests/"
+#define DIR_ROOT        "Heaven-Hell Continuum/"
+#define DIR_ROOT_TESTS  "tests/"
 #define DIR_SRC         "src/"
-#define DIR_LAUNCHER    "src/launcher/"
-#define DIR_TESTS       "src/tests/"
+#define DIR_LAUNCHER    DIR_SRC"launcher/"
+#define DIR_TESTS       DIR_SRC"tests/"
 #define CMD_MEMB        128
 
 #if defined(__linux__) || defined(__linux)
-#define COMPILER        "cc"
+#define PLATFORM        "linux/"
+#define COMPILER        "gcc"
 #define EXTENSION       ""
-str str_libs[][24] =
+str str_libs[][32] =
 {
     "-lm",
     //"-lpthread",
-    "-lglfw",
+    "-I ./include/",
+    "./lib/linux/libglfw.so",
     "-lGLEW",
     "-lGL",
     //"-lXrandr",
@@ -33,9 +35,10 @@ str str_libs[][24] =
     "-lfreetype",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#define PLATFORM        "win/"
 #define COMPILER        "gcc"
 #define EXTENSION       ".exe"
-str str_libs[6][24] =
+str str_libs[][24] =
 {
     "-lm",
     "-lglfw",
@@ -54,6 +57,7 @@ enum Flags
 
     FLAG_INCLUDE_RAYLIB =   0x01,
     FLAG_SHOW_CMD =         0x02,
+    FLAG_RAW_CMD =          0x04,
 }; /* Flags */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -64,9 +68,14 @@ str_buf cmd = {NULL};
 u64 cmd_pos = 0;
 str_buf str_tests = {NULL};
 glob_t glob_buf = {0};
+
+str *cmd_cp_lib[] = {"cp", "-rv", "lib/", DIR_ROOT, NULL};
+str *cmd_cp_shaders[] = {"cp", "-rv", "shaders/", DIR_ROOT, NULL};
+str *cmd_cp_resources[] = {"cp", "-rv", "resources/", DIR_ROOT, NULL};
+
 str str_main[NAME_MAX] = DIR_SRC"main.c";
 
-str str_cflags[][28] =
+str str_cflags[][32] =
 {
     "-std=c99",
     "-ggdb",
@@ -75,9 +84,10 @@ str str_cflags[][28] =
     "-Wno-missing-braces",
     "-Wpedantic",
     "-fno-builtin",
+    "-Wl,-rpath,$ORIGIN/lib/"PLATFORM,
 };
 
-str str_out[NAME_MAX] = DIR_BIN"heaven-hell_continuum";
+str str_out[NAME_MAX] = DIR_ROOT"hhc";
 
 /* ---- section: signatures ------------------------------------------------- */
 
@@ -85,14 +95,18 @@ u64 compare_argv(str *arg, int argc, str **argv);
 b8 evaluate_extension(const str *file_name);
 void strip_extension(const str *file_name, str *dest);
 void show_cmd();
+void raw_cmd();
 void push_cmd(str *string);
 void build_cmd();
-void push_glob(const str *pattern);
-void execute_cmd();
+void exec(str **command, const str *command_name);
 void fail_cmd();
 void build_test(int argc, char ** argv);
 void help();
 void list();
+/* 
+ * scrap function, for reference;
+ */
+//void push_glob(const str *pattern);
 
 /* ---- section: main ------------------------------------------------------- */
 
@@ -104,6 +118,7 @@ int main(int argc, char **argv)
     if (compare_argv("launcher", argc, argv))   state = STATE_LAUNCHER;
     if (compare_argv("raylib", argc, argv))     flags |= FLAG_INCLUDE_RAYLIB;
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
+    if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
     if (0
             || !is_dir_exists(DIR_SRC)
@@ -116,19 +131,19 @@ int main(int argc, char **argv)
     if (flags & FLAG_SHOW_CMD)
         show_cmd();
 
-    if (!is_dir_exists(DIR_BIN))
-    {
-        make_dir(DIR_BIN);
-        LOGINFO("Directory Created '%s'", DIR_BIN);
-    }
+    if (flags & FLAG_RAW_CMD)
+        raw_cmd();
 
-    if (!is_dir_exists(DIR_BIN_TESTS))
-    {
-        make_dir(DIR_BIN_TESTS);
-        LOGINFO("Directory Created '%s'", DIR_BIN_TESTS);
-    }
+    if (!is_dir_exists(DIR_ROOT))
+        make_dir(DIR_ROOT);
 
-    execute_cmd();
+    if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
+        make_dir(DIR_ROOT_TESTS);
+
+    exec(cmd_cp_lib, "cp lib/");
+    exec(cmd_cp_shaders, "cp shaders/");
+    exec(cmd_cp_resources, "cp resources/");
+    exec(cmd.entry, "build");
     mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
     return 0;
 }
@@ -172,6 +187,21 @@ void show_cmd()
         if (!cmd.entry[i]) break;
         printf("    %.3d: %s\n", i, cmd.entry[i]);
     }
+
+    if (!(flags & FLAG_RAW_CMD))
+        putchar('\n');
+}
+
+void raw_cmd()
+{
+    printf("\nRAW:\n");
+    for (u32 i = 0; i < CMD_MEMB; ++i)
+    {
+        if (!cmd.entry[i]) break;
+        printf("%s ", cmd.entry[i]);
+    }
+
+    printf("%s", "\n\n");
 }
 
 void push_cmd(str *string)
@@ -212,14 +242,14 @@ void build_cmd(int argc, char **argv)
 
             sort_str_buf(&str_tests);
             snprintf(str_main, NAME_MAX, "%s%s.c", DIR_TESTS, str_tests.entry[test_index]);
-            snprintf(str_out, NAME_MAX, "./%stest_%s%s", DIR_BIN_TESTS, str_tests.entry[test_index], EXTENSION);
+            snprintf(str_out, NAME_MAX, "./%stest_%s%s", DIR_ROOT_TESTS, str_tests.entry[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
         case STATE_LAUNCHER:
             snprintf(str_main, NAME_MAX, "%slauncher.c", DIR_LAUNCHER);
             push_cmd(str_main);
-            snprintf(str_out, NAME_MAX, "./%slauncher%s", DIR_BIN, EXTENSION);
+            snprintf(str_out, NAME_MAX, "./%slauncher%s", DIR_ROOT, EXTENSION);
             break;
 
         default:
@@ -267,38 +297,57 @@ void push_glob(const str *pattern)
     }
 }
 
-void execute_cmd()
+/*
+ * command = command;
+ * args = command arguments;
+ * command_name = command name (for logging);
+ */
+void exec(str **command, const str *command_name)
 {
     pid_t pid = fork();
     if (pid < 0)
     {
-        LOGERROR("%s\n", "Fork Failed, Process Aborted");
+        LOGERROR("'%s' Fork Failed, Process Aborted\n", command_name);
         goto cleanup;
     }
     else if (pid == 0)
     {
-        execvp(COMPILER, cmd.entry);
-        LOGERROR("%s\n", "Build Failed, Process Aborted");
+        execvp(command[0], (str *const *)command);
+        LOGERROR("'%s' Failed, Process Aborted\n", command_name);
         goto cleanup;
     }
 
     int status;
-    waitpid(pid, &status, 0);
+    if (waitpid(pid, &status, 0) == -1)
+    {
+        LOGFATAL("'%s' Waitpid Failed, Process Aborted", command_name);
+        goto cleanup;
+    }
 
     if (WIFEXITED(status))
     {
-        if (status == 0)
-            LOGINFO("Built '%s'\n", str_out);
-        LOGINFO("Build Exit Code: %d\n", WEXITSTATUS(status));
-
-        if (WEXITSTATUS(status))
+        int exit_code = WEXITSTATUS(status);
+        if (exit_code == 0)
+            LOGINFO("'%s' Success, Exit Code: %d\n", command_name, exit_code);
+        else
+        {
+            LOGINFO("'%s' Exit Code: %d\n", command_name, exit_code);
             goto cleanup;
+        }
+    }
+    else if (WIFSIGNALED(status))
+    {
+        int sig = WTERMSIG(status);
+        LOGFATAL("'%s' Terminated by Signal: %d, Process Aborted\n", command_name, sig);
+        goto cleanup;
     }
     else
     {
-        LOGERROR("%s\n", "Build Exited Abnormally, Process Aborted");
+        LOGERROR("'%s' Exited Abnormally, Process Aborted\n", command_name);
         goto cleanup;
     }
+
+    return;
 
 cleanup:
     fail_cmd();
@@ -316,8 +365,8 @@ void help()
     LOGINFO("Usage: ./build [options]...\nOptions:\n%s\n%s\n%s\n%s\n",
             "    help       print this help",
             "    list       list all available options and tests",
-            "    test [n]   build test 'n' from the 'list' command",
-            "    show       show build command");
+            "    show       show build command",
+            "    raw        show build command, raw");
 
     exit(0);
 }

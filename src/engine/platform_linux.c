@@ -11,7 +11,15 @@
 
 int make_dir(str *path)
 {
-    return mkdir(path, 0775);
+
+    int exit_code = mkdir(path, 0775);
+
+    if (exit_code == 0)
+        LOGTRACE("Directory Created '%s'\n", path);
+    else
+        LOGTRACE("Directory Exists '%s'\n", path);
+
+    return exit_code;
 }
 
 str *_get_path_absolute(const str *path, str *path_real)
@@ -26,6 +34,7 @@ b8 _get_path_bin_root(str *buf)
         LOGFATAL("%s\n", "'/proc/self/exe' Not Found, Process Aborted");
         return FALSE;
     }
+
     return TRUE;
 }
 
