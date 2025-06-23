@@ -22,8 +22,7 @@ str str_libs[][32] =
 {
     "-lm",
     //"-lpthread",
-    "-I ./include/",
-    "./lib/linux/libglfw.so",
+    "-lglfw",
     "-lGLEW",
     "-lGL",
     //"-lXrandr",
@@ -84,7 +83,7 @@ str str_cflags[][32] =
     "-Wno-missing-braces",
     "-Wpedantic",
     "-fno-builtin",
-    "-Wl,-rpath,$ORIGIN/lib/"PLATFORM,
+    "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
 
 str str_out[NAME_MAX] = DIR_ROOT"hhc";
