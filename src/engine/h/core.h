@@ -85,10 +85,9 @@ typedef struct Projection
 int init_glfw(void);
 int init_window(Render *render);
 int init_glew(void);
-int init_freetype(void);
 
-int init_shader(Shader *shader);
-int init_shader_program(ShaderProgram *program);
+int init_shader(const str *shaders_dir, Shader *shader);
+int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
 int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
 int generate_mesh_fbo(Mesh *mesh);

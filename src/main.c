@@ -11,8 +11,6 @@
 #include "dir.c"
 #include "keymaps.c"
 
-#define DIR_SHADER "./shaders/"
-
 /* ---- section: declarations ----------------------------------------------- */
 
 b8 logging = 0;
@@ -39,19 +37,18 @@ Camera camera = {0};
 Projection projection = {0};
 Uniform uniform = {0};
 
-
 ShaderProgram shader_fbo =
 {
     .name = "fbo",
     .vertex =
     {
-        .file_name = DIR_SHADER"fbo.vert",
+        .file_name = "fbo.vert",
         .type = GL_VERTEX_SHADER,
     },
 
     .fragment =
     {
-        .file_name = DIR_SHADER"fbo.frag",
+        .file_name = "fbo.frag",
         .type = GL_FRAGMENT_SHADER,
     },
 };
@@ -61,13 +58,13 @@ ShaderProgram shader_default =
     .name = "default",
     .vertex =
     {
-        .file_name = DIR_SHADER"default.vert",
+        .file_name = "default.vert",
         .type = GL_VERTEX_SHADER,
     },
 
     .fragment =
     {
-        .file_name = DIR_SHADER"default.frag",
+        .file_name = "default.frag",
         .type = GL_FRAGMENT_SHADER,
     },
 };
@@ -77,13 +74,13 @@ ShaderProgram shader_skybox =
     .name = "skybox",
     .vertex =
     {
-        .file_name = DIR_SHADER"skybox.vert",
+        .file_name = "skybox.vert",
         .type = GL_VERTEX_SHADER,
     },
 
     .fragment =
     {
-        .file_name = DIR_SHADER"skybox.frag",
+        .file_name = "skybox.frag",
         .type = GL_FRAGMENT_SHADER,
     },
 };
@@ -93,13 +90,13 @@ ShaderProgram shader_gizmo =
     .name = "gizmo",
     .vertex =
     {
-        .file_name = DIR_SHADER"gizmo.vert",
+        .file_name = "gizmo.vert",
         .type = GL_VERTEX_SHADER,
     },
 
     .fragment =
     {
-        .file_name = DIR_SHADER"gizmo.frag",
+        .file_name = "gizmo.frag",
         .type = GL_FRAGMENT_SHADER,
     },
 };
@@ -179,7 +176,7 @@ int main(void)
         return -1;
 
     if (init_glfw() != 0 ||
-            init_freetype() != 0 ||
+            init_text() != 0 ||
             init_window(&render) != 0 ||
             init_glew() != 0)
     {
@@ -216,10 +213,10 @@ int main(void)
 
     /* ---- section: graphics ----------------------------------------------- */
 
-    if (init_shader_program(&shader_skybox) != 0 ||
-            init_shader_program(&shader_default) != 0 ||
-            init_shader_program(&shader_gizmo) != 0 ||
-            init_shader_program(&shader_fbo) != 0 ||
+    if (init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
             init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0 ||
             init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0 ||
             init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
@@ -302,7 +299,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        init_shader_program(&shader_default);
+        init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default);
 
     if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
     {

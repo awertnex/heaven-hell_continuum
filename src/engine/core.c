@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -51,9 +52,12 @@ int init_glew(void)
 
 /* ---- section: shaders ---------------------------------------------------- */
 
-int init_shader(Shader *shader)
+int init_shader(const str *shaders_dir, Shader *shader)
 {
-    if ((shader->source = get_file_contents(shader->file_name)) == NULL)
+    str str_reg[PATH_MAX] = {0};
+    snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
+
+    if ((shader->source = get_file_contents(str_reg)) == NULL)
         return -1;
     if (shader->id)
         glDeleteShader(shader->id);
@@ -77,11 +81,11 @@ int init_shader(Shader *shader)
     return 0;
 }
 
-int init_shader_program(ShaderProgram *program)
+int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 {
-    if (init_shader(&program->vertex) != 0)
+    if (init_shader(shaders_dir, &program->vertex) != 0)
         return -1;
-    if (init_shader(&program->fragment) != 0)
+    if (init_shader(shaders_dir, &program->fragment) != 0)
         return -1;
     if (program->id)
         glDeleteProgram(program->id);

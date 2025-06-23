@@ -1,6 +1,5 @@
 #include "engine/core.c"
-#include "platform_linux.c"
-#include "platform_windows.c"
+#include "h/main.h"
 
 /* ---- declarations -------------------------------------------------------- */
 u32 state = 0;

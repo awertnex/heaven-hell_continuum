@@ -19,6 +19,6 @@ extern Glyph glyphs[GLYPH_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 int load_font(const str *file_name);
-int init_freetype(void);
+int init_text(const unsigned char *buffer);
 
 #endif /* ENGINE_TEXT_H */
