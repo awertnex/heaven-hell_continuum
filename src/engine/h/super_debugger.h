@@ -1,5 +1,5 @@
-#ifndef SUPER_DEBUGGER_H
-#include "../super_debugger_h"
+#ifndef ENGINE_SUPER_DEBUGGER_H
+#define ENGINE_SUPER_DEBUGGER_H
 
-#define SUPER_DEBUGGER_H
-#endif
+#endif /* ENGINE_SUPER_DEBUGGER_H */
+

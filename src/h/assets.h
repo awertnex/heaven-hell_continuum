@@ -1,10 +1,11 @@
-#ifndef ASSETS_H
+#ifndef GAME_ASSETS_H
+#define GAME_ASSETS_H
 
-#include "../dependencies/raylib-5.5/src/raylib.h"
-#include "defines.h"
+#include "../include/raylib.h"
+#include "../engine/h/defines.h"
 #include "dir.h"
 
-enum BlockStates
+enum BlockStateFlags
 {
     BLOCK_STATE_SOLID =     0x1,
     BLOCK_STATE_FLUID =     0x2,
@@ -15,57 +16,46 @@ enum BlockStates
     BLOCK_STATE_BOUNCY =    0x40,
     BLOCK_STATE_SLOW =      0x80,
     BLOCK_STATE_QUICK =     0x100,
-    BLOCK_STATE_ANIMATES =  0x200,
-}; /* BlockStates */
+    BLOCK_STATE_ANIMATED =  0x200,
+}; /* BlockStateFlags */
 
 enum BlockID
 {
-    Grass =             1,
-    Dirt =              2,
-    Stone =             3,
-    CobbleStone =       4,
-    MossStone =         5,
-    OakWoodLog =        6,
-    OakWoodPlanks =     7,
-    Sand =              8,
-    Glass =             9,
-    NetherRack =        10,
-    BedRock =           11,
-    GlowStone =         12,
-    Deepslate =         13,
-    CobbledDeepSlate =  14,
+    grass,
+    dirt,
+    stone,
+    sand,
+    glass,
 }; /* BlockID */
 
-typedef struct block
+typedef struct Block
 {
-    u8 blockId;
-    u16 blockState;
-    void *textureLayout;
-    void *texture;
-} block;
+    str *name;
+    u16 block_state;
+    void *texture_layout;
+    Texture texture;
+} Block;
 
-typedef struct texture_layout
+typedef struct TextureLayout
 {
     u8 px, py, pz;
     u8 nx, ny, nz;
-} texture_layout;
+} TextureLayout;
 
-// ---- declarations -----------------------------------------------------------
-extern u16 baseTextureSize;
-extern texture_layout OneSide;
-extern texture_layout TwoSide;
-extern texture_layout ThreeSide;
-extern texture_layout ThreeSideAlt;
-extern texture_layout FourSide;
+/* ---- section: declarations ----------------------------------------------- */
 
-extern Texture2D textureBlockGrass;
-extern Texture2D textureBlockCobblestone;
-extern Texture2D textureBlockCobbledDeepslate;
+extern u16 base_texture_size;
+extern TextureLayout one_side;
+extern TextureLayout two_side;
+extern TextureLayout three_side;
+extern TextureLayout three_side_alt;
+extern TextureLayout four_side;
+extern Block block[1023];               /* standard block array */
 
-// ---- signatures -------------------------------------------------------------
-void init_texture_layouts();
+/* ---- section: signatures ------------------------------------------------- */
+
 void init_textures();
 void unload_textures();
 
-#define ASSETS_H
-#endif
+#endif /* GAME_ASSETS_H */
+

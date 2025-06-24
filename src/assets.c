@@ -1,107 +1,73 @@
-/* ==== section table ==========================================================
-_section_blocks ================================================================
-_section_special_blocks ========================================================
-_section_items =================================================================
-_section_tools =================================================================
-*/
-
-#include <stdio.h>
-#include <string.h>
-
 #include "h/assets.h"
 #include "h/dir.h"
 
-// ---- variables --------------------------------------------------------------
-u16 baseTextureSize;
-texture_layout OneSide;
-texture_layout TwoSide;
-texture_layout ThreeSide;
-texture_layout ThreeSideAlt;
-texture_layout FourSide;
+#include "engine/h/math.h"
+#include "engine/h/memory.h"
 
-Texture2D textures[3] = {0};
-enum TextureNames
-{
-    TEXTURE_BLOCK_GRASS = 0,
-    TEXTURE_BLOCK_COBBLESTONE = 1,
-    TEXTURE_BLOCK_COBBLED_DEEPSLATE = 2,
-}; /* TextureNames */
-str block_names[3][NAME_MAX] =
-{
-    "grass_block_side.png",
-    "cobblestone.png",
-    "cobbled_deepslate.png",
-};
+/* ---- declarations -------------------------------------------------------- */
+u16 base_texture_size;
+TextureLayout one_side;
+TextureLayout two_side;
+TextureLayout three_side;
+TextureLayout three_side_alt;
+TextureLayout four_side;
+Block block[1023];              /* standard block array */
 
-// ---- functions --------------------------------------------------------------
-void init_texture_layouts()
-{
-    OneSide =       (texture_layout){0, 0,                  0,                      0,                  0,                  0};
-    TwoSide =       (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  baseTextureSize};
-    ThreeSide =     (texture_layout){0, 0,                  baseTextureSize,      0,                  0,                  (baseTextureSize*2)};
-    ThreeSideAlt =  (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  0,                  baseTextureSize,  (baseTextureSize*2)};
-    FourSide =      (texture_layout){0, baseTextureSize,  (baseTextureSize*2),  baseTextureSize,  baseTextureSize,  (baseTextureSize*3)};
-}
-
+/* ---- functions ----------------------------------------------------------- */
 void init_textures()
 {
-    baseTextureSize = 16;
+    base_texture_size = 16;
+    { /* ---- texture layouts ----------------------------------------------- */
+        one_side =          (TextureLayout){0, 0,                   0,                      0,                  0,                  0};
+        two_side =          (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  base_texture_size};
+        three_side =        (TextureLayout){0, 0,                   base_texture_size,      0,                  0,                  (base_texture_size*2)};
+        three_side_alt =    (TextureLayout){0, base_texture_size,   (base_texture_size*2),  0,                  base_texture_size,  (base_texture_size*2)};
+        four_side =         (TextureLayout){0, base_texture_size,   (base_texture_size*2),  base_texture_size,  base_texture_size,  (base_texture_size*3)};
+    } /* ---- texture layouts ----------------------------------------------- */
 
-    str string[PATH_MAX + NAME_MAX] = {0};
-    for (u8 i = 0; i < 3; ++i)
-    {
-        snprintf(string,
-                strlen(mc_c_subpath) + strlen(instanceDirStructure[MC_C_DIR_BLOCK]) + strlen(block_names[i]),
-                "%s%s%s",
-                mc_c_subpath, instanceDirStructure[MC_C_DIR_BLOCK], block_names[i]);
-
-        textures[i] = LoadTexture(string);
-    }
+    for (u16 i = 0; i < arr_len(block) && block[i].name; ++i)
+        block[i].texture =
+            LoadTexture(TextFormat("%s%s%s.png",
+                        path_subpath,
+                        INSTANCE_DIR[DIR_BLOCKS],
+                        block[i].name));
 }
 
 void unload_textures()
 {
-    for (u8 i = 0; i < 3; ++i)
-        UnloadTexture(textures[i]);
+    for (u16 i = 0; i < arr_len(block); ++i)
+        UnloadTexture(block[i].texture);
 }
 
-// =============================================================================
-// _section_blocks =============================================================
-// =============================================================================
-block BlockGrass = 
-{
-    Grass,
-    BLOCK_STATE_SOLID,
-    &ThreeSide,
-    &textures[TEXTURE_BLOCK_GRASS],
-}; /* Block Grass */
+/* ---- section_blocks ------------------------------------------------------ */
+Block block[1023] = {
+    { /* Block Grass */
+        .name = "grass",
+        .block_state = BLOCK_STATE_SOLID,
+        .texture_layout = &three_side,
+        .texture = 0,
+    }, /* Block Grass */
 
-block BlockCobbleStone =
-{
-    CobbleStone,
-    BLOCK_STATE_SOLID,
-    &OneSide,
-    &textures[TEXTURE_BLOCK_COBBLESTONE],
-}; /* Block Cobblestone */
+    { /* Block Dirt */
+        .name = "dirt",
+        .block_state = BLOCK_STATE_SOLID,
+        .texture_layout = &one_side,
+        .texture = 0,
+    }, /* Block Dirt */
 
-block BlockCobbledDeepslate =
-{
-    CobbledDeepSlate,
-    BLOCK_STATE_SOLID,
-    &OneSide,
-    &textures[TEXTURE_BLOCK_COBBLED_DEEPSLATE],
-}; /* Block Cobbled Deepslate */
+    { /* Block Stone */
+        .name = "stone",
+        .block_state = BLOCK_STATE_SOLID,
+        .texture_layout = &one_side,
+        .texture = 0,
+    }, /* Block Stone */
+};
 
-// =============================================================================
-// _section_special_blocks =====================================================
-// =============================================================================
+/* ---- section_special_blocks ---------------------------------------------- */
 
 
-// =============================================================================
-// _section_items ==============================================================
-// =============================================================================
+/* ---- section_items ------------------------------------------------------- */
 
 
-// =============================================================================
-// _section_tools ==============================================================
-// =============================================================================
+/* ---- section_tools ------------------------------------------------------- */
+

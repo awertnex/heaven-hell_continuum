@@ -1,305 +1,284 @@
-#include <math.h>
 #include <time.h>
 #include <sys/time.h>
 
+#include "engine/h/math.h"
 #include "h/logic.h"
 #include "h/chunking.h"
 
-// ---- variables --------------------------------------------------------------
-Vector2 mouseDelta;
-
-bool get_double_press(Player *player, KeyboardKey key)
+/* ---- variables ----------------------------------------------------------- */
+bool get_double_press(u32 key)
 {
-    static f64 doublePressStartTime = 0;
-    static KeyboardKey doublePressKey = KEY_NULL;
+    static f64 double_press_start_time = 0;
+    static u32 double_press_key = 0;
 
-    if (((player->state & STATE_DOUBLE_PRESS) && (f64)(get_time_ms() - doublePressStartTime >= 0.25f)) ||
-            key != doublePressKey)
-        player->state &= ~STATE_DOUBLE_PRESS;
+    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f))
+            || (key != double_press_key))
+        state &= ~FLAG_DOUBLE_PRESS;
     else
     {
-        doublePressKey = KEY_NULL;
-        return true;
+        double_press_key = 0;
+        return TRUE;
     }
 
-    if (!(player->state & STATE_DOUBLE_PRESS))
+    if (!(state & FLAG_DOUBLE_PRESS))
     {
-        player->state |= STATE_DOUBLE_PRESS;
-        doublePressKey = key;
-        doublePressStartTime = get_time_ms();
+        state |= FLAG_DOUBLE_PRESS;
+        double_press_key = key;
+        double_press_start_time = get_time_ms();
     }
-    return false;
+    return FALSE;
 }
 
-void update_player_states(Player *player)
+void update_player(Player *player)
 {
-    if (!(player->state & STATE_CAN_JUMP) && !(player->state & STATE_FLYING))
-        give_gravity(player);
+    player->chunk = (v3i16){
+            floorf((f32)player->pos.x / CHUNK_DIAMETER),
+            floorf((f32)player->pos.y / CHUNK_DIAMETER),
+            floorf((f32)player->pos.z / CHUNK_DIAMETER),
+        };
 
-    if (player->state & STATE_FLYING)
+    if ((lily.delta_chunk.x - lily.chunk.x)
+            || (lily.delta_chunk.y - lily.chunk.y)
+            || (lily.delta_chunk.z - lily.chunk.z))
+        state |= FLAG_CHUNK_BUF_DIRTY;
+
+    if (!(player->state & FLAG_CAN_JUMP)
+            && !(player->state & FLAG_FLYING))
+        update_gravity(player);
+
+    if (player->state & FLAG_FLYING)
     {
-        player->v = v3fzero;
-        player->movementSpeed = PLAYER_SPEED_FLY*dt;
-        player->camera.fovy = 80; //TODO: revise (add lerp)
+        player->vel = v3fzero;
+        player->movement_speed = PLAYER_SPEED_FLY * dt;
+        player->camera.fov = 80; /* TODO: revise (add lerp) */
     }
 
-    if (player->state & STATE_SNEAKING && !(player->state & STATE_FLYING))
-        player->movementSpeed = PLAYER_SPEED_SNEAK*dt;
-    else if (player->state & STATE_SPRINTING)
+    if ((player->state & FLAG_SNEAKING)
+            && !(player->state & FLAG_FLYING))
+        player->movement_speed = PLAYER_SPEED_SNEAK * dt;
+    else if (player->state & FLAG_SPRINTING)
     {
-        !(player->state & STATE_FLYING) ?
-            (player->movementSpeed = PLAYER_SPEED_SPRINT*dt,
-             player->camera.fovy = 75) :
-
-            (player->movementSpeed = PLAYER_SPEED_FLY_FAST*dt,
-             player->camera.fovy = 90);
+        if (!(player->state & FLAG_FLYING))
+        {
+            player->movement_speed = PLAYER_SPEED_SPRINT * dt;
+            player->camera.fov = 75;
+        }
+        else
+        {
+            player->movement_speed = PLAYER_SPEED_FLY_FAST * dt;
+            player->camera.fov = 90;
+        }
     }
-    else if (!(player->state & STATE_SNEAKING) && !(player->state & STATE_SPRINTING) && !(player->state & STATE_FLYING))
+    else if (!(player->state & FLAG_SNEAKING)
+            && !(player->state & FLAG_SPRINTING)
+            && !(player->state & FLAG_FLYING))
     {
-        player->movementSpeed = PLAYER_SPEED_WALK*dt;
-        player->camera.fovy = 70;
-    }
-
-    //TODO: revise (actually kill the player)
-    if (player->pos.z < WORLD_KILL_Z)
-    {
-        player->pos =
-            (Vector3){
-                player->spawnPoint.x,
-                player->spawnPoint.y,
-                player->spawnPoint.z,
-            };
-        player->v.z = 0;
+        player->movement_speed = PLAYER_SPEED_WALK * dt;
+        player->camera.fov = 70;
     }
 }
 
 void update_camera_movements_player(Player *player)
 {
-    if (!(stateMenuDepth) && !(state & STATE_SUPER_DEBUG))
-    {
-        player->yaw -= mouseDelta.x*setting.mouseSensitivity;
-        player->pitch -= mouseDelta.y*setting.mouseSensitivity;
-    }
+    if (state & FLAG_PARSE_CURSOR)
+        if (!(state_menu_depth) && !(state & FLAG_SUPER_DEBUG))
+        {
+            player->yaw -= (f32)mouse_delta.x * setting.mouse_sensitivity;
+            player->pitch -= (f32)mouse_delta.y * setting.mouse_sensitivity;
+        }
 
-    player->yaw = fmodf(player->yaw, 360.0f);
+    player->yaw = fmod(player->yaw, 360.0f);
     if (player->yaw < 0.0f) player->yaw += 360.0f;
     if (player->pitch > 90.0f) player->pitch = 90.0f;
     else if (player->pitch < -90.0f) player->pitch = -90.0f;
 
-    player->sinPitch =  sinf(player->pitch*MC_C_DEG2RAD);
-    player->cosPitch =  cosf(player->pitch*MC_C_DEG2RAD);
-    player->sinYaw =    sinf(player->yaw*MC_C_DEG2RAD);
-    player->cosYaw =    cosf(player->yaw*MC_C_DEG2RAD);
+    player->sin_pitch =  sin(player->pitch * DEG2RAD);
+    player->cos_pitch =  cos(player->pitch * DEG2RAD);
+    player->sin_yaw =    sin(player->yaw * DEG2RAD);
+    player->cos_yaw =    cos(player->yaw * DEG2RAD);
 
-    Vector3 playerCameraUp;
-    playerCameraUp =
-        (Vector3){
-            -player->cosYaw*player->sinPitch,
-            -player->sinYaw*player->sinPitch,
-            player->cosPitch,
-        };
+    v3f32 player_camera_up =
+    {
+        -player->cos_yaw * player->sin_pitch,
+        -player->sin_yaw * player->sin_pitch,
+        player->cos_pitch,
+    };
 
     switch (player->perspective)
     {
-        case 0: // ---- 1st person ---------------------------------------------
+        case 0: /* ---- 1st person ------------------------------------------ */
             player->camera.position =
-                (Vector3){player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
-                };
+                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             player->camera.target =
-                (Vector3){
-                    player->pos.x + ((player->cosYaw*player->cosPitch)*setting.reachDistance),
-                    player->pos.y + ((player->sinYaw*player->cosPitch)*setting.reachDistance),
-                    player->camera.position.z + (player->sinPitch*setting.reachDistance),
+                (v3f32){
+                    player->pos.x + ((player->cos_yaw * player->cos_pitch) * setting.reach_distance),
+                    player->pos.y + ((player->sin_yaw * player->cos_pitch) * setting.reach_distance),
+                    player->camera.position.z + (player->sin_pitch * setting.reach_distance),
                 };
-            player->camera.up = playerCameraUp;
+            player->camera.up = player_camera_up;
             break;
 
-        case 1: // ---- 3rd person back ----------------------------------------
+        case 1: /* ---- 3rd person back ------------------------------------- */
             player->camera.position =
-                (Vector3){
-                    player->pos.x - ((player->cosYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.y - ((player->sinYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.z + player->eyeHeight - (player->sinPitch*player->cameraDistance),
+                (v3f32){
+                    player->pos.x - ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
+                    player->pos.y - ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
+                    player->pos.z + player->eye_height - (player->sin_pitch * player->camera_distance),
                 };
             player->camera.target =
-                (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
-                };
-            player->camera.up = playerCameraUp;
+                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
+            player->camera.up = player_camera_up;
             break;
 
-        case 2: // ---- 3rd person front ---------------------------------------
+        case 2: /* ---- 3rd person front ------------------------------------ */
             player->camera.position =
-                (Vector3){
-                    player->pos.x + ((player->cosYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.y + ((player->sinYaw*player->cosPitch)*player->cameraDistance),
-                    player->pos.z + player->eyeHeight + (player->sinPitch*player->cameraDistance),
+                (v3f32){
+                    player->pos.x + ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
+                    player->pos.y + ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
+                    player->pos.z + player->eye_height + (player->sin_pitch * player->camera_distance),
                 };
             player->camera.target =
-                (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
-                };
-            player->camera.up = playerCameraUp;
+                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
+            player->camera.up = player_camera_up;
             break;
 
-            // TODO: make the stalker camera mode
-        case 3: // ---- stalker ------------------------------------------------
+            /* TODO: make the stalker camera mode */
+        case 3: /* ---- stalker --------------------------------------------- */
             player->camera.target =
-                (Vector3){
-                    player->pos.x, player->pos.y, player->pos.z + player->eyeHeight,
-                };
+                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             break;
 
-            // TODO: make the spectator camera mode
-        case 4: // ---- spectator ----------------------------------------------
+            /* TODO: make the spectator camera mode */
+        case 4: /* ---- spectator ------------------------------------------- */
+            break;
+    }
+
+    /* ---- camera_debug_mode ----------------------------------------------- */
+    if (!(state & FLAG_DEBUG)) return;
+    switch (player->perspective)
+    {
+        case 0: /* ---- 1st person ------------------------------------------ */
+        case 1: /* ---- 3rd person back ------------------------------------- */
+            player->camera_debug_info.position =
+                (v3f32){
+                    -player->cos_yaw * player->cos_pitch,
+                    -player->sin_yaw * player->cos_pitch,
+                    -player->sin_pitch,
+                };
+            player->camera_debug_info.target = v3fzero;
+            player->camera_debug_info.up = player_camera_up;
+            break;
+        case 2: /* ---- 3rd person front ------------------------------------ */
+            player->camera_debug_info.position =
+                (v3f32){
+                    player->cos_yaw * player->cos_pitch,
+                    player->sin_yaw * player->cos_pitch,
+                    player->sin_pitch,
+                };
+            player->camera_debug_info.target = v3fzero;
+            player->camera_debug_info.up = player_camera_up;
+            break;
+
+            /* TODO: make the stalker camera mode */
+        case 3: /* ---- stalker --------------------------------------------- */
+            break;
+
+            /* TODO: make the spectator camera mode */
+        case 4: /* ---- spectator ------------------------------------------- */
             break;
     }
 }
 
-void update_camera_movements_debug_info(Camera3D *camera, Player *player)
+void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
 {
-    if (player->perspective == 0 || player->perspective == 1)
-    {
-        camera->position =
-            (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->pitch*MC_C_DEG2RAD),
-            };
-        camera->up =
-            (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                cosf(player->pitch*MC_C_DEG2RAD),
-            };
-        camera->target = Vector3Zero();
-    }
-    else if (player->perspective == 2)
-    {
-        camera->position =
-            (Vector3){
-                cosf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                sinf(player->yaw*MC_C_DEG2RAD)*cosf(player->pitch*MC_C_DEG2RAD),
-                sinf(player->pitch*MC_C_DEG2RAD),
-            };
-        camera->target = Vector3Zero();
-        camera->up =
-            (Vector3){
-                -cosf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                -sinf(player->yaw*MC_C_DEG2RAD)*sinf(player->pitch*MC_C_DEG2RAD),
-                cosf(player->pitch*MC_C_DEG2RAD),
-            };
-    }
+    if ((i32)player_delta_target->x != floorf(player_target->x)
+            || (i32)player_delta_target->y != floorf(player_target->y)
+            || (i32)player_delta_target->z != floorf(player_target->z))
+        *player_delta_target =
+            (v3i32){
+                (i32)floorf(player_target->x),
+                (i32)floorf(player_target->y),
+                (i32)floorf(player_target->z)};
 }
 
-void kill_player(Player *player)
+void set_player_pos(Player *player, f32 x, f32 y, f32 z)
 {
-    *player =
-        (Player){
-            .v = {0.0f},
-            .m = 0.0f,
-            .movementSpeed = 0.0f,
-            .containerState = 0,
-            .state = STATE_DEAD,
-    };
+    player->pos = (v3f32){x, y, z};
+}
+
+void set_player_block(Player *player, i32 x, i32 y, i32 z)
+{
+    player->pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
+}
+
+void player_kill(Player *player)
+{
+    player->v = v3fzero;
+    player->m = 0.0f;
+    player->movement_speed = 0.0f;
+    player->container_state = 0;
+    player->state = FLAG_DEAD;
 }
 
 void player_respawn(Player *player)
 {
-    *player =
-        (Player){
-            .pos = (Vector3){
-                player->spawnPoint.x,
-                player->spawnPoint.y,
-                player->spawnPoint.z},
-            .state = 0,
-    };
+    player->pos =
+        (v3f32){
+            player->spawn_point.x,
+            player->spawn_point.y,
+            player->spawn_point.z
+        };
+    player->state = 0;
 }
 
-bool check_target_delta_position(Vector3 *coordinates, v3i32 *lastTarget)
+b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 {
-    if (lastTarget->x == floorf(coordinates->x) &&
-            lastTarget->y == floorf(coordinates->y) &&
-            lastTarget->z == floorf(coordinates->z))
-        return false;
-
-    lastTarget->x = (i32)floorf(coordinates->x);
-    lastTarget->y = (i32)floorf(coordinates->y);
-    lastTarget->z = (i32)floorf(coordinates->z);
-    return true;
-}
-
-bool is_range_within_ff(f32 *pos, f32 start, f32 end)
-{
-    if (*pos < start || *pos > end) return false;
-    return true;
-}
-
-bool is_range_within_v2ff(v2f32 *pos, v2f32 start, v2f32 end)
-{
-    if (pos->x < start.x || pos->x > end.x ||
-            pos->y < start.y || pos->y > end.y) return false;
-    return true;
-}
-
-bool is_range_within_v3fi(Vector3 *pos, v3i32 start, v3i32 end)
-{
-    if (pos->x < start.x || pos->x > end.x ||
-            pos->y < start.y || pos->y > end.y ||
-            pos->z < start.z || pos->z > end.z) return false;
-    return true;
-}
-
-b8 is_ray_intersect(Player *player) //TODO: make the player ray intersection
-{
-    if (targetChunk->i[player->lastTarget.z][player->lastTarget.y][player->lastTarget.x])
-        return true;
+    //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
+        //return true;
     return false;
 }
 
-void give_gravity(Player *player) // TODO: fix player gravity
+void update_gravity(Player *player) /* TODO: fix player gravity */
 {
-    if (player->state & STATE_FALLING)
-        player->v.z -= (PLAYER_JUMP_HEIGHT*GRAVITY*player->m*dt);
+    if (player->state & FLAG_FALLING)
+        player->v.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->m * dt);
     player->pos.z += player->v.z;
-    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); //temp
+    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); /*temp*/
 }
 
-/*
-void update_collision_static(Player *player) // TODO: make AABB collision work
+//void update_collision_static(player *player) /* TODO: make AABB collision work */
+    /*
 {
-    player->collisionCheckStart =
-        (Vector3){
-            floorf(player->pos.x - (player->scl.x/2.0f)) - 1,
-            floorf(player->pos.y - (player->scl.y/2.0f)) - 1,
+    player->collision_check_start = (v3f32){
+            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
+            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1,
             floorf(player->pos.z) - 1,
         };
 
-    player->collisionCheckEnd =
-        (Vector3){
+    player->collision_check_end = (v3f32){
             ceilf(player->scl.x) + 2,
             ceilf(player->scl.y) + 2,
             ceilf(player->scl.z) + 2,
         };
 
-    Chunk *targetChunk = get_chunk(&player->lastPos, &player->state, STATE_PARSE_COLLISION_FEET);
-    if ((player->state & STATE_PARSE_COLLISION_FEET) && player->pos.z > WORLD_BOTTOM)
+    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
+    if ((player->state & FLAG_PARSE_COLLISION_FEET)
+        && player->pos.z > WORLD_BOTTOM)
     {
-        if (targetChunk->i
+        if (target_chunk->i
                 [z - 1 - WORLD_BOTTOM]
-                [y - (targetChunk->pos.y*CHUNK_SIZE)]
-                [x - (targetChunk->pos.x*CHUNK_SIZE)] & NOT_EMPTY)
+                [y - (target_chunk->pos.y * CHUNK_SIZE)]
+                [x - (target_chunk->pos.x * CHUNK_SIZE)] & NOT_EMPTY)
         {
             player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
             player->v.z = 0;
-            if (player->state & STATE_FLYING) player->state &= ~STATE_FLYING;
-            player->state |= STATE_CAN_JUMP;
-            player->state &= ~STATE_FALLING;
-        }
-        else player->state |= STATE_FALLING;
+            if (player->state & FLAG_FLYING) player->state &= ~FLAG_FLYING;
+            player->state |= FLAG_CAN_JUMP;
+            player->state &= ~FLAG_FALLING;
+        } else player->state |= FLAG_FALLING;
     }
-    //TODO: move to new 'void parse_camera_collisions()'
-    player->cameraDistance = SETTING_CAMERA_DISTANCE_MAX;
+    // TODO: move to new 'void parse_camera_collisions()'
+    player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
 }
 */
 
@@ -307,14 +286,14 @@ f64 get_time_ms()
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
-    return tp.tv_sec + (f64)tp.tv_usec/1000000;
+    return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
-bool get_timer(f64 *timeStart, f32 interval)
+bool get_timer(f64 *time_start, f32 interval)
 {
-    if (get_time_ms() - *timeStart >= interval)
+    if (get_time_ms() - *time_start >= interval)
     {
-        *timeStart = get_time_ms();
+        *time_start = get_time_ms();
         return true;
     }
     return false;

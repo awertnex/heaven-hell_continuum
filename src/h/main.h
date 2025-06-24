@@ -1,40 +1,73 @@
-#ifndef MINECRAFT_H
+#ifndef GAME_H
+#define GAME_H
 
-#define MC_C_VERSION "Minecraft.c 0.1.4"
-#define MC_C_AUTHOR "Author: Lily Awertnex"
+#define GAME_AUTHOR         "Author: Lily Awertnex"
+#define GAME_NAME           "Heaven-Hell Continuum"
+#define GAME_VERSION        "0.2.0-alpha"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/core.h"
+#include "../engine/h/defines.h"
+#include "platform.h"
 
-// ---- platform layer ---------------------------------------------------------
-#define WIDTH 1280
-#define HEIGHT 720
+/* ---- section: definitions ------------------------------------------------ */
+
 #define MARGIN 20
 
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
-#define MODE_GRAY_BLOCKS    1
 
-// ---- declarations -----------------------------------------------------------
-extern f64 deltaTime;
-static f64 gameStartTime;
-static u64 gameTick;
-static u64 gameDays;
-#define dt GetFrameTime()
+#define THREAD_COUNT 2 /* TODO: use for multithreading */
 
-extern u16 state;
-extern u8 stateMenuDepth;
+typedef struct Uniform
+{
+    struct /* defaults */
+    {
+        GLint mat_perspective;
+        GLint camera_position;
+        GLint sun_rotation;
+        GLint sky_color;
+    } defaults;
 
-extern f64 skyboxMidDay;
-extern f64 skyboxBurn;
-extern f64 skyboxBurnBoost;
-extern f64 skyboxMidNight;
+    struct /* skybox */
+    {
+        GLint camera_position;
+        GLint mat_rotation;
+        GLint mat_orientation;
+        GLint mat_projection;
+        GLint time;
+        GLint sun_rotation;
+        GLint sky_color;
+    } skybox;
 
-// ---- signatures -------------------------------------------------------------
-int mc_mkdir(const char *path, u16 mode);
-void init_world();
+    struct /* gizmo */
+    {
+        GLint render_ratio;
+        GLint mat_target;
+        GLint mat_rotation;
+        GLint mat_orientation;
+        GLint mat_projection;
+    } gizmo;
 
-#define MINECRAFT_H
-#endif
+} Uniform;
+
+/* ---- section: declarations ----------------------------------------------- */
+
+extern Render render;
+extern u32 state;
+extern u8 state_menu_depth;
+
+extern f64 delta_time;
+extern f64 game_start_time;
+extern u64 game_tick;
+extern u64 game_days;
+#define dt (glfwGetTime() - game_start_time)
+
+extern Uniform uniform;
+
+/* ---- section: signatures ------------------------------------------------- */
+
+void init_world(str *str);
+
+#endif /* GAME_MAIN_H */
+
