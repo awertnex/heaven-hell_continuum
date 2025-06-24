@@ -18,11 +18,10 @@
     - [glew](https://github.com/nigels-com/glew/releases)
 
 
-## Download
+## Download (unzip and launch)
 - [v0.1.4_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-win64.zip)
 - [v0.1.4_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-linux-x86_64.tar.gz)
 - [v0.1.4_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-linux-x86_64.zip)
-- unzip and launch
 
 ## All Release Builds:
 - [Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
@@ -31,6 +30,7 @@
 ## Build From Source
 
 ### For development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`) before building.
+**Development build turns on TRACE and DEBUG logging**
 
 ### linux:
 
