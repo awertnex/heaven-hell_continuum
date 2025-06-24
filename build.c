@@ -12,11 +12,22 @@
 #define DIR_SRC         "src/"
 #define DIR_LAUNCHER    DIR_SRC"launcher/"
 #define DIR_TESTS       DIR_SRC"tests/"
-#define CMD_MEMB        128
+#define CMD_MEMB        64
+
+/* ---- section: c_standard ------------------------------------------------- */
+
+#ifndef __STDC_VERSION__
+#define __STDC_VERSION__ 0L
+#endif
+
+#define STD_C99 199901L
+
+const long C_STD = __STDC_VERSION__;
+
+/* ---- section: platform --------------------------------------------------- */
 
 #if defined(__linux__) || defined(__linux)
 #define PLATFORM        "linux/"
-#define COMPILER        "gcc"
 #define EXTENSION       ""
 str str_libs[][32] =
 {
@@ -35,7 +46,6 @@ str str_libs[][32] =
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define PLATFORM        "win/"
-#define COMPILER        "gcc"
 #define EXTENSION       ".exe"
 str str_libs[][24] =
 {
@@ -54,25 +64,25 @@ enum Flags
     STATE_TEST = 1,
     STATE_LAUNCHER,
 
-    FLAG_INCLUDE_RAYLIB =   0x01,
-    FLAG_SHOW_CMD =         0x02,
-    FLAG_RAW_CMD =          0x04,
+    FLAG_SHOW_CMD =         0x01,
+    FLAG_RAW_CMD =          0x02,
 }; /* Flags */
 
 /* ---- section: declarations ----------------------------------------------- */
 
 u8 state = 0;
 u16 flags = 0;
+str *str_bin_root = NULL;
+str str_src[PATH_MAX] = {0};
+str str_bin[PATH_MAX] = {0};
+str str_bin_new[PATH_MAX] = {0};
+str cmd_self_rebuild[PATH_MAX] = {0};
 str_buf cmd = {NULL};
 u64 cmd_pos = 0;
 str_buf str_tests = {NULL};
 glob_t glob_buf = {0};
 
-str *cmd_cp_lib[] = {"cp", "-rv", "lib/", DIR_ROOT, NULL};
-str *cmd_cp_shaders[] = {"cp", "-rv", "shaders/", DIR_ROOT, NULL};
-str *cmd_cp_resources[] = {"cp", "-rv", "resources/", DIR_ROOT, NULL};
-
-str str_main[NAME_MAX] = DIR_SRC"main.c";
+str str_main[PATH_MAX] = DIR_SRC"main.c";
 
 str str_cflags[][32] =
 {
@@ -86,22 +96,25 @@ str str_cflags[][32] =
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
 
-str str_out[NAME_MAX] = DIR_ROOT"hhc";
+str str_out[PATH_MAX] = DIR_ROOT"hhc";
 
 /* ---- section: signatures ------------------------------------------------- */
 
+void init_build(void);
+b8 is_source_changed(void);
+void rebuild_self(int argc, char **argv);
 u64 compare_argv(str *arg, int argc, str **argv);
 b8 evaluate_extension(const str *file_name);
 void strip_extension(const str *file_name, str *dest);
-void show_cmd();
-void raw_cmd();
-void push_cmd(str *string);
-void build_cmd();
-void exec(str **command, const str *command_name);
-void fail_cmd();
-void build_test(int argc, char ** argv);
-void help();
-void list();
+void show_cmd(void);
+void raw_cmd(void);
+void push_cmd(const str *string);
+void build_cmd(int argc, char **argv);
+void exec(str *const *command, const str *command_name);
+void clean_cmd(void);
+void fail_cmd(void);
+void help(void);
+void list(void);
 /* 
  * scrap function, for reference;
  */
@@ -111,19 +124,27 @@ void list();
 
 int main(int argc, char **argv)
 {
+    init_build();
+
+    if (C_STD != STD_C99)
+    {
+        LOGINFO("Rebuilding 'build%s' With -std=c99\n", EXTENSION);
+        rebuild_self(argc, argv);
+    }
+
+    if (is_source_changed())
+        rebuild_self(argc, argv);
+
     if (compare_argv("help", argc, argv))       help();
     if (compare_argv("list", argc, argv))       list();
     if (compare_argv("test", argc, argv))       state = STATE_TEST;
     if (compare_argv("launcher", argc, argv))   state = STATE_LAUNCHER;
-    if (compare_argv("raylib", argc, argv))     flags |= FLAG_INCLUDE_RAYLIB;
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
     if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
-    if (0
-            || !is_dir_exists(DIR_SRC)
-            || !is_dir_exists(DIR_TESTS)
-            || !is_dir_exists(DIR_LAUNCHER)
-       )
+    if (!is_dir_exists(DIR_SRC) ||
+            !is_dir_exists(DIR_TESTS) ||
+            !is_dir_exists(DIR_LAUNCHER))
         return -1;
 
     build_cmd(argc, argv);
@@ -139,15 +160,71 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    exec(cmd_cp_lib, "cp lib/");
-    exec(cmd_cp_shaders, "cp shaders/");
-    exec(cmd_cp_resources, "cp resources/");
+    exec((str *const []){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/");
+    exec((str *const []){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/");
+    exec((str *const []){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/");
     exec(cmd.entry, "build");
-    mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
+    clean_cmd();
     return 0;
 }
 
 /* ---- section: functions -------------------------------------------------- */
+
+void init_build(void)
+{
+    str_bin_root = get_path_bin_root();
+    if (str_bin_root == NULL)
+        fail_cmd();
+
+    snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
+    snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
+    snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
+    snprintf(cmd_self_rebuild, PATH_MAX, "gcc %s -std=c99 -fno-builtin -o %s", str_src, str_bin_new);
+}
+
+b8 is_source_changed(void)
+{
+    struct stat stats;
+    unsigned long mtime_src = 0;
+    unsigned long mtime_bin = 0;
+
+    if (stat(str_src, &stats) == 0)
+        mtime_src = stats.st_mtime;
+    else
+        LOGERROR("%s\n", "File 'build.c' Not Found");
+
+    if (stat(str_bin, &stats) == 0)
+        mtime_bin = stats.st_mtime;
+    else
+        LOGERROR("File 'build%s' Not Found\n", EXTENSION);
+
+    if (mtime_src && mtime_bin && mtime_src > mtime_bin)
+        return TRUE;
+
+    return FALSE;
+}
+
+void rebuild_self(int argc, char **argv)
+{
+    LOGINFO("%s\n", "Rebuilding Self..");
+    int self_rebuild_success = system(cmd_self_rebuild);
+    if (self_rebuild_success != -1 &&
+            WIFEXITED(self_rebuild_success) &&
+            WEXITSTATUS(self_rebuild_success) == 0)
+    {
+        LOGINFO("%s\n", "Self Rebuild Success");
+        remove(str_bin);
+        rename(str_bin_new, str_bin);
+
+        execvp(argv[0], (str *const *)argv);
+        LOGFATAL("'build%s' Failed, Process Aborted\n", EXTENSION);
+        fail_cmd();
+    }
+
+    LOGFATAL("%s\n", "Self-Rebuild Failed, Process Aborted");
+    fail_cmd();
+}
+
 u64 compare_argv(str *arg, int argc, char **argv)
 {
     if (argc == 1)
@@ -178,7 +255,7 @@ void strip_extension(const str *file_name, str *dest) // TODO: make this functio
     }
 }
 
-void show_cmd()
+void show_cmd(void)
 {
     printf("\nCMD:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
@@ -191,7 +268,7 @@ void show_cmd()
         putchar('\n');
 }
 
-void raw_cmd()
+void raw_cmd(void)
 {
     printf("\nRAW:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
@@ -203,21 +280,30 @@ void raw_cmd()
     printf("%s", "\n\n");
 }
 
-void push_cmd(str *string)
+void push_cmd(const str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
+    {
         LOGERROR("%s\n", "cmd Full");
+        return;
+    }
 
-    strncpy(cmd.entry[cmd_pos], string, NAME_MAX);
+    if (strlen(string) >= PATH_MAX - 1)
+    {
+        LOGERROR("string '%s' Too Long\n", string);
+        return;
+    }
+
+    strncpy(cmd.entry[cmd_pos], string, PATH_MAX);
     ++cmd_pos;
 }
 
 void build_cmd(int argc, char **argv)
 {
-    if (!mem_alloc_str_buf((str_buf*)&cmd, CMD_MEMB, NAME_MAX, "cmd"))
+    if (!mem_alloc_str_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
         fail_cmd();
 
-    push_cmd(COMPILER);
+    push_cmd("gcc");
     switch (state)
     {
         case STATE_TEST:
@@ -240,15 +326,15 @@ void build_cmd(int argc, char **argv)
 
 
             sort_str_buf(&str_tests);
-            snprintf(str_main, NAME_MAX, "%s%s.c", DIR_TESTS, str_tests.entry[test_index]);
-            snprintf(str_out, NAME_MAX, "./%stest_%s%s", DIR_ROOT_TESTS, str_tests.entry[test_index], EXTENSION);
+            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, str_tests.entry[test_index]);
+            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, str_tests.entry[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
         case STATE_LAUNCHER:
-            snprintf(str_main, NAME_MAX, "%slauncher.c", DIR_LAUNCHER);
+            snprintf(str_main, PATH_MAX, "%slauncher.c", DIR_LAUNCHER);
             push_cmd(str_main);
-            snprintf(str_out, NAME_MAX, "./%slauncher%s", DIR_ROOT, EXTENSION);
+            snprintf(str_out, PATH_MAX, "./%slauncher%s", DIR_ROOT, EXTENSION);
             break;
 
         default:
@@ -261,9 +347,6 @@ void build_cmd(int argc, char **argv)
         push_cmd(str_cflags[i]);
 
     /* ---- libs ------------------------------------------------------------ */
-    if (flags & FLAG_INCLUDE_RAYLIB)
-        push_cmd("-L:./lib/libraylib.a");
-
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
@@ -297,29 +380,28 @@ void push_glob(const str *pattern)
 }
 
 /*
- * command = command;
- * args = command arguments;
+ * command = command & args;
  * command_name = command name (for logging);
  */
-void exec(str **command, const str *command_name)
+void exec(str *const *command, const str *command_name)
 {
     pid_t pid = fork();
     if (pid < 0)
     {
-        LOGERROR("'%s' Fork Failed, Process Aborted\n", command_name);
+        LOGFATAL("'%s' Fork Failed, Process Aborted\n", command_name);
         goto cleanup;
     }
     else if (pid == 0)
     {
-        execvp(command[0], (str *const *)command);
-        LOGERROR("'%s' Failed, Process Aborted\n", command_name);
-        goto cleanup;
+        execvp(command[0], command);
+        LOGFATAL("'%s' Failed, Process Aborted\n", command_name);
+        _exit(EXIT_FAILURE);
     }
 
     int status;
     if (waitpid(pid, &status, 0) == -1)
     {
-        LOGFATAL("'%s' Waitpid Failed, Process Aborted", command_name);
+        LOGFATAL("'%s' Waitpid Failed, Process Aborted\n", command_name);
         goto cleanup;
     }
 
@@ -352,42 +434,54 @@ cleanup:
     fail_cmd();
 }
 
-void fail_cmd()
+void clean_cmd(void)
 {
+    mem_free((void*)&str_bin_root, PATH_MAX, "str_bin_root");
     mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
-    mem_free_str_buf((str_buf*)&cmd, NAME_MAX, "cmd");
-    exit(-1);
+    mem_free_str_buf(&cmd, PATH_MAX, "cmd");
 }
 
-void help()
+void fail_cmd(void)
 {
-    LOGINFO("Usage: ./build [options]...\nOptions:\n%s\n%s\n%s\n%s\n",
-            "    help       print this help",
-            "    list       list all available options and tests",
-            "    show       show build command",
-            "    raw        show build command, raw");
-
-    exit(0);
+    clean_cmd();
+    _exit(EXIT_FAILURE);
 }
 
-void list()
+void help(void)
 {
-    printf("Options:\n%s\n%s\n%s\n%s\nTests:\n",
-            "    engine",
-            "    launcher",
-            "    raylib",
-            "    test [n]");
+    LOGINFO("%s%s%s%s%s%s",
+            "Usage: ./build [options]...\n",
+            "Options:\n",
+            "    help       print this help\n",
+            "    list       list all available options and tests\n",
+            "    show       show build command\n",
+            "    raw        show build command, raw\n");
+
+    exit(EXIT_SUCCESS);
+}
+
+void list(void)
+{
+    printf("%s%s%s%s%s",
+            "Options:\n",
+            "    engine\n",
+            "    launcher\n",
+            "    test [n]\n",
+            "Tests:\n");
 
     str_tests = get_dir_contents(DIR_TESTS);
     if (!str_tests.loaded)
     {
-        mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
-        return;
+        LOGERROR("%s\n", "Fetching Tests Failed");
+        fail_cmd();
     }
 
     str *str_tests_temp = NULL;
     if (!mem_alloc((void*)&str_tests_temp, NAME_MAX, "str_tests_temp"))
-        return;
+    {
+        LOGERROR("%s\n", "Fetching Tests Failed");
+        fail_cmd();
+    }
 
     sort_str_buf(&str_tests);
     for (u32 i = 0; i < str_tests.count; ++i)
@@ -399,8 +493,8 @@ void list()
         printf("    %03d: %s\n", i, str_tests_temp);
     }
 
-    mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
     mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
-    exit(0);
+    clean_cmd();
+    exit(EXIT_SUCCESS);
 }
 
