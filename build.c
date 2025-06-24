@@ -42,7 +42,6 @@ str str_libs[][32] =
     //"-lXxf86vm",
     //"-ldl",
     //"-lXinerama",
-    "-lfreetype",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define PLATFORM        "win/"
@@ -55,7 +54,6 @@ str str_libs[][24] =
     "-lGL",
     "-lgdi32",
     "-lwinmm",
-    "-lfreetype",
 };
 #endif /* PLATFORM */
 
