@@ -24,6 +24,9 @@
 - [v0.1.4_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-linux-x86_64.zip)
 - unzip and launch
 
+## All Release Builds:
+- [Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
+
 
 ## Build From Source
 
