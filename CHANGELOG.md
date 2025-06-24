@@ -1,6 +1,6 @@
 # changelog
 
-## v0.2.0 (DD MMM 2025)
+## v0.2.0-alpha (DD Jun 2025)
 
 #### changes
 - added skybox colors for day/night cycle
@@ -37,6 +37,22 @@
 - simplified build tool
 - localized dependencies' headers and shared libraries
 - changed project name "minecraft.c" -> "heaven-hell_continuum"
+- added self-rebuild logic for build tool
+- made dynamically-linked libraries local, still dynamic
+- removed raylib
+- improved engine directory handling (src/engine/dir.c)
+- improved memory safety (src/engine/memory.c)
+- improved platform abstraction:
+    - (src/engine/platform_<platform>.c)
+    - (src/engine/h/platform.h)
+    - (src/platform_<platform>.c)
+    - (src/h/platform.h)
+- broke windows support, will fix in next version
+- made asset-fetching independent from user's current working directory:
+    - fetch '/proc/self/exe' on linux (the executed process' current directory)
+- improved logging:
+    - added log colors
+    - added LOGTRACE for extremely verbose logging
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
