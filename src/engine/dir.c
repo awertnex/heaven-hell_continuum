@@ -194,7 +194,7 @@ str *get_path_bin_root(void)
 
     path_bin_root[len] = 0;
     str *result = NULL;
-    if (!mem_alloc((void*)&result, len + 1, "path_bin_root"))
+    if (!mem_alloc((void*)&result, PATH_MAX, "path_bin_root"))
         return NULL;
 
     strncpy(result, path_bin_root, len);

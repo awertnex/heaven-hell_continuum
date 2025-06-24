@@ -41,21 +41,22 @@ b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
 
 b8 mem_alloc_str_buf(str_buf *x, u64 memb, u64 size, const str *name)
 {
-    str name_entry[256] = {0};
-    str name_buf[256] = {0};
-    snprintf(name_entry, 256, "%s.entry", name);
-    snprintf(name_buf, 256, "%s.buf", name);
+    str name_entry[NAME_MAX] = {0};
+    str name_buf[NAME_MAX] = {0};
+    snprintf(name_entry, NAME_MAX, "%s.entry", name);
+    snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (!mem_alloc((void*)&x->entry, memb * sizeof(str*), name_entry) ||
-            !mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
+    if (!mem_alloc_memb((void*)&x->entry, memb, sizeof(str*), name_entry))
         return FALSE;
 
-    u64 i = 0;
-    while (i < memb)
+    if (!mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
     {
-        x->entry[i] = x->buf + (i * size);
-        ++i;
+        mem_free((void*)&x->entry, memb * sizeof(str*), name_entry);
+        return FALSE;
     }
+
+    for (u64 i = 0; i < memb; ++i)
+        x->entry[i] = x->buf + (i * size);
 
     x->count = memb;
     x->loaded = TRUE;
@@ -111,32 +112,32 @@ void mem_free(void **x, u64 size, const str *name)
 
     memset(*x, 0, size);
     free(*x);
-    LOGTRACE("%s[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
+    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
     *x = NULL;
 }
 
 void mem_free_str_buf(str_buf *x, u64 memb_size, const str *name)
 {
+    if (x->entry != NULL)
+    {
+        memset(x->entry, 0, x->count * sizeof(str*));
+        free(x->entry);
+        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->entry), x->count * sizeof(str*));
+        x->entry = NULL;
+    }
+
     if (x->buf != NULL)
     {
         memset(x->buf, 0, x->count * memb_size);
         free(x->buf);
-        LOGTRACE("%s.buf[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), x->count * memb_size);
+        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->buf), x->count * memb_size);
         x->buf = NULL;
     }
-
-    if (x->entry != NULL)
-    {
-        memset(x->entry, 0, x->count * memb_size);
-        free(x->entry);
-        LOGTRACE("%s.entry[%p] Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x), x->count);
-        x->entry = NULL;
-    }
-    else return;
 
     x->count = 0;
     x->loaded = FALSE;
 }
+
 void mem_zero(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
