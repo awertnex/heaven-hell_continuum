@@ -19,9 +19,9 @@
 
 
 ## Download (unzip and launch)
-- [v0.1.4_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-win64.zip)
-- [v0.1.4_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-linux-x86_64.tar.gz)
-- [v0.1.4_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.1.4-alpha/heaven-hell_continuum-v0.1.4-linux-x86_64.zip)
+- [v0.2.0-alpha_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_win64.zip)
+- [v0.2.0-alpha_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.tar.gz)
+- [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.zip)
 
 ## All Release Builds:
 - [Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)

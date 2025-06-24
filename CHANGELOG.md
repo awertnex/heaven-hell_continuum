@@ -1,6 +1,6 @@
 # changelog
 
-## v0.2.0-alpha (DD Jun 2025)
+## v0.2.0-alpha (25 Jun 2025)
 
 #### changes
 - added skybox colors for day/night cycle
