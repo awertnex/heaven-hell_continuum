@@ -161,8 +161,8 @@ int main(int argc, char **argv)
         make_dir(DIR_ROOT_TESTS);
 
     exec((str *const []){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/");
-    exec((str *const []){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/");
     exec((str *const []){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/");
+    exec((str *const []){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/");
     exec(cmd.entry, "build");
     clean_cmd();
     return 0;
