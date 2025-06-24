@@ -176,7 +176,7 @@ int main(void)
         return -1;
 
     if (init_glfw() != 0 ||
-            init_text() != 0 ||
+            //init_text() != 0 || /*temp off*/
             init_window(&render) != 0 ||
             init_glew() != 0)
     {
