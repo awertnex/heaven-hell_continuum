@@ -10,7 +10,19 @@
 #include "defines.h"
 
 int make_dir(str *path);
+
+/*
+ * get real path;
+ * path = relative path;
+ * path_real = result/canonical path, ending with slash;
+ */
 str *_get_path_absolute(const str *path, str *path_real);
+
+/*
+ * get current path of binary/executable;
+ * assign allocated path string to buf;
+ * returns 0 on success;
+ */
 b8 _get_path_bin_root(str *buf);
 
 #endif /* ENGINE_PLATFORM_H */
