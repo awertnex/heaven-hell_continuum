@@ -1,17 +1,16 @@
-#ifndef SUPER_DEBUGGER_H
+#ifndef GAME_SUPER_DEBUGGER_H
+#define GAME_SUPER_DEBUGGER_H
 
-#include "../dependencies/raylib-5.5/src/raylib.h"
+#include "../include/raylib.h"
 
-#define VECTOR2_TYPES
-#define VECTOR3_TYPES
-#include "defines.h"
+#include "../engine/h/defines.h"
 #include "gui.h"
 
 #define SDB_ROW_HEIGHT  22
 #define SDB_BASE_SIZE   5
 #define SDB_BUTTON_SIZE 14
 
-typedef struct debug_rect
+typedef struct DebugRect
 {
     Rectangle corner_00;
     Rectangle corner_10;
@@ -24,19 +23,19 @@ typedef struct debug_rect
     Rectangle rect_center;
     Vector2 pos;
     Vector2 scl;
-} debug_rect;
+} DebugRect;
 
-// ---- declarations -----------------------------------------------------------
-extern Texture2D texture_super_debugger;
-extern debug_rect DebugRectangle;
+/* ---- declarations -------------------------------------------------------- */
+extern Texture texture_super_debugger;
+extern DebugRect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
-// ---- signatures -------------------------------------------------------------
-void init_super_debugger(v2f32 renderSize);
+/* ---- signatures ---------------------------------------------------------- */
+void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
-void draw_super_debugger(v2f32 renderSize);
+void draw_super_debugger(v2f32 render_size);
 
-#define SUPER_DEBUGGER_H
-#endif
+#endif /* GAME_SUPER_DEBUGGER_H */
+

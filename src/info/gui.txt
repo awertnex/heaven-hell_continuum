@@ -26,11 +26,6 @@ TODO: complete gui.txt
     layer = 2;
 }
 
---screen[mc_c_realms]
-{
-    layer = 2;
-}
-
 --screen[options_title]
 {
     layer = 2;

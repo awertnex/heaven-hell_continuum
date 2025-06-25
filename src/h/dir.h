@@ -1,50 +1,65 @@
-#ifndef DIR_H
+#ifndef GAME_DIR_H
+#define GAME_DIR_H
+
+#include <linux/limits.h>
 
 #include "main.h"
-#include "defines.h"
+#include "../engine/h/defines.h"
+#include "../engine/h/dir.h"
 
-// ---- from linux/limits.h ----------------------------------------------------
-#ifndef NAME_MAX
-    #define NAME_MAX    255
-#endif // NAME_MAX
-#ifndef PATH_MAX
-    #define PATH_MAX    4096
-#endif // PATH_MAX
+#define DIR_MAX     64
 
-enum DirectoryStructure
+/* ---- section: definitions ------------------------------------------------ */
+enum Directories
 {
-    MC_C_DIR_BIN = 0,
-    MC_C_DIR_SAVES = 1,
-    MC_C_DIR_RESOURCES = 2,
-    MC_C_DIR_TEXTURES = 3,
-    MC_C_DIR_BLOCK = 4,
-    MC_C_DIR_ENVIRONMENT = 5,
-    MC_C_DIR_ENTITY = 6,
-    MC_C_DIR_FONT = 7,
-    MC_C_DIR_GUI = 8,
-    MC_C_DIR_ITEM = 9,
-    MC_C_DIR_MISC = 10,
-    MC_C_DIR_PAINTING = 11,
-    MC_C_DIR_SOUNDS = 12,
-    MC_C_DIR_INFO = 13,
-    MC_C_DIR_SCREENSHOTS = 14,
+    /* ---- source directories ---------------------------------------------- */
+    DIR_SOURCE =            0,
+    DIR_SOURCE_SHADERS,
 
-    MC_C_DIR_ADVANCEMENTS = 0,
-    MC_C_DIR_CHUNKS = 1,
-    MC_C_DIR_ENTITIES = 2,
-}; /* DirectoryStructure */
+    /* ---- grandpath directories ------------------------------------------- */
+    DIR_ROOT_LIB =          0,
+    DIR_ROOT_SHADERS,
+    DIR_ROOT_INSTANCES,
 
-// ---- declarations -----------------------------------------------------------
-extern str mc_c_grandpath[PATH_MAX];
-extern str mc_c_subpath[PATH_MAX];
-extern str mc_c_launcher_path[PATH_MAX];
-extern str instanceDirStructure[17][NAME_MAX];
-extern str worldDirStructure[3][NAME_MAX];
+    /* ---- instance directories -------------------------------------------- */
+    DIR_MODELS =            0,
+    DIR_RESOURCES,
+    DIR_FONT,
+    DIR_LOGO,
+    DIR_TEXTURES,
+    DIR_BLOCKS,
+    DIR_ENVIRONMENT,
+    DIR_ENTITIES,
+    DIR_GUI,
+    DIR_ITEMS,
+    DIR_SHADERS,
+    DIR_AUDIO,
+    DIR_WORLDS,
+    DIR_SCREENSHOTS,
+    DIR_TEXT,
 
-// ---- signatures -------------------------------------------------------------
-void init_paths();
-void init_instance_directory(str *instanceName, u16 *state, u8 STATE_ACTIVE);
-void init_world_directory();
+    /* ---- world directories ----------------------------------------------- */
+    DIR_WORLD_CHUNKS =      0,
+    DIR_WORLD_ENTITIES,
+    DIR_WORLD_LOG,
+    DIR_WORLD_PLAYER_DATA,
+}; /* Directories */
 
-#define DIR_H
-#endif
+/* ---- section: declarations ----------------------------------------------- */
+
+extern str path_grandpath[PATH_MAX];
+extern str path_subpath[PATH_MAX];
+extern str path_launcherpath[PATH_MAX];
+extern str path_worldpath[PATH_MAX];
+extern str GRANDPATH_DIR[][NAME_MAX];
+extern str INSTANCE_DIR[][NAME_MAX];
+extern str WORLD_DIR[][NAME_MAX];
+
+/* ---- section: signatures ------------------------------------------------- */
+
+int init_paths();
+int init_instance_directory(const str *instance_name);
+void init_world_directory(const str *world_name);
+
+#endif /* GAME_DIR_H */
+

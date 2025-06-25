@@ -1,9 +1,7 @@
 #include <dirent.h>
 
-#include "../dependencies/raylib-5.5/src/raylib.h"
-
 #include "launcher.h"
-#include "../h/logger.h"
+#include "../engine/h/logger.h"
 #include "../h/dir.h"
 
 u8 state = 0;
@@ -14,9 +12,9 @@ struct dirent *drnt;
 
 void init_launcher()
 {
-    state |= STATE_ACTIVE;
+    state |= FLAG_ACTIVE;
     SetWindowState(FLAG_MSAA_4X_HINT);
-    InitWindow(render_size.x, render_size.y, "minecraft.c Launcher");
+    InitWindow(render_size.x, render_size.y, "Heaven-Hell Continuum Launcher");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     if (LOGGING_DEBUG)
@@ -26,11 +24,11 @@ void init_launcher()
     }
 }
 
-int main(void) // ---- main ----------------------------------------------------
+int main(void)
 {
     init_launcher();
 
-    while (state & STATE_ACTIVE)
+    while (state & FLAG_ACTIVE)
     {
         update_launcher_input();
         update_launcher();
@@ -51,13 +49,13 @@ void update_launcher()
     EndDrawing();
 }
 
-//TODO: evaluate instance
-void update_launcher_input()
+void update_launcher_input() /* TODO: evaluate instance */
 {
     if (IsKeyPressed(KEY_Q))
-        state &= ~STATE_ACTIVE;
+        state &= ~FLAG_ACTIVE;
 }
 
-void evaluate_instance(str *mc_c_subpath)
+void evaluate_instance(str *path)
 {
 }
+
