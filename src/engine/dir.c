@@ -4,10 +4,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <linux/limits.h>
 
 #include "h/platform.h"
 #include "h/dir.h"
+#include "h/limits.h"
 #include "h/logger.h"
 #include "h/memory.h"
 
@@ -150,6 +150,7 @@ u64 get_dir_entry_count(const str *dir_name)
 
     return count;
 }
+
 str *get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
@@ -176,9 +177,6 @@ str *get_path_absolute(const str *path)
     return result;
 }
 
-/*
- * returns calloc'd string of the executable's current directory, slash and null terminated;
- */
 str *get_path_bin_root(void)
 {
     str path_bin_root[PATH_MAX] = {0};
@@ -207,9 +205,6 @@ str *get_path_bin_root(void)
     return result;
 }
 
-/*
- * appends '/' onto path if there's none, null terminated;
- */
 void check_slash(str *path)
 {
     if (path == NULL)

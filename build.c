@@ -29,6 +29,7 @@ const long C_STD = __STDC_VERSION__;
 
 #define PLATFORM        "linux/"
 #define EXTENSION       ""
+#define COMPILER        "gcc"EXTENSION
 
 glob_t glob_buf = {0};
 
@@ -49,6 +50,8 @@ str str_libs[][32] =
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define PLATFORM        "win/"
 #define EXTENSION       ".exe"
+#define COMPILER        "gcc"EXTENSION
+
 str str_libs[][24] =
 {
     "-lm",
@@ -180,7 +183,7 @@ void init_build(void)
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(cmd_self_rebuild, PATH_MAX, "gcc %s -std=c99 -fno-builtin -o %s", str_src, str_bin_new);
+    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
 }
 
 b8 is_source_changed(void)
@@ -304,7 +307,7 @@ void build_cmd(int argc, char **argv)
     if (!mem_alloc_str_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
         fail_cmd();
 
-    push_cmd("gcc");
+    push_cmd(COMPILER);
     switch (state)
     {
         case STATE_TEST:
