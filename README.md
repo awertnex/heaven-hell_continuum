@@ -12,6 +12,7 @@
 - [glew](https://github.com/nigels-com/glew/releases)
 - [mingw (optional, for 'gcc' command)](https://www.mingw-w64.org/downloads/)
 - [gcc (optional)](https://www.sourceforge.net/projects/gcc-win64/) (setup instructions found below)
+- some mingw headers
 
 ### linux:
     - [glfw](https://github.com/glfw/glfw/releases)

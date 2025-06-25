@@ -1,6 +1,4 @@
-#include <sys/wait.h>
 #include <unistd.h>
-#include <glob.h>
 
 #include "src/engine/h/platform.h"
 #include "src/engine/memory.c"
@@ -27,8 +25,14 @@ const long C_STD = __STDC_VERSION__;
 /* ---- section: platform --------------------------------------------------- */
 
 #if defined(__linux__) || defined(__linux)
+#include <glob.h>
+
 #define PLATFORM        "linux/"
 #define EXTENSION       ""
+#define COMPILER        "gcc"EXTENSION
+
+glob_t glob_buf = {0};
+
 str str_libs[][32] =
 {
     "-lm",
@@ -42,11 +46,12 @@ str str_libs[][32] =
     //"-lXxf86vm",
     //"-ldl",
     //"-lXinerama",
-    "-lfreetype",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define PLATFORM        "win/"
 #define EXTENSION       ".exe"
+#define COMPILER        "gcc"EXTENSION
+
 str str_libs[][24] =
 {
     "-lm",
@@ -55,7 +60,6 @@ str str_libs[][24] =
     "-lGL",
     "-lgdi32",
     "-lwinmm",
-    "-lfreetype",
 };
 #endif /* PLATFORM */
 
@@ -73,14 +77,13 @@ enum Flags
 u8 state = 0;
 u16 flags = 0;
 str *str_bin_root = NULL;
-str str_src[PATH_MAX] = {0};
-str str_bin[PATH_MAX] = {0};
-str str_bin_new[PATH_MAX] = {0};
-str cmd_self_rebuild[PATH_MAX] = {0};
+str str_src[PATH_MAX] = {0};            /* path: ./build.c */
+str str_bin[PATH_MAX] = {0};            /* path: ./build%s, EXTENSION */
+str str_bin_new[PATH_MAX] = {0};        /* path: ./build_new%s, EXTENSION */
+str cmd_self_rebuild[PATH_MAX] = {0};   /* self-rebuild command to execute */
 str_buf cmd = {NULL};
 u64 cmd_pos = 0;
 str_buf str_tests = {NULL};
-glob_t glob_buf = {0};
 
 str str_main[PATH_MAX] = DIR_SRC"main.c";
 
@@ -110,7 +113,6 @@ void show_cmd(void);
 void raw_cmd(void);
 void push_cmd(const str *string);
 void build_cmd(int argc, char **argv);
-void exec(str *const *command, const str *command_name);
 void clean_cmd(void);
 void fail_cmd(void);
 void help(void);
@@ -160,10 +162,12 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    exec((str *const []){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/");
-    exec((str *const []){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/");
-    exec((str *const []){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/");
-    exec(cmd.entry, "build");
+    if (!exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
+            !exec((str *const[]){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/") ||
+            !exec((str *const[]){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/") ||
+            !exec(cmd.entry, "build"))
+        fail_cmd();
+
     clean_cmd();
     return 0;
 }
@@ -179,7 +183,7 @@ void init_build(void)
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(cmd_self_rebuild, PATH_MAX, "gcc %s -std=c99 -fno-builtin -o %s", str_src, str_bin_new);
+    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
 }
 
 b8 is_source_changed(void)
@@ -303,7 +307,7 @@ void build_cmd(int argc, char **argv)
     if (!mem_alloc_str_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
         fail_cmd();
 
-    push_cmd("gcc");
+    push_cmd(COMPILER);
     switch (state)
     {
         case STATE_TEST:
@@ -377,61 +381,6 @@ void push_glob(const str *pattern)
         strncpy(cmd.entry[cmd_pos], glob_buf.gl_pathv[i], NAME_MAX);
         ++cmd_pos;
     }
-}
-
-/*
- * command = command & args;
- * command_name = command name (for logging);
- */
-void exec(str *const *command, const str *command_name)
-{
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        LOGFATAL("'%s' Fork Failed, Process Aborted\n", command_name);
-        goto cleanup;
-    }
-    else if (pid == 0)
-    {
-        execvp(command[0], command);
-        LOGFATAL("'%s' Failed, Process Aborted\n", command_name);
-        _exit(EXIT_FAILURE);
-    }
-
-    int status;
-    if (waitpid(pid, &status, 0) == -1)
-    {
-        LOGFATAL("'%s' Waitpid Failed, Process Aborted\n", command_name);
-        goto cleanup;
-    }
-
-    if (WIFEXITED(status))
-    {
-        int exit_code = WEXITSTATUS(status);
-        if (exit_code == 0)
-            LOGINFO("'%s' Success, Exit Code: %d\n", command_name, exit_code);
-        else
-        {
-            LOGINFO("'%s' Exit Code: %d\n", command_name, exit_code);
-            goto cleanup;
-        }
-    }
-    else if (WIFSIGNALED(status))
-    {
-        int sig = WTERMSIG(status);
-        LOGFATAL("'%s' Terminated by Signal: %d, Process Aborted\n", command_name, sig);
-        goto cleanup;
-    }
-    else
-    {
-        LOGERROR("'%s' Exited Abnormally, Process Aborted\n", command_name);
-        goto cleanup;
-    }
-
-    return;
-
-cleanup:
-    fail_cmd();
 }
 
 void clean_cmd(void)
