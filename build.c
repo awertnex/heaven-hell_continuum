@@ -161,7 +161,8 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    if (!exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
+    if (!exec((str *const[]){"cp", "-v", "LICENSE", DIR_ROOT, NULL}, "cp lib/") ||
+            !exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
             !exec((str *const[]){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/") ||
             !exec((str *const[]){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/") ||
             !exec(cmd.entry, "build"))
