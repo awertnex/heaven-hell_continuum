@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include "h/limits.h"
 
-#include "src/engine/h/platform.h"
+#include "h/platform.h"
 #include "h/memory.h"
 #include "h/logger.h"
 
