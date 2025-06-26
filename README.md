@@ -6,17 +6,21 @@
 
 **a voxel game/engine written in C99, with minimal library usage if any.**
 
-## Dependencies (already bundled in download files)
-### windows:
-- [glfw](https://github.com/glfw/glfw/releases)
-- [glew](https://github.com/nigels-com/glew/releases)
-- [mingw (optional, for 'gcc' command)](https://www.mingw-w64.org/downloads/)
-- [gcc (optional)](https://www.sourceforge.net/projects/gcc-win64/) (setup instructions found below)
-- some mingw headers
+## Dependencies (already bundled)
+### Windows:
+- [glfw](https://github.com/glfw/glfw/releases) (headers modified)
+- [glew)](https://github.com/nigels-com/glew/releases) (headers modified)
+- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) (headers modified)
+- some mingw headers (modified)
+**optional dependencies:**
+- [mingw (for 'gcc' command)](https://www.mingw-w64.org/downloads/)
+- [gcc](https://www.sourceforge.net/projects/gcc-win64/) (setup instructions found below)
 
-### linux:
-    - [glfw](https://github.com/glfw/glfw/releases)
-    - [glew](https://github.com/nigels-com/glew/releases)
+
+### Linux:
+- [glfw)](https://github.com/glfw/glfw/releases) (headers modified)
+- [glew)](https://github.com/nigels-com/glew/releases) (headers modified)
+- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) (headers modified)
 
 
 ## Download (unzip and launch)
@@ -30,24 +34,29 @@
 
 ## Build From Source
 
-### For development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`) before building.
-**Development build turns on TRACE and DEBUG logging**
+**For Development Build: turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`) to enable TRACE and DEBUG logging.**
 
-### linux:
+### Build For Linux:
 
+1. clone the repo:
 ```bash
 git clone --depth=1 https://github.com/awertnex/heaven-hell_continuum.git
 cd heaven-hell_continuum/
+```
+2. build:
+```bash
 ./build
 ```
-if build successful, run 'Heaven-Hell Continuum' with `./Heaven-Hell\ Continuum/hhc`\
+3. if build successful:
+    - place `Heaven-Hell Continuum` directory anywhere you wish, that's your entire bundle.
+    - run 'Heaven-Hell Continuum': `./Heaven-Hell\ Continuum/hhc`.
 
 ### Build The Build Tool:
 ```bash
-gcc build.c -std=c99 -o build # -std=c99 optional, but preferred
+gcc build.c -o build
 ```
 
-**additional build commands**
+**additional build commands:**
 - `./build help`: show help
 - `./build engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine`
 - `./build launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher`
@@ -59,32 +68,41 @@ gcc build.c -std=c99 -o build # -std=c99 optional, but preferred
 - `./build test [n]`: build test [n]
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
 
+**NOTE: the build tool will rebuild itself before building the project if you either modified its source or didn't build it in C99.**
 
-### windows (using mingw and gcc):
+### Build For Windows (using mingw and gcc):
 
-**requirements**
+**requirements:**
 - a c compiler (gcc from `mingw-w64`)
     - download `gcc` for windows from [sourceforge/gcc-win64](https://www.sourceforge.net/projects/gcc-win64/)
     - extract it and move the extracted folder somewhere like `C:\` (preferrably) or `C:\Program Files`
     - add the path of the `bin` folder inside to the `path` environment variable
 
+1. clone the repo:
 ```command
 git clone --depth=1 https://github.com/awertnex/heaven-hell_continuum.git
 cd heaven-hell_continuum
+```
+2. build:
+```command
 ./build.exe
 ```
-if build successful, run 'Heaven-Hell Continuum' with `./Heaven-Hell\ Continuum/hhc.exe`
+3. if build successful:
+    - place `Heaven-Hell Continuum` folder anywhere you wish, that's your entire bundle.
+    - run 'Heaven-Hell Continuum': `./Heaven-Hell\ Continuum/hhc.exe`.
 
 ### Build The Build Tool:
 ```command
-gcc build.c -std=c99 -o build.exe
+gcc.exe build.c -o build.exe
 ```
 
-**additional build commands**
+**NOTE: the build tool will rebuild itself before building the project if you either modified its source or didn't build it in C99.**
+
+**additional build commands:**
 - `./build.exe help`: show help
 - `./build.exe engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine.exe`
 - `./build.exe launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher.exe`
-    - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances'
+    - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances/'
 - `./build.exe list`: list all available options and tests
     - this command searches the folder './src/tests' and loads all `.c` file names into an array to list
 - `./build.exe show`: show build command
