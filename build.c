@@ -93,7 +93,6 @@ str str_cflags[][32] =
     "-ggdb",
     "-Wall",
     "-Wextra",
-    "-Wno-missing-braces",
     "-Wpedantic",
     "-fno-builtin",
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
@@ -183,7 +182,7 @@ void init_build(void)
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
+    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -Wall -Wextra -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
 }
 
 b8 is_source_changed(void)
