@@ -18,7 +18,7 @@ typedef struct Glyph
 extern Glyph glyphs[GLYPH_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
-int load_font(const str *file_name);
 int init_text(const unsigned char *buffer);
+int load_font(const str *file_name);
 
 #endif /* ENGINE_TEXT_H */
