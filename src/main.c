@@ -178,7 +178,7 @@ int main(void)
     if (init_glfw() != 0 ||
             //init_text() != 0 || /*temp off*/
             init_window(&render) != 0 ||
-            init_glew() != 0)
+            init_glad() != 0)
     {
         glfwTerminate();
         return -1;

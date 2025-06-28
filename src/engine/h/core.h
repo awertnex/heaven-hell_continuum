@@ -5,8 +5,7 @@
 #define ENGINE_NAME         "Heaven-Hell Continuum Engine"
 #define ENGINE_VERSION      "0.1.0-beta"
 
-#define GLEW_STATIC
-#include "../../../include/glew_modified.h"
+#include "../../../include/glad/glad.h"
 #define GLFW_INCLUDE_NONE
 #include "../../../include/glfw3_modified.h"
 
@@ -84,7 +83,7 @@ typedef struct Projection
 
 int init_glfw(void);
 int init_window(Render *render);
-int init_glew(void);
+int init_glad(void);
 
 int init_shader(const str *shaders_dir, Shader *shader);
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);

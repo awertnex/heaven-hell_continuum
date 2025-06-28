@@ -8,15 +8,11 @@
 
 ## Dependencies (already bundled)
 
-### linux:
-- [glfw](https://github.com/glfw/glfw/releases) (headers modified)
-- [glew](https://github.com/nigels-com/glew/releases) (headers modified)
-- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
+- [glfw v3.5](https://github.com/glfw/glfw/releases) (headers modified)
+- [glad v0.1.36](https://github.com/dav1dde/glad-web) (header modified)
+- [stb_truetype.h v1.26](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
 
-### windows:
-- [glfw](https://github.com/glfw/glfw/releases) (headers modified)
-- [glew](https://github.com/nigels-com/glew/releases) (headers modified)
-- [stb_truetype.h](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
+### windows-specific:
 - some mingw headers (modified)
 
 ## Download (unzip and launch)

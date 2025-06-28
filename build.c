@@ -38,8 +38,6 @@ str str_libs[][32] =
     "-lm",
     //"-lpthread",
     "-lglfw",
-    "-lGLEW",
-    "-lGL",
     //"-lXrandr",
     //"-lXi",
     //"-lX11",
@@ -56,8 +54,6 @@ str str_libs[][24] =
 {
     "-lm",
     "-lglfw",
-    "-lGLEW",
-    "-lGL",
     "-lgdi32",
     "-lwinmm",
 };
@@ -90,7 +86,6 @@ str str_main[PATH_MAX] = DIR_SRC"main.c";
 str str_cflags[][32] =
 {
     "-std=c99",
-    "-ggdb",
     "-Wall",
     "-Wextra",
     "-Wpedantic",

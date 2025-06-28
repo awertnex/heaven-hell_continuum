@@ -40,13 +40,25 @@ int init_window(Render *render)
     return 0;
 }
 
-int init_glew(void)
+int init_glad(void)
 {
-    if (glewInit() != GLEW_OK)
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLAD, Process Aborted");
         return -1;
     }
+
+    if (GLVersion.major < 3 || (GLVersion.major == 3 && GLVersion.minor < 3))
+    {
+        LOGFATAL("OpenGL 3.3+ Required, Current Version '%d.%d', Process Aborted\n", GLVersion.major, GLVersion.minor);
+        return -1;
+    }
+
+    LOGINFO("OpenGL:    %s\n", glGetString(GL_VERSION));
+    LOGINFO("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOGINFO("Vendor:    %s\n", glGetString(GL_VENDOR));
+    LOGINFO("Renderer:  %s\n", glGetString(GL_RENDERER));
+
     return 0;
 }
 
