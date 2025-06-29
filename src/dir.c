@@ -28,7 +28,7 @@ str INSTANCE_DIR[][NAME_MAX] =
 {
     "models/",
     "resources/",
-    "resources/font/",
+    "resources/fonts/",
     "resources/logo/",
     "resources/textures/",
     "resources/textures/blocks/",

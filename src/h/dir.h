@@ -24,7 +24,7 @@ enum Directories
     /* ---- instance directories -------------------------------------------- */
     DIR_MODELS =            0,
     DIR_RESOURCES,
-    DIR_FONT,
+    DIR_FONTS,
     DIR_LOGO,
     DIR_TEXTURES,
     DIR_BLOCKS,
