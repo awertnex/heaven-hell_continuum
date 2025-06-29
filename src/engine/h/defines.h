@@ -8,189 +8,190 @@
 #define FALSE       0
 
 /* ---- data types ---------------------------------------------------------- */
-typedef uint8_t		u8;
-typedef uint16_t	u16;
-typedef uint32_t	u32;
-typedef uint64_t	u64;
+typedef uint8_t     u8;
+typedef uint16_t    u16;
+typedef uint32_t    u32;
+typedef uint64_t    u64;
 
-typedef int8_t		i8;
-typedef int16_t		i16;
-typedef int32_t		i32;
-typedef int64_t		i64;
+typedef int8_t      i8;
+typedef int16_t     i16;
+typedef int32_t     i32;
+typedef int64_t     i64;
 
-typedef float		f32;
-typedef double		f64;
+typedef float       f32;
+typedef double      f64;
 
-typedef char		str;
+typedef char        str;
 
 typedef bool        b8;
 typedef bool        b32;
 
-typedef struct str_buf
+typedef struct buf
 {
+    void **i;
+    void *buf;
+    u64 memb;
+    u64 size;
     b8 loaded;
-    u64 count;
-    str **entry;
-    str *buf;
-} str_buf;
+} buf;
 
 /* ---- vector2u ------------------------------------------------------------ */
 typedef struct v2u8
 {
-	u8 x, y;
+    u8 x, y;
 } v2u8;
 
 typedef struct v2u16
 {
-	u16 x, y;
+    u16 x, y;
 } v2u16;
 
 typedef struct v2u32
 {
-	u32 x, y;
+    u32 x, y;
 } v2u32;
 
 typedef struct v2u64
 {
-	u64 x, y;
+    u64 x, y;
 } v2u64;
 
 /* ---- vector2i ------------------------------------------------------------ */
 typedef struct v2i8
 {
-	i8 x, y;
+    i8 x, y;
 } v2i8;
 
 typedef struct v2i16
 {
-	i16 x, y;
+    i16 x, y;
 } v2i16;
 
 typedef struct v2i32
 {
-	i32 x, y;
+    i32 x, y;
 } v2i32;
 
 typedef struct v2i64
 {
-	i64 x, y;
+    i64 x, y;
 } v2i64;
 
 /* ---- vector2f ------------------------------------------------------------ */
 typedef struct v2f32
 {
-	f32 x, y;
+    f32 x, y;
 } v2f32;
 
 typedef struct v2f64
 {
-	f64 x, y;
+    f64 x, y;
 } v2f64;
 
 /* ---- vector3u ------------------------------------------------------------ */
 typedef struct v3u8
 {
-	u8 x, y, z;
+    u8 x, y, z;
 } v3u8;
 
 typedef struct v3u16
 {
-	u16 x, y, z;
+    u16 x, y, z;
 } v3u16;
 
 typedef struct v3u32
 {
-	u32 x, y, z;
+    u32 x, y, z;
 } v3u32;
 
 typedef struct v3u64
 {
-	u64 x, y, z;
+    u64 x, y, z;
 } v3u64;
 
 /* ---- vector3i ------------------------------------------------------------ */
 typedef struct v3i8
 {
-	i8 x, y, z;
+    i8 x, y, z;
 } v3i8;
 
 typedef struct v3i16
 {
-	i16 x, y, z;
+    i16 x, y, z;
 } v3i16;
 
 typedef struct v3i32
 {
-	i32 x, y, z;
+    i32 x, y, z;
 } v3i32;
 
 typedef struct v3i64
 {
-	i64 x, y, z;
+    i64 x, y, z;
 } v3i64;
 
 /* ---- vector3f ------------------------------------------------------------ */
 typedef struct v3f32
 {
-	f32 x, y, z;
+    f32 x, y, z;
 } v3f32;
 
 typedef struct v3f64
 {
-	f64 x, y, z;
+    f64 x, y, z;
 } v3f64;
 
 /* ---- vector4u ------------------------------------------------------------ */
 typedef struct v4u8
 {
-	u8 x, y, z, w;
+    u8 x, y, z, w;
 } v4u8;
 
 typedef struct v4u16
 {
-	u16 x, y, z, w;
+    u16 x, y, z, w;
 } v4u16;
 
 typedef struct v4u32
 {
-	u32 x, y, z, w;
+    u32 x, y, z, w;
 } v4u32;
 
 typedef struct v4u64
 {
-	u64 x, y, z, w;
+    u64 x, y, z, w;
 } v4u64;
 
 /* ---- vector4i ------------------------------------------------------------ */
 typedef struct v4i8
 {
-	i8 x, y, z, w;
+    i8 x, y, z, w;
 } v4i8;
 
 typedef struct v4i16
 {
-	i16 x, y, z, w;
+    i16 x, y, z, w;
 } v4i16;
 
 typedef struct v4i32
 {
-	i32 x, y, z, w;
+    i32 x, y, z, w;
 } v4i32;
 
 typedef struct v4i64
 {
-	i64 x, y, z, w;
+    i64 x, y, z, w;
 } v4i64;
 
 /* ---- vector3f ------------------------------------------------------------ */
 typedef struct v4f32
 {
-	f32 x, y, z, w;
+    f32 x, y, z, w;
 } v4f32;
 
 typedef struct v4f64
 {
-	f64 x, y, z, w;
+    f64 x, y, z, w;
 } v4f64;
 
 /* ---- matrix4f ------------------------------------------------------------ */
