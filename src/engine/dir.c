@@ -11,57 +11,57 @@
 #include "h/logger.h"
 #include "h/memory.h"
 
-b8 is_file_exists(const str *file_name)
+b8 is_file_exists(const str *file_path)
 {
     struct stat stats;
-    if (stat(file_name, &stats) == 0)
+    if (stat(file_path, &stats) == 0)
     {
         if (S_ISREG(stats.st_mode))
             return TRUE;
         else
         {
-            LOGERROR("'%s' is Not a Regular File\n", file_name);
+            LOGERROR("'%s' is Not a Regular File\n", file_path);
             return FALSE;
         }
     }
-    LOGERROR("File '%s' Not Found\n", file_name);
+    LOGERROR("File '%s' Not Found\n", file_path);
     return FALSE;
 }
 
-b8 is_dir(const str *name)
+b8 is_dir(const str *path)
 {
     struct stat stats;
-    if (stat(name, &stats) == 0 && S_ISDIR(stats.st_mode))
+    if (stat(path, &stats) == 0 && S_ISDIR(stats.st_mode))
         return TRUE;
     return FALSE;
 }
 
-b8 is_dir_exists(const str *dir_name)
+b8 is_dir_exists(const str *dir_path)
 {
     struct stat stats;
-    if (stat(dir_name, &stats) == 0)
+    if (stat(dir_path, &stats) == 0)
     {
         if (S_ISDIR(stats.st_mode))
             return TRUE;
         else
         {
-            LOGERROR("'%s' is Not a Directory\n", dir_name);
+            LOGERROR("'%s' is Not a Directory\n", dir_path);
             return FALSE;
         }
     }
-    LOGERROR("Directory '%s' Not Found\n", dir_name);
+    LOGERROR("Directory '%s' Not Found\n", dir_path);
     return FALSE;
 }
 
-str *get_file_contents(const str *file_name)
+void *get_file_contents(const str *file_path, u64 *file_len, const str *format)
 {
-    if (!is_file_exists(file_name))
+    if (!is_file_exists(file_path))
             return NULL;
 
     FILE *file = NULL;
-    if ((file = fopen(file_name, "r")) == NULL)
+    if ((file = fopen(file_path, format)) == NULL)
     {
-        LOGERROR("File '%s' Not Accessible\n", file_name);
+        LOGERROR("Opening File '%s' Failed\n", file_path);
         return NULL;
     }
 
@@ -72,9 +72,14 @@ str *get_file_contents(const str *file_name)
     str *file_contents = NULL;
     if (!mem_alloc((void*)&file_contents, len + 1, "file_contents"))
         goto cleanup;
+
     fread(file_contents, 1, len, file);
     file_contents[len] = 0;
     fclose(file);
+
+    if (file_len)
+        *file_len = len + 1;
+
     return file_contents;
 
 cleanup:
@@ -82,32 +87,28 @@ cleanup:
     return NULL;
 }
 
-/*
- * returns directory contents inside dir_name;
- * count = return number of entries inside directory;
- */
-str_buf get_dir_contents(const str *dir_name)
+buf get_dir_contents(const str *dir_path)
 {
-    if (!dir_name || !is_dir_exists(dir_name))
-        return (str_buf){NULL};
+    if (!dir_path || !is_dir_exists(dir_path))
+        return (buf){NULL};
 
-    str *dir_name_absolute = get_path_absolute(dir_name);
-    if (!dir_name_absolute)
+    str *dir_path_absolute = get_path_absolute(dir_path);
+    if (!dir_path_absolute)
         goto cleanup;
 
-    str dir_name_absolute_usable[PATH_MAX] = {0};
-    snprintf(dir_name_absolute_usable, PATH_MAX, "%s", dir_name_absolute);
+    str dir_path_absolute_usable[PATH_MAX] = {0};
+    snprintf(dir_path_absolute_usable, PATH_MAX, "%s", dir_path_absolute);
 
     DIR *dir = NULL;
     struct dirent *entry;
-    str_buf contents = {NULL};
+    buf contents = {NULL};
 
-    dir = opendir(dir_name_absolute);
+    dir = opendir(dir_path_absolute);
     while ((entry = readdir(dir)) != NULL)
-        ++contents.count;
+        ++contents.memb;
 
-    if (!contents.count
-            || !mem_alloc_str_buf(&contents, contents.count, NAME_MAX, "dir_contents"))
+    if (!contents.memb
+            || !mem_alloc_buf(&contents, contents.memb, NAME_MAX, "dir_contents"))
         goto cleanup;
 
     rewinddir(dir);
@@ -115,35 +116,36 @@ str_buf get_dir_contents(const str *dir_name)
     str path_full[PATH_MAX] = {0};
     while ((entry = readdir(dir)) != NULL)
     {
-        contents.entry[i] = contents.buf + (i * NAME_MAX);
-        memcpy(contents.entry[i], entry->d_name, NAME_MAX - 1);
-        snprintf(path_full, PATH_MAX, "%s%s", dir_name_absolute_usable, entry->d_name);
+        contents.i[i] = contents.buf + (i * NAME_MAX);
+        memcpy(contents.i[i], entry->d_name, NAME_MAX - 1);
+        snprintf(path_full, PATH_MAX, "%s%s", dir_path_absolute_usable, entry->d_name);
         if (is_dir(path_full))
-            check_slash(contents.entry[i]);
+            check_slash(contents.i[i]);
         ++i;
     }
 
     closedir(dir);
-    mem_free((void*)&dir_name_absolute, strlen(dir_name_absolute), "dir_name_absolute");
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute), "dir_path_absolute");
+
     return contents;
 
 cleanup:
     if (dir != NULL)
         closedir(dir);
-    mem_free((void*)&dir_name_absolute, strlen(dir_name_absolute), "dir_name_absolute");
-    mem_free((void*)&contents, sizeof(contents), "dir_contents");
-    return (str_buf){NULL};
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute), "dir_path_absolute");
+    mem_free_buf((void*)&contents, "dir_contents");
+    return (buf){NULL};
 }
 
-u64 get_dir_entry_count(const str *dir_name)
+u64 get_dir_entry_count(const str *dir_path)
 {
-    if (!dir_name || !is_dir_exists(dir_name))
+    if (!dir_path || !is_dir_exists(dir_path))
         return 0;
 
     DIR *dir = NULL;
     u64 count;
     struct dirent *entry;
-    dir = opendir(dir_name);
+    dir = opendir(dir_path);
 
     while ((entry = readdir(dir)) != NULL)
         ++count;
@@ -186,7 +188,7 @@ str *get_path_bin_root(void)
     u64 len = strlen(path_bin_root);
     if (len >= PATH_MAX - 1)
     {
-        LOGFATAL("Path Too Long '%s', Process Aborted", path_bin_root);
+        LOGFATAL("Path Too Long '%s', Process Aborted\n", path_bin_root);
         return NULL;
     }
 
@@ -211,7 +213,7 @@ void check_slash(str *path)
         return;
 
     u64 len = strlen(path);
-    if (len >= PATH_MAX)
+    if (len >= PATH_MAX - 1)
         return;
 
     if (path[len - 1] == '/')
