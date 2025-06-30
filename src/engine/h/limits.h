@@ -8,5 +8,7 @@
     #define NAME_MAX 255
 #endif /* PLATFORM */
 
+#define GLYPH_MAX   256
+
 #endif /* ENGINE_LIMITS_H */
 

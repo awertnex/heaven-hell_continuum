@@ -69,7 +69,7 @@ int init_shader(const str *shaders_dir, Shader *shader)
     str str_reg[PATH_MAX] = {0};
     snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
 
-    if ((shader->source = get_file_contents(str_reg)) == NULL)
+    if ((shader->source = get_file_contents(str_reg, NULL, "r")) == NULL)
         return -1;
     if (shader->id)
         glDeleteShader(shader->id);

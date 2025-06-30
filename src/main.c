@@ -156,10 +156,14 @@ void draw_world();
 void draw_hud();
 void draw_everything();
 
+void draw_text_example();
+
 /* ---- section: main ------------------------------------------------------- */
 
 int main(void)
 {
+    draw_text_example();
+
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
@@ -242,8 +246,8 @@ int main(void)
 
     bind_shader_uniforms();
 
-section_menu_title: /* ------------------------------------------------------ */
-section_menu_world: /* ------------------------------------------------------ */
+section_menu_title: /* ---- section: title menu ----------------------------- */
+section_menu_pause: /* ---- section: pause menu ----------------------------- */
 section_main: /* ---- section: main loop ------------------------------------ */
     generate_standard_meshes();
 
@@ -594,5 +598,56 @@ void draw_everything()
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, color_buf_hud);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+/* ---- section: code examples ---------------------------------------------- */
+
+void draw_text_example()
+{
+    Font font = {0};
+    str *text = "Heljo World!";
+
+    int width = 190, height = 32;
+    unsigned char screen[height][width];
+    float scale, offset_x = 2;
+
+    if (init_paths() != 0 ||
+            init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+        exit(EXIT_FAILURE);
+
+    printf("dir fonts: %s\n", INSTANCE_DIR[DIR_FONTS]);
+    str path[PATH_MAX] = {0};
+    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+
+    if (!load_font(&font, height, path))
+        exit(EXIT_FAILURE);
+
+    scale = stbtt_ScaleForPixelHeight(&font.info, height - 1);
+
+    for (u64 i = 0; i < strlen(text); ++i)
+    {
+        u8 c = text[i];
+        u8 c1 = text[i + 1];
+        u32 glyph_index = stbtt_FindGlyphIndex(&font.info, c);
+        u32 glyph_index1 = stbtt_FindGlyphIndex(&font.info, c1);
+        Glyph *g = &font.glyph[c];
+        void *bitmap_offset = font.bitmap + (i * font.size * font.size);
+        f32 x_shift = offset_x - (f32)floor(offset_x);
+
+        stbtt_MakeGlyphBitmapSubpixel(&font.info, &screen[font.baseline + g->y0][(i32)offset_x + g->x0], g->size.x, g->size.y, width, scale, scale, x_shift, 0.0f, glyph_index);
+        offset_x += (g->advance * scale);
+        if (c1)
+            offset_x += scale * stbtt_GetGlyphKernAdvance(&font.info, glyph_index, glyph_index1);
+    }
+
+    for (int j = 0; j < height; ++j)
+    {
+        for (int i = 0; i < width; ++i)
+            putchar(" .:ioVM@" [screen[j][i] >> 5]);
+        putchar('\n');
+    }
+
+    free_font(&font);
+    exit(0);
 }
 

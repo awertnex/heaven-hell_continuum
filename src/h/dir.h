@@ -10,6 +10,7 @@
 #define DIR_MAX     64
 
 /* ---- section: definitions ------------------------------------------------ */
+
 enum Directories
 {
     /* ---- source directories ---------------------------------------------- */
@@ -57,7 +58,8 @@ extern str WORLD_DIR[][NAME_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-int init_paths();
+int init_paths(void);
+int init_grandpath_directory(void);
 int init_instance_directory(const str *instance_name);
 void init_world_directory(const str *world_name);
 

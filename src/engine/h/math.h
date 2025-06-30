@@ -7,9 +7,7 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#ifndef PI
-    #define PI      3.14159265358979323846f
-#endif /* PI */
+#define PI          3.14159265358979323846
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
 

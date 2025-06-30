@@ -55,10 +55,9 @@ b8 mem_realloc_memb(void **x, u64 memb, u64 size, const str *name);
 void mem_free(void **x, u64 size, const str *name);
 
 /* 
- * memb_size = member size in bytes (member count is taken care of);
  * name = pointer name (for logging);
  */
-void mem_free_buf(buf *x, u64 memb_size, const str *name);
+void mem_free_buf(buf *x, const str *name);
 
 /* 
  * size = size in bytes;
