@@ -4,7 +4,6 @@
 #include "engine/logger.c"
 #include "engine/math.c"
 #include "engine/memory.c"
-#include "engine/text.c"
 
 #include "h/setting.h"
 #include "chunking.c"
@@ -162,8 +161,6 @@ void draw_text_example();
 
 int main(void)
 {
-    draw_text_example();
-
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
@@ -173,10 +170,8 @@ int main(void)
     if (MODE_DEBUG)
         LOGDEBUG("%s\n", "Debugging Enabled");
 
-    if (init_paths() != 0)
-        return -1;
-
-    if (init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+    if (init_paths() != 0 ||
+            init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
         return -1;
 
     if (init_glfw() != 0 ||
@@ -267,9 +262,9 @@ section_main: /* ---- section: main loop ------------------------------------ */
     }
 
 cleanup: /* ----------------------------------------------------------------- */
-    delete_mesh(&mesh_skybox);
-    delete_mesh(&mesh_cube_of_happiness);
-    delete_mesh(&mesh_gizmo);
+    free_mesh(&mesh_skybox);
+    free_mesh(&mesh_cube_of_happiness);
+    free_mesh(&mesh_gizmo);
     glDeleteFramebuffers(1, &fbo_skybox);
     glDeleteFramebuffers(1, &fbo_world);
     glDeleteFramebuffers(1, &fbo_hud);
@@ -600,7 +595,7 @@ void draw_everything()
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-/* ---- section: code examples ---------------------------------------------- */
+/* ---- section: testing ---------------------------------------------------- */
 
 void draw_text_example()
 {
@@ -611,11 +606,7 @@ void draw_text_example()
     unsigned char screen[height][width];
     float scale, offset_x = 2;
 
-    if (init_paths() != 0 ||
-            init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
-        exit(EXIT_FAILURE);
-
-    printf("dir fonts: %s\n", INSTANCE_DIR[DIR_FONTS]);
+    // if init_paths() and init_instance_dir() weren't called before this, the font path will depend on current working directory, else, the font must exist in $ORIGIN/instances/<instance>/resources/fonts/
     str path[PATH_MAX] = {0};
     snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
 
@@ -623,7 +614,6 @@ void draw_text_example()
         exit(EXIT_FAILURE);
 
     scale = stbtt_ScaleForPixelHeight(&font.info, height - 1);
-
     for (u64 i = 0; i < strlen(text); ++i)
     {
         u8 c = text[i];
