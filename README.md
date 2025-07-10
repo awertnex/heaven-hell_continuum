@@ -108,6 +108,9 @@ cd heaven-hell_continuum
 gcc.exe build.c -o build.exe
 ```
 
+## Contributing:
+I'm currently not accepting contributions at this early stage, maybe when I have something more stable and actually usable
+
 ## Contributors:
 - [sofia](https://github.com/EdgySofia666): alpha-testing on windows
 
