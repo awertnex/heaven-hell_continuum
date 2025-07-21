@@ -4,7 +4,7 @@ uniform vec3 camera_position;
 uniform vec3 sun_rotation; // TODO: use sun_rotation
 uniform vec3 sky_color;
 in vec3 vertex_position;
-out vec4 FragColor;
+out vec4 color;
 
 float get_distance(vec3 a, vec3 b)
 {
@@ -16,6 +16,7 @@ float distance;
 float sky_influence = 0.13;
 float sky_brightness;
 float flashlight;
+
 void main()
 {
     distance = get_distance(vertex_position, camera_position);
@@ -28,7 +29,7 @@ void main()
             (base_color.b * sky_color.b)) / sky_brightness;
     flashlight /= distance;
 
-    FragColor = (((base_color * (1.0 + sky_brightness)) + flashlight) / distance) +
+    color = (((base_color * (1.0 + sky_brightness)) + flashlight) / distance) +
         (vec4(sky_color, 1.0) * sky_influence);
 }
 
