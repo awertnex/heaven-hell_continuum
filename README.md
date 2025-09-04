@@ -6,6 +6,16 @@
 
 **a voxel game/engine written in C99, with minimal library usage if any.**
 
+
+## Download (unzip and launch)
+
+Format | Linux (latest) | Windows (latest)
+--- | --- | ---
+tar | [v0.2.0-alpha_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.tar.gz)
+zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.zip) | [v0.2.0-alpha_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_win64.zip)
+[All Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
+
+
 ## Dependencies (already bundled)
 
 - [glfw v3.5](https://github.com/glfw/glfw/releases) (headers modified)
@@ -17,14 +27,6 @@
 
 ### windows-specific:
 - some mingw headers (modified)
-
-## Download (unzip and launch)
-
-Platform | Zip | Tar
---- | --- | ---
-Linux (latest) | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.zip) | [v0.2.0-alpha_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.tar.gz)
-Windows (latest) | [v0.2.0-alpha_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_win64.zip)
-[All Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
 
 
 ## Build From Source
