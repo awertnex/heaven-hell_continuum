@@ -211,8 +211,6 @@ b8 generate_texture_atlas(GLuint *id, const GLint format, u32 size, void *buffer
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glBindTexture(GL_TEXTURE_2D, *id);
     glTexImage2D(GL_TEXTURE_2D, 0, format, size, size, 0, format, GL_UNSIGNED_BYTE, buffer);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -298,7 +296,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     f32 cyaw = camera->cos_yaw;
 
     f32 ratio = camera->ratio;
-    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
+    f32 fovy = 1.0f / tanf((camera->fovy / 2.0f) * DEG2RAD);
     f32 far = camera->far;
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
@@ -357,8 +355,8 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- projection ------------------------------------------------------ */
     projection->projection =
         (m4f32){
-            fov / ratio,    0.0f,   0.0f,   0.0f,
-            0.0f,           fov,    0.0f,   0.0f,
+            fovy / ratio,   0.0f,   0.0f,   0.0f,
+            0.0f,           fovy,   0.0f,   0.0f,
             0.0f,           0.0f,   clip,  -1.0f,
             0.0f,           0.0f,   offset, 0.0f,
         };
@@ -417,6 +415,10 @@ b8 load_font(Font *font, u32 size, const str *font_path)
     if (!mem_alloc_memb((void*)&font->bitmap, GLYPH_MAX, size * size, font_path))
         goto cleanup;
 
+    u8 *canvas = {NULL};
+    if (!mem_alloc((void*)&canvas, size * size, "font_glyph_canvas"))
+        goto cleanup;
+
     f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
     stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
     snprintf(font->path, PATH_MAX, "%s", font_path);
@@ -431,28 +433,43 @@ b8 load_font(Font *font, u32 size, const str *font_path)
             continue;
 
         Glyph *g = &font->glyph[i];
-        void *bitmap_offset = font->bitmap + (i * size * size);
 
         stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
         stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, scale, scale, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
         g->size.x = g->x1 - g->x0;
         g->size.y = g->y1 - g->y0;
-        stbtt_MakeGlyphBitmapSubpixel(&font->info, bitmap_offset, size, size, g->size.x, scale, scale, 0.0f, 0.0f, glyph_index);
+        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, g->size.x, g->size.y, size, scale, scale, 0.0f, 0.0f, glyph_index);
 
+        u32 row = i / size;
+        u32 col = i % size;
+        void *bitmap_offset = font->bitmap + (col * size) + (row * size * size * size);
+        for (u32 y = 0; y < size; ++y)
+        {
+            for (u32 x = 0; x < size; ++x)
+                memcpy(bitmap_offset + x + (y * size * size), (canvas + x + (y * size)), 1);
+        }
+
+        mem_zero((void*)&canvas, size * size, "font_glyph_canvas");
         font->glyph[i].loaded = TRUE;
     }
 
-    if (!generate_texture_atlas(&font->id, GL_RED, size * 16, font->bitmap))
+    if (!generate_texture_atlas(&font->id, GL_RED, size * size * size * size, font->bitmap))
         goto cleanup;
 
+    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
     return TRUE;
 
 cleanup:
+    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
     mem_free((void*)&font->buf, font->buf_len, font->path);
     mem_free((void*)&font->bitmap, GLYPH_MAX * size * size, font->path);
     *font = (Font){0};
 
     return FALSE;
+}
+
+void bake_font_atlas()
+{
 }
 
 void free_font(Font *font)

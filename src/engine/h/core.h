@@ -64,7 +64,7 @@ typedef struct Camera
     f32 cos_pitch;
     f32 sin_yaw;
     f32 cos_yaw;
-    f32 fov;
+    f32 fovy;
     f32 ratio;
     f32 far;
     f32 near;

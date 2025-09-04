@@ -68,6 +68,22 @@ ShaderProgram shader_default =
     },
 };
 
+ShaderProgram shader_text =
+{
+    .name = "text",
+    .vertex =
+    {
+        .file_name = "text.vert",
+        .type = GL_VERTEX_SHADER,
+    },
+
+    .fragment =
+    {
+        .file_name = "text.frag",
+        .type = GL_FRAGMENT_SHADER,
+    },
+};
+
 ShaderProgram shader_skybox =
 {
     .name = "skybox",
@@ -156,11 +172,19 @@ void draw_hud();
 void draw_everything();
 
 void draw_text_example();
+void draw_font_atlas_example();
+void render_text_example();
 
 /* ---- section: main ------------------------------------------------------- */
 
+Font font = {0}; // TODO: put in gui.c
+
 int main(void)
 {
+    // TODO: put in gui.c
+    str path[PATH_MAX] = {0};
+    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1080, 820};
 
@@ -182,6 +206,9 @@ int main(void)
         glfwTerminate();
         return -1;
     }
+
+    if (!load_font(&font, 16, path)) // TODO: put in gui.c
+        exit(EXIT_FAILURE);
 
     game_start_time = glfwGetTime();
 
@@ -216,6 +243,7 @@ int main(void)
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text) != 0 ||
             init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0 ||
             init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0 ||
             init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
@@ -233,7 +261,7 @@ int main(void)
         (Camera){
             .pos = (v3f32){-0.5f, -0.5f, 0.5f},
             .rot = (v3f32){0.0f, 0.0f, 315.0f},
-            .fov = 70.0f,
+            .fovy = 70.0f,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
@@ -255,6 +283,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
         update_world();
         draw_everything();
+        /*temp*/ render_text_example();
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
@@ -480,6 +509,9 @@ cleanup:
 
 void bind_shader_uniforms()
 {
+    uniform.text.texture_text = glGetUniformLocation(shader_text.id, "texture_text");
+    uniform.text.text_color = glGetUniformLocation(shader_text.id, "text_color");
+
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
     uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
@@ -599,27 +631,27 @@ void draw_everything()
 
 void draw_text_example()
 {
-    Font font = {0};
     str *text = "Heljo World!";
 
-    int width = 190, height = 32;
+    int width = 256, height = 256;
     unsigned char screen[height][width];
     float scale, offset_x = 2;
+    float font_size = 32;
 
-    // if init_paths() and init_instance_dir() weren't called before this, the font path will depend on current working directory, else, the font must exist in $ORIGIN/instances/<instance>/resources/fonts/
+    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
     str path[PATH_MAX] = {0};
     snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
 
-    if (!load_font(&font, height, path))
+    if (!load_font(&font, font_size, path))
         exit(EXIT_FAILURE);
 
-    scale = stbtt_ScaleForPixelHeight(&font.info, height - 1);
+    scale = stbtt_ScaleForPixelHeight(&font.info, font_size - 1);
     for (u64 i = 0; i < strlen(text); ++i)
     {
         u8 c = text[i];
         u8 c1 = text[i + 1];
         u32 glyph_index = stbtt_FindGlyphIndex(&font.info, c);
-        u32 glyph_index1 = stbtt_FindGlyphIndex(&font.info, c1);
+        u32 glyph_index1 = (c1) ? stbtt_FindGlyphIndex(&font.info, c1) : 0;
         Glyph *g = &font.glyph[c];
         void *bitmap_offset = font.bitmap + (i * font.size * font.size);
         f32 x_shift = offset_x - (f32)floor(offset_x);
@@ -639,5 +671,41 @@ void draw_text_example()
 
     free_font(&font);
     exit(0);
+}
+
+void draw_font_atlas_example()
+{
+    int width = 256, height = 256;
+    unsigned char screen[height][width];
+    float scale, offset_x = 2;
+    float font_size = 16;
+
+    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
+    str path[PATH_MAX] = {0};
+    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+
+    if (!load_font(&font, font_size, path))
+        exit(EXIT_FAILURE);
+
+    for (int i = 0; i < width; ++i)
+    {
+        for (int j = 0; j < height; ++j)
+            putchar(" .:ioVM@" [*(font.bitmap + (i * width) + j) >> 5]);
+        putchar('\n');
+    }
+
+    free_font(&font);
+    exit(0);
+}
+
+void render_text_example()
+{
+    glUseProgram(shader_text.id);
+    glUniform1i(uniform.text.texture_text, font.id);
+    glUniform3f(uniform.text.text_color, 1.0f, 1.0f, 1.0f);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(mesh_fbo.vao);
+    glBindTexture(GL_TEXTURE_2D, font.id);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
