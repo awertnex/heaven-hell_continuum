@@ -10,6 +10,7 @@
 #define DIR_MAX     64
 
 /* ---- section: definitions ------------------------------------------------ */
+
 enum Directories
 {
     /* ---- source directories ---------------------------------------------- */
@@ -17,35 +18,32 @@ enum Directories
     DIR_SOURCE_SHADERS,
 
     /* ---- grandpath directories ------------------------------------------- */
-    DIR_INSTANCES =         0,
+    DIR_ROOT_LIB =          0,
+    DIR_ROOT_SHADERS,
+    DIR_ROOT_INSTANCES,
 
     /* ---- instance directories -------------------------------------------- */
-    DIR_BIN =               0,
-    DIR_MODELS,
+    DIR_MODELS =            0,
     DIR_RESOURCES,
+    DIR_FONTS,
+    DIR_LOGO,
     DIR_TEXTURES,
     DIR_BLOCKS,
     DIR_ENVIRONMENT,
     DIR_ENTITIES,
-    DIR_FONT,
     DIR_GUI,
     DIR_ITEMS,
-    DIR_LOGO,
-    DIR_MISC,
-    DIR_PAINTINGS,
     DIR_SHADERS,
-    DIR_SOUNDS,
-    DIR_INFO,
-    DIR_SAVES,
+    DIR_AUDIO,
+    DIR_WORLDS,
     DIR_SCREENSHOTS,
     DIR_TEXT,
 
     /* ---- world directories ----------------------------------------------- */
-    DIR_ADVANCEMENTS =      0,
-    DIR_CHUNKS,
-    DIR_ENTITIES_WORLD,
-    DIR_LOGS,
-    DIR_PLAYER_DATA,
+    DIR_WORLD_CHUNKS =      0,
+    DIR_WORLD_ENTITIES,
+    DIR_WORLD_LOG,
+    DIR_WORLD_PLAYER_DATA,
 }; /* Directories */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -54,13 +52,14 @@ extern str path_grandpath[PATH_MAX];
 extern str path_subpath[PATH_MAX];
 extern str path_launcherpath[PATH_MAX];
 extern str path_worldpath[PATH_MAX];
-extern const str GRANDPATH_DIR[][NAME_MAX];
-extern const str INSTANCE_DIR[][NAME_MAX];
-extern const str WORLD_DIR[][NAME_MAX];
+extern str GRANDPATH_DIR[][NAME_MAX];
+extern str INSTANCE_DIR[][NAME_MAX];
+extern str WORLD_DIR[][NAME_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-int init_paths();
+int init_paths(void);
+int init_grandpath_directory(void);
 int init_instance_directory(const str *instance_name);
 void init_world_directory(const str *world_name);
 

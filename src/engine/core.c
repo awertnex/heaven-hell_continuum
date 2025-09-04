@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -6,7 +7,6 @@
 #include "h/logger.h"
 #include "h/math.h"
 #include "h/memory.h"
-#include "h/text.h"
 
 /* ---- section: windowing -------------------------------------------------- */
 
@@ -34,26 +34,41 @@ int init_window(Render *render)
     }
 
     glfwMakeContextCurrent(render->window);
-    glfwSetWindowIcon(render->window, 1, &render->icon);
+    //glfwSetWindowIcon(render->window, 1, &render->icon); /* TODO: set window icon correctly */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     return 0;
 }
 
-int init_glew(void)
+int init_glad(void)
 {
-    if (glewInit() != GLEW_OK)
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLEW, Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize GLAD, Process Aborted");
         return -1;
     }
+
+    if (GLVersion.major < 3 || (GLVersion.major == 3 && GLVersion.minor < 3))
+    {
+        LOGFATAL("OpenGL 3.3+ Required, Current Version '%d.%d', Process Aborted\n", GLVersion.major, GLVersion.minor);
+        return -1;
+    }
+
+    LOGINFO("OpenGL:    %s\n", glGetString(GL_VERSION));
+    LOGINFO("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOGINFO("Vendor:    %s\n", glGetString(GL_VENDOR));
+    LOGINFO("Renderer:  %s\n", glGetString(GL_RENDERER));
+
     return 0;
 }
 
 /* ---- section: shaders ---------------------------------------------------- */
 
-int init_shader(Shader *shader)
+int init_shader(const str *shaders_dir, Shader *shader)
 {
-    if ((shader->source = get_file_contents(shader->file_name)) == NULL)
+    str str_reg[PATH_MAX] = {0};
+    snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
+
+    if ((shader->source = get_file_contents(str_reg, NULL, "r")) == NULL)
         return -1;
     if (shader->id)
         glDeleteShader(shader->id);
@@ -77,11 +92,11 @@ int init_shader(Shader *shader)
     return 0;
 }
 
-int init_shader_program(ShaderProgram *program)
+int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 {
-    if (init_shader(&program->vertex) != 0)
+    if (init_shader(shaders_dir, &program->vertex) != 0)
         return -1;
-    if (init_shader(&program->fragment) != 0)
+    if (init_shader(shaders_dir, &program->fragment) != 0)
         return -1;
     if (program->id)
         glDeleteProgram(program->id);
@@ -178,13 +193,30 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     return 0;
 
 cleanup:
-    delete_mesh(mesh_fbo);
+    free_mesh(mesh_fbo);
     return -1;
 }
 
-/* 
- * usage = GL_<x>_DRAW;
- */
+b8 generate_texture_atlas(GLuint *id, const GLint format, u32 size, void *buffer)
+{
+    glGenTextures(1, id);
+
+    if (size <= 2)
+    {
+        LOGERROR("Texture Atlas Generation '%d' Failed, Size Too Small\n", *id);
+        glDeleteTextures(size * size, id);
+        return FALSE;
+    }
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, *id);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, size, size, 0, format, GL_UNSIGNED_BYTE, buffer);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return TRUE;
+}
+
 int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data)
 {
     if (!mem_alloc((void*)&mesh->vbo_data, sizeof(GLfloat) * vbo_len, "mesh.vbo_data"))
@@ -219,7 +251,7 @@ int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfl
     return 0;
 
 cleanup:
-    delete_mesh(mesh);
+    free_mesh(mesh);
     return -1;
 }
 
@@ -229,7 +261,7 @@ void draw_mesh(Mesh *mesh)
     glDrawElements(GL_TRIANGLES, mesh->ebo_len, GL_UNSIGNED_INT, 0);
 }
 
-void delete_mesh(Mesh *mesh)
+void free_mesh(Mesh *mesh)
 {
     if (mesh->vbo_data == NULL || mesh->ebo_data == NULL) return;
     mem_free((void*)&mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len, "mesh.vbo_data");
@@ -264,7 +296,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     f32 cyaw = camera->cos_yaw;
 
     f32 ratio = camera->ratio;
-    f32 fov = 1.0f / tanf((camera->fov / 2.0f) * DEG2RAD);
+    f32 fovy = 1.0f / tanf((camera->fovy / 2.0f) * DEG2RAD);
     f32 far = camera->far;
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
@@ -323,8 +355,8 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- projection ------------------------------------------------------ */
     projection->projection =
         (m4f32){
-            fov / ratio,    0.0f,   0.0f,   0.0f,
-            0.0f,           fov,    0.0f,   0.0f,
+            fovy / ratio,   0.0f,   0.0f,   0.0f,
+            0.0f,           fovy,   0.0f,   0.0f,
             0.0f,           0.0f,   clip,  -1.0f,
             0.0f,           0.0f,   offset, 0.0f,
         };
@@ -349,5 +381,101 @@ v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get m
 
     *mouse_last = mouse_position;
     return delta;
+}
+
+/* ---- section: font ------------------------------------------------------- */
+
+b8 load_font(Font *font, u32 size, const str *font_path)
+{
+    if (size <= 2)
+    {
+        LOGERROR("Font Loading '%s' Failed, Font Size Too Small\n", font_path);
+        return FALSE;
+    }
+
+    if (strlen(font_path) >= PATH_MAX)
+    {
+        LOGERROR("Font Loading '%s' Failed, Font Path Too Long\n", font_path);
+        return FALSE;
+    }
+
+    if (!is_file_exists(font_path))
+        return FALSE;
+
+    font->buf = (u8*)get_file_contents(font_path, &font->buf_len, "rb");
+    if (font->buf == NULL)
+        return FALSE;
+
+    if (!stbtt_InitFont(&font->info, font->buf, 0))
+    {
+        LOGINFO("Font Initializing '%s' Failed\n", font_path);
+        goto cleanup;
+    }
+
+    if (!mem_alloc_memb((void*)&font->bitmap, GLYPH_MAX, size * size, font_path))
+        goto cleanup;
+
+    u8 *canvas = {NULL};
+    if (!mem_alloc((void*)&canvas, size * size, "font_glyph_canvas"))
+        goto cleanup;
+
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
+    stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
+    snprintf(font->path, PATH_MAX, "%s", font_path);
+    font->size = size;
+    font->baseline = (int)(font->ascent * scale);
+    font->line_height = font->ascent - font->descent + font->line_gap;
+
+    for (i32 i = 0; i < GLYPH_MAX; ++i)
+    {
+        int glyph_index = stbtt_FindGlyphIndex(&font->info, i);
+        if (!glyph_index)
+            continue;
+
+        Glyph *g = &font->glyph[i];
+
+        stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
+        stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, scale, scale, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
+        g->size.x = g->x1 - g->x0;
+        g->size.y = g->y1 - g->y0;
+        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, g->size.x, g->size.y, size, scale, scale, 0.0f, 0.0f, glyph_index);
+
+        u32 row = i / size;
+        u32 col = i % size;
+        void *bitmap_offset = font->bitmap + (col * size) + (row * size * size * size);
+        for (u32 y = 0; y < size; ++y)
+        {
+            for (u32 x = 0; x < size; ++x)
+                memcpy(bitmap_offset + x + (y * size * size), (canvas + x + (y * size)), 1);
+        }
+
+        mem_zero((void*)&canvas, size * size, "font_glyph_canvas");
+        font->glyph[i].loaded = TRUE;
+    }
+
+    if (!generate_texture_atlas(&font->id, GL_RED, size * size * size * size, font->bitmap))
+        goto cleanup;
+
+    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
+    return TRUE;
+
+cleanup:
+    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
+    mem_free((void*)&font->buf, font->buf_len, font->path);
+    mem_free((void*)&font->bitmap, GLYPH_MAX * size * size, font->path);
+    *font = (Font){0};
+
+    return FALSE;
+}
+
+void bake_font_atlas()
+{
+}
+
+void free_font(Font *font)
+{
+    mem_free((void*)&font->buf, font->buf_len, "file_contents");
+    mem_free((void*)&font->bitmap, GLYPH_MAX * font->size * font->size, font->path);
+    *font = (Font){0};
 }
 

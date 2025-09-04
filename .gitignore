@@ -1,12 +1,13 @@
 # Directories
-bin/
-files/
 ref/
-demos/
-test_instance/
+files/
+
+# Deployment Directory
+Heaven-Hell\ Continuum/
 
 # Notes
 NOTES.md
+RELEASE_PROCEDURE.md
 
 # Prerequisites
 *.d
@@ -30,14 +31,7 @@ NOTES.md
 *.la
 *.lo
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
 # Executables
-*.exe
 *.out
 *.app
 *.i*86
