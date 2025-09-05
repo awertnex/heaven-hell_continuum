@@ -4,7 +4,7 @@
   <img src="resources/logo/128x128.png" alt="Heaven-Hell Continuum">
 </h1>
 
-**a voxel game/engine written in C99, with minimal library usage if any.**
+**a voxel game/engine written in C99, with minimal dependencies if any.**
 
 
 ## Download (unzip and launch)
