@@ -412,7 +412,7 @@ b8 load_font(Font *font, u32 size, const str *font_path)
         goto cleanup;
     }
 
-    if (!mem_alloc_memb((void*)&font->bitmap, GLYPH_MAX, size * size, font_path))
+    if (!mem_alloc((void*)&font->bitmap, GLYPH_MAX * size * size, font_path))
         goto cleanup;
 
     u8 *canvas = {NULL};
@@ -440,13 +440,13 @@ b8 load_font(Font *font, u32 size, const str *font_path)
         g->size.y = g->y1 - g->y0;
         stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, g->size.x, g->size.y, size, scale, scale, 0.0f, 0.0f, glyph_index);
 
-        u32 row = i / size;
-        u32 col = i % size;
-        void *bitmap_offset = font->bitmap + (col * size) + (row * size * size * size);
+        u8 row = i / 16;
+        u8 col = i % 16;
+        void *bitmap_offset = font->bitmap + (col * size) + (row * size * size * 16);
         for (u32 y = 0; y < size; ++y)
         {
             for (u32 x = 0; x < size; ++x)
-                memcpy(bitmap_offset + x + (y * size * size), (canvas + x + (y * size)), 1);
+                memcpy((bitmap_offset + x + (y * size * 16)), (canvas + x + (y * size)), 1);
         }
 
         mem_zero((void*)&canvas, size * size, "font_glyph_canvas");
@@ -466,10 +466,6 @@ cleanup:
     *font = (Font){0};
 
     return FALSE;
-}
-
-void bake_font_atlas()
-{
 }
 
 void free_font(Font *font)
