@@ -207,7 +207,7 @@ int main(void)
         return -1;
     }
 
-    if (!load_font(&font, 16, path)) // TODO: put in gui.c
+    if (!load_font(&font, 32, path)) // TODO: put in gui.c
         exit(EXIT_FAILURE);
 
     game_start_time = glfwGetTime();
@@ -249,7 +249,7 @@ int main(void)
             init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
         goto cleanup;
 
-    glfwSwapInterval(1); /* vsync */
+    glfwSwapInterval(0); /* vsync off */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -309,7 +309,7 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
 {
     render.size = (v2i32){width, height};
     camera.ratio = (f32)width / (f32)height;
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, render.size.x, render.size.y);
 }
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
