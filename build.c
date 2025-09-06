@@ -88,7 +88,6 @@ str str_cflags[][32] =
     "-std=c99",
     "-Wall",
     "-Wextra",
-    "-Wpedantic",
     "-fno-builtin",
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
