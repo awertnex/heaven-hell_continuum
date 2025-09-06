@@ -197,23 +197,25 @@ cleanup:
     return -1;
 }
 
-b8 generate_texture_atlas(GLuint *id, const GLint format, u32 size, void *buffer)
+b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer)
 {
-    glGenTextures(1, id);
-
-    if (size <= 2)
+    if (width <= 2 || height <= 2)
     {
-        LOGERROR("Texture Atlas Generation '%d' Failed, Size Too Small\n", *id);
-        glDeleteTextures(size * size, id);
+        LOGERROR("Texture Generation '%d' Failed, Size Too Small\n", *id);
         return FALSE;
     }
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, id);
     glBindTexture(GL_TEXTURE_2D, *id);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, size, size, 0, format, GL_UNSIGNED_BYTE, buffer);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, buffer);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    glBindTexture(GL_TEXTURE_2D, 0);
     return TRUE;
 }
 
@@ -453,7 +455,7 @@ b8 load_font(Font *font, u32 size, const str *font_path)
         font->glyph[i].loaded = TRUE;
     }
 
-    if (!generate_texture_atlas(&font->id, GL_RED, size * size * size * size, font->bitmap))
+    if (!generate_texture(&font->id, GL_RED, 16 * size, 16 * size, font->bitmap))
         goto cleanup;
 
     mem_free((void*)&canvas, size * size, "font_glyph_canvas");

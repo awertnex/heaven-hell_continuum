@@ -25,6 +25,9 @@ typedef struct Render
     v2f64 mouse_position;
     v2f64 mouse_last;
     v2f64 mouse_delta;
+    f64 frame_start;
+    f64 frame_last;
+    f64 frame_delta;
 } Render;
 
 typedef struct Mesh
@@ -134,7 +137,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
 /*
  * return FALSE (0) on failure;
  */
-b8 generate_texture_atlas(GLuint *id, const GLint format, u32 size, void *buffer);
+b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer);
 
 int generate_mesh_fbo(Mesh *mesh);
 
@@ -154,7 +157,8 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 /*
  * load font from file at font_path;
  * allocate memory for font.buf and load file contents into it in binary format;
- * allocate memory for font.bitmap and render glyphs into it;
+ * allocate memory for font.bitmap and render glyphs onto it;
+ * generate square texture of diameter "size * 16" and bake bitmap onto it;
  *
  * size = font size;
  * font_path = font path;

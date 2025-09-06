@@ -29,7 +29,6 @@ Settings setting =
 };
 
 u32 state = 0;
-f64 game_start_time = 0.0f;
 u64 game_tick = 0;
 u64 game_days = 0;
 Camera camera = {0};
@@ -210,8 +209,6 @@ int main(void)
     if (!load_font(&font, 32, path)) // TODO: put in gui.c
         exit(EXIT_FAILURE);
 
-    game_start_time = glfwGetTime();
-
     glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
@@ -272,10 +269,15 @@ int main(void)
 section_menu_title: /* ---- section: title menu ----------------------------- */
 section_menu_pause: /* ---- section: pause menu ----------------------------- */
 section_main: /* ---- section: main loop ------------------------------------ */
+
     generate_standard_meshes();
 
     while (!glfwWindowShouldClose(render.window))
     {
+        render.frame_start = glfwGetTime();
+        render.frame_delta = render.frame_start - render.frame_last;
+        render.frame_last = render.frame_start;
+
         //get_mouse_position(&render, &render.mouse_position);
         //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
@@ -283,7 +285,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
         update_world();
         draw_everything();
-        /*temp*/ render_text_example();
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
@@ -358,9 +359,11 @@ void log_stuff()
 
 }
 
-f64 movement_speed = 0.08f;
+f64 movement_speed = 5.0f;
 void update_input(GLFWwindow *window, Camera *camera)
 {
+    movement_speed = 5.0f * render.frame_delta;
+
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
     {
@@ -533,7 +536,7 @@ void bind_shader_uniforms()
 
 void update_world()
 {
-    game_tick = (floor((glfwGetTime() - game_start_time) * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(glfwGetTime() * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
@@ -612,8 +615,7 @@ void draw_everything()
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud();
-
-    /* ---- section: draw everything ---------------------------------------- */
+    render_text_example(); /*temp*/
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -701,11 +703,11 @@ void draw_font_atlas_example()
 void render_text_example()
 {
     glUseProgram(shader_text.id);
-    glUniform1i(uniform.text.texture_text, font.id);
-    glUniform3f(uniform.text.text_color, 1.0f, 1.0f, 1.0f);
-    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(uniform.text.texture_text, 0);
     glBindVertexArray(mesh_fbo.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
