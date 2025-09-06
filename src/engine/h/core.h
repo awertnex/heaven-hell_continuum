@@ -2,7 +2,7 @@
 #define ENGINE_CORE_H
 
 #define ENGINE_AUTHOR       "Author: Lily Awertnex"
-#define ENGINE_NAME         "Heaven-Hell Continuum Engine"
+#define ENGINE_NAME         "Fossil Engine"
 #define ENGINE_VERSION      "0.1.0-beta"
 
 #include "../../../include/glad/glad.h"
