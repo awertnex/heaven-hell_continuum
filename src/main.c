@@ -512,9 +512,6 @@ cleanup:
 
 void bind_shader_uniforms()
 {
-    uniform.text.texture_text = glGetUniformLocation(shader_text.id, "texture_text");
-    uniform.text.text_color = glGetUniformLocation(shader_text.id, "text_color");
-
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
     uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
@@ -703,7 +700,6 @@ void draw_font_atlas_example()
 void render_text_example()
 {
     glUseProgram(shader_text.id);
-    glUniform1i(uniform.text.texture_text, 0);
     glBindVertexArray(mesh_fbo.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
     glDrawArrays(GL_TRIANGLES, 0, 6);

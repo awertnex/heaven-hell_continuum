@@ -21,12 +21,6 @@
 
 typedef struct Uniform
 {
-    struct /* text */
-    {
-        GLint texture_text;
-        GLint text_color;
-    } text;
-
     struct /* defaults */
     {
         GLint mat_perspective;
