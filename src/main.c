@@ -123,15 +123,15 @@ struct /* skybox_data */
 } skybox_data;
 
 GLuint fbo_skybox;
-GLuint color_buf_skybox;
-GLuint rbo_skybox;
-
 GLuint fbo_world;
-GLuint color_buf_world;
-GLuint rbo_world;
-
 GLuint fbo_hud;
+
+GLuint color_buf_skybox;
+GLuint color_buf_world;
 GLuint color_buf_hud;
+
+GLuint rbo_skybox;
+GLuint rbo_world;
 GLuint rbo_hud;
 
 Mesh mesh_fbo = {0};
@@ -172,7 +172,7 @@ void draw_everything();
 
 void draw_text_example();
 void draw_font_atlas_example();
-void render_text_example();
+void render_font_atlas_example();
 
 /* ---- section: main ------------------------------------------------------- */
 
@@ -206,7 +206,7 @@ int main(void)
         return -1;
     }
 
-    if (!load_font(&font, 64, path)) // TODO: put in gui.c
+    if (!load_font(&font, 16, path)) // TODO: put in gui.c
         exit(EXIT_FAILURE);
 
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
@@ -552,7 +552,7 @@ void bind_shader_uniforms()
 
 void update_world()
 {
-    game_tick = (floor(glfwGetTime() * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(glfwGetTime() * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
@@ -631,7 +631,7 @@ void draw_everything()
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud();
-    render_text_example(); /*temp*/
+    render_font_atlas_example(); /*temp*/
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -646,50 +646,6 @@ void draw_everything()
 }
 
 /* ---- section: testing ---------------------------------------------------- */
-
-void draw_text_example()
-{
-    str *text = "Heljo World!";
-
-    int width = 256, height = 256;
-    unsigned char screen[height][width];
-    float scale, offset_x = 2;
-    float font_size = 32;
-
-    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
-    if (!load_font(&font, font_size, path))
-        exit(EXIT_FAILURE);
-
-    scale = stbtt_ScaleForPixelHeight(&font.info, font_size - 1);
-    for (u64 i = 0; i < strlen(text); ++i)
-    {
-        u8 c = text[i];
-        u8 c1 = text[i + 1];
-        u32 glyph_index = stbtt_FindGlyphIndex(&font.info, c);
-        u32 glyph_index1 = (c1) ? stbtt_FindGlyphIndex(&font.info, c1) : 0;
-        Glyph *g = &font.glyph[c];
-        void *bitmap_offset = font.bitmap + (i * font.size * font.size);
-        f32 x_shift = offset_x - (f32)floor(offset_x);
-
-        stbtt_MakeGlyphBitmapSubpixel(&font.info, &screen[font.baseline + g->y0][(i32)offset_x + g->x0], g->size.x, g->size.y, width, scale, scale, x_shift, 0.0f, glyph_index);
-        offset_x += (g->advance * scale);
-        if (c1)
-            offset_x += scale * stbtt_GetGlyphKernAdvance(&font.info, glyph_index, glyph_index1);
-    }
-
-    for (int j = 0; j < height; ++j)
-    {
-        for (int i = 0; i < width; ++i)
-            putchar(" .:ioVM@" [screen[j][i] >> 5]);
-        putchar('\n');
-    }
-
-    free_font(&font);
-    exit(0);
-}
 
 void draw_font_atlas_example()
 {
@@ -716,7 +672,7 @@ void draw_font_atlas_example()
     exit(0);
 }
 
-void render_text_example()
+void render_font_atlas_example()
 {
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo.vao);
