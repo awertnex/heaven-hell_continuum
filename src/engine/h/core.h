@@ -160,7 +160,7 @@ void update_camera_perspective(Camera *camera, Projection *projection);
  * allocate memory for font.bitmap and render glyphs onto it;
  * generate square texture of diameter "size * 16" and bake bitmap onto it;
  *
- * size = font size;
+ * size = font size & character bitmap diameter;
  * font_path = font path;
  *
  * return FALSE (0) on failure;

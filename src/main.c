@@ -185,7 +185,7 @@ int main(void)
     snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
 
     glfwSetErrorCallback(error_callback);
-    /*temp*/ render.size = (v2i32){1080, 820};
+    /*temp*/ render.size = (v2i32){1024, 1024};
 
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
@@ -206,10 +206,10 @@ int main(void)
         return -1;
     }
 
-    if (!load_font(&font, 32, path)) // TODO: put in gui.c
+    if (!load_font(&font, 64, path)) // TODO: put in gui.c
         exit(EXIT_FAILURE);
 
-    glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
+    /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
     /* ---- section: set mouse input ---------------------------------------- */
@@ -292,6 +292,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
     }
 
 cleanup: /* ----------------------------------------------------------------- */
+    free_font(&font);
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
@@ -344,19 +345,37 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 void log_stuff()
 {
-    LOGDEBUG("%s\n", "-------------------------------------]");
-    LOGDEBUG("        mouse[%7.2lf %7.2lf        ]\n", render.mouse_position.x, render.mouse_position.y);
-    LOGDEBUG("        delta[%7.2lf %7.2lf        ]\n", render.mouse_delta.x, render.mouse_delta.y);
-    LOGDEBUG("   camera xyz[%7.2f %7.2f %7.2f]\n", camera.pos.x, camera.pos.y, camera.pos.z);
-    LOGDEBUG("camera yawpch[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
-    LOGDEBUG("        ratio[%7.2f                ]\n\n", camera.ratio);
+    printf("---------------------------------------]\n"
+            "          mouse[%7.2lf %7.2lf        ]\n"
+            "          delta[%7.2lf %7.2lf        ]\n"
+            "     camera xyz[%7.2f %7.2f %7.2f]\n"
+            "  camera yawpch[        %7.2f %7.2f]\n"
+            "          ratio[%7.2f                ]\n\n"
 
-    LOGDEBUG("        ticks[%5d                  ]\n", game_tick);
-    LOGDEBUG("  skybox time[%7.2f                ]\n", skybox_data.time);
-    LOGDEBUG(" sun rotation[%7.2f %7.2f %7.2f]\n", skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z);
-    LOGDEBUG("        color[%7.2f %7.2f %7.2f]\n", skybox_data.color.x, skybox_data.color.y, skybox_data.color.z);
-    LOGDEBUG("%s\n\n", "-------------------------------------]");
+            "          ticks[%-23d]\n"
+            "    skybox time[%-23.2f]\n"
+            "   sun rotation[%7.2f %7.2f %7.2f]\n"
+            "          color[%7.2f %7.2f %7.2f]\n\n"
 
+            "    frame_start[%-23.6f]\n"
+            "    frame_delta[%-23.6f]\n"
+            "            fps[%-23.0f]\n"
+            "---------------------------------------]\n\n",
+
+            render.mouse_position.x, render.mouse_position.y,
+            render.mouse_delta.x, render.mouse_delta.y,
+            camera.pos.x, camera.pos.y, camera.pos.z,
+            camera.rot.y, camera.rot.z,
+            camera.ratio,
+
+            game_tick,
+            skybox_data.time,
+            skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z,
+            skybox_data.color.x, skybox_data.color.y, skybox_data.color.z,
+
+            render.frame_start,
+            render.frame_delta,
+            render.frame_start);
 }
 
 f64 movement_speed = 5.0f;

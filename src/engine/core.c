@@ -463,10 +463,7 @@ b8 load_font(Font *font, u32 size, const str *font_path)
 
 cleanup:
     mem_free((void*)&canvas, size * size, "font_glyph_canvas");
-    mem_free((void*)&font->buf, font->buf_len, font->path);
-    mem_free((void*)&font->bitmap, GLYPH_MAX * size * size, font->path);
-    *font = (Font){0};
-
+    free_font(font);
     return FALSE;
 }
 
