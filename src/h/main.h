@@ -17,8 +17,6 @@
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
 
-#define THREAD_COUNT 2 /* TODO: use for multithreading */
-
 typedef struct Uniform
 {
     struct /* defaults */
@@ -49,6 +47,17 @@ typedef struct Uniform
         GLint mat_projection;
     } gizmo;
 
+    struct /* text */
+    {
+        GLint row;
+        GLint col;
+        GLint char_size;
+        GLint advance;
+        GLint bearing;
+        GLint projection;
+        GLint text_color;
+    } text;
+
 } Uniform;
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -57,11 +66,9 @@ extern Render render;
 extern u32 state;
 extern u8 state_menu_depth;
 
-extern f64 delta_time;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
-#define dt (glfwGetTime() - game_start_time)
 
 extern Uniform uniform;
 

@@ -126,7 +126,7 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 
 /* ---- section: meat ------------------------------------------------------- */
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo)
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical)
 {
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
@@ -169,6 +169,16 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
         1.0f, -1.0f, 1.0f, 0.0f,
         -1.0f, -1.0f, 0.0f, 0.0f,
     };
+
+    if (flip_vertical)
+    {
+        vbo_data[3] = 1.0f;
+        vbo_data[7] = 0.0f;
+        vbo_data[11] = 0.0f;
+        vbo_data[15] = 0.0f;
+        vbo_data[19] = 1.0f;
+        vbo_data[23] = 1.0f;
+    }
 
     if (!mem_alloc((void*)&mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len, "mesh_fbo.vbo_data"))
         goto cleanup;
@@ -387,9 +397,9 @@ v2f64 get_mouse_movement(v2f64 mouse_position, v2f64 *mouse_last) /* TODO: get m
 
 /* ---- section: font ------------------------------------------------------- */
 
-b8 load_font(Font *font, u32 size, const str *font_path)
+b8 load_font(Font *font, u32 resolution, const str *font_path)
 {
-    if (size <= 2)
+    if (resolution <= 2)
     {
         LOGERROR("Font Loading '%s' Failed, Font Size Too Small\n", font_path);
         return FALSE;
@@ -414,19 +424,29 @@ b8 load_font(Font *font, u32 size, const str *font_path)
         goto cleanup;
     }
 
-    if (!mem_alloc((void*)&font->bitmap, GLYPH_MAX * size * size, font_path))
+    if (!mem_alloc((void*)&font->bitmap, GLYPH_MAX * resolution * resolution, font_path))
         goto cleanup;
 
     u8 *canvas = {NULL};
-    if (!mem_alloc((void*)&canvas, size * size, "font_glyph_canvas"))
+    if (!mem_alloc((void*)&canvas, resolution * resolution, "font_glyph_canvas"))
         goto cleanup;
 
-    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
-    stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
     snprintf(font->path, PATH_MAX, "%s", font_path);
-    font->size = size;
-    font->baseline = (int)(font->ascent * scale);
+    f32 scale_metric = stbtt_ScaleForPixelHeight(&font->info, FONT_SCALE_METRIC);
+    f32 scale_bearing = stbtt_ScaleForPixelHeight(&font->info, FONT_SCALE_BEARING);
+    f32 scale_raster = stbtt_ScaleForPixelHeight(&font->info, resolution);
+    stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
+    font->resolution = resolution;
+    font->char_size = 1.0f / FONT_ATLAS_CELL_RESOLUTION;
     font->line_height = font->ascent - font->descent + font->line_gap;
+
+    font->projection =
+        (m4f32){
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+        };
 
     for (i32 i = 0; i < GLYPH_MAX; ++i)
     {
@@ -437,32 +457,41 @@ b8 load_font(Font *font, u32 size, const str *font_path)
         Glyph *g = &font->glyph[i];
 
         stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
-        stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, scale, scale, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
-        g->size.x = g->x1 - g->x0;
-        g->size.y = g->y1 - g->y0;
-        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, g->size.x, g->size.y, size, scale, scale, 0.0f, 0.0f, glyph_index);
+        g->advance_scaled = g->advance * scale_metric;
+        g->bearing_scaled.x = g->bearing.x * scale_metric;
 
-        u8 row = i / 16;
-        u8 col = i % 16;
-        void *bitmap_offset = font->bitmap + (col * size) + (row * size * size * 16);
-        for (u32 y = 0; y < size; ++y)
+        stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, scale_bearing, scale_bearing, 0.0f, 0.0f, NULL, &g->bearing.y, NULL, NULL);
+        g->bearing_scaled.y = g->bearing.y * scale_bearing;
+
+        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale_raster, scale_raster, 0.0f, 0.0f, glyph_index);
+
+        u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
+        u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
+        void *bitmap_offset =
+            font->bitmap +
+            (col * resolution) +
+            (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION);
+        for (u32 y = 0; y < resolution; ++y)
         {
-            for (u32 x = 0; x < size; ++x)
-                memcpy((bitmap_offset + x + (y * size * 16)), (canvas + x + (y * size)), 1);
+            for (u32 x = 0; x < resolution; ++x)
+                memcpy((bitmap_offset + x + (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
+                        (canvas + x + (y * resolution)), 1);
         }
 
-        mem_zero((void*)&canvas, size * size, "font_glyph_canvas");
+        mem_zero((void*)&canvas, resolution * resolution, "font_glyph_canvas");
         font->glyph[i].loaded = TRUE;
     }
 
-    if (!generate_texture(&font->id, GL_RED, 16 * size, 16 * size, font->bitmap))
+    if (!generate_texture(&font->id, GL_RED,
+                FONT_ATLAS_CELL_RESOLUTION * resolution,
+                FONT_ATLAS_CELL_RESOLUTION * resolution, font->bitmap))
         goto cleanup;
 
-    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
+    mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
     return TRUE;
 
 cleanup:
-    mem_free((void*)&canvas, size * size, "font_glyph_canvas");
+    mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
     free_font(font);
     return FALSE;
 }
@@ -470,7 +499,7 @@ cleanup:
 void free_font(Font *font)
 {
     mem_free((void*)&font->buf, font->buf_len, "file_contents");
-    mem_free((void*)&font->bitmap, GLYPH_MAX * font->size * font->size, font->path);
+    mem_free((void*)&font->bitmap, GLYPH_MAX * font->resolution * font->resolution, font->path);
     *font = (Font){0};
 }
 

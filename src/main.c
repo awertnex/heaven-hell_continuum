@@ -29,6 +29,7 @@ Settings setting =
 };
 
 u32 state = 0;
+f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
 Camera camera = {0};
@@ -125,16 +126,20 @@ struct /* skybox_data */
 GLuint fbo_skybox;
 GLuint fbo_world;
 GLuint fbo_hud;
+GLuint fbo_text;
 
 GLuint color_buf_skybox;
 GLuint color_buf_world;
 GLuint color_buf_hud;
+GLuint color_buf_text;
 
 GLuint rbo_skybox;
 GLuint rbo_world;
 GLuint rbo_hud;
+GLuint rbo_text;
 
 Mesh mesh_fbo = {0};
+Mesh mesh_fbo_flipped = {0};
 
 #define VBO_LEN_SKYBOX  24
 #define EBO_LEN_SKYBOX  36
@@ -170,7 +175,6 @@ void draw_world();
 void draw_hud();
 void draw_everything();
 
-void draw_text_example();
 void draw_font_atlas_example();
 void render_font_atlas_example();
 
@@ -182,7 +186,7 @@ int main(void)
 {
     // TODO: put in gui.c
     str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
 
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1024, 1024};
@@ -198,16 +202,12 @@ int main(void)
         return -1;
 
     if (init_glfw() != 0 ||
-            //init_text() != 0 || /*temp off*/
             init_window(&render) != 0 ||
             init_glad() != 0)
     {
         glfwTerminate();
         return -1;
     }
-
-    if (!load_font(&font, 16, path)) // TODO: put in gui.c
-        exit(EXIT_FAILURE);
 
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
@@ -241,9 +241,10 @@ int main(void)
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text) != 0 ||
-            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0 ||
-            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0 ||
-            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
+            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
@@ -254,10 +255,13 @@ int main(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    if (!load_font(&font, 1024, path)) // TODO: put in gui.c
+        goto cleanup;
+
     camera =
         (Camera){
-            .pos = (v3f32){-0.5f, -0.5f, 0.5f},
-            .rot = (v3f32){0.0f, 0.0f, 315.0f},
+            .pos = (v3f32){-1.0f, 1.0f, 1.0f},
+            .rot = (v3f32){0.0f, 0.0f, 0.0f},
             .fovy = 70.0f,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
@@ -265,6 +269,7 @@ int main(void)
         };
 
     bind_shader_uniforms();
+    game_start_time = glfwGetTime();
 
 section_menu_title: /* ---- section: title menu ----------------------------- */
 section_menu_pause: /* ---- section: pause menu ----------------------------- */
@@ -274,7 +279,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
     while (!glfwWindowShouldClose(render.window))
     {
-        render.frame_start = glfwGetTime();
+        render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
         render.frame_last = render.frame_start;
 
@@ -325,7 +330,7 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
 
 static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_PAUSE && action == GLFW_PRESS)
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
@@ -351,8 +356,7 @@ void log_stuff()
             "     camera xyz[%7.2f %7.2f %7.2f]\n"
             "  camera yawpch[        %7.2f %7.2f]\n"
             "          ratio[%7.2f                ]\n\n"
-
-            "          ticks[%-23d]\n"
+            "    ticks, days[%-7ld %-15ld]\n"
             "    skybox time[%-23.2f]\n"
             "   sun rotation[%7.2f %7.2f %7.2f]\n"
             "          color[%7.2f %7.2f %7.2f]\n\n"
@@ -363,25 +367,29 @@ void log_stuff()
             "---------------------------------------]\n\n",
 
             render.mouse_position.x, render.mouse_position.y,
-            render.mouse_delta.x, render.mouse_delta.y,
-            camera.pos.x, camera.pos.y, camera.pos.z,
+            render.mouse_delta.x, render.mouse_delta.y, camera.pos.x, camera.pos.y, camera.pos.z,
             camera.rot.y, camera.rot.z,
             camera.ratio,
 
             game_tick,
+            game_days,
             skybox_data.time,
             skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z,
             skybox_data.color.x, skybox_data.color.y, skybox_data.color.z,
 
             render.frame_start,
             render.frame_delta,
-            render.frame_start);
+            floor(render.frame_start));
 }
 
-f64 movement_speed = 5.0f;
+f32 movement_speed = 5.0f;
 void update_input(GLFWwindow *window, Camera *camera)
 {
     movement_speed = 5.0f * render.frame_delta;
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+        movement_speed += 12.0f * render.frame_delta;
 
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
@@ -531,6 +539,14 @@ cleanup:
 
 void bind_shader_uniforms()
 {
+    uniform.text.row = glGetUniformLocation(shader_text.id, "row");
+    uniform.text.col = glGetUniformLocation(shader_text.id, "col");
+    uniform.text.char_size = glGetUniformLocation(shader_text.id, "char_size");
+    uniform.text.advance = glGetUniformLocation(shader_text.id, "advance");
+    uniform.text.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    uniform.text.projection = glGetUniformLocation(shader_text.id, "projection");
+    uniform.text.text_color = glGetUniformLocation(shader_text.id, "text_color");
+
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
     uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
@@ -552,7 +568,7 @@ void bind_shader_uniforms()
 
 void update_world()
 {
-    game_tick = (floor(glfwGetTime() * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 9000)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
@@ -647,38 +663,71 @@ void draw_everything()
 
 /* ---- section: testing ---------------------------------------------------- */
 
-void draw_font_atlas_example()
-{
-    int width = 256, height = 256;
-    unsigned char screen[height][width];
-    float scale, offset_x = 2;
-    float font_size = 16;
-
-    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
-    if (!load_font(&font, font_size, path))
-        exit(EXIT_FAILURE);
-
-    for (int i = 0; i < width; ++i)
-    {
-        for (int j = 0; j < height; ++j)
-            putchar(" .:ioVM@" [*(font.bitmap + (i * width) + j) >> 5]);
-        putchar('\n');
-    }
-
-    free_font(&font);
-    exit(0);
-}
-
 void render_font_atlas_example()
 {
     glUseProgram(shader_text.id);
-    glBindVertexArray(mesh_fbo.vao);
+    glBindVertexArray(mesh_fbo_flipped.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    draw_text("FPS:", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text("XYZ:", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.5f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text("Lgbubu!labubu!", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.5f * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, b8 align_x, b8 align_y)
+{
+    u64 len = strlen(text);
+    if (len <= 0) return;
+
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
+    f32 advance = 0.0f;
+    Glyph *g = NULL;
+
+    v2f32 font_size =
+    {
+        size / (render.size.x / 2.0f),
+        size / (render.size.y / 2.0f),
+    };
+
+    pos.x /= (render.size.x / 2.0f);
+    pos.y /= (render.size.y / 2.0f);
+
+    v4f32 text_color =
+    {
+        (f32)color.x / 0xff,
+        (f32)color.y / 0xff,
+        (f32)color.z / 0xff,
+        (f32)color.w / 0xff,
+    };
+
+    font->projection.a11 = font_size.x;
+    font->projection.a22 = font_size.y;
+    font->projection.a41 = -1.0f + font_size.x + pos.x;
+    font->projection.a42 = 1.0f - (font_size.y * 2.5f) - pos.y;
+
+    /* text alignment */
+    font->projection.a42 += (font_size.y * align_y);
+    if (align_x)
+    {
+        // TODO: calculate string width, divide by 2, subtract from font->projection.a41
+    }
+
+    glUniform1f(uniform.text.char_size, font->char_size);
+    glUniform4fv(uniform.text.text_color, 1, (GLfloat*)&text_color);
+    for (u64 i = 0; i < len; ++i)
+    {
+        g = &font->glyph[text[i]];
+
+        glUniform1i(uniform.text.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
+        glUniform1i(uniform.text.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
+        glUniform1f(uniform.text.advance, advance + g->bearing_scaled.x);
+        glUniform1f(uniform.text.bearing, g->bearing_scaled.y);
+        glUniformMatrix4fv(uniform.text.projection, 1, GL_FALSE, (GLfloat*)&font->projection);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        advance += g->advance_scaled;
+    }
 }
 

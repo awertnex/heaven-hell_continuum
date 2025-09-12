@@ -16,6 +16,11 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
+#define FONT_ATLAS_CELL_RESOLUTION  16
+#define FONT_SCALE_METRIC           30.0f
+#define FONT_SCALE_BEARING          68.0f
+#define FONT_SIZE_DEFAULT           14.0f
+
 typedef struct Render
 {
     GLFWwindow *window;
@@ -86,21 +91,23 @@ typedef struct Projection
 
 typedef struct Glyph
 {
-    v2f32 size;
     v2i32 bearing;
+    v2f32 bearing_scaled;
     i32 advance;
-    i32 x0, y0, x1, y1;         /* uv texture coordinates */
+    f32 advance_scaled;
     b8 loaded;
 } Glyph;
 
 typedef struct Font
 {
     str path[PATH_MAX];         /* font file name, assigned in load_font() automatically */
-    u32 size;
-    i32 baseline;
-    i32 ascent, descent;        /* glyphs highest and lowest points' deviation from baseline in pixels */
-    i32 line_gap;               /* gap between lines, from descent to next line's ascent */
-    f32 line_height;            /* font line height in pixels (or advance y) */
+    u32 resolution;             /* glyph bitmap diameter in bytes */
+    f32 char_size;              /* for font atlas sampling */
+    i32 ascent;                 /* glyphs highest points' deviation from baseline */
+    i32 descent;                /* glyphs lowest points' deviation from baseline */
+    i32 line_gap;
+    i32 line_height;
+    m4f32 projection;           /* font-units to screen-space conversion matrix */
 
     stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
     u8 *buf;                    /* font file contents, used by stb_truetype.h's stbtt_InitFont() */
@@ -132,7 +139,7 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
 
 /*
  * return FALSE (0) on failure;
@@ -168,6 +175,13 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 b8 load_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
+
+/*
+ * does update Font.projection;
+ *
+ * size = font height in pixels;
+ */
+void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, b8 align_x, b8 align_y);
 
 #endif /* ENGINE_CORE_H */
 
