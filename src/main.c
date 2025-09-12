@@ -15,12 +15,10 @@
 
 /* ---- section: declarations ----------------------------------------------- */
 
-b8 logging = 0;
 Render render =
 {
     .title = ENGINE_NAME": "ENGINE_VERSION,
     .size = {854, 480},
-
 };
 
 Settings setting =
@@ -61,81 +59,46 @@ Player lily =
 ShaderProgram shader_fbo =
 {
     .name = "fbo",
-    .vertex =
-    {
-        .file_name = "fbo.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "fbo.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "fbo.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "fbo.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_default =
 {
     .name = "default",
-    .vertex =
-    {
-        .file_name = "default.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "default.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "default.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "default.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_text =
 {
     .name = "text",
-    .vertex =
-    {
-        .file_name = "text.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "text.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "text.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "text.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_skybox =
 {
     .name = "skybox",
-    .vertex =
-    {
-        .file_name = "skybox.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "skybox.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "skybox.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "skybox.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_gizmo =
 {
     .name = "gizmo",
-    .vertex =
-    {
-        .file_name = "gizmo.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "gizmo.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "gizmo.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "gizmo.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 struct /* skybox_data */
@@ -187,17 +150,14 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void log_stuff(Player *player);
 void update_input(GLFWwindow *window, Player *player);
-void generate_standard_meshes();
-void bind_shader_uniforms();
+void generate_standard_meshes(void);
+void bind_shader_uniforms(void);
 void update_world(Player *player);
 void draw_skybox(Player *player);
 void draw_world(Player *player);
 void draw_hud(Player *player);
 void draw_everything(Player *player);
-
-void render_font_atlas_example();
 
 /* ---- section: main ------------------------------------------------------- */
 
@@ -301,8 +261,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
         //get_mouse_position(&render, &render.mouse_position);
         //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
-        if (logging) log_stuff(&lily);
-
         update_world(&lily);
         draw_everything(&lily);
 
@@ -364,43 +322,6 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         else
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
-
-    if (key == GLFW_KEY_L && action == GLFW_PRESS)
-        logging ^= 1;
-}
-
-void log_stuff(Player *player)
-{
-    printf("---------------------------------------]\n"
-            "          mouse[%7.2lf %7.2lf        ]\n"
-            "          delta[%7.2lf %7.2lf        ]\n"
-            "     camera xyz[%7.2f %7.2f %7.2f]\n"
-            "  camera yawpch[        %7.2f %7.2f]\n"
-            "          ratio[%7.2f                ]\n\n"
-            "    ticks, days[%-7ld %-15ld]\n"
-            "    skybox time[%-23.2f]\n"
-            "   sun rotation[%7.2f %7.2f %7.2f]\n"
-            "          color[%7.2f %7.2f %7.2f]\n\n"
-
-            "    frame_start[%-23.6f]\n"
-            "    frame_delta[%-23.6f]\n"
-            "            fps[%-23.0f]\n"
-            "---------------------------------------]\n\n",
-
-            render.mouse_position.x, render.mouse_position.y,
-            render.mouse_delta.x, render.mouse_delta.y, player->camera.pos.x, player->camera.pos.y, player->camera.pos.z,
-            player->camera.rot.y, player->camera.rot.z,
-            player->camera.ratio,
-
-            game_tick,
-            game_days,
-            skybox_data.time,
-            skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z,
-            skybox_data.color.x, skybox_data.color.y, skybox_data.color.z,
-
-            render.frame_start,
-            render.frame_delta,
-            floor(render.frame_start));
 }
 
 f32 movement_speed = 5.0f;
@@ -558,7 +479,7 @@ cleanup:
     LOGERROR("%s\n", "Mesh Generation Failed");
 }
 
-void bind_shader_uniforms()
+void bind_shader_uniforms(void)
 {
     font.uniform.row = glGetUniformLocation(shader_text.id, "row");
     font.uniform.col = glGetUniformLocation(shader_text.id, "col");
@@ -683,10 +604,12 @@ void draw_everything(Player *player)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud(player);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_text);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo_flipped.vao);
     glBindTexture(GL_TEXTURE_2D, font_bold.id);
-    draw_debug_info(&render);
+    draw_debug_info(&render, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -699,11 +622,13 @@ void draw_everything(Player *player)
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, color_buf_hud);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, color_buf_text);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 /* ---- section: testing ---------------------------------------------------- */
 
-void render_font_atlas_example()
+void render_font_atlas_example(void)
 {
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo_flipped.vao);

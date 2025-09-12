@@ -340,7 +340,7 @@ void draw_hud()
 }
 #endif // TODO: undef FUCK
 
-void draw_debug_info(Render *render)
+void draw_debug_info(Render *render, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
 {
     //if (!(state & FLAG_DEBUG))
     //    return;
@@ -354,77 +354,29 @@ void draw_debug_info(Render *render)
     draw_text(render, &font, str_quad_count, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 6, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
     draw_text(render, &font, str_tri_count, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 7, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
     draw_text(render, &font, str_vertex_count, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 8, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+
+    str string[64] = {0};
+    snprintf(string, 32, "MOUSE XY: %d %d", (i16)render->mouse_position.x, (i16)render->mouse_position.y);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 10, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "DELTA XY: %.2f %.2f", render->mouse_delta.x, render->mouse_delta.y);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "RENDER RATIO: %.4f", (f32)render->size.x / render->size.y);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 12, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "TICKS: %ld DAYS: %ld", game_tick, game_days);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 13, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "SKYBOX TIME: %.2f", skybox_time);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 14, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "SKYBOX RGB: %.2f %.2f %.2f", skybox_color.x, skybox_color.y, skybox_color.z);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 15, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "SUN ANGLE: %.2f %.2f %.2f", sun_rotation.x, sun_rotation.y, sun_rotation.z);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 16, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "FRAME TIME: %.2lf", render->frame_start);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 17, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    snprintf(string, 32, "FRAME DELTA: %.6lf", render->frame_delta);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 18, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
 }
 
 #ifdef FUCK // TODO: undef FUCK
-/* 
- * raylib/rtext.c/DrawTextEx refactored;
- * align_x = (0 = left, 1 = center, 2 = right);
- * align_y = (0 = top, 1 = center, 2 = bottom);
- */
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
-{
-    switch (align_x)
-    {
-        case 1:
-            pos.x -= (get_str_width(font, str, font_size, spacing) / 2);
-            break;
-
-        case 2:
-            pos.x -= get_str_width(font, str, font_size, spacing);
-            break;
-    };
-
-    switch (align_y)
-    {
-        case 1:
-            pos.y -= (font_size / 1.8f);
-            break;
-
-        case 2:
-            pos.y -= font_size;
-            break;
-    };
-
-    if (font.texture.id == 0) font = GetFontDefault();
-    u16 size = TextLength(str);
-
-    f32 text_offset_y = 0;
-    f32 text_offset_x = 0.0f;
-    f32 scale_factor = font_size / font.baseSize;
-    for (u16 i = 0; i < size;)
-    {
-        i32 codepoint_byte_count = 0;
-        u16 codepoint = GetCodepointNext(&str[i], &codepoint_byte_count);
-        u8 index = GetGlyphIndex(font, codepoint);
-
-        if (codepoint == '\n')
-        {
-            text_offset_y += (font_size + 2);
-            text_offset_x = 0.0f;
-        }
-        else
-        {
-            if ((codepoint != ' ') && (codepoint != '\t'))
-            {
-                DrawTextCodepoint(font_bold, codepoint,
-                        (Vector2){pos.x + text_offset_x + 1, pos.y + text_offset_y + 1},
-                        font_size, ColorAlpha(ColorBrightness(tint, -0.1f), 0.4f));
-
-                DrawTextCodepoint(font, codepoint,
-                        (Vector2){pos.x + text_offset_x, pos.y + text_offset_y},
-                        font_size, tint);
-            }
-
-            if (font.glyphs[index].advanceX == 0)
-                text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
-            else
-                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
-        }
-        i += codepoint_byte_count;
-    }
-}
-
 float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;

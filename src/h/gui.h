@@ -128,7 +128,7 @@ void apply_render_settings();
 void update_render_settings(v2f32 render_size);
 void free_gui(void);
 
-void draw_debug_info(Render *render);
+void draw_debug_info(Render *render, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation);
 
 #if 0 // TODO: undef
 void update_menus(v2f32 render_size);
