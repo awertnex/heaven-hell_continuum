@@ -17,7 +17,8 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 #define FONT_ATLAS_CELL_RESOLUTION  16
-#define FONT_SIZE_DEFAULT           24.0f
+#define FONT_RESOLUTION_DEFAULT     128
+#define FONT_SIZE_DEFAULT           22.0f
 
 typedef struct Render
 {

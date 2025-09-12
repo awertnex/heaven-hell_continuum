@@ -1,13 +1,16 @@
-#include "h/main.h"
 #include "engine/core.c"
 #include "engine/dir.c"
 #include "engine/logger.c"
 #include "engine/math.c"
 #include "engine/memory.c"
 
+#include "h/main.h"
+#include "h/platform.h"
 #include "h/setting.h"
 #include "chunking.c"
 #include "dir.c"
+#include "gui.c"
+#include "logic.c"
 #include "keymaps.c"
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -17,13 +20,14 @@ Render render =
 {
     .title = ENGINE_NAME": "ENGINE_VERSION,
     .size = {854, 480},
+
 };
 
 Settings setting =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
-    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
+    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT,
     .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
@@ -32,9 +36,27 @@ u32 state = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
-Camera camera = {0};
 Projection projection = {0};
 Uniform uniform = {0};
+
+Player lily =
+{
+    .name = "Lily",
+    .pos = {0.0f},
+    .scl = {0.6f, 0.6f, 1.8f},
+    .collision_check_start = {0.0f},
+    .collision_check_end = {0.0f},
+    .pitch = 0.0f,
+    .yaw = 0.0f,
+    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
+    .eye_height = 1.5f,
+    .mass = 2.0f,
+    .movement_speed = 10.0f,
+    .container_state = 0,
+    .perspective = 0,
+    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+    .spawn_point = {0},
+};
 
 ShaderProgram shader_fbo =
 {
@@ -165,28 +187,22 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void log_stuff();
-void update_input(GLFWwindow *window, Camera *camera);
+void log_stuff(Player *player);
+void update_input(GLFWwindow *window, Player *player);
 void generate_standard_meshes();
 void bind_shader_uniforms();
-void update_world();
-void draw_skybox();
-void draw_world();
-void draw_hud();
-void draw_everything();
+void update_world(Player *player);
+void draw_skybox(Player *player);
+void draw_world(Player *player);
+void draw_hud(Player *player);
+void draw_everything(Player *player);
 
 void render_font_atlas_example();
 
 /* ---- section: main ------------------------------------------------------- */
 
-Font font = {0}; // TODO: put in gui.c
-
 int main(void)
 {
-    // TODO: put in gui.c
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1024, 1024};
 
@@ -254,13 +270,13 @@ int main(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (!load_font(&font, 128, path)) // TODO: put in gui.c
+    if (init_gui() != 0)
         goto cleanup;
 
-    camera =
+    setting.mouse_sensitivity = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f;
+
+    lily.camera =
         (Camera){
-            .pos = (v3f32){-1.0f, 1.0f, 1.0f},
-            .rot = (v3f32){0.0f, 0.0f, 0.0f},
             .fovy = 70.0f,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
@@ -285,14 +301,14 @@ section_main: /* ---- section: main loop ------------------------------------ */
         //get_mouse_position(&render, &render.mouse_position);
         //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
-        if (logging) log_stuff();
+        if (logging) log_stuff(&lily);
 
-        update_world();
-        draw_everything();
+        update_world(&lily);
+        draw_everything(&lily);
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
-        update_input(render.window, &camera);
+        update_input(render.window, &lily);
     }
 
 cleanup: /* ----------------------------------------------------------------- */
@@ -314,7 +330,7 @@ cleanup: /* ----------------------------------------------------------------- */
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
-    camera.ratio = (f32)width / (f32)height;
+    lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 }
 
@@ -323,8 +339,14 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
     render.mouse_delta = (v2f64){xpos - render.mouse_position.x, ypos - render.mouse_position.y};
     render.mouse_position = (v2f64){xpos, ypos};
 
-    camera.rot.y += render.mouse_delta.y;
-    camera.rot.z += render.mouse_delta.x;
+    if (state & FLAG_PARSE_CURSOR)
+        if (!(state & FLAG_SUPER_DEBUG))
+        {
+            lily.yaw -= (f32)render.mouse_delta.x * setting.mouse_sensitivity;
+            lily.pitch -= (f32)render.mouse_delta.y * setting.mouse_sensitivity;
+        }
+    lily.yaw += (f32)render.mouse_delta.x * setting.mouse_sensitivity;
+    lily.pitch += (f32)render.mouse_delta.y * setting.mouse_sensitivity;
 }
 
 static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -347,7 +369,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         logging ^= 1;
 }
 
-void log_stuff()
+void log_stuff(Player *player)
 {
     printf("---------------------------------------]\n"
             "          mouse[%7.2lf %7.2lf        ]\n"
@@ -366,9 +388,9 @@ void log_stuff()
             "---------------------------------------]\n\n",
 
             render.mouse_position.x, render.mouse_position.y,
-            render.mouse_delta.x, render.mouse_delta.y, camera.pos.x, camera.pos.y, camera.pos.z,
-            camera.rot.y, camera.rot.z,
-            camera.ratio,
+            render.mouse_delta.x, render.mouse_delta.y, player->camera.pos.x, player->camera.pos.y, player->camera.pos.z,
+            player->camera.rot.y, player->camera.rot.z,
+            player->camera.ratio,
 
             game_tick,
             game_days,
@@ -382,7 +404,7 @@ void log_stuff()
 }
 
 f32 movement_speed = 5.0f;
-void update_input(GLFWwindow *window, Camera *camera)
+void update_input(GLFWwindow *window, Player *player)
 {
     movement_speed = 5.0f * render.frame_delta;
 
@@ -393,38 +415,38 @@ void update_input(GLFWwindow *window, Camera *camera)
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
     {
-        camera->pos.z += movement_speed;
+        player->pos.z += movement_speed;
     }
 
     /* ---- sneaking -------------------------------------------------------- */
     if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
     {
-        camera->pos.z -= movement_speed;
+        player->pos.z -= movement_speed;
     }
 
     /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
     {
-        camera->pos.x += (movement_speed * camera->sin_yaw);
-        camera->pos.y += (movement_speed * camera->cos_yaw);
+        player->pos.x += (movement_speed * player->camera.sin_yaw);
+        player->pos.y += (movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
     {
-        camera->pos.x -= (movement_speed * camera->sin_yaw);
-        camera->pos.y -= (movement_speed * camera->cos_yaw);
+        player->pos.x -= (movement_speed * player->camera.sin_yaw);
+        player->pos.y -= (movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
     {
-        camera->pos.x -= (movement_speed * camera->cos_yaw);
-        camera->pos.y += (movement_speed * camera->sin_yaw);
+        player->pos.x -= (movement_speed * player->camera.cos_yaw);
+        player->pos.y += (movement_speed * player->camera.sin_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
     {
-        camera->pos.x += (movement_speed * camera->cos_yaw);
-        camera->pos.y -= (movement_speed * camera->sin_yaw);
+        player->pos.x += (movement_speed * player->camera.cos_yaw);
+        player->pos.y -= (movement_speed * player->camera.sin_yaw);
     }
 }
 
@@ -454,14 +476,14 @@ void generate_standard_meshes()
 
     GLfloat vbo_data_coh[] =
     {
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,
         1.0f, 1.0f, 1.0f,
-        2.0f, 1.0f, 1.0f,
-        1.0f, 2.0f, 1.0f,
-        2.0f, 2.0f, 1.0f,
-        1.0f, 1.0f, 2.0f,
-        2.0f, 1.0f, 2.0f,
-        1.0f, 2.0f, 2.0f,
-        2.0f, 2.0f, 2.0f,
     };
 
     GLuint ebo_data_coh[] =
@@ -548,6 +570,16 @@ void bind_shader_uniforms()
     font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
+    font_bold.uniform.row = glGetUniformLocation(shader_text.id, "row");
+    font_bold.uniform.col = glGetUniformLocation(shader_text.id, "col");
+    font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
+    font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
+    font_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
+    font_bold.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font_bold.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
+    font_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
     uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
@@ -567,17 +599,19 @@ void bind_shader_uniforms()
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
-void update_world()
+void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 9000)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
-    update_camera_movement(&camera);
-    update_camera_perspective(&camera, &projection);
+    update_camera_movement_player(&render, player);
+    update_camera_perspective(&player->camera, &projection);
+
+    update_debug_strings(player);
 }
 
-void draw_skybox()
+void draw_skybox(Player *player)
 {
     skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
     skybox_data.sun_rotation = (v3f32){-cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, 12.0f};
@@ -604,7 +638,7 @@ void draw_skybox()
         };
 
     glUseProgram(shader_skybox.id);
-    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&player->camera.pos);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
@@ -613,20 +647,20 @@ void draw_skybox()
     draw_mesh(&mesh_skybox);
 }
 
-void draw_world()
+void draw_world(Player *player)
 {
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&player->camera.pos);
     glUniform3fv(uniform.defaults.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
     draw_mesh(&mesh_cube_of_happiness);
 }
 
-void draw_hud()
+void draw_hud(Player *player)
 {
     glUseProgram(shader_gizmo.id);
-    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)camera.ratio);
+    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)player->camera.ratio);
     glUniformMatrix4fv(uniform.gizmo.mat_target, 1, GL_FALSE, (GLfloat*)&projection.target);
     glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
@@ -634,21 +668,26 @@ void draw_hud()
     draw_mesh(&mesh_gizmo);
 }
 
-void draw_everything()
+void draw_everything(Player *player)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    draw_skybox();
+    draw_skybox(player);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_world();
+    draw_world(player);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_hud();
-    render_font_atlas_example(); /*temp*/
+    draw_hud(player);
+
+    glUseProgram(shader_text.id);
+    glBindVertexArray(mesh_fbo_flipped.vao);
+    glBindTexture(GL_TEXTURE_2D, font_bold.id);
+    draw_debug_info(&render);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);

@@ -7,7 +7,6 @@
 
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
-#include "platform.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 

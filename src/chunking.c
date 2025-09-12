@@ -644,7 +644,7 @@ void draw_block(Chunk *chunk, u32 x, u32 y, u32 z)
 }
 
 /* raylib/rmodels.c/DrawLine3D refactored; */
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color)
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color)
 {
     rlColor4ub(color.r, color.g, color.b, color.a);
     rlVertex3f(pos_0.x, pos_0.y, pos_0.z);

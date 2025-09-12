@@ -302,10 +302,10 @@ void update_camera_movement(Camera *camera)
 
 void update_camera_perspective(Camera *camera, Projection *projection)
 {
-    f32 spch = camera->sin_pitch;
-    f32 cpch = camera->cos_pitch;
-    f32 syaw = camera->sin_yaw;
-    f32 cyaw = camera->cos_yaw;
+    const f32 SPCH = camera->sin_pitch;
+    const f32 CPCH = camera->cos_pitch;
+    const f32 SYAW = camera->sin_yaw;
+    const f32 CYAW = camera->cos_yaw;
 
     f32 ratio = camera->ratio;
     f32 fovy = 1.0f / tanf((camera->fovy / 2.0f) * DEG2RAD);
@@ -320,7 +320,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
             1.0f,           0.0f,           0.0f,   0.0f,
             0.0f,           1.0f,           0.0f,   0.0f,
             0.0f,           0.0f,           1.0f,   0.0f,
-            -cyaw * -cpch,  syaw * -cpch,   -spch,  1.0f,
+            -CYAW * -CPCH,  SYAW * -CPCH,   -SPCH,  1.0f,
         };
 
     /* ---- translation ----------------------------------------------------- */
@@ -335,8 +335,8 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- rotation: yaw --------------------------------------------------- */
     projection->rotation =
         (m4f32){
-            cyaw,   syaw, 0.0f, 0.0f,
-            -syaw,  cyaw, 0.0f, 0.0f,
+            CYAW,   SYAW, 0.0f, 0.0f,
+            -SYAW,  CYAW, 0.0f, 0.0f,
             0.0f,   0.0f, 1.0f, 0.0f,
             0.0f,   0.0f, 0.0f, 1.0f,
         };
@@ -344,9 +344,9 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- rotation: pitch ------------------------------------------------- */
     projection->rotation = matrix_multiply(projection->rotation,
             (m4f32){
-            cpch,   0.0f, spch, 0.0f,
+            CPCH,   0.0f, SPCH, 0.0f,
             0.0f,   1.0f, 0.0f, 0.0f,
-            -spch,  0.0f, cpch, 0.0f,
+            -SPCH,  0.0f, CPCH, 0.0f,
             0.0f,   0.0f, 0.0f, 1.0f,
             });
 

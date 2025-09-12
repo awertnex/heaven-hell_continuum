@@ -1,20 +1,15 @@
 #ifndef GAME_GUI_H
 #define GAME_GUI_H
 
-#include "../include/raylib.h"
+#include "../engine/h/core.h"
 
-#include "../engine/h/defines.h"
+#define FONT_SIZE 24.0f
 
-#define show_cursor\
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-#define disable_cursor\
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-#define center_cursor\
-    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
-#define color(r, g, b, v, a)\
-    (Color){((f32)r / 255) * v, ((f32)g / 255) * v, ((f32)b / 255) * v, a}
-#define draw_menu_overlay(render_size)\
-    DrawRectangle(0, 0, render.size.x, render.size.y, COL_MENU_BG_OVERLAY)
+#define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+#define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#define center_cursor   glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
+#define color(r, g, b, v, a) (v4u8){((f32)r / 0xff) * v, ((f32)g / 0xff) * v, ((f32)b / 0xff) * v, a}
+#define draw_menu_overlay(render_size) DrawRectangle(0, 0, render.size.x, render.size.y, COL_MENU_BG_OVERLAY)
 
 #define BTN_COUNT 110
 
@@ -33,14 +28,8 @@
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern Font font_regular;
-extern u8 font_size;
-extern u8 font_size_debug_info;
-extern u8 text_row_height;
-
-extern Rectangle button_inactive;
-extern Rectangle button;
-extern Rectangle button_selected;
+extern Font font;
+extern Font font_bold;
 
 extern v2i16 hotbar_pos;
 extern f32 hotbar_slot_selected;
@@ -126,7 +115,7 @@ enum StringsDebugInfo
     STR_DEBUG_INFO_GAME_TICK,
 }; /* StringsDebugInfo */
 
-extern str str_debug_info[16][128];
+extern str str_debug_info[16][64];
 extern str str_block_count[32];
 extern str str_quad_count[32];
 extern str str_tri_count[32];
@@ -134,22 +123,23 @@ extern str str_vertex_count[32];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void init_gui();
+b8 init_gui(void);
 void apply_render_settings();
 void update_render_settings(v2f32 render_size);
-void free_gui();
+void free_gui(void);
 
+void draw_debug_info(Render *render);
+
+#if 0 // TODO: undef
 void update_menus(v2f32 render_size);
 void draw_hud();
-void update_debug_strings();
-void draw_debug_info(Camera3D *camera);
 
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint);
 float get_str_width(Font font, const str *str, f32 font_size, f32 spacing);
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint);
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint);
 void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint);
 void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str);
+#endif // TODO: undef
 
 void btn_func_singleplayer();
 void btn_func_multiplayer();
