@@ -83,6 +83,15 @@ buf str_tests = {NULL};
 
 str str_main[PATH_MAX] = DIR_SRC"main.c";
 
+str str_children[][32] =
+{
+    DIR_SRC"chunking.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"logic.c",
+    DIR_SRC"keymaps.c",
+};
+
 str str_cflags[][32] =
 {
     "-std=c99",
@@ -339,6 +348,10 @@ void build_cmd(int argc, char **argv)
             push_cmd(str_main);
             break;
     }
+
+    /* ---- children -------------------------------------------------------- */
+    for (u32 i = 0; i < arr_len(str_children); ++i)
+        push_cmd(str_children[i]);
 
     /* ---- cflags ---------------------------------------------------------- */
     for (u32 i = 0; i < arr_len(str_cflags); ++i)

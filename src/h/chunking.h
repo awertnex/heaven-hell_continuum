@@ -4,7 +4,7 @@
 #include "../engine/h/defines.h"
 
 #include "main.h"
-#include "setting.h"
+#include "settings.h"
 
 /* ---- section: world stuff ------------------------------------------------ */
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "h/setting.h"
+#include "h/settings.h"
 
 //#include "h/assets.h"
 #include "h/chunking.h"

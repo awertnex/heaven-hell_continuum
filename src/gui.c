@@ -80,22 +80,17 @@ cleanup:
 
 void apply_render_settings()
 {
-    setting = (Settings){
+    settings = (Settings){
             .reach_distance =       SETTING_REACH_DISTANCE_MAX,
             .fov =                  SETTING_FOV_DEFAULT,
-            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
+            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
             .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
             .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
         };
-
-    font_size = 14 * setting.gui_scale;
-    text_row_height = 8 * setting.gui_scale;
 }
 
 void update_render_settings(v2f32 render_size)
 {
-    hotbar_pos =                (v2i16){render_size.x / 2, render_size.y - (2 * setting.gui_scale)};
-    crosshair_pos =             (v2i16){render_size.x / 2, render_size.y / 2};
 }
 
 void free_gui(void)
@@ -342,9 +337,6 @@ void draw_hud()
 
 void draw_debug_info(Render *render, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
 {
-    //if (!(state & FLAG_DEBUG))
-    //    return;
-
     draw_text(render, &font, str_debug_info[STR_DEBUG_INFO_FPS], FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
     draw_text(render, &font, str_debug_info[STR_DEBUG_INFO_PLAYER_POS], FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
     draw_text(render, &font, str_debug_info[STR_DEBUG_INFO_PLAYER_BLOCK], FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 2, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
@@ -355,25 +347,29 @@ void draw_debug_info(Render *render, f32 skybox_time, v3f32 skybox_color, v3f32 
     draw_text(render, &font, str_tri_count, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 7, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
     draw_text(render, &font, str_vertex_count, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 8, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
-    str string[64] = {0};
-    snprintf(string, 32, "MOUSE XY: %d %d", (i16)render->mouse_position.x, (i16)render->mouse_position.y);
+    str string[512] = {0};
+    snprintf(string, 511,
+            "MOUSE XY: %d %d\n"
+            "DELTA XY: %.2f %.2f\n"
+            "RENDER RATIO: %.4f\n"
+            "TICKS: %ld DAYS: %ld\n"
+            "SKYBOX TIME: %.2f\n"
+            "Lgbubu!labubu!\n"
+            "SKYBOX RGB: %.2f %.2f %.2f\n"
+            "SUN ANGLE: %.2f %.2f %.2f\n",
+            (i16)render->mouse_position.x, (i16)render->mouse_position.y,
+            render->mouse_delta.x, render->mouse_delta.y,
+            (f32)render->size.x / render->size.y,
+            game_tick, game_days,
+            skybox_time,
+            skybox_color.x, skybox_color.y, skybox_color.z,
+            sun_rotation.x, sun_rotation.y, sun_rotation.z);
     draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 10, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "DELTA XY: %.2f %.2f", render->mouse_delta.x, render->mouse_delta.y);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "RENDER RATIO: %.4f", (f32)render->size.x / render->size.y);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 12, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "TICKS: %ld DAYS: %ld", game_tick, game_days);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 13, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "SKYBOX TIME: %.2f", skybox_time);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 14, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "SKYBOX RGB: %.2f %.2f %.2f", skybox_color.x, skybox_color.y, skybox_color.z);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 15, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "SUN ANGLE: %.2f %.2f %.2f", sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 16, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "FRAME TIME: %.2lf", render->frame_start);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 17, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-    snprintf(string, 32, "FRAME DELTA: %.6lf", render->frame_delta);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 18, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+
+    snprintf(string, 255,
+            "FRAME TIME: %.2lf\n" "FRAME DELTA: %.6lf\n",
+            render->frame_start, render->frame_delta);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 19, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
 }
 
 #ifdef FUCK // TODO: undef FUCK

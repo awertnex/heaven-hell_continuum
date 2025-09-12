@@ -46,7 +46,7 @@ typedef struct Settings
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern Settings setting;
+extern Settings settings;
 
 #endif /* GAME_SETTING_H */
 

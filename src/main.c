@@ -6,12 +6,7 @@
 
 #include "h/main.h"
 #include "h/platform.h"
-#include "h/setting.h"
-#include "chunking.c"
-#include "dir.c"
-#include "gui.c"
-#include "logic.c"
-#include "keymaps.c"
+#include "h/settings.h"
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -21,19 +16,11 @@ Render render =
     .size = {854, 480},
 };
 
-Settings setting =
-{
-    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-    .fov =                  SETTING_FOV_DEFAULT,
-    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT,
-    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
-};
-
 u32 state = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
+Settings settings = {0};
 Projection projection = {0};
 Uniform uniform = {0};
 
@@ -187,6 +174,8 @@ int main(void)
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
+    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED | FLAG_DEBUG;
+
     /* ---- section: set mouse input ---------------------------------------- */
 
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -233,7 +222,8 @@ int main(void)
     if (init_gui() != 0)
         goto cleanup;
 
-    setting.mouse_sensitivity = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f;
+    apply_render_settings();
+    //init_super_debugger(&render.size); /*temp off*/
 
     lily.camera =
         (Camera){
@@ -322,16 +312,26 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         else
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
+
+    /* ---- miscellaneous --------------------------------------------------- */
+    if (key == bind_toggle_hud && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        state ^= FLAG_HUD;
+
+    if (key == bind_toggle_debug && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        if (!(state & FLAG_DEBUG))
+            state |= FLAG_DEBUG;
+        else if (!(state & FLAG_DEBUG_MORE))
+            state |= FLAG_DEBUG_MORE;
+        else
+            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+    }
 }
 
 f32 movement_speed = 5.0f;
 void update_input(GLFWwindow *window, Player *player)
 {
     movement_speed = 5.0f * render.frame_delta;
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
-        movement_speed += 12.0f * render.frame_delta;
 
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
@@ -344,6 +344,10 @@ void update_input(GLFWwindow *window, Player *player)
     {
         player->pos.z -= movement_speed;
     }
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+        movement_speed += 12.0f * render.frame_delta;
 
     /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
@@ -604,13 +608,16 @@ void draw_everything(Player *player)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud(player);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_text);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(shader_text.id);
-    glBindVertexArray(mesh_fbo_flipped.vao);
-    glBindTexture(GL_TEXTURE_2D, font_bold.id);
-    draw_debug_info(&render, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    if (state & FLAG_DEBUG)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_text);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(shader_text.id);
+        glBindVertexArray(mesh_fbo_flipped.vao);
+        glBindTexture(GL_TEXTURE_2D, font_bold.id);
+        draw_debug_info(&render, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -622,8 +629,12 @@ void draw_everything(Player *player)
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, color_buf_hud);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindTexture(GL_TEXTURE_2D, color_buf_text);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    if (state & FLAG_DEBUG)
+    {
+        glBindTexture(GL_TEXTURE_2D, color_buf_text);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
 }
 
 /* ---- section: testing ---------------------------------------------------- */

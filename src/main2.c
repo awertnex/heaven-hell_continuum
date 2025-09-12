@@ -9,7 +9,7 @@ u64 game_tick = 0;
 u64 game_days = 0;
 pthread_t thrd_chunk_handler;
 
-Settings setting =
+Settings settings =
 {
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
     .fov =                  SETTING_FOV_DEFAULT,
