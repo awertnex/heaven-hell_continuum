@@ -17,7 +17,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 #define FONT_ATLAS_CELL_RESOLUTION  16
-#define FONT_SIZE_DEFAULT           22.0f
+#define FONT_SIZE_DEFAULT           24.0f
 
 typedef struct Render
 {
@@ -114,6 +114,20 @@ typedef struct Font
 
     GLuint id;                  /* used by opengl's glGenTextures() */
     Glyph glyph[GLYPH_MAX];
+
+    struct /* uniform */
+    {
+        GLint row;
+        GLint col;
+        GLint char_size;
+        GLint font_size;
+        GLint ndc_size;
+        GLint offset;
+        GLint advance;
+        GLint bearing;
+        GLint text_color;
+    } uniform;
+
 } Font;
 
 /* ---- section: signatures ------------------------------------------------- */
@@ -179,7 +193,7 @@ void free_font(Font *font);
  *
  * size = font height in pixels;
  */
-void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
 
 #endif /* ENGINE_CORE_H */
 

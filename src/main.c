@@ -538,15 +538,15 @@ cleanup:
 
 void bind_shader_uniforms()
 {
-    uniform.text.row = glGetUniformLocation(shader_text.id, "row");
-    uniform.text.col = glGetUniformLocation(shader_text.id, "col");
-    uniform.text.char_size = glGetUniformLocation(shader_text.id, "char_size");
-    uniform.text.glyph_size = glGetUniformLocation(shader_text.id, "glyph_size");
-    uniform.text.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
-    uniform.text.offset = glGetUniformLocation(shader_text.id, "offset");
-    uniform.text.advance = glGetUniformLocation(shader_text.id, "advance");
-    uniform.text.bearing = glGetUniformLocation(shader_text.id, "bearing");
-    uniform.text.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font.uniform.row = glGetUniformLocation(shader_text.id, "row");
+    font.uniform.col = glGetUniformLocation(shader_text.id, "col");
+    font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
+    font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
+    font.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
+    font.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
+    font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
@@ -669,80 +669,10 @@ void render_font_atlas_example()
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo_flipped.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
-    draw_text("FPS:", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
-    draw_text("XYZ:", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
-    draw_text("Lgbubu!labubu!", &font, FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y)
-{
-    u64 len = strlen(text);
-    if (len <= 0) return;
-
-    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
-    f32 advance = 0.0f;
-    Glyph *g = NULL;
-
-    v2f32 screen_size =
-    {
-        2.0f / render.size.x,
-        2.0f / render.size.y,
-    };
-
-    v2f32 glyph_size =
-    {
-        size * screen_size.x * 0.5f,
-        size * screen_size.y * 0.5f,
-    };
-
-    v2f32 ndc_size =
-    {
-        scale * screen_size.x,
-        scale * screen_size.y,
-    };
-
-    pos.x *= screen_size.x;
-    pos.y *= screen_size.y;
-
-    v2f32 offset =
-    {
-        -1.0f + glyph_size.x + pos.x,
-        1.0f - glyph_size.y - pos.y,
-    };
-
-    offset.y += (align_y - 1) * (font->scale.y / 2.0f) * ndc_size.y;
-    if (align_x)
-    {
-        // TODO: calculate string width, divide by 2, subtract from font->projection.a41
-    }
-
-    v4f32 text_color =
-    {
-        (f32)color.x / 0xff,
-        (f32)color.y / 0xff,
-        (f32)color.z / 0xff,
-        (f32)color.w / 0xff,
-    };
-
-    glUniform1f(uniform.text.char_size, font->char_size);
-    glUniform2fv(uniform.text.glyph_size, 1, (GLfloat*)&glyph_size);
-    glUniform2fv(uniform.text.ndc_size, 1, (GLfloat*)&ndc_size);
-    glUniform2fv(uniform.text.offset, 1, (GLfloat*)&offset);
-    glUniform4fv(uniform.text.text_color, 1, (GLfloat*)&text_color);
-    for (u64 i = 0; i < len; ++i)
-    {
-        g = &font->glyph[text[i]];
-
-        glUniform1i(uniform.text.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
-        glUniform1i(uniform.text.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
-        glUniform1f(uniform.text.advance, advance + g->bearing.x);
-        glUniform1f(uniform.text.bearing, font->descent - g->bearing.y);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        advance += g->advance;
-    }
 }
 

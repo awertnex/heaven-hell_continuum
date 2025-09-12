@@ -47,19 +47,6 @@ typedef struct Uniform
         GLint mat_projection;
     } gizmo;
 
-    struct /* text */
-    {
-        GLint row;
-        GLint col;
-        GLint char_size;
-        GLint glyph_size;
-        GLint ndc_size;
-        GLint offset;
-        GLint advance;
-        GLint bearing;
-        GLint text_color;
-    } text;
-
 } Uniform;
 
 /* ---- section: declarations ----------------------------------------------- */

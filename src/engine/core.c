@@ -495,3 +495,74 @@ void free_font(Font *font)
     *font = (Font){0};
 }
 
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y)
+{
+    u64 len = strlen(text);
+    if (len <= 0) return;
+
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
+    f32 advance = 0.0f;
+    Glyph *g = NULL;
+
+    v2f32 screen_size =
+    {
+        2.0f / render->size.x,
+        2.0f / render->size.y,
+    };
+
+    v2f32 font_size =
+    {
+        size * screen_size.x * 0.5f,
+        size * screen_size.y * 0.5f,
+    };
+
+    v2f32 ndc_size =
+    {
+        scale * screen_size.x,
+        scale * screen_size.y,
+    };
+
+    pos.x *= screen_size.x;
+    pos.y *= screen_size.y;
+
+    v2f32 offset =
+    {
+        -1.0f + font_size.x + pos.x,
+        1.0f - font_size.y - pos.y,
+    };
+
+    offset.y += (align_y - 1) * (font->scale.y / 2.0f) * ndc_size.y;
+    if (align_x)
+    {
+        // TODO: calculate string width, divide by 2, subtract from font->projection.a41
+    }
+
+    v4f32 text_color =
+    {
+        (f32)color.x / 0xff,
+        (f32)color.y / 0xff,
+        (f32)color.z / 0xff,
+        (f32)color.w / 0xff,
+    };
+
+    glUniform1f(font->uniform.char_size, font->char_size);
+    glUniform2fv(font->uniform.font_size, 1, (GLfloat*)&font_size);
+    glUniform2fv(font->uniform.ndc_size, 1, (GLfloat*)&ndc_size);
+    glUniform2fv(font->uniform.offset, 1, (GLfloat*)&offset);
+    glUniform4fv(font->uniform.text_color, 1, (GLfloat*)&text_color);
+
+    for (u64 i = 0; i < len; ++i)
+    {
+        g = &font->glyph[text[i]];
+
+        glUniform1i(font->uniform.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
+        glUniform1i(font->uniform.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
+        glUniform1f(font->uniform.advance, advance + g->bearing.x);
+        glUniform1f(font->uniform.bearing, font->descent - g->bearing.y);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        advance += g->advance;
+    }
+}
+
