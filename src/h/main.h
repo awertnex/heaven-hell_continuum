@@ -52,9 +52,11 @@ typedef struct Uniform
         GLint row;
         GLint col;
         GLint char_size;
+        GLint glyph_size;
+        GLint ndc_size;
+        GLint offset;
         GLint advance;
         GLint bearing;
-        GLint projection;
         GLint text_color;
     } text;
 

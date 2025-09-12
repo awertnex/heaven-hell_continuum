@@ -17,9 +17,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 #define FONT_ATLAS_CELL_RESOLUTION  16
-#define FONT_SCALE_METRIC           30.0f
-#define FONT_SCALE_BEARING          68.0f
-#define FONT_SIZE_DEFAULT           14.0f
+#define FONT_SIZE_DEFAULT           22.0f
 
 typedef struct Render
 {
@@ -91,10 +89,10 @@ typedef struct Projection
 
 typedef struct Glyph
 {
+    v2i32 scale;
     v2i32 bearing;
-    v2f32 bearing_scaled;
     i32 advance;
-    f32 advance_scaled;
+    i32 x0, y0, x1, y1;
     b8 loaded;
 } Glyph;
 
@@ -107,7 +105,7 @@ typedef struct Font
     i32 descent;                /* glyphs lowest points' deviation from baseline */
     i32 line_gap;
     i32 line_height;
-    m4f32 projection;           /* font-units to screen-space conversion matrix */
+    v2i32 scale;                /* biggest glyph bounding box in pixels */
 
     stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
     u8 *buf;                    /* font file contents, used by stb_truetype.h's stbtt_InitFont() */
@@ -181,7 +179,7 @@ void free_font(Font *font);
  *
  * size = font height in pixels;
  */
-void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, b8 align_x, b8 align_y);
+void draw_text(const str *text, Font *font, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
 
 #endif /* ENGINE_CORE_H */
 

@@ -432,22 +432,12 @@ b8 load_font(Font *font, u32 resolution, const str *font_path)
         goto cleanup;
 
     snprintf(font->path, PATH_MAX, "%s", font_path);
-    f32 scale_metric = stbtt_ScaleForPixelHeight(&font->info, FONT_SCALE_METRIC);
-    f32 scale_bearing = stbtt_ScaleForPixelHeight(&font->info, FONT_SCALE_BEARING);
-    f32 scale_raster = stbtt_ScaleForPixelHeight(&font->info, resolution);
     stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
     font->resolution = resolution;
     font->char_size = 1.0f / FONT_ATLAS_CELL_RESOLUTION;
     font->line_height = font->ascent - font->descent + font->line_gap;
 
-    font->projection =
-        (m4f32){
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
-        };
-
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, resolution);
     for (i32 i = 0; i < GLYPH_MAX; ++i)
     {
         int glyph_index = stbtt_FindGlyphIndex(&font->info, i);
@@ -457,13 +447,15 @@ b8 load_font(Font *font, u32 resolution, const str *font_path)
         Glyph *g = &font->glyph[i];
 
         stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
-        g->advance_scaled = g->advance * scale_metric;
-        g->bearing_scaled.x = g->bearing.x * scale_metric;
 
-        stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, scale_bearing, scale_bearing, 0.0f, 0.0f, NULL, &g->bearing.y, NULL, NULL);
-        g->bearing_scaled.y = g->bearing.y * scale_bearing;
+        stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, 1.0f, 1.0f, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
+        g->bearing.y = g->y0;
+        g->scale.x = g->x1 - g->x0;
+        g->scale.y = g->y1 - g->y0;
+        (g->scale.x > font->scale.x) ? font->scale.x = g->scale.x : 0;
+        (g->scale.y > font->scale.y) ? font->scale.y = g->scale.y : 0;
 
-        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale_raster, scale_raster, 0.0f, 0.0f, glyph_index);
+        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale, scale, 0.0f, 0.0f, glyph_index);
 
         u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
         u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
