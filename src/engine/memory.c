@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "h/limits.h"
 
 #include "h/platform.h"
 #include "h/memory.h"
+#include "h/limits.h"
 #include "h/logger.h"
 
 b8 mem_alloc(void **x, u64 size, const str *name)

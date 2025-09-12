@@ -4,7 +4,7 @@
 #include "../engine/h/defines.h"
 
 #include "main.h"
-#include "setting.h"
+#include "settings.h"
 
 /* ---- section: world stuff ------------------------------------------------ */
 
@@ -86,12 +86,13 @@ extern struct Globals
 static inline u16 get_block_index(u8 x, u8 y, u8 z)
 {return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
 
-static inline v3u32 get_block_coordinates(u16 i)
+static inline v3u32 get_block_coordinates(u32 i)
 {
     return (v3u32){
         (i) % CHUNK_DIAMETER,
             ((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER,
-            (i) / (CHUNK_DIAMETER * CHUNK_DIAMETER)};
+            (i) / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+    };
 }
 
 static inline u8 get_mirror_axis(u8 axis)
@@ -130,7 +131,7 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
 #ifdef FUCK // TODO: undef FUCK
 void draw_chunk_tab(Texture *tex);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color);
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
 void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);

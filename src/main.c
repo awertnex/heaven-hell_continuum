@@ -1,119 +1,93 @@
-#include "h/main.h"
-#include "engine/core.c"
-#include "engine/dir.c"
-#include "engine/logger.c"
-#include "engine/math.c"
-#include "engine/memory.c"
+#include "engine/h/core.h"
+#include "engine/h/logger.h"
+#include "engine/h/math.h"
 
-#include "h/setting.h"
-#include "chunking.c"
-#include "dir.c"
+#include "h/main.h"
+#include "h/settings.h"
+#include "h/chunking.h"
+#include "h/dir.h"
+#include "h/gui.h"
+#include "h/logic.h"
 #include "keymaps.c"
 
 /* ---- section: declarations ----------------------------------------------- */
 
-b8 logging = 0;
 Render render =
 {
     .title = ENGINE_NAME": "ENGINE_VERSION,
     .size = {854, 480},
 };
 
-Settings setting =
-{
-    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-    .fov =                  SETTING_FOV_DEFAULT,
-    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
-    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
-};
-
 u32 state = 0;
-f64 game_start_time = 0.0f;
+f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
-Camera camera = {0};
+Settings settings = {0};
 Projection projection = {0};
 Uniform uniform = {0};
+
+Player lily =
+{
+    .name = "Lily",
+    .pos = {0.0f},
+    .scl = {0.6f, 0.6f, 1.8f},
+    .collision_check_start = {0.0f},
+    .collision_check_end = {0.0f},
+    .pitch = 0.0f,
+    .yaw = 0.0f,
+    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
+    .eye_height = 1.5f,
+    .mass = 2.0f,
+    .movement_speed = 10.0f,
+    .container_state = 0,
+    .perspective = 0,
+    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+    .spawn_point = {0},
+};
 
 ShaderProgram shader_fbo =
 {
     .name = "fbo",
-    .vertex =
-    {
-        .file_name = "fbo.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "fbo.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "fbo.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "fbo.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_default =
 {
     .name = "default",
-    .vertex =
-    {
-        .file_name = "default.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "default.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "default.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "default.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_text =
 {
     .name = "text",
-    .vertex =
-    {
-        .file_name = "text.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "text.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "text.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "text.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_skybox =
 {
     .name = "skybox",
-    .vertex =
-    {
-        .file_name = "skybox.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "skybox.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "skybox.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "skybox.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 ShaderProgram shader_gizmo =
 {
     .name = "gizmo",
-    .vertex =
-    {
-        .file_name = "gizmo.vert",
-        .type = GL_VERTEX_SHADER,
-    },
-
-    .fragment =
-    {
-        .file_name = "gizmo.frag",
-        .type = GL_FRAGMENT_SHADER,
-    },
+    .vertex.file_name = "gizmo.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "gizmo.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
 };
 
 struct /* skybox_data */
@@ -124,18 +98,22 @@ struct /* skybox_data */
 } skybox_data;
 
 GLuint fbo_skybox;
-GLuint color_buf_skybox;
-GLuint rbo_skybox;
-
 GLuint fbo_world;
-GLuint color_buf_world;
-GLuint rbo_world;
-
 GLuint fbo_hud;
+GLuint fbo_text;
+
+GLuint color_buf_skybox;
+GLuint color_buf_world;
 GLuint color_buf_hud;
+GLuint color_buf_text;
+
+GLuint rbo_skybox;
+GLuint rbo_world;
 GLuint rbo_hud;
+GLuint rbo_text;
 
 Mesh mesh_fbo = {0};
+Mesh mesh_fbo_flipped = {0};
 
 #define VBO_LEN_SKYBOX  24
 #define EBO_LEN_SKYBOX  36
@@ -161,32 +139,21 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void log_stuff();
-void update_input(GLFWwindow *window, Camera *camera);
-void generate_standard_meshes();
-void bind_shader_uniforms();
-void update_world();
-void draw_skybox();
-void draw_world();
-void draw_hud();
-void draw_everything();
-
-void draw_text_example();
-void draw_font_atlas_example();
-void render_text_example();
+void update_input(GLFWwindow *window, Player *player);
+void generate_standard_meshes(void);
+void bind_shader_uniforms(void);
+void update_world(Player *player);
+void draw_skybox(Player *player);
+void draw_world(Player *player);
+void draw_hud(Player *player);
+void draw_everything(Player *player);
 
 /* ---- section: main ------------------------------------------------------- */
 
-Font font = {0}; // TODO: put in gui.c
-
 int main(void)
 {
-    // TODO: put in gui.c
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
     glfwSetErrorCallback(error_callback);
-    /*temp*/ render.size = (v2i32){1080, 820};
+    /*temp*/ render.size = (v2i32){1024, 1024};
 
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
@@ -199,7 +166,6 @@ int main(void)
         return -1;
 
     if (init_glfw() != 0 ||
-            //init_text() != 0 || /*temp off*/
             init_window(&render) != 0 ||
             init_glad() != 0)
     {
@@ -207,13 +173,10 @@ int main(void)
         return -1;
     }
 
-    if (!load_font(&font, 32, path)) // TODO: put in gui.c
-        exit(EXIT_FAILURE);
-
-    game_start_time = glfwGetTime();
-
-    glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
+    /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
+
+    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_DEBUG;
 
     /* ---- section: set mouse input ---------------------------------------- */
 
@@ -244,9 +207,10 @@ int main(void)
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text) != 0 ||
-            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo) != 0 ||
-            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo) != 0 ||
-            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo) != 0)
+            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
@@ -257,10 +221,14 @@ int main(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    camera =
+    if (init_gui() != 0)
+        goto cleanup;
+
+    apply_render_settings();
+    //init_super_debugger(&render.size); /*temp off*/
+
+    lily.camera =
         (Camera){
-            .pos = (v3f32){-0.5f, -0.5f, 0.5f},
-            .rot = (v3f32){0.0f, 0.0f, 315.0f},
             .fovy = 70.0f,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
@@ -268,29 +236,33 @@ int main(void)
         };
 
     bind_shader_uniforms();
+    game_start_time = glfwGetTime();
 
 section_menu_title: /* ---- section: title menu ----------------------------- */
 section_menu_pause: /* ---- section: pause menu ----------------------------- */
 section_main: /* ---- section: main loop ------------------------------------ */
+
     generate_standard_meshes();
 
     while (!glfwWindowShouldClose(render.window))
     {
+        render.frame_start = glfwGetTime() - game_start_time;
+        render.frame_delta = render.frame_start - render.frame_last;
+        render.frame_last = render.frame_start;
+
         //get_mouse_position(&render, &render.mouse_position);
         //get_mouse_movement(render.mouse_last, &render.mouse_delta);
 
-        if (logging) log_stuff();
-
-        update_world();
-        draw_everything();
-        /*temp*/ render_text_example();
+        update_world(&lily);
+        draw_everything(&lily);
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
-        update_input(render.window, &camera);
+        update_input(render.window, &lily);
     }
 
 cleanup: /* ----------------------------------------------------------------- */
+    free_font(&font);
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
@@ -308,7 +280,7 @@ cleanup: /* ----------------------------------------------------------------- */
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
-    camera.ratio = (f32)width / (f32)height;
+    lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 }
 
@@ -317,13 +289,17 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
     render.mouse_delta = (v2f64){xpos - render.mouse_position.x, ypos - render.mouse_position.y};
     render.mouse_position = (v2f64){xpos, ypos};
 
-    camera.rot.y += render.mouse_delta.y;
-    camera.rot.z += render.mouse_delta.x;
+    if (state & FLAG_PARSE_CURSOR)
+        if (!(state & FLAG_SUPER_DEBUG))
+        {
+            lily.yaw += (f32)render.mouse_delta.x * settings.mouse_sensitivity;
+            lily.pitch += (f32)render.mouse_delta.y * settings.mouse_sensitivity;
+        }
 }
 
 static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_PAUSE && action == GLFW_PRESS)
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
@@ -337,65 +313,65 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
-    if (key == GLFW_KEY_L && action == GLFW_PRESS)
-        logging ^= 1;
+    /* ---- miscellaneous --------------------------------------------------- */
+    if (key == bind_toggle_hud && (action == GLFW_PRESS || action == GLFW_REPEAT))
+        state ^= FLAG_HUD;
+
+    if (key == bind_toggle_debug && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        if (!(state & FLAG_DEBUG))
+            state |= FLAG_DEBUG;
+        else if (!(state & FLAG_DEBUG_MORE))
+            state |= FLAG_DEBUG_MORE;
+        else
+            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+    }
 }
 
-void log_stuff()
+f32 movement_speed = 5.0f;
+void update_input(GLFWwindow *window, Player *player)
 {
-    LOGDEBUG("%s\n", "-------------------------------------]");
-    LOGDEBUG("        mouse[%7.2lf %7.2lf        ]\n", render.mouse_position.x, render.mouse_position.y);
-    LOGDEBUG("        delta[%7.2lf %7.2lf        ]\n", render.mouse_delta.x, render.mouse_delta.y);
-    LOGDEBUG("   camera xyz[%7.2f %7.2f %7.2f]\n", camera.pos.x, camera.pos.y, camera.pos.z);
-    LOGDEBUG("camera yawpch[        %7.2f %7.2f]\n", camera.rot.y, camera.rot.z);
-    LOGDEBUG("        ratio[%7.2f                ]\n\n", camera.ratio);
+    movement_speed = 5.0f * render.frame_delta;
 
-    LOGDEBUG("        ticks[%5d                  ]\n", game_tick);
-    LOGDEBUG("  skybox time[%7.2f                ]\n", skybox_data.time);
-    LOGDEBUG(" sun rotation[%7.2f %7.2f %7.2f]\n", skybox_data.sun_rotation.x, skybox_data.sun_rotation.y, skybox_data.sun_rotation.z);
-    LOGDEBUG("        color[%7.2f %7.2f %7.2f]\n", skybox_data.color.x, skybox_data.color.y, skybox_data.color.z);
-    LOGDEBUG("%s\n\n", "-------------------------------------]");
-
-}
-
-f64 movement_speed = 0.08f;
-void update_input(GLFWwindow *window, Camera *camera)
-{
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
     {
-        camera->pos.z += movement_speed;
+        player->pos.z += movement_speed;
     }
 
     /* ---- sneaking -------------------------------------------------------- */
     if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
     {
-        camera->pos.z -= movement_speed;
+        player->pos.z -= movement_speed;
     }
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+        movement_speed += 12.0f * render.frame_delta;
 
     /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
     {
-        camera->pos.x += (movement_speed * camera->sin_yaw);
-        camera->pos.y += (movement_speed * camera->cos_yaw);
+        player->pos.x += (movement_speed * player->camera.sin_yaw);
+        player->pos.y += (movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
     {
-        camera->pos.x -= (movement_speed * camera->sin_yaw);
-        camera->pos.y -= (movement_speed * camera->cos_yaw);
+        player->pos.x -= (movement_speed * player->camera.sin_yaw);
+        player->pos.y -= (movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
     {
-        camera->pos.x -= (movement_speed * camera->cos_yaw);
-        camera->pos.y += (movement_speed * camera->sin_yaw);
+        player->pos.x -= (movement_speed * player->camera.cos_yaw);
+        player->pos.y += (movement_speed * player->camera.sin_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
     {
-        camera->pos.x += (movement_speed * camera->cos_yaw);
-        camera->pos.y -= (movement_speed * camera->sin_yaw);
+        player->pos.x += (movement_speed * player->camera.cos_yaw);
+        player->pos.y -= (movement_speed * player->camera.sin_yaw);
     }
 }
 
@@ -425,14 +401,14 @@ void generate_standard_meshes()
 
     GLfloat vbo_data_coh[] =
     {
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,
         1.0f, 1.0f, 1.0f,
-        2.0f, 1.0f, 1.0f,
-        1.0f, 2.0f, 1.0f,
-        2.0f, 2.0f, 1.0f,
-        1.0f, 1.0f, 2.0f,
-        2.0f, 1.0f, 2.0f,
-        1.0f, 2.0f, 2.0f,
-        2.0f, 2.0f, 2.0f,
     };
 
     GLuint ebo_data_coh[] =
@@ -507,10 +483,27 @@ cleanup:
     LOGERROR("%s\n", "Mesh Generation Failed");
 }
 
-void bind_shader_uniforms()
+void bind_shader_uniforms(void)
 {
-    uniform.text.texture_text = glGetUniformLocation(shader_text.id, "texture_text");
-    uniform.text.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font.uniform.row = glGetUniformLocation(shader_text.id, "row");
+    font.uniform.col = glGetUniformLocation(shader_text.id, "col");
+    font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
+    font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
+    font.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
+    font.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
+    font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+
+    font_bold.uniform.row = glGetUniformLocation(shader_text.id, "row");
+    font_bold.uniform.col = glGetUniformLocation(shader_text.id, "col");
+    font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
+    font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
+    font_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
+    font_bold.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font_bold.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
+    font_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
     uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
@@ -531,17 +524,19 @@ void bind_shader_uniforms()
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
-void update_world()
+void update_world(Player *player)
 {
-    game_tick = (floor((glfwGetTime() - game_start_time) * 1500)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
-    update_camera_movement(&camera);
-    update_camera_perspective(&camera, &projection);
+    update_camera_movement_player(&render, player);
+    update_camera_perspective(&player->camera, &projection);
+
+    update_debug_strings(player);
 }
 
-void draw_skybox()
+void draw_skybox(Player *player)
 {
     skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
     skybox_data.sun_rotation = (v3f32){-cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, 12.0f};
@@ -568,7 +563,7 @@ void draw_skybox()
         };
 
     glUseProgram(shader_skybox.id);
-    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&player->camera.pos);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
@@ -577,20 +572,20 @@ void draw_skybox()
     draw_mesh(&mesh_skybox);
 }
 
-void draw_world()
+void draw_world(Player *player)
 {
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&camera.pos);
+    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&player->camera.pos);
     glUniform3fv(uniform.defaults.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
     draw_mesh(&mesh_cube_of_happiness);
 }
 
-void draw_hud()
+void draw_hud(Player *player)
 {
     glUseProgram(shader_gizmo.id);
-    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)camera.ratio);
+    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)player->camera.ratio);
     glUniformMatrix4fv(uniform.gizmo.mat_target, 1, GL_FALSE, (GLfloat*)&projection.target);
     glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
@@ -598,22 +593,31 @@ void draw_hud()
     draw_mesh(&mesh_gizmo);
 }
 
-void draw_everything()
+void draw_everything(Player *player)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    draw_skybox();
+    draw_skybox(player);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_world();
+    draw_world(player);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_hud();
+    draw_hud(player);
 
-    /* ---- section: draw everything ---------------------------------------- */
+    if (state & FLAG_DEBUG)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_text);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(shader_text.id);
+        glBindVertexArray(mesh_fbo_flipped.vao);
+        glBindTexture(GL_TEXTURE_2D, font_bold.id);
+        draw_debug_info(&render, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -625,87 +629,25 @@ void draw_everything()
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, color_buf_hud);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    if (state & FLAG_DEBUG)
+    {
+        glBindTexture(GL_TEXTURE_2D, color_buf_text);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
 }
 
 /* ---- section: testing ---------------------------------------------------- */
 
-void draw_text_example()
-{
-    str *text = "Heljo World!";
-
-    int width = 256, height = 256;
-    unsigned char screen[height][width];
-    float scale, offset_x = 2;
-    float font_size = 32;
-
-    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
-    if (!load_font(&font, font_size, path))
-        exit(EXIT_FAILURE);
-
-    scale = stbtt_ScaleForPixelHeight(&font.info, font_size - 1);
-    for (u64 i = 0; i < strlen(text); ++i)
-    {
-        u8 c = text[i];
-        u8 c1 = text[i + 1];
-        u32 glyph_index = stbtt_FindGlyphIndex(&font.info, c);
-        u32 glyph_index1 = (c1) ? stbtt_FindGlyphIndex(&font.info, c1) : 0;
-        Glyph *g = &font.glyph[c];
-        void *bitmap_offset = font.bitmap + (i * font.size * font.size);
-        f32 x_shift = offset_x - (f32)floor(offset_x);
-
-        stbtt_MakeGlyphBitmapSubpixel(&font.info, &screen[font.baseline + g->y0][(i32)offset_x + g->x0], g->size.x, g->size.y, width, scale, scale, x_shift, 0.0f, glyph_index);
-        offset_x += (g->advance * scale);
-        if (c1)
-            offset_x += scale * stbtt_GetGlyphKernAdvance(&font.info, glyph_index, glyph_index1);
-    }
-
-    for (int j = 0; j < height; ++j)
-    {
-        for (int i = 0; i < width; ++i)
-            putchar(" .:ioVM@" [screen[j][i] >> 5]);
-        putchar('\n');
-    }
-
-    free_font(&font);
-    exit(0);
-}
-
-void draw_font_atlas_example()
-{
-    int width = 256, height = 256;
-    unsigned char screen[height][width];
-    float scale, offset_x = 2;
-    float font_size = 16;
-
-    // if init_paths() and init_instance_dir() are called before this, the font path will depend on "&ORIGIN/instances/<instance>/resources/fonts/" instead of on current working directory
-    str path[PATH_MAX] = {0};
-    snprintf(path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
-
-    if (!load_font(&font, font_size, path))
-        exit(EXIT_FAILURE);
-
-    for (int i = 0; i < width; ++i)
-    {
-        for (int j = 0; j < height; ++j)
-            putchar(" .:ioVM@" [*(font.bitmap + (i * width) + j) >> 5]);
-        putchar('\n');
-    }
-
-    free_font(&font);
-    exit(0);
-}
-
-void render_text_example()
+void render_font_atlas_example(void)
 {
     glUseProgram(shader_text.id);
-    glUniform1i(uniform.text.texture_text, font.id);
-    glUniform3f(uniform.text.text_color, 1.0f, 1.0f, 1.0f);
-    glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(mesh_fbo.vao);
+    glBindVertexArray(mesh_fbo_flipped.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 

@@ -2,19 +2,23 @@
 #define ENGINE_CORE_H
 
 #define ENGINE_AUTHOR       "Author: Lily Awertnex"
-#define ENGINE_NAME         "Heaven-Hell Continuum Engine"
+#define ENGINE_NAME         "Fossil Engine"
 #define ENGINE_VERSION      "0.1.0-beta"
 
 #include "../../../include/glad/glad.h"
 #define GLFW_INCLUDE_NONE
 #include "../../../include/glfw3_modified.h"
-#define STB_TRUETYPE_IMPLEMENTATION
 #include "../../../include/stb_truetype_modified.h"
 
 #include "defines.h"
 #include "platform.h"
+#include "limits.h"
 
 /* ---- section: definitions ------------------------------------------------ */
+
+#define FONT_ATLAS_CELL_RESOLUTION  16
+#define FONT_RESOLUTION_DEFAULT     128
+#define FONT_SIZE_DEFAULT           22.0f
 
 typedef struct Render
 {
@@ -25,6 +29,9 @@ typedef struct Render
     v2f64 mouse_position;
     v2f64 mouse_last;
     v2f64 mouse_delta;
+    f64 frame_start;
+    f64 frame_last;
+    f64 frame_delta;
 } Render;
 
 typedef struct Mesh
@@ -83,21 +90,23 @@ typedef struct Projection
 
 typedef struct Glyph
 {
-    v2f32 size;
+    v2i32 scale;
     v2i32 bearing;
     i32 advance;
-    i32 x0, y0, x1, y1;         /* uv texture coordinates */
+    i32 x0, y0, x1, y1;
     b8 loaded;
 } Glyph;
 
 typedef struct Font
 {
     str path[PATH_MAX];         /* font file name, assigned in load_font() automatically */
-    u32 size;
-    i32 baseline;
-    i32 ascent, descent;        /* glyphs highest and lowest points' deviation from baseline in pixels */
-    i32 line_gap;               /* gap between lines, from descent to next line's ascent */
-    f32 line_height;            /* font line height in pixels (or advance y) */
+    u32 resolution;             /* glyph bitmap diameter in bytes */
+    f32 char_size;              /* for font atlas sampling */
+    i32 ascent;                 /* glyphs highest points' deviation from baseline */
+    i32 descent;                /* glyphs lowest points' deviation from baseline */
+    i32 line_gap;
+    i32 line_height;
+    v2i32 scale;                /* biggest glyph bounding box in pixels */
 
     stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
     u8 *buf;                    /* font file contents, used by stb_truetype.h's stbtt_InitFont() */
@@ -106,6 +115,20 @@ typedef struct Font
 
     GLuint id;                  /* used by opengl's glGenTextures() */
     Glyph glyph[GLYPH_MAX];
+
+    struct /* uniform */
+    {
+        GLint row;
+        GLint col;
+        GLint char_size;
+        GLint font_size;
+        GLint ndc_size;
+        GLint offset;
+        GLint advance;
+        GLint bearing;
+        GLint text_color;
+    } uniform;
+
 } Font;
 
 /* ---- section: signatures ------------------------------------------------- */
@@ -129,12 +152,12 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
 
 /*
  * return FALSE (0) on failure;
  */
-b8 generate_texture_atlas(GLuint *id, const GLint format, u32 size, void *buffer);
+b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer);
 
 int generate_mesh_fbo(Mesh *mesh);
 
@@ -154,9 +177,10 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 /*
  * load font from file at font_path;
  * allocate memory for font.buf and load file contents into it in binary format;
- * allocate memory for font.bitmap and render glyphs into it;
+ * allocate memory for font.bitmap and render glyphs onto it;
+ * generate square texture of diameter "size * 16" and bake bitmap onto it;
  *
- * size = font size;
+ * size = font size & character bitmap diameter;
  * font_path = font path;
  *
  * return FALSE (0) on failure;
@@ -164,6 +188,13 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 b8 load_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
+
+/*
+ * does update Font.projection;
+ *
+ * size = font height in pixels;
+ */
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
 
 #endif /* ENGINE_CORE_H */
 

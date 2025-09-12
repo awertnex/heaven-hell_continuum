@@ -29,7 +29,7 @@ void main()
             (base_color.b * sky_color.b)) / sky_brightness;
     flashlight /= distance;
 
-    color = (((base_color * (1.0 + sky_brightness)) + flashlight) / distance) +
+    color = (((base_color * (1.0 + sky_brightness)) + flashlight) / (distance * 2.0)) +
         (vec4(sky_color, 1.0) * sky_influence);
 }
 

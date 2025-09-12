@@ -7,7 +7,6 @@ uniform mat4 mat_translation;
 uniform mat4 mat_rotation;
 uniform mat4 mat_orientation;
 uniform mat4 mat_projection;
-mat4 mat_transposition;
 out vec4 vertex_color;
 
 void main()
@@ -15,13 +14,17 @@ void main()
     float corner_offset = 0.2;
     float scale = 0.08;
 
-    mat_transposition = mat4(
+    mat4 mat_transposition = mat4(
             1.0,                            0.0,                    0.0,    0.0,
             0.0,                            1.0,                    0.0,    0.0,
             0.0,                            0.0,                    1.0,    0.0,
             1.0 - (corner_offset / ratio),  1.0 - corner_offset,    0.0,    1.0);
 
-    vertex_color = vec4(floor(a_pos), 1.0) * 20.0;
+    mat4 mat_offset = mat4(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            -0.0025, -0.0025, -0.0025, 1.0);
 
     gl_Position =
         mat_transposition *
@@ -29,6 +32,9 @@ void main()
         mat_orientation *
         mat_rotation *
         mat_translation *
+        mat_offset *
         vec4(a_pos * scale, 1.0);
+
+    vertex_color = vec4(floor(a_pos), 1.0) * 20.0;
 }
 

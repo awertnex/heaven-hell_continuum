@@ -25,6 +25,7 @@ const long C_STD = __STDC_VERSION__;
 /* ---- section: platform --------------------------------------------------- */
 
 #if defined(__linux__) || defined(__linux)
+#include "src/engine/platform_linux.c"
 #include <glob.h>
 
 #define PLATFORM        "linux/"
@@ -32,6 +33,21 @@ const long C_STD = __STDC_VERSION__;
 #define COMPILER        "gcc"EXTENSION
 
 glob_t glob_buf = {0};
+
+str str_children[][32] =
+{
+    DIR_SRC"chunking.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"logic.c",
+    DIR_SRC"platform_linux.c",
+    DIR_SRC"engine/core.c",
+    DIR_SRC"engine/dir.c",
+    DIR_SRC"engine/logger.c",
+    DIR_SRC"engine/math.c",
+    DIR_SRC"engine/memory.c",
+    DIR_SRC"engine/platform_linux.c",
+};
 
 str str_libs[][32] =
 {
@@ -46,9 +62,26 @@ str str_libs[][32] =
     //"-lXinerama",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#include "src/engine/platform_windows.c"
+
 #define PLATFORM        "win/"
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
+
+str str_children[][32] =
+{
+    DIR_SRC"chunking.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"logic.c",
+    DIR_SRC"platform_windows.c",
+    DIR_SRC"engine/core.c",
+    DIR_SRC"engine/dir.c",
+    DIR_SRC"engine/logger.c",
+    DIR_SRC"engine/math.c",
+    DIR_SRC"engine/memory.c",
+    DIR_SRC"engine/platform_windows.c",
+};
 
 str str_libs[][24] =
 {
@@ -88,7 +121,6 @@ str str_cflags[][32] =
     "-std=c99",
     "-Wall",
     "-Wextra",
-    "-Wpedantic",
     "-fno-builtin",
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
@@ -340,6 +372,15 @@ void build_cmd(int argc, char **argv)
             push_cmd(str_main);
             break;
     }
+
+    /* ---- children -------------------------------------------------------- */
+    for (u32 i = 0; i < arr_len(str_children); ++i)
+        push_cmd(str_children[i]);
+
+    /* ---- includes -------------------------------------------------------- */
+    str temp[PATH_MAX] = {0};
+    snprintf(temp, PATH_MAX - 1, "%sinclude/glad/glad.c", str_bin_root);
+    push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
     for (u32 i = 0; i < arr_len(str_cflags); ++i)

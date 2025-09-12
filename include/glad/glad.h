@@ -2120,7 +2120,5 @@ GLAPI PFNGLSECONDARYCOLORP3UIVPROC glad_glSecondaryColorP3uiv;
 #define glSecondaryColorP3uiv glad_glSecondaryColorP3uiv
 #endif
 
-#include "glad.c"
-
 #endif
 

@@ -5,12 +5,12 @@
 
 /* ---- section: player defaults -------------------------------------------- */
 
-const f32 PLAYER_JUMP_HEIGHT =      1.25f;
-const f32 PLAYER_SPEED_WALK =       3.0f;
-const f32 PLAYER_SPEED_FLY =        10.0f;
-const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
-const f32 PLAYER_SPEED_SNEAK =      1.8f;
-const f32 PLAYER_SPEED_SPRINT =     4.0f;
+static const f32 PLAYER_JUMP_HEIGHT =      1.25f;
+static const f32 PLAYER_SPEED_WALK =       3.0f;
+static const f32 PLAYER_SPEED_FLY =        10.0f;
+static const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
+static const f32 PLAYER_SPEED_SNEAK =      1.8f;
+static const f32 PLAYER_SPEED_SPRINT =     4.0f;
 
 typedef struct Player
 {
@@ -33,7 +33,6 @@ typedef struct Player
 
     Camera camera;
     f32 camera_distance;            /* for camera collision detection */
-    Camera camera_debug_info;
 
     /* TODO: do player overflow */
     u8 overflow;                    /* player at world edge, enum: PlayerFlags */
@@ -121,7 +120,7 @@ extern Player lily;
 
 bool get_double_press(u32 key);
 void update_player(Player *player);
-void update_camera_movements_player(Player *player);
+void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
@@ -141,8 +140,10 @@ void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *time_start, f32 interval);
 
+void update_debug_strings(Player *player);
+
 #ifdef FUCK // TODO: undef FUCK
-void draw_default_grid(Color x, Color y, Color z);
+void draw_default_grid(v4u8 x, v4u8 y, v4u8 z);
 #endif // TODO: undef FUCK
 
 #endif /* GAME_LOGIC_H */
