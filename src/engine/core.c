@@ -502,6 +502,7 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
     f32 advance = 0.0f;
+    f32 line_height = 0.0f;
     Glyph *g = NULL;
 
     v2f32 screen_size =
@@ -553,6 +554,12 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     for (u64 i = 0; i < len; ++i)
     {
+        if (text[i] == '\n')
+        {
+            offset.y -= (font->line_height * ndc_size.y);
+            glUniform2fv(font->uniform.offset, 1, (GLfloat*)&offset);
+        }
+
         g = &font->glyph[text[i]];
 
         glUniform1i(font->uniform.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
@@ -562,7 +569,7 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
         glClear(GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        advance += g->advance;
+        (text[i] != '\n') ? (advance += g->advance) : (advance = 0);
     }
 }
 
