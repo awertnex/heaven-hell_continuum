@@ -3,7 +3,7 @@
 #include "engine/h/logger.h"
 
 #include "h/chunking.h"
-//#include "h/logic.h" // temp off
+#include "h/logic.h"
 
 Chunk *chunk_buf = {0};                         /* chunk buffer, raw chunk data */
 Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {NULL};    /* chunk pointer look-up table */
@@ -304,7 +304,7 @@ void update_chunk_tab(v3i16 player_delta_chunk)
         if (distance_v3i32(
                     (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v3i32){coordinates.x, coordinates.y, coordinates.z})
-                < ((u32)powf(setting.render_distance, 2) + 2))
+                < ((u32)powf(settings.render_distance, 2) + 2))
         {
             if (chunk_tab[i] == NULL)
                 chunk_tab[i] = push_chunk_buf(player_delta_chunk, coordinates);

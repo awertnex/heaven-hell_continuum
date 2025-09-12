@@ -8,11 +8,11 @@
 #include "../../../include/glad/glad.h"
 #define GLFW_INCLUDE_NONE
 #include "../../../include/glfw3_modified.h"
-#define STB_TRUETYPE_IMPLEMENTATION
 #include "../../../include/stb_truetype_modified.h"
 
 #include "defines.h"
 #include "platform.h"
+#include "limits.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 

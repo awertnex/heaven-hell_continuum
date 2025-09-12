@@ -5,12 +5,12 @@
 
 /* ---- section: player defaults -------------------------------------------- */
 
-const f32 PLAYER_JUMP_HEIGHT =      1.25f;
-const f32 PLAYER_SPEED_WALK =       3.0f;
-const f32 PLAYER_SPEED_FLY =        10.0f;
-const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
-const f32 PLAYER_SPEED_SNEAK =      1.8f;
-const f32 PLAYER_SPEED_SPRINT =     4.0f;
+static const f32 PLAYER_JUMP_HEIGHT =      1.25f;
+static const f32 PLAYER_SPEED_WALK =       3.0f;
+static const f32 PLAYER_SPEED_FLY =        10.0f;
+static const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
+static const f32 PLAYER_SPEED_SNEAK =      1.8f;
+static const f32 PLAYER_SPEED_SPRINT =     4.0f;
 
 typedef struct Player
 {

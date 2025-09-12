@@ -1,12 +1,14 @@
-#include "engine/core.c"
-#include "engine/dir.c"
-#include "engine/logger.c"
-#include "engine/math.c"
-#include "engine/memory.c"
+#include "engine/h/core.h"
+#include "engine/h/logger.h"
+#include "engine/h/math.h"
 
 #include "h/main.h"
-#include "h/platform.h"
 #include "h/settings.h"
+#include "h/chunking.h"
+#include "h/dir.h"
+#include "h/gui.h"
+#include "h/logic.h"
+#include "keymaps.c"
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -174,7 +176,7 @@ int main(void)
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 0);
 
-    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED | FLAG_DEBUG;
+    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_DEBUG;
 
     /* ---- section: set mouse input ---------------------------------------- */
 
@@ -290,11 +292,9 @@ static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
     if (state & FLAG_PARSE_CURSOR)
         if (!(state & FLAG_SUPER_DEBUG))
         {
-            lily.yaw -= (f32)render.mouse_delta.x * setting.mouse_sensitivity;
-            lily.pitch -= (f32)render.mouse_delta.y * setting.mouse_sensitivity;
+            lily.yaw += (f32)render.mouse_delta.x * settings.mouse_sensitivity;
+            lily.pitch += (f32)render.mouse_delta.y * settings.mouse_sensitivity;
         }
-    lily.yaw += (f32)render.mouse_delta.x * setting.mouse_sensitivity;
-    lily.pitch += (f32)render.mouse_delta.y * setting.mouse_sensitivity;
 }
 
 static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)

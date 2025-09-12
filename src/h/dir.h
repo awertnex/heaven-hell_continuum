@@ -1,11 +1,10 @@
 #ifndef GAME_DIR_H
 #define GAME_DIR_H
 
-#include <linux/limits.h>
-
 #include "main.h"
 #include "../engine/h/defines.h"
 #include "../engine/h/dir.h"
+#include "../engine/h/limits.h"
 
 #define DIR_MAX     64
 

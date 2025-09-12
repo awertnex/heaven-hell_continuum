@@ -1,14 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "h/setting.h"
-
-#include "h/assets.h"
 #include "h/chunking.h"
-#include "h/dir.h"
 #include "h/gui.h"
 #include "h/logic.h"
-#include "h/super_debugger.h"
 
 void update_debug_strings(Player *player)
 {

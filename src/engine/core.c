@@ -3,6 +3,10 @@
 #include <sys/stat.h>
 
 #include "h/core.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../../include/stb_truetype_modified.h"
+
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/math.h"

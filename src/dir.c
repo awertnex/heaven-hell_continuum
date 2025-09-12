@@ -9,7 +9,6 @@
 #include "engine/h/logger.h"
 #include "engine/h/memory.h"
 #include "h/main.h"
-#include "h/platform.h"
 #include "h/dir.h"
 
 str path_grandpath[PATH_MAX] = {0};
