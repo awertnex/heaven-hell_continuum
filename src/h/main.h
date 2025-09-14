@@ -10,8 +10,6 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define MARGIN 20
-
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
 #define MODE_GRAVITY        1
@@ -62,7 +60,7 @@ extern Uniform uniform;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void init_world(str *str);
+void init_world(str *string);
 
 #endif /* GAME_MAIN_H */
 

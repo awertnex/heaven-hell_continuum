@@ -29,7 +29,7 @@ bool get_double_press(u32 key)
     return FALSE;
 }
 
-void update_player(Player *player)
+void update_player(Render *render, Player *player)
 {
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / CHUNK_DIAMETER),
@@ -44,7 +44,7 @@ void update_player(Player *player)
 
     if (!(player->state & FLAG_CAN_JUMP)
             && !(player->state & FLAG_FLYING))
-        update_gravity(player);
+        update_gravity(render, player);
 
     if (player->state & FLAG_FLYING)
     {
@@ -240,12 +240,11 @@ b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
     return false;
 }
 
-void update_gravity(Player *player) /* TODO: fix player gravity */
+void update_gravity(Render *render, Player *player)
 {
-    if (player->state & FLAG_FALLING)
-        player->vel.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->mass);
+    (player->state & FLAG_FALLING) ?
+        player->vel.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->mass * render->frame_delta_square) : 0;
     player->pos.z += player->vel.z;
-    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); /*temp*/
 }
 
 //void update_collision_static(player *player) /* TODO: make AABB collision work */

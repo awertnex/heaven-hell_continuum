@@ -69,13 +69,15 @@ int init_glad(void)
 
 int init_shader(const str *shaders_dir, Shader *shader)
 {
+    if (!shader->type)
+        return 0;
+
     str str_reg[PATH_MAX] = {0};
     snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
 
     if ((shader->source = get_file_contents(str_reg, NULL, "r")) == NULL)
         return -1;
-    if (shader->id)
-        glDeleteShader(shader->id);
+    (shader->id) ? glDeleteShader(shader->id) : 0;
 
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
@@ -100,10 +102,11 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 {
     if (init_shader(shaders_dir, &program->vertex) != 0)
         return -1;
+    if (init_shader(shaders_dir, &program->geometry) != 0)
+        return -1;
     if (init_shader(shaders_dir, &program->fragment) != 0)
         return -1;
-    if (program->id)
-        glDeleteProgram(program->id);
+    (program->id) ? glDeleteProgram(program->id) : 0;
 
     program->id = glCreateProgram();
     glAttachShader(program->id, program->vertex.id);
@@ -132,6 +135,8 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 
 int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical)
 {
+    free_fbo(fbo, color_buf, fbo);
+
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
 
@@ -207,9 +212,17 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     return 0;
 
 cleanup:
+    free_fbo(fbo, color_buf, fbo);
     free_mesh(mesh_fbo);
     return -1;
 }
+
+void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo)
+{
+    fbo ? glDeleteFramebuffers(1, fbo) : 0;
+    color_buf ? glDeleteTextures(1, color_buf) : 0;
+    rbo ? glDeleteRenderbuffers(1, fbo) : 0;
+};
 
 b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer)
 {
@@ -279,12 +292,12 @@ void draw_mesh(Mesh *mesh)
 
 void free_mesh(Mesh *mesh)
 {
-    if (mesh->vbo_data == NULL || mesh->ebo_data == NULL) return;
+    mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
+    mesh->vbo ? glDeleteBuffers(1, &mesh->vbo) : 0;
+    mesh->vao ? glDeleteVertexArrays(1, &mesh->vao) : 0;
     mem_free((void*)&mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len, "mesh.vbo_data");
     mem_free((void*)&mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len, "mesh.vbo_data");
-    glDeleteVertexArrays(1, &mesh->vao);
-    glDeleteBuffers(1, &mesh->vbo);
-    glDeleteBuffers(1, &mesh->ebo);
+    *mesh = (Mesh){0};
 }
 
 /* ---- section: camera ----------------------------------------------------- */

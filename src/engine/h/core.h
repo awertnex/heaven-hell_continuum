@@ -17,7 +17,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 #define FONT_ATLAS_CELL_RESOLUTION  16
-#define FONT_RESOLUTION_DEFAULT     128
+#define FONT_RESOLUTION_DEFAULT     64
 #define FONT_SIZE_DEFAULT           22.0f
 
 typedef struct Render
@@ -32,6 +32,7 @@ typedef struct Render
     f64 frame_start;
     f64 frame_last;
     f64 frame_delta;
+    f64 frame_delta_square;
 } Render;
 
 typedef struct Mesh
@@ -60,6 +61,7 @@ typedef struct ShaderProgram
     GLuint id;                  /* used by opengl's glCreateProgram() */
     GLint loaded;               /* used by opengl's "glGetProgramiv()" */
     Shader vertex;
+    Shader geometry;
     Shader fragment;
 } ShaderProgram;
 
@@ -153,6 +155,8 @@ int init_shader(const str *shaders_dir, Shader *shader);
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
 int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
+
+void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
 /*
  * return FALSE (0) on failure;

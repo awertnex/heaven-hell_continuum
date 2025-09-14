@@ -58,9 +58,21 @@ extern str WORLD_DIR[][NAME_MAX];
 /* ---- section: signatures ------------------------------------------------- */
 
 int init_paths(void);
+
 int init_grandpath_directory(void);
+
+// TODO: make "create_instance & create_world" functions
+int create_instance(const str *instance_name);
+
 int init_instance_directory(const str *instance_name);
+
+int init_instance_files(const str *instance_name);
+
+int create_world(const str *world_name);
+
 void init_world_directory(const str *world_name);
+
+void init_world_files(const str *world_name);
 
 #endif /* GAME_DIR_H */
 
