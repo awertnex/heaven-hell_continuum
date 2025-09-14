@@ -20,8 +20,10 @@ typedef struct Player
     v3f32 collision_check_start;
     v3f32 collision_check_end;
     f32 pitch, yaw;                 /* for player camera direction and target */
-    f32 sin_pitch, cos_pitch;       /* processed player pitch angles */
-    f32 sin_yaw, cos_yaw;           /* processed player yaw angles */
+    f32 sin_pitch;                  /* processed player pitch sine angle */
+    f32 cos_pitch;                  /* processed player pitch cosine angle */
+    f32 sin_yaw;                    /* processed player yaw sine angle */
+    f32 cos_yaw;                    /* processed player yaw cosine angle */
     f32 eye_height;                 /* height of player camera, usually */
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
