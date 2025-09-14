@@ -3,7 +3,7 @@
 #include "engine/h/logger.h"
 
 #include "h/chunking.h"
-//#include "h/logic.h" // temp off
+#include "h/logic.h"
 
 Chunk *chunk_buf = {0};                         /* chunk buffer, raw chunk data */
 Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {NULL};    /* chunk pointer look-up table */
@@ -304,7 +304,7 @@ void update_chunk_tab(v3i16 player_delta_chunk)
         if (distance_v3i32(
                     (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v3i32){coordinates.x, coordinates.y, coordinates.z})
-                < ((u32)powf(setting.render_distance, 2) + 2))
+                < ((u32)powf(settings.render_distance, 2) + 2))
         {
             if (chunk_tab[i] == NULL)
                 chunk_tab[i] = push_chunk_buf(player_delta_chunk, coordinates);
@@ -644,7 +644,7 @@ void draw_block(Chunk *chunk, u32 x, u32 y, u32 z)
 }
 
 /* raylib/rmodels.c/DrawLine3D refactored; */
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, Color color)
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color)
 {
     rlColor4ub(color.r, color.g, color.b, color.a);
     rlVertex3f(pos_0.x, pos_0.y, pos_0.z);

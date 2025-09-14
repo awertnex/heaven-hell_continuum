@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include "h/dir.h"
@@ -28,9 +29,9 @@ b8 _get_path_absolute(const str *path, str *path_real)
     return TRUE;
 }
 
-b8 _get_path_bin_root(str *buf)
+b8 _get_path_bin_root(str *path)
 {
-    if (!readlink("/proc/self/exe", buf, PATH_MAX - 1))
+    if (!readlink("/proc/self/exe", path, PATH_MAX - 1))
     {
         LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;

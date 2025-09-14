@@ -2,18 +2,23 @@
 #define ENGINE_CORE_H
 
 #define ENGINE_AUTHOR       "Author: Lily Awertnex"
-#define ENGINE_NAME         "Heaven-Hell Continuum Engine"
-#define ENGINE_VERSION      "0.1.0-beta"
+#define ENGINE_NAME         "Fossil Engine"
+#define ENGINE_VERSION      "0.1.0"
 
-#define GLEW_STATIC
-#include "../../../include/glew_modified.h"
+#include "../../../include/glad/glad.h"
 #define GLFW_INCLUDE_NONE
 #include "../../../include/glfw3_modified.h"
+#include "../../../include/stb_truetype_modified.h"
 
 #include "defines.h"
 #include "platform.h"
+#include "limits.h"
 
 /* ---- section: definitions ------------------------------------------------ */
+
+#define FONT_ATLAS_CELL_RESOLUTION  16
+#define FONT_RESOLUTION_DEFAULT     64
+#define FONT_SIZE_DEFAULT           22.0f
 
 typedef struct Render
 {
@@ -24,6 +29,10 @@ typedef struct Render
     v2f64 mouse_position;
     v2f64 mouse_last;
     v2f64 mouse_delta;
+    f64 frame_start;
+    f64 frame_last;
+    f64 frame_delta;
+    f64 frame_delta_square;
 } Render;
 
 typedef struct Mesh
@@ -52,6 +61,7 @@ typedef struct ShaderProgram
     GLuint id;                  /* used by opengl's glCreateProgram() */
     GLint loaded;               /* used by opengl's "glGetProgramiv()" */
     Shader vertex;
+    Shader geometry;
     Shader fragment;
 } ShaderProgram;
 
@@ -63,7 +73,7 @@ typedef struct Camera
     f32 cos_pitch;
     f32 sin_yaw;
     f32 cos_yaw;
-    f32 fov;
+    f32 fovy;
     f32 ratio;
     f32 far;
     f32 near;
@@ -80,23 +90,115 @@ typedef struct Projection
     m4f32 perspective;
 } Projection;
 
+typedef struct Glyph
+{
+    v2i32 scale;
+    v2i32 bearing;
+    i32 advance;
+    i32 x0, y0, x1, y1;
+    b8 loaded;
+} Glyph;
+
+typedef struct Font
+{
+    str path[PATH_MAX];         /* font file name, assigned in load_font() automatically */
+    u32 resolution;             /* glyph bitmap diameter in bytes */
+    f32 char_size;              /* for font atlas sampling */
+    i32 ascent;                 /* glyphs highest points' deviation from baseline */
+    i32 descent;                /* glyphs lowest points' deviation from baseline */
+    i32 line_gap;
+    i32 line_height;
+    v2i32 scale;                /* biggest glyph bounding box in pixels */
+
+    stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
+    u8 *buf;                    /* font file contents, used by stb_truetype.h's stbtt_InitFont() */
+    u64 buf_len;                /* buf size in bytes */
+    u8 *bitmap;                 /* memory block for all font glyph bitmaps */
+
+    GLuint id;                  /* used by opengl's glGenTextures() */
+    Glyph glyph[GLYPH_MAX];
+
+    struct /* uniform */
+    {
+        GLint row;
+        GLint col;
+        GLint char_size;
+        GLint font_size;
+        GLint ndc_size;
+        GLint offset;
+        GLint advance;
+        GLint bearing;
+        GLint text_color;
+    } uniform;
+
+} Font;
+
 /* ---- section: signatures ------------------------------------------------- */
 
+/*
+ * return non-zero on failure;
+ */
 int init_glfw(void);
+
+/*
+ * return non-zero on failure;
+ */
 int init_window(Render *render);
-int init_glew(void);
+
+/*
+ * return non-zero on failure;
+ */
+int init_glad(void);
 
 int init_shader(const str *shaders_dir, Shader *shader);
+
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo);
+int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
+
+void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
+
+/*
+ * return FALSE (0) on failure;
+ */
+b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer);
+
 int generate_mesh_fbo(Mesh *mesh);
+
+/* 
+ * usage = GL_<x>_DRAW;
+ */
 int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
+
 void draw_mesh(Mesh *mesh);
-void delete_mesh(Mesh *mesh);
+
+void free_mesh(Mesh *mesh);
 
 void update_camera_movement(Camera *camera);
+
 void update_camera_perspective(Camera *camera, Projection *projection);
+
+/*
+ * load font from file at font_path;
+ * allocate memory for font.buf and load file contents into it in binary format;
+ * allocate memory for font.bitmap and render glyphs onto it;
+ * generate square texture of diameter "size * 16" and bake bitmap onto it;
+ *
+ * size = font size & character bitmap diameter;
+ * font_path = font path;
+ *
+ * return FALSE (0) on failure;
+ */
+b8 load_font(Font *font, u32 size, const str *font_path);
+
+void free_font(Font *font);
+
+/*
+ * does update Font.projection;
+ *
+ * size = font height in pixels;
+ */
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
 
 #endif /* ENGINE_CORE_H */
 

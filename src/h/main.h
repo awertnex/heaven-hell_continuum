@@ -7,17 +7,11 @@
 
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
-#include "platform.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define MARGIN 20
-
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
-#define MODE_GRAVITY        1
-
-#define THREAD_COUNT 2 /* TODO: use for multithreading */
 
 typedef struct Uniform
 {
@@ -55,19 +49,10 @@ typedef struct Uniform
 
 extern Render render;
 extern u32 state;
-extern u8 state_menu_depth;
-
-extern f64 delta_time;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
-#define dt (glfwGetTime() - game_start_time)
-
 extern Uniform uniform;
-
-/* ---- section: signatures ------------------------------------------------- */
-
-void init_world(str *str);
 
 #endif /* GAME_MAIN_H */
 

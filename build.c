@@ -25,6 +25,7 @@ const long C_STD = __STDC_VERSION__;
 /* ---- section: platform --------------------------------------------------- */
 
 #if defined(__linux__) || defined(__linux)
+#include "src/engine/platform_linux.c"
 #include <glob.h>
 
 #define PLATFORM        "linux/"
@@ -33,13 +34,26 @@ const long C_STD = __STDC_VERSION__;
 
 glob_t glob_buf = {0};
 
+str str_children[][32] =
+{
+    DIR_SRC"chunking.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"logic.c",
+    DIR_SRC"platform_linux.c",
+    DIR_SRC"engine/core.c",
+    DIR_SRC"engine/dir.c",
+    DIR_SRC"engine/logger.c",
+    DIR_SRC"engine/math.c",
+    DIR_SRC"engine/memory.c",
+    DIR_SRC"engine/platform_linux.c",
+};
+
 str str_libs[][32] =
 {
     "-lm",
     //"-lpthread",
     "-lglfw",
-    "-lGLEW",
-    "-lGL",
     //"-lXrandr",
     //"-lXi",
     //"-lX11",
@@ -48,16 +62,31 @@ str str_libs[][32] =
     //"-lXinerama",
 };
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#include "src/engine/platform_windows.c"
+
 #define PLATFORM        "win/"
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
+
+str str_children[][32] =
+{
+    DIR_SRC"chunking.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"logic.c",
+    DIR_SRC"platform_windows.c",
+    DIR_SRC"engine/core.c",
+    DIR_SRC"engine/dir.c",
+    DIR_SRC"engine/logger.c",
+    DIR_SRC"engine/math.c",
+    DIR_SRC"engine/memory.c",
+    DIR_SRC"engine/platform_windows.c",
+};
 
 str str_libs[][24] =
 {
     "-lm",
     "-lglfw",
-    "-lGLEW",
-    "-lGL",
     "-lgdi32",
     "-lwinmm",
 };
@@ -68,8 +97,8 @@ enum Flags
     STATE_TEST = 1,
     STATE_LAUNCHER,
 
-    FLAG_SHOW_CMD =         0x01,
-    FLAG_RAW_CMD =          0x02,
+    FLAG_SHOW_CMD = 1,
+    FLAG_RAW_CMD = 2,
 }; /* Flags */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -81,20 +110,17 @@ str str_src[PATH_MAX] = {0};            /* path: ./build.c */
 str str_bin[PATH_MAX] = {0};            /* path: ./build%s, EXTENSION */
 str str_bin_new[PATH_MAX] = {0};        /* path: ./build_new%s, EXTENSION */
 str cmd_self_rebuild[PATH_MAX] = {0};   /* self-rebuild command to execute */
-str_buf cmd = {NULL};
+buf cmd = {NULL};
 u64 cmd_pos = 0;
-str_buf str_tests = {NULL};
+buf str_tests = {NULL};
 
 str str_main[PATH_MAX] = DIR_SRC"main.c";
 
 str str_cflags[][32] =
 {
     "-std=c99",
-    "-ggdb",
     "-Wall",
     "-Wextra",
-    "-Wno-missing-braces",
-    "-Wpedantic",
     "-fno-builtin",
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
@@ -162,10 +188,11 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    if (!exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
+    if (!exec((str *const[]){"cp", "-v", "LICENSE", DIR_ROOT, NULL}, "cp lib/") ||
+            !exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
             !exec((str *const[]){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/") ||
             !exec((str *const[]){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/") ||
-            !exec(cmd.entry, "build"))
+            !exec(cmd.i, "build"))
         fail_cmd();
 
     clean_cmd();
@@ -183,7 +210,7 @@ void init_build(void)
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
+    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -Wall -Wextra -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
 }
 
 b8 is_source_changed(void)
@@ -264,8 +291,8 @@ void show_cmd(void)
     printf("\nCMD:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
     {
-        if (!cmd.entry[i]) break;
-        printf("    %.3d: %s\n", i, cmd.entry[i]);
+        if (!cmd.i[i]) break;
+        printf("    %.3d: %s\n", i, cmd.i[i]);
     }
 
     if (!(flags & FLAG_RAW_CMD))
@@ -277,8 +304,8 @@ void raw_cmd(void)
     printf("\nRAW:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
     {
-        if (!cmd.entry[i]) break;
-        printf("%s ", cmd.entry[i]);
+        if (!cmd.i[i]) break;
+        printf("%s ", cmd.i[i]);
     }
 
     printf("%s", "\n\n");
@@ -298,14 +325,16 @@ void push_cmd(const str *string)
         return;
     }
 
-    strncpy(cmd.entry[cmd_pos], string, PATH_MAX);
+    strncpy(cmd.i[cmd_pos], string, PATH_MAX);
     ++cmd_pos;
 }
 
 void build_cmd(int argc, char **argv)
 {
-    if (!mem_alloc_str_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
+    if (!mem_alloc_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
         fail_cmd();
+
+    str temp[PATH_MAX] = {0};
 
     push_cmd(COMPILER);
     switch (state)
@@ -318,20 +347,20 @@ void build_cmd(int argc, char **argv)
             }
 
             u32 test_index = atoi(argv[2]);
-            str_tests.count = get_dir_entry_count(DIR_TESTS);
-            if (test_index <= 0 || test_index >= str_tests.count)
+            str_tests.memb = get_dir_entry_count(DIR_TESTS);
+            if (test_index <= 0 || test_index >= str_tests.memb)
             {
                 LOGERROR("'%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
                 fail_cmd();
             }
 
-            if (!mem_alloc_str_buf((str_buf*)&str_tests, str_tests.count, NAME_MAX, "str_tests"))
+            if (!mem_alloc_buf((buf*)&str_tests, str_tests.memb, NAME_MAX, "str_tests"))
                 fail_cmd();
 
 
-            sort_str_buf(&str_tests);
-            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, str_tests.entry[test_index]);
-            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, str_tests.entry[test_index], EXTENSION);
+            sort_buf(&str_tests);
+            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, str_tests.i[test_index]);
+            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, str_tests.i[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
@@ -346,6 +375,14 @@ void build_cmd(int argc, char **argv)
             break;
     }
 
+    /* ---- children -------------------------------------------------------- */
+    for (u32 i = 0; i < arr_len(str_children); ++i)
+        push_cmd(str_children[i]);
+
+    /* ---- includes -------------------------------------------------------- */
+    snprintf(temp, PATH_MAX - 1, "%sinclude/glad/glad.c", str_bin_root);
+    push_cmd(temp);
+
     /* ---- cflags ---------------------------------------------------------- */
     for (u32 i = 0; i < arr_len(str_cflags); ++i)
         push_cmd(str_cflags[i]);
@@ -354,11 +391,14 @@ void build_cmd(int argc, char **argv)
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
+    snprintf(temp, PATH_MAX - 1, "-L%slib/%s", str_bin_root, PLATFORM);
+    push_cmd(temp);
+
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(str_out);
 
-    cmd.entry[cmd_pos] = NULL;
+    cmd.i[cmd_pos] = NULL;
 }
 
 /*
@@ -378,7 +418,7 @@ void push_glob(const str *pattern)
     {
         if (strstr(glob_buf.gl_pathv[i], str_main))
             continue;
-        strncpy(cmd.entry[cmd_pos], glob_buf.gl_pathv[i], NAME_MAX);
+        strncpy(cmd.i[cmd_pos], glob_buf.gl_pathv[i], NAME_MAX);
         ++cmd_pos;
     }
 }
@@ -386,8 +426,8 @@ void push_glob(const str *pattern)
 void clean_cmd(void)
 {
     mem_free((void*)&str_bin_root, PATH_MAX, "str_bin_root");
-    mem_free_str_buf(&str_tests, NAME_MAX, "str_tests");
-    mem_free_str_buf(&cmd, PATH_MAX, "cmd");
+    mem_free_buf(&str_tests, "str_tests");
+    mem_free_buf(&cmd, "cmd");
 }
 
 void fail_cmd(void)
@@ -432,13 +472,13 @@ void list(void)
         fail_cmd();
     }
 
-    sort_str_buf(&str_tests);
-    for (u32 i = 0; i < str_tests.count; ++i)
+    sort_buf(&str_tests);
+    for (u32 i = 0; i < str_tests.memb; ++i)
     {
-        if (!evaluate_extension(str_tests.entry[i]))
+        if (!evaluate_extension(str_tests.i[i]))
             continue;
 
-        strip_extension(str_tests.entry[i], str_tests_temp);
+        strip_extension(str_tests.i[i], str_tests_temp);
         printf("    %03d: %s\n", i, str_tests_temp);
     }
 

@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "h/limits.h"
 
-#include "src/engine/h/platform.h"
+#include "h/platform.h"
 #include "h/memory.h"
+#include "h/limits.h"
 #include "h/logger.h"
 
 b8 mem_alloc(void **x, u64 size, const str *name)
@@ -40,26 +40,27 @@ b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
     return TRUE;
 }
 
-b8 mem_alloc_str_buf(str_buf *x, u64 memb, u64 size, const str *name)
+b8 mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
 {
-    str name_entry[NAME_MAX] = {0};
+    str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
-    snprintf(name_entry, NAME_MAX, "%s.entry", name);
+    snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (!mem_alloc_memb((void*)&x->entry, memb, sizeof(str*), name_entry))
+    if (!mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i))
         return FALSE;
 
     if (!mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
     {
-        mem_free((void*)&x->entry, memb * sizeof(str*), name_entry);
+        mem_free((void*)&x->i, memb * sizeof(str*), name_i);
         return FALSE;
     }
 
     for (u64 i = 0; i < memb; ++i)
-        x->entry[i] = x->buf + (i * size);
+        x->i[i] = x->buf + (i * size);
 
-    x->count = memb;
+    x->memb = memb;
+    x->size = size;
     x->loaded = TRUE;
     return TRUE;
 }
@@ -117,26 +118,23 @@ void mem_free(void **x, u64 size, const str *name)
     *x = NULL;
 }
 
-void mem_free_str_buf(str_buf *x, u64 memb_size, const str *name)
+void mem_free_buf(buf *x, const str *name)
 {
-    if (x->entry != NULL)
+    if (x->i != NULL)
     {
-        memset(x->entry, 0, x->count * sizeof(str*));
-        free(x->entry);
-        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->entry), x->count * sizeof(str*));
-        x->entry = NULL;
+        memset(x->i, 0, x->memb * sizeof(str*));
+        free(x->i);
+        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->i), x->memb * sizeof(str*));
     }
 
     if (x->buf != NULL)
     {
-        memset(x->buf, 0, x->count * memb_size);
+        memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
-        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->buf), x->count * memb_size);
-        x->buf = NULL;
+        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->buf), x->memb * x->size);
     }
 
-    x->count = 0;
-    x->loaded = FALSE;
+    *x = (buf){NULL};
 }
 
 void mem_zero(void **x, u64 size, const str *name)
@@ -174,21 +172,23 @@ void swap_strings(str *s1, str *s2)
         swap_bits(&s1[i], &s2[i], 8);
 }
 
-void sort_str_buf(str_buf *s_buf)
+void sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
-    for (u16 i = 0, smallest = 0; i < s_buf->count - 1 && s_buf->entry[i] != NULL; ++i)
+    /*
+    for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
     {
         smallest = i;
-        for (u64 j = i + 1; j < s_buf->count && s_buf->entry[j] != NULL; ++j)
+        for (u64 j = i + 1; j < buffer->memb && buffer->i[j] != NULL; ++j)
         {
-            if (tolower(s_buf->entry[j][0]) < tolower(s_buf->entry[smallest][0]) &&
-                    s_buf->entry[j][0] && s_buf->entry[smallest][0])
+            char cmp0 = tolower(buffer->i[j] + 0);
+            char cmp1 = tolower(buffer->i[smallest] + 0);
+            if (cmp0 < cmp1 && buffer->i[j][0] && buffer->i[smallest][0])
                 smallest = j;
 
-            if (tolower(s_buf->entry[j][0]) == tolower(s_buf->entry[smallest][0]) && s_buf->entry[j] && s_buf->entry[smallest][0])
-                for (u16 k = 1; k < NAME_MAX - 1 && s_buf->entry[j][k - 1] && s_buf->entry[smallest][k - 1]; ++k)
+            if (cmp0 == cmp1 && buffer->i[j] && cmp1)
+                for (u16 k = 1; k < NAME_MAX - 1 && buffer->i[j][k - 1] && buffer->i[smallest][k - 1]; ++k)
                 {
-                    if (tolower(s_buf->entry[j][k]) < tolower(s_buf->entry[smallest][k]))
+                    if (tolower(buffer->i[j] + k) < tolower(buffer->i[smallest] + k))
                     {
                         smallest = j;
                         break;
@@ -196,7 +196,8 @@ void sort_str_buf(str_buf *s_buf)
                 }
         }
 
-        swap_strings(s_buf->entry[i], s_buf->entry[smallest]);
+        swap_strings(buffer->i[i], buffer->i[smallest]);
     }
+    */
 }
 

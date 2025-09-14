@@ -1,19 +1,18 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
+#include "h/dir.h"
 
 /* ---- section: declarations ----------------------------------------------- */
 
-Font font_regular;
+Font font = {0};
+Font font_bold = {0};
 u8 font_size = 0;
 u8 text_row_height = 0;
-
-Rectangle button_inactive =     {0.0f, 46.0f, 200.0f, 20.0f};
-Rectangle button =              {0.0f, 66.0f, 200.0f, 20.0f};
-Rectangle button_selected =     {0.0f, 86.0f, 200.0f, 20.0f};
 
 v2i16 hotbar_pos;
 f32 hotbar_slot_selected = 1.0f;
@@ -24,7 +23,7 @@ u16 menu_layer[5] = {0};
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
-str str_debug_info[16][128];
+str str_debug_info[16][64];
 str str_block_count[32];
 str str_quad_count[32];
 str str_tri_count[32];
@@ -55,77 +54,87 @@ void print_menu_layers()
     putchar('\n');
 }
 
-void init_gui()
+b8 init_gui(void)
 {
-    game_icon = LoadImage("resources/logo/128x128.png");
-    SetWindowIcon(game_icon);
+    str font_path[PATH_MAX] = {0};
+    str font_path_bold[PATH_MAX] = {0};
 
-    font_regular = LoadFont("resources/fonts/code_saver_regular.otf");
+    snprintf(font_path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
+    snprintf(font_path_bold, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
 
-    game_menu_pos = setting.render_size.y / 3;
+    if (!load_font(&font, FONT_RESOLUTION_DEFAULT, font_path) ||
+            !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path_bold))
+        goto cleanup;
+
+    //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
 
     menu_index = MENU_TITLE;
-    state_menu_depth = 1;
     memset(buttons, 0, BTN_COUNT);
+    return 0;
+
+cleanup:
+    free_gui();
+    return 1;
 }
 
 void apply_render_settings()
 {
-    setting = (Settings){
+    settings = (Settings){
             .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-            .fov =                  SETTING_FOV_DEFAULT,
-            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 650.0f,
+            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
             .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+            .target_fps =           SETTING_TARGET_FPS_DEFAULT,
             .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
         };
-
-    font_size = 14 * setting.gui_scale;
-    text_row_height = 8 * setting.gui_scale;
 }
 
 void update_render_settings(v2f32 render_size)
 {
-    hotbar_pos =                (v2i16){render_size.x / 2, render_size.y - (2 * setting.gui_scale)};
-    crosshair_pos =             (v2i16){render_size.x / 2, render_size.y / 2};
-    container_inventory_pos =   (v2i16){render_size.x / 2, render_size.y / 2};
 }
 
-void free_gui()
+void free_gui(void)
 {
-    UnloadFont(font_regular);
+    free_font(&font);
+    free_font(&font_bold);
 }
 
+#ifdef FUCK // TODO: undef FUCK
 /*jump*/
-/* scale = (source.scale * scl); */
+/* 
+ * scale = (source.scale * scl);
+ */
 void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
         return;
-
+ 
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0.0f, 0.0f, 1.0f);
-
+ 
     i32 tile_width = source.width * scl.x;
     i32 tile_height = source.height * scl.y;
-
+ 
     /* top left */
     rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
-
+ 
     /* bottom left */
     rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tile_height);
-
+ 
     /* bottom right */
     rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y + tile_height);
-
+ 
     /* top right */
     rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y);
 }
+
 
 void update_menus(v2f32 render_size)
 {
@@ -158,11 +167,11 @@ void update_menus(v2f32 render_size)
                     (v2i16){0, 128}, (v2i16){4, 4},
                     COL_TEXTURE_DEFAULT);
 
-            draw_text(font_regular, GAME_VERSION,
+            draw_text(font, GAME_VERSION,
                     (v2i16){6, render_size.y - 3},
                     font_size, 2, 0, 2, COL_TEXT_DEFAULT);
 
-            draw_text(font_regular, GAME_AUTHOR,
+            draw_text(font, GAME_AUTHOR,
                     (v2i16){render_size.x - 2, render_size.y - 3},
                     font_size, 2, 2, 2, COL_TEXT_DEFAULT);
 
@@ -325,104 +334,61 @@ void draw_hud()
     rlEnd();
     rlSetTexture(0);
 }
+#endif // TODO: undef FUCK
 
-void draw_debug_info(Camera3D *camera)
+void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
 {
-    if (!(state & FLAG_DEBUG))
-        return;
+    str string[512] = {0};
 
-    update_debug_strings();
+    snprintf(string, 511,
+            "FPS: %d\n"
+            "PLAYER NAME: %s\n"
+            "PLAYER XYZ: %.2f %.2f %.2f\n"
+            "PLAYER BLOCK: %d %d %d\n"
+            "PLAYER CHUNK: %d %d %d\n"
+            "PITCH: %.2f YAW: %.2f\n"
+            "BLOCK COUNT: 1\n"
+            "QUAD COUNT: 6\n"
+            "TRI COUNT: 12\n"
+            "VERTEX COUNT: a lot\n",
 
-    /* TODO: rewrite DrawRectangle, get rectangle correct size for font */
-    DrawRectangle(MARGIN - 2, MARGIN, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_FPS], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_POS], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 2, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_BLOCK], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 3, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_CHUNK], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 4, get_str_width(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_DIRECTION], font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 5, get_str_width(font_regular, str_block_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 6, get_str_width(font_regular, str_quad_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 7, get_str_width(font_regular, str_tri_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
-    DrawRectangle(MARGIN - 2, MARGIN + text_row_height * 8, get_str_width(font_regular, str_vertex_count, font_size_debug_info, 1), text_row_height, color(255, 255, 255, 100, 40));
+            (u32)(1.0f / render->frame_delta),
+            player->name,
+            player->pos.x, player->pos.y, player->pos.z,
+            (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
+            player->chunk.x, player->chunk.y, player->chunk.z,
+            player->pitch, player->yaw);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
-    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_FPS], (v2i16){MARGIN, MARGIN}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_POS], (v2i16){MARGIN, MARGIN + text_row_height}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_BLOCK], (v2i16){MARGIN, MARGIN + text_row_height * 2}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_CHUNK], (v2i16){MARGIN, MARGIN + text_row_height * 3}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_debug_info[STR_DEBUG_INFO_PLAYER_DIRECTION], (v2i16){MARGIN, MARGIN + text_row_height * 4}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_block_count, (v2i16){MARGIN, MARGIN + text_row_height * 5}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_quad_count, (v2i16){MARGIN, MARGIN + text_row_height * 6}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_tri_count, (v2i16){MARGIN, MARGIN + text_row_height * 7}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
-    draw_text(font_regular, str_vertex_count, (v2i16){MARGIN, MARGIN + text_row_height * 8}, font_size_debug_info, 1, 0, 0, COL_TEXT_DEFAULT);
+    snprintf(string, 511,
+            "MOUSE XY: %.2f %.2f\n"
+            "DELTA XY: %.2f %.2f\n"
+            "RENDER RATIO: %.4f\n"
+            "TICKS: %ld DAYS: %ld\n"
+            "SKYBOX TIME: %.2f\n"
+            "Lgbubu!labubu!\n"
+            "SKYBOX RGB: %.2f %.2f %.2f\n"
+            "SUN ANGLE: %.2f %.2f %.2f\n",
+
+            render->mouse_position.x, render->mouse_position.y,
+            render->mouse_delta.x, render->mouse_delta.y,
+            (f32)render->size.x / render->size.y,
+            game_tick, game_days,
+            skybox_time,
+            skybox_color.x, skybox_color.y, skybox_color.z,
+            sun_rotation.x, sun_rotation.y, sun_rotation.z);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+
+    snprintf(string, 255,
+            "FRAME TIME: %.2lf\n"
+            "FRAME DELTA: %.6lf\n",
+
+            render->frame_start,
+            render->frame_delta);
+    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
 }
 
-/* 
- * raylib/rtext.c/DrawTextEx refactored;
- * align_x = (0 = left, 1 = center, 2 = right);
- * align_y = (0 = top, 1 = center, 2 = bottom);
- */
-void draw_text(Font font, const str *str, v2i16 pos, f32 font_size, f32 spacing, u8 align_x, u8 align_y, Color tint)
-{
-    switch (align_x)
-    {
-        case 1:
-            pos.x -= (get_str_width(font, str, font_size, spacing) / 2);
-            break;
-
-        case 2:
-            pos.x -= get_str_width(font, str, font_size, spacing);
-            break;
-    };
-
-    switch (align_y)
-    {
-        case 1:
-            pos.y -= (font_size / 1.8f);
-            break;
-
-        case 2:
-            pos.y -= font_size;
-            break;
-    };
-
-    if (font.texture.id == 0) font = GetFontDefault();
-    u16 size = TextLength(str);
-
-    f32 text_offset_y = 0;
-    f32 text_offset_x = 0.0f;
-    f32 scale_factor = font_size / font.baseSize;
-    for (u16 i = 0; i < size;)
-    {
-        i32 codepoint_byte_count = 0;
-        u16 codepoint = GetCodepointNext(&str[i], &codepoint_byte_count);
-        u8 index = GetGlyphIndex(font, codepoint);
-
-        if (codepoint == '\n')
-        {
-            text_offset_y += (font_size + 2);
-            text_offset_x = 0.0f;
-        }
-        else
-        {
-            if ((codepoint != ' ') && (codepoint != '\t'))
-            {
-                DrawTextCodepoint(font_bold, codepoint,
-                        (Vector2){pos.x + text_offset_x + 1, pos.y + text_offset_y + 1},
-                        font_size, ColorAlpha(ColorBrightness(tint, -0.1f), 0.4f));
-
-                DrawTextCodepoint(font, codepoint,
-                        (Vector2){pos.x + text_offset_x, pos.y + text_offset_y},
-                        font_size, tint);
-            }
-
-            if (font.glyphs[index].advanceX == 0)
-                text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
-            else
-                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
-        }
-        i += codepoint_byte_count;
-    }
-}
-
+#ifdef FUCK // TODO: undef FUCK
 float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
@@ -454,10 +420,12 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
     return result + 4;
 }
 
-/* raylib/rtextures.c/DrawTexturePro refactored;
-   scale = (source.scale * scl);
-   align_x = (0 = left, 1 = center, 2 = right);
-   align_y = (0 = top, 1 = center, 2 = bottom); */
+/* 
+ * raylib/rtextures.c/DrawTexturePro refactored;
+ * scale = (source.scale * scl);
+ * align_x = (0 = left, 1 = center, 2 = right);
+ * align_y = (0 = top, 1 = center, 2 = bottom);
+ */
 void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
@@ -511,9 +479,10 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
 }
 
 /*jump*/
-/* TODO: make draw_texture_tiled() */
-/* raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored; */
-/*
+// TODO: make draw_texture_tiled()
+/* 
+ * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
+ */
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
@@ -679,7 +648,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
                     0, 0, COL_TEXTURE_DEFAULT);
 
         if (str)
-            draw_text(font_regular, str,
+            draw_text(font, str,
                     (v2i16){pos.x + ((button.width * setting.gui_scale) / 2), pos.y + ((button.height * setting.gui_scale) / 2)},
                     font_size, 1, align_x, align_y, COL_TEXT_DEFAULT);
 
@@ -743,4 +712,5 @@ void btn_func_back()
     menu_index = menu_layer[state_menu_depth];
     is_menu_ready = 0;
 }
+#endif // TODO: undef FUCK
 

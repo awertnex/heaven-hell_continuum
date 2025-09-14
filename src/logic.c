@@ -29,7 +29,7 @@ bool get_double_press(u32 key)
     return FALSE;
 }
 
-void update_player(Player *player)
+void update_player(Render *render, Player *player)
 {
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / CHUNK_DIAMETER),
@@ -44,82 +44,83 @@ void update_player(Player *player)
 
     if (!(player->state & FLAG_CAN_JUMP)
             && !(player->state & FLAG_FLYING))
-        update_gravity(player);
+        update_gravity(render, player);
 
     if (player->state & FLAG_FLYING)
     {
         player->vel = v3fzero;
-        player->movement_speed = PLAYER_SPEED_FLY * dt;
-        player->camera.fov = 80; /* TODO: revise (add lerp) */
+        player->movement_speed = PLAYER_SPEED_FLY;
+        player->camera.fovy = 80; /* TODO: revise (add lerp) */
     }
 
     if ((player->state & FLAG_SNEAKING)
             && !(player->state & FLAG_FLYING))
-        player->movement_speed = PLAYER_SPEED_SNEAK * dt;
+        player->movement_speed = PLAYER_SPEED_SNEAK;
     else if (player->state & FLAG_SPRINTING)
     {
         if (!(player->state & FLAG_FLYING))
         {
-            player->movement_speed = PLAYER_SPEED_SPRINT * dt;
-            player->camera.fov = 75;
+            player->movement_speed = PLAYER_SPEED_SPRINT;
+            player->camera.fovy = 75;
         }
         else
         {
-            player->movement_speed = PLAYER_SPEED_FLY_FAST * dt;
-            player->camera.fov = 90;
+            player->movement_speed = PLAYER_SPEED_FLY_FAST;
+            player->camera.fovy = 90;
         }
     }
     else if (!(player->state & FLAG_SNEAKING)
             && !(player->state & FLAG_SPRINTING)
             && !(player->state & FLAG_FLYING))
     {
-        player->movement_speed = PLAYER_SPEED_WALK * dt;
-        player->camera.fov = 70;
+        player->movement_speed = PLAYER_SPEED_WALK;
+        player->camera.fovy = 70;
     }
 }
 
-void update_camera_movements_player(Player *player)
+void update_camera_movement_player(Render *render, Player *player)
 {
-    if (state & FLAG_PARSE_CURSOR)
-        if (!(state_menu_depth) && !(state & FLAG_SUPER_DEBUG))
-        {
-            player->yaw -= (f32)mouse_delta.x * setting.mouse_sensitivity;
-            player->pitch -= (f32)mouse_delta.y * setting.mouse_sensitivity;
-        }
+    const f32 ANGLE = 90.0f;
+    const f32 RANGE = 360.0f;
 
-    player->yaw = fmod(player->yaw, 360.0f);
-    if (player->yaw < 0.0f) player->yaw += 360.0f;
-    if (player->pitch > 90.0f) player->pitch = 90.0f;
-    else if (player->pitch < -90.0f) player->pitch = -90.0f;
+    player->yaw = fmodf(player->yaw, RANGE);
+    if (player->yaw < 0.0f) player->yaw += RANGE;
+    player->pitch = clamp_f32(player->pitch, -ANGLE, ANGLE);
 
-    player->sin_pitch =  sin(player->pitch * DEG2RAD);
-    player->cos_pitch =  cos(player->pitch * DEG2RAD);
-    player->sin_yaw =    sin(player->yaw * DEG2RAD);
-    player->cos_yaw =    cos(player->yaw * DEG2RAD);
+    player->sin_pitch =         sin(player->pitch * DEG2RAD);
+    player->cos_pitch =         cos(player->pitch * DEG2RAD);
+    player->sin_yaw =           sin(player->yaw * DEG2RAD);
+    player->cos_yaw =           cos(player->yaw * DEG2RAD);
+    const f32 SPCH = player->sin_pitch;
+    const f32 CPCH = player->cos_pitch;
+    const f32 SYAW = player->sin_yaw;
+    const f32 CYAW = player->cos_yaw;
+    player->camera.sin_pitch =  SPCH;
+    player->camera.cos_pitch =  CPCH;
+    player->camera.sin_yaw =    SYAW;
+    player->camera.cos_yaw =    CYAW;
 
-    v3f32 player_camera_up =
-    {
-        -player->cos_yaw * player->sin_pitch,
-        -player->sin_yaw * player->sin_pitch,
-        player->cos_pitch,
-    };
+    v3f32 player_camera_up = {-CYAW * SPCH, -SYAW * SPCH, CPCH};
 
+    player->camera.pos =
+        (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
+#if 0 // TODO: undef
     switch (player->perspective)
     {
         case 0: /* ---- 1st person ------------------------------------------ */
-            player->camera.position =
+            player->camera.pos =
                 (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             player->camera.target =
                 (v3f32){
                     player->pos.x + ((player->cos_yaw * player->cos_pitch) * setting.reach_distance),
                     player->pos.y + ((player->sin_yaw * player->cos_pitch) * setting.reach_distance),
-                    player->camera.position.z + (player->sin_pitch * setting.reach_distance),
+                    player->camera.pos.z + (player->sin_pitch * setting.reach_distance),
                 };
             player->camera.up = player_camera_up;
             break;
 
         case 1: /* ---- 3rd person back ------------------------------------- */
-            player->camera.position =
+            player->camera.pos =
                 (v3f32){
                     player->pos.x - ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
                     player->pos.y - ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
@@ -131,7 +132,7 @@ void update_camera_movements_player(Player *player)
             break;
 
         case 2: /* ---- 3rd person front ------------------------------------ */
-            player->camera.position =
+            player->camera.pos =
                 (v3f32){
                     player->pos.x + ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
                     player->pos.y + ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
@@ -187,6 +188,7 @@ void update_camera_movements_player(Player *player)
         case 4: /* ---- spectator ------------------------------------------- */
             break;
     }
+#endif // TODO: undef
 }
 
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
@@ -213,8 +215,8 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z)
 
 void player_kill(Player *player)
 {
-    player->v = v3fzero;
-    player->m = 0.0f;
+    player->vel = v3fzero;
+    player->mass = 0.0f;
     player->movement_speed = 0.0f;
     player->container_state = 0;
     player->state = FLAG_DEAD;
@@ -238,12 +240,11 @@ b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
     return false;
 }
 
-void update_gravity(Player *player) /* TODO: fix player gravity */
+void update_gravity(Render *render, Player *player)
 {
-    if (player->state & FLAG_FALLING)
-        player->v.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->m * dt);
-    player->pos.z += player->v.z;
-    //printf("   previous time: %.2lf   delta time: %.2lf\n", get_time_ms(), get_delta_time(&start_time)); /*temp*/
+    (player->state & FLAG_FALLING) ?
+        player->vel.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->mass * render->frame_delta_square) : 0;
+    player->pos.z += player->vel.z;
 }
 
 //void update_collision_static(player *player) /* TODO: make AABB collision work */
@@ -299,33 +300,33 @@ bool get_timer(f64 *time_start, f32 interval)
     return false;
 }
 
-void draw_default_grid(Color x, Color y, Color z)
+#if 0 // TODO: undef
+void draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
 {
-    rlPushMatrix();
-    rlBegin(RL_LINES);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, WHITE);
-    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, WHITE);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, RAYWHITE);
-    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, RAYWHITE);
+    v4u8 color = {0xff, 0xff, 0xff, 0xff};
+
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, color);
+    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, color);
+    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, color);
+    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, color);
+    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, color);
+    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, color);
+    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, color);
+    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, color);
+    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, color);
+    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, color);
+    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, color);
+    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, color);
+    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, color);
+    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, color);
+    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, color);
+    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, color);
+    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, color);
+    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, color);
 
     draw_line_3d(v3izero, (v3i32){2, 0, 0}, x);
     draw_line_3d(v3izero, (v3i32){0, 2, 0}, y);
     draw_line_3d(v3izero, (v3i32){0, 0, 2}, z);
-    rlEnd();
-    rlPopMatrix();
 }
+#endif // TODO: undef
 
