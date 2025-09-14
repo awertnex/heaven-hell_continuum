@@ -135,7 +135,7 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 
 int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical)
 {
-    free_fbo(fbo, color_buf, fbo);
+    free_fbo(fbo, color_buf, rbo);
 
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
@@ -212,16 +212,49 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     return 0;
 
 cleanup:
-    free_fbo(fbo, color_buf, fbo);
+    free_fbo(fbo, color_buf, rbo);
     free_mesh(mesh_fbo);
     return -1;
 }
 
+int realloc_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
+    free_fbo(0, color_buf, rbo);
+
+    /* ---- color buffer ---------------------------------------------------- */
+    glGenTextures(1, color_buf);
+    glBindTexture(GL_TEXTURE_2D, *color_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *color_buf, 0);
+
+    /* ---- render buffer --------------------------------------------------- */
+    glGenRenderbuffers(1, rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, render->size.x, render->size.y);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
+
+    GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", fbo, status);
+        free_fbo(fbo, color_buf, rbo);
+        return -1;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return 0;
+}
+
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo)
 {
-    fbo ? glDeleteFramebuffers(1, fbo) : 0;
+    rbo ? glDeleteRenderbuffers(1, rbo) : 0;
     color_buf ? glDeleteTextures(1, color_buf) : 0;
-    rbo ? glDeleteRenderbuffers(1, fbo) : 0;
+    fbo ? glDeleteFramebuffers(1, fbo) : 0;
 };
 
 b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer)

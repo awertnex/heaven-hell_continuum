@@ -5,6 +5,7 @@
     #include <linux/limits.h>
 #elif defined(__WIN32) || defined(__WIN64) || defined (__CYGWIN__)
     #define NAME_MAX 255
+    #include <limits.h>
 #endif /* PLATFORM */
 
 #define U8_MAX 255

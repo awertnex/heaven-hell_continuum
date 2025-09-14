@@ -172,6 +172,20 @@ void swap_strings(str *s1, str *s2)
         swap_bits(&s1[i], &s2[i], 8);
 }
 
+str *swap_string_char(str *string, char c1, char c2)
+{
+    u64 len = strlen(string);
+    if (!len) return string;
+
+    for (u64 i = 0; i < len; ++i)
+    {
+        if (string[i] == c1)
+            string[i] = c2;
+    }
+
+    return string;
+}
+
 void sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
     /*

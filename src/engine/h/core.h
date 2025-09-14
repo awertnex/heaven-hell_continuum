@@ -156,6 +156,8 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
 int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
 
+int realloc_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo);
+
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
 /*
