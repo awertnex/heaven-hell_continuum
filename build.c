@@ -40,7 +40,6 @@ str str_children[][32] =
     DIR_SRC"dir.c",
     DIR_SRC"gui.c",
     DIR_SRC"logic.c",
-    DIR_SRC"platform_linux.c",
     DIR_SRC"engine/core.c",
     DIR_SRC"engine/dir.c",
     DIR_SRC"engine/logger.c",
@@ -74,7 +73,6 @@ str str_children[][32] =
     DIR_SRC"dir.c",
     DIR_SRC"gui.c",
     DIR_SRC"logic.c",
-    DIR_SRC"platform_windows.c",
     DIR_SRC"engine/core.c",
     DIR_SRC"engine/dir.c",
     DIR_SRC"engine/logger.c",
@@ -176,6 +174,7 @@ int main(int argc, char **argv)
         return -1;
 
     build_cmd(argc, argv);
+
     if (flags & FLAG_SHOW_CMD)
         show_cmd();
 
@@ -188,15 +187,36 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    if (!exec((str *const[]){"cp", "-v", "LICENSE", DIR_ROOT, NULL}, "cp lib/") ||
-            !exec((str *const[]){"cp", "-rv", "lib/", DIR_ROOT, NULL}, "cp lib/") ||
-            !exec((str *const[]){"cp", "-rv", "resources/", DIR_ROOT, NULL}, "cp resources/") ||
-            !exec((str *const[]){"cp", "-rv", "shaders/", DIR_ROOT, NULL}, "cp shaders/") ||
-            !exec(cmd.i, "build"))
-        fail_cmd();
+    str cmd_asset_in[PATH_MAX] = {0};
+    str cmd_asset_out[PATH_MAX] = {0};
+
+    snprintf(cmd_asset_in, PATH_MAX - 1, "%sLICENSE", str_bin_root);
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"LICENSE", str_bin_root);
+    if (copy_file(cmd_asset_in, cmd_asset_out) != 0) goto cleanup;
+
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/", str_bin_root);
+    make_dir(cmd_asset_out);
+
+    snprintf(cmd_asset_in, PATH_MAX - 1, "%slib/"PLATFORM, str_bin_root);
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
+    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
+
+    snprintf(cmd_asset_in, PATH_MAX - 1, "%sresources/", str_bin_root);
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"resources/", str_bin_root);
+    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
+
+    snprintf(cmd_asset_in, PATH_MAX - 1, "%sshaders/", str_bin_root);
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"shaders/", str_bin_root);
+    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
+
+    if (!exec(&cmd, "build")) goto cleanup;
+    
 
     clean_cmd();
     return 0;
+
+cleanup:
+    fail_cmd();
 }
 
 /* ---- section: functions -------------------------------------------------- */
@@ -354,7 +374,7 @@ void build_cmd(int argc, char **argv)
                 fail_cmd();
             }
 
-            if (!mem_alloc_buf((buf*)&str_tests, str_tests.memb, NAME_MAX, "str_tests"))
+            if (!mem_alloc_buf(&str_tests, str_tests.memb, NAME_MAX, "str_tests"))
                 fail_cmd();
 
 
@@ -388,11 +408,11 @@ void build_cmd(int argc, char **argv)
         push_cmd(str_cflags[i]);
 
     /* ---- libs ------------------------------------------------------------ */
+    snprintf(temp, PATH_MAX - 1, "-L%slib/"PLATFORM, str_bin_root);
+    push_cmd(temp);
+
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
-
-    snprintf(temp, PATH_MAX - 1, "-L%slib/%s", str_bin_root, PLATFORM);
-    push_cmd(temp);
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
@@ -404,6 +424,7 @@ void build_cmd(int argc, char **argv)
 /*
  * scrap function, for reference;
  */
+#if 0
 void push_glob(const str *pattern)
 {
     b8 ret = glob(pattern, 0, NULL, &glob_buf);
@@ -422,6 +443,7 @@ void push_glob(const str *pattern)
         ++cmd_pos;
     }
 }
+#endif /* 0 */
 
 void clean_cmd(void)
 {
