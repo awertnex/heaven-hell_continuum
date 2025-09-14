@@ -97,8 +97,8 @@ enum Flags
     STATE_TEST = 1,
     STATE_LAUNCHER,
 
-    FLAG_SHOW_CMD =         0x01,
-    FLAG_RAW_CMD =          0x02,
+    FLAG_SHOW_CMD = 1,
+    FLAG_RAW_CMD = 2,
 }; /* Flags */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -334,6 +334,8 @@ void build_cmd(int argc, char **argv)
     if (!mem_alloc_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
         fail_cmd();
 
+    str temp[PATH_MAX] = {0};
+
     push_cmd(COMPILER);
     switch (state)
     {
@@ -378,7 +380,6 @@ void build_cmd(int argc, char **argv)
         push_cmd(str_children[i]);
 
     /* ---- includes -------------------------------------------------------- */
-    str temp[PATH_MAX] = {0};
     snprintf(temp, PATH_MAX - 1, "%sinclude/glad/glad.c", str_bin_root);
     push_cmd(temp);
 
@@ -389,6 +390,9 @@ void build_cmd(int argc, char **argv)
     /* ---- libs ------------------------------------------------------------ */
     for (u32 i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
+
+    snprintf(temp, PATH_MAX - 1, "-L%slib/%s", str_bin_root, PLATFORM);
+    push_cmd(temp);
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
