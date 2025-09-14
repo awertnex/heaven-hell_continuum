@@ -4,7 +4,7 @@
   <img src="resources/logo/128x128.png" alt="Heaven-Hell Continuum">
 </h1>
 
-**a voxel game/engine written in C99, with minimal dependencies if any.**
+**a voxel game/engine in C99, with minimal dependencies if any.**
 
 
 ## Download (unzip and launch)
@@ -33,7 +33,7 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
 ## Build From Source
 
 >**NOTES:**
->- for development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`) to enable TRACE and DEBUG logging.
+>- for development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`), enables TRACE and DEBUG logging.
 >- if build successful, you can place the built directory 'Heaven-Hell Continuum' anywhere you wish, that's the entire bundle.
 >- the build tool will rebuild itself before building the project if you either modified its source or didn't build it in C99.
 
@@ -70,10 +70,9 @@ cd heaven-hell_continuum/
 
 - - -
 
-### for windows (using mingw and gcc):
+### for windows (using any C compiler, a suggestion is "gcc" from "mingw"):
 
-if you don't already have them (or any compiler that does the job):
-- download `gcc`: [sourceforge/gcc-win64](https://www.sourceforge.net/projects/gcc-win64/)
+if you don't already have a C compiler:
 - download `mingw`: [mingw-w64](https://www.mingw-w64.org/downloads/)
 
 1. clone and build:
