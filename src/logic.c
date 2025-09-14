@@ -1,5 +1,6 @@
 #include <time.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "engine/h/math.h"
 #include "h/logic.h"

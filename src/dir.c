@@ -55,7 +55,6 @@ str WORLD_DIR[][NAME_MAX] =
 int init_paths(void)
 {
     snprintf(path_grandpath, PATH_MAX, "%s", get_path_bin_root());
-    check_slash(path_grandpath);
 
     LOGINFO("Main Directory Path '%s'\n", path_grandpath);
 
@@ -63,6 +62,8 @@ int init_paths(void)
     for (u8 i = 0; i < 255 && i < arr_len(GRANDPATH_DIR); ++i)
     {
         snprintf(str_reg, PATH_MAX, "%s%s", path_grandpath, GRANDPATH_DIR[i]);
+        check_slash(str_reg);
+        normalize_slash(str_reg);
         snprintf(GRANDPATH_DIR[i], PATH_MAX, "%s", str_reg);
 
         if (!is_dir_exists(str_reg))
@@ -90,6 +91,7 @@ int init_instance_directory(const str *instance_name)
     b8 make_dirs = TRUE;
     snprintf(path_subpath, PATH_MAX, "%s%s", GRANDPATH_DIR[DIR_ROOT_INSTANCES], instance_name);
     check_slash(path_subpath);
+    normalize_slash(path_subpath);
 
     if (make_dir(path_subpath) != 0)
     {
@@ -107,6 +109,8 @@ int init_instance_directory(const str *instance_name)
     for (u8 i = 0; (i < 255) && (i < arr_len(INSTANCE_DIR)); ++i)
     {
         snprintf(str_reg, PATH_MAX, "%s%s", path_subpath, INSTANCE_DIR[i]);
+        check_slash(str_reg);
+        normalize_slash(str_reg);
         snprintf(INSTANCE_DIR[i], PATH_MAX, "%s", str_reg);
         if (!make_dirs)
             continue;
@@ -134,6 +138,7 @@ void init_world_directory(const str *world_name)
 {
     snprintf(path_worldpath, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_WORLDS], world_name);
     check_slash(path_worldpath);
+    normalize_slash(path_worldpath);
 
     if (make_dir(path_worldpath) != 0)
     {
@@ -148,6 +153,8 @@ void init_world_directory(const str *world_name)
     for (u8 i = 0; i < 255 && i < arr_len(WORLD_DIR); ++i)
     {
         snprintf(str_reg, PATH_MAX, "%s%s", path_worldpath, WORLD_DIR[i]);
+        check_slash(str_reg);
+        normalize_slash(str_reg);
         make_dir(str_reg);
 
         if (!is_dir_exists(str_reg))

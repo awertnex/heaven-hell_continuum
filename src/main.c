@@ -157,6 +157,9 @@ void draw_everything(Player *player);
 
 int main(void)
 {
+    copy_dir("shaders", "Heaven-Hell Continuum", 1);
+    return 0;
+
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1024, 1024};
 
@@ -208,11 +211,11 @@ int main(void)
     /* ---- section: graphics ----------------------------------------------- */
 
     if (
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_fbo) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_default) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_text) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
             init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
@@ -261,15 +264,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
         render.frame_delta_square = pow(render.frame_delta, 2);
         render.frame_last = render.frame_start;
 
-        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo);
-        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default);
-        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text);
-        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo);
-        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox);
-
-        //get_mouse_position(&render, &render.mouse_position);
-        //get_mouse_movement(render.mouse_last, &render.mouse_delta);
-
         update_world(&lily);
         draw_everything(&lily);
 
@@ -279,8 +273,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
     }
 
 cleanup: /* ----------------------------------------------------------------- */
-    free_font(&font);
-    free_font(&font_bold);
+
+    free_gui();
     free_mesh(&mesh_fbo);
     free_mesh(&mesh_fbo_flipped);
     free_mesh(&mesh_skybox);
@@ -306,10 +300,10 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
-    init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0);
-    init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0);
-    init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0);
-    init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1);
+    realloc_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox);
+    realloc_fbo(&render, &fbo_world, &color_buf_world, &rbo_world);
+    realloc_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud);
+    realloc_fbo(&render, &fbo_text, &color_buf_text, &rbo_text);
 }
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)

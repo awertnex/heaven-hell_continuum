@@ -102,24 +102,6 @@ enum ButtonNames
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-/* ---- section: debug info ------------------------------------------------- */
-
-enum StringsDebugInfo
-{
-    STR_DEBUG_INFO_FPS = 0,
-    STR_DEBUG_INFO_PLAYER_POS,
-    STR_DEBUG_INFO_PLAYER_BLOCK,
-    STR_DEBUG_INFO_PLAYER_CHUNK,
-    STR_DEBUG_INFO_PLAYER_DIRECTION,
-    STR_DEBUG_INFO_GAME_TICK,
-}; /* StringsDebugInfo */
-
-extern str str_debug_info[16][64];
-extern str str_block_count[32];
-extern str str_quad_count[32];
-extern str str_tri_count[32];
-extern str str_vertex_count[32];
-
 /* ---- section: signatures ------------------------------------------------- */
 
 b8 init_gui(void);
