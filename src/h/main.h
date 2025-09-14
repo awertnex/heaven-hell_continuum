@@ -12,7 +12,6 @@
 
 #define MODE_DEBUG          1
 #define MODE_COLLIDE        0
-#define MODE_GRAVITY        1
 
 typedef struct Uniform
 {
@@ -50,17 +49,10 @@ typedef struct Uniform
 
 extern Render render;
 extern u32 state;
-extern u8 state_menu_depth;
-
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
-
 extern Uniform uniform;
-
-/* ---- section: signatures ------------------------------------------------- */
-
-void init_world(str *string);
 
 #endif /* GAME_MAIN_H */
 

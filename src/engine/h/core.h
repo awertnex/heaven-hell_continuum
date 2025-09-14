@@ -3,7 +3,7 @@
 
 #define ENGINE_AUTHOR       "Author: Lily Awertnex"
 #define ENGINE_NAME         "Fossil Engine"
-#define ENGINE_VERSION      "0.1.0-beta"
+#define ENGINE_VERSION      "0.1.0"
 
 #include "../../../include/glad/glad.h"
 #define GLFW_INCLUDE_NONE
