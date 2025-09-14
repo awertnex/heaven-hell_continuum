@@ -3,7 +3,19 @@
 
 #include "defines.h"
 
-int make_dir(str *path);
+#if defined(__linux__) || defined(__linux)
+
+#define SLASH_NATIVE '/'
+#define SLASH_NON_NATIVE '\\'
+
+#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+
+#define SLASH_NATIVE '\\'
+#define SLASH_NON_NATIVE '/'
+
+#endif /* PLATFORM */
+
+int make_dir(const str *path);
 
 /*
  * -- INTERNAL USE ONLY --;
@@ -34,7 +46,7 @@ b8 _get_path_bin_root(str *path);
  *
  * return FALSE (0) on failure;
  */
-b8 exec(str *const *cmd, str *cmd_name);
+b8 exec(buf *cmd, str *cmd_name);
 
 #endif /* ENGINE_PLATFORM_H */
 
