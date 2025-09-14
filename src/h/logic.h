@@ -7,10 +7,10 @@
 
 static const f32 PLAYER_JUMP_HEIGHT =      1.25f;
 static const f32 PLAYER_SPEED_WALK =       3.0f;
-static const f32 PLAYER_SPEED_FLY =        10.0f;
+static const f32 PLAYER_SPEED_FLY =        18.0f;
 static const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
 static const f32 PLAYER_SPEED_SNEAK =      1.8f;
-static const f32 PLAYER_SPEED_SPRINT =     4.0f;
+static const f32 PLAYER_SPEED_SPRINT =     9.0f;
 
 typedef struct Player
 {
@@ -119,7 +119,7 @@ extern Player lily;
 /* ---- section: signatures ------------------------------------------------- */
 
 bool get_double_press(u32 key);
-void update_player(Player *player);
+void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
@@ -135,7 +135,7 @@ b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end);
 b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end);
 b8 is_ray_intersect(Player *player);
 
-void update_gravity(Player *player);
+void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *time_start, f32 interval);

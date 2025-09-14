@@ -2,14 +2,13 @@
 #define GAME_GUI_H
 
 #include "../engine/h/core.h"
+#include "logic.h"
 
-#define FONT_SIZE 24.0f
+#define MARGIN 10
 
-#define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-#define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+#define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
 #define center_cursor   glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
-#define color(r, g, b, v, a) (v4u8){((f32)r / 0xff) * v, ((f32)g / 0xff) * v, ((f32)b / 0xff) * v, a}
-#define draw_menu_overlay(render_size) DrawRectangle(0, 0, render.size.x, render.size.y, COL_MENU_BG_OVERLAY)
 
 #define BTN_COUNT 110
 
@@ -128,7 +127,7 @@ void apply_render_settings();
 void update_render_settings(v2f32 render_size);
 void free_gui(void);
 
-void draw_debug_info(Render *render, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation);
+void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation);
 
 #if 0 // TODO: undef
 void update_menus(v2f32 render_size);

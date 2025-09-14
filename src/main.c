@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "engine/h/core.h"
 #include "engine/h/logger.h"
 #include "engine/h/math.h"
@@ -38,7 +40,7 @@ Player lily =
     .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
     .eye_height = 1.5f,
     .mass = 2.0f,
-    .movement_speed = 10.0f,
+    .movement_speed = PLAYER_SPEED_WALK,
     .container_state = 0,
     .perspective = 0,
     .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
@@ -59,6 +61,8 @@ ShaderProgram shader_default =
     .name = "default",
     .vertex.file_name = "default.vert",
     .vertex.type = GL_VERTEX_SHADER,
+    .geometry.file_name = "default.geom",
+    .geometry.type = 0,
     .fragment.file_name = "default.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -142,6 +146,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 void update_input(GLFWwindow *window, Player *player);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
+void init_world(str *string);
 void update_world(Player *player);
 void draw_skybox(Player *player);
 void draw_world(Player *player);
@@ -162,7 +167,7 @@ int main(void)
         LOGDEBUG("%s\n", "Debugging Enabled");
 
     if (init_paths() != 0 ||
-            init_instance_directory("new_instance") != 0) /* TODO: make editable instance name */
+            create_instance("new_instance") != 0) /* TODO: make editable instance name */
         return -1;
 
     if (init_glfw() != 0 ||
@@ -202,11 +207,12 @@ int main(void)
 
     /* ---- section: graphics ----------------------------------------------- */
 
-    if (init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default) != 0 ||
-            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
+    if (
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default) != 0 ||
             init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo) != 0 ||
+            init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox) != 0 ||
             init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
@@ -229,7 +235,7 @@ int main(void)
 
     lily.camera =
         (Camera){
-            .fovy = 70.0f,
+            .fovy = SETTING_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
@@ -239,16 +245,27 @@ int main(void)
     game_start_time = glfwGetTime();
 
 section_menu_title: /* ---- section: title menu ----------------------------- */
+
+    init_world("Poop Consistency Tester");
+
 section_menu_pause: /* ---- section: pause menu ----------------------------- */
 section_main: /* ---- section: main loop ------------------------------------ */
 
     generate_standard_meshes();
 
+    //lily.state = FLAG_FALLING;
     while (!glfwWindowShouldClose(render.window))
     {
         render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
+        render.frame_delta_square = pow(render.frame_delta, 2);
         render.frame_last = render.frame_start;
+
+        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo);
+        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default);
+        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text);
+        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo);
+        //init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox);
 
         //get_mouse_position(&render, &render.mouse_position);
         //get_mouse_movement(render.mouse_last, &render.mouse_delta);
@@ -263,13 +280,19 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
 cleanup: /* ----------------------------------------------------------------- */
     free_font(&font);
+    free_font(&font_bold);
+    free_mesh(&mesh_fbo);
+    free_mesh(&mesh_fbo_flipped);
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
-    glDeleteFramebuffers(1, &fbo_skybox);
-    glDeleteFramebuffers(1, &fbo_world);
-    glDeleteFramebuffers(1, &fbo_hud);
+    free_fbo(&fbo_skybox, &color_buf_skybox, &rbo_skybox);
+    free_fbo(&fbo_world, &color_buf_world, &rbo_world);
+    free_fbo(&fbo_hud, &color_buf_hud, &rbo_hud);
+    free_fbo(&fbo_text, &color_buf_text, &rbo_text);
+    glDeleteProgram(shader_fbo.id);
     glDeleteProgram(shader_default.id);
+    glDeleteProgram(shader_text.id);
     glDeleteProgram(shader_skybox.id);
     glDeleteProgram(shader_gizmo.id);
     glfwDestroyWindow(render.window);
@@ -282,6 +305,11 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     render.size = (v2i32){width, height};
     lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
+
+    init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0);
+    init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0);
+    init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0);
+    init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1);
 }
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
@@ -303,14 +331,24 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     if (key == GLFW_KEY_ENTER && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    {
+        init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_fbo);
         init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_default);
+        init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_text);
+        init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_skybox);
+        init_shader_program(GRANDPATH_DIR[DIR_ROOT_SHADERS], &shader_gizmo);
+        init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0);
+        init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0);
+        init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0);
+        init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1);
+    }
 
     if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
     {
         if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            show_cursor;
         else
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            disable_cursor;
     }
 
     /* ---- miscellaneous --------------------------------------------------- */
@@ -328,50 +366,49 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
     }
 }
 
-f32 movement_speed = 5.0f;
 void update_input(GLFWwindow *window, Player *player)
 {
-    movement_speed = 5.0f * render.frame_delta;
+    player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+        player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
 
     /* ---- jumping --------------------------------------------------------- */
     if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
     {
-        player->pos.z += movement_speed;
+        player->pos.z += player->movement_speed;
     }
 
     /* ---- sneaking -------------------------------------------------------- */
     if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
     {
-        player->pos.z -= movement_speed;
+        player->pos.z -= player->movement_speed;
     }
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
-        movement_speed += 12.0f * render.frame_delta;
 
     /* ---- movement -------------------------------------------------------- */
     if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
     {
-        player->pos.x += (movement_speed * player->camera.sin_yaw);
-        player->pos.y += (movement_speed * player->camera.cos_yaw);
+        player->pos.x += (player->movement_speed * player->camera.sin_yaw);
+        player->pos.y += (player->movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
     {
-        player->pos.x -= (movement_speed * player->camera.sin_yaw);
-        player->pos.y -= (movement_speed * player->camera.cos_yaw);
+        player->pos.x -= (player->movement_speed * player->camera.sin_yaw);
+        player->pos.y -= (player->movement_speed * player->camera.cos_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
     {
-        player->pos.x -= (movement_speed * player->camera.cos_yaw);
-        player->pos.y += (movement_speed * player->camera.sin_yaw);
+        player->pos.x -= (player->movement_speed * player->camera.cos_yaw);
+        player->pos.y += (player->movement_speed * player->camera.sin_yaw);
     }
 
     if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
     {
-        player->pos.x += (movement_speed * player->camera.cos_yaw);
-        player->pos.y -= (movement_speed * player->camera.sin_yaw);
+        player->pos.x += (player->movement_speed * player->camera.cos_yaw);
+        player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
     }
 }
 
@@ -420,7 +457,7 @@ void generate_standard_meshes()
         4, 6, 7, 7, 5, 4,
         0, 1, 3, 3, 2, 0,
     };
-    
+
     GLfloat THIC = 0.05f;
     GLfloat vbo_data_gizmo[] =
     {
@@ -524,16 +561,41 @@ void bind_shader_uniforms(void)
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
+void init_world(str *string)
+{
+    if (strlen(string) == 0) return;
+
+    init_world_directory(string);
+//    if (init_chunking() != 0)
+//        state &= ~FLAG_ACTIVE;
+
+    update_player(&render, &lily);
+//    update_chunk_tab(lily.chunk);
+
+    //lily.state |= FLAG_FALLING; /*temp off*/
+    lily.state |= FLAG_FLYING; /*temp*/
+    set_player_block(&lily, 0, 0, 0);
+//  lily.delta_target =
+//      (v3i32){
+//          lily.camera.target.x,
+//          lily.camera.target.y,
+//          lily.camera.target.z};
+
+    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
+
+    disable_cursor;
+    center_cursor;
+}
+
 void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 2000)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 
+    update_player(&render, player);
     update_camera_movement_player(&render, player);
     update_camera_perspective(&player->camera, &projection);
-
-    update_debug_strings(player);
 }
 
 void draw_skybox(Player *player)
@@ -615,7 +677,7 @@ void draw_everything(Player *player)
         glUseProgram(shader_text.id);
         glBindVertexArray(mesh_fbo_flipped.vao);
         glBindTexture(GL_TEXTURE_2D, font_bold.id);
-        draw_debug_info(&render, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
+        draw_debug_info(&render, player, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 

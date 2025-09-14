@@ -72,6 +72,13 @@ int init_paths(void)
     return 0;
 }
 
+int create_instance(const str *instance_name)
+{
+    if (init_instance_directory(instance_name) == 0) /* TODO: make editable instance name */
+        LOGINFO("Instance Created '%s'\n", instance_name);
+    return 0;
+}
+
 int init_instance_directory(const str *instance_name)
 {
     if (!is_dir_exists(path_grandpath))
@@ -112,9 +119,14 @@ int init_instance_directory(const str *instance_name)
         }
     }
 
-    if (make_dirs)
-        LOGINFO("Instance Created '%s'\n", instance_name);
+    if (!make_dirs)
+        return -1;
 
+    return 0;
+}
+
+int init_instance_files(const str *instance_name)
+{
     return 0;
 }
 
