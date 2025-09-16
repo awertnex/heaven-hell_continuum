@@ -27,7 +27,7 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
     - dejavu_sans_mono_ansi_bold.ttf (subset: U+0000-00ff)
 
 ### windows-specific:
-- some mingw headers (modified)
+- [x86_64-w64-mingw32 (UCRT) v15.2.0-rt_v13-rev0](https://github.com/niXman/mingw-builds-binaries/releases) (not necessary for runtime, just for building from source)
 
 
 ## Build From Source
@@ -73,7 +73,7 @@ cd heaven-hell_continuum/
 ### for windows (using any C compiler, a suggestion is "gcc" from "mingw"):
 
 if you don't already have a C compiler:
-- download `mingw`: [mingw-w64](https://www.mingw-w64.org/downloads/)
+- my choice of `mingw`: [x86_64-w64-mingw32 (UCRT) v15.2.0-rt_v13-rev0](https://github.com/niXman/mingw-builds-binaries/releases)
 
 1. clone and build:
 
