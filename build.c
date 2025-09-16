@@ -28,7 +28,6 @@ const long C_STD = __STDC_VERSION__;
 #include "src/engine/platform_linux.c"
 #include <glob.h>
 
-#define PLATFORM        "linux/"
 #define EXTENSION       ""
 #define COMPILER        "gcc"EXTENSION
 
@@ -63,7 +62,6 @@ str str_libs[][32] =
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #include "src/engine/platform_windows.c"
 
-#define PLATFORM        "win/"
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
 
@@ -107,7 +105,6 @@ str *str_bin_root = NULL;
 str str_src[PATH_MAX] = {0};            /* path: ./build.c */
 str str_bin[PATH_MAX] = {0};            /* path: ./build%s, EXTENSION */
 str str_bin_new[PATH_MAX] = {0};        /* path: ./build_new%s, EXTENSION */
-str cmd_self_rebuild[PATH_MAX] = {0};   /* self-rebuild command to execute */
 buf cmd = {NULL};
 u64 cmd_pos = 0;
 buf str_tests = {NULL};
@@ -137,14 +134,10 @@ void show_cmd(void);
 void raw_cmd(void);
 void push_cmd(const str *string);
 void build_cmd(int argc, char **argv);
-void clean_cmd(void);
+void free_cmd(void);
 void fail_cmd(void);
 void help(void);
 void list(void);
-/* 
- * scrap function, for reference;
- */
-//void push_glob(const str *pattern);
 
 /* ---- section: main ------------------------------------------------------- */
 
@@ -192,27 +185,35 @@ int main(int argc, char **argv)
 
     snprintf(cmd_asset_in, PATH_MAX - 1, "%sLICENSE", str_bin_root);
     snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"LICENSE", str_bin_root);
+    normalize_slash(cmd_asset_in);
+    normalize_slash(cmd_asset_out);
     if (copy_file(cmd_asset_in, cmd_asset_out) != 0) goto cleanup;
 
     snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/", str_bin_root);
+    normalize_slash(cmd_asset_out);
     make_dir(cmd_asset_out);
 
     snprintf(cmd_asset_in, PATH_MAX - 1, "%slib/"PLATFORM, str_bin_root);
     snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
+    normalize_slash(cmd_asset_in);
+    normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     snprintf(cmd_asset_in, PATH_MAX - 1, "%sresources/", str_bin_root);
     snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"resources/", str_bin_root);
+    normalize_slash(cmd_asset_in);
+    normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     snprintf(cmd_asset_in, PATH_MAX - 1, "%sshaders/", str_bin_root);
     snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"shaders/", str_bin_root);
+    normalize_slash(cmd_asset_in);
+    normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     if (!exec(&cmd, "build")) goto cleanup;
-    
 
-    clean_cmd();
+    free_cmd();
     return 0;
 
 cleanup:
@@ -227,10 +228,10 @@ void init_build(void)
     if (str_bin_root == NULL)
         fail_cmd();
 
+    check_slash(str_bin_root);
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(cmd_self_rebuild, PATH_MAX, "%s %s -Wall -Wextra -std=c99 -fno-builtin -o %s", COMPILER, str_src, str_bin_new);
 }
 
 b8 is_source_changed(void)
@@ -257,11 +258,24 @@ b8 is_source_changed(void)
 
 void rebuild_self(int argc, char **argv)
 {
+    if (!mem_alloc_buf(&cmd, 16, PATH_MAX, "cmd"))
+        fail_cmd();
+
     LOGINFO("%s\n", "Rebuilding Self..");
-    int self_rebuild_success = system(cmd_self_rebuild);
-    if (self_rebuild_success != -1 &&
-            WIFEXITED(self_rebuild_success) &&
-            WEXITSTATUS(self_rebuild_success) == 0)
+
+    snprintf(cmd.i[0], PATH_MAX - 1, "%s", COMPILER);
+    snprintf(cmd.i[1], PATH_MAX - 1, "%s", str_src);
+    normalize_slash(cmd.i[1]);
+    snprintf(cmd.i[2], PATH_MAX - 1, "%s", "-Wall");
+    snprintf(cmd.i[3], PATH_MAX - 1, "%s", "-Wextra");
+    snprintf(cmd.i[4], PATH_MAX - 1, "%s", "-std=c99");
+    snprintf(cmd.i[5], PATH_MAX - 1, "%s", "-fno-builtin");
+    snprintf(cmd.i[6], PATH_MAX - 1, "%s", "-o");
+    snprintf(cmd.i[7], PATH_MAX - 1, "%s", str_bin_new);
+    normalize_slash(cmd.i[7]);
+    cmd.i[8] = NULL;
+
+    if (exec(&cmd, "cmd"))
     {
         LOGINFO("%s\n", "Self Rebuild Success");
         remove(str_bin);
@@ -269,10 +283,16 @@ void rebuild_self(int argc, char **argv)
 
         execvp(argv[0], (str *const *)argv);
         LOGFATAL("'build%s' Failed, Process Aborted\n", EXTENSION);
-        fail_cmd();
+        goto cleanup;
     }
 
     LOGFATAL("%s\n", "Self-Rebuild Failed, Process Aborted");
+    goto cleanup;
+
+    return;
+
+cleanup:
+    mem_free_buf(&cmd, "cmd");
     fail_cmd();
 }
 
@@ -397,10 +417,14 @@ void build_cmd(int argc, char **argv)
 
     /* ---- children -------------------------------------------------------- */
     for (u32 i = 0; i < arr_len(str_children); ++i)
+    {
+        normalize_slash(str_children[i]);
         push_cmd(str_children[i]);
+    }
 
     /* ---- includes -------------------------------------------------------- */
     snprintf(temp, PATH_MAX - 1, "%sinclude/glad/glad.c", str_bin_root);
+    normalize_slash(temp);
     push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
@@ -409,6 +433,7 @@ void build_cmd(int argc, char **argv)
 
     /* ---- libs ------------------------------------------------------------ */
     snprintf(temp, PATH_MAX - 1, "-L%slib/"PLATFORM, str_bin_root);
+    normalize_slash(temp);
     push_cmd(temp);
 
     for (u32 i = 0; i < arr_len(str_libs); ++i)
@@ -445,7 +470,7 @@ void push_glob(const str *pattern)
 }
 #endif /* 0 */
 
-void clean_cmd(void)
+void free_cmd(void)
 {
     mem_free((void*)&str_bin_root, PATH_MAX, "str_bin_root");
     mem_free_buf(&str_tests, "str_tests");
@@ -454,7 +479,7 @@ void clean_cmd(void)
 
 void fail_cmd(void)
 {
-    clean_cmd();
+    free_cmd();
     _exit(EXIT_FAILURE);
 }
 
@@ -505,7 +530,7 @@ void list(void)
     }
 
     mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
-    clean_cmd();
+    free_cmd();
     exit(EXIT_SUCCESS);
 }
 
