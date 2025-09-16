@@ -2,6 +2,7 @@
 #define ENGINE_LOGGER_H
 
 #include "defines.h"
+#include "memory.h"
 
 #define RELEASE_BUILD 0
 
@@ -12,9 +13,6 @@
     #define LOGGING_DEBUG 1
     #define LOGGING_TRACE 1
 #endif
-
-#define IN_MESSAGE_MAX      4096
-#define OUT_MESSAGE_MAX     8192
 
 enum LogLevel
 {

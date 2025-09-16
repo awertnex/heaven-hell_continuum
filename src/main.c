@@ -157,9 +157,6 @@ void draw_everything(Player *player);
 
 int main(void)
 {
-    copy_dir("shaders", "Heaven-Hell Continuum", 1);
-    return 0;
-
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1024, 1024};
 

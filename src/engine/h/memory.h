@@ -3,6 +3,10 @@
 
 #include "defines.h"
 
+#define STRINGF_BUFFERS_MAX 8
+#define IN_STRING_MAX 2048
+#define OUT_STRING_MAX 4096
+
 #define arr_len(arr)    ((u64)sizeof(arr) / sizeof(arr[0]))
 
 /* 
@@ -75,6 +79,11 @@ void swap_strings(str *s1, str *s2);
  * return string;
  */
 str *swap_string_char(str *string, char c1, char c2);
+
+/*
+ * return string format;
+ */
+str *stringf(const str* format, ...);
 
 void sort_buf(buf *s_buf);
 

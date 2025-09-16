@@ -4,11 +4,13 @@
 #include "defines.h"
 
 #if defined(__linux__) || defined(__linux)
+#define PLATFORM "linux"
 
 #define SLASH_NATIVE '/'
 #define SLASH_NON_NATIVE '\\'
 
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#define PLATFORM "win"
 
 #define SLASH_NATIVE '\\'
 #define SLASH_NON_NATIVE '/'

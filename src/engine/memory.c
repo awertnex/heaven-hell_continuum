@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "h/platform.h"
 #include "h/memory.h"
@@ -183,6 +184,29 @@ str *swap_string_char(str *string, char c1, char c2)
             string[i] = c2;
     }
 
+    return string;
+}
+
+str *stringf(const str* format, ...)
+{
+    static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
+    static u64 index = 0;
+
+    str *string = str_buf[index];
+    mem_zero((void*)&string, OUT_STRING_MAX, "stringf_current_buf");
+
+    __builtin_va_list args;
+    va_start(args, format);
+    u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
+    va_end(args);
+
+    if (required_bytes >= OUT_STRING_MAX - 1)
+    {
+        char *trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
+        snprintf(trunc_buf, 3, "...");
+    }
+
+    index = (index + 1) % STRINGF_BUFFERS_MAX;
     return string;
 }
 

@@ -25,8 +25,8 @@ str esc_code_open[][16] =
 
 str esc_code_close[] = "\033[0m";
 
-str in_message[IN_MESSAGE_MAX] = {0};
-str out_message[OUT_MESSAGE_MAX] = {0};
+str in_message[IN_STRING_MAX] = {0};
+str out_message[OUT_STRING_MAX] = {0};
 
 /* ---- section: functions -------------------------------------------------- */
 
@@ -48,10 +48,10 @@ void log_output(u8 log_level, const str* format, ...)
 
     __builtin_va_list args;
     va_start(args, format);
-    vsnprintf(in_message, IN_MESSAGE_MAX, format, args);
+    vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);
 
-    snprintf(out_message, OUT_MESSAGE_MAX, "%s: %s", log_tag[log_level], in_message);
+    snprintf(out_message, OUT_STRING_MAX, "%s: %s", log_tag[log_level], in_message);
     fprintf(stderr, "%s%s%s", esc_code_open[log_level], out_message, esc_code_close);
 }
 

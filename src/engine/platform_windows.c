@@ -52,9 +52,7 @@ b8 exec(buf *cmd, str *cmd_name)
 
     mem_alloc((void*)&cmd_cat, cmd->size * cmd->memb, cmd_name);
     for (u64 i = 0; i < cmd->memb; ++i)
-    {
-        strncat(cmd_cat, cmd->i[i], cmd->size);
-    }
+        strncat(cmd_cat, stringf("%s ", cmd->i[i]), cmd->size);
 
     if(!CreateProcessA(cmd_cat, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info))
     {

@@ -117,17 +117,18 @@ u8 copy_dir(const str *path, const str *destination, b8 overwrite)
     if (!dir_contents.loaded)
         return -1;
 
+    str path_string[PATH_MAX] = {0};
+    snprintf(path_string, PATH_MAX, "%s", path);
+    check_slash(path_string);
+
     str destination_string[PATH_MAX] = {0};
     snprintf(destination_string, PATH_MAX, "%s", destination);
     check_slash(destination_string);
 
-    if (is_dir_exists(destination_string))
+    if (is_dir_exists(destination_string) && !overwrite)
     {
-        if (!overwrite)
-        {
-            strncat(destination_string, strrchr(path, SLASH_NATIVE), PATH_MAX - 1);
-            check_slash(destination_string);
-        }
+        strncat(destination_string, strrchr(path_string, SLASH_NATIVE), PATH_MAX - 1);
+        check_slash(destination_string);
     }
     else make_dir(destination_string);
 
@@ -135,11 +136,10 @@ u8 copy_dir(const str *path, const str *destination, b8 overwrite)
     str out_dir[PATH_MAX] = {0};
     for (u64 i = 0; i < dir_contents.memb; ++i)
     {
-        snprintf(in_dir, PATH_MAX - 1, "%s%s", path, (str*)dir_contents.i[i]);
+        snprintf(in_dir, PATH_MAX - 1, "%s%s", path_string, (str*)dir_contents.i[i]);
         snprintf(out_dir, PATH_MAX - 1, "%s%s", destination_string, (str*)dir_contents.i[i]);
         if (is_dir(in_dir))
         {
-            check_slash(out_dir);
             copy_dir(in_dir, out_dir, 1);
             continue;
         }
