@@ -18,7 +18,7 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
 
 ## Dependencies (already bundled)
 
-- [glfw v3.5](https://github.com/glfw/glfw/releases) (headers modified)
+- [glfw v3.4](https://github.com/glfw/glfw/releases) (headers modified)
 - [glad v0.1.36](https://github.com/dav1dde/glad-web) (header modified)
 - [stb_image_write.h v1.26](https://github.com/nothings/stb/blob/master/stb_image_write.h) (modified)
 - [stb_truetype.h v1.26](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)

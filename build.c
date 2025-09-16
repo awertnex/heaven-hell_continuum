@@ -26,12 +26,10 @@ const long C_STD = __STDC_VERSION__;
 
 #if defined(__linux__) || defined(__linux)
 #include "src/engine/platform_linux.c"
-#include <glob.h>
 
 #define EXTENSION       ""
 #define COMPILER        "gcc"EXTENSION
-
-glob_t glob_buf = {0};
+#define STR_OUT         DIR_ROOT"hhc"
 
 str str_children[][32] =
 {
@@ -59,11 +57,13 @@ str str_libs[][32] =
     //"-ldl",
     //"-lXinerama",
 };
+
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #include "src/engine/platform_windows.c"
 
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
+#define STR_OUT         "\""DIR_ROOT"hhc"EXTENSION"\""
 
 str str_children[][32] =
 {
@@ -82,10 +82,11 @@ str str_children[][32] =
 str str_libs[][24] =
 {
     "-lm",
-    "-lglfw",
+    "-lglfw3",
     "-lgdi32",
     "-lwinmm",
 };
+
 #endif /* PLATFORM */
 
 enum Flags
@@ -94,7 +95,7 @@ enum Flags
     STATE_LAUNCHER,
 
     FLAG_SHOW_CMD = 1,
-    FLAG_RAW_CMD = 2,
+    FLAG_RAW_CMD,
 }; /* Flags */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -105,6 +106,7 @@ str *str_bin_root = NULL;
 str str_src[PATH_MAX] = {0};            /* path: ./build.c */
 str str_bin[PATH_MAX] = {0};            /* path: ./build%s, EXTENSION */
 str str_bin_new[PATH_MAX] = {0};        /* path: ./build_new%s, EXTENSION */
+str str_bin_old[PATH_MAX] = {0};        /* path: ./build_old%s, EXTENSION */
 buf cmd = {NULL};
 u64 cmd_pos = 0;
 buf str_tests = {NULL};
@@ -113,14 +115,14 @@ str str_main[PATH_MAX] = DIR_SRC"main.c";
 
 str str_cflags[][32] =
 {
+    "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
     "-std=c99",
     "-Wall",
     "-Wextra",
     "-fno-builtin",
-    "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
 };
 
-str str_out[PATH_MAX] = DIR_ROOT"hhc";
+str str_out[PATH_MAX] = STR_OUT;
 
 /* ---- section: signatures ------------------------------------------------- */
 
@@ -147,7 +149,7 @@ int main(int argc, char **argv)
 
     if (C_STD != STD_C99)
     {
-        LOGINFO("Rebuilding 'build%s' With -std=c99\n", EXTENSION);
+        LOGINFO("%s\n", "Rebuilding Self With -std=c99..");
         rebuild_self(argc, argv);
     }
 
@@ -229,16 +231,19 @@ void init_build(void)
         fail_cmd();
 
     check_slash(str_bin_root);
+    normalize_slash(str_bin_root);
     snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
     snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
     snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
+    snprintf(str_bin_old, PATH_MAX, "%sbuild_old%s", str_bin_root, EXTENSION);
 }
 
 b8 is_source_changed(void)
 {
-    struct stat stats;
     unsigned long mtime_src = 0;
     unsigned long mtime_bin = 0;
+
+    struct stat stats;
 
     if (stat(str_src, &stats) == 0)
         mtime_src = stats.st_mtime;
@@ -273,13 +278,17 @@ void rebuild_self(int argc, char **argv)
     snprintf(cmd.i[6], PATH_MAX - 1, "%s", "-o");
     snprintf(cmd.i[7], PATH_MAX - 1, "%s", str_bin_new);
     normalize_slash(cmd.i[7]);
+
+#if defined(__linux__) || defined(__linux)
     cmd.i[8] = NULL;
+#endif
 
     if (exec(&cmd, "cmd"))
     {
         LOGINFO("%s\n", "Self Rebuild Success");
-        remove(str_bin);
+        rename(str_bin, str_bin_old);
         rename(str_bin_new, str_bin);
+        remove(str_bin_old);
 
         execvp(argv[0], (str *const *)argv);
         LOGFATAL("'build%s' Failed, Process Aborted\n", EXTENSION);
@@ -332,7 +341,7 @@ void show_cmd(void)
     for (u32 i = 0; i < CMD_MEMB; ++i)
     {
         if (!cmd.i[i]) break;
-        printf("    %.3d: %s\n", i, cmd.i[i]);
+        printf("    %.3d: %s\n", i, (str*)cmd.i[i]);
     }
 
     if (!(flags & FLAG_RAW_CMD))
@@ -345,7 +354,7 @@ void raw_cmd(void)
     for (u32 i = 0; i < CMD_MEMB; ++i)
     {
         if (!cmd.i[i]) break;
-        printf("%s ", cmd.i[i]);
+        printf("%s ", (str*)cmd.i[i]);
     }
 
     printf("%s", "\n\n");
@@ -399,8 +408,8 @@ void build_cmd(int argc, char **argv)
 
 
             sort_buf(&str_tests);
-            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, str_tests.i[test_index]);
-            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, str_tests.i[test_index], EXTENSION);
+            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, (str*)str_tests.i[test_index]);
+            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, (str*)str_tests.i[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
@@ -428,12 +437,17 @@ void build_cmd(int argc, char **argv)
     push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
-    for (u32 i = 0; i < arr_len(str_cflags); ++i)
+    posix_slash(str_cflags[0]);
+    push_cmd(str_cflags[0]);
+    for (u32 i = 1; i < arr_len(str_cflags); ++i)
+    {
+        normalize_slash(str_cflags[i]);
         push_cmd(str_cflags[i]);
+    }
 
     /* ---- libs ------------------------------------------------------------ */
     snprintf(temp, PATH_MAX - 1, "-L%slib/"PLATFORM, str_bin_root);
-    normalize_slash(temp);
+    posix_slash(temp);
     push_cmd(temp);
 
     for (u32 i = 0; i < arr_len(str_libs); ++i)
@@ -443,13 +457,17 @@ void build_cmd(int argc, char **argv)
     push_cmd("-o");
     push_cmd(str_out);
 
+#if defined(__linux__) || defined(__linux)
     cmd.i[cmd_pos] = NULL;
+#endif
 }
 
 /*
  * scrap function, for reference;
  */
 #if 0
+#include <glob.h>
+
 void push_glob(const str *pattern)
 {
     b8 ret = glob(pattern, 0, NULL, &glob_buf);

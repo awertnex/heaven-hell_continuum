@@ -344,6 +344,19 @@ void normalize_slash(str *path)
     }
 }
 
+void posix_slash(str *path)
+{
+    if (path == NULL)
+        return;
+
+    u64 len = strlen(path);
+    for (u64 i = 0; i < len; ++i)
+    {
+        if (path[i] == '\\')
+            path[i] = '/';
+    }
+}
+
 str *retract_path(str *path)
 {
     u64 len = strlen(path);

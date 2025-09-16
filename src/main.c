@@ -143,9 +143,9 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void update_input(GLFWwindow *window, Player *player);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
+void update_input(GLFWwindow *window, Player *player);
 void init_world(str *string);
 void update_world(Player *player);
 void draw_skybox(Player *player);
@@ -155,8 +155,24 @@ void draw_everything(Player *player);
 
 /* ---- section: main ------------------------------------------------------- */
 
-int main(void)
+int main(int argc, char **argv)
 {
+    if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
+    {
+        if (!strncmp(argv[2], "FATAL", 5))
+            log_level = LOGLEVEL_FATAL;
+        else if (!strncmp(argv[2], "ERROR", 5))
+            log_level = LOGLEVEL_ERROR;
+        else if (!strncmp(argv[2], "WARN", 4))
+            log_level = LOGLEVEL_WARNING;
+        else if (!strncmp(argv[2], "INFO", 4))
+            log_level = LOGLEVEL_INFO;
+        else if (!strncmp(argv[2], "DEBUG", 5))
+            log_level = LOGLEVEL_DEBUG;
+        else if (!strncmp(argv[2], "TRACE", 5))
+            log_level = LOGLEVEL_TRACE;
+    }
+
     glfwSetErrorCallback(error_callback);
     /*temp*/ render.size = (v2i32){1024, 1024};
 
@@ -357,52 +373,6 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
     }
 }
 
-void update_input(GLFWwindow *window, Player *player)
-{
-    player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
-        player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
-
-    /* ---- jumping --------------------------------------------------------- */
-    if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
-    {
-        player->pos.z += player->movement_speed;
-    }
-
-    /* ---- sneaking -------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
-    {
-        player->pos.z -= player->movement_speed;
-    }
-
-    /* ---- movement -------------------------------------------------------- */
-    if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
-    {
-        player->pos.x += (player->movement_speed * player->camera.sin_yaw);
-        player->pos.y += (player->movement_speed * player->camera.cos_yaw);
-    }
-
-    if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
-    {
-        player->pos.x -= (player->movement_speed * player->camera.sin_yaw);
-        player->pos.y -= (player->movement_speed * player->camera.cos_yaw);
-    }
-
-    if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
-    {
-        player->pos.x -= (player->movement_speed * player->camera.cos_yaw);
-        player->pos.y += (player->movement_speed * player->camera.sin_yaw);
-    }
-
-    if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
-    {
-        player->pos.x += (player->movement_speed * player->camera.cos_yaw);
-        player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
-    }
-}
-
 void generate_standard_meshes()
 {
     GLfloat vbo_data_skybox[] =
@@ -552,6 +522,52 @@ void bind_shader_uniforms(void)
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
+void update_input(GLFWwindow *window, Player *player)
+{
+    player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+        player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
+
+    /* ---- jumping --------------------------------------------------------- */
+    if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
+    {
+        player->pos.z += player->movement_speed;
+    }
+
+    /* ---- sneaking -------------------------------------------------------- */
+    if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
+    {
+        player->pos.z -= player->movement_speed;
+    }
+
+    /* ---- movement -------------------------------------------------------- */
+    if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
+    {
+        player->pos.x += (player->movement_speed * player->camera.sin_yaw);
+        player->pos.y += (player->movement_speed * player->camera.cos_yaw);
+    }
+
+    if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
+    {
+        player->pos.x -= (player->movement_speed * player->camera.sin_yaw);
+        player->pos.y -= (player->movement_speed * player->camera.cos_yaw);
+    }
+
+    if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
+    {
+        player->pos.x -= (player->movement_speed * player->camera.cos_yaw);
+        player->pos.y += (player->movement_speed * player->camera.sin_yaw);
+    }
+
+    if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
+    {
+        player->pos.x += (player->movement_speed * player->camera.cos_yaw);
+        player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
+    }
+}
+
 void init_world(str *string)
 {
     if (strlen(string) == 0) return;
@@ -565,7 +581,7 @@ void init_world(str *string)
 
     //lily.state |= FLAG_FALLING; /*temp off*/
     lily.state |= FLAG_FLYING; /*temp*/
-    set_player_block(&lily, 0, 0, 0);
+    set_player_block(&lily, 0, 0, 10);
 //  lily.delta_target =
 //      (v3i32){
 //          lily.camera.target.x,
@@ -580,7 +596,7 @@ void init_world(str *string)
 
 void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 2000)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
 

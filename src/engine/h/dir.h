@@ -84,6 +84,11 @@ void check_slash(str *path);
 void normalize_slash(str *path);
 
 /*
+ * change all '\\' to '\';
+ */
+void posix_slash(str *path);
+
+/*
  * retract path to its parent directory;
  *
  * return path;

@@ -41,8 +41,11 @@ b8 _get_path_bin_root(str *path)
 b8 exec(buf *cmd, str *cmd_name)
 {
     str *cmd_cat = NULL;
-    STARTUPINFOA        startup_info;
-    PROCESS_INFORMATION process_info;
+    STARTUPINFOA        startup_info = {0};
+    PROCESS_INFORMATION process_info = {0};
+
+    ZeroMemory(&startup_info, sizeof(startup_info));
+    startup_info.cb = sizeof(startup_info);
 
     if (!cmd->loaded || !cmd->buf)
     {
@@ -54,7 +57,7 @@ b8 exec(buf *cmd, str *cmd_name)
     for (u64 i = 0; i < cmd->memb; ++i)
         strncat(cmd_cat, stringf("%s ", cmd->i[i]), cmd->size);
 
-    if(!CreateProcessA(cmd_cat, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info))
+    if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info))
     {
         LOGFATAL("'%s' Fork Failed, Process Aborted\n", cmd_name);
         goto cleanup;
@@ -62,8 +65,8 @@ b8 exec(buf *cmd, str *cmd_name)
 
     WaitForSingleObject(process_info.hProcess, INFINITE);
 
-    LPDWORD exit_code = 0;
-    GetExitCodeProcess(process_info.hProcess, exit_code);
+    DWORD exit_code = 0;
+    GetExitCodeProcess(process_info.hProcess, &exit_code);
 
     CloseHandle(process_info.hProcess);
     CloseHandle(process_info.hThread);

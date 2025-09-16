@@ -3,6 +3,12 @@
 
 #include "h/logger.h"
 
+#if RELEASE_BUILD
+u32 log_level = LOGLEVEL_ERROR;
+#else
+u32 log_level = LOGLEVEL_TRACE;
+#endif /* RELEASE_BUILD */
+
 static str log_tag[][16] =
 {
     "FATAL",
@@ -41,17 +47,16 @@ void close_logger()
     // TODO: close logger
 }
 
-void log_output(u8 log_level, const str* format, ...)
+void log_output(u8 level, const str* format, ...)
 {
-    // TODO: use b8 is_error;
-    //b8 is_error = log_level < 2;
+    if (level > log_level) return;
 
     __builtin_va_list args;
     va_start(args, format);
     vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);
 
-    snprintf(out_message, OUT_STRING_MAX, "%s: %s", log_tag[log_level], in_message);
-    fprintf(stderr, "%s%s%s", esc_code_open[log_level], out_message, esc_code_close);
+    snprintf(out_message, OUT_STRING_MAX, "%s: %s", log_tag[level], in_message);
+    fprintf(stderr, "%s%s%s", esc_code_open[level], out_message, esc_code_close);
 }
 
