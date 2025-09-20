@@ -23,8 +23,10 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
 - [stb_image_write.h v1.26](https://github.com/nothings/stb/blob/master/stb_image_write.h) (modified)
 - [stb_truetype.h v1.26](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
 - [dejavu-fonts v2.37](https://github.com/dejavu-fonts/dejavu-fonts) (modified)
+    - dejavu_sans_ansi.ttf (subset: U+0000-00ff)
+    - dejavu_sans_bold_ansi.ttf (subset: U+0000-00ff)
     - dejavu_sans_mono_ansi.ttf (subset: U+0000-00ff)
-    - dejavu_sans_mono_ansi_bold.ttf (subset: U+0000-00ff)
+    - dejavu_sans_mono_bold_ansi.ttf (subset: U+0000-00ff)
 
 ### windows-specific:
 - [w64devkit v2.4.0](https://github.com/skeeto/w64devkit) (not necessary for runtime, just for building from source)
