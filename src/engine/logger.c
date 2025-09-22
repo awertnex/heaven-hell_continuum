@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "h/defines.h"
 #include "h/logger.h"
 
 #if RELEASE_BUILD
@@ -39,7 +40,7 @@ str out_message[OUT_STRING_MAX] = {0};
 b8 init_logger()
 {
     // TODO: init logger
-    return true;
+    return TRUE;
 }
 
 void close_logger()

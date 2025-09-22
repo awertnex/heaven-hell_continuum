@@ -29,6 +29,8 @@
 
 extern Font font;
 extern Font font_bold;
+extern Font font_mono;
+extern Font font_mono_bold;
 
 extern v2i16 hotbar_pos;
 extern f32 hotbar_slot_selected;
@@ -105,7 +107,6 @@ enum ButtonNames
 /* ---- section: signatures ------------------------------------------------- */
 
 b8 init_gui(void);
-void apply_render_settings();
 void update_render_settings(v2f32 render_size);
 void free_gui(void);
 

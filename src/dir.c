@@ -21,7 +21,7 @@ str GRANDPATH_DIR[][NAME_MAX] =
     "lib/",
     "lib/"PLATFORM"/",
     "resources/",
-    "shaders/",
+    "resources/shaders/",
     "instances/",
 };
 

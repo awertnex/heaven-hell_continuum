@@ -36,6 +36,7 @@ str str_children[][32] =
     DIR_SRC"chunking.c",
     DIR_SRC"dir.c",
     DIR_SRC"gui.c",
+    DIR_SRC"input.c",
     DIR_SRC"logic.c",
     DIR_SRC"engine/core.c",
     DIR_SRC"engine/dir.c",
@@ -70,6 +71,7 @@ str str_children[][32] =
     DIR_SRC"chunking.c",
     DIR_SRC"dir.c",
     DIR_SRC"gui.c",
+    DIR_SRC"input.c",
     DIR_SRC"logic.c",
     DIR_SRC"engine/core.c",
     DIR_SRC"engine/dir.c",
@@ -208,7 +210,7 @@ int main(int argc, char **argv)
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     snprintf(cmd_asset_in, PATH_MAX - 1, "%sshaders/", str_bin_root);
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"shaders/", str_bin_root);
+    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"resources/shaders/", str_bin_root);
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;

@@ -2,94 +2,94 @@
 #include "h/main.h"
 
 /* ---- declarations -------------------------------------------------------- */
-u32 state = 0;
-u8 state_menu_depth = 0;
-f64 game_start_time = 0.0f;
-u64 game_tick = 0;
-u64 game_days = 0;
-pthread_t thrd_chunk_handler;
+// u32 state = 0;
+// u8 state_menu_depth = 0;
+// f64 game_start_time = 0.0f;
+// u64 game_tick = 0;
+// u64 game_days = 0;
+// pthread_t thrd_chunk_handler;
 
-Settings settings =
-{
-    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-    .fov =                  SETTING_FOV_DEFAULT,
-    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
-    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
-};
+// Settings settings =
+// {
+//     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
+//     .fov =                  SETTING_FOV_DEFAULT,
+//     .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT * 0.065f,
+//     .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+//     .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
+// };
 
-Player lily =
-{
-    .name = "Lily",
-    .pos = {0.0f},
-    .scl = {0.6f, 0.6f, 1.8f},
-    .collision_check_start = {0.0f},
-    .collision_check_end = {0.0f},
-    .pitch = -29.0f,
-    .yaw = 121.0f,
-    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
-    .eye_height = 1.5f,
-    .m = 2.0f,
-    .movement_speed = 10.0f,
-    .container_state = 0,
-    .perspective = 0,
+// Player lily =
+// {
+//     .name = "Lily",
+//     .pos = {0.0f},
+//     .scl = {0.6f, 0.6f, 1.8f},
+//     .collision_check_start = {0.0f},
+//     .collision_check_end = {0.0f},
+//     .pitch = -29.0f,
+//     .yaw = 121.0f,
+//     .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
+//     .eye_height = 1.5f,
+//     .m = 2.0f,
+//     .movement_speed = 10.0f,
+//     .container_state = 0,
+//     .perspective = 0,
 
-    .camera =
-    {
-        .fov = 70.0f,
-        .projection = CAMERA_PERSPECTIVE,
-    },
-    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
-    .camera_debug_info =
-    {
-        .fov = 50.0f,
-        .projection = CAMERA_ORTHOGRAPHIC,
-    },
+//     .camera =
+//     {
+//         .fov = 70.0f,
+//         .projection = CAMERA_PERSPECTIVE,
+//     },
+//     .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+//     .camera_debug_info =
+//     {
+//         .fov = 50.0f,
+//         .projection = CAMERA_ORTHOGRAPHIC,
+//     },
 
-    .spawn_point = {0},
-};
+//     .spawn_point = {0},
+// };
 
 /* ---- signatures ---------------------------------------------------------- */
 void update_world();
 void *chunk_handler();
 void update_input(Player *player);
-void draw_skybox();
+// void draw_skybox();
 void draw_world();
 void draw_gui();
 
 int main(void)
 {
     /* ---- init main ------------------------------------------------------- */
-    if (MODE_DEBUG)
-        LOGINFO("%s", "Debugging Enabled");
+//     if (MODE_DEBUG)
+//         LOGINFO("%s", "Debugging Enabled");
 
     state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_PAUSED;
-    init_paths();
-#if RELEASE_BUILD
-    init_instance_directory("new_instance"); /* TODO: make editable instance name */
-#else
-    init_instance_directory("test_instance");
-#endif /* RELEASE_BUILD */
+//     init_paths();
+// #if RELEASE_BUILD
+//     init_instance_directory("new_instance"); /* TODO: make editable instance name */
+// #else
+//     init_instance_directory("test_instance");
+// #endif /* RELEASE_BUILD */
 
-    setting.render_size = (v2f32){854, 480};
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(setting.render_size.x, setting.render_size.y, GAME_NAME);
-    SetExitKey(KEY_PAUSE);
-    SetWindowMinSize(640, 480);
+//     setting.render_size = (v2f32){854, 480};
+//     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+//     InitWindow(setting.render_size.x, setting.render_size.y, GAME_NAME);
+//     SetExitKey(KEY_PAUSE);
+//     SetWindowMinSize(640, 480);
 
     init_textures();
 
-#if !RELEASE_BUILD
-    SetTargetFPS(60); /* TODO: make release-build FPS depend on video settings */
-#endif /* RELEASE_BUILD */
+// #if !RELEASE_BUILD
+//     SetTargetFPS(60); /* TODO: make release-build FPS depend on video settings */
+// #endif /* RELEASE_BUILD */
 
-    init_fonts();
-    init_gui();
-    apply_render_settings();
+//     init_fonts();
+//     init_gui();
+//     apply_render_settings();
     update_render_settings(setting.render_size);
     init_super_debugger(setting.render_size);
 
-    game_start_time = get_time_ms();
+//     game_start_time = get_time_ms();
 
 section_menu_title: /* ------------------------------------------------------ */
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
@@ -156,21 +156,21 @@ section_main: /* ------------------------------------------------------------ */
             mouse_delta = (Vector2){0.0f, 0.0f};
         }
 
-        update_input(&lily);
+//         update_input(&lily);
         update_render_settings(setting.render_size);
         setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        update_world();
+//         update_world();
 
-        BeginDrawing();
-        {
-            BeginMode3D(lily.camera);
-            draw_skybox();
+//         BeginDrawing();
+//         {
+//             BeginMode3D(lily.camera);
+//             draw_skybox();
             draw_chunk_tab(&block[dirt].texture);
             draw_world();
-            EndMode3D();
-        }
+//             EndMode3D();
+//         }
         draw_gui();
-        EndDrawing();
+//         EndDrawing();
 
         if (!(state & FLAG_WORLD_LOADED))
             goto section_menu_title;
@@ -192,46 +192,46 @@ section_main: /* ------------------------------------------------------------ */
 
 void init_world(str *str)
 {
-    if (strlen(str) == 0) return;
+//     if (!strlen(str)) return;
 
-    init_world_directory(str);
-    rlSetClipPlanes(0.1f, 500.0f);
+//     init_world_directory(str);
+//     rlSetClipPlanes(0.1f, 500.0f);
     if (init_chunking() != 0)
         state &= ~FLAG_ACTIVE;
 
-    update_player(&lily);
+//     update_player(&lily);
     update_chunk_tab(lily.chunk);
 
-    //lily.state |= FLAG_FALLING; /*temp off*/
-    lily.state |= FLAG_FLYING; /*temp*/
-    set_player_block(&lily, 0, 0, 0);
+//     lily.state |= FLAG_FALLING; /*temp off*/
+//     lily.state |= FLAG_FLYING; /*temp*/
+//     set_player_block(&lily, 0, 0, 0);
     lily.delta_target =
         (v3i32){
             lily.camera.target.x,
             lily.camera.target.y,
             lily.camera.target.z};
 
-    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
+//     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
 
-    disable_cursor;
-    center_cursor;
+//     disable_cursor;
+//     center_cursor;
 }
 
 void update_world()
 {
-    game_tick = (floor((get_time_ms() - game_start_time) * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
-    if (game_tick >= SETTING_DAY_TICKS_MAX)
-        ++game_days;
+//     game_tick = (floor((get_time_ms() - game_start_time) * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+//     if (game_tick >= SETTING_DAY_TICKS_MAX)
+//         ++game_days;
 
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
 
-    update_player(&lily);
+//     update_player(&lily);
     update_player_target(&lily.camera.target, &lily.delta_target);
-    update_camera_movements_player(&lily);
-    if (MODE_COLLIDE)
-        update_collision_static(&lily);
+//     update_camera_movements_player(&lily);
+//     if (MODE_COLLIDE)
+//         update_collision_static(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -543,40 +543,40 @@ void draw_world()
     }
 }
 
-struct /* skybox */
-{
-    f64 time;
-    f64 mid_day;
-    f64 pre_burn;
-    f64 burn;
-    f64 burn_boost;
-    f64 mid_night;
-    Color color;
-} skybox = {0};
+// struct /* skybox */
+// {
+//     f64 time;
+//     f64 mid_day;
+//     f64 pre_burn;
+//     f64 burn;
+//     f64 burn_boost;
+//     f64 mid_night;
+//     Color color;
+// } skybox = {0};
 
-void draw_skybox()
-{
-    skybox.time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
-    skybox.mid_day =    fabs(sin(1.5f * pow(sin(skybox.time * PI), 1.0f)));
-    skybox.pre_burn =   fabs(sin(pow(sin((skybox.time + 0.33) * PI * 1.2f), 16.0f)));
-    skybox.burn =       fabs(sin(1.5f * pow(sin((skybox.time + 0.124f) * PI * 1.6f), 32.0f)));
-    skybox.burn_boost = fabs(pow(sin((skybox.time + 0.212f) * PI * 1.4f), 64.0f));
-    skybox.mid_night =  fabs(sin(pow(2 * cos(skybox.time * PI), 3.0f)));
-    skybox.color =
-        (Color){
-            Clamp((skybox.mid_day * 171) + (skybox.burn * 85) + (skybox.mid_night * 1) +
-                    (skybox.pre_burn * 13) + (skybox.burn_boost * 76), 0, 255),
-
-            Clamp((skybox.mid_day * 229) + (skybox.burn * 42) + (skybox.mid_night * 4) +
-                    (skybox.pre_burn * 7) + (skybox.burn_boost * 34), 0, 255),
-
-            Clamp((skybox.mid_day * 255) + (skybox.burn * 19) + (skybox.mid_night * 14) +
-                    (skybox.pre_burn * 20), 0, 255),
-            255,
-        };
-
-    ClearBackground(skybox.color);
-}
+// void draw_skybox()
+// {
+//     skybox.time =       (f64)game_tick / (f64)SETTING_DAY_TICKS_MAX;
+//     skybox.mid_day =    fabs(sin(1.5f * pow(sin(skybox.time * PI), 1.0f)));
+//     skybox.pre_burn =   fabs(sin(pow(sin((skybox.time + 0.33) * PI * 1.2f), 16.0f)));
+//     skybox.burn =       fabs(sin(1.5f * pow(sin((skybox.time + 0.124f) * PI * 1.6f), 32.0f)));
+//     skybox.burn_boost = fabs(pow(sin((skybox.time + 0.212f) * PI * 1.4f), 64.0f));
+//     skybox.mid_night =  fabs(sin(pow(2 * cos(skybox.time * PI), 3.0f)));
+//     skybox.color =
+//         (Color){
+//             Clamp((skybox.mid_day * 171) + (skybox.burn * 85) + (skybox.mid_night * 1) +
+//                     (skybox.pre_burn * 13) + (skybox.burn_boost * 76), 0, 255),
+// 
+//             Clamp((skybox.mid_day * 229) + (skybox.burn * 42) + (skybox.mid_night * 4) +
+//                     (skybox.pre_burn * 7) + (skybox.burn_boost * 34), 0, 255),
+// 
+//             Clamp((skybox.mid_day * 255) + (skybox.burn * 19) + (skybox.mid_night * 14) +
+//                     (skybox.pre_burn * 20), 0, 255),
+//             255,
+//         };
+// 
+//     ClearBackground(skybox.color);
+// }
 
 void draw_gui()
 {

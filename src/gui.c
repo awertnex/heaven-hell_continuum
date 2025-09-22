@@ -12,6 +12,8 @@
 
 Font font = {0};
 Font font_bold = {0};
+Font font_mono = {0};
+Font font_mono_bold = {0};
 
 v2i16 hotbar_pos;
 f32 hotbar_slot_selected = 1.0f;
@@ -54,19 +56,23 @@ void print_menu_layers()
 
 b8 init_gui(void)
 {
-    str font_path[PATH_MAX] = {0};
-    str font_path_bold[PATH_MAX] = {0};
+    str font_path[4][PATH_MAX] = {0};
 
-    snprintf(font_path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
-    snprintf(font_path_bold, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+    snprintf(font_path[0], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf");
+    snprintf(font_path[1], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf");
+    snprintf(font_path[2], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
+    snprintf(font_path[3], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS], "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf");
 
-    normalize_slash(font_path);
-    normalize_slash(font_path_bold);
+    normalize_slash(font_path[0]);
+    normalize_slash(font_path[1]);
+    normalize_slash(font_path[2]);
+    normalize_slash(font_path[3]);
 
-    if (!load_font(&font, FONT_RESOLUTION_DEFAULT, font_path) ||
-            !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path_bold))
+    if (
+            !load_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
+            !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
+            !load_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
+            !load_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
@@ -78,17 +84,6 @@ b8 init_gui(void)
 cleanup:
     free_gui();
     return 1;
-}
-
-void apply_render_settings()
-{
-    settings = (Settings){
-            .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-            .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-            .target_fps =           SETTING_TARGET_FPS_DEFAULT,
-            .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
-        };
 }
 
 void update_render_settings(v2f32 render_size)
@@ -123,7 +118,7 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     snprintf(string, 511,
             "MOUSE XY: %.2f %.2f\n"
@@ -142,7 +137,7 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
 
     snprintf(string, 255,
             "FRAME TIME: %.2lf\n"
@@ -150,7 +145,7 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
 
             render->frame_start,
             render->frame_delta);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
 }
 
 #ifdef FUCK // TODO: undef FUCK

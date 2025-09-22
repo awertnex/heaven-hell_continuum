@@ -212,7 +212,7 @@ str *stringf(const str* format, ...)
 
 void sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
-    /*
+#if 0
     for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
     {
         smallest = i;
@@ -236,6 +236,6 @@ void sort_buf(buf *buffer) /* TODO: fucking fix this */
 
         swap_strings(buffer->i[i], buffer->i[smallest]);
     }
-    */
+#endif
 }
 

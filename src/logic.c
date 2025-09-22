@@ -248,8 +248,7 @@ void update_gravity(Render *render, Player *player)
     player->pos.z += player->vel.z;
 }
 
-//void update_collision_static(player *player) /* TODO: make AABB collision work */
-    /*
+void update_collision_static(Player *player) /* TODO: make AABB collision work */
 {
     player->collision_check_start = (v3f32){
             floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
@@ -263,26 +262,35 @@ void update_gravity(Render *render, Player *player)
             ceilf(player->scl.z) + 2,
         };
 
-    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
-    if ((player->state & FLAG_PARSE_COLLISION_FEET)
-        && player->pos.z > WORLD_BOTTOM)
+    if (player->pos.z < 0.0f)
     {
-        if (target_chunk->i
-                [z - 1 - WORLD_BOTTOM]
-                [y - (target_chunk->pos.y * CHUNK_SIZE)]
-                [x - (target_chunk->pos.x * CHUNK_SIZE)] & NOT_EMPTY)
-        {
-            player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
-            player->v.z = 0;
-            if (player->state & FLAG_FLYING) player->state &= ~FLAG_FLYING;
-            player->state |= FLAG_CAN_JUMP;
-            player->state &= ~FLAG_FALLING;
-        } else player->state |= FLAG_FALLING;
+        if (player->state & FLAG_FLYING)
+            player->state &= ~FLAG_FLYING;
+        player->pos.z = 0.0f;
+        player->vel.z = 0.0f;
+        player->state |= FLAG_CAN_JUMP;
+        player->state &= ~FLAG_FALLING;
     }
+
+
+#if 0 /* TODO: remove this parse collision feet stuff */
+    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
+    if (target_chunk->i
+            [z - 1 - WORLD_BOTTOM]
+            [y - (target_chunk->pos.y * CHUNK_SIZE)]
+            [x - (target_chunk->pos.x * CHUNK_SIZE)] & NOT_EMPTY)
+    {
+        player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
+        player->vel.z = 0;
+        if (player->state & FLAG_FLYING) player->state &= ~FLAG_FLYING;
+        player->state |= FLAG_CAN_JUMP;
+        player->state &= ~FLAG_FALLING;
+    } else player->state |= FLAG_FALLING;
+
     // TODO: move to new 'void parse_camera_collisions()'
     player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
+#endif
 }
-*/
 
 f64 get_time_ms()
 {

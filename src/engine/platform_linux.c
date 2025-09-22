@@ -6,9 +6,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <stdio.h>
 
-#include "h/dir.h"
 #include "h/limits.h"
 #include "h/logger.h"
 

@@ -1,7 +1,4 @@
-#ifndef GAME_KEYMAPS_H
-#define GAME_KEYMAPS_H
-
-#include "engine/h/core.h"
+#include "h/input.h"
 
 /* ---- section: movement --------------------------------------------------- */
 
@@ -63,6 +60,4 @@ u32 bind_left =                         GLFW_KEY_LEFT;
 u32 bind_right =                        GLFW_KEY_RIGHT;
 u32 bind_down =                         GLFW_KEY_DOWN;
 u32 bind_up =                           GLFW_KEY_UP;
-
-#endif /* GAME_KEYMAPS_H */
 
