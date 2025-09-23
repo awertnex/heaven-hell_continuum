@@ -120,7 +120,7 @@ extern Player lily;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-bool get_double_press(u32 key);
+b8 get_double_press(u32 key);
 void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);

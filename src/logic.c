@@ -7,7 +7,7 @@
 #include "h/chunking.h"
 
 /* ---- variables ----------------------------------------------------------- */
-bool get_double_press(u32 key)
+b8 get_double_press(u32 key)
 {
     static f64 double_press_start_time = 0;
     static u32 double_press_key = 0;
@@ -237,8 +237,8 @@ void player_respawn(Player *player)
 b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 {
     //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
-        //return true;
-    return false;
+        //return TRUE;
+    return FALSE;
 }
 
 void update_gravity(Render *render, Player *player)
@@ -299,14 +299,14 @@ f64 get_time_ms()
     return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
-bool get_timer(f64 *time_start, f32 interval)
+b8 get_timer(f64 *time_start, f32 interval)
 {
     if (get_time_ms() - *time_start >= interval)
     {
         *time_start = get_time_ms();
-        return true;
+        return TRUE;
     }
-    return false;
+    return FALSE;
 }
 
 #if 0 // TODO: undef

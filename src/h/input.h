@@ -30,7 +30,7 @@ extern u32 bind_walk_forwards;
 /* ---- section: miscellaneous ---------------------------------------------- */
 
 // extern u32 bind_take_screenshot;
-// extern u32 bind_toggle_hud;
+extern u32 bind_toggle_hud;
 extern u32 bind_toggle_debug;
 // extern u32 bind_toggle_cinematic_camera;
 // extern u32 bind_toggle_fullscreen;

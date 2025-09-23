@@ -203,7 +203,7 @@ str *stringf(const str* format, ...)
     if (required_bytes >= OUT_STRING_MAX - 1)
     {
         char *trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
-        snprintf(trunc_buf, 3, "...");
+        snprintf(trunc_buf, 4, "...");
     }
 
     index = (index + 1) % STRINGF_BUFFERS_MAX;
