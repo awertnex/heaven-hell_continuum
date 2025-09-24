@@ -16,11 +16,12 @@ Font font_mono = {0};
 Font font_mono_bold = {0};
 
 v2i16 hotbar_pos;
-f32 hotbar_slot_selected = 1.0f;
+u8 hotbar_slot_selected = 1;
 v2i16 crosshair_pos;
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
+u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
@@ -94,14 +95,25 @@ void free_gui(void)
 {
     free_font(&font);
     free_font(&font_bold);
+    free_font(&font_mono);
+    free_font(&font_mono_bold);
 }
 
 void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
 {
-    str string[512] = {0};
+    static str string[512] = {0};
+
+    snprintf(string, 255,
+            "FPS: %d\n"
+            "FRAME TIME: %.2lf\n"
+            "FRAME DELTA: %.6lf\n",
+
+            (u32)(1.0f / render->frame_delta),
+            render->frame_start,
+            render->frame_delta);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
 
     snprintf(string, 511,
-            "FPS: %d\n"
             "PLAYER NAME: %s\n"
             "PLAYER XYZ: %.2f %.2f %.2f\n"
             "PLAYER BLOCK: %d %d %d\n"
@@ -112,13 +124,12 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             "TRI COUNT: 12\n"
             "VERTEX COUNT: a lot\n",
 
-            (u32)(1.0f / render->frame_delta),
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
             (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 3, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     snprintf(string, 511,
             "MOUSE XY: %.2f %.2f\n"
@@ -137,15 +148,34 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 12, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
 
-    snprintf(string, 255,
-            "FRAME TIME: %.2lf\n"
-            "FRAME DELTA: %.6lf\n",
+    snprintf(string, 511,
+            "    Key [X]:\n"
+            "  Press [%d][%d] Press Double\n"
+            "   Hold [%d][%d] Hold Double\n"
+            "Release [%d][%d] Release Double\n"
+            " Listen [%d][%d] Listen Double\n\n",
+            is_key_press(KEY_X),
+            is_key_press_double(KEY_X),
+            _is_key_hold(KEY_X),
+            _is_key_hold_double(KEY_X),
+            _is_key_release(KEY_X),
+            _is_key_release_double(KEY_X),
+            !keyboard_key[KEY_X],
+            _is_key_listen_double(KEY_X));
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x9f, 0x6f, 0x3f, 0xff}, 0, 0);
 
-            render->frame_start,
-            render->frame_delta);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
+    snprintf(string, 511,
+            "OpenGL:   %s\n"
+            "GLSL:     %s\n"
+            "Vendor:   %s\n"
+            "Renderer: %s\n",
+            glGetString(GL_VERSION),
+            glGetString(GL_SHADING_LANGUAGE_VERSION),
+            glGetString(GL_VENDOR),
+            glGetString(GL_RENDERER));
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 4), 0.0f}, (v4u8){0x3f, 0x9f, 0x3f, 0xff}, 0, 0);
 }
 
 #ifdef FUCK // TODO: undef FUCK

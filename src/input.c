@@ -23,27 +23,33 @@ u32 bind_use_item_or_place_block    = GLFW_MOUSE_BUTTON_RIGHT;
 /* ---- section: inventory -------------------------------------------------- */
 
 u32 bind_drop_selected_item         = KEY_Q;
-u32 bind_hotbar_slot_1              = KEY_1;
-u32 bind_hotbar_slot_2              = KEY_2;
-u32 bind_hotbar_slot_3              = KEY_3;
-u32 bind_hotbar_slot_4              = KEY_4;
-u32 bind_hotbar_slot_5              = KEY_5;
-u32 bind_hotbar_slot_6              = KEY_6;
-u32 bind_hotbar_slot_7              = KEY_7;
-u32 bind_hotbar_slot_8              = KEY_8;
-u32 bind_hotbar_slot_9              = KEY_9;
-u32 bind_hotbar_slot_0              = KEY_0;
-u32 bind_hotbar_slot_kp_1           = KEY_KP_1;
-u32 bind_hotbar_slot_kp_2           = KEY_KP_2;
-u32 bind_hotbar_slot_kp_3           = KEY_KP_3;
-u32 bind_hotbar_slot_kp_4           = KEY_KP_4;
-u32 bind_hotbar_slot_kp_5           = KEY_KP_5;
-u32 bind_hotbar_slot_kp_6           = KEY_KP_6;
-u32 bind_hotbar_slot_kp_7           = KEY_KP_7;
-u32 bind_hotbar_slot_kp_8           = KEY_KP_8;
-u32 bind_hotbar_slot_kp_9           = KEY_KP_9;
-u32 bind_hotbar_slot_kp_0           = KEY_KP_0;
-u32 bind_open_or_close_inventory    = KEY_E;
+u32 bind_hotbar_slot[10] =
+{
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_0,
+};
+u32 bind_hotbar_slot_kp[10] =
+{
+    KEY_KP_1,
+    KEY_KP_2,
+    KEY_KP_3,
+    KEY_KP_4,
+    KEY_KP_5,
+    KEY_KP_6,
+    KEY_KP_7,
+    KEY_KP_8,
+    KEY_KP_9,
+    KEY_KP_0,
+};
+u32 bind_inventory                  = KEY_E;
 u32 bind_swap_item_with_offhand     = KEY_F;
 
 /* ---- section: miscellaneous ---------------------------------------------- */

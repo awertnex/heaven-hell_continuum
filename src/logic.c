@@ -103,22 +103,17 @@ void update_camera_movement_player(Render *render, Player *player)
                     player->pos.y - ((SYAW * CPCH) * player->camera_distance),
                     player->pos.z + player->eye_height + (SPCH * player->camera_distance),
                 };
-
             player->camera.sin_yaw = sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
             player->camera.cos_yaw = cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
             break;
 
-#if 0 // TODO: undef
             /* TODO: make the stalker camera mode */
         case 3: /* ---- stalker --------------------------------------------- */
-            player->camera.target =
-                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
             break;
 
             /* TODO: make the spectator camera mode */
         case 4: /* ---- spectator ------------------------------------------- */
             break;
-#endif // TODO: undef
     }
 }
 
@@ -132,16 +127,6 @@ void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
                 (i32)floorf(player_target->x),
                 (i32)floorf(player_target->y),
                 (i32)floorf(player_target->z)};
-}
-
-void set_player_pos(Player *player, f32 x, f32 y, f32 z)
-{
-    player->pos = (v3f32){x, y, z};
-}
-
-void set_player_block(Player *player, i32 x, i32 y, i32 z)
-{
-    player->pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};
 }
 
 void player_kill(Player *player)

@@ -21,7 +21,7 @@
 
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
-#define FONT_SIZE_DEFAULT 22.0f
+#define FONT_SIZE_DEFAULT 24.0f
 
 enum KeyboardKeyState
 {
@@ -333,6 +333,12 @@ void update_key_states(Render *render);
 /*
  * -- INTERNAL USE ONLY --;
  */
+static inline b8 _is_key_press(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
 static inline b8 _is_key_listen_double(const u32 key)
 {return (keyboard_key[key] == KEY_LISTEN_DOUBLE);}
 
@@ -361,7 +367,7 @@ static inline b8 _is_key_release_double(const u32 key)
 {return (keyboard_key[key] == KEY_RELEASE_DOUBLE);}
 
 static inline b8 is_key_press(const u32 key)
-{return (keyboard_key[key] == KEY_PRESS);}
+{return (keyboard_key[key] == KEY_PRESS || keyboard_key[key] == KEY_PRESS_DOUBLE);}
 
 static inline b8 is_key_press_double(const u32 key)
 {return (keyboard_key[key] == KEY_PRESS_DOUBLE);}

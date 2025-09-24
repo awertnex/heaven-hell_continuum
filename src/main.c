@@ -146,6 +146,7 @@ Mesh mesh_cube_of_happiness = {0};
 
 #define VBO_LEN_GIZMO   51
 #define EBO_LEN_GIZMO   90
+#define GIZMO_CORNER_OFFSET 0.2f
 Mesh mesh_gizmo = {0};
 
 /* ---- section: callbacks -------------------------------------------------- */
@@ -295,7 +296,7 @@ void generate_standard_meshes()
         0, 1, 3, 3, 2, 0,
     };
 
-    GLfloat THIC = 0.05f;
+    GLfloat THIC = 0.06f;
     GLfloat vbo_data_gizmo[] =
     {
         0.0f, 0.0f, 0.0f,
@@ -412,7 +413,7 @@ void bind_shader_uniforms(void)
     uniform.defaults.sky_color = glGetUniformLocation(shader_default.id, "sky_color");
 
     uniform.gizmo.render_ratio = glGetUniformLocation(shader_gizmo.id, "ratio");
-    uniform.gizmo.mat_target = glGetUniformLocation(shader_gizmo.id, "mat_translation");
+    uniform.gizmo.mat_translation = glGetUniformLocation(shader_gizmo.id, "mat_translation");
     uniform.gizmo.mat_rotation = glGetUniformLocation(shader_gizmo.id, "mat_rotation");
     uniform.gizmo.mat_orientation = glGetUniformLocation(shader_gizmo.id, "mat_orientation");
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
@@ -479,8 +480,57 @@ void update_input(Player *player)
         player->state |= FLAG_SPRINTING;
 
     /* ---- gameplay -------------------------------------------------------- */
+    if (is_key_hold(bind_attack_or_destroy))
+    {
+        if ((state & FLAG_PARSE_TARGET)
+                && !(state & FLAG_CHUNK_BUF_DIRTY)
+                && (chunk_tab[chunk_tab_index] != NULL))
+        {
+            remove_block(chunk_tab_index,
+                    lily.delta_target.x,
+                    lily.delta_target.y,
+                    lily.delta_target.z);
+        }
+    }
+
+    if (is_key_press(bind_pick_block))
+    {
+    }
+
+    if (is_key_hold(bind_use_item_or_place_block))
+    {
+        if ((state & FLAG_PARSE_TARGET)
+                && !(state & FLAG_CHUNK_BUF_DIRTY)
+                && (chunk_tab[chunk_tab_index] != NULL))
+        {
+            add_block(chunk_tab_index,
+                    lily.delta_target.x,
+                    lily.delta_target.y,
+                    lily.delta_target.z);
+        }
+    }
 
     /* ---- inventory ------------------------------------------------------- */
+    for (u32 i = 0; i < 10; ++i)
+        if (is_key_press(bind_hotbar_slot[i]) || is_key_press(bind_hotbar_slot_kp[i]))
+            hotbar_slot_selected = i + 1;
+
+    if (is_key_press(bind_inventory))
+    {
+        if ((player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
+        {
+            state_menu_depth = 0;
+            player->container_state &= ~STATE_CONTR_INVENTORY;
+        }
+        else if (!(player->container_state & STATE_CONTR_INVENTORY) && !state_menu_depth)
+        {
+            state_menu_depth = 1;
+            player->container_state |= STATE_CONTR_INVENTORY;
+        }
+
+        if (!(player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
+            --state_menu_depth;
+    }
 
     /* ---- miscellaneous --------------------------------------------------- */
     if (is_key_press(bind_toggle_hud))
@@ -512,10 +562,7 @@ void init_world(str *string)
     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
 
     update_player(&render, &lily);
-
-    //lily.state |= FLAG_FALLING; /*temp off*/
-    lily.state |= FLAG_FLYING; /*temp*/
-    set_player_block(&lily, -1, -1, 0);
+    set_player_block(&lily, 0, 0, 0);
 
     disable_cursor;
     center_cursor;
@@ -528,8 +575,8 @@ void update_world(Player *player)
         ++game_days;
 
     update_collision_static(&lily);
-    update_player(&render, player);
     update_camera_movement_player(&render, player);
+    update_player(&render, player);
     update_camera_perspective(&player->camera, &projection);
 
 #if 0 /* TODO: do chunk tab update in update_world */
@@ -596,7 +643,7 @@ void draw_hud(Player *player)
 {
     glUseProgram(shader_gizmo.id);
     glUniform1f(uniform.gizmo.render_ratio, (GLfloat)player->camera.ratio);
-    glUniformMatrix4fv(uniform.gizmo.mat_target, 1, GL_FALSE, (GLfloat*)&projection.target);
+    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE, (GLfloat*)&projection.target);
     glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
     glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
     glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
@@ -659,25 +706,6 @@ void render_font_atlas_example(void)
     draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void input_example()
-{
-    printf(
-            "     Running [%.2f]\n"
-            "       Press [%d][%d] Press Double\n"
-            "        Hold [%d][%d] Hold Double\n"
-            "     Release [%d][%d] Release Double\n"
-            " Wait Double [%d][%d] Idle\n\n",
-            render.frame_start,
-            is_key_press(0),
-            is_key_press_double(0),
-            _is_key_hold(0),
-            _is_key_hold_double(0),
-            _is_key_release(0),
-            _is_key_release_double(0),
-            _is_key_listen_double(0),
-            (keyboard_key[0] == 0));
 }
 
 /* ---- section: main ------------------------------------------------------- */
@@ -787,14 +815,14 @@ int main(int argc, char **argv)
 
 section_menu_title: /* ---- section: title menu ----------------------------- */
 
-    init_world("Poop Consistency Tester");
-
 section_menu_pause: /* ---- section: pause menu ----------------------------- */
+
 section_main: /* ---- section: main loop ------------------------------------ */
 
+    if (!(state & FLAG_WORLD_LOADED))
+            init_world("Poop Consistency Tester");
     generate_standard_meshes();
 
-    //lily.state = FLAG_FALLING;
     while (!glfwWindowShouldClose(render.window))
     {
         render.frame_start = glfwGetTime() - game_start_time;
@@ -808,8 +836,13 @@ section_main: /* ---- section: main loop ------------------------------------ */
         glfwSwapBuffers(render.window);
         glfwPollEvents();
         update_key_states(&render);
-        input_example();
         update_input(&lily);
+
+        //if (!(state & FLAG_WORLD_LOADED))
+        //    goto section_menu_title;
+
+        if (state & FLAG_PAUSED)
+            goto section_menu_pause;
     }
 
 cleanup: /* ----------------------------------------------------------------- */

@@ -37,7 +37,7 @@ typedef struct Uniform
     struct /* gizmo */
     {
         GLint render_ratio;
-        GLint mat_target;
+        GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;
         GLint mat_projection;

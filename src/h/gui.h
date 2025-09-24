@@ -33,11 +33,12 @@ extern Font font_mono;
 extern Font font_mono_bold;
 
 extern v2i16 hotbar_pos;
-extern f32 hotbar_slot_selected;
+extern u8 hotbar_slot_selected;
 extern v2i16 crosshair_pos;
 
 extern u16 menu_index;
 extern u16 menu_layer[5];
+extern u8 state_menu_depth;
 extern b8 is_menu_ready;
 extern u8 buttons[BTN_COUNT];
 enum MenuNames

@@ -16,16 +16,16 @@ extern u32 bind_walk_forwards;
 
 /* ---- section: gameplay --------------------------------------------------- */
 
-// extern u32 bind_attack_or_destroy;
-// extern u32 bind_pick_block;
-// extern u32 bind_use_item_or_place_block;
+extern u32 bind_attack_or_destroy;
+extern u32 bind_pick_block;
+extern u32 bind_use_item_or_place_block;
 
 /* ---- section: inventory -------------------------------------------------- */
 
 // extern u32 bind_drop_selected_item;
-// extern u32 bind_hotbar_slot[10];
-// extern u32 bind_hotbar_slot_kp[10];
-// extern u32 bind_open_or_close_inventory;
+extern u32 bind_hotbar_slot[10];
+extern u32 bind_hotbar_slot_kp[10];
+extern u32 bind_inventory;
 // extern u32 bind_swap_item_with_offhand;
 
 /* ---- section: miscellaneous ---------------------------------------------- */

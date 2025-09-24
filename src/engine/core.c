@@ -184,10 +184,10 @@ int init_glad(void)
         return -1;
     }
 
-    LOGINFO("OpenGL:    %s\n", glGetString(GL_VERSION));
-    LOGINFO("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    LOGINFO("Vendor:    %s\n", glGetString(GL_VENDOR));
-    LOGINFO("Renderer:  %s\n", glGetString(GL_RENDERER));
+    LOGDEBUG("OpenGL:    %s\n", glGetString(GL_VERSION));
+    LOGDEBUG("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOGDEBUG("Vendor:    %s\n", glGetString(GL_VENDOR));
+    LOGDEBUG("Renderer:  %s\n", glGetString(GL_RENDERER));
 
     return 0;
 }
@@ -605,7 +605,7 @@ void update_key_states(Render *render)
             continue;
         }
 
-        if (is_key_press(i))            keyboard_key[i] = KEY_HOLD;
+        if (_is_key_press(i))           keyboard_key[i] = KEY_HOLD;
         if (is_key_press_double(i))     keyboard_key[i] = KEY_HOLD_DOUBLE;
         if (_is_key_release(i))         keyboard_key[i] = KEY_LISTEN_DOUBLE;
         if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
