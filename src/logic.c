@@ -76,49 +76,39 @@ void update_camera_movement_player(Render *render, Player *player)
     player->camera.sin_yaw =    SYAW;
     player->camera.cos_yaw =    CYAW;
 
-    v3f32 player_camera_up = {-CYAW * SPCH, -SYAW * SPCH, CPCH};
+    switch (player->perspective)
+    {
+        case 0: /* ---- 1st person ------------------------------------------ */
+            player->camera.pos =
+                (v3f32){
+                    player->pos.x,
+                    player->pos.y,
+                    player->pos.z + player->eye_height
+                };
+            break;
 
-    player->camera.pos =
-        (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
+        case 1: /* ---- 3rd person ------------------------------------------ */
+            player->camera.pos =
+                (v3f32){
+                    player->pos.x - ((CYAW * CPCH) * player->camera_distance),
+                    player->pos.y + ((SYAW * CPCH) * player->camera_distance),
+                    player->pos.z + player->eye_height + (SPCH * player->camera_distance),
+                };
+            break;
+
+        case 2: /* ---- 3rd person opposite --------------------------------- */
+            player->camera.pos =
+                (v3f32){
+                    player->pos.x + ((CYAW * CPCH) * player->camera_distance),
+                    player->pos.y - ((SYAW * CPCH) * player->camera_distance),
+                    player->pos.z + player->eye_height + (SPCH * player->camera_distance),
+                };
+
+            player->camera.sin_yaw = sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+            player->camera.cos_yaw = cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+            break;
+
 #if 0 // TODO: undef
-    switch (player->perspective)
-    {
-        case 0: /* ---- 1st person ------------------------------------------ */
-            player->camera.pos =
-                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
-            player->camera.target =
-                (v3f32){
-                    player->pos.x + ((player->cos_yaw * player->cos_pitch) * setting.reach_distance),
-                    player->pos.y + ((player->sin_yaw * player->cos_pitch) * setting.reach_distance),
-                    player->camera.pos.z + (player->sin_pitch * setting.reach_distance),
-                };
-            player->camera.up = player_camera_up;
-            break;
-
-        case 1: /* ---- 3rd person back ------------------------------------- */
-            player->camera.pos =
-                (v3f32){
-                    player->pos.x - ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
-                    player->pos.y - ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
-                    player->pos.z + player->eye_height - (player->sin_pitch * player->camera_distance),
-                };
-            player->camera.target =
-                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
-            player->camera.up = player_camera_up;
-            break;
-
-        case 2: /* ---- 3rd person front ------------------------------------ */
-            player->camera.pos =
-                (v3f32){
-                    player->pos.x + ((player->cos_yaw * player->cos_pitch) * player->camera_distance),
-                    player->pos.y + ((player->sin_yaw * player->cos_pitch) * player->camera_distance),
-                    player->pos.z + player->eye_height + (player->sin_pitch * player->camera_distance),
-                };
-            player->camera.target =
-                (v3f32){player->pos.x, player->pos.y, player->pos.z + player->eye_height};
-            player->camera.up = player_camera_up;
-            break;
-
             /* TODO: make the stalker camera mode */
         case 3: /* ---- stalker --------------------------------------------- */
             player->camera.target =
@@ -128,43 +118,8 @@ void update_camera_movement_player(Render *render, Player *player)
             /* TODO: make the spectator camera mode */
         case 4: /* ---- spectator ------------------------------------------- */
             break;
-    }
-
-    /* ---- camera_debug_mode ----------------------------------------------- */
-    if (!(state & FLAG_DEBUG)) return;
-    switch (player->perspective)
-    {
-        case 0: /* ---- 1st person ------------------------------------------ */
-        case 1: /* ---- 3rd person back ------------------------------------- */
-            player->camera_debug_info.position =
-                (v3f32){
-                    -player->cos_yaw * player->cos_pitch,
-                    -player->sin_yaw * player->cos_pitch,
-                    -player->sin_pitch,
-                };
-            player->camera_debug_info.target = v3fzero;
-            player->camera_debug_info.up = player_camera_up;
-            break;
-        case 2: /* ---- 3rd person front ------------------------------------ */
-            player->camera_debug_info.position =
-                (v3f32){
-                    player->cos_yaw * player->cos_pitch,
-                    player->sin_yaw * player->cos_pitch,
-                    player->sin_pitch,
-                };
-            player->camera_debug_info.target = v3fzero;
-            player->camera_debug_info.up = player_camera_up;
-            break;
-
-            /* TODO: make the stalker camera mode */
-        case 3: /* ---- stalker --------------------------------------------- */
-            break;
-
-            /* TODO: make the spectator camera mode */
-        case 4: /* ---- spectator ------------------------------------------- */
-            break;
-    }
 #endif // TODO: undef
+    }
 }
 
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)

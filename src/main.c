@@ -20,12 +20,13 @@ Render render =
     .size = {854, 480},
 };
 
-Settings settings = (Settings){
+Settings settings =
+(Settings){
     .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-        .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-        .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-        .target_fps =           SETTING_TARGET_FPS_DEFAULT,
-        .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
+    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
+    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
+    .target_fps =           SETTING_TARGET_FPS_DEFAULT,
+    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
 };
 
 u32 state = 0;
@@ -207,20 +208,6 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
             show_cursor;
         else
             disable_cursor;
-    }
-
-    /* ---- miscellaneous --------------------------------------------------- */
-    if (key == bind_toggle_hud && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        state ^= FLAG_HUD;
-
-    if (key == bind_toggle_debug && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        if (!(state & FLAG_DEBUG))
-            state |= FLAG_DEBUG;
-        else if (!(state & FLAG_DEBUG_MORE))
-            state |= FLAG_DEBUG_MORE;
-        else
-            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
     }
 
     /* ---- some weird shit ------------------------------------------------- */
@@ -467,29 +454,54 @@ void update_input(Player *player)
     /* ---- movement -------------------------------------------------------- */
     if (is_key_hold(bind_strafe_left))
     {
-        player->pos.x += (player->movement_speed * player->camera.sin_yaw);
-        player->pos.y += (player->movement_speed * player->camera.cos_yaw);
+        player->pos.x += (player->movement_speed * player->sin_yaw);
+        player->pos.y += (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_strafe_right))
     {
-        player->pos.x -= (player->movement_speed * player->camera.sin_yaw);
-        player->pos.y -= (player->movement_speed * player->camera.cos_yaw);
+        player->pos.x -= (player->movement_speed * player->sin_yaw);
+        player->pos.y -= (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_walk_backwards))
     {
-        player->pos.x -= (player->movement_speed * player->camera.cos_yaw);
-        player->pos.y += (player->movement_speed * player->camera.sin_yaw);
+        player->pos.x -= (player->movement_speed * player->cos_yaw);
+        player->pos.y += (player->movement_speed * player->sin_yaw);
     }
 
     if (is_key_hold(bind_walk_forwards))
     {
-        player->pos.x += (player->movement_speed * player->camera.cos_yaw);
-        player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
+        player->pos.x += (player->movement_speed * player->cos_yaw);
+        player->pos.y -= (player->movement_speed * player->sin_yaw);
     }
     if (is_key_press_double(bind_walk_forwards))
         player->state |= FLAG_SPRINTING;
+
+    /* ---- gameplay -------------------------------------------------------- */
+
+    /* ---- inventory ------------------------------------------------------- */
+
+    /* ---- miscellaneous --------------------------------------------------- */
+    if (is_key_press(bind_toggle_hud))
+        state ^= FLAG_HUD;
+
+    if (is_key_press(bind_toggle_debug))
+    {
+        if (!(state & FLAG_DEBUG))
+            state |= FLAG_DEBUG;
+        else if (!(state & FLAG_DEBUG_MORE))
+            state |= FLAG_DEBUG_MORE;
+        else
+            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+    }
+
+    if (is_key_press(bind_toggle_perspective))
+    {
+        if (player->perspective < 4)
+            ++player->perspective;
+        else player->perspective = 0;
+    }
 }
 
 void init_world(str *string)

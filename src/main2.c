@@ -278,75 +278,75 @@ void *chunk_handler()
 
 void update_input(Player *player)
 {
-    /* ---- jumping --------------------------------------------------------- */
-    if (IsKeyDown(bind_jump))
-    {
-        if (IsKeyPressed(bind_jump) && get_double_press(bind_jump))
-            player->state ^= FLAG_FLYING;
-
-        if (player->state & FLAG_FLYING)
-            player->pos.z += player->movement_speed;
-
-        if (player->state & FLAG_CAN_JUMP)
-        {
-            player->vel.z += PLAYER_JUMP_HEIGHT;
-            player->state &= ~FLAG_CAN_JUMP;
-        }
-    }
-
-    /* ---- sneaking -------------------------------------------------------- */
-    if (IsKeyDown(bind_sneak))
-    {
-        if (player->state & FLAG_FLYING)
-            player->pos.z -= player->movement_speed;
-        else player->state |= FLAG_SNEAKING;
-    }
-    else player->state &= ~FLAG_SNEAKING;
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
-        player->state |= FLAG_SPRINTING;
-
-    if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
-        player->state &= ~FLAG_SPRINTING;
-
-    /* ---- moving ---------------------------------------------------------- */
-    if (IsKeyDown(bind_strafe_left))
-    {
-        player->v.x -= player->movement_speed * player->sin_yaw;
-        player->v.y += player->movement_speed * player->cos_yaw;
-    }
-
-    if (IsKeyDown(bind_strafe_right))
-    {
-        player->v.x += player->movement_speed * player->sin_yaw;
-        player->v.y -= player->movement_speed * player->cos_yaw;
-    }
-
-    if (IsKeyDown(bind_walk_backwards))
-    {
-        player->v.x -= player->movement_speed * player->cos_yaw;
-        player->v.y -= player->movement_speed * player->sin_yaw;
-    }
-
-    if (IsKeyDown(bind_walk_forwards))
-    {
-        if (IsKeyPressed(bind_walk_forwards) && get_double_press(bind_walk_forwards))
-            player->state |= FLAG_SPRINTING;
-
-        player->v.x += player->movement_speed * player->cos_yaw;
-        player->v.y += player->movement_speed * player->sin_yaw;
-    }
-
-    player->movement_step_length = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
-    if (player->movement_step_length > 0.0f)
-    {
-        player->v.x /= player->movement_step_length;
-        player->v.y /= player->movement_step_length;
-
-        player->pos.x += player->v.x * player->movement_speed;
-        player->pos.y += player->v.y * player->movement_speed;
-    }
+//    /* ---- jumping --------------------------------------------------------- */
+//    if (IsKeyDown(bind_jump))
+//    {
+//        if (IsKeyPressed(bind_jump) && get_double_press(bind_jump))
+//            player->state ^= FLAG_FLYING;
+//
+//        if (player->state & FLAG_FLYING)
+//            player->pos.z += player->movement_speed;
+//
+//        if (player->state & FLAG_CAN_JUMP)
+//        {
+//            player->vel.z += PLAYER_JUMP_HEIGHT;
+//            player->state &= ~FLAG_CAN_JUMP;
+//        }
+//    }
+//
+//    /* ---- sneaking -------------------------------------------------------- */
+//    if (IsKeyDown(bind_sneak))
+//    {
+//        if (player->state & FLAG_FLYING)
+//            player->pos.z -= player->movement_speed;
+//        else player->state |= FLAG_SNEAKING;
+//    }
+//    else player->state &= ~FLAG_SNEAKING;
+//
+//    /* ---- sprinting ------------------------------------------------------- */
+//    if (IsKeyDown(bind_sprint) && IsKeyDown(bind_walk_forwards))
+//        player->state |= FLAG_SPRINTING;
+//
+//    if (IsKeyUp(bind_sprint) && IsKeyUp(bind_walk_forwards))
+//        player->state &= ~FLAG_SPRINTING;
+//
+//    /* ---- moving ---------------------------------------------------------- */
+//    if (IsKeyDown(bind_strafe_left))
+//    {
+//        player->v.x -= player->movement_speed * player->sin_yaw;
+//        player->v.y += player->movement_speed * player->cos_yaw;
+//    }
+//
+//    if (IsKeyDown(bind_strafe_right))
+//    {
+//        player->v.x += player->movement_speed * player->sin_yaw;
+//        player->v.y -= player->movement_speed * player->cos_yaw;
+//    }
+//
+//    if (IsKeyDown(bind_walk_backwards))
+//    {
+//        player->v.x -= player->movement_speed * player->cos_yaw;
+//        player->v.y -= player->movement_speed * player->sin_yaw;
+//    }
+//
+//    if (IsKeyDown(bind_walk_forwards))
+//    {
+//        if (IsKeyPressed(bind_walk_forwards) && get_double_press(bind_walk_forwards))
+//            player->state |= FLAG_SPRINTING;
+//
+//        player->v.x += player->movement_speed * player->cos_yaw;
+//        player->v.y += player->movement_speed * player->sin_yaw;
+//    }
+//
+//    player->movement_step_length = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
+//    if (player->movement_step_length > 0.0f)
+//    {
+//        player->v.x /= player->movement_step_length;
+//        player->v.y /= player->movement_step_length;
+//
+//        player->pos.x += player->v.x * player->movement_speed;
+//        player->pos.y += player->v.y * player->movement_speed;
+//    }
 
     /* ---- gameplay -------------------------------------------------------- */
     if (IsMouseButtonDown(bind_attack_or_destroy))
@@ -427,19 +427,19 @@ void update_input(Player *player)
             --state_menu_depth;
     }
 
-    /* ---- miscellaneous --------------------------------------------------- */
-    if (IsKeyPressed(bind_toggle_hud))
-        state ^= FLAG_HUD;
-
-    if (IsKeyPressed(bind_toggle_debug))
-    {
-        if (state & FLAG_DEBUG)
-            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
-        else state |= FLAG_DEBUG;
-
-        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & FLAG_DEBUG))
-            state |= FLAG_DEBUG_MORE;
-    }
+//    /* ---- miscellaneous --------------------------------------------------- */
+//    if (IsKeyPressed(bind_toggle_hud))
+//        state ^= FLAG_HUD;
+//
+//    if (IsKeyPressed(bind_toggle_debug))
+//    {
+//        if (state & FLAG_DEBUG)
+//            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+//        else state |= FLAG_DEBUG;
+//
+//        if (IsKeyDown(KEY_LEFT_SHIFT) && (state & FLAG_DEBUG))
+//            state |= FLAG_DEBUG_MORE;
+//    }
 
     if (IsKeyPressed(bind_toggle_fullscreen))
     {
@@ -458,12 +458,12 @@ void update_input(Player *player)
         }
     }
 
-    if (IsKeyPressed(bind_toggle_perspective))
-    {
-        if (player->perspective < 4)
-            ++player->perspective;
-        else player->perspective = 0;
-    }
+//    if (IsKeyPressed(bind_toggle_perspective))
+//    {
+//        if (player->perspective < 4)
+//            ++player->perspective;
+//        else player->perspective = 0;
+//    }
 
     if (IsKeyPressed(bind_pause) && (state & FLAG_WORLD_LOADED))
     {

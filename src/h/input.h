@@ -180,7 +180,7 @@ extern u32 bind_toggle_hud;
 extern u32 bind_toggle_debug;
 // extern u32 bind_toggle_cinematic_camera;
 // extern u32 bind_toggle_fullscreen;
-// extern u32 bind_toggle_perspective;
+extern u32 bind_toggle_perspective;
 // extern u32 bind_pause;
 // extern u32 bind_chat_or_command;
 
