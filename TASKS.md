@@ -24,7 +24,7 @@ TASKS:
 
 quirks:
 - [ ] fix haloing (black traces when drawing an RGB texture onto an RGBA framebuffer, more visible when aspect ratio isn't 1:1)
-- [ ] fix weird framebuffer scaling on window scaling (possibly reallocate framebuffers)
+- [x] fix weird framebuffer scaling on window scaling (possibly reallocate framebuffers) (10 Sep 2025)
 - [ ] bake skybox into a look-up table, or HDR (retain old code, just because it was fun to write)
 - [ ] get subpixel mouse deltas, PLEASE
 - [ ] limit framerate

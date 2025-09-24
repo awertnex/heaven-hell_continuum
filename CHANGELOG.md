@@ -1,6 +1,6 @@
 # changelog
 
-## v0.2.0-alpha (DD Jun 2025)
+## v0.2.0-alpha (DD MMM 2025)
 
 #### changes
 - added skybox colors for day/night cycle
@@ -55,7 +55,7 @@
     - added LOGTRACE for extremely verbose logging
 - added font loading and font atlas baking
 - added image reading/writing (stb_image_write.h)
-- fixed windows support
+- optimized and expanded input handling
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
