@@ -701,9 +701,9 @@ void render_font_atlas_example(void)
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo_flipped.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
-    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
-    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
-    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
+    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, 0xffffffff, 0, 0);
+    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, 0xffffffff, 0, 0);
+    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, 0xffffffff, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }

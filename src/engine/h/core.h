@@ -397,8 +397,9 @@ void free_font(Font *font);
  * does update Font.projection;
  *
  * size = font height in pixels;
+ * color = hex format: 0xrrggbbaa;
  */
-void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y);
 
 #endif /* ENGINE_CORE_H */
 

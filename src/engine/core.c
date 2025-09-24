@@ -712,7 +712,7 @@ void free_font(Font *font)
     *font = (Font){0};
 }
 
-void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y)
+void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y)
 {
     u64 len = strlen(text);
     if (len <= 0) return;
@@ -757,10 +757,10 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     v4f32 text_color =
     {
-        (f32)color.x / 0xff,
-        (f32)color.y / 0xff,
-        (f32)color.z / 0xff,
-        (f32)color.w / 0xff,
+        (f32)((color >> 0x18) & 0xff) / 0xff,
+        (f32)((color >> 0x10) & 0xff) / 0xff,
+        (f32)((color >> 0x08) & 0xff) / 0xff,
+        (f32)((color >> 0x00) & 0xff) / 0xff,
     };
 
     glUniform1f(font->uniform.char_size, font->char_size);
