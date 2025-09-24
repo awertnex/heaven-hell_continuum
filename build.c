@@ -11,6 +11,7 @@
 #define DIR_LAUNCHER    DIR_SRC"launcher/"
 #define DIR_TESTS       DIR_SRC"tests/"
 #define CMD_MEMB        64
+#define CMD_SIZE        512
 
 /* ---- section: c_standard ------------------------------------------------- */
 
@@ -105,26 +106,27 @@ enum Flags
 u8 state = 0;
 u16 flags = 0;
 str *str_bin_root = NULL;
-str str_src[PATH_MAX] = {0};            /* path: ./build.c */
-str str_bin[PATH_MAX] = {0};            /* path: ./build%s, EXTENSION */
-str str_bin_new[PATH_MAX] = {0};        /* path: ./build_new%s, EXTENSION */
-str str_bin_old[PATH_MAX] = {0};        /* path: ./build_old%s, EXTENSION */
+str str_src[CMD_SIZE] = {0};            /* path: ./build.c */
+str str_bin[CMD_SIZE] = {0};            /* path: ./build%s, EXTENSION */
+str str_bin_new[CMD_SIZE] = {0};        /* path: ./build_new%s, EXTENSION */
+str str_bin_old[CMD_SIZE] = {0};        /* path: ./build_old%s, EXTENSION */
 buf cmd = {NULL};
 u64 cmd_pos = 0;
 buf str_tests = {NULL};
 
-str str_main[PATH_MAX] = DIR_SRC"main.c";
+str str_main[CMD_SIZE] = DIR_SRC"main.c";
 
-str str_cflags[][32] =
+str str_cflags[][48] =
 {
     "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
     "-std=c99",
     "-Wall",
     "-Wextra",
     "-fno-builtin",
+    "-Wno-implicit-function-declaration",
 };
 
-str str_out[PATH_MAX] = STR_OUT;
+str str_out[CMD_SIZE] = STR_OUT;
 
 /* ---- section: signatures ------------------------------------------------- */
 
@@ -184,33 +186,33 @@ int main(int argc, char **argv)
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    str cmd_asset_in[PATH_MAX] = {0};
-    str cmd_asset_out[PATH_MAX] = {0};
+    str cmd_asset_in[CMD_SIZE] = {0};
+    str cmd_asset_out[CMD_SIZE] = {0};
 
-    snprintf(cmd_asset_in, PATH_MAX - 1, "%sLICENSE", str_bin_root);
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"LICENSE", str_bin_root);
+    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sLICENSE", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"LICENSE", str_bin_root);
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_file(cmd_asset_in, cmd_asset_out) != 0) goto cleanup;
 
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"lib/", str_bin_root);
     normalize_slash(cmd_asset_out);
     make_dir(cmd_asset_out);
 
-    snprintf(cmd_asset_in, PATH_MAX - 1, "%slib/"PLATFORM, str_bin_root);
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
+    snprintf(cmd_asset_in, CMD_SIZE - 1, "%slib/"PLATFORM, str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
-    snprintf(cmd_asset_in, PATH_MAX - 1, "%sresources/", str_bin_root);
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"resources/", str_bin_root);
+    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sresources/", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"resources/", str_bin_root);
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
-    snprintf(cmd_asset_in, PATH_MAX - 1, "%sshaders/", str_bin_root);
-    snprintf(cmd_asset_out, PATH_MAX - 1, "%s"DIR_ROOT"resources/shaders/", str_bin_root);
+    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sshaders/", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"resources/shaders/", str_bin_root);
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
@@ -234,10 +236,10 @@ void init_build(void)
 
     check_slash(str_bin_root);
     normalize_slash(str_bin_root);
-    snprintf(str_src, PATH_MAX, "%sbuild.c", str_bin_root);
-    snprintf(str_bin, PATH_MAX, "%sbuild%s", str_bin_root, EXTENSION);
-    snprintf(str_bin_new, PATH_MAX, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(str_bin_old, PATH_MAX, "%sbuild_old%s", str_bin_root, EXTENSION);
+    snprintf(str_src, CMD_SIZE, "%sbuild.c", str_bin_root);
+    snprintf(str_bin, CMD_SIZE, "%sbuild%s", str_bin_root, EXTENSION);
+    snprintf(str_bin_new, CMD_SIZE, "%sbuild_new%s", str_bin_root, EXTENSION);
+    snprintf(str_bin_old, CMD_SIZE, "%sbuild_old%s", str_bin_root, EXTENSION);
 }
 
 b8 is_source_changed(void)
@@ -265,24 +267,25 @@ b8 is_source_changed(void)
 
 void rebuild_self(int argc, char **argv)
 {
-    if (!mem_alloc_buf(&cmd, 16, PATH_MAX, "cmd"))
+    if (!mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd"))
         fail_cmd();
 
     LOGINFO("%s\n", "Rebuilding Self..");
 
-    snprintf(cmd.i[0], PATH_MAX - 1, "%s", COMPILER);
-    snprintf(cmd.i[1], PATH_MAX - 1, "%s", str_src);
+    snprintf(cmd.i[0], CMD_SIZE - 1, "%s", COMPILER);
+    snprintf(cmd.i[1], CMD_SIZE - 1, "%s", str_src);
     normalize_slash(cmd.i[1]);
-    snprintf(cmd.i[2], PATH_MAX - 1, "%s", "-Wall");
-    snprintf(cmd.i[3], PATH_MAX - 1, "%s", "-Wextra");
-    snprintf(cmd.i[4], PATH_MAX - 1, "%s", "-std=c99");
-    snprintf(cmd.i[5], PATH_MAX - 1, "%s", "-fno-builtin");
-    snprintf(cmd.i[6], PATH_MAX - 1, "%s", "-o");
-    snprintf(cmd.i[7], PATH_MAX - 1, "%s", str_bin_new);
-    normalize_slash(cmd.i[7]);
+    snprintf(cmd.i[2], CMD_SIZE - 1, "%s", "-std=c99");
+    snprintf(cmd.i[3], CMD_SIZE - 1, "%s", "-Wall");
+    snprintf(cmd.i[4], CMD_SIZE - 1, "%s", "-Wextra");
+    snprintf(cmd.i[5], CMD_SIZE - 1, "%s", "-fno-builtin");
+    snprintf(cmd.i[6], CMD_SIZE - 1, "%s", "-Wno-implicit-function-declaration");
+    snprintf(cmd.i[7], CMD_SIZE - 1, "%s", "-o");
+    snprintf(cmd.i[8], CMD_SIZE - 1, "%s", str_bin_new);
+    normalize_slash(cmd.i[8]);
 
 #if defined(__linux__) || defined(__linux)
-    cmd.i[8] = NULL;
+    cmd.i[9] = NULL;
 #endif
 
     if (exec(&cmd, "cmd"))
@@ -370,22 +373,22 @@ void push_cmd(const str *string)
         return;
     }
 
-    if (strlen(string) >= PATH_MAX - 1)
+    if (strlen(string) >= CMD_SIZE - 1)
     {
         LOGERROR("string '%s' Too Long\n", string);
         return;
     }
 
-    strncpy(cmd.i[cmd_pos], string, PATH_MAX);
+    strncpy(cmd.i[cmd_pos], string, CMD_SIZE);
     ++cmd_pos;
 }
 
 void build_cmd(int argc, char **argv)
 {
-    if (!mem_alloc_buf(&cmd, CMD_MEMB, PATH_MAX, "cmd"))
+    if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
 
-    str temp[PATH_MAX] = {0};
+    str temp[CMD_SIZE] = {0};
 
     push_cmd(COMPILER);
     switch (state)
@@ -410,15 +413,15 @@ void build_cmd(int argc, char **argv)
 
 
             sort_buf(&str_tests);
-            snprintf(str_main, PATH_MAX, "%s%s.c", DIR_TESTS, (str*)str_tests.i[test_index]);
-            snprintf(str_out, PATH_MAX, "./%s%s%s", DIR_ROOT_TESTS, (str*)str_tests.i[test_index], EXTENSION);
+            snprintf(str_main, CMD_SIZE, "%s%s.c", DIR_TESTS, (str*)str_tests.i[test_index]);
+            snprintf(str_out, CMD_SIZE, "./%s%s%s", DIR_ROOT_TESTS, (str*)str_tests.i[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
         case STATE_LAUNCHER:
-            snprintf(str_main, PATH_MAX, "%slauncher.c", DIR_LAUNCHER);
+            snprintf(str_main, CMD_SIZE, "%slauncher.c", DIR_LAUNCHER);
             push_cmd(str_main);
-            snprintf(str_out, PATH_MAX, "./%slauncher%s", DIR_ROOT, EXTENSION);
+            snprintf(str_out, CMD_SIZE, "./%slauncher%s", DIR_ROOT, EXTENSION);
             break;
 
         default:
@@ -434,7 +437,7 @@ void build_cmd(int argc, char **argv)
     }
 
     /* ---- includes -------------------------------------------------------- */
-    snprintf(temp, PATH_MAX - 1, "%sinclude/glad/glad.c", str_bin_root);
+    snprintf(temp, CMD_SIZE - 1, "%sinclude/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
@@ -448,7 +451,7 @@ void build_cmd(int argc, char **argv)
     }
 
     /* ---- libs ------------------------------------------------------------ */
-    snprintf(temp, PATH_MAX - 1, "-L%slib/"PLATFORM, str_bin_root);
+    snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
     posix_slash(temp);
     push_cmd(temp);
 
@@ -492,7 +495,7 @@ void push_glob(const str *pattern)
 
 void free_cmd(void)
 {
-    mem_free((void*)&str_bin_root, PATH_MAX, "str_bin_root");
+    mem_free((void*)&str_bin_root, CMD_SIZE, "str_bin_root");
     mem_free_buf(&str_tests, "str_tests");
     mem_free_buf(&cmd, "cmd");
 }
