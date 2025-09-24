@@ -162,13 +162,15 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 void some_weird_shit(f32 unit_x, f32 unit_y);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
-void update_input(GLFWwindow *window, Player *player);
+void update_input(Player *player);
 void init_world(str *string);
 void update_world(Player *player);
 void draw_skybox(Player *player);
 void draw_world(Player *player);
 void draw_hud(Player *player);
 void draw_everything(Player *player);
+
+void input_example();
 
 /* ---- section: main ------------------------------------------------------- */
 
@@ -301,7 +303,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
-        update_input(render.window, &lily);
+        update_keys(render.window);
+        update_input(&lily);
     }
 
 cleanup: /* ----------------------------------------------------------------- */
@@ -586,18 +589,27 @@ void bind_shader_uniforms(void)
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
-void update_input(GLFWwindow *window, Player *player)
+u32 press_count = 0;
+u32 hold_count = 0;
+u32 release_count = 0;
+void update_input(Player *player)
 {
+    //printf("space: %d\n", keyboard_key[bind_jump]);
+    if (is_key_press(bind_jump)) ++press_count;
+    if (is_key_hold(bind_jump)) ++hold_count;
+    if (is_key_release(bind_jump)) ++release_count;
+    //printf("Press   [%d]\nHold    [%d]\nRelease [%d]\n\n", press_count, hold_count, release_count);
+
     player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
 
     /* ---- sprinting ------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sprint) == GLFW_PRESS)
+    if (is_key_hold(bind_sprint))
         player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
 
     /* ---- jumping --------------------------------------------------------- */
-    if (glfwGetKey(window, bind_jump) == GLFW_PRESS)
+    if (is_key_hold(bind_jump))
     {
-        if (glfwGetKey(window, bind_jump) == GLFW_PRESS && get_double_press(bind_jump))
+        if (is_key_press(bind_jump) && get_double_press(bind_jump))
             player->state ^= FLAG_FLYING;
 
         if (player->state & FLAG_FLYING)
@@ -611,32 +623,33 @@ void update_input(GLFWwindow *window, Player *player)
     }
 
     /* ---- sneaking -------------------------------------------------------- */
-    if (glfwGetKey(window, bind_sneak) == GLFW_PRESS)
+    if (is_key_hold(bind_sneak))
     {
         player->pos.z -= player->movement_speed;
     }
 
     /* ---- movement -------------------------------------------------------- */
-    if (glfwGetKey(window, bind_strafe_left) == GLFW_PRESS)
+    if (is_key_hold(bind_strafe_left))
     {
         player->pos.x += (player->movement_speed * player->camera.sin_yaw);
         player->pos.y += (player->movement_speed * player->camera.cos_yaw);
     }
 
-    if (glfwGetKey(window, bind_strafe_right) == GLFW_PRESS)
+    if (is_key_hold(bind_strafe_right))
     {
         player->pos.x -= (player->movement_speed * player->camera.sin_yaw);
         player->pos.y -= (player->movement_speed * player->camera.cos_yaw);
     }
 
-    if (glfwGetKey(window, bind_walk_backwards) == GLFW_PRESS)
+    if (is_key_hold(bind_walk_backwards))
     {
         player->pos.x -= (player->movement_speed * player->camera.cos_yaw);
         player->pos.y += (player->movement_speed * player->camera.sin_yaw);
     }
 
-    if (glfwGetKey(window, bind_walk_forwards) == GLFW_PRESS)
+    if (is_key_hold(bind_walk_forwards))
     {
+        printf("fuck walking forward\n");
         player->pos.x += (player->movement_speed * player->camera.cos_yaw);
         player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
     }

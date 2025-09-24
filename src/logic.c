@@ -6,30 +6,6 @@
 #include "h/logic.h"
 #include "h/chunking.h"
 
-/* ---- variables ----------------------------------------------------------- */
-b8 get_double_press(u32 key)
-{
-    static f64 double_press_start_time = 0;
-    static u32 double_press_key = 0;
-
-    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f))
-            || (key != double_press_key))
-        state &= ~FLAG_DOUBLE_PRESS;
-    else
-    {
-        double_press_key = 0;
-        return TRUE;
-    }
-
-    if (!(state & FLAG_DOUBLE_PRESS))
-    {
-        state |= FLAG_DOUBLE_PRESS;
-        double_press_key = key;
-        double_press_start_time = get_time_ms();
-    }
-    return FALSE;
-}
-
 void update_player(Render *render, Player *player)
 {
     player->chunk = (v3i16){

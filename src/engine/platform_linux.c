@@ -12,7 +12,6 @@
 
 int make_dir(const str *path)
 {
-
     int exit_code = mkdir(path, 0755);
 
     if (exit_code == 0)
