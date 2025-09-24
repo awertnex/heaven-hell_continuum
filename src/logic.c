@@ -19,30 +19,29 @@ void update_player(Render *render, Player *player)
             || (lily.delta_chunk.z - lily.chunk.z))
         state |= FLAG_CHUNK_BUF_DIRTY;
 
-    if (!(player->state & FLAG_CAN_JUMP)
-            && !(player->state & FLAG_FLYING))
+    if (!(player->state & FLAG_CAN_JUMP) && !(player->state & FLAG_FLYING))
         update_gravity(render, player);
 
     if (player->state & FLAG_FLYING)
     {
         player->vel = v3fzero;
-        player->movement_speed = PLAYER_SPEED_FLY;
+        player->movement_speed = PLAYER_SPEED_FLY * render->frame_delta;
         player->camera.fovy = 80; /* TODO: revise (add lerp) */
     }
 
     if ((player->state & FLAG_SNEAKING)
             && !(player->state & FLAG_FLYING))
-        player->movement_speed = PLAYER_SPEED_SNEAK;
+        player->movement_speed = PLAYER_SPEED_SNEAK * render->frame_delta;
     else if (player->state & FLAG_SPRINTING)
     {
         if (!(player->state & FLAG_FLYING))
         {
-            player->movement_speed = PLAYER_SPEED_SPRINT;
+            player->movement_speed = PLAYER_SPEED_SPRINT * render->frame_delta;
             player->camera.fovy = 75;
         }
         else
         {
-            player->movement_speed = PLAYER_SPEED_FLY_FAST;
+            player->movement_speed = PLAYER_SPEED_FLY_FAST * render->frame_delta;
             player->camera.fovy = 90;
         }
     }
@@ -50,7 +49,7 @@ void update_player(Render *render, Player *player)
             && !(player->state & FLAG_SPRINTING)
             && !(player->state & FLAG_FLYING))
     {
-        player->movement_speed = PLAYER_SPEED_WALK;
+        player->movement_speed = PLAYER_SPEED_WALK * render->frame_delta;
         player->camera.fovy = 70;
     }
 }
@@ -219,8 +218,8 @@ b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 
 void update_gravity(Render *render, Player *player)
 {
-    (player->state & FLAG_FALLING) ?
-        player->vel.z -= (PLAYER_JUMP_HEIGHT * GRAVITY * player->mass * render->frame_delta_square) : 0;
+    if (player->state & FLAG_FALLING)
+        player->vel.z -= (GRAVITY * player->mass * render->frame_delta_square);
     player->pos.z += player->vel.z;
 }
 
@@ -247,6 +246,8 @@ void update_collision_static(Player *player) /* TODO: make AABB collision work *
         player->state |= FLAG_CAN_JUMP;
         player->state &= ~FLAG_FALLING;
     }
+    else if (!(player->state & FLAG_FLYING))
+        player->state |= FLAG_FALLING;
 
 
 #if 0 /* TODO: remove this parse collision feet stuff */

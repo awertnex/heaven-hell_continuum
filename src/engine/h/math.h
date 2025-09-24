@@ -11,7 +11,7 @@
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
 
-#define GRAVITY     (9.7803267715f / 10.0f)
+#define GRAVITY     (9.7803267715f)
 
 #define v3izero     (v3i32){0, 0, 0}
 #define v3fzero     (v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f}

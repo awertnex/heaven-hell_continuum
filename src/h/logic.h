@@ -5,12 +5,12 @@
 
 /* ---- section: player defaults -------------------------------------------- */
 
-static const f32 PLAYER_JUMP_HEIGHT =      1.25f;
-static const f32 PLAYER_SPEED_WALK =       3.0f;
-static const f32 PLAYER_SPEED_FLY =        18.0f;
-static const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
-static const f32 PLAYER_SPEED_SNEAK =      1.8f;
-static const f32 PLAYER_SPEED_SPRINT =     9.0f;
+static const f32 PLAYER_JUMP_HEIGHT =      8.0f;
+static const f32 PLAYER_SPEED_WALK =       3.5f;
+static const f32 PLAYER_SPEED_FLY =        9.0f;
+static const f32 PLAYER_SPEED_FLY_FAST =   18.0f;
+static const f32 PLAYER_SPEED_SNEAK =      1.5f;
+static const f32 PLAYER_SPEED_SPRINT =     7.0f;
 
 typedef struct Player
 {
@@ -28,7 +28,6 @@ typedef struct Player
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
     f32 movement_speed;             /* depends on enum: PlayerFlags */
-    f32 movement_step_length;
     u64 container_state;            /* enum: ContainerFlags */
     u8 perspective;                 /* camera perspective mode */
     u16 state;                      /* enum: PlayerFlags */

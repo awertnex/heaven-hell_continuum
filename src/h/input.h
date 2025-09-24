@@ -11,11 +11,11 @@ enum KeyboardKeyState
 {
     KEY_IDLE,
     KEY_PRESS,
-    KEY_WAIT_PRESS_DOUBLE,
-    KEY_PRESS_DOUBLE,
     KEY_HOLD,
-    KEY_HOLD_DOUBLE,
     KEY_RELEASE,
+    KEY_LISTEN_DOUBLE,
+    KEY_PRESS_DOUBLE,
+    KEY_HOLD_DOUBLE,
     KEY_RELEASE_DOUBLE,
 }; /* KeyboardKeyState */
 
@@ -194,37 +194,47 @@ extern u32 bind_toggle_debug;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_wait_press_double(const u32 key)   {return (keyboard_key[key] == KEY_WAIT_PRESS_DOUBLE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold(const u32 key)                {return (keyboard_key[key] == KEY_HOLD);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold_double(const u32 key)         {return (keyboard_key[key] == KEY_HOLD_DOUBLE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release(const u32 key)             {return (keyboard_key[key] == KEY_RELEASE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release_double(const u32 key)      {return (keyboard_key[key] == KEY_RELEASE_DOUBLE);}
-
-
 void update_keys(Render *window);
-static inline b8 is_key_press(const u32 key)                {return (keyboard_key[key] == KEY_PRESS);}
-static inline b8 is_key_press_double(const u32 key)         {return (keyboard_key[key] == KEY_PRESS_DOUBLE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_listen_double(const u32 key)
+{return (keyboard_key[key] == KEY_LISTEN_DOUBLE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_hold(const u32 key)
+{return (keyboard_key[key] == KEY_HOLD);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_hold_double(const u32 key)
+{return (keyboard_key[key] == KEY_HOLD_DOUBLE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_release(const u32 key)
+{return (keyboard_key[key] == KEY_RELEASE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_release_double(const u32 key)
+{return (keyboard_key[key] == KEY_RELEASE_DOUBLE);}
+
+static inline b8 is_key_press(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS);}
+
+static inline b8 is_key_press_double(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS_DOUBLE);}
+
 static inline b8 is_key_hold(const u32 key)
 {return (keyboard_key[key] == KEY_HOLD || keyboard_key[key] == KEY_HOLD_DOUBLE);}
+
 static inline b8 is_key_release(const u32 key)
 {return (keyboard_key[key] == KEY_RELEASE || keyboard_key[key] == KEY_RELEASE_DOUBLE);}
 

@@ -431,24 +431,9 @@ void bind_shader_uniforms(void)
     uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
-u32 press_count = 0;
-u32 hold_count = 0;
-u32 release_count = 0;
 void update_input(Player *player)
 {
-    player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
-
-    /* ---- sprinting ------------------------------------------------------- */
-    if (is_key_hold(bind_sprint))
-        player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
-
     /* ---- jumping --------------------------------------------------------- */
-    if (is_key_press_double(bind_jump))
-    {
-        printf("WE'RE FUCKING FLYING, NO WAY!\n");
-        player->state ^= FLAG_FLYING;
-    }
-
     if (is_key_hold(bind_jump))
     {
         if (player->state & FLAG_FLYING)
@@ -456,16 +441,28 @@ void update_input(Player *player)
 
         if (player->state & FLAG_CAN_JUMP)
         {
-            player->vel.z += PLAYER_JUMP_HEIGHT;
+            player->vel.z += PLAYER_JUMP_HEIGHT * render.frame_delta;
             player->state &= ~FLAG_CAN_JUMP;
         }
     }
+    if (is_key_press_double(bind_jump))
+        player->state ^= FLAG_FLYING;
 
     /* ---- sneaking -------------------------------------------------------- */
     if (is_key_hold(bind_sneak))
     {
-        player->pos.z -= player->movement_speed;
+        if (player->state & FLAG_FLYING)
+            player->pos.z -= player->movement_speed;
+        else player->state |= FLAG_SNEAKING;
     }
+    else player->state &= ~FLAG_SNEAKING;
+
+    /* ---- sprinting ------------------------------------------------------- */
+    if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forwards))
+        player->state |= FLAG_SPRINTING;
+    else if (is_key_release(bind_walk_forwards))
+        player->state &= ~FLAG_SPRINTING;
+
 
     /* ---- movement -------------------------------------------------------- */
     if (is_key_hold(bind_strafe_left))
@@ -491,6 +488,8 @@ void update_input(Player *player)
         player->pos.x += (player->movement_speed * player->camera.cos_yaw);
         player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
     }
+    if (is_key_press_double(bind_walk_forwards))
+        player->state |= FLAG_SPRINTING;
 }
 
 void init_world(str *string)
@@ -665,7 +664,7 @@ void input_example()
             _is_key_hold_double(0),
             _is_key_release(0),
             _is_key_release_double(0),
-            _is_key_wait_press_double(0),
+            _is_key_listen_double(0),
             (keyboard_key[0] == 0));
 }
 

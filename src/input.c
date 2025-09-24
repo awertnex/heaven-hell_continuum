@@ -196,7 +196,6 @@ u32 bind_up                         = KEY_UP;
 void update_keys(Render *render)
 {
     static f64 key_press_start_time[KEYS_MAX];
-
     for (u32 i = 0; i < KEYS_MAX; ++i)
     {
         b8 key_press = (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_PRESS);
@@ -208,9 +207,9 @@ void update_keys(Render *render)
             key_press_start_time[i] = render->frame_start;
             continue;
         }
-        else if (key_press && _is_key_wait_press_double(i))
+        else if (key_press && _is_key_listen_double(i))
         {
-            if (glfwGetTime() - key_press_start_time[i] <= DOUBLE_PRESS_TIME_THRESHOLD)
+            if (glfwGetTime() - key_press_start_time[i] < DOUBLE_PRESS_TIME_THRESHOLD)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
                 keyboard_key[i] = KEY_PRESS;
@@ -227,9 +226,9 @@ void update_keys(Render *render)
             continue;
         }
 
-        if (is_key_press(i)) keyboard_key[i] = KEY_HOLD;
-        if (is_key_press_double(i)) keyboard_key[i] = KEY_HOLD_DOUBLE;
-        if (_is_key_release(i))         keyboard_key[i] = KEY_WAIT_PRESS_DOUBLE;
+        if (is_key_press(i))            keyboard_key[i] = KEY_HOLD;
+        if (is_key_press_double(i))     keyboard_key[i] = KEY_HOLD_DOUBLE;
+        if (_is_key_release(i))         keyboard_key[i] = KEY_LISTEN_DOUBLE;
         if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
     }
 }
