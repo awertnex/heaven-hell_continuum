@@ -170,165 +170,7 @@ void draw_world(Player *player);
 void draw_hud(Player *player);
 void draw_everything(Player *player);
 
-void input_example();
-
-/* ---- section: main ------------------------------------------------------- */
-
-int main(int argc, char **argv)
-{
-    if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
-    {
-        if (!strncmp(argv[2], "FATAL", 5))
-            log_level = LOGLEVEL_FATAL;
-        else if (!strncmp(argv[2], "ERROR", 5))
-            log_level = LOGLEVEL_ERROR;
-        else if (!strncmp(argv[2], "WARN", 4))
-            log_level = LOGLEVEL_WARNING;
-        else if (!strncmp(argv[2], "INFO", 4))
-            log_level = LOGLEVEL_INFO;
-        else if (!strncmp(argv[2], "DEBUG", 5))
-            log_level = LOGLEVEL_DEBUG;
-        else if (!strncmp(argv[2], "TRACE", 5))
-            log_level = LOGLEVEL_TRACE;
-    }
-
-    glfwSetErrorCallback(error_callback);
-    /*temp*/ render.size = (v2i32){1280, 720};
-
-    if (!RELEASE_BUILD)
-        LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
-
-    if (MODE_DEBUG)
-        LOGDEBUG("%s\n", "Debugging Enabled");
-
-    if (init_paths() != 0 ||
-            create_instance("new_instance") != 0) /* TODO: make editable instance name */
-        return -1;
-
-    if (init_glfw() != 0 ||
-            init_window(&render) != 0 ||
-            init_glad() != 0)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
-    /*temp*/ glfwSetWindowPos(render.window,
-            (1920 / 2) - (render.size.x / 2),
-            (1080 / 2) - (render.size.y / 2));
-
-    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_DEBUG;
-
-    /* ---- section: set mouse input ---------------------------------------- */
-
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported())
-    {
-        glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
-    }
-    else LOGERROR("%s\n", "GLFW: Raw Mouse Motion Not Supported");
-    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
-
-    /* ---- section: set callbacks ------------------------------------------ */
-
-    glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
-    gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
-
-    glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
-    gl_cursor_pos_callback(render.window, render.mouse_position.x, render.mouse_position.y);
-
-    glfwSetKeyCallback(render.window, gl_key_callback);
-    gl_key_callback(render.window, 0, 0, 0, 0);
-
-    /* ---- section: graphics ----------------------------------------------- */
-
-    if (
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_fbo) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_default) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_text) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_voxel) != 0 ||
-            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1) != 0)
-        goto cleanup;
-
-    glfwSwapInterval(0); /* vsync off */
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    if (init_gui() != 0)
-        goto cleanup;
-
-    //init_super_debugger(&render.size); /*temp off*/
-
-    lily.camera =
-        (Camera){
-            .fovy = SETTING_FOV_DEFAULT,
-            .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = GL_CLIP_DISTANCE0,
-            .near = 0.05f,
-        };
-
-    bind_shader_uniforms();
-    game_start_time = glfwGetTime();
-
-section_menu_title: /* ---- section: title menu ----------------------------- */
-
-    init_world("Poop Consistency Tester");
-
-section_menu_pause: /* ---- section: pause menu ----------------------------- */
-section_main: /* ---- section: main loop ------------------------------------ */
-
-    generate_standard_meshes();
-
-    //lily.state = FLAG_FALLING;
-    while (!glfwWindowShouldClose(render.window))
-    {
-        render.frame_start = glfwGetTime() - game_start_time;
-        render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_delta_square = pow(render.frame_delta, 2);
-        render.frame_last = render.frame_start;
-
-        update_world(&lily);
-        draw_everything(&lily);
-
-        glfwSwapBuffers(render.window);
-        glfwPollEvents();
-        update_keys(render.window);
-        update_input(&lily);
-    }
-
-cleanup: /* ----------------------------------------------------------------- */
-
-    free_gui();
-    free_mesh(&mesh_fbo);
-    free_mesh(&mesh_fbo_flipped);
-    free_mesh(&mesh_skybox);
-    free_mesh(&mesh_cube_of_happiness);
-    free_mesh(&mesh_gizmo);
-    free_fbo(&fbo_skybox, &color_buf_skybox, &rbo_skybox);
-    free_fbo(&fbo_world, &color_buf_world, &rbo_world);
-    free_fbo(&fbo_hud, &color_buf_hud, &rbo_hud);
-    free_fbo(&fbo_text, &color_buf_text, &rbo_text);
-    glDeleteProgram(shader_fbo.id);
-    glDeleteProgram(shader_default.id);
-    glDeleteProgram(shader_text.id);
-    glDeleteProgram(shader_skybox.id);
-    glDeleteProgram(shader_gizmo.id);
-    glfwDestroyWindow(render.window);
-    glfwTerminate();
-    return 0;
-}
-
+/* ---- section: functions -------------------------------------------------- */
 static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
@@ -594,12 +436,6 @@ u32 hold_count = 0;
 u32 release_count = 0;
 void update_input(Player *player)
 {
-    //printf("space: %d\n", keyboard_key[bind_jump]);
-    if (is_key_press(bind_jump)) ++press_count;
-    if (is_key_hold(bind_jump)) ++hold_count;
-    if (is_key_release(bind_jump)) ++release_count;
-    //printf("Press   [%d]\nHold    [%d]\nRelease [%d]\n\n", press_count, hold_count, release_count);
-
     player->movement_speed = PLAYER_SPEED_WALK * render.frame_delta;
 
     /* ---- sprinting ------------------------------------------------------- */
@@ -607,11 +443,14 @@ void update_input(Player *player)
         player->movement_speed = PLAYER_SPEED_SPRINT * render.frame_delta;
 
     /* ---- jumping --------------------------------------------------------- */
+    if (is_key_press_double(bind_jump))
+    {
+        printf("WE'RE FUCKING FLYING, NO WAY!\n");
+        player->state ^= FLAG_FLYING;
+    }
+
     if (is_key_hold(bind_jump))
     {
-        if (is_key_press(bind_jump) && get_double_press(bind_jump))
-            player->state ^= FLAG_FLYING;
-
         if (player->state & FLAG_FLYING)
             player->pos.z += player->movement_speed;
 
@@ -649,7 +488,6 @@ void update_input(Player *player)
 
     if (is_key_hold(bind_walk_forwards))
     {
-        printf("fuck walking forward\n");
         player->pos.x += (player->movement_speed * player->camera.cos_yaw);
         player->pos.y -= (player->movement_speed * player->camera.sin_yaw);
     }
@@ -810,5 +648,178 @@ void render_font_atlas_example(void)
     draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void input_example()
+{
+    printf(
+            "     Running [%.2f]\n"
+            "       Press [%d][%d] Press Double\n"
+            "        Hold [%d][%d] Hold Double\n"
+            "     Release [%d][%d] Release Double\n"
+            " Wait Double [%d][%d] Idle\n\n",
+            render.frame_start,
+            is_key_press(0),
+            is_key_press_double(0),
+            _is_key_hold(0),
+            _is_key_hold_double(0),
+            _is_key_release(0),
+            _is_key_release_double(0),
+            _is_key_wait_press_double(0),
+            (keyboard_key[0] == 0));
+}
+
+/* ---- section: main ------------------------------------------------------- */
+int main(int argc, char **argv)
+{
+    if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
+    {
+        if (!strncmp(argv[2], "FATAL", 5))
+            log_level = LOGLEVEL_FATAL;
+        else if (!strncmp(argv[2], "ERROR", 5))
+            log_level = LOGLEVEL_ERROR;
+        else if (!strncmp(argv[2], "WARN", 4))
+            log_level = LOGLEVEL_WARNING;
+        else if (!strncmp(argv[2], "INFO", 4))
+            log_level = LOGLEVEL_INFO;
+        else if (!strncmp(argv[2], "DEBUG", 5))
+            log_level = LOGLEVEL_DEBUG;
+        else if (!strncmp(argv[2], "TRACE", 5))
+            log_level = LOGLEVEL_TRACE;
+    }
+
+    glfwSetErrorCallback(error_callback);
+    /*temp*/ render.size = (v2i32){1280, 720};
+
+    if (!RELEASE_BUILD)
+        LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
+
+    if (MODE_DEBUG)
+        LOGDEBUG("%s\n", "Debugging Enabled");
+
+    if (init_paths() != 0 ||
+            create_instance("new_instance") != 0) /* TODO: make editable instance name */
+        return -1;
+
+    if (init_glfw() != 0 ||
+            init_window(&render) != 0 ||
+            init_glad() != 0)
+    {
+        glfwTerminate();
+        return -1;
+    }
+
+    /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
+
+    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_DEBUG;
+
+    /* ---- section: set mouse input ---------------------------------------- */
+
+    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported())
+    {
+        glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
+    }
+    else LOGERROR("%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
+
+    /* ---- section: set callbacks ------------------------------------------ */
+
+    glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
+    gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
+
+    glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
+    gl_cursor_pos_callback(render.window, render.mouse_position.x, render.mouse_position.y);
+
+    glfwSetKeyCallback(render.window, gl_key_callback);
+    gl_key_callback(render.window, 0, 0, 0, 0);
+
+    /* ---- section: graphics ----------------------------------------------- */
+
+    if (
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_fbo) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_default) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_text) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_voxel) != 0 ||
+            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1) != 0)
+        goto cleanup;
+
+    glfwSwapInterval(0); /* vsync off */
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    if (init_gui() != 0)
+        goto cleanup;
+
+    //init_super_debugger(&render.size); /*temp off*/
+
+    lily.camera =
+        (Camera){
+            .fovy = SETTING_FOV_DEFAULT,
+            .ratio = (f32)render.size.x / (f32)render.size.y,
+            .far = GL_CLIP_DISTANCE0,
+            .near = 0.05f,
+        };
+
+    bind_shader_uniforms();
+    game_start_time = glfwGetTime();
+
+section_menu_title: /* ---- section: title menu ----------------------------- */
+
+    init_world("Poop Consistency Tester");
+
+section_menu_pause: /* ---- section: pause menu ----------------------------- */
+section_main: /* ---- section: main loop ------------------------------------ */
+
+    generate_standard_meshes();
+
+    //lily.state = FLAG_FALLING;
+    while (!glfwWindowShouldClose(render.window))
+    {
+        render.frame_start = glfwGetTime() - game_start_time;
+        render.frame_delta = render.frame_start - render.frame_last;
+        render.frame_delta_square = pow(render.frame_delta, 2);
+        render.frame_last = render.frame_start;
+
+        update_world(&lily);
+        draw_everything(&lily);
+
+        glfwSwapBuffers(render.window);
+        glfwPollEvents();
+        input_example();
+        update_keys(&render);
+        update_input(&lily);
+    }
+
+cleanup: /* ----------------------------------------------------------------- */
+
+    free_gui();
+    free_mesh(&mesh_fbo);
+    free_mesh(&mesh_fbo_flipped);
+    free_mesh(&mesh_skybox);
+    free_mesh(&mesh_cube_of_happiness);
+    free_mesh(&mesh_gizmo);
+    free_fbo(&fbo_skybox, &color_buf_skybox, &rbo_skybox);
+    free_fbo(&fbo_world, &color_buf_world, &rbo_world);
+    free_fbo(&fbo_hud, &color_buf_hud, &rbo_hud);
+    free_fbo(&fbo_text, &color_buf_text, &rbo_text);
+    glDeleteProgram(shader_fbo.id);
+    glDeleteProgram(shader_default.id);
+    glDeleteProgram(shader_text.id);
+    glDeleteProgram(shader_skybox.id);
+    glDeleteProgram(shader_gizmo.id);
+    glfwDestroyWindow(render.window);
+    glfwTerminate();
+    return 0;
 }
 

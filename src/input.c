@@ -1,6 +1,8 @@
 #include "engine/h/core.h"
 #include "engine/h/defines.h"
 #include "h/input.h"
+#include "h/main.h"
+#include "h/logic.h"
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -191,45 +193,44 @@ u32 bind_right                      = KEY_RIGHT;
 u32 bind_down                       = KEY_DOWN;
 u32 bind_up                         = KEY_UP;
 
-void update_keys(GLFWwindow *window)
+void update_keys(Render *render)
 {
+    static f64 key_press_start_time[KEYS_MAX];
+
     for (u32 i = 0; i < KEYS_MAX; ++i)
     {
-        if (!keyboard_key[i] && glfwGetKey(window, keyboard_tab[i]) == GLFW_PRESS)
+        b8 key_press = (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_PRESS);
+        b8 key_release = (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_RELEASE);
+
+        if (key_press && !keyboard_key[i])
         {
             keyboard_key[i] = KEY_PRESS;
+            key_press_start_time[i] = render->frame_start;
             continue;
         }
-        else if (is_key_hold(i) && glfwGetKey(window, keyboard_tab[i]) == GLFW_RELEASE)
+        else if (key_press && _is_key_wait_press_double(i))
         {
-            keyboard_key[i] = KEY_RELEASE;
+            if (glfwGetTime() - key_press_start_time[i] <= DOUBLE_PRESS_TIME_THRESHOLD)
+                keyboard_key[i] = KEY_PRESS_DOUBLE;
+            else
+                keyboard_key[i] = KEY_PRESS;
+            key_press_start_time[i] = render->frame_start;
             continue;
         }
+
+        if (key_release)
+        {
+            if (_is_key_hold(i))
+                keyboard_key[i] = KEY_RELEASE;
+            else if (_is_key_hold_double(i))
+                keyboard_key[i] = KEY_RELEASE_DOUBLE;
+            continue;
+        }
+
         if (is_key_press(i)) keyboard_key[i] = KEY_HOLD;
-        if (is_key_release(i)) keyboard_key[i] = 0;
+        if (is_key_press_double(i)) keyboard_key[i] = KEY_HOLD_DOUBLE;
+        if (_is_key_release(i))         keyboard_key[i] = KEY_WAIT_PRESS_DOUBLE;
+        if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
     }
-}
-
-b8 get_double_press(u32 key)
-{
-    static f64 double_press_start_time = 0;
-    static u32 double_press_key = 0;
-
-    if (((state & FLAG_DOUBLE_PRESS) && (f64)(get_time_ms() - double_press_start_time >= 0.25f))
-            || (key != double_press_key))
-        state &= ~FLAG_DOUBLE_PRESS;
-    else
-    {
-        double_press_key = 0;
-        return TRUE;
-    }
-
-    if (!(state & FLAG_DOUBLE_PRESS))
-    {
-        state |= FLAG_DOUBLE_PRESS;
-        double_press_key = key;
-        double_press_start_time = get_time_ms();
-    }
-    return FALSE;
 }
 
