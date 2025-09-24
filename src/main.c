@@ -799,7 +799,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
     {
         render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_delta_square = pow(render.frame_delta, 2);
+        render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
 
         update_world(&lily);
@@ -807,8 +807,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
+        update_key_states(&render);
         input_example();
-        update_keys(&render);
         update_input(&lily);
     }
 
