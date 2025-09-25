@@ -78,6 +78,8 @@ ShaderProgram shader_text =
     .name = "text",
     .vertex.file_name = "text.vert",
     .vertex.type = GL_VERTEX_SHADER,
+    .geometry.file_name = "text.geom",
+    .geometry.type = GL_GEOMETRY_SHADER,
     .fragment.file_name = "text.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -161,7 +163,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void some_weird_shit(f32 unit_x, f32 unit_y);
+// void some_weird_shit(f32 unit_x, f32 unit_y);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_input(Player *player);
@@ -211,6 +213,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
             disable_cursor;
     }
 
+#if 0 // TODO: maybe remove
     /* ---- some weird shit ------------------------------------------------- */
     if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
         some_weird_shit(0.0f, 1.0f);
@@ -220,8 +223,10 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         some_weird_shit(1.0f, 0.0f);
     if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
         some_weird_shit(-1.0f, 0.0f);
+#endif
 }
 
+#if 0 // TODO: maybe remove
 void some_weird_shit(f32 unit_x, f32 unit_y)
 {
     GLfloat vbo_data_coh[] =
@@ -249,6 +254,7 @@ void some_weird_shit(f32 unit_x, f32 unit_y)
     generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
             vbo_data_coh, ebo_data_coh);
 }
+#endif
 
 void generate_standard_meshes()
 {
@@ -578,7 +584,7 @@ b8 init_world(str *string)
 
 void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 500)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))

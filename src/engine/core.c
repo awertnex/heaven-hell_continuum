@@ -270,7 +270,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- color buffer ---------------------------------------------------- */
     glGenTextures(1, color_buf);
     glBindTexture(GL_TEXTURE_2D, *color_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -280,7 +280,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- render buffer --------------------------------------------------- */
     glGenRenderbuffers(1, rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, render->size.x, render->size.y);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, render->size.x, render->size.y);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *rbo);
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
