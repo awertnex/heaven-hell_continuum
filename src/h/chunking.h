@@ -69,8 +69,8 @@ typedef struct Chunk
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern Chunk *chunk_buf;                        /* chunk buffer, raw chunk data */
-extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];      /* chunk pointer look-up table */
+static Chunk *chunk_buf;                        /* chunk buffer, raw chunk data */
+static Chunk *chunk_tab[CHUNK_BUF_VOLUME];      /* chunk pointer look-up table */
 extern v3u16 chunk_tab_coordinates;             /* pointer arithmetic redundancy optimization */
 extern v3u32 block_coordinates;                 /* pointer arithmetic redundancy optimization */
 extern u16 chunk_tab_index;                     /* player relative chunk tab access */

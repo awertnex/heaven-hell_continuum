@@ -5,7 +5,6 @@
 // pthread_t thrd_chunk_handler;
 
 /* ---- signatures ---------------------------------------------------------- */
-void update_world();
 void *chunk_handler();
 void update_input(Player *player);
 void draw_world();
@@ -78,7 +77,6 @@ section_main: /* ------------------------------------------------------------ */
 //         update_input(&lily);
         update_render_settings(setting.render_size);
         setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-//         update_world();
 //
 //         BeginDrawing();
 //         {
@@ -99,58 +97,7 @@ section_main: /* ------------------------------------------------------------ */
     free_gui();
     free_super_debugger();
     CloseWindow();
-
     return 0;
-}
-
-void init_world(str *str)
-{
-//     init_world_directory(str);
-    if (init_chunking() != 0)
-        state &= ~FLAG_ACTIVE;
-//     update_player(&lily);
-    update_chunk_tab(lily.chunk);
-//     set_player_block(&lily, 0, 0, 0);
-    lily.delta_target =
-        (v3i32){
-            lily.camera.target.x,
-            lily.camera.target.y,
-            lily.camera.target.z};
-//     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
-}
-
-void update_world()
-{
-//     if (game_tick >= SETTING_DAY_TICKS_MAX) ++game_days;
-    if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
-        show_cursor;
-    else disable_cursor;
-//     update_player(&lily);
-    update_player_target(&lily.camera.target, &lily.delta_target);
-//     update_camera_movements_player(&lily);
-//     if (MODE_COLLIDE)
-//         update_collision_static(&lily);
-
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
-    (chunk_tab_index >= CHUNK_BUF_VOLUME)
-        ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
-
-    if (state & FLAG_CHUNK_BUF_DIRTY)
-    {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        update_chunk_tab(lily.delta_chunk);
-        state &= ~FLAG_CHUNK_BUF_DIRTY;
-    }
-
-    /* ---- player targeting ------------------------------------------------ */
-    if (is_range_within_v3i(lily.delta_target,
-                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
-        state |= FLAG_PARSE_TARGET;
-    else state &= ~FLAG_PARSE_TARGET;
-
-    /* TODO: make a function 'index_to_bounding_box()' */
-    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {}
 }
 
 struct /* Chunk Handler Args */

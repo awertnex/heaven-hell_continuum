@@ -165,7 +165,7 @@ void some_weird_shit(f32 unit_x, f32 unit_y);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_input(Player *player);
-void init_world(str *string);
+b8 init_world(str *string);
 void update_world(Player *player);
 void draw_skybox(Player *player);
 void draw_world(Player *player);
@@ -554,16 +554,24 @@ void update_input(Player *player)
     }
 }
 
-void init_world(str *string)
+b8 init_world(str *string)
 {
-    if (!strlen(string)) return;
-
+    if (!strlen(string)) return FALSE;
     init_world_directory(string);
-    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
+    if (init_chunking() != 0) return FALSE;
 
     update_player(&render, &lily);
     set_player_block(&lily, 0, 0, 0);
+    update_chunk_tab(lily.chunk);
 
+    lily.delta_target =
+        (v3i32){
+            lily.target.x,
+            lily.target.y,
+            lily.target.z
+        };
+
+    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
     disable_cursor;
     center_cursor;
 }
@@ -573,13 +581,16 @@ void update_world(Player *player)
     game_tick = (floor(render.frame_start * 500)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
+    if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
+        show_cursor;
+    else disable_cursor;
 
-    update_collision_static(&lily);
     update_camera_movement_player(&render, player);
+    update_collision_static(&lily);
     update_player(&render, player);
+    update_player_target(&lily.target, &lily.delta_target);
     update_camera_perspective(&player->camera, &projection);
 
-#if 0 /* TODO: do chunk tab update in update_world */
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
         ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
@@ -590,7 +601,16 @@ void update_world(Player *player)
         update_chunk_tab(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
-#endif
+
+    /* ---- player targeting ------------------------------------------------ */
+    if (is_in_volume_i32(lily.delta_target,
+                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
+                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
+        state |= FLAG_PARSE_TARGET;
+    else state &= ~FLAG_PARSE_TARGET;
+
+    /* TODO: make a function 'index_to_bounding_box()' */
+    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {}
 }
 
 void draw_skybox(Player *player)
@@ -838,8 +858,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
         update_key_states(&render);
         update_input(&lily);
 
-        //if (!(state & FLAG_WORLD_LOADED))
-        //    goto section_menu_title;
+        if (!(state & FLAG_WORLD_LOADED))
+            goto section_menu_title;
 
         if (state & FLAG_PAUSED)
             goto section_menu_pause;

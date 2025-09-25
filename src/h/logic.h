@@ -16,6 +16,7 @@ typedef struct Player
 {
     str name[100];                  /* player in-game name */
     v3f32 pos;                      /* player current coordinates in world */
+    v3f32 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
@@ -38,7 +39,7 @@ typedef struct Player
     /* TODO: do player overflow */
     u8 overflow;                    /* player at world edge, enum: PlayerFlags */
     v3i32 delta_pos;                /* for collision tunneling prevention */
-    v3i32 delta_target;
+    v3i32 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
     v3i16 delta_chunk;              /* previous chunk player was in */
 
