@@ -280,7 +280,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- render buffer --------------------------------------------------- */
     glGenRenderbuffers(1, rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, render->size.x, render->size.y);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, render->size.x, render->size.y);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *rbo);
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -771,22 +771,26 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     for (u64 i = 0; i < len; ++i)
     {
+        g = &font->glyph[text[i]];
+
         if (text[i] == '\n')
         {
             offset.y -= (font->line_height * ndc_size.y);
+            offset.x -= (advance * ndc_size.x);
             glUniform2fv(font->uniform.offset, 1, (GLfloat*)&offset);
+            offset.x += (advance * ndc_size.x);
+        }
+        else if (text[i] != ' ')
+        {
+            glUniform1i(font->uniform.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
+            glUniform1i(font->uniform.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
+            glUniform1f(font->uniform.advance, advance + g->bearing.x);
+            glUniform1f(font->uniform.bearing, font->descent - g->bearing.y);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
-        g = &font->glyph[text[i]];
-
-        glUniform1i(font->uniform.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
-        glUniform1i(font->uniform.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
-        glUniform1f(font->uniform.advance, advance + g->bearing.x);
-        glUniform1f(font->uniform.bearing, font->descent - g->bearing.y);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        (text[i] != '\n') ? (advance += g->advance) : (advance = 0);
+        advance += g->advance;
     }
 }
 

@@ -77,7 +77,7 @@ b8 init_gui(void)
             !load_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
             !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
             !load_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !load_font(&font_mono_bold, 24, font_path[3]))
+            !load_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
@@ -155,31 +155,36 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
     draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 12, 0.0f}, 0x3f6f9fff, 0, 0);
 
     snprintf(string, 511,
-            "    Key [X]:\n"
+            "    Key [Space ]:\n"
             "  Press [%d][%d] Press Double\n"
             "   Hold [%d][%d] Hold Double\n"
             "Release [%d][%d] Release Double\n"
             " Listen [%d][%d] Listen Double\n\n",
-            is_key_press(KEY_X),
-            is_key_press_double(KEY_X),
-            _is_key_hold(KEY_X),
-            _is_key_hold_double(KEY_X),
-            _is_key_release(KEY_X),
-            _is_key_release_double(KEY_X),
-            !keyboard_key[KEY_X],
-            _is_key_listen_double(KEY_X));
+            is_key_press(0),
+            is_key_press_double(0),
+            _is_key_hold(0),
+            _is_key_hold_double(0),
+            _is_key_release(0),
+            _is_key_release_double(0),
+            !keyboard_key[0],
+            _is_key_listen_double(0));
     draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, 0x9f6f3fff, 0, 0);
 
     snprintf(string, 511,
+            "Engine:   %s v%s\n"
+            "Author:   %s\n"
             "OpenGL:   %s\n"
             "GLSL:     %s\n"
             "Vendor:   %s\n"
             "Renderer: %s\n",
+            ENGINE_NAME,
+            ENGINE_VERSION,
+            ENGINE_AUTHOR,
             glGetString(GL_VERSION),
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 4), 0.0f}, 0x3f9f3fff, 0, 0);
+    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 6), 0.0f}, 0x3f9f3fff, 0, 0);
 }
 
 #ifdef FUCK // TODO: undef FUCK
