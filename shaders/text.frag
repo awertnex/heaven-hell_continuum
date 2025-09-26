@@ -7,6 +7,7 @@ uniform vec4 text_color;
 
 void main()
 {
-    color = vec4(text_color.rgb * text_color.a, text_color.a * texture(texture_font_atlas, tex_coords).r);
+    color = text_color * texture(texture_font_atlas, tex_coords).r;
+    color = text_color;
 }
 

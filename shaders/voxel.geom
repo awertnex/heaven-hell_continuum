@@ -26,7 +26,7 @@ void main()
                 vec3(0.0, 1.0, 1.0),
               );
 
-    vec3 ebo_voxel[MAX_VERTICES] =
+    int ebo_voxel[MAX_VERTICES] =
         int[](
                 0, 1, 2, 2, 3, 0,
                 4, 5, 6, 6, 7, 4,

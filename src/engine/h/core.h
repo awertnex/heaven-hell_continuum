@@ -21,7 +21,7 @@
 
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
-#define FONT_SIZE_DEFAULT 24.0f
+#define FONT_SIZE_DEFAULT 48.0f
 
 enum KeyboardKeyState
 {
@@ -236,6 +236,7 @@ typedef struct Glyph
     v2i32 bearing;
     i32 advance;
     i32 x0, y0, x1, y1;
+    v2i32 texture_sample;
     b8 loaded;
 } Glyph;
 
@@ -260,8 +261,6 @@ typedef struct Font
 
     struct /* uniform */
     {
-        GLint row;
-        GLint col;
         GLint char_size;
         GLint font_size;
         GLint ndc_size;
@@ -389,7 +388,7 @@ static inline b8 is_key_release(const u32 key)
  *
  * return FALSE (0) on failure;
  */
-b8 load_font(Font *font, u32 size, const str *font_path);
+b8 init_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
 

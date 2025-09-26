@@ -236,8 +236,12 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
     (program->id) ? glDeleteProgram(program->id) : 0;
 
     program->id = glCreateProgram();
-    glAttachShader(program->id, program->vertex.id);
-    glAttachShader(program->id, program->fragment.id);
+    if (program->vertex.id)
+        glAttachShader(program->id, program->vertex.id);
+    if (program->geometry.id)
+        glAttachShader(program->id, program->geometry.id);
+    if (program->fragment.id)
+        glAttachShader(program->id, program->fragment.id);
     glLinkProgram(program->id);
 
     glGetProgramiv(program->id, GL_LINK_STATUS, &program->loaded);
@@ -252,6 +256,8 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 
     if (program->vertex.loaded)
         glDeleteShader(program->vertex.id);
+    if (program->geometry.loaded)
+        glDeleteShader(program->geometry.id);
     if (program->fragment.loaded)
         glDeleteShader(program->fragment.id);
 
@@ -614,7 +620,7 @@ void update_key_states(Render *render)
 
 /* ---- section: font ------------------------------------------------------- */
 
-b8 load_font(Font *font, u32 resolution, const str *font_path)
+b8 init_font(Font *font, u32 resolution, const str *font_path)
 {
     if (resolution <= 2)
     {
@@ -664,7 +670,6 @@ b8 load_font(Font *font, u32 resolution, const str *font_path)
         Glyph *g = &font->glyph[i];
 
         stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
-
         stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index, 1.0f, 1.0f, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
         g->bearing.y = g->y0;
         g->scale.x = g->x1 - g->x0;
@@ -672,22 +677,26 @@ b8 load_font(Font *font, u32 resolution, const str *font_path)
         (g->scale.x > font->scale.x) ? font->scale.x = g->scale.x : 0;
         (g->scale.y > font->scale.y) ? font->scale.y = g->scale.y : 0;
 
-        stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale, scale, 0.0f, 0.0f, glyph_index);
-
         u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
         u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
-        void *bitmap_offset =
-            font->bitmap +
-            (col * resolution) +
-            (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION);
-        for (u32 y = 0; y < resolution; ++y)
+        if (!stbtt_IsGlyphEmpty(&font->info, glyph_index))
         {
-            for (u32 x = 0; x < resolution; ++x)
-                memcpy((bitmap_offset + x + (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
-                        (canvas + x + (y * resolution)), 1);
-        }
+            stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale, scale, 0.0f, 0.0f, glyph_index);
 
-        mem_zero((void*)&canvas, resolution * resolution, "font_glyph_canvas");
+            void *bitmap_offset =
+                font->bitmap +
+                (col * resolution) +
+                (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION);
+            for (u32 y = 0; y < resolution; ++y)
+            {
+                for (u32 x = 0; x < resolution; ++x)
+                    memcpy((bitmap_offset + x + (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
+                            (canvas + x + (y * resolution)), 1);
+            }
+            mem_zero((void*)&canvas, resolution * resolution, "font_glyph_canvas");
+        }
+        g->texture_sample.x = col * resolution;
+        g->texture_sample.y = row * resolution;
         font->glyph[i].loaded = TRUE;
     }
 
@@ -710,6 +719,18 @@ void free_font(Font *font)
     mem_free((void*)&font->buf, font->buf_len, "file_contents");
     mem_free((void*)&font->bitmap, GLYPH_MAX * font->resolution * font->resolution, font->path);
     *font = (Font){0};
+}
+
+void start_text()
+{
+}
+
+void push_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y)
+{
+}
+
+void stop_text()
+{
 }
 
 void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y)
@@ -782,12 +803,10 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
         }
         else if (text[i] != ' ')
         {
-            glUniform1i(font->uniform.row, text[i] / FONT_ATLAS_CELL_RESOLUTION);
-            glUniform1i(font->uniform.col, text[i] % FONT_ATLAS_CELL_RESOLUTION);
             glUniform1f(font->uniform.advance, advance + g->bearing.x);
             glUniform1f(font->uniform.bearing, font->descent - g->bearing.y);
             glClear(GL_DEPTH_BUFFER_BIT);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glDrawArrays(GL_POINTS, 0, 1);
         }
 
         advance += g->advance;

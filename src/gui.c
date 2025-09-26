@@ -74,10 +74,10 @@ b8 init_gui(void)
     normalize_slash(font_path[3]);
 
     if (
-            !load_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !load_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !load_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
+            !init_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
+            !init_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
+            !init_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
+            !init_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out

@@ -366,8 +366,6 @@ cleanup:
 
 void bind_shader_uniforms(void)
 {
-    font.uniform.row = glGetUniformLocation(shader_text.id, "row");
-    font.uniform.col = glGetUniformLocation(shader_text.id, "col");
     font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
     font.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
@@ -376,8 +374,6 @@ void bind_shader_uniforms(void)
     font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
-    font_bold.uniform.row = glGetUniformLocation(shader_text.id, "row");
-    font_bold.uniform.col = glGetUniformLocation(shader_text.id, "col");
     font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
     font_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
@@ -386,8 +382,6 @@ void bind_shader_uniforms(void)
     font_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
-    font_mono.uniform.row = glGetUniformLocation(shader_text.id, "row");
-    font_mono.uniform.col = glGetUniformLocation(shader_text.id, "col");
     font_mono.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
     font_mono.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
@@ -396,8 +390,6 @@ void bind_shader_uniforms(void)
     font_mono.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_mono.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
-    font_mono_bold.uniform.row = glGetUniformLocation(shader_text.id, "row");
-    font_mono_bold.uniform.col = glGetUniformLocation(shader_text.id, "col");
     font_mono_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
     font_mono_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
@@ -591,8 +583,8 @@ void update_world(Player *player)
         show_cursor;
     else disable_cursor;
 
-    update_camera_movement_player(&render, player);
     update_collision_static(&lily);
+    update_camera_movement_player(&render, player);
     update_player(&render, player);
     update_player_target(&lily.target, &lily.delta_target);
     update_camera_perspective(&player->camera, &projection);
