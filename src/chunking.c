@@ -508,16 +508,12 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
 }
 
 #ifdef FUCK // TODO: undef FUCK
-void draw_chunk_tab(Texture *tex /*temp texturing*/)
+void draw_chunk_tab(void)
 {
     if (state & FLAG_DEBUG_MORE)
         globals.opacity = 200;
     else
         globals.opacity = 255;
-
-    rlPushMatrix();
-    rlSetTexture(tex->id); /*temp texturing*/
-    rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {

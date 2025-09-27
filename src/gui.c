@@ -115,7 +115,6 @@ void draw_debug_info(Player *player,
             "FPS: %d\n"
             "FRAME TIME: %.2lf\n"
             "FRAME DELTA: %.6lf\n",
-
             (u32)(1.0f / render->frame_delta),
             render->frame_start,
             render->frame_delta);
@@ -132,7 +131,6 @@ void draw_debug_info(Player *player,
             "QUAD COUNT: 6\n"
             "TRI COUNT: 12\n"
             "VERTEX COUNT: a lot\n",
-
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
             (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
@@ -150,7 +148,6 @@ void draw_debug_info(Player *player,
             "Lgbubu!labubu!\n"
             "SKYBOX RGB: %.2f %.2f %.2f\n"
             "SUN ANGLE: %.2f %.2f %.2f\n",
-
             render->mouse_position.x, render->mouse_position.y,
             render->mouse_delta.x, render->mouse_delta.y,
             (f32)render->size.x / render->size.y,
@@ -194,10 +191,6 @@ void draw_debug_info(Player *player,
             glGetString(GL_RENDERER));
     push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
     render_text(0x3f9f3fff);
-    stop_text();
-    start_text(0, 64.0f, &font_bold, render, program, fbo, 0);
-    push_text("LABUBU!", (v2f32){540.0f, MARGIN}, 0, 0);
-    render_text(0x9f3f3fff);
     stop_text();
 }
 

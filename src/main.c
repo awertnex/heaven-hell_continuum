@@ -11,6 +11,7 @@
 #include "h/gui.h"
 #include "h/logic.h"
 #include "h/input.h"
+#include "h/voxel.h"
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -108,7 +109,7 @@ ShaderProgram shader_voxel =
     .vertex.file_name = "voxel.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .geometry.file_name = "voxel.geom",
-    .geometry.type = 0,
+    .geometry.type = GL_GEOMETRY_SHADER,
     .fragment.file_name = "voxel.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -534,7 +535,7 @@ b8 init_world(str *string)
 
 void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = (floor(render.frame_start * 200)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
@@ -640,9 +641,11 @@ void draw_everything(Player *player)
     draw_hud(player);
 
     if (state & FLAG_DEBUG)
-        draw_debug_info(player,
-                skybox_data.time, skybox_data.color, skybox_data.sun_rotation,
-                &render, &shader_text, &fbo_text);
+            draw_debug_info(player,
+                    skybox_data.time,
+                    skybox_data.color,
+                    skybox_data.sun_rotation,
+                    &render, &shader_text, &fbo_text);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -680,7 +683,6 @@ void render_font_atlas_example(void)
 }
 #endif
 
-/* ---- section: main ------------------------------------------------------- */
 int main(int argc, char **argv)
 {
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
@@ -793,7 +795,10 @@ section_menu_pause: /* ---- section: pause menu ----------------------------- */
 section_main: /* ---- section: main loop ------------------------------------ */
 
     if (!(state & FLAG_WORLD_LOADED))
-            init_world("Poop Consistency Tester");
+    {
+        init_world("Poop Consistency Tester");
+        init_voxel();
+    }
 
     generate_standard_meshes();
 
