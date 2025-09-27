@@ -18,10 +18,10 @@
 
 #define KEYBOARD_KEYS_MAX 120
 #define KEYBOARD_DOUBLE_PRESS_TIME_THRESHOLD 0.4f
-
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
+#define TEXT_TAB_SIZE 4
 
 enum KeyboardKeyState
 {
@@ -266,6 +266,7 @@ typedef struct Font
     i32 descent;                /* glyphs lowest points' deviation from baseline */
     i32 line_gap;
     i32 line_height;
+    f32 size;                   /* global font size for text uniformity */
     v2i32 scale;                /* biggest glyph bounding box in pixels */
 
     stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
@@ -280,9 +281,6 @@ typedef struct Font
     {
         GLint char_size;
         GLint font_size;
-        GLint screen_size;
-        GLint advance;
-        GLint bearing;
         GLint text_color;
     } uniform;
 
@@ -410,19 +408,21 @@ void free_font(Font *font);
 
 u8 init_text(void);
 
-void start_text(u64 length, Render *render);
-
-void push_text(const str *text, f32 size, v2f32 pos, i8 align_x, i8 align_y, Font *font);
-
-void render_text(f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y, Font *font, ShaderProgram *program, FBO *fbo);
-
 /*
- * does update Font.projection;
- *
+ * length = pre-allocate buffer for string;
+ * length = if 0, STRING_MAX is allocated;
  * size = font height in pixels;
  * color = hex format: 0xrrggbbaa;
  */
-void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y);
+void start_text(
+        u64 length, f32 size, Font *font,
+        Render *render, ShaderProgram *program, FBO *fbo);
+
+void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
+
+void render_text(u32 color);
+
+void stop_text(void);
 
 #endif /* ENGINE_CORE_H */
 

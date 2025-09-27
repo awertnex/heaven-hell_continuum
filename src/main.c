@@ -328,28 +328,18 @@ void bind_shader_uniforms(void)
 {
     font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
-    font.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
-    font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_bold.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
-    font_bold.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
-    font_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_mono.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
-    font_mono.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
-    font_mono.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_mono.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_mono_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono_bold.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
     font_mono_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
@@ -650,11 +640,9 @@ void draw_everything(Player *player)
     draw_hud(player);
 
     if (state & FLAG_DEBUG)
-    {
-        start_text(0, &render);
-        push_text("Lgbubu!!", 50.0f, (v2f32){30.0f, 0.0f}, 0, 0, &font_mono_bold);
-        render_text(100.0f, (v3f32){0.0f, 0.0f, 0.0f}, 0x6f9f3fff, 0, 0, &font_mono_bold, &shader_text, &fbo_text);
-    }
+        draw_debug_info(player,
+                skybox_data.time, skybox_data.color, skybox_data.sun_rotation,
+                &render, &shader_text, &fbo_text);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
@@ -678,6 +666,7 @@ void draw_everything(Player *player)
 
 /* ---- section: testing ---------------------------------------------------- */
 
+#if 0
 void render_font_atlas_example(void)
 {
     glUseProgram(shader_text.id);
@@ -689,16 +678,7 @@ void render_font_atlas_example(void)
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
-b8 init_text_example(void)
-{
-    return TRUE;
-}
-
-b8 render_text_example(void)
-{
-    return TRUE;
-}
+#endif
 
 /* ---- section: main ------------------------------------------------------- */
 int main(int argc, char **argv)
@@ -816,10 +796,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
             init_world("Poop Consistency Tester");
 
     generate_standard_meshes();
-
-    if (!init_text_example() ||
-            !render_text_example())
-        goto cleanup;
 
     while (!glfwWindowShouldClose(render.window))
     {

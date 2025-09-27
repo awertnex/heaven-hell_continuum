@@ -103,11 +103,14 @@ void free_gui(void)
     free_font(&font_mono_bold);
 }
 
-void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
+void draw_debug_info(Player *player,
+        f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
+        Render *render, ShaderProgram *program, FBO *fbo)
 {
     static str string[512] = {0};
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold, render, program, fbo);
 
-    snprintf(string, 255,
+    snprintf(string, 511,
             "FPS: %d\n"
             "FRAME TIME: %.2lf\n"
             "FRAME DELTA: %.6lf\n",
@@ -115,7 +118,8 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             (u32)(1.0f / render->frame_delta),
             render->frame_start,
             render->frame_delta);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, 0x6f9f3fff, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+    render_text(0x6f9f3fff);
 
     snprintf(string, 511,
             "PLAYER NAME: %s\n"
@@ -133,7 +137,8 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 3, 0.0f}, 0xffffffff, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3)}, 0, 0);
+    render_text(0xffffffff);
 
     snprintf(string, 511,
             "MOUSE XY: %.2f %.2f\n"
@@ -152,7 +157,8 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 12, 0.0f}, 0x3f6f9fff, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 12)}, 0, 0);
+    render_text(0x3f6f9fff);
 
     snprintf(string, 511,
             "    Key [Space ]:\n"
@@ -168,7 +174,8 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             _is_key_release_double(0),
             !keyboard_key[0],
             _is_key_listen_double(0));
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, 0x9f6f3fff, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 20)}, 0, 0);
+    render_text(0x9f6f3fff);
 
     snprintf(string, 511,
             "Engine:   %s v%s\n"
@@ -184,7 +191,9 @@ void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skyb
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
-    draw_text(render, &font_mono_bold, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 6), 0.0f}, 0x3f9f3fff, 0, 0);
+    push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 6)}, 0, 0);
+    render_text(0x3f9f3fff);
+    stop_text();
 }
 
 #ifdef FUCK // TODO: undef FUCK
