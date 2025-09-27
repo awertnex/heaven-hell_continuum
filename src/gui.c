@@ -108,7 +108,8 @@ void draw_debug_info(Player *player,
         Render *render, ShaderProgram *program, FBO *fbo)
 {
     static str string[512] = {0};
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold, render, program, fbo);
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+            render, program, fbo, 1);
 
     snprintf(string, 511,
             "FPS: %d\n"
@@ -178,21 +179,25 @@ void draw_debug_info(Player *player,
     render_text(0x9f6f3fff);
 
     snprintf(string, 511,
+            "Game:     %s v%s\n"
             "Engine:   %s v%s\n"
             "Author:   %s\n"
             "OpenGL:   %s\n"
             "GLSL:     %s\n"
             "Vendor:   %s\n"
             "Renderer: %s\n",
-            ENGINE_NAME,
-            ENGINE_VERSION,
-            ENGINE_AUTHOR,
+            GAME_NAME, GAME_VERSION,
+            ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
             glGetString(GL_VERSION),
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
-    push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 6)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
     render_text(0x3f9f3fff);
+    stop_text();
+    start_text(0, 64.0f, &font_bold, render, program, fbo, 0);
+    push_text("LABUBU!", (v2f32){540.0f, MARGIN}, 0, 0);
+    render_text(0x9f3f3fff);
     stop_text();
 }
 

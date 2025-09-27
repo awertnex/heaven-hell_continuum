@@ -418,10 +418,12 @@ u8 init_text(void);
  * length = if 0, STRING_MAX is allocated;
  * size = font height in pixels;
  * color = hex format: 0xrrggbbaa;
+ * clear = clear the framebuffer before rendering;
  */
 void start_text(
         u64 length, f32 size, Font *font,
-        Render *render, ShaderProgram *program, FBO *fbo);
+        Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
+
 
 /*
  * push string's glyph metrics, position
@@ -441,8 +443,9 @@ void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 void render_text(u32 color);
 
 /*
- * cleanup and stop text rendering;
+ * cleanup for text rendering;
  * unbind text framebuffer;
+ * enable depth test;
  */
 void stop_text(void);
 

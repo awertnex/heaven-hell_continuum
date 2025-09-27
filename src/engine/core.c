@@ -759,7 +759,7 @@ cleanup:
 
 void start_text(
         u64 length, f32 size, Font *font,
-        Render *render, ShaderProgram *program, FBO *fbo)
+        Render *render, ShaderProgram *program, FBO *fbo, b8 clear)
 {
     if (!length)
         length = STRING_MAX;
@@ -784,7 +784,8 @@ void start_text(
     glBindTexture(GL_TEXTURE_2D, text_info.font->id);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
     glDisable(GL_DEPTH_TEST);
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (clear)
+        glClear(GL_COLOR_BUFFER_BIT);
     return;
 
 cleanup:
