@@ -406,9 +406,14 @@ b8 init_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
 
+/*
+ * init text rendering settings;
+ */
 u8 init_text(void);
 
 /*
+ * start text rendering batch;
+ *
  * length = pre-allocate buffer for string;
  * length = if 0, STRING_MAX is allocated;
  * size = font height in pixels;
@@ -418,10 +423,27 @@ void start_text(
         u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo);
 
+/*
+ * push string's glyph metrics, position
+ * and alignment to render buffer;
+ *
+ * can be called multiple times within a text rendering
+ * batch, chained with 'render_text()';
+ */
 void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
+/*
+ * render text to framebuffer;
+ *
+ * can be called multiple times within a text rendering
+ * batch, chained with 'push_text()';
+ */
 void render_text(u32 color);
 
+/*
+ * cleanup and stop text rendering;
+ * unbind text framebuffer;
+ */
 void stop_text(void);
 
 #endif /* ENGINE_CORE_H */
