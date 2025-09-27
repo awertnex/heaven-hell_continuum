@@ -167,7 +167,7 @@ int init_glfw(void)
         return -1;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     return 0;
@@ -195,9 +195,9 @@ int init_glad(void)
         return -1;
     }
 
-    if (GLVersion.major < 3 || (GLVersion.major == 3 && GLVersion.minor < 3))
+    if (GLVersion.major < 4 || (GLVersion.major == 4 && GLVersion.minor < 3))
     {
-        LOGFATAL("OpenGL 3.3+ Required, Current Version '%d.%d', Process Aborted\n", GLVersion.major, GLVersion.minor);
+        LOGFATAL("OpenGL 4.3+ Required, Current Version '%d.%d', Process Aborted\n", GLVersion.major, GLVersion.minor);
         return -1;
     }
 

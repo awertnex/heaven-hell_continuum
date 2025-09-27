@@ -112,31 +112,34 @@ void draw_debug_info(Player *player,
             render, program, fbo, 1);
 
     snprintf(string, 511,
-            "FPS: %d\n"
-            "FRAME TIME: %.2lf\n"
-            "FRAME DELTA: %.6lf\n",
-            (u32)(1.0f / render->frame_delta),
-            render->frame_start,
+            "FPS[%d]", (u32)(1.0f / render->frame_delta));
+    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+    render_text(0x6f9f3fff);
+
+    snprintf(string, 511,
+            "               FRAME TIME[%.2lf]",
+            render->frame_start);
+    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+    render_text(0x6f9f3fff);
+
+    snprintf(string, 511,
+            "                                   FRAME DELTA[%.5lf]",
             render->frame_delta);
     push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
     render_text(0x6f9f3fff);
 
     snprintf(string, 511,
-            "PLAYER NAME: %s\n"
-            "PLAYER XYZ: %.2f %.2f %.2f\n"
-            "PLAYER BLOCK: %d %d %d\n"
-            "PLAYER CHUNK: %d %d %d\n"
-            "PITCH: %.2f YAW: %.2f\n"
-            "BLOCK COUNT: 1\n"
-            "QUAD COUNT: 6\n"
-            "TRI COUNT: 12\n"
-            "VERTEX COUNT: a lot\n",
+            "PLAYER NAME[%-16s]\n"
+            "PLAYER XYZ[%.2f %.2f %.2f]\n"
+            "PLAYER BLOCK[%d %d %d]\n"
+            "PLAYER CHUNK[%d %d %d]\n"
+            "PITCH[%.2f] YAW[%.2f]\n",
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
             (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT}, 0, 0);
     render_text(0xffffffff);
 
     snprintf(string, 511,
@@ -155,15 +158,15 @@ void draw_debug_info(Player *player,
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 12)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 6)}, 0, 0);
     render_text(0x3f6f9fff);
 
     snprintf(string, 511,
-            "    Key [Space ]:\n"
-            "  Press [%d][%d] Press Double\n"
-            "   Hold [%d][%d] Hold Double\n"
-            "Release [%d][%d] Release Double\n"
-            " Listen [%d][%d] Listen Double\n\n",
+            "Key            [Space ]:\n"
+            "Press          [%d][%d] Press Double\n"
+            "Hold           [%d][%d] Hold Double\n"
+            "Release        [%d][%d] Release Double\n"
+            "Listen         [%d][%d] Listen Double\n\n",
             is_key_press(0),
             is_key_press_double(0),
             _is_key_hold(0),
@@ -172,7 +175,9 @@ void draw_debug_info(Player *player,
             _is_key_release_double(0),
             !keyboard_key[0],
             _is_key_listen_double(0));
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 20)}, 0, 0);
+    start_text(0, 32.0f, &font_mono_bold,
+            render, program, fbo, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 14)}, 0, 0);
     render_text(0x9f6f3fff);
 
     snprintf(string, 511,
@@ -189,6 +194,8 @@ void draw_debug_info(Player *player,
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+            render, program, fbo, 0);
     push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
     render_text(0x3f9f3fff);
     stop_text();

@@ -8,20 +8,35 @@
 
 /* ---- section: world stuff ------------------------------------------------ */
 
-#define CHUNK_DIAMETER              16
-#define CHUNK_VOLUME                (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
+#define CHUNK_DIAMETER 16
+#define CHUNK_VOLUME \
+    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
-#define WORLD_SEA_LEVEL             62
-#define WORLD_RADIUS                2048    /* chunk count */
-#define WORLD_RADIUS_VERTICAL       64      /* chunk count */
-#define WORLD_DIAMETER              ((WORLD_RADIUS * 2) + 1)
-#define WORLD_DIAMETER_VERTICAL     ((WORLD_RADIUS_VERTICAL * 2) + 1)
-#define WORLD_MAX_CHUNKS            (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
+#define WORLD_SEA_LEVEL 62
+#define WORLD_RADIUS 2048           /* chunk count */
+#define WORLD_RADIUS_VERTICAL 64    /* chunk count */
 
-#define CHUNK_BUF_RADIUS            SETTING_RENDER_DISTANCE_MAX
-#define CHUNK_BUF_DIAMETER          ((CHUNK_BUF_RADIUS * 2) + 1)
-#define CHUNK_BUF_LAYER             (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-#define CHUNK_BUF_VOLUME            (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+#define WORLD_DIAMETER \
+    ((WORLD_RADIUS * 2) + 1)
+
+#define WORLD_DIAMETER_VERTICAL \
+    ((WORLD_RADIUS_VERTICAL * 2) + 1)
+
+#define WORLD_MAX_CHUNKS \
+    (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
+
+#define CHUNK_BUF_RADIUS \
+    SETTING_RENDER_DISTANCE_MAX
+
+#define CHUNK_BUF_DIAMETER \
+    ((CHUNK_BUF_RADIUS * 2) + 1)
+
+#define CHUNK_BUF_LAYER \
+    (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+
+#define CHUNK_BUF_VOLUME \
+    (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
+
 #define CHUNK_TAB_CENTER \
     (CHUNK_BUF_RADIUS \
      + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) \
@@ -110,26 +125,31 @@ enum ChunkFlags
 
 typedef struct Chunk
 {
-    v3i16 pos;                      /* (world XYZ) / CHUNK_DIAMETER */
-    u64 id;                         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
-    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
+    u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
+    u32 block
+        [CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     Mesh mesh;
     u8 flag;
 } Chunk;
 
 /* ---- section: declarations ----------------------------------------------- */
 
-static Chunk *chunk_buf;                        /* chunk buffer, raw chunk data */
-static Chunk *chunk_tab[CHUNK_BUF_VOLUME];      /* chunk pointer look-up table */
-extern v3u16 chunk_tab_coordinates;             /* pointer arithmetic redundancy optimization */
-extern v3u32 block_coordinates;                 /* pointer arithmetic redundancy optimization */
-extern u16 chunk_tab_index;                     /* player relative chunk tab access */
-extern struct Globals
-{
-    u8 opacity;
-    u64 block_count;
-    u64 quad_count;
-} globals;
+/* 
+ * chunk buffer, raw chunk data */
+static Chunk *chunk_buf;
+/* 
+ * chunk pointer look-up table */
+static Chunk *chunk_tab[CHUNK_BUF_VOLUME];
+/* 
+ * pointer arithmetic redundancy optimization */
+extern v3u16 chunk_tab_coordinates;
+/* 
+ * pointer arithmetic redundancy optimization */
+extern v3u32 block_coordinates;
+/* 
+ * player relative chunk tab access */
+extern u16 chunk_tab_index;
 
 /* ---- section: getters & setters ------------------------------------------ */
 

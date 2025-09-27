@@ -1,9 +1,9 @@
-#version 330 core
+#version 440 core
+
+#define MAX_VERTICES 6
 
 layout (points) in;
 layout (triangle_strip, max_vertices = MAX_VERTICES) out;
-
-#define MAX_VERTICES 6
 
 in vec2 vs_tex_coords[];
 out vec2 tex_coords;

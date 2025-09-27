@@ -7,7 +7,12 @@
 
 v3u16 chunk_tab_coordinates;                    /* pointer arithmetic redundancy optimization */
 u16 chunk_tab_index = 0;                        /* player relative chunk tab access */
-struct Globals globals =
+static struct Globals
+{
+    u8 opacity;
+    u64 block_count;
+    u64 quad_count;
+} globals =
 {
     .opacity = 0,
     .block_count = 0,
