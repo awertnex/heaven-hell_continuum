@@ -11,14 +11,7 @@ out vec4 vertex_color;
 
 void main()
 {
-    float corner_offset = 0.2;
-    float scale = 0.08;
-
-    mat4 mat_transposition = mat4(
-            1.0,                            0.0,                    0.0,    0.0,
-            0.0,                            1.0,                    0.0,    0.0,
-            0.0,                            0.0,                    1.0,    0.0,
-            1.0 - (corner_offset / ratio),  1.0 - corner_offset,    0.0,    1.0);
+    float scale = 0.04;
 
     mat4 mat_offset = mat4(
             1.0, 0.0, 0.0, 0.0,
@@ -27,7 +20,6 @@ void main()
             -0.0025, -0.0025, -0.0025, 1.0);
 
     gl_Position =
-        mat_transposition *
         mat_projection *
         mat_orientation *
         mat_rotation *

@@ -29,13 +29,16 @@
 
 extern Font font;
 extern Font font_bold;
+extern Font font_mono;
+extern Font font_mono_bold;
 
 extern v2i16 hotbar_pos;
-extern f32 hotbar_slot_selected;
+extern u8 hotbar_slot_selected;
 extern v2i16 crosshair_pos;
 
 extern u16 menu_index;
 extern u16 menu_layer[5];
+extern u8 state_menu_depth;
 extern b8 is_menu_ready;
 extern u8 buttons[BTN_COUNT];
 enum MenuNames
@@ -102,32 +105,15 @@ enum ButtonNames
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-/* ---- section: debug info ------------------------------------------------- */
-
-enum StringsDebugInfo
-{
-    STR_DEBUG_INFO_FPS = 0,
-    STR_DEBUG_INFO_PLAYER_POS,
-    STR_DEBUG_INFO_PLAYER_BLOCK,
-    STR_DEBUG_INFO_PLAYER_CHUNK,
-    STR_DEBUG_INFO_PLAYER_DIRECTION,
-    STR_DEBUG_INFO_GAME_TICK,
-}; /* StringsDebugInfo */
-
-extern str str_debug_info[16][64];
-extern str str_block_count[32];
-extern str str_quad_count[32];
-extern str str_tri_count[32];
-extern str str_vertex_count[32];
-
 /* ---- section: signatures ------------------------------------------------- */
 
 b8 init_gui(void);
-void apply_render_settings();
 void update_render_settings(v2f32 render_size);
 void free_gui(void);
 
-void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation);
+void draw_debug_info(Player *player,
+        f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
+        Render *render, ShaderProgram *program, FBO *fbo);
 
 #if 0 // TODO: undef
 void update_menus(v2f32 render_size);

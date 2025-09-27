@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "h/gui.h"
 #include "h/chunking.h"
@@ -11,15 +12,16 @@
 
 Font font = {0};
 Font font_bold = {0};
-u8 font_size = 0;
-u8 text_row_height = 0;
+Font font_mono = {0};
+Font font_mono_bold = {0};
 
 v2i16 hotbar_pos;
-f32 hotbar_slot_selected = 1.0f;
+u8 hotbar_slot_selected = 1;
 v2i16 crosshair_pos;
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
+u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
@@ -28,7 +30,6 @@ str str_block_count[32];
 str str_quad_count[32];
 str str_tri_count[32];
 str str_vertex_count[32];
-u8 font_size_debug_info = 22;
 
 /* ---- section: functions -------------------------------------------------- */
 
@@ -56,16 +57,27 @@ void print_menu_layers()
 
 b8 init_gui(void)
 {
-    str font_path[PATH_MAX] = {0};
-    str font_path_bold[PATH_MAX] = {0};
+    str font_path[4][PATH_MAX] = {0};
 
-    snprintf(font_path, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+    snprintf(font_path[0], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+            "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf");
+    snprintf(font_path[1], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+            "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf");
+    snprintf(font_path[2], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
             "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
-    snprintf(font_path_bold, PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi_bold.ttf");
+    snprintf(font_path[3], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
+            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf");
 
-    if (!load_font(&font, FONT_RESOLUTION_DEFAULT, font_path) ||
-            !load_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path_bold))
+    normalize_slash(font_path[0]);
+    normalize_slash(font_path[1]);
+    normalize_slash(font_path[2]);
+    normalize_slash(font_path[3]);
+
+    if (
+            !init_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
+            !init_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
+            !init_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
+            !init_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
@@ -79,17 +91,6 @@ cleanup:
     return 1;
 }
 
-void apply_render_settings()
-{
-    settings = (Settings){
-            .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-            .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-            .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-            .target_fps =           SETTING_TARGET_FPS_DEFAULT,
-            .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
-        };
-}
-
 void update_render_settings(v2f32 render_size)
 {
 }
@@ -98,6 +99,99 @@ void free_gui(void)
 {
     free_font(&font);
     free_font(&font_bold);
+    free_font(&font_mono);
+    free_font(&font_mono_bold);
+}
+
+void draw_debug_info(Player *player,
+        f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
+        Render *render, ShaderProgram *program, FBO *fbo)
+{
+    static str string[512] = {0};
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+            render, program, fbo, 1);
+
+    snprintf(string, 511,
+            "FPS: %d\n"
+            "FRAME TIME: %.2lf\n"
+            "FRAME DELTA: %.6lf\n",
+            (u32)(1.0f / render->frame_delta),
+            render->frame_start,
+            render->frame_delta);
+    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+    render_text(0x6f9f3fff);
+
+    snprintf(string, 511,
+            "PLAYER NAME: %s\n"
+            "PLAYER XYZ: %.2f %.2f %.2f\n"
+            "PLAYER BLOCK: %d %d %d\n"
+            "PLAYER CHUNK: %d %d %d\n"
+            "PITCH: %.2f YAW: %.2f\n"
+            "BLOCK COUNT: 1\n"
+            "QUAD COUNT: 6\n"
+            "TRI COUNT: 12\n"
+            "VERTEX COUNT: a lot\n",
+            player->name,
+            player->pos.x, player->pos.y, player->pos.z,
+            (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
+            player->chunk.x, player->chunk.y, player->chunk.z,
+            player->pitch, player->yaw);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3)}, 0, 0);
+    render_text(0xffffffff);
+
+    snprintf(string, 511,
+            "MOUSE XY: %.2f %.2f\n"
+            "DELTA XY: %.2f %.2f\n"
+            "RENDER RATIO: %.4f\n"
+            "TICKS: %"PRId64" DAYS: %"PRId64"\n"
+            "SKYBOX TIME: %.2f\n"
+            "Lgbubu!labubu!\n"
+            "SKYBOX RGB: %.2f %.2f %.2f\n"
+            "SUN ANGLE: %.2f %.2f %.2f\n",
+            render->mouse_position.x, render->mouse_position.y,
+            render->mouse_delta.x, render->mouse_delta.y,
+            (f32)render->size.x / render->size.y,
+            game_tick, game_days,
+            skybox_time,
+            skybox_color.x, skybox_color.y, skybox_color.z,
+            sun_rotation.x, sun_rotation.y, sun_rotation.z);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 12)}, 0, 0);
+    render_text(0x3f6f9fff);
+
+    snprintf(string, 511,
+            "    Key [Space ]:\n"
+            "  Press [%d][%d] Press Double\n"
+            "   Hold [%d][%d] Hold Double\n"
+            "Release [%d][%d] Release Double\n"
+            " Listen [%d][%d] Listen Double\n\n",
+            is_key_press(0),
+            is_key_press_double(0),
+            _is_key_hold(0),
+            _is_key_hold_double(0),
+            _is_key_release(0),
+            _is_key_release_double(0),
+            !keyboard_key[0],
+            _is_key_listen_double(0));
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 20)}, 0, 0);
+    render_text(0x9f6f3fff);
+
+    snprintf(string, 511,
+            "Game:     %s v%s\n"
+            "Engine:   %s v%s\n"
+            "Author:   %s\n"
+            "OpenGL:   %s\n"
+            "GLSL:     %s\n"
+            "Vendor:   %s\n"
+            "Renderer: %s\n",
+            GAME_NAME, GAME_VERSION,
+            ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
+            glGetString(GL_VERSION),
+            glGetString(GL_SHADING_LANGUAGE_VERSION),
+            glGetString(GL_VENDOR),
+            glGetString(GL_RENDERER));
+    push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
+    render_text(0x3f9f3fff);
+    stop_text();
 }
 
 #ifdef FUCK // TODO: undef FUCK
@@ -169,11 +263,11 @@ void update_menus(v2f32 render_size)
 
             draw_text(font, GAME_VERSION,
                     (v2i16){6, render_size.y - 3},
-                    font_size, 2, 0, 2, COL_TEXT_DEFAULT);
+                    FONT_SIZE_DEFAULT, 2, 0, 2, COL_TEXT_DEFAULT);
 
             draw_text(font, GAME_AUTHOR,
                     (v2i16){render_size.x - 2, render_size.y - 3},
-                    font_size, 2, 2, 2, COL_TEXT_DEFAULT);
+                    FONT_SIZE_DEFAULT, 2, 2, 2, COL_TEXT_DEFAULT);
 
             rlBegin(RL_QUADS);
 
@@ -334,61 +428,7 @@ void draw_hud()
     rlEnd();
     rlSetTexture(0);
 }
-#endif // TODO: undef FUCK
 
-void draw_debug_info(Render *render, Player *player, f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation)
-{
-    str string[512] = {0};
-
-    snprintf(string, 511,
-            "FPS: %d\n"
-            "PLAYER NAME: %s\n"
-            "PLAYER XYZ: %.2f %.2f %.2f\n"
-            "PLAYER BLOCK: %d %d %d\n"
-            "PLAYER CHUNK: %d %d %d\n"
-            "PITCH: %.2f YAW: %.2f\n"
-            "BLOCK COUNT: 1\n"
-            "QUAD COUNT: 6\n"
-            "TRI COUNT: 12\n"
-            "VERTEX COUNT: a lot\n",
-
-            (u32)(1.0f / render->frame_delta),
-            player->name,
-            player->pos.x, player->pos.y, player->pos.z,
-            (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
-            player->chunk.x, player->chunk.y, player->chunk.z,
-            player->pitch, player->yaw);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN, 0.0f}, (v4u8){0xff, 0xff, 0xff, 0xff}, 0, 0);
-
-    snprintf(string, 511,
-            "MOUSE XY: %.2f %.2f\n"
-            "DELTA XY: %.2f %.2f\n"
-            "RENDER RATIO: %.4f\n"
-            "TICKS: %ld DAYS: %ld\n"
-            "SKYBOX TIME: %.2f\n"
-            "Lgbubu!labubu!\n"
-            "SKYBOX RGB: %.2f %.2f %.2f\n"
-            "SUN ANGLE: %.2f %.2f %.2f\n",
-
-            render->mouse_position.x, render->mouse_position.y,
-            render->mouse_delta.x, render->mouse_delta.y,
-            (f32)render->size.x / render->size.y,
-            game_tick, game_days,
-            skybox_time,
-            skybox_color.x, skybox_color.y, skybox_color.z,
-            sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 11, 0.0f}, (v4u8){0x3f, 0x6f, 0x9f, 0xff}, 0, 0);
-
-    snprintf(string, 255,
-            "FRAME TIME: %.2lf\n"
-            "FRAME DELTA: %.6lf\n",
-
-            render->frame_start,
-            render->frame_delta);
-    draw_text(render, &font, string, FONT_SIZE_DEFAULT, (v3f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT * 20, 0.0f}, (v4u8){0x6f, 0x9f, 0x3f, 0xff}, 0, 0);
-}
-
-#ifdef FUCK // TODO: undef FUCK
 float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
@@ -650,7 +690,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
         if (str)
             draw_text(font, str,
                     (v2i16){pos.x + ((button.width * setting.gui_scale) / 2), pos.y + ((button.height * setting.gui_scale) / 2)},
-                    font_size, 1, align_x, align_y, COL_TEXT_DEFAULT);
+                    FONT_SIZE_DEFAULT, 1, align_x, align_y, COL_TEXT_DEFAULT);
 
     } else draw_texture(texture, button_inactive, pos, 
             (v2i16){setting.gui_scale, setting.gui_scale},

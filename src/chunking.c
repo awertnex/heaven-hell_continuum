@@ -5,8 +5,6 @@
 #include "h/chunking.h"
 #include "h/logic.h"
 
-Chunk *chunk_buf = {0};                         /* chunk buffer, raw chunk data */
-Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {NULL};    /* chunk pointer look-up table */
 v3u16 chunk_tab_coordinates;                    /* pointer arithmetic redundancy optimization */
 u16 chunk_tab_index = 0;                        /* player relative chunk tab access */
 struct Globals globals =
@@ -20,7 +18,6 @@ u8 init_chunking(void)
 {
     if (!mem_alloc_memb((void*)&chunk_buf, CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
         goto cleanup;
-
     return 0;
 
 cleanup:
@@ -291,7 +288,6 @@ Chunk *pop_chunk_buf(u16 index)
 void update_chunk_tab(v3i16 player_delta_chunk)
 {
     v3u16 coordinates = {0};
-
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         coordinates =
@@ -304,6 +300,11 @@ void update_chunk_tab(v3i16 player_delta_chunk)
         if (distance_v3i32(
                     (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v3i32){coordinates.x, coordinates.y, coordinates.z})
+                /* 
+                 * don't touch these numbers,
+                 * power of two makes render distance proportional,
+                 * plus two adds a little padding and makes the circle look plump
+                 */
                 < ((u32)powf(settings.render_distance, 2) + 2))
         {
             if (chunk_tab[i] == NULL)
@@ -507,16 +508,12 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
 }
 
 #ifdef FUCK // TODO: undef FUCK
-void draw_chunk_tab(Texture *tex /*temp texturing*/)
+void draw_chunk_tab(void)
 {
     if (state & FLAG_DEBUG_MORE)
         globals.opacity = 200;
     else
         globals.opacity = 255;
-
-    rlPushMatrix();
-    rlSetTexture(tex->id); /*temp texturing*/
-    rlBegin(RL_QUADS);
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {

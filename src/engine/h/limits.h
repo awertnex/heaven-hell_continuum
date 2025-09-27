@@ -5,6 +5,7 @@
     #include <linux/limits.h>
 #elif defined(__WIN32) || defined(__WIN64) || defined (__CYGWIN__)
     #define NAME_MAX 255
+    #include <limits.h>
 #endif /* PLATFORM */
 
 #define U8_MAX 255
@@ -23,7 +24,12 @@
 #define I64_MAX 9223372036854775807
 #define I64_MIN (-I8_MAX - 1)
 
-#define GLYPH_MAX   256
+#define STRING_MAX          2048
+#define STRINGF_BUFFERS_MAX 8
+#define IN_STRING_MAX       STRING_MAX
+#define OUT_STRING_MAX      (STRING_MAX * 2)
+#define GLYPH_MAX           256
+
 
 #endif /* ENGINE_LIMITS_H */
 

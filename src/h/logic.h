@@ -5,28 +5,30 @@
 
 /* ---- section: player defaults -------------------------------------------- */
 
-static const f32 PLAYER_JUMP_HEIGHT =      1.25f;
-static const f32 PLAYER_SPEED_WALK =       3.0f;
-static const f32 PLAYER_SPEED_FLY =        18.0f;
-static const f32 PLAYER_SPEED_FLY_FAST =   40.0f;
-static const f32 PLAYER_SPEED_SNEAK =      1.8f;
-static const f32 PLAYER_SPEED_SPRINT =     9.0f;
+static const f32 PLAYER_JUMP_HEIGHT =      8.0f;
+static const f32 PLAYER_SPEED_WALK =       3.5f;
+static const f32 PLAYER_SPEED_FLY =        9.0f;
+static const f32 PLAYER_SPEED_FLY_FAST =   18.0f;
+static const f32 PLAYER_SPEED_SNEAK =      1.5f;
+static const f32 PLAYER_SPEED_SPRINT =     7.0f;
 
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
     v3f32 pos;                      /* player current coordinates in world */
+    v3f32 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
     f32 pitch, yaw;                 /* for player camera direction and target */
-    f32 sin_pitch, cos_pitch;       /* processed player pitch angles */
-    f32 sin_yaw, cos_yaw;           /* processed player yaw angles */
+    f32 sin_pitch;                  /* processed player pitch sine angle */
+    f32 cos_pitch;                  /* processed player pitch cosine angle */
+    f32 sin_yaw;                    /* processed player yaw sine angle */
+    f32 cos_yaw;                    /* processed player yaw cosine angle */
     f32 eye_height;                 /* height of player camera, usually */
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
     f32 movement_speed;             /* depends on enum: PlayerFlags */
-    f32 movement_step_length;
     u64 container_state;            /* enum: ContainerFlags */
     u8 perspective;                 /* camera perspective mode */
     u16 state;                      /* enum: PlayerFlags */
@@ -37,7 +39,7 @@ typedef struct Player
     /* TODO: do player overflow */
     u8 overflow;                    /* player at world edge, enum: PlayerFlags */
     v3i32 delta_pos;                /* for collision tunneling prevention */
-    v3i32 delta_target;
+    v3i32 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
     v3i16 delta_chunk;              /* previous chunk player was in */
 
@@ -118,10 +120,16 @@ extern Player lily;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-bool get_double_press(u32 key);
 void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
+
+static inline void set_player_pos(Player *player, f32 x, f32 y, f32 z)
+{player->pos = (v3f32){x, y, z};}
+
+static inline void set_player_block(Player *player, i32 x, i32 y, i32 z)
+{player->pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};}
+
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void player_kill(Player *player);
