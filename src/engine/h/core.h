@@ -21,7 +21,7 @@
 
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
-#define FONT_SIZE_DEFAULT 48.0f
+#define FONT_SIZE_DEFAULT 22.0f
 
 enum KeyboardKeyState
 {
@@ -205,6 +205,13 @@ typedef struct ShaderProgram
     Shader fragment;
 } ShaderProgram;
 
+typedef struct FBO
+{
+    GLuint fbo;
+    GLuint color_buf;
+    GLuint rbo;
+} FBO;
+
 typedef struct Camera
 {
     v3f32 pos;
@@ -236,9 +243,19 @@ typedef struct Glyph
     v2i32 bearing;
     i32 advance;
     i32 x0, y0, x1, y1;
-    v2i32 texture_sample;
+    v2f32 texture_sample;
     b8 loaded;
 } Glyph;
+
+typedef struct Glyphf
+{
+    v2f32 scale;
+    v2f32 bearing;
+    f32 advance;
+    f32 x0, y0, x1, y1;
+    v2f32 texture_sample;
+    b8 loaded;
+} Glyphf;
 
 typedef struct Font
 {
@@ -263,8 +280,7 @@ typedef struct Font
     {
         GLint char_size;
         GLint font_size;
-        GLint ndc_size;
-        GLint offset;
+        GLint screen_size;
         GLint advance;
         GLint bearing;
         GLint text_color;
@@ -298,9 +314,9 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
+int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo, b8 flip_vertical);
 
-int realloc_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo);
+int realloc_fbo(Render *render, FBO *fbo);
 
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
@@ -391,6 +407,14 @@ static inline b8 is_key_release(const u32 key)
 b8 init_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
+
+u8 init_text(void);
+
+void start_text(u64 length, Render *render);
+
+void push_text(const str *text, f32 size, v2f32 pos, i8 align_x, i8 align_y, Font *font);
+
+void render_text(f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y, Font *font, ShaderProgram *program, FBO *fbo);
 
 /*
  * does update Font.projection;

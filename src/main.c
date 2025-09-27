@@ -120,35 +120,14 @@ struct /* skybox_data */
     v3f32 color;
 } skybox_data;
 
-GLuint fbo_skybox;
-GLuint fbo_world;
-GLuint fbo_hud;
-GLuint fbo_text;
-
-GLuint color_buf_skybox;
-GLuint color_buf_world;
-GLuint color_buf_hud;
-GLuint color_buf_text;
-
-GLuint rbo_skybox;
-GLuint rbo_world;
-GLuint rbo_hud;
-GLuint rbo_text;
+FBO fbo_skybox;
+FBO fbo_world;
+FBO fbo_hud;
+FBO fbo_text;
 
 Mesh mesh_fbo = {0};
-Mesh mesh_fbo_flipped = {0};
-
-#define VBO_LEN_SKYBOX  24
-#define EBO_LEN_SKYBOX  36
 Mesh mesh_skybox = {0};
-
-#define VBO_LEN_COH     24
-#define EBO_LEN_COH     36
 Mesh mesh_cube_of_happiness = {0};
-
-#define VBO_LEN_GIZMO   51
-#define EBO_LEN_GIZMO   90
-#define GIZMO_CORNER_OFFSET 0.2f
 Mesh mesh_gizmo = {0};
 
 /* ---- section: callbacks -------------------------------------------------- */
@@ -163,7 +142,7 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
 
 /* ---- section: signatures ------------------------------------------------- */
 
-// void some_weird_shit(f32 unit_x, f32 unit_y);
+void some_weird_shit(f32 unit_x, f32 unit_y);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_input(Player *player);
@@ -181,10 +160,10 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
-    realloc_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox);
-    realloc_fbo(&render, &fbo_world, &color_buf_world, &rbo_world);
-    realloc_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud);
-    realloc_fbo(&render, &fbo_text, &color_buf_text, &rbo_text);
+    realloc_fbo(&render, &fbo_skybox);
+    realloc_fbo(&render, &fbo_world);
+    realloc_fbo(&render, &fbo_hud);
+    realloc_fbo(&render, &fbo_text);
 }
 
 static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
@@ -212,52 +191,33 @@ static void gl_key_callback(GLFWwindow *window, int key, int scancode, int actio
         else
             disable_cursor;
     }
-
-#if 0 // TODO: maybe remove
-    /* ---- some weird shit ------------------------------------------------- */
-    if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        some_weird_shit(0.0f, 1.0f);
-    if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        some_weird_shit(0.0f, -1.0f);
-    if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        some_weird_shit(1.0f, 0.0f);
-    if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
-        some_weird_shit(-1.0f, 0.0f);
-#endif
 }
 
-#if 0 // TODO: maybe remove
 void some_weird_shit(f32 unit_x, f32 unit_y)
 {
-    GLfloat vbo_data_coh[] =
+    for (u32 i = 0; i < 8; ++i)
     {
-        mesh_cube_of_happiness.vbo_data[0] + unit_x, mesh_cube_of_happiness.vbo_data[1] + unit_y, 0.0f,
-        mesh_cube_of_happiness.vbo_data[3] + unit_x, mesh_cube_of_happiness.vbo_data[4] + unit_y, 0.0f,
-        mesh_cube_of_happiness.vbo_data[6] + unit_x, mesh_cube_of_happiness.vbo_data[7] + unit_y, 0.0f,
-        mesh_cube_of_happiness.vbo_data[9] + unit_x, mesh_cube_of_happiness.vbo_data[10] + unit_y, 0.0f,
-        mesh_cube_of_happiness.vbo_data[12] + unit_x, mesh_cube_of_happiness.vbo_data[13] + unit_y, 1.0f,
-        mesh_cube_of_happiness.vbo_data[15] + unit_x, mesh_cube_of_happiness.vbo_data[16] + unit_y, 1.0f,
-        mesh_cube_of_happiness.vbo_data[18] + unit_x, mesh_cube_of_happiness.vbo_data[19] + unit_y, 1.0f,
-        mesh_cube_of_happiness.vbo_data[21] + unit_x, mesh_cube_of_happiness.vbo_data[22] + unit_y, 1.0f,
-    };
+        mesh_cube_of_happiness.vbo_data[i * 3] += (unit_x * render.frame_delta);
+        mesh_cube_of_happiness.vbo_data[(i * 3) + 1] += (unit_y * render.frame_delta);
+    }
 
-    GLuint ebo_data_coh[] =
-    {
-        0, 4, 5, 5, 1, 0,
-        1, 5, 7, 7, 3, 1,
-        3, 7, 6, 6, 2, 3,
-        2, 6, 4, 4, 0, 2,
-        4, 6, 7, 7, 5, 4,
-        0, 1, 3, 3, 2, 0,
-    };
-
-    generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
-            vbo_data_coh, ebo_data_coh);
+    glBindVertexArray(mesh_cube_of_happiness.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh_cube_of_happiness.vbo);
+    glBufferData(GL_ARRAY_BUFFER, mesh_cube_of_happiness.vbo_len * sizeof(GLfloat), mesh_cube_of_happiness.vbo_data, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
+#if 0 // TODO: maybe remove
 #endif
 
 void generate_standard_meshes()
 {
+    const u32 VBO_LEN_SKYBOX        = 24;
+    const u32 EBO_LEN_SKYBOX        = 36;
+    const u32 VBO_LEN_COH           = 24;
+    const u32 EBO_LEN_COH           = 36;
+    const u32 VBO_LEN_GIZMO         = 51;
+    const u32 EBO_LEN_GIZMO         = 90;
+
     GLfloat vbo_data_skybox[] =
     {
         -1.0f, -1.0f, -1.0f,
@@ -302,7 +262,7 @@ void generate_standard_meshes()
         0, 1, 3, 3, 2, 0,
     };
 
-    GLfloat THIC = 0.06f;
+    const GLfloat THIC = 0.06f;
     GLfloat vbo_data_gizmo[] =
     {
         0.0f, 0.0f, 0.0f,
@@ -368,34 +328,28 @@ void bind_shader_uniforms(void)
 {
     font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
-    font.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
     font.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
     font.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
-    font_bold.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font_bold.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
     font_bold.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
     font_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_mono.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
-    font_mono.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
+    font_mono.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
     font_mono.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
     font_mono.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
     font_mono.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     font_mono_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
     font_mono_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono_bold.uniform.ndc_size = glGetUniformLocation(shader_text.id, "ndc_size");
-    font_mono_bold.uniform.offset = glGetUniformLocation(shader_text.id, "offset");
-    font_mono_bold.uniform.advance = glGetUniformLocation(shader_text.id, "advance");
-    font_mono_bold.uniform.bearing = glGetUniformLocation(shader_text.id, "bearing");
+    font_mono_bold.uniform.screen_size = glGetUniformLocation(shader_text.id, "screen_size");
     font_mono_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
 
     uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
@@ -419,6 +373,20 @@ void bind_shader_uniforms(void)
 
 void update_input(Player *player)
 {
+
+    /* ---- some weird shit ------------------------------------------------- */
+    if (is_key_press(KEY_ENTER))
+        some_weird_shit(0.0f, 0.0f);
+    if (is_key_hold(KEY_LEFT))
+        some_weird_shit(0.0f, 1.0f);
+    if (is_key_hold(KEY_RIGHT))
+        some_weird_shit(0.0f, -1.0f);
+    if (is_key_hold(KEY_UP))
+        some_weird_shit(1.0f, 0.0f);
+    if (is_key_hold(KEY_DOWN))
+        some_weird_shit(-1.0f, 0.0f);
+#if 0 // TODO: maybe remove
+#endif
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
     {
@@ -559,7 +527,7 @@ b8 init_world(str *string)
     if (init_chunking() != 0) return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 0, 0, 0);
+    set_player_block(&lily, -3, 0, 0);
     update_chunk_tab(lily.chunk);
 
     lily.delta_target =
@@ -581,7 +549,7 @@ void update_world(Player *player)
         ++game_days;
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
         show_cursor;
-    else disable_cursor;
+    //else disable_cursor;
 
     update_collision_static(&lily);
     update_camera_movement_player(&render, player);
@@ -670,46 +638,42 @@ void draw_hud(Player *player)
 
 void draw_everything(Player *player)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     draw_skybox(player);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_world(player);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud(player);
 
     if (state & FLAG_DEBUG)
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_text);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(shader_text.id);
-        glBindVertexArray(mesh_fbo_flipped.vao);
-        glBindTexture(GL_TEXTURE_2D, font_mono_bold.id);
-        draw_debug_info(&render, player, skybox_data.time, skybox_data.color, skybox_data.sun_rotation);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        start_text(0, &render);
+        push_text("Lgbubu!!", 50.0f, (v2f32){30.0f, 0.0f}, 0, 0, &font_mono_bold);
+        render_text(100.0f, (v3f32){0.0f, 0.0f, 0.0f}, 0x6f9f3fff, 0, 0, &font_mono_bold, &shader_text, &fbo_text);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_fbo.id);
     glBindVertexArray(mesh_fbo.vao);
     glDisable(GL_DEPTH_TEST);
-    glBindTexture(GL_TEXTURE_2D, color_buf_skybox);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindTexture(GL_TEXTURE_2D, color_buf_world);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindTexture(GL_TEXTURE_2D, color_buf_hud);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     if (state & FLAG_DEBUG)
     {
-        glBindTexture(GL_TEXTURE_2D, color_buf_text);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+
+    glBindVertexArray(0);
 }
 
 /* ---- section: testing ---------------------------------------------------- */
@@ -717,13 +681,23 @@ void draw_everything(Player *player)
 void render_font_atlas_example(void)
 {
     glUseProgram(shader_text.id);
-    glBindVertexArray(mesh_fbo_flipped.vao);
+    glBindVertexArray(mesh_fbo.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
     draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, 0xffffffff, 0, 0);
     draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, 0xffffffff, 0, 0);
     draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, 0xffffffff, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+b8 init_text_example(void)
+{
+    return TRUE;
+}
+
+b8 render_text_example(void)
+{
+    return TRUE;
 }
 
 /* ---- section: main ------------------------------------------------------- */
@@ -801,10 +775,10 @@ int main(int argc, char **argv)
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_voxel) != 0 ||
-            init_fbo(&render, &fbo_skybox, &color_buf_skybox, &rbo_skybox, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_world, &color_buf_world, &rbo_world, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_hud, &color_buf_hud, &rbo_hud, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_text, &color_buf_text, &rbo_text, &mesh_fbo_flipped, 1) != 0)
+            init_fbo(&render, &fbo_skybox, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_world, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_hud, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_text, &mesh_fbo, 0) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
@@ -813,9 +787,10 @@ int main(int argc, char **argv)
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (init_gui() != 0)
+    if (init_gui() != 0 ||
+            init_text() != 0)
         goto cleanup;
 
     //init_super_debugger(&render.size); /*temp off*/
@@ -839,7 +814,12 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
     if (!(state & FLAG_WORLD_LOADED))
             init_world("Poop Consistency Tester");
+
     generate_standard_meshes();
+
+    if (!init_text_example() ||
+            !render_text_example())
+        goto cleanup;
 
     while (!glfwWindowShouldClose(render.window))
     {
@@ -867,14 +847,14 @@ cleanup: /* ----------------------------------------------------------------- */
 
     free_gui();
     free_mesh(&mesh_fbo);
-    free_mesh(&mesh_fbo_flipped);
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
-    free_fbo(&fbo_skybox, &color_buf_skybox, &rbo_skybox);
-    free_fbo(&fbo_world, &color_buf_world, &rbo_world);
-    free_fbo(&fbo_hud, &color_buf_hud, &rbo_hud);
-    free_fbo(&fbo_text, &color_buf_text, &rbo_text);
+    free_fbo(&fbo_skybox.fbo, &fbo_skybox.color_buf, &fbo_skybox.rbo);
+    free_fbo(&fbo_world.fbo, &fbo_world.color_buf, &fbo_world.rbo);
+    free_fbo(&fbo_hud.fbo, &fbo_hud.color_buf, &fbo_hud.rbo);
+    free_fbo(&fbo_text.fbo, &fbo_text.color_buf, &fbo_text.rbo);
+    free_text();
     glDeleteProgram(shader_fbo.id);
     glDeleteProgram(shader_default.id);
     glDeleteProgram(shader_text.id);

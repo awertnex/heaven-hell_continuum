@@ -2,10 +2,7 @@
 #define ENGINE_MEMORY_H
 
 #include "defines.h"
-
-#define STRINGF_BUFFERS_MAX 8
-#define IN_STRING_MAX 2048
-#define OUT_STRING_MAX 4096
+#include "limits.h"
 
 #define arr_len(arr)    ((u64)sizeof(arr) / sizeof(arr[0]))
 

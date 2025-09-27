@@ -70,7 +70,7 @@ b8 mem_realloc(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Denied, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
@@ -91,7 +91,7 @@ b8 mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Denied, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 

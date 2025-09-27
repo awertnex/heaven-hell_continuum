@@ -140,6 +140,20 @@ u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
     GLFW_KEY_MENU,
 }; /* keyboard_tab */
 
+/* ---- section: declarations ----------------------------------------------- */
+
+static Mesh mesh_text = {0};
+static struct TextInfo
+{
+    /* 
+     * current cursor position between start_text()
+     * and render_text() for internal buffer
+     */
+    GLuint cursor;
+    v2f32 screen_size;
+    Glyphf glyph[GLYPH_MAX];
+} text_info;
+
 /* ---- section: windowing -------------------------------------------------- */
 
 int init_glfw(void)
@@ -266,33 +280,33 @@ int init_shader_program(const str *shaders_dir, ShaderProgram *program)
 
 /* ---- section: meat ------------------------------------------------------- */
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical)
+int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo, b8 flip_vertical)
 {
-    free_fbo(fbo, color_buf, rbo);
+    free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
 
-    glGenFramebuffers(1, fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
+    glGenFramebuffers(1, &fbo->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
 
     /* ---- color buffer ---------------------------------------------------- */
-    glGenTextures(1, color_buf);
-    glBindTexture(GL_TEXTURE_2D, *color_buf);
+    glGenTextures(1, &fbo->color_buf);
+    glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *color_buf, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo->color_buf, 0);
 
     /* ---- render buffer --------------------------------------------------- */
-    glGenRenderbuffers(1, rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
+    glGenRenderbuffers(1, &fbo->rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, render->size.x, render->size.y);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, *rbo);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->rbo);
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", *fbo, status);
+        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", fbo->fbo, status);
         return -1;
     }
 
@@ -301,15 +315,13 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     /* ---- mesh data ------------------------------------------------------- */
     if (mesh_fbo == NULL || mesh_fbo->vbo_data != NULL) return 0;
 
-    mesh_fbo->vbo_len = 24;
+    mesh_fbo->vbo_len = 16;
     GLfloat vbo_data[] =
     {
         -1.0f, -1.0f, 0.0f, 0.0f,
         -1.0f, 1.0f, 0.0f, 1.0f,
         1.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 1.0f,
         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f,
     };
 
     if (flip_vertical)
@@ -317,9 +329,7 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
         vbo_data[3] = 1.0f;
         vbo_data[7] = 0.0f;
         vbo_data[11] = 0.0f;
-        vbo_data[15] = 0.0f;
-        vbo_data[19] = 1.0f;
-        vbo_data[23] = 1.0f;
+        vbo_data[15] = 1.0f;
     }
 
     if (!mem_alloc((void*)&mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len, "mesh_fbo.vbo_data"))
@@ -345,37 +355,26 @@ int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *
     return 0;
 
 cleanup:
-    free_fbo(fbo, color_buf, rbo);
+    free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
     free_mesh(mesh_fbo);
     return -1;
 }
 
-int realloc_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo)
+int realloc_fbo(Render *render, FBO *fbo)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
-    free_fbo(0, color_buf, rbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
 
-    /* ---- color buffer ---------------------------------------------------- */
-    glGenTextures(1, color_buf);
-    glBindTexture(GL_TEXTURE_2D, *color_buf);
+    glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *color_buf, 0);
 
-    /* ---- render buffer --------------------------------------------------- */
-    glGenRenderbuffers(1, rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, render->size.x, render->size.y);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", fbo, status);
-        free_fbo(fbo, color_buf, rbo);
+        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n", &fbo->fbo, status);
+        free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
         return -1;
     }
 
@@ -624,13 +623,13 @@ b8 init_font(Font *font, u32 resolution, const str *font_path)
 {
     if (resolution <= 2)
     {
-        LOGERROR("Font Loading '%s' Failed, Font Size Too Small\n", font_path);
+        LOGERROR("Font Initialization '%s' Failed, Font Size Too Small\n", font_path);
         return FALSE;
     }
 
     if (strlen(font_path) >= PATH_MAX)
     {
-        LOGERROR("Font Loading '%s' Failed, Font Path Too Long\n", font_path);
+        LOGERROR("Font Initialization '%s' Failed, Font Path Too Long\n", font_path);
         return FALSE;
     }
 
@@ -643,7 +642,7 @@ b8 init_font(Font *font, u32 resolution, const str *font_path)
 
     if (!stbtt_InitFont(&font->info, font->buf, 0))
     {
-        LOGINFO("Font Initializing '%s' Failed\n", font_path);
+        LOGERROR("Font Initializing '%s' Failed, 'stbtt_InitFont' Failed\n", font_path);
         goto cleanup;
     }
 
@@ -677,8 +676,8 @@ b8 init_font(Font *font, u32 resolution, const str *font_path)
         (g->scale.x > font->scale.x) ? font->scale.x = g->scale.x : 0;
         (g->scale.y > font->scale.y) ? font->scale.y = g->scale.y : 0;
 
-        u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
         u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
+        u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
         if (!stbtt_IsGlyphEmpty(&font->info, glyph_index))
         {
             stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas, resolution, resolution, resolution, scale, scale, 0.0f, 0.0f, glyph_index);
@@ -695,8 +694,8 @@ b8 init_font(Font *font, u32 resolution, const str *font_path)
             }
             mem_zero((void*)&canvas, resolution * resolution, "font_glyph_canvas");
         }
-        g->texture_sample.x = col * resolution;
-        g->texture_sample.y = row * resolution;
+        g->texture_sample.x = col * font->char_size;
+        g->texture_sample.y = row * font->char_size;
         font->glyph[i].loaded = TRUE;
     }
 
@@ -721,16 +720,209 @@ void free_font(Font *font)
     *font = (Font){0};
 }
 
-void start_text()
+/* ---- section: text ------------------------------------------------------- */
+
+u8 init_text(void)
 {
+    if (!mem_alloc((void*)&mesh_text.vbo_data, STRING_MAX * sizeof(GLfloat) * 4, "mesh_text.vbo_data"))
+        goto cleanup;
+    mesh_text.vbo_len = STRING_MAX * 4;
+    mesh_text.ebo_len = STRING_MAX;
+
+    if (!mesh_text.vao)
+    {
+        glGenVertexArrays(1, &mesh_text.vao);
+        glGenBuffers(1, &mesh_text.vbo);
+
+        glBindVertexArray(mesh_text.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, mesh_text.vbo);
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    return 0;
+
+cleanup:
+    free_mesh(&mesh_text);
+    LOGFATAL("%s\n", "Failed to Initialize Text, Process Aborted");
+    return -1;
 }
 
-void push_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y)
+void start_text(u64 length, Render *render)
 {
+    text_info.cursor = 0;
+    if (!length)
+        length = STRING_MAX;
+    else if (length > mesh_text.ebo_len)
+    {
+        if (!mem_realloc((void*)&mesh_text.vbo_data,
+                    length * sizeof(GLfloat) * 4,
+                    "mesh_text.vbo_data"))
+            goto cleanup;
+        mesh_text.vbo_len = length * 4;
+        mesh_text.ebo_len = length;
+    }
+
+    text_info.screen_size.x = 2.0f / render->size.x;
+    text_info.screen_size.y = 2.0f / render->size.y;
+    return;
+
+cleanup:
+    free_mesh(&mesh_text);
+    LOGERROR("%s\n", "Failed to Start Text");
 }
 
-void stop_text()
+void push_text(const str *text, f32 size, v2f32 pos, i8 align_x, i8 align_y, Font *font)
 {
+    if (!mesh_text.vbo_data)
+    {
+        LOGERROR("%s\n", "Failed to Push Text, 'mesh_text.vbo_data' Null");
+        return;
+    }
+
+    u64 len = strlen(text);
+    if (len >= STRING_MAX)
+    {
+        LOGERROR("%s\n", "Failed to Push Text, Text Too Long");
+        return;
+    }
+
+    if (text_info.cursor + len >= mesh_text.ebo_len)
+    {
+        if (!mem_realloc((void*)&mesh_text.vbo_data,
+                    (mesh_text.vbo_len + STRING_MAX) * sizeof(GLfloat) * 4,
+                    "mesh_text.vbo_data"))
+        {
+            free_mesh(&mesh_text);
+            LOGERROR("%s\n", "Failed to Push Text");
+        }
+        mesh_text.vbo_len += STRING_MAX * 4;
+        mesh_text.ebo_len += STRING_MAX;
+    }
+
+    Glyphf *g = NULL;
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
+    v2f32 font_size =
+    {
+        size * text_info.screen_size.x * 0.5f,
+        size * text_info.screen_size.y * 0.5f,
+    };
+    v2f32 ndc_size =
+    {
+        scale * text_info.screen_size.x,
+        scale * text_info.screen_size.y,
+    };
+
+    for (u64 i = 0; i < GLYPH_MAX; ++i)
+    {
+        if (!font->glyph[i].loaded)
+            continue;
+
+        text_info.glyph[i].bearing.x = font->glyph[i].bearing.x * ndc_size.x;
+        text_info.glyph[i].bearing.y = font->glyph[i].bearing.y * ndc_size.y;
+        text_info.glyph[i].advance = font->glyph[i].advance * ndc_size.x;
+        text_info.glyph[i].texture_sample.x = font->glyph[i].texture_sample.x;
+        text_info.glyph[i].texture_sample.y = font->glyph[i].texture_sample.y;
+        text_info.glyph[i].loaded = TRUE;
+    }
+
+    pos.x *= text_info.screen_size.x;
+    pos.y *= text_info.screen_size.y;
+    pos.y += (align_y - 1.0f) * (font->scale.y / 2.0f) * ndc_size.y;
+
+    f32 advance = 0;
+    f32 descent = font->descent * ndc_size.y;
+    f32 line = 0;
+    f32 line_height = font->line_height * ndc_size.y;
+    for (u64 i = 0; i < len; ++i)
+    {
+        g = &text_info.glyph[text[i]];
+        if (text[i] == '\n')
+        {
+            advance = 0.0f;
+            line += line_height;
+        }
+
+        mesh_text.vbo_data[(i * 4) + 0] =
+            pos.x + advance + g->bearing.x;
+        mesh_text.vbo_data[(i * 4) + 1] =
+            pos.y - descent - line - g->bearing.y;
+        mesh_text.vbo_data[(i * 4) + 2] =
+            g->texture_sample.x;
+        mesh_text.vbo_data[(i * 4) + 3] =
+            g->texture_sample.y;
+
+        advance += g->advance;
+        ++text_info.cursor;
+    }
+}
+
+void render_text(f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y, Font *font, ShaderProgram *program, FBO *fbo)
+{
+    if (!mesh_text.vbo_data)
+    {
+        LOGERROR("%s\n", "Failed to Render Text, 'mesh_text.vbo_data' Null");
+        return;
+    }
+
+    glBindVertexArray(mesh_text.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh_text.vbo);
+    glBufferData(GL_ARRAY_BUFFER,
+            mesh_text.vbo_len * sizeof(GLfloat),
+            mesh_text.vbo_data, GL_DYNAMIC_DRAW);
+
+    glUseProgram(program->id);
+    glBindTexture(GL_TEXTURE_2D, font->id);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
+
+    f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
+    v2f32 font_size =
+    {
+        size * text_info.screen_size.x * 0.5f,
+        size * text_info.screen_size.y * 0.5f,
+    };
+    if (align_x)
+    {
+        // TODO: calculate string width, divide by 2, subtract from font->projection.a41
+    }
+
+    v4f32 text_color =
+    {
+        (f32)((color >> 0x18) & 0xff) / 0xff,
+        (f32)((color >> 0x10) & 0xff) / 0xff,
+        (f32)((color >> 0x08) & 0xff) / 0xff,
+        (f32)((color >> 0x00) & 0xff) / 0xff,
+    };
+    v2f32 ndc_size =
+    {
+        scale * text_info.screen_size.x,
+        scale * text_info.screen_size.y,
+    };
+
+    glUniform1f(font->uniform.char_size, font->char_size);
+    glUniform2fv(font->uniform.font_size, 1, (GLfloat*)&font_size);
+    glUniform2fv(font->uniform.screen_size, 1, (GLfloat*)&ndc_size);
+    glUniform4fv(font->uniform.text_color, 1, (GLfloat*)&text_color);
+
+    glDisable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDrawArrays(GL_POINTS, 0, text_info.cursor);
+
+    glEnable(GL_DEPTH_TEST);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    text_info.cursor = 0;
+}
+
+void free_text(void)
+{
+    free_mesh(&mesh_text);
 }
 
 void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, u32 color, i8 align_x, i8 align_y)
@@ -740,7 +932,6 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     f32 scale = stbtt_ScaleForPixelHeight(&font->info, size);
     f32 advance = 0.0f;
-    f32 line_height = 0.0f;
     Glyph *g = NULL;
 
     v2f32 screen_size =
@@ -764,13 +955,6 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
     pos.x *= screen_size.x;
     pos.y *= screen_size.y;
 
-    v2f32 offset =
-    {
-        -1.0f + font_size.x + pos.x,
-        1.0f - font_size.y - pos.y,
-    };
-
-    offset.y += (align_y - 1) * (font->scale.y / 2.0f) * ndc_size.y;
     if (align_x)
     {
         // TODO: calculate string width, divide by 2, subtract from font->projection.a41
@@ -786,22 +970,13 @@ void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos,
 
     glUniform1f(font->uniform.char_size, font->char_size);
     glUniform2fv(font->uniform.font_size, 1, (GLfloat*)&font_size);
-    glUniform2fv(font->uniform.ndc_size, 1, (GLfloat*)&ndc_size);
-    glUniform2fv(font->uniform.offset, 1, (GLfloat*)&offset);
+    glUniform2fv(font->uniform.screen_size, 1, (GLfloat*)&ndc_size);
     glUniform4fv(font->uniform.text_color, 1, (GLfloat*)&text_color);
 
     for (u64 i = 0; i < len; ++i)
     {
         g = &font->glyph[text[i]];
-
-        if (text[i] == '\n')
-        {
-            offset.y -= (font->line_height * ndc_size.y);
-            offset.x -= (advance * ndc_size.x);
-            glUniform2fv(font->uniform.offset, 1, (GLfloat*)&offset);
-            offset.x += (advance * ndc_size.x);
-        }
-        else if (text[i] != ' ')
+        if (text[i] != ' ' || text[i] != '\n')
         {
             glUniform1f(font->uniform.advance, advance + g->bearing.x);
             glUniform1f(font->uniform.bearing, font->descent - g->bearing.y);

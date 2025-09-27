@@ -2,6 +2,7 @@
 #include <stdarg.h>
 
 #include "h/defines.h"
+#include "h/limits.h"
 #include "h/logger.h"
 
 #if RELEASE_BUILD
