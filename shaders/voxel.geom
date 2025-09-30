@@ -25,12 +25,12 @@ layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 #define BLOCK_Z         0x00ff000000000000
 
 in int voxel_data[];
-out vec3 raw_color;
+out vec3 vertex_position;
 uniform ivec3 mask_positive;
 uniform ivec3 mask_negative;
 uniform ivec3 mask_not_empty;
 uniform vec3 chunk_position;
-uniform mat4 mat_projection;
+uniform mat4 mat_perspective;
 
 void main()
 {
@@ -66,7 +66,8 @@ void main()
     for (int i = 0; i < MAX_VERTICES; ++i)
     {
         world_position = base + vbo_voxel[ebo_voxel[i]];
-        gl_Position = mat_projection * vec4(world_position, 1.0);
+        gl_Position = mat_perspective * vec4(world_position, 1.0);
+        vertex_position = gl_Position.xyz;
         EmitVertex();
         if ((i + 1) % 3 == 0) EndPrimitive();
     }

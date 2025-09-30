@@ -26,7 +26,7 @@
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
 #define CHUNK_BUF_RADIUS \
-    SETTING_RENDER_DISTANCE_MAX
+    SETTING_RENDER_DISTANCE_MIN
 
 #define CHUNK_BUF_DIAMETER \
     ((CHUNK_BUF_RADIUS * 2) + 1)
@@ -146,7 +146,7 @@ static Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 extern v3u16 chunk_tab_coordinates;
 /* 
  * pointer arithmetic redundancy optimization */
-extern v3u32 block_coordinates;
+//extern v3u32 block_coordinates;
 /* 
  * player relative chunk tab access */
 extern u16 chunk_tab_index;
@@ -185,9 +185,8 @@ static inline u32 get_block_data(u32 i)
 
 /* ---- section: signatures ------------------------------------------------- */
 
-u8 init_chunking();
+u8 init_chunking(ShaderProgram *program);
 void free_chunking();
-
 void add_block(u16 index, u32 x, u32 y, u32 z);
 void remove_block(u16 index, u32 x, u32 y, u32 z);
 void generate_chunk(u16 index);
@@ -196,11 +195,14 @@ void deserialize_chunk(Chunk *chunk, str *world_name);
 Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos);
 Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v3i16 player_chunk);
-void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
+void shift_chunk_tab(
+        v3i16 player_chunk,
+        v3i16 *player_delta_chunk,
+        v3f32 camera_position);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
-#ifdef FUCK // TODO: undef FUCK
-void draw_chunk_tab(void);
+void draw_chunk_tab(Projection *perspective, v3f32 *camera_position);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
+#ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);

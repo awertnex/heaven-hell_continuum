@@ -46,7 +46,8 @@ Player lily =
     .collision_check_end = {0.0f},
     .pitch = 0.0f,
     .yaw = 0.0f,
-    .sin_pitch = 0.0f, .cos_pitch = 0.0f, .sin_yaw = 0.0f, .cos_yaw = 0.0f,
+    .sin_pitch = 0.0f, .cos_pitch = 0.0f,
+    .sin_yaw = 0.0f, .cos_yaw = 0.0f,
     .eye_height = 1.5f,
     .mass = 2.0f,
     .movement_speed = PLAYER_SPEED_WALK,
@@ -109,7 +110,7 @@ ShaderProgram shader_voxel =
     .vertex.file_name = "voxel.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .geometry.file_name = "voxel.geom",
-    .geometry.type = GL_GEOMETRY_SHADER,
+    .geometry.type = 0,
     .fragment.file_name = "voxel.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -137,9 +138,12 @@ void error_callback(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
-static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height);
-static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
-static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+static void gl_frame_buffer_size_callback(
+        GLFWwindow* window, int width, int height);
+static void gl_cursor_pos_callback(
+        GLFWwindow* window, double xpos, double ypos);
+static void gl_key_callback(
+        GLFWwindow *window, int key, int scancode, int action, int mods);
 
 /* ---- section: signatures ------------------------------------------------- */
 
@@ -155,7 +159,8 @@ void draw_hud(Player *player);
 void draw_everything(Player *player);
 
 /* ---- section: functions -------------------------------------------------- */
-static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int height)
+static void gl_frame_buffer_size_callback(
+        GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
     lily.camera.ratio = (f32)width / (f32)height;
@@ -167,20 +172,28 @@ static void gl_frame_buffer_size_callback(GLFWwindow* window, int width, int hei
     realloc_fbo(&render, &fbo_text);
 }
 
-static void gl_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+static void gl_cursor_pos_callback(
+        GLFWwindow* window, double xpos, double ypos)
 {
-    render.mouse_delta = (v2f64){xpos - render.mouse_position.x, ypos - render.mouse_position.y};
+    render.mouse_delta =
+        (v2f64){
+            xpos - render.mouse_position.x,
+            ypos - render.mouse_position.y
+        };
     render.mouse_position = (v2f64){xpos, ypos};
 
-    if (state & FLAG_PARSE_CURSOR)
-        if (!(state & FLAG_SUPER_DEBUG))
+    if ((state & FLAG_PARSE_CURSOR) && !(state & FLAG_SUPER_DEBUG))
         {
-            lily.yaw += (f32)render.mouse_delta.x * settings.mouse_sensitivity;
-            lily.pitch += (f32)render.mouse_delta.y * settings.mouse_sensitivity;
+            lily.yaw +=
+                (f32)render.mouse_delta.x * settings.mouse_sensitivity;
+
+            lily.pitch +=
+                (f32)render.mouse_delta.y * settings.mouse_sensitivity;
         }
 }
 
-static void gl_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void gl_key_callback(
+        GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -198,13 +211,19 @@ void some_weird_shit(f32 unit_x, f32 unit_y)
 {
     for (u32 i = 0; i < 8; ++i)
     {
-        mesh_cube_of_happiness.vbo_data[i * 3] += (unit_x * render.frame_delta);
-        mesh_cube_of_happiness.vbo_data[(i * 3) + 1] += (unit_y * render.frame_delta);
+        mesh_cube_of_happiness.vbo_data[i * 3] +=
+            (unit_x * render.frame_delta);
+
+        mesh_cube_of_happiness.vbo_data[(i * 3) + 1] +=
+            (unit_y * render.frame_delta);
     }
 
     glBindVertexArray(mesh_cube_of_happiness.vao);
     glBindBuffer(GL_ARRAY_BUFFER, mesh_cube_of_happiness.vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh_cube_of_happiness.vbo_len * sizeof(GLfloat), mesh_cube_of_happiness.vbo_data, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+            mesh_cube_of_happiness.vbo_len * sizeof(GLfloat),
+            mesh_cube_of_happiness.vbo_data,
+            GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 #if 0 // TODO: maybe remove
@@ -304,18 +323,21 @@ void generate_standard_meshes()
         1, 13, 15, 15, 8, 1,
     };
 
-    if (generate_mesh(&mesh_skybox, GL_STATIC_DRAW, VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
-            vbo_data_skybox, ebo_data_skybox) != 0)
+    if (generate_mesh(&mesh_skybox, GL_STATIC_DRAW,
+                VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
+                vbo_data_skybox, ebo_data_skybox) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Skybox' Mesh Generated");
 
-    if (generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW, VBO_LEN_COH, EBO_LEN_COH,
-            vbo_data_coh, ebo_data_coh) != 0)
+    if (generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW,
+                VBO_LEN_COH, EBO_LEN_COH,
+                vbo_data_coh, ebo_data_coh) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
 
-    if (generate_mesh(&mesh_gizmo, GL_STATIC_DRAW, VBO_LEN_GIZMO, EBO_LEN_GIZMO,
-            vbo_data_gizmo, ebo_data_gizmo) != 0)
+    if (generate_mesh(&mesh_gizmo, GL_STATIC_DRAW,
+                VBO_LEN_GIZMO, EBO_LEN_GIZMO,
+                vbo_data_gizmo, ebo_data_gizmo) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Gizmo' Mesh Generated");
 
@@ -327,57 +349,70 @@ cleanup:
 
 void bind_shader_uniforms(void)
 {
-    font.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
-    font.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font.uniform.char_size =
+        glGetUniformLocation(shader_text.id, "char_size");
+    font.uniform.font_size =
+        glGetUniformLocation(shader_text.id, "font_size");
+    font.uniform.text_color =
+        glGetUniformLocation(shader_text.id, "text_color");
 
-    font_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
-    font_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font_bold.uniform.char_size =
+        glGetUniformLocation(shader_text.id, "char_size");
+    font_bold.uniform.font_size =
+        glGetUniformLocation(shader_text.id, "font_size");
+    font_bold.uniform.text_color =
+        glGetUniformLocation(shader_text.id, "text_color");
 
-    font_mono.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
-    font_mono.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font_mono.uniform.char_size =
+        glGetUniformLocation(shader_text.id, "char_size");
+    font_mono.uniform.font_size =
+        glGetUniformLocation(shader_text.id, "font_size");
+    font_mono.uniform.text_color =
+        glGetUniformLocation(shader_text.id, "text_color");
 
-    font_mono_bold.uniform.char_size = glGetUniformLocation(shader_text.id, "char_size");
-    font_mono_bold.uniform.font_size = glGetUniformLocation(shader_text.id, "font_size");
-    font_mono_bold.uniform.text_color = glGetUniformLocation(shader_text.id, "text_color");
+    font_mono_bold.uniform.char_size =
+        glGetUniformLocation(shader_text.id, "char_size");
+    font_mono_bold.uniform.font_size =
+        glGetUniformLocation(shader_text.id, "font_size");
+    font_mono_bold.uniform.text_color =
+        glGetUniformLocation(shader_text.id, "text_color");
 
-    uniform.skybox.camera_position = glGetUniformLocation(shader_skybox.id, "camera_position");
-    uniform.skybox.mat_rotation = glGetUniformLocation(shader_skybox.id, "mat_rotation");
-    uniform.skybox.mat_orientation = glGetUniformLocation(shader_skybox.id, "mat_orientation");
-    uniform.skybox.mat_projection = glGetUniformLocation(shader_skybox.id, "mat_projection");
-    uniform.skybox.sun_rotation = glGetUniformLocation(shader_skybox.id, "sun_rotation");
-    uniform.skybox.sky_color = glGetUniformLocation(shader_skybox.id, "sky_color");
+    uniform.skybox.camera_position =
+        glGetUniformLocation(shader_skybox.id, "camera_position");
+    uniform.skybox.mat_rotation =
+        glGetUniformLocation(shader_skybox.id, "mat_rotation");
+    uniform.skybox.mat_orientation =
+        glGetUniformLocation(shader_skybox.id, "mat_orientation");
+    uniform.skybox.mat_projection =
+        glGetUniformLocation(shader_skybox.id, "mat_projection");
+    uniform.skybox.sun_rotation =
+        glGetUniformLocation(shader_skybox.id, "sun_rotation");
+    uniform.skybox.sky_color =
+        glGetUniformLocation(shader_skybox.id, "sky_color");
 
-    uniform.defaults.mat_perspective = glGetUniformLocation(shader_default.id, "mat_perspective");
-    uniform.defaults.camera_position = glGetUniformLocation(shader_default.id, "camera_position");
-    uniform.defaults.sun_rotation = glGetUniformLocation(shader_default.id, "sun_rotation");
-    uniform.defaults.sky_color = glGetUniformLocation(shader_default.id, "sky_color");
+    uniform.defaults.mat_perspective =
+        glGetUniformLocation(shader_default.id, "mat_perspective");
+    uniform.defaults.camera_position =
+        glGetUniformLocation(shader_default.id, "camera_position");
+    uniform.defaults.sun_rotation =
+        glGetUniformLocation(shader_default.id, "sun_rotation");
+    uniform.defaults.sky_color =
+        glGetUniformLocation(shader_default.id, "sky_color");
 
-    uniform.gizmo.render_ratio = glGetUniformLocation(shader_gizmo.id, "ratio");
-    uniform.gizmo.mat_translation = glGetUniformLocation(shader_gizmo.id, "mat_translation");
-    uniform.gizmo.mat_rotation = glGetUniformLocation(shader_gizmo.id, "mat_rotation");
-    uniform.gizmo.mat_orientation = glGetUniformLocation(shader_gizmo.id, "mat_orientation");
-    uniform.gizmo.mat_projection = glGetUniformLocation(shader_gizmo.id, "mat_projection");
+    uniform.gizmo.render_ratio =
+        glGetUniformLocation(shader_gizmo.id, "ratio");
+    uniform.gizmo.mat_translation =
+        glGetUniformLocation(shader_gizmo.id, "mat_translation");
+    uniform.gizmo.mat_rotation =
+        glGetUniformLocation(shader_gizmo.id, "mat_rotation");
+    uniform.gizmo.mat_orientation =
+        glGetUniformLocation(shader_gizmo.id, "mat_orientation");
+    uniform.gizmo.mat_projection =
+        glGetUniformLocation(shader_gizmo.id, "mat_projection");
 }
 
 void update_input(Player *player)
 {
-
-    /* ---- some weird shit ------------------------------------------------- */
-    if (is_key_press(KEY_ENTER))
-        some_weird_shit(0.0f, 0.0f);
-    if (is_key_hold(KEY_LEFT))
-        some_weird_shit(0.0f, 1.0f);
-    if (is_key_hold(KEY_RIGHT))
-        some_weird_shit(0.0f, -1.0f);
-    if (is_key_hold(KEY_UP))
-        some_weird_shit(1.0f, 0.0f);
-    if (is_key_hold(KEY_DOWN))
-        some_weird_shit(-1.0f, 0.0f);
-#if 0 // TODO: maybe remove
-#endif
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
     {
@@ -515,11 +550,12 @@ b8 init_world(str *string)
 {
     if (!strlen(string)) return FALSE;
     init_world_directory(string);
-    if (init_chunking() != 0) return FALSE;
+    if (init_chunking(&shader_voxel) != 0) return FALSE;
 
     update_player(&render, &lily);
     set_player_block(&lily, -3, 0, 0);
     update_chunk_tab(lily.chunk);
+    shift_chunk_tab(lily.chunk, &lily.delta_chunk, lily.camera.pos);
 
     lily.delta_target =
         (v3i32){
@@ -554,7 +590,7 @@ void update_world(Player *player)
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
+        shift_chunk_tab(lily.chunk, &lily.delta_chunk, lily.camera.pos);
         update_chunk_tab(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
@@ -635,6 +671,8 @@ void draw_everything(Player *player)
     draw_skybox(player);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(shader_voxel.id);
+    //draw_chunk_tab(&projection, &lily.camera.pos);
     draw_world(player);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
