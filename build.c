@@ -151,6 +151,14 @@ void list(void);
 
 int main(int argc, char **argv)
 {
+    log_level = LOGLEVEL_INFO;
+    if (compare_argv("LOGFATAL", argc, argv)) log_level = LOGLEVEL_FATAL;
+    if (compare_argv("LOGERROR", argc, argv)) log_level = LOGLEVEL_ERROR;
+    if (compare_argv("LOGWARN", argc, argv)) log_level = LOGLEVEL_WARNING;
+    if (compare_argv("LOGINFO", argc, argv)) log_level = LOGLEVEL_INFO;
+    if (compare_argv("LOGDEBUG", argc, argv)) log_level = LOGLEVEL_DEBUG;
+    if (compare_argv("LOGTRACE", argc, argv)) log_level = LOGLEVEL_TRACE;
+
     init_build();
 
     if (C_STD != STD_C99)

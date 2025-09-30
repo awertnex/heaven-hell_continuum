@@ -123,6 +123,16 @@ enum ChunkFlags
     FLAG_CHUNK_EDGE =       0x08,
 }; /* ChunkFlags */
 
+enum ChunkStates
+{
+    SHIFT_PX = 1,
+    SHIFT_NX = 2,
+    SHIFT_PY = 3,
+    SHIFT_NY = 4,
+    SHIFT_PZ = 5,
+    SHIFT_NZ = 6,
+}; /* ChunkStates */
+
 typedef struct Chunk
 {
     v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
@@ -136,20 +146,17 @@ typedef struct Chunk
 /* ---- section: declarations ----------------------------------------------- */
 
 /* 
- * chunk buffer, raw chunk data */
-static Chunk *chunk_buf;
-/* 
  * chunk pointer look-up table */
 static Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 /* 
  * pointer arithmetic redundancy optimization */
-extern v3u16 chunk_tab_coordinates;
+static v3u16 chunk_tab_coordinates;
 /* 
  * pointer arithmetic redundancy optimization */
-//extern v3u32 block_coordinates;
+static v3u32 block_coordinates;
 /* 
  * player relative chunk tab access */
-extern u16 chunk_tab_index;
+static u16 chunk_tab_index;
 
 /* ---- section: getters & setters ------------------------------------------ */
 
@@ -197,7 +204,7 @@ Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v3i16 player_chunk);
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
-void draw_chunk_tab(GLuint u_open_cursor);
+void draw_chunk_tab(Uniform *uniform);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 #ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);

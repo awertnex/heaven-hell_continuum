@@ -46,7 +46,12 @@ typedef struct Uniform
     struct /* voxel */
     {
         GLint mat_perspective;
+        GLint camera_position;
+        GLint sun_rotation;
+        GLint sky_color;
         GLint open_cursor;
+        GLint offset_cursor;
+        GLint opacity;
     } voxel;
 
 } Uniform;

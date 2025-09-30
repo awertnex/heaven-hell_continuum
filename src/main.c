@@ -412,8 +412,18 @@ void bind_shader_uniforms(void)
 
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader_voxel.id, "mat_perspective");
+    uniform.voxel.camera_position =
+        glGetUniformLocation(shader_voxel.id, "camera_position");
+    uniform.voxel.sun_rotation =
+        glGetUniformLocation(shader_voxel.id, "sun_rotation");
+    uniform.voxel.sky_color =
+        glGetUniformLocation(shader_voxel.id, "sky_color");
     uniform.voxel.open_cursor =
         glGetUniformLocation(shader_voxel.id, "open_cursor");
+    uniform.voxel.offset_cursor =
+        glGetUniformLocation(shader_voxel.id, "offset_cursor");
+    uniform.voxel.opacity =
+        glGetUniformLocation(shader_voxel.id, "opacity");
 }
 
 void update_input(Player *player)
@@ -651,14 +661,19 @@ void draw_world(Player *player)
 {
     glUseProgram(shader_voxel.id);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    draw_chunk_tab(uniform.voxel.open_cursor);
+    glUniform3fv(uniform.voxel.camera_position, 1, (GLfloat*)&player->camera.pos);
+    glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
+    draw_chunk_tab(&uniform);
 
+#if 0 // TODO: maybe remove
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
     glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&player->camera.pos);
     glUniform3fv(uniform.defaults.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
     draw_mesh(&mesh_cube_of_happiness);
+#endif
 }
 
 void draw_hud(Player *player)
@@ -769,7 +784,11 @@ int main(int argc, char **argv)
 
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
-    state = FLAG_ACTIVE | FLAG_PARSE_CURSOR | FLAG_DEBUG;
+    state =
+        FLAG_ACTIVE |
+        FLAG_PARSE_CURSOR |
+        FLAG_DEBUG |
+        FLAG_DEBUG_MORE;
 
     /* ---- section: set mouse input ---------------------------------------- */
 
