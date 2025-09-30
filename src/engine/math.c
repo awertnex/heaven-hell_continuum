@@ -143,3 +143,16 @@ v4f32 matrix_multiply_vector(m4f32 a, v4f32 b)
     };
 }
 
+f32 lerp_f32(f32 start, f32 end, f32 scale)
+{
+    return start + (end - start) * scale;
+}
+
+f32 easein_f32(f32 start, f32 end, f32 scale)
+{
+    return start + (end - start) * (scale * scale);
+}
+
+f32 easeout_f32(f32 start, f32 end, f32 scale) /* TODO: write this function */
+{
+}

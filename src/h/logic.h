@@ -5,17 +5,12 @@
 
 /* ---- section: player defaults -------------------------------------------- */
 
-static const f32 PLAYER_JUMP_HEIGHT =      8.0f;
-static const f32 PLAYER_SPEED_WALK =       3.5f;
-static const f32 PLAYER_SPEED_FLY =        9.0f;
-static const f32 PLAYER_SPEED_FLY_FAST =   18.0f;
-static const f32 PLAYER_SPEED_SNEAK =      1.5f;
-static const f32 PLAYER_SPEED_SPRINT =     7.0f;
-
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
-    v3f32 pos;                      /* player current coordinates in world */
+    v3f32 pos;                      /* player processed raw_pos */
+    v3f32 raw_pos;                  /* player current coordinates in world */
+    v3f32 pos_lerp_speed;
     v3f32 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
     v3f32 collision_check_start;

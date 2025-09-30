@@ -5,6 +5,7 @@
 #include "engine/h/math.h"
 #include "h/logic.h"
 #include "h/chunking.h"
+#include "h/settings.h"
 
 void update_player(Render *render, Player *player)
 {
@@ -14,19 +15,32 @@ void update_player(Render *render, Player *player)
             floorf((f32)player->pos.z / CHUNK_DIAMETER),
         };
 
-    if ((lily.delta_chunk.x - lily.chunk.x)
-            || (lily.delta_chunk.y - lily.chunk.y)
-            || (lily.delta_chunk.z - lily.chunk.z))
+    if ((player->delta_chunk.x - player->chunk.x)
+            || (player->delta_chunk.y - player->chunk.y)
+            || (player->delta_chunk.z - player->chunk.z))
         state |= FLAG_CHUNK_BUF_DIRTY;
 
     if (!(player->state & FLAG_CAN_JUMP) && !(player->state & FLAG_FLYING))
+    {
+        player->pos_lerp_speed.x = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.y = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
         update_gravity(render, player);
+    }
 
     if (player->state & FLAG_FLYING)
     {
+        player->pos_lerp_speed.x = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.y = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.z = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+
         player->vel = v3fzero;
-        player->movement_speed = PLAYER_SPEED_FLY * render->frame_delta;
-        player->camera.fovy = 80; /* TODO: revise (add lerp) */
+        player->movement_speed =
+            PLAYER_SPEED_FLY * render->frame_delta;
+
+        player->camera.fovy =
+            lerp_f32(player->camera.fovy,
+                    80.0f,
+                    settings.lerp_speed);
     }
 
     if ((player->state & FLAG_SNEAKING)
@@ -37,20 +51,33 @@ void update_player(Render *render, Player *player)
         if (!(player->state & FLAG_FLYING))
         {
             player->movement_speed = PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy = 75;
+            player->camera.fovy =
+                lerp_f32(player->camera.fovy,
+                        75.0f,
+                        settings.lerp_speed);
         }
         else
         {
             player->movement_speed = PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy = 90;
+            player->camera.fovy =
+                lerp_f32(player->camera.fovy,
+                        90.0f,
+                        settings.lerp_speed);
         }
     }
     else if (!(player->state & FLAG_SNEAKING)
             && !(player->state & FLAG_SPRINTING)
             && !(player->state & FLAG_FLYING))
     {
+        player->pos_lerp_speed.x = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+        player->pos_lerp_speed.y = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+        player->pos_lerp_speed.z = SETTING_LERP_SPEED_RIGID * render->frame_delta;
+
         player->movement_speed = PLAYER_SPEED_WALK * render->frame_delta;
-        player->camera.fovy = 70;
+        player->camera.fovy =
+            lerp_f32(player->camera.fovy,
+                    70.0f,
+                    settings.lerp_speed);
     }
 }
 
@@ -63,10 +90,10 @@ void update_camera_movement_player(Render *render, Player *player)
     if (player->yaw < 0.0f) player->yaw += RANGE;
     player->pitch = clamp_f32(player->pitch, -ANGLE, ANGLE);
 
-    player->sin_pitch =         sin(player->pitch * DEG2RAD);
-    player->cos_pitch =         cos(player->pitch * DEG2RAD);
-    player->sin_yaw =           sin(player->yaw * DEG2RAD);
-    player->cos_yaw =           cos(player->yaw * DEG2RAD);
+    player->sin_pitch = sin(player->pitch * DEG2RAD);
+    player->cos_pitch = cos(player->pitch * DEG2RAD);
+    player->sin_yaw =   sin(player->yaw * DEG2RAD);
+    player->cos_yaw =   cos(player->yaw * DEG2RAD);
     const f32 SPCH = player->sin_pitch;
     const f32 CPCH = player->cos_pitch;
     const f32 SYAW = player->sin_yaw;
@@ -166,28 +193,28 @@ void update_gravity(Render *render, Player *player)
         else
             player->vel.z -= (GRAVITY * player->mass * render->frame_delta_square);
     }
-    player->pos.z += player->vel.z;
+    player->raw_pos.z += player->vel.z;
 }
 
 void update_collision_static(Player *player) /* TODO: make AABB collision work */
 {
     player->collision_check_start = (v3f32){
-            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1,
-            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1,
-            floorf(player->pos.z) - 1,
+            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1.0f,
+            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1.0f,
+            floorf(player->pos.z) - 1.0f,
         };
 
     player->collision_check_end = (v3f32){
-            ceilf(player->scl.x) + 2,
-            ceilf(player->scl.y) + 2,
-            ceilf(player->scl.z) + 2,
+            ceilf(player->scl.x) + 2.0f,
+            ceilf(player->scl.y) + 2.0f,
+            ceilf(player->scl.z) + 2.0f,
         };
 
-    if (player->pos.z < 0.0f)
+    if (player->raw_pos.z < 0.0f)
     {
         if (player->state & FLAG_FLYING)
             player->state &= ~FLAG_FLYING;
-        player->pos.z = 0.0f;
+        player->raw_pos.z = 0.0f;
         player->vel.z = 0.0f;
         player->state |= FLAG_CAN_JUMP;
         player->state &= ~FLAG_FALLING;

@@ -91,8 +91,9 @@ cleanup:
     return 1;
 }
 
-void update_render_settings(v2f32 render_size)
+void update_render_settings(Render *render)
 {
+    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
 }
 
 void free_gui(void)

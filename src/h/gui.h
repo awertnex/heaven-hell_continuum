@@ -108,7 +108,7 @@ enum ButtonNames
 /* ---- section: signatures ------------------------------------------------- */
 
 b8 init_gui(void);
-void update_render_settings(v2f32 render_size);
+void update_render_settings(Render *render);
 void free_gui(void);
 
 void draw_debug_info(Player *player,

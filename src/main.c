@@ -23,11 +23,12 @@ Render render =
 
 Settings settings =
 (Settings){
-    .reach_distance =       SETTING_REACH_DISTANCE_MAX,
-    .mouse_sensitivity =    SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-    .render_distance =      SETTING_RENDER_DISTANCE_DEFAULT,
-    .target_fps =           SETTING_TARGET_FPS_DEFAULT,
-    .gui_scale =            SETTING_GUI_SCALE_DEFAULT,
+    .reach_distance       = SETTING_REACH_DISTANCE_MAX,
+    .lerp_speed           = SETTING_LERP_SPEED_DEFAULT,
+    .mouse_sensitivity    = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
+    .render_distance      = SETTING_RENDER_DISTANCE_DEFAULT,
+    .target_fps           = SETTING_TARGET_FPS_DEFAULT,
+    .gui_scale            = SETTING_GUI_SCALE_DEFAULT,
 };
 
 u32 state = 0;
@@ -432,7 +433,13 @@ void update_input(Player *player)
     if (is_key_hold(bind_jump))
     {
         if (player->state & FLAG_FLYING)
-            player->pos.z += player->movement_speed;
+        {
+            player->raw_pos.z += player->movement_speed;
+            player->pos.z =
+                lerp_f32(player->pos.z,
+                        player->raw_pos.z,
+                        player->pos_lerp_speed.z);
+        }
 
         if (player->state & FLAG_CAN_JUMP)
         {
@@ -447,7 +454,7 @@ void update_input(Player *player)
     if (is_key_hold(bind_sneak))
     {
         if (player->state & FLAG_FLYING)
-            player->pos.z -= player->movement_speed;
+            player->raw_pos.z -= player->movement_speed;
         else player->state |= FLAG_SNEAKING;
     }
     else player->state &= ~FLAG_SNEAKING;
@@ -458,33 +465,40 @@ void update_input(Player *player)
     else if (is_key_release(bind_walk_forwards))
         player->state &= ~FLAG_SPRINTING;
 
-
     /* ---- movement -------------------------------------------------------- */
     if (is_key_hold(bind_strafe_left))
     {
-        player->pos.x += (player->movement_speed * player->sin_yaw);
-        player->pos.y += (player->movement_speed * player->cos_yaw);
+        player->raw_pos.x += (player->movement_speed * player->sin_yaw);
+        player->raw_pos.y += (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_strafe_right))
     {
-        player->pos.x -= (player->movement_speed * player->sin_yaw);
-        player->pos.y -= (player->movement_speed * player->cos_yaw);
+        player->raw_pos.x -= (player->movement_speed * player->sin_yaw);
+        player->raw_pos.y -= (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_walk_backwards))
     {
-        player->pos.x -= (player->movement_speed * player->cos_yaw);
-        player->pos.y += (player->movement_speed * player->sin_yaw);
+        player->raw_pos.x -= (player->movement_speed * player->cos_yaw);
+        player->raw_pos.y += (player->movement_speed * player->sin_yaw);
     }
 
     if (is_key_hold(bind_walk_forwards))
     {
-        player->pos.x += (player->movement_speed * player->cos_yaw);
-        player->pos.y -= (player->movement_speed * player->sin_yaw);
+        player->raw_pos.x += (player->movement_speed * player->cos_yaw);
+        player->raw_pos.y -= (player->movement_speed * player->sin_yaw);
     }
     if (is_key_press_double(bind_walk_forwards))
         player->state |= FLAG_SPRINTING;
+
+    player->pos.x =
+        lerp_f32(player->pos.x, player->raw_pos.x, player->pos_lerp_speed.x);
+
+    player->pos.y =
+        lerp_f32(player->pos.y, player->raw_pos.y, player->pos_lerp_speed.y);
+
+    player->pos.z = player->raw_pos.z;
 
     /* ---- gameplay -------------------------------------------------------- */
     if (is_key_hold(bind_attack_or_destroy))
@@ -873,6 +887,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
         render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
 
+        update_render_settings(&render);
         update_world(&lily);
         draw_everything(&lily);
 
