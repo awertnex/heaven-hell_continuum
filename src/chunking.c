@@ -366,6 +366,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         player_chunk.y - player_delta_chunk->y,
         player_chunk.z - player_delta_chunk->z,
     };
+    printf("xyz[%.2f %.2f %.2f]\n", delta.x, delta.y, delta.z);
 
     if (distance_v3i32(
             (v3i32){player_chunk.x, player_chunk.y, player_chunk.z},

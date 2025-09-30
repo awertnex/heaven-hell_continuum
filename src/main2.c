@@ -74,20 +74,6 @@ section_main: /* ------------------------------------------------------------ */
             disable_cursor;
             center_cursor;
         }
-//         update_input(&lily);
-        update_render_settings(setting.render_size);
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-//
-//         BeginDrawing();
-//         {
-//             BeginMode3D(lily.camera);
-//             draw_skybox();
-//            draw_chunk_tab(&block[dirt].texture);
-//            draw_world();
-//             EndMode3D();
-//         }
-//        draw_gui();
-//         EndDrawing();
     }
 
     /* ---- section_cleanup ------------------------------------------------- */

@@ -20,22 +20,29 @@ void update_player(Render *render, Player *player)
             || (player->delta_chunk.z - player->chunk.z))
         state |= FLAG_CHUNK_BUF_DIRTY;
 
-    if (!(player->state & FLAG_CAN_JUMP) && !(player->state & FLAG_FLYING))
+    if (!(player->state & FLAG_CAN_JUMP) &&
+            !(player->state & FLAG_FLYING))
     {
-        player->pos_lerp_speed.x = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
-        player->pos_lerp_speed.y = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.x =
+            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.y =
+            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+
         update_gravity(render, player);
     }
 
     if (player->state & FLAG_FLYING)
     {
-        player->pos_lerp_speed.x = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
-        player->pos_lerp_speed.y = SETTING_LERP_SPEED_GLIDE * render->frame_delta;
-        player->pos_lerp_speed.z = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+        player->pos_lerp_speed.x =
+            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.y =
+            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+        player->pos_lerp_speed.z =
+            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
 
         player->vel = v3fzero;
         player->movement_speed =
-            PLAYER_SPEED_FLY * render->frame_delta;
+            SETTING_PLAYER_SPEED_FLY * render->frame_delta;
 
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
@@ -45,12 +52,14 @@ void update_player(Render *render, Player *player)
 
     if ((player->state & FLAG_SNEAKING)
             && !(player->state & FLAG_FLYING))
-        player->movement_speed = PLAYER_SPEED_SNEAK * render->frame_delta;
+        player->movement_speed =
+            SETTING_PLAYER_SPEED_SNEAK * render->frame_delta;
     else if (player->state & FLAG_SPRINTING)
     {
         if (!(player->state & FLAG_FLYING))
         {
-            player->movement_speed = PLAYER_SPEED_SPRINT * render->frame_delta;
+            player->movement_speed =
+                SETTING_PLAYER_SPEED_SPRINT * render->frame_delta;
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         75.0f,
@@ -58,7 +67,8 @@ void update_player(Render *render, Player *player)
         }
         else
         {
-            player->movement_speed = PLAYER_SPEED_FLY_FAST * render->frame_delta;
+            player->movement_speed =
+                SETTING_PLAYER_SPEED_FLY_FAST * render->frame_delta;
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         90.0f,
@@ -69,11 +79,16 @@ void update_player(Render *render, Player *player)
             && !(player->state & FLAG_SPRINTING)
             && !(player->state & FLAG_FLYING))
     {
-        player->pos_lerp_speed.x = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
-        player->pos_lerp_speed.y = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
-        player->pos_lerp_speed.z = SETTING_LERP_SPEED_RIGID * render->frame_delta;
+        player->pos_lerp_speed.x =
+            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+        player->pos_lerp_speed.y =
+            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+        player->pos_lerp_speed.z =
+            SETTING_LERP_SPEED_RIGID * render->frame_delta;
 
-        player->movement_speed = PLAYER_SPEED_WALK * render->frame_delta;
+        player->movement_speed =
+            SETTING_PLAYER_SPEED_WALK * render->frame_delta;
+
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
                     70.0f,
@@ -119,7 +134,8 @@ void update_camera_movement_player(Render *render, Player *player)
                 (v3f32){
                     player->pos.x - ((CYAW * CPCH) * player->camera_distance),
                     player->pos.y + ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z + player->eye_height + (SPCH * player->camera_distance),
+                    player->pos.z +
+                        player->eye_height + (SPCH * player->camera_distance),
                 };
             break;
 
@@ -128,10 +144,13 @@ void update_camera_movement_player(Render *render, Player *player)
                 (v3f32){
                     player->pos.x + ((CYAW * CPCH) * player->camera_distance),
                     player->pos.y - ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z + player->eye_height + (SPCH * player->camera_distance),
+                    player->pos.z +
+                        player->eye_height + (SPCH * player->camera_distance),
                 };
-            player->camera.sin_yaw = sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
-            player->camera.cos_yaw = cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+            player->camera.sin_yaw =
+                sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+            player->camera.cos_yaw =
+                cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
             break;
 
             /* TODO: make the stalker camera mode */
@@ -186,7 +205,8 @@ b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 void update_gravity(Render *render, Player *player)
 {
     if (player->state & FLAG_FALLING)
-        player->vel.z += (GRAVITY * player->mass * render->frame_delta_square);
+        player->vel.z +=
+            (GRAVITY * player->mass * render->frame_delta_square);
     player->raw_pos.z += player->vel.z;
 }
 

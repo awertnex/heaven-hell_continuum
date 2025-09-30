@@ -51,7 +51,7 @@ Player lily =
     .sin_yaw = 0.0f, .cos_yaw = 0.0f,
     .eye_height = 1.5f,
     .mass = 2.0f,
-    .movement_speed = PLAYER_SPEED_WALK,
+    .movement_speed = SETTING_PLAYER_SPEED_WALK,
     .container_state = 0,
     .perspective = 0,
     .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
@@ -443,7 +443,8 @@ void update_input(Player *player)
 
         if (player->state & FLAG_CAN_JUMP)
         {
-            player->vel.z += PLAYER_JUMP_HEIGHT * render.frame_delta;
+            player->vel.z +=
+                SETTING_PLAYER_JUMP_HEIGHT * render.frame_delta;
             player->state &= ~FLAG_CAN_JUMP;
         }
     }
