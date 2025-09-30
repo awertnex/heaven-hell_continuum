@@ -56,6 +56,8 @@
 - added font loading and font atlas baking
 - added image reading/writing (stb_image_write.h)
 - optimized and expanded input handling
+- fixed gravity's framerate-dependence
+- added easy motion
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
