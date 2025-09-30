@@ -2,6 +2,7 @@
 #define ENGINE_LOGGER_H
 
 #include "defines.h"
+#include "memory.h"
 
 #define RELEASE_BUILD 0
 
@@ -11,38 +12,37 @@
 #else
     #define LOGGING_DEBUG 1
     #define LOGGING_TRACE 1
-#endif
-
-#define IN_MESSAGE_MAX      4096
-#define OUT_MESSAGE_MAX     8192
+#endif /* RELEASE_BUILD */
 
 enum LogLevel
 {
-    LOGGER_FATAL = 0,
-    LOGGER_ERROR,
-    LOGGER_WARNING,
-    LOGGER_INFO,
-    LOGGER_DEBUG,
-    LOGGER_TRACE,
+    LOGLEVEL_FATAL = 0,
+    LOGLEVEL_ERROR,
+    LOGLEVEL_WARNING,
+    LOGLEVEL_INFO,
+    LOGLEVEL_DEBUG,
+    LOGLEVEL_TRACE,
 }; /* LogLevel */
+
+extern u32 log_level;
 
 b8 init_logger();
 void close_logger();
-void log_output(u8 log_level, const str* format, ...);
+void log_output(u8 level, const str* format, ...);
 
-#define LOGFATAL(format, ...) log_output(LOGGER_FATAL, format, ##__VA_ARGS__)
-#define LOGERROR(format, ...) log_output(LOGGER_ERROR, format, ##__VA_ARGS__)
-#define LOGWARNING(format, ...) log_output(LOGGER_WARNING, format, ##__VA_ARGS__)
-#define LOGINFO(format, ...) log_output(LOGGER_INFO, format, ##__VA_ARGS__)
+#define LOGFATAL(format, ...) log_output(LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+#define LOGERROR(format, ...) log_output(LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+#define LOGWARNING(format, ...) log_output(LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+#define LOGINFO(format, ...) log_output(LOGLEVEL_INFO, format, ##__VA_ARGS__)
 
 #if LOGGING_DEBUG == 1
-    #define LOGDEBUG(format, ...) log_output(LOGGER_DEBUG, format, ##__VA_ARGS__)
+    #define LOGDEBUG(format, ...) log_output(LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
 #else
     #define LOGDEBUG(format, ...)
 #endif
 
 #if LOGGING_TRACE == 1
-    #define LOGTRACE(format, ...) log_output(LOGGER_TRACE, format, ##__VA_ARGS__)
+    #define LOGTRACE(format, ...) log_output(LOGLEVEL_TRACE, format, ##__VA_ARGS__)
 #else
     #define LOGTRACE(format, ...)
 #endif

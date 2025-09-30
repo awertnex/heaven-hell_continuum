@@ -12,12 +12,14 @@
 
 enum Directories
 {
-    /* ---- source directories ---------------------------------------------- */
+    /* ---- source code directories ----------------------------------------- */
     DIR_SOURCE =            0,
     DIR_SOURCE_SHADERS,
 
     /* ---- grandpath directories ------------------------------------------- */
     DIR_ROOT_LIB =          0,
+    DIR_ROOT_LIB_PLATFORM,
+    DIR_ROOT_RESOURCES,
     DIR_ROOT_SHADERS,
     DIR_ROOT_INSTANCES,
 
@@ -28,7 +30,7 @@ enum Directories
     DIR_LOGO,
     DIR_TEXTURES,
     DIR_BLOCKS,
-    DIR_ENVIRONMENT,
+    DIR_SKYBOXES,
     DIR_ENTITIES,
     DIR_GUI,
     DIR_ITEMS,
@@ -66,7 +68,7 @@ int create_instance(const str *instance_name);
 
 int init_instance_directory(const str *instance_name);
 
-int init_instance_files(const str *instance_name);
+int init_instance_files(void);
 
 int create_world(const str *world_name);
 

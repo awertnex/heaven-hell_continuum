@@ -2,7 +2,6 @@
 #define ENGINE_DEFINES_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #define TRUE        1
 #define FALSE       0
@@ -24,8 +23,8 @@ typedef double      f64;
 
 typedef char        str;
 
-typedef bool        b8;
-typedef bool        b32;
+typedef uint8_t     b8;
+typedef uint32_t    b32;
 
 typedef struct buf
 {

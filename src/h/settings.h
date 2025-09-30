@@ -7,6 +7,18 @@
 #define SETTING_CAMERA_DISTANCE_MAX         4.0f
 #define SETTING_REACH_DISTANCE_MAX          5.0f
 #define SETTING_DAY_TICKS_MAX               24000
+#define SETTING_LERP_SPEED_DEFAULT          20.0f
+#define SETTING_LERP_SPEED_GLIDE            3.0f
+#define SETTING_LERP_SPEED_RIGID            100.0f
+
+#define SETTING_PLAYER_JUMP_HEIGHT          8.0f
+#define SETTING_PLAYER_SPEED_WALK           3.5f
+#define SETTING_PLAYER_SPEED_FLY            9.0f
+#define SETTING_PLAYER_SPEED_FLY_FAST       40.0f
+#define SETTING_PLAYER_SPEED_SNEAK          1.5f
+#define SETTING_PLAYER_SPEED_SPRINT         7.0f
+#define SETTING_PLAYER_SPEED_MAX            100.0f
+
 
 /* ---- options menu -------------------------------------------------------- */
 #define SETTING_FOV_DEFAULT                 70.0f
@@ -36,6 +48,7 @@ typedef struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
     u8 reach_distance;  /* for player reach (arm length basically) */
+    f32 lerp_speed;
 
     /* ---- options --------------------------------------------------------- */
     f64 mouse_sensitivity;

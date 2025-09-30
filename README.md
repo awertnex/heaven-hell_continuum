@@ -4,7 +4,7 @@
   <img src="resources/logo/128x128.png" alt="Heaven-Hell Continuum">
 </h1>
 
-**a voxel game/engine written in C99, with minimal dependencies if any.**
+**a voxel game/engine in C99, with minimal dependencies if any.**
 
 
 ## Download (unzip and launch)
@@ -18,22 +18,24 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
 
 ## Dependencies (already bundled)
 
-- [glfw v3.5](https://github.com/glfw/glfw/releases) (headers modified)
+- [glfw v3.4](https://github.com/glfw/glfw/releases) (headers modified)
 - [glad v0.1.36](https://github.com/dav1dde/glad-web) (header modified)
 - [stb_image_write.h v1.26](https://github.com/nothings/stb/blob/master/stb_image_write.h) (modified)
 - [stb_truetype.h v1.26](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
 - [dejavu-fonts v2.37](https://github.com/dejavu-fonts/dejavu-fonts) (modified)
+    - dejavu_sans_ansi.ttf (subset: U+0000-00ff)
+    - dejavu_sans_bold_ansi.ttf (subset: U+0000-00ff)
     - dejavu_sans_mono_ansi.ttf (subset: U+0000-00ff)
-    - dejavu_sans_mono_ansi_bold.ttf (subset: U+0000-00ff)
+    - dejavu_sans_mono_bold_ansi.ttf (subset: U+0000-00ff)
 
 ### windows-specific:
-- some mingw headers (modified)
+- [w64devkit v2.4.0](https://github.com/skeeto/w64devkit) (not necessary for runtime, just for building from source)
 
 
 ## Build From Source
 
 >**NOTES:**
->- for development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`) to enable TRACE and DEBUG logging.
+>- for development build, turn off `RELEASE_BUILD` in `src/engine/h/logger.h` (set as `0`), enables TRACE and DEBUG logging.
 >- if build successful, you can place the built directory 'Heaven-Hell Continuum' anywhere you wish, that's the entire bundle.
 >- the build tool will rebuild itself before building the project if you either modified its source or didn't build it in C99.
 
@@ -70,11 +72,10 @@ cd heaven-hell_continuum/
 
 - - -
 
-### for windows (using mingw and gcc):
+### for windows (using any C compiler, a suggestion is "gcc" from "mingw"):
 
-if you don't already have them (or any compiler that does the job):
-- download `gcc`: [sourceforge/gcc-win64](https://www.sourceforge.net/projects/gcc-win64/)
-- download `mingw`: [mingw-w64](https://www.mingw-w64.org/downloads/)
+if you don't already have a C compiler:
+- [w64devkit v2.4.0](https://github.com/skeeto/w64devkit) (includes gcc toolchain)
 
 1. clone and build:
 

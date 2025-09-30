@@ -5,27 +5,59 @@
 #include "h/chunking.h"
 #include "h/logic.h"
 
-Chunk *chunk_buf = {0};                         /* chunk buffer, raw chunk data */
-Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {NULL};    /* chunk pointer look-up table */
-v3u16 chunk_tab_coordinates;                    /* pointer arithmetic redundancy optimization */
-u16 chunk_tab_index = 0;                        /* player relative chunk tab access */
-struct Globals globals =
-{
-    .opacity = 0,
-    .block_count = 0,
-    .quad_count = 0,
-};
+/* ---- section: declarations ----------------------------------------------- */
 
-u8 init_chunking(void)
+/* 
+ * chunk buffer, raw chunk data */
+static Chunk *chunk_buf = {0};
+/* 
+ * chunk pointer look-up table */
+static Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
+
+static struct Globals
+{
+    f32 opacity;
+    Mesh voxel;
+} globals;
+
+/* ---- section: functions -------------------------------------------------- */
+
+u8 init_chunking(ShaderProgram *program)
 {
     if (!mem_alloc_memb((void*)&chunk_buf, CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
         goto cleanup;
 
+    GLfloat vbo[] =
+    {
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+    };
+    GLuint ebo[] =
+    {
+        0, 4, 5, 5, 1, 0,
+        1, 5, 7, 7, 3, 1,
+        3, 7, 6, 6, 2, 3,
+        2, 6, 4, 4, 0, 2,
+        4, 6, 7, 7, 5, 4,
+        0, 1, 3, 3, 2, 0,
+    };
+
+    generate_mesh(&globals.voxel, GL_DYNAMIC_DRAW, 24, 36, vbo, ebo);
     return 0;
 
 cleanup:
     free_chunking();
     return -1;
+}
+
+void update_chunking(void)
+{
 }
 
 void free_chunking(void)
@@ -239,7 +271,10 @@ void generate_chunk(u16 index) /* TODO: make this function */
 
                 if (z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <= sin_x
                         && z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <= sin_y)
+                {
                     add_block(index, x, y, z);
+                    chunk_tab[index]->flag |= FLAG_CHUNK_RENDER;
+                }
             }
 }
 
@@ -252,7 +287,8 @@ void deserialize_chunk(Chunk *chunk, str *world_name) /* TODO: make this functio
 {
 }
 
-/* pos = (chunk_tab coordinates); */
+/* 
+ * pos = (chunk_tab coordinates); */
 Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
@@ -272,7 +308,7 @@ Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
             | ((u64)(chunk_buf[i].pos.y & 0xffff) << 16)
             | ((u64)(chunk_buf[i].pos.z & 0xffff));
 
-        chunk_buf[i].flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER;
+        chunk_buf[i].flag = FLAG_CHUNK_LOADED;
 
         return &chunk_buf[i];
     }
@@ -281,7 +317,8 @@ Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos)
     return NULL;
 }
 
-/* index = (chunk_tab index); */
+/* 
+ * index = (chunk_tab index); */
 Chunk *pop_chunk_buf(u16 index)
 {
     *chunk_tab[index] = (Chunk){0};
@@ -291,7 +328,6 @@ Chunk *pop_chunk_buf(u16 index)
 void update_chunk_tab(v3i16 player_delta_chunk)
 {
     v3u16 coordinates = {0};
-
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         coordinates =
@@ -304,6 +340,11 @@ void update_chunk_tab(v3i16 player_delta_chunk)
         if (distance_v3i32(
                     (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
                     (v3i32){coordinates.x, coordinates.y, coordinates.z})
+                /* 
+                 * don't touch these numbers,
+                 * power of two makes render distance proportional,
+                 * plus two adds a little padding and makes the circle look plump
+                 */
                 < ((u32)powf(settings.render_distance, 2) + 2))
         {
             if (chunk_tab[i] == NULL)
@@ -325,11 +366,12 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         player_chunk.y - player_delta_chunk->y,
         player_chunk.z - player_delta_chunk->z,
     };
+    printf("xyz[%.2f %.2f %.2f]\n", delta.x, delta.y, delta.z);
 
     if (distance_v3i32(
             (v3i32){player_chunk.x, player_chunk.y, player_chunk.z},
             (v3i32){player_delta_chunk->x, player_delta_chunk->y, player_delta_chunk->z})
-            > (u32)powf(SETTING_RENDER_DISTANCE_DEFAULT, 2) + 2)
+            > (u32)powf(settings.render_distance, 2) + 2)
     {
         for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i] != NULL)
@@ -339,20 +381,19 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         return;
     }
 
-    /* direction = (1 = x, 2 = -x, 3 = y, 4 = -y, 5 = z, 6 = -z) */
     u8 direction =
-        (delta.x > 0) ? 1 : (delta.x < 0) ? 2 :
-        (delta.y > 0) ? 3 : (delta.y < 0) ? 4 :
-        (delta.z > 0) ? 5 : (delta.z < 0) ? 6 : 0;
+        (delta.x > 0) ? SHIFT_PX : (delta.x < 0) ? SHIFT_NX :
+        (delta.y > 0) ? SHIFT_PY : (delta.y < 0) ? SHIFT_NY :
+        (delta.z > 0) ? SHIFT_PZ : (delta.z < 0) ? SHIFT_NZ : 0;
     i8 increment = (direction % 2 == 1) - (direction % 2 == 0);
     v3u16 coordinates = {0};
     u16 mirror_index = 0;
     u16 target_index = 0;
     u8 is_on_edge = 0;
 
-    player_delta_chunk->x += ((direction == 1) - (direction == 2));
-    player_delta_chunk->y += ((direction == 3) - (direction == 4));
-    player_delta_chunk->z += ((direction == 5) - (direction == 6));
+    player_delta_chunk->x += ((direction == SHIFT_PX) - (direction == SHIFT_NX));
+    player_delta_chunk->y += ((direction == SHIFT_PY) - (direction == SHIFT_NY));
+    player_delta_chunk->z += ((direction == SHIFT_PZ) - (direction == SHIFT_NZ));
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i] != NULL)
@@ -371,18 +412,18 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         switch (direction)
         {
-            case 1: /* ---- positive x -------------------------------------- */
+            case SHIFT_PX:
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 is_on_edge = (coordinates.x == 0) || (chunk_tab[i - 1] == NULL);
                 break;
 
-            case 2: /* ---- negative x -------------------------------------- */
+            case SHIFT_NX:
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 is_on_edge =
                     (coordinates.x == CHUNK_BUF_DIAMETER - 1) || (chunk_tab[i + 1] == NULL);
                 break;
 
-            case 3: /* ---- positive y -------------------------------------- */
+            case SHIFT_PY:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER)
                     + coordinates.x;
@@ -390,7 +431,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                     (coordinates.y == 0) || (chunk_tab[i - CHUNK_BUF_DIAMETER] == NULL);
                 break;
 
-            case 4: /* ---- negative y -------------------------------------- */
+            case SHIFT_NY:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER)
                     + coordinates.x;
@@ -399,7 +440,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                     || (chunk_tab[i + CHUNK_BUF_DIAMETER] == NULL);
                 break;
 
-            case 5: /* ---- positive z -------------------------------------- */
+            case SHIFT_PZ:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER)
                     + (coordinates.y * CHUNK_BUF_DIAMETER)
@@ -408,7 +449,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                     (coordinates.z == 0) || (chunk_tab[i - CHUNK_BUF_LAYER] == NULL);
                 break;
 
-            case 6: /* ---- negative z -------------------------------------- */
+            case SHIFT_NZ:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER)
                     + (coordinates.y * CHUNK_BUF_DIAMETER)
@@ -443,18 +484,18 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         switch (direction)
         {
-            case 1: /* ---- positive x -------------------------------------- */
+            case SHIFT_PX:
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 target_index = (coordinates.x == CHUNK_BUF_DIAMETER - 1)
                     ? i : i + 1;
                 break;
 
-            case 2: /* ---- negative x -------------------------------------- */
+            case SHIFT_NX:
                 mirror_index = i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2);
                 target_index = (coordinates.x == 0) ? i : i - 1;
                 break;
 
-            case 3: /* ---- positive y -------------------------------------- */
+            case SHIFT_PY:
                 mirror_index = 
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER)
                     + coordinates.x;
@@ -462,14 +503,14 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                     ? i : i + CHUNK_BUF_DIAMETER;
                 break;
 
-            case 4: /* ---- negative y -------------------------------------- */
+            case SHIFT_NY:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) * CHUNK_BUF_DIAMETER)
                     + coordinates.x;
                 target_index = (coordinates.y == 0) ? i : i - CHUNK_BUF_DIAMETER;
                 break;
 
-            case 5: /* ---- positive z -------------------------------------- */
+            case SHIFT_PZ:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER)
                     + (coordinates.y * CHUNK_BUF_DIAMETER)
@@ -478,7 +519,7 @@ void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                     ? i : i + CHUNK_BUF_LAYER;
                 break;
 
-            case 6: /* ---- negative z -------------------------------------- */
+            case SHIFT_NZ:
                 mirror_index =
                     ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER)
                     + (coordinates.y * CHUNK_BUF_DIAMETER)
@@ -506,141 +547,67 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
         + (offset.z * CHUNK_BUF_LAYER);
 }
 
-#ifdef FUCK // TODO: undef FUCK
-void draw_chunk_tab(Texture *tex /*temp texturing*/)
+void draw_chunk_tab(Uniform *uniform)
 {
-    if (state & FLAG_DEBUG_MORE)
-        globals.opacity = 200;
-    else
-        globals.opacity = 255;
+    v3f32 open_cursor = {0};
+    v3f32 offset_cursor = {0};
+    v4f32 color[2] =
+    {
+        {
+            150.0f / 0xff,
+            150.0f / 0xff,
+            137.0f / 0xff,
+            200.0f,
+        },
+        {
+            200.0f / 0xff,
+            210.0f / 0xff,
+            90.0f / 0xff,
+            255.0f,
+        },
+    };
 
-    rlPushMatrix();
-    rlSetTexture(tex->id); /*temp texturing*/
-    rlBegin(RL_QUADS);
+    if (state & FLAG_DEBUG_MORE)
+        globals.opacity = 0.2f;
+    else
+        globals.opacity = 1.0f;
+
+    glUniform1f(uniform->voxel.opacity, globals.opacity);
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         if ((chunk_tab[i] == NULL) || !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
             continue;
 
-        rlTranslatef(
+        open_cursor =
+            (v3f32){
                 (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
                 (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
-                (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER));
+                (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER),
+            };
 
-        v3u32 block_coordinates = {0};
+        glUniform3fv(uniform->voxel.offset_cursor, 1, (GLfloat*)&open_cursor);
         for (u32 j = 0; j < CHUNK_VOLUME; ++j)
         {
-            block_coordinates = get_block_coordinates(j);
-            draw_block(chunk_tab[i],
-                    block_coordinates.x,
-                    block_coordinates.y,
-                    block_coordinates.z);
+            offset_cursor.x = (f32)(j % CHUNK_DIAMETER);
+            offset_cursor.y = (f32)(u32)((j / CHUNK_DIAMETER) % CHUNK_DIAMETER);
+            offset_cursor.z = (f32)(u32)(j / (CHUNK_DIAMETER * CHUNK_DIAMETER));
+            glUniform3fv(uniform->voxel.open_cursor, 1, (GLfloat*)&offset_cursor);
+            draw_mesh(&globals.voxel);
 
-            rlTranslatef(1.0f, 0.0f, 0.0f);
-            if (block_coordinates.x == CHUNK_DIAMETER - 1)
-            {
-                rlTranslatef(-(f32)CHUNK_DIAMETER, 1.0f, 0.0f);
-                if (block_coordinates.y == CHUNK_DIAMETER - 1)
-                {
-                    rlTranslatef(0.0f, -(f32)CHUNK_DIAMETER, 1.0f);
-                    if (block_coordinates.z == CHUNK_DIAMETER - 1)
-                        rlTranslatef(0.0f, 0.0f, -(f32)CHUNK_DIAMETER);
-                }
-            }
+            //block_coordinates = get_block_coordinates(j);
+            //draw_block(chunk_tab[i],
+            //        block_coordinates.x,
+            //        block_coordinates.y,
+            //        block_coordinates.z);
         }
-
-        rlTranslatef(
-                -(f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
-                -(f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
-                -(f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER));
     }
-
-    rlEnd();
-    rlPopMatrix();
-    rlSetTexture(0); /*temp texturing*/
 }
 
+#ifdef FUCK // TODO: undef FUCK
 /* raylib/rmodels.c/DrawCube refactored; */
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z)
 {
-    if (chunk->block[z][y][x] & POSITIVE_X)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(150, 150, 137, globals.opacity);
-        else rlColor4ub(200, 210, 90, globals.opacity);
-        
-        rlNormal3f(1.0f, 0.0f, 0.0f); /*temp texturing*/
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
-    }
-
-    if (chunk->block[z][y][x] & NEGATIVE_X)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(135, 135, 123, globals.opacity);
-        else rlColor4ub(236, 17, 90, globals.opacity);
-
-        rlNormal3f(-1.0f, 0.0f, 0.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
-    }
-
-    if (chunk->block[z][y][x] & POSITIVE_Y)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(155, 155, 142, globals.opacity);
-        else rlColor4ub(200, 248, 246, globals.opacity);
-
-        rlNormal3f(0.0f, 1.0f, 0.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
-    }
-
-    if (chunk->block[z][y][x] & NEGATIVE_Y)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(140, 140, 123, globals.opacity);
-        else rlColor4ub(28, 14, 50, globals.opacity);
-
-        rlNormal3f(0.0f, -1.0f, 0.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
-    }
-
-    if (chunk->block[z][y][x] & POSITIVE_Z)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(176, 176, 160, globals.opacity);
-        else rlColor4ub(250, 18, 5, globals.opacity);
-
-        rlNormal3f(0.0f, 0.0f, 1.0f);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 1.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 1.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 1.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 1.0f);
-    }
-
-    if (chunk->block[z][y][x] & NEGATIVE_Z)
-    {
-        if (LOGGER_DEBUG)
-            rlColor4ub(115, 115, 104, globals.opacity);
-        else rlColor4ub(200, 40, 203, globals.opacity);
-
-        rlNormal3f(0.0f, 0.0f, -1.0f);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(0.0f, 0.0f, 0.0f);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(0.0f, 1.0f, 0.0f);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(1.0f, 1.0f, 0.0f);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(1.0f, 0.0f, 0.0f);
-    }
 }
 
 /* raylib/rmodels.c/DrawLine3D refactored; */

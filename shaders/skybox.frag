@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 uniform vec3 sun_rotation;
 uniform vec3 sky_color;

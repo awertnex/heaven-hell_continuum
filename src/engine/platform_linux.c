@@ -7,14 +7,12 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include "h/dir.h"
 #include "h/limits.h"
 #include "h/logger.h"
 
-int make_dir(str *path)
+int make_dir(const str *path)
 {
-
-    int exit_code = mkdir(path, 0775);
+    int exit_code = mkdir(path, 0755);
 
     if (exit_code == 0)
         LOGTRACE("Directory Created '%s'\n", path);
@@ -40,7 +38,7 @@ b8 _get_path_bin_root(str *path)
     return TRUE;
 }
 
-b8 exec(str *const *cmd, str *cmd_name)
+b8 exec(buf *cmd, str *cmd_name)
 {
     pid_t pid = fork();
     if (pid < 0)
@@ -50,7 +48,7 @@ b8 exec(str *const *cmd, str *cmd_name)
     }
     else if (pid == 0)
     {
-        execvp(cmd[0], cmd);
+        execvp((const str*)cmd->i[0], (str *const *)cmd->i);
         LOGERROR("'%s' Failed\n", cmd_name);
         _exit(EXIT_FAILURE);
     }

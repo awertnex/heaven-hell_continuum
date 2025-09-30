@@ -11,7 +11,7 @@
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
 
-#define GRAVITY     (9.7803267715f / 10.0f)
+#define GRAVITY     -9.7803267715f
 
 #define v3izero     (v3i32){0, 0, 0}
 #define v3fzero     (v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f}
@@ -28,14 +28,20 @@ u32 distance_v3i32(v3i32 a, v3i32 b);
 f32 distance_v3f32(v3f32 a, v3f32 b);
 b8 is_in_range_i32(i32 pos, i32 start, i32 end);
 b8 is_in_range_f32(f32 pos, f32 start, f32 end);
+b8 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end);
 b8 is_in_area_f32(v2f32 pos, v2f32 start, v2f32 end);
 b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end);
-b8 is_in_volume_f32_i32(v3f32 pos, v3i32 start, v3i32 end);
+b8 is_in_volume_f32(v3f32 pos, v3f32 start, v3f32 end);
 
 m4f32 matrix_add(m4f32 a, m4f32 b);
 m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
+
+f32 lerp_f32(f32 start, f32 end, f32 scale);
+f32 easein_f32(f32 start, f32 end, f32 scale);
+f32 easeout_f32(f32 start, f32 end, f32 scale);
+f32 smoothstep_f32(f32 start, f32 end, f32 scale);
 
 #endif /* ENGINE_MATH_H */
 

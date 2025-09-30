@@ -3,6 +3,7 @@
 uniform vec3 camera_position;
 uniform vec3 sun_rotation; // TODO: use sun_rotation
 uniform vec3 sky_color;
+uniform float opacity;
 in vec3 vertex_position;
 out vec4 color;
 
@@ -29,7 +30,7 @@ void main()
             (base_color.b * sky_color.b)) / sky_brightness;
     flashlight /= distance;
 
-    color = (((base_color * (1.0 + sky_brightness)) + flashlight) / (distance * 2.0)) +
-        (vec4(sky_color, 1.0) * sky_influence);
+    color = vec4(((((base_color.rgb * (1.0 + sky_brightness)) + flashlight) / (distance * 2.0)) +
+        (sky_color.rgb * sky_influence)) * base_color.a * opacity, base_color.a * opacity);
 }
 

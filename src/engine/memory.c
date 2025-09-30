@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "h/platform.h"
 #include "h/memory.h"
@@ -69,7 +70,7 @@ b8 mem_realloc(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Denied, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
@@ -90,7 +91,7 @@ b8 mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Denied, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
@@ -172,9 +173,46 @@ void swap_strings(str *s1, str *s2)
         swap_bits(&s1[i], &s2[i], 8);
 }
 
+str *swap_string_char(str *string, char c1, char c2)
+{
+    u64 len = strlen(string);
+    if (!len) return string;
+
+    for (u64 i = 0; i < len; ++i)
+    {
+        if (string[i] == c1)
+            string[i] = c2;
+    }
+
+    return string;
+}
+
+str *stringf(const str* format, ...)
+{
+    static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
+    static u64 index = 0;
+
+    str *string = str_buf[index];
+    mem_zero((void*)&string, OUT_STRING_MAX, "stringf_current_buf");
+
+    __builtin_va_list args;
+    va_start(args, format);
+    u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
+    va_end(args);
+
+    if (required_bytes >= OUT_STRING_MAX - 1)
+    {
+        char *trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
+        snprintf(trunc_buf, 4, "...");
+    }
+
+    index = (index + 1) % STRINGF_BUFFERS_MAX;
+    return string;
+}
+
 void sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
-    /*
+#if 0
     for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
     {
         smallest = i;
@@ -198,6 +236,6 @@ void sort_buf(buf *buffer) /* TODO: fucking fix this */
 
         swap_strings(buffer->i[i], buffer->i[smallest]);
     }
-    */
+#endif
 }
 

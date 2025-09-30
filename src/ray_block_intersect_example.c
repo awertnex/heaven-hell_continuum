@@ -53,7 +53,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
                 /* Fill out hit info */
                 out_hit->block_pos = (v3i32){x, y, z};
                 out_hit->distance = dist;
-                out_hit->hit = true;
+                out_hit->hit = TRUE;
 
                 /* Determine face normal */
                 v3i8 normal = {0};
@@ -65,7 +65,7 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
                 }
 
                 out_hit->face_normal = normal;
-                return true;
+                return TRUE;
             }
         }
 

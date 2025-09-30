@@ -2,6 +2,7 @@
 #define ENGINE_MEMORY_H
 
 #include "defines.h"
+#include "limits.h"
 
 #define arr_len(arr)    ((u64)sizeof(arr) / sizeof(arr[0]))
 
@@ -68,6 +69,19 @@ void mem_zero(void **x, u64 size, const str *name);
 void print_bits(u64 x, u8 bit_count);
 void swap_bits(char *c1, char *c2, u8 bit_count);
 void swap_strings(str *s1, str *s2);
+
+/*
+ * swap all occurrences of c1 in string with c2;
+ *
+ * return string;
+ */
+str *swap_string_char(str *string, char c1, char c2);
+
+/*
+ * return string format;
+ */
+str *stringf(const str* format, ...);
+
 void sort_buf(buf *s_buf);
 
 #endif /* ENGINE_MEMORY_H */

@@ -55,14 +55,21 @@ b8 is_in_range_i32(i32 pos, i32 start, i32 end)
 
 b8 is_in_range_f32(f32 pos, f32 start, f32 end)
 {
-    return ((pos - start) >= 0) & ((end - pos) >= 0);
+    return ((pos - start) >= 0.0f) & ((end - pos) >= 0.0f);
+}
+
+b8 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end)
+{
+    return
+        ((pos.x - start.x) >= 0) & ((end.x - pos.x) >= 0) &
+        ((pos.y - start.y) >= 0) & ((end.y - pos.y) >= 0);
 }
 
 b8 is_in_area_f32(v2f32 pos, v2f32 start, v2f32 end)
 {
     return
-        ((pos.x - start.x) >= 0) & ((end.x - pos.x) >= 0) &
-        ((pos.y - start.y) >= 0) & ((end.y - pos.y) >= 0);
+        ((pos.x - start.x) >= 0.0f) & ((end.x - pos.x) >= 0.0f) &
+        ((pos.y - start.y) >= 0.0f) & ((end.y - pos.y) >= 0.0f);
 }
 
 b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end)
@@ -73,14 +80,12 @@ b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end)
         ((pos.z - start.z) >= 0) & ((end.z - pos.z) >= 0);
 }
 
-b8 is_in_volume_f32_i32(v3f32 pos, v3i32 start, v3i32 end)
+b8 is_in_volume_f32(v3f32 pos, v3f32 start, v3f32 end)
 {
-    v3i32 pos_i = (v3i32){floor(pos.x), floor(pos.y), floor(pos.z)};
-
     return
-        ((pos_i.x - start.x) >= 0) & ((end.x - pos_i.x) >= 0) &
-        ((pos_i.y - start.y) >= 0) & ((end.y - pos_i.y) >= 0) &
-        ((pos_i.z - start.z) >= 0) & ((end.z - pos_i.z) >= 0);
+        ((pos.x - start.x) >= 0.0f) & ((end.x - pos.x) >= 0.0f) &
+        ((pos.y - start.y) >= 0.0f) & ((end.y - pos.y) >= 0.0f) &
+        ((pos.z - start.z) >= 0.0f) & ((end.z - pos.z) >= 0.0f);
 }
 
 m4f32 matrix_add(m4f32 a, m4f32 b)
@@ -138,3 +143,16 @@ v4f32 matrix_multiply_vector(m4f32 a, v4f32 b)
     };
 }
 
+f32 lerp_f32(f32 start, f32 end, f32 scale)
+{
+    return start + (end - start) * scale;
+}
+
+f32 easein_f32(f32 start, f32 end, f32 scale)
+{
+    return start + (end - start) * (scale * scale);
+}
+
+f32 easeout_f32(f32 start, f32 end, f32 scale) /* TODO: write this function */
+{
+}

@@ -1,11 +1,11 @@
 #ifndef ENGINE_CORE_H
 #define ENGINE_CORE_H
 
-#define ENGINE_AUTHOR       "Author: Lily Awertnex"
+#define ENGINE_AUTHOR       "Lily Awertnex"
 #define ENGINE_NAME         "Fossil Engine"
-#define ENGINE_VERSION      "0.1.0-beta"
+#define ENGINE_VERSION      "0.1.0"
 
-#include "../../../include/glad/glad.h"
+#include "../../../include/glad/glad_modified.h"
 #define GLFW_INCLUDE_NONE
 #include "../../../include/glfw3_modified.h"
 #include "../../../include/stb_truetype_modified.h"
@@ -16,9 +16,149 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define FONT_ATLAS_CELL_RESOLUTION  16
-#define FONT_RESOLUTION_DEFAULT     64
-#define FONT_SIZE_DEFAULT           22.0f
+#define KEYBOARD_KEYS_MAX 120
+#define KEYBOARD_DOUBLE_PRESS_TIME_THRESHOLD 0.4f
+#define FONT_ATLAS_CELL_RESOLUTION 16
+#define FONT_RESOLUTION_DEFAULT 64
+#define FONT_SIZE_DEFAULT 22.0f
+#define TEXT_TAB_SIZE 4
+
+enum KeyboardKeyState
+{
+    KEY_IDLE,
+    KEY_PRESS,
+    KEY_HOLD,
+    KEY_RELEASE,
+    KEY_LISTEN_DOUBLE,
+    KEY_PRESS_DOUBLE,
+    KEY_HOLD_DOUBLE,
+    KEY_RELEASE_DOUBLE,
+}; /* KeyboardKeyState */
+
+enum KeyboardKeys
+{
+    KEY_SPACE,
+    KEY_APOSTROPHE,
+    KEY_COMMA,
+    KEY_MINUS,
+    KEY_PERIOD,
+    KEY_SLASH,
+    KEY_0,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_SEMICOLON,
+    KEY_EQUAL,
+    KEY_A,
+    KEY_B,
+    KEY_C,
+    KEY_D,
+    KEY_E,
+    KEY_F,
+    KEY_G,
+    KEY_H,
+    KEY_I,
+    KEY_J,
+    KEY_K,
+    KEY_L,
+    KEY_M,
+    KEY_N,
+    KEY_O,
+    KEY_P,
+    KEY_Q,
+    KEY_R,
+    KEY_S,
+    KEY_T,
+    KEY_U,
+    KEY_V,
+    KEY_W,
+    KEY_X,
+    KEY_Y,
+    KEY_Z,
+    KEY_LEFT_BRACKET,
+    KEY_BACKSLASH,
+    KEY_RIGHT_BRACKET,
+    KEY_GRAVE_ACCENT,
+    KEY_WORLD_1,
+    KEY_WORLD_2,
+
+    KEY_ESCAPE,
+    KEY_ENTER,
+    KEY_TAB,
+    KEY_BACKSPACE,
+    KEY_INSERT,
+    KEY_DELETE,
+    KEY_RIGHT,
+    KEY_LEFT,
+    KEY_DOWN,
+    KEY_UP,
+    KEY_PAGE_UP,
+    KEY_PAGE_DOWN,
+    KEY_HOME,
+    KEY_END,
+    KEY_CAPS_LOCK,
+    KEY_SCROLL_LOCK,
+    KEY_NUM_LOCK,
+    KEY_PRINT_SCREEN,
+    KEY_PAUSE,
+    KEY_F1,
+    KEY_F2,
+    KEY_F3,
+    KEY_F4,
+    KEY_F5,
+    KEY_F6,
+    KEY_F7,
+    KEY_F8,
+    KEY_F9,
+    KEY_F10,
+    KEY_F11,
+    KEY_F12,
+    KEY_F13,
+    KEY_F14,
+    KEY_F15,
+    KEY_F16,
+    KEY_F17,
+    KEY_F18,
+    KEY_F19,
+    KEY_F20,
+    KEY_F21,
+    KEY_F22,
+    KEY_F23,
+    KEY_F24,
+    KEY_F25,
+    KEY_KP_0,
+    KEY_KP_1,
+    KEY_KP_2,
+    KEY_KP_3,
+    KEY_KP_4,
+    KEY_KP_5,
+    KEY_KP_6,
+    KEY_KP_7,
+    KEY_KP_8,
+    KEY_KP_9,
+    KEY_KP_DECIMAL,
+    KEY_KP_DIVIDE,
+    KEY_KP_MULTIPLY,
+    KEY_KP_SUBTRACT,
+    KEY_KP_ADD,
+    KEY_KP_ENTER,
+    KEY_KP_EQUAL,
+    KEY_LEFT_SHIFT,
+    KEY_LEFT_CONTROL,
+    KEY_LEFT_ALT,
+    KEY_LEFT_SUPER,
+    KEY_RIGHT_SHIFT,
+    KEY_RIGHT_CONTROL,
+    KEY_RIGHT_ALT,
+    KEY_RIGHT_SUPER,
+    KEY_MENU,
+}; /* KeyboardKeys */
 
 typedef struct Render
 {
@@ -65,6 +205,13 @@ typedef struct ShaderProgram
     Shader fragment;
 } ShaderProgram;
 
+typedef struct FBO
+{
+    GLuint fbo;
+    GLuint color_buf;
+    GLuint rbo;
+} FBO;
+
 typedef struct Camera
 {
     v3f32 pos;
@@ -96,8 +243,19 @@ typedef struct Glyph
     v2i32 bearing;
     i32 advance;
     i32 x0, y0, x1, y1;
+    v2f32 texture_sample;
     b8 loaded;
 } Glyph;
+
+typedef struct Glyphf
+{
+    v2f32 scale;
+    v2f32 bearing;
+    f32 advance;
+    f32 x0, y0, x1, y1;
+    v2f32 texture_sample;
+    b8 loaded;
+} Glyphf;
 
 typedef struct Font
 {
@@ -108,6 +266,7 @@ typedef struct Font
     i32 descent;                /* glyphs lowest points' deviation from baseline */
     i32 line_gap;
     i32 line_height;
+    f32 size;                   /* global font size for text uniformity */
     v2i32 scale;                /* biggest glyph bounding box in pixels */
 
     stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
@@ -120,18 +279,17 @@ typedef struct Font
 
     struct /* uniform */
     {
-        GLint row;
-        GLint col;
         GLint char_size;
         GLint font_size;
-        GLint ndc_size;
-        GLint offset;
-        GLint advance;
-        GLint bearing;
         GLint text_color;
     } uniform;
 
 } Font;
+
+/* ---- section: declarations ----------------------------------------------- */
+
+extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
+extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
@@ -154,7 +312,9 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, GLuint *fbo, GLuint *color_buf, GLuint *rbo, Mesh *mesh_fbo, b8 flip_vertical);
+int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo, b8 flip_vertical);
+
+int realloc_fbo(Render *render, FBO *fbo);
 
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
@@ -179,6 +339,59 @@ void update_camera_movement(Camera *camera);
 void update_camera_perspective(Camera *camera, Projection *projection);
 
 /*
+ * update internal key states: press, double-press, hold, release;
+ */
+void update_key_states(Render *render);
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_press(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_listen_double(const u32 key)
+{return (keyboard_key[key] == KEY_LISTEN_DOUBLE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_hold(const u32 key)
+{return (keyboard_key[key] == KEY_HOLD);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_hold_double(const u32 key)
+{return (keyboard_key[key] == KEY_HOLD_DOUBLE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_release(const u32 key)
+{return (keyboard_key[key] == KEY_RELEASE);}
+
+/*
+ * -- INTERNAL USE ONLY --;
+ */
+static inline b8 _is_key_release_double(const u32 key)
+{return (keyboard_key[key] == KEY_RELEASE_DOUBLE);}
+
+static inline b8 is_key_press(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS || keyboard_key[key] == KEY_PRESS_DOUBLE);}
+
+static inline b8 is_key_press_double(const u32 key)
+{return (keyboard_key[key] == KEY_PRESS_DOUBLE);}
+
+static inline b8 is_key_hold(const u32 key)
+{return (keyboard_key[key] == KEY_HOLD || keyboard_key[key] == KEY_HOLD_DOUBLE);}
+
+static inline b8 is_key_release(const u32 key)
+{return (keyboard_key[key] == KEY_RELEASE || keyboard_key[key] == KEY_RELEASE_DOUBLE);}
+
+/*
  * load font from file at font_path;
  * allocate memory for font.buf and load file contents into it in binary format;
  * allocate memory for font.bitmap and render glyphs onto it;
@@ -189,16 +402,52 @@ void update_camera_perspective(Camera *camera, Projection *projection);
  *
  * return FALSE (0) on failure;
  */
-b8 load_font(Font *font, u32 size, const str *font_path);
+b8 init_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
 
 /*
- * does update Font.projection;
- *
- * size = font height in pixels;
+ * init text rendering settings;
  */
-void draw_text(Render *render, Font *font, const str *text, f32 size, v3f32 pos, v4u8 color, i8 align_x, i8 align_y);
+u8 init_text(void);
+
+/*
+ * start text rendering batch;
+ *
+ * length = pre-allocate buffer for string;
+ * length = if 0, STRING_MAX is allocated;
+ * size = font height in pixels;
+ * color = hex format: 0xrrggbbaa;
+ * clear = clear the framebuffer before rendering;
+ */
+void start_text(
+        u64 length, f32 size, Font *font,
+        Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
+
+
+/*
+ * push string's glyph metrics, position
+ * and alignment to render buffer;
+ *
+ * can be called multiple times within a text rendering
+ * batch, chained with 'render_text()';
+ */
+void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
+
+/*
+ * render text to framebuffer;
+ *
+ * can be called multiple times within a text rendering
+ * batch, chained with 'push_text()';
+ */
+void render_text(u32 color);
+
+/*
+ * cleanup for text rendering;
+ * unbind text framebuffer;
+ * enable depth test;
+ */
+void stop_text(void);
 
 #endif /* ENGINE_CORE_H */
 
