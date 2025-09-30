@@ -10,8 +10,6 @@ u16 chunk_tab_index = 0;                        /* player relative chunk tab acc
 static struct Globals
 {
     u8 opacity;
-    GLuint color;
-    GLuint camera_position;
     GLuint perspective;
     GLuint open_cursor;
     Mesh voxel;
@@ -21,7 +19,6 @@ u8 init_chunking(ShaderProgram *program)
 {
     if (!mem_alloc_memb((void*)&chunk_buf, CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
         goto cleanup;
-    return 0;
 
     GLfloat vbo[] =
     {
@@ -44,15 +41,17 @@ u8 init_chunking(ShaderProgram *program)
         0, 1, 3, 3, 2, 0,
     };
 
-    generate_mesh(&globals.voxel, GL_STATIC_DRAW, 24, 36, vbo, ebo);
-    globals.color = glGetUniformLocation(program->id, "voxel_color");
-    globals.camera_position = glGetUniformLocation(program->id, "camera_position");
-    globals.perspective = glGetUniformLocation(program->id, "mat_perspective");
-    globals.open_cursor = glGetUniformLocation(program->id, "open_cursor");
+    generate_mesh(&globals.voxel, GL_DYNAMIC_DRAW, 24, 36, vbo, ebo);
+    LOGFATAL("vbolen: %d\n", globals.voxel.vbo_len);
+    return 0;
 
 cleanup:
     free_chunking();
     return -1;
+}
+
+void update_chunking(void)
+{
 }
 
 void free_chunking(void)
@@ -350,19 +349,8 @@ void update_chunk_tab(v3i16 player_delta_chunk)
     }
 }
 
-void shift_chunk_tab(
-        v3i16 player_chunk,
-        v3i16 *player_delta_chunk,
-        v3f32 camera_position)
+void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
-    v3f32 camera_pos =
-    {
-        camera_position.x,
-        camera_position.y,
-        camera_position.z,
-    };
-    glUniform4fv(globals.camera_position, 1, (GLfloat*)&camera_pos);
-
     v3i16 delta =
     {
         player_chunk.x - player_delta_chunk->x,
@@ -550,7 +538,7 @@ u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
         + (offset.z * CHUNK_BUF_LAYER);
 }
 
-void draw_chunk_tab(Projection *perspective, v3f32 *camera_position)
+void draw_chunk_tab(GLuint u_open_cursor)
 {
     static v3f32 open_cursor = {0};
     static v3u32 block_coordinates = {0};
@@ -575,12 +563,11 @@ void draw_chunk_tab(Projection *perspective, v3f32 *camera_position)
     else
         globals.opacity = 255;
 
-    if (FLAG_DEBUG_MORE)
-        glUniform4fv(globals.color, 1, (GLfloat*)&color[0]);
-    else
-        glUniform4fv(globals.color, 1, (GLfloat*)&color[1]);
-    glUniformMatrix4fv(globals.perspective, 1, GL_FALSE, (GLfloat*)&perspective->projection);
-    glUniform3fv(globals.camera_position, 1, (GLfloat*)camera_position);
+    //if (FLAG_DEBUG_MORE)
+    //    glUniform4fv(globals.color, 1, (GLfloat*)&color[0]);
+    //else
+    //    glUniform4fv(globals.color, 1, (GLfloat*)&color[1]);
+    //glUniform3fv(globals.camera_position, 1, (GLfloat*)camera_position);
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
@@ -596,10 +583,10 @@ void draw_chunk_tab(Projection *perspective, v3f32 *camera_position)
 
         for (u32 j = 0; j < CHUNK_VOLUME; ++j)
         {
-            block_coordinates = get_block_coordinates(j);
-            glUniform3fv(globals.open_cursor, 1, (GLfloat*)&open_cursor);
+            glUniform3fv(u_open_cursor, 1, (GLfloat*)&open_cursor);
             draw_mesh(&globals.voxel);
 
+            block_coordinates = get_block_coordinates(j);
             //draw_block(chunk_tab[i],
             //        block_coordinates.x,
             //        block_coordinates.y,
@@ -608,14 +595,14 @@ void draw_chunk_tab(Projection *perspective, v3f32 *camera_position)
             open_cursor.x += 1.0f;
             if (block_coordinates.x == CHUNK_DIAMETER - 1)
             {
-                open_cursor.x = 0.0f;
+                open_cursor.x -= CHUNK_DIAMETER;
                 open_cursor.y += 1.0f;
                 if (block_coordinates.y == CHUNK_DIAMETER - 1)
                 {
-                    open_cursor.y = 0.0f;
+                    open_cursor.y -= CHUNK_DIAMETER;
                     open_cursor.z += 1.0f;
                     if (block_coordinates.z == CHUNK_DIAMETER - 1)
-                        open_cursor.z = 0.0f;
+                        open_cursor.z -= CHUNK_DIAMETER;
                 }
             }
         }

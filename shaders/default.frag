@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 uniform vec3 camera_position;
 uniform vec3 sun_rotation; // TODO: use sun_rotation

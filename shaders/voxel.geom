@@ -1,4 +1,4 @@
-#version 440 core
+#version 430 core
 
 #define MAX_VERTICES 36
 

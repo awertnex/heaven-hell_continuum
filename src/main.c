@@ -409,6 +409,11 @@ void bind_shader_uniforms(void)
         glGetUniformLocation(shader_gizmo.id, "mat_orientation");
     uniform.gizmo.mat_projection =
         glGetUniformLocation(shader_gizmo.id, "mat_projection");
+
+    uniform.voxel.mat_perspective =
+        glGetUniformLocation(shader_voxel.id, "mat_perspective");
+    uniform.voxel.open_cursor =
+        glGetUniformLocation(shader_voxel.id, "open_cursor");
 }
 
 void update_input(Player *player)
@@ -555,7 +560,7 @@ b8 init_world(str *string)
     update_player(&render, &lily);
     set_player_block(&lily, -3, 0, 0);
     update_chunk_tab(lily.chunk);
-    shift_chunk_tab(lily.chunk, &lily.delta_chunk, lily.camera.pos);
+    shift_chunk_tab(lily.chunk, &lily.delta_chunk);
 
     lily.delta_target =
         (v3i32){
@@ -571,7 +576,7 @@ b8 init_world(str *string)
 
 void update_world(Player *player)
 {
-    game_tick = (floor(render.frame_start * 200)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = 3000 + (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
@@ -590,7 +595,7 @@ void update_world(Player *player)
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk, lily.camera.pos);
+        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunk_tab(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
@@ -644,6 +649,10 @@ void draw_skybox(Player *player)
 
 void draw_world(Player *player)
 {
+    glUseProgram(shader_voxel.id);
+    glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
+    draw_chunk_tab(uniform.voxel.open_cursor);
+
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
     glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&player->camera.pos);
@@ -671,8 +680,6 @@ void draw_everything(Player *player)
     draw_skybox(player);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(shader_voxel.id);
-    //draw_chunk_tab(&projection, &lily.camera.pos);
     draw_world(player);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

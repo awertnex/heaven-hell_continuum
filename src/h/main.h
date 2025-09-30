@@ -43,6 +43,12 @@ typedef struct Uniform
         GLint mat_projection;
     } gizmo;
 
+    struct /* voxel */
+    {
+        GLint mat_perspective;
+        GLint open_cursor;
+    } voxel;
+
 } Uniform;
 
 /* ---- section: declarations ----------------------------------------------- */

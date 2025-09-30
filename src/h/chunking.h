@@ -195,12 +195,9 @@ void deserialize_chunk(Chunk *chunk, str *world_name);
 Chunk *push_chunk_buf(v3i16 player_delta_chunk, v3u16 pos);
 Chunk *pop_chunk_buf(u16 index);
 void update_chunk_tab(v3i16 player_chunk);
-void shift_chunk_tab(
-        v3i16 player_chunk,
-        v3i16 *player_delta_chunk,
-        v3f32 camera_position);
+void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
-void draw_chunk_tab(Projection *perspective, v3f32 *camera_position);
+void draw_chunk_tab(GLuint u_open_cursor);
 void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 #ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
