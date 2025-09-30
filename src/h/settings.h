@@ -14,7 +14,7 @@
 #define PLAYER_JUMP_HEIGHT                  8.0f
 #define PLAYER_SPEED_WALK                   3.5f
 #define PLAYER_SPEED_FLY                    9.0f
-#define PLAYER_SPEED_FLY_FAST               18.0f
+#define PLAYER_SPEED_FLY_FAST               40.0f
 #define PLAYER_SPEED_SNEAK                  1.5f
 #define PLAYER_SPEED_SPRINT                 7.0f
 

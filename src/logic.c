@@ -185,14 +185,8 @@ b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
 
 void update_gravity(Render *render, Player *player)
 {
-    f32 initial_velocity = (GRAVITY * player->mass);
     if (player->state & FLAG_FALLING)
-    {
-        if (player->state & FLAG_CAN_JUMP)
-            player->vel.z -= initial_velocity;
-        else
-            player->vel.z -= (GRAVITY * player->mass * render->frame_delta_square);
-    }
+        player->vel.z += (GRAVITY * player->mass * render->frame_delta_square);
     player->raw_pos.z += player->vel.z;
 }
 

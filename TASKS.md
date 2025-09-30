@@ -20,7 +20,6 @@ TASKS:
 - [x] fix fullscreen affecting mouse delta (10 May 2025)
 - [x] fix hollow states at top of chunk (22 May 2025)
 - [x] fix remove_block block_parse_limit math (21 May 2025)
-- [ ] get user's screen resolution for fbo base size
 
 quirks:
 - [x] fix haloing (black traces when drawing an RGB texture onto an RGBA framebuffer, more visible when aspect ratio isn't 1:1) (27 Sep 2025)
