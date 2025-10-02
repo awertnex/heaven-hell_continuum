@@ -6,8 +6,8 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
-#include "../include/raylib.h"
-#include "../include/rlgl.h"
+#include "../../include/raylib/raylib.h"
+#include "../../include/raylib/rlgl.h"
 
 #include "../chunking.c"
 #include "../dir.c"

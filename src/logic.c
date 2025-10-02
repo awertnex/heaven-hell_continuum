@@ -123,9 +123,8 @@ void update_camera_movement_player(Render *render, Player *player)
         case 0: /* ---- 1st person ------------------------------------------ */
             player->camera.pos =
                 (v3f32){
-                    player->pos.x,
-                    player->pos.y,
-                    player->pos.z + player->eye_height
+                    player->pos.x, player->pos.y, player->pos.z +
+                        player->eye_height
                 };
             break;
 

@@ -1,9 +1,9 @@
 #version 430 core
 
-in vec2 tex_coords;
-out vec4 color;
 uniform sampler2D texture_font_atlas;
 uniform vec4 text_color;
+in vec2 tex_coords;
+out vec4 color;
 
 void main()
 {

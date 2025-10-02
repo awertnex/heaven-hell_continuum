@@ -13,24 +13,21 @@ float get_distance(vec3 a, vec3 b)
 }
 
 vec4 base_color = vec4(0.3, 0.15, 0.03, 1.0);
-float distance;
 float sky_influence = 0.13;
-float sky_brightness;
-float flashlight;
 
 void main()
 {
-    distance = get_distance(vertex_position, camera_position);
+    float distance = get_distance(vertex_position, camera_position);
     distance /= sqrt(distance);
 
-    sky_brightness = sky_color.r + sky_color.g + sky_color.b;
-    flashlight = (
-            (base_color.r * sky_color.r) +
-            (base_color.g * sky_color.g) +
-            (base_color.b * sky_color.b)) / sky_brightness;
+    float sky_brightness = sky_color.r + sky_color.g + sky_color.b;
+    float flashlight =
+        ((base_color.r * sky_color.r) +
+         (base_color.g * sky_color.g) +
+         (base_color.b * sky_color.b)) / 3.0;
     flashlight /= distance;
 
-    color = vec4(((((base_color.rgb * (1.0 + sky_brightness)) + flashlight) / (distance * 2.0)) +
-        (sky_color.rgb * sky_influence)) * base_color.a * opacity, base_color.a * opacity);
+    vec3 solid_color = (base_color.rgb * (sky_brightness)) + flashlight;
+    color = vec4(((solid_color / (distance * 2.0)) +
+        (sky_color.rgb * sky_influence)) * opacity, opacity);
 }
-

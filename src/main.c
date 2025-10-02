@@ -76,6 +76,15 @@ ShaderProgram shader_default =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
+ShaderProgram shader_testing =
+{
+    .name = "testing",
+    .vertex.file_name = "testing.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "testing.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
+
 ShaderProgram shader_text =
 {
     .name = "text",
@@ -179,18 +188,17 @@ static void gl_cursor_pos_callback(
     render.mouse_delta =
         (v2f64){
             xpos - render.mouse_position.x,
-            ypos - render.mouse_position.y
+            ypos - render.mouse_position.y,
         };
     render.mouse_position = (v2f64){xpos, ypos};
 
     if ((state & FLAG_PARSE_CURSOR) && !(state & FLAG_SUPER_DEBUG))
-        {
-            lily.yaw +=
-                (f32)render.mouse_delta.x * settings.mouse_sensitivity;
-
-            lily.pitch +=
-                (f32)render.mouse_delta.y * settings.mouse_sensitivity;
-        }
+    {
+        lily.yaw +=
+            (f32)render.mouse_delta.x * settings.mouse_sensitivity;
+        lily.pitch +=
+            (f32)render.mouse_delta.y * settings.mouse_sensitivity;
+    }
 }
 
 static void gl_key_callback(
@@ -425,6 +433,8 @@ void bind_shader_uniforms(void)
         glGetUniformLocation(shader_voxel.id, "offset_cursor");
     uniform.voxel.opacity =
         glGetUniformLocation(shader_voxel.id, "opacity");
+    uniform.voxel.size =
+        glGetUniformLocation(shader_voxel.id, "size");
 }
 
 void update_input(Player *player)
@@ -583,30 +593,32 @@ b8 init_world(str *string)
     if (init_chunking(&shader_voxel) != 0) return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, -3, 0, 0);
-    update_chunk_tab(lily.chunk);
-    shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-
+    set_player_block(&lily, 8, 8, 22);
+    lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i32){
-            lily.target.x,
-            lily.target.y,
-            lily.target.z
+            (i32)lily.target.x,
+            (i32)lily.target.y,
+            (i32)lily.target.z,
         };
+
+    update_chunking(lily.delta_chunk);
+    //shift_chunk_tab(lily.chunk, &lily.delta_chunk);
 
     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
     disable_cursor;
     center_cursor;
+    return TRUE;
 }
 
 void update_world(Player *player)
 {
-    game_tick = 3000 + (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = 6000 + (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
         show_cursor;
-    //else disable_cursor;
+    else disable_cursor;
 
     update_collision_static(&lily);
     update_camera_movement_player(&render, player);
@@ -621,7 +633,7 @@ void update_world(Player *player)
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        update_chunk_tab(lily.delta_chunk);
+        update_chunking(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
 
@@ -684,8 +696,7 @@ void draw_world(Player *player)
 #if 0 // TODO: maybe remove
     glUseProgram(shader_default.id);
     glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&player->camera.pos);
-    glUniform3fv(uniform.defaults.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&lily.camera.pos);
     glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
     draw_mesh(&mesh_cube_of_happiness);
 #endif
@@ -797,6 +808,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 25);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
     state =
@@ -821,9 +833,6 @@ int main(int argc, char **argv)
     glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
     gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
 
-    glfwSetCursorPosCallback(render.window, gl_cursor_pos_callback);
-    gl_cursor_pos_callback(render.window, render.mouse_position.x, render.mouse_position.y);
-
     glfwSetKeyCallback(render.window, gl_key_callback);
     gl_key_callback(render.window, 0, 0, 0, 0);
 
@@ -832,6 +841,7 @@ int main(int argc, char **argv)
     if (
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_fbo) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_default) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_testing) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_text) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
             init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
@@ -881,6 +891,141 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
     generate_standard_meshes();
 
+    lily.perspective = 2;
+    lily.camera_distance = 64.0f;
+    u8 test_tab[33 * 33 * 33] = {0};
+    while (!glfwWindowShouldClose(render.window))
+    {
+        render.frame_start = glfwGetTime() - game_start_time;
+        render.frame_delta = render.frame_start - render.frame_last;
+        render.frame_delta_square = pow(render.frame_delta, 2.0f);
+        render.frame_last = render.frame_start;
+        game_tick = 4000.0f + (floor(render.frame_start * 200)) -
+            (SETTING_DAY_TICKS_MAX * game_days);
+        if (game_tick >= SETTING_DAY_TICKS_MAX) ++game_days;
+        glEnable(GL_DEPTH_TEST);
+        glfwGetCursorPos(render.window,
+                &render.mouse_position.x,
+                &render.mouse_position.y);
+        render.mouse_delta =
+            (v2f64){
+                render.mouse_position.x - render.mouse_last.x,
+                render.mouse_position.y - render.mouse_last.y,
+            };
+        render.mouse_last = render.mouse_position;
+        update_key_states(&render);
+
+        if (glfwGetMouseButton(render.window,
+                    GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        {
+            lily.camera_distance += (f32)render.mouse_delta.y;
+            lily.camera_distance =
+                clamp_f32(lily.camera_distance, 10.0f, 100.0f);
+        }
+        else
+        {
+            lily.yaw +=
+                (f32)render.mouse_delta.x * settings.mouse_sensitivity;
+            lily.pitch +=
+                (f32)render.mouse_delta.y * settings.mouse_sensitivity;
+        }
+
+        update_camera_movement_player(&render, &lily);
+        update_camera_perspective(&lily.camera, &projection);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        draw_skybox(&lily);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(shader_voxel.id);
+        glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
+        glUniform3fv(uniform.voxel.camera_position, 1, (GLfloat*)&lily.camera.pos);
+        glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
+        glUniform1f(uniform.voxel.opacity, 1.0f);
+        v3f32 open_cursor = {-17.5f, -17.5f, -16.0f};
+        glUniform3fv(uniform.voxel.open_cursor, 1, (GLfloat*)&open_cursor);
+        glUniform1f(uniform.voxel.opacity, 1.0f);
+
+        static f32 render_distance;
+        static f32 pulse;
+        render_distance = (16 * 16) + 2;
+        static f32 pulse_distance;
+        for (u32 i = 0; i < 33 * 33 * 33; ++i)
+        {
+            if (distance_v3i32(
+                        (v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
+                        (v3i32){17, 17, 17}) > (i32)render_distance) continue;
+
+            v3f32 offset_cursor =
+            {
+                floorf(i % 33),
+                floorf((i / 33) % 33),
+                floorf(i / (33 * 33)),
+            };
+            glUniform3fv(uniform.voxel.offset_cursor, 1,
+                    (GLfloat*)&offset_cursor);
+
+            pulse_distance = distance_v3f32(
+                    (v3f32){offset_cursor.x, offset_cursor.y, offset_cursor.z},
+                    (v3f32){17.0f, ((render.frame_start * 20.0f) -
+                     (floorf((render.frame_start * 20.0f) / 90.0f) * 90.0f)) - 30.0f, 17.0f}) * 0.2f;
+            pulse = (sinf(pulse_distance * DEG2RAD) * 0.3f) + 0.7f;
+            glUniform1f(uniform.voxel.size, pulse);
+
+            draw_mesh(&mesh_cube_of_happiness);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        draw_hud(&lily);
+
+        static str string[512] = {0};
+        start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+                &render, &shader_text, &fbo_text, 1);
+
+        snprintf(string, 511, "FPS[%d]", (u32)(1.0f / render.frame_delta));
+        push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+        render_text(0x6f9f3fff);
+
+        snprintf(string, 511, "PITCH[%.2f] YAW[%.2f]\n", lily.pitch, lily.yaw);
+        push_text(string, (v2f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT}, 0, 0);
+        render_text(0xffffffff);
+
+        snprintf(string, 511, "MOUSE XY: %.2f %.2f\n" "DELTA XY: %.2f %.2f\n",
+                render.mouse_position.x, render.mouse_position.y,
+                render.mouse_delta.x, render.mouse_delta.y);
+        push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 2)}, 0, 0);
+        render_text(0x3f6f9fff);
+
+        snprintf(string, 511,
+                "CAMERA DISTANCE: %.2f\n"
+                "RENDER DISTANCE: %.2f\n",
+                lily.camera_distance,
+                render_distance);
+        start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+                &render, &shader_text, &fbo_text, 0);
+        push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 4)}, 0, 0);
+        render_text(0x3f9f3fff);
+        stop_text();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(shader_fbo.id);
+        glBindVertexArray(mesh_fbo.vao);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glfwSwapBuffers(render.window);
+        glfwPollEvents();
+    }
+    goto cleanup;
+
     while (!glfwWindowShouldClose(render.window))
     {
         render.frame_start = glfwGetTime() - game_start_time;
@@ -925,4 +1070,3 @@ cleanup: /* ----------------------------------------------------------------- */
     glfwTerminate();
     return 0;
 }
-

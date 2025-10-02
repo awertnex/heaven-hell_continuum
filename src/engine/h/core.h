@@ -17,7 +17,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 #define KEYBOARD_KEYS_MAX 120
-#define KEYBOARD_DOUBLE_PRESS_TIME_THRESHOLD 0.4f
+#define KEYBOARD_DOUBLE_PRESS_TIME 25.0f
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f

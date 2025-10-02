@@ -120,10 +120,10 @@ void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
 
 static inline void set_player_pos(Player *player, f32 x, f32 y, f32 z)
-{player->pos = (v3f32){x, y, z};}
+{player->raw_pos = (v3f32){x, y, z};}
 
 static inline void set_player_block(Player *player, i32 x, i32 y, i32 z)
-{player->pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};}
+{player->raw_pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};}
 
 void set_player_pos(Player *player, f32 x, f32 y, f32 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);

@@ -52,6 +52,7 @@ typedef struct Uniform
         GLint open_cursor;
         GLint offset_cursor;
         GLint opacity;
+        GLint size;
     } voxel;
 
 } Uniform;
@@ -63,6 +64,7 @@ extern u32 state;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
+extern Projection projection;
 extern Uniform uniform;
 
 #endif /* GAME_MAIN_H */

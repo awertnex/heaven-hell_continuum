@@ -36,16 +36,18 @@ v3f32 normalize_v3f32(v3f32 v)
 
 u32 distance_v3i32(v3i32 a, v3i32 b)
 {
-    return powf(a.x - b.x, 2)
-        + powf(a.y - b.y, 2)
-        + powf(a.z - b.z, 2);
+    return (u32)
+        (powf(a.x - b.x, 2) +
+         powf(a.y - b.y, 2) +
+         powf(a.z - b.z, 2));
 }
 
 f32 distance_v3f32(v3f32 a, v3f32 b)
 {
-    return powf(a.x - b.x, 2.0f)
-        + powf(a.y - b.y, 2.0f)
-        + powf(a.z - b.z, 2.0f);
+    return
+        powf(a.x - b.x, 2.0f) +
+        powf(a.y - b.y, 2.0f) +
+        powf(a.z - b.z, 2.0f);
 }
 
 b8 is_in_range_i32(i32 pos, i32 start, i32 end)
@@ -155,4 +157,5 @@ f32 easein_f32(f32 start, f32 end, f32 scale)
 
 f32 easeout_f32(f32 start, f32 end, f32 scale) /* TODO: write this function */
 {
+    return 0.0f;
 }
