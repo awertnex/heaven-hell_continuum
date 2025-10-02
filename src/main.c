@@ -942,20 +942,23 @@ section_main: /* ---- section: main loop ------------------------------------ */
         glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
         glUniform3fv(uniform.voxel.camera_position, 1, (GLfloat*)&lily.camera.pos);
         glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
-        glUniform1f(uniform.voxel.opacity, 1.0f);
+        glUniform1f(uniform.voxel.opacity, 0.2f);
         v3f32 open_cursor = {-17.5f, -17.5f, -16.0f};
         glUniform3fv(uniform.voxel.open_cursor, 1, (GLfloat*)&open_cursor);
-        glUniform1f(uniform.voxel.opacity, 1.0f);
 
-        static f32 render_distance;
+        static f32 render_distance = (16 * 16) + 2;
         static f32 pulse;
-        render_distance = (16 * 16) + 2;
         static f32 pulse_distance;
+        static u32 test_tab_center = 17 + (17 * 33) + (17 * 33 * 33);
         for (u32 i = 0; i < 33 * 33 * 33; ++i)
         {
             if (distance_v3i32(
                         (v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
                         (v3i32){17, 17, 17}) > (i32)render_distance) continue;
+
+            glUniform1f(uniform.voxel.opacity, 0.2f);
+            if (i == test_tab_center)
+                glUniform1f(uniform.voxel.opacity, 1.0f);
 
             v3f32 offset_cursor =
             {

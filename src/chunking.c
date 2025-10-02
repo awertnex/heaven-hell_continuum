@@ -414,8 +414,8 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
             player_chunk.y,
             player_chunk.z},
             (v3i32){
-            player_delta_chunk->x, 
-            player_delta_chunk->y, 
+            player_delta_chunk->x,
+            player_delta_chunk->y,
             player_delta_chunk->z}) >
             (u32)powf(settings.render_distance, 2) + 2)
     {

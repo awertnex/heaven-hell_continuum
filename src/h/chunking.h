@@ -8,39 +8,29 @@
 
 /* ---- section: world stuff ------------------------------------------------ */
 
-#define CHUNK_DIAMETER 16
-#define CHUNK_VOLUME \
-    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
+#define CHUNK_DIAMETER  16
+#define CHUNK_VOLUME    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
-#define WORLD_SEA_LEVEL 62
-#define WORLD_RADIUS 2048           /* chunk count */
-#define WORLD_RADIUS_VERTICAL 64    /* chunk count */
+#define WORLD_SEA_LEVEL         62
+#define WORLD_RADIUS            2048    /* chunk count */
+#define WORLD_RADIUS_VERTICAL   64      /* chunk count */
 
-#define WORLD_DIAMETER \
-    ((WORLD_RADIUS * 2) + 1)
-
-#define WORLD_DIAMETER_VERTICAL \
-    ((WORLD_RADIUS_VERTICAL * 2) + 1)
-
+#define WORLD_DIAMETER          ((WORLD_RADIUS * 2) + 1)
+#define WORLD_DIAMETER_VERTICAL ((WORLD_RADIUS_VERTICAL * 2) + 1)
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS \
-    2
-
-#define CHUNK_BUF_DIAMETER \
-    ((CHUNK_BUF_RADIUS * 2) + 1)
-
-#define CHUNK_BUF_LAYER \
-    (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-
+#define CHUNK_BUF_RADIUS        2
+#define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
+#define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
+#define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
     (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 
 #define CHUNK_TAB_CENTER \
-    (CHUNK_BUF_RADIUS \
-     + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) \
-     + (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
+    (CHUNK_BUF_RADIUS_ODD \
+     + (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER) \
+     + (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
 /* ---- section: general ---------------------------------------------------- */
 
