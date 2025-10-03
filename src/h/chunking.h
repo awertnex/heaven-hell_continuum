@@ -114,20 +114,12 @@ enum ChunkFlags
 
 enum ChunkStates
 {
-    SHIFT_PX = 1,
-    SHIFT_NX = 2,
-    SHIFT_PY = 3,
-    SHIFT_NY = 4,
-    SHIFT_PZ = 5,
-    SHIFT_NZ = 6,
-
     SHIFT_X = 1,
     SHIFT_Y = 2,
     SHIFT_Z = 3,
 
     COLOR_CHUNK_LOADED  = 0x4c2607ff,
     COLOR_CHUNK_RENDER  = 0x5e7a0aff,
-    COLOR_CHUNK_SHIFTED = 0x990f05ff,
 }; /* ChunkStates */
 
 typedef struct Chunk
@@ -136,7 +128,15 @@ typedef struct Chunk
     u32 color;  /* debug color: 0xrrggbbaa */
     u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
-    Mesh mesh;
+
+    struct /* mesh */
+    {
+        GLuint vao;
+        GLuint vbo;
+        u64 vbo_len;
+        u32 *vbo_data;
+    } mesh;
+
     u8 flag;
 } Chunk;
 
@@ -145,19 +145,10 @@ typedef struct Chunk
 /* chunk pointer look-up table */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 
-/* pointer arithmetic redundancy optimization */
-static v3u32 block_coordinates;
-
 /* player relative chunk tab access */
 static u16 chunk_tab_index;
 
 /* ---- section: getters & setters ------------------------------------------ */
-
-static inline u16
-get_block_index(u8 x, u8 y, u8 z)
-{
-    return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));
-}
 
 static inline v3u32
 index_to_coordinates_v3u32(u32 i, u64 size)
@@ -222,10 +213,10 @@ void update_chunking(v3i16 player_delta_chunk);
 void free_chunking();
 
 /* index = (chunk_tab index); */
-void add_block(u16 index, u32 x, u32 y, u32 z);
+void add_block(u32 index, u32 x, u32 y, u32 z);
 
 /* index = (chunk_tab index); */
-void remove_block(u16 index, u32 x, u32 y, u32 z);
+void remove_block(u32 index, u32 x, u32 y, u32 z);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);

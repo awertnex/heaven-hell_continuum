@@ -607,7 +607,7 @@ init_world(str *string)
     if (init_chunking(&shader_voxel) != 0) return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 8, 8, 8);
+    set_player_block(&lily, 8, 128, 8);
     lily.state |= FLAG_FLYING;
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
@@ -889,8 +889,6 @@ render_font_atlas_example(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 #endif
-
-#include "tests/test_tab_shift.c"
 
 int
 main(int argc, char **argv)

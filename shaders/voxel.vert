@@ -7,11 +7,11 @@ uniform vec3 open_cursor;
 uniform vec3 offset_cursor;
 uniform float size;
 out vec3 vertex_position;
-//out int voxel_data;
+//out int vs_data;
 
 void main()
 {
+    //vs_data = a_data;
     vertex_position = a_pos + open_cursor + offset_cursor;
     gl_Position = mat_perspective * vec4(vertex_position, 1.0);
-    //voxel_data = a_voxel;
 }

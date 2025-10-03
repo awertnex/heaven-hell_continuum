@@ -23,16 +23,19 @@ static struct Globals
 /* ---- section: signatures ------------------------------------------------- */
 
 /* index = (chunk_tab index); */
-static void generate_chunk(u16 index);
+static void generate_chunk(u32 index);
+
+/* index = (chunk_tab index); */
+static void mesh_chunk(u32 index);
 
 static void serialize_chunk(Chunk *chunk, str *world_name);
 static void deserialize_chunk(Chunk *chunk, str *world_name);
 
 /* index = (chunk_tab index); */
-static void push_chunk_buf(u16 index, v3i16 player_delta_chunk);
+static void push_chunk_buf(u32 index, v3i16 player_delta_chunk);
 
 /* index = (chunk_tab index); */
-static void pop_chunk_buf(u16 index);
+static void pop_chunk_buf(u32 index);
 
 /* ---- section: functions -------------------------------------------------- */
 
@@ -113,14 +116,11 @@ free_chunking(void)
 }
 
 void
-add_block(u16 index, u32 x, u32 y, u32 z)
+add_block(u32 index, u32 x, u32 y, u32 z)
 {
-    v3u16 chunk_tab_coordinates =
-    {
-        index % CHUNK_BUF_DIAMETER,
-        (index / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-        index / CHUNK_BUF_LAYER,
-    };
+    v3u32 chunk_tab_coordinates =
+        index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
+
     u8 is_on_edge = 0;
 
     x %= CHUNK_DIAMETER;
@@ -214,14 +214,11 @@ add_block(u16 index, u32 x, u32 y, u32 z)
 }
 
 void
-remove_block(u16 index, u32 x, u32 y, u32 z)
+remove_block(u32 index, u32 x, u32 y, u32 z)
 {
-    v3u16 chunk_tab_coordinates =
-    {
-        index % CHUNK_BUF_DIAMETER,
-        (index / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-        index / CHUNK_BUF_LAYER,
-    };
+    v3u32 chunk_tab_coordinates =
+        index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
+
     u8 is_on_edge = 0;
 
     x %= CHUNK_DIAMETER;
@@ -304,7 +301,7 @@ remove_block(u16 index, u32 x, u32 y, u32 z)
 
 /* TODO: make generate_chunk() */
 static void
-generate_chunk(u16 index)
+generate_chunk(u32 index)
 {
     u16 sin_x = 0, sin_y = 0;
 
@@ -312,9 +309,9 @@ generate_chunk(u16 index)
         for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
             for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
             {
-                sin_x = (u16)((sin(((f32)x + (chunk_tab[index]->pos.x *
+                sin_x = (u32)((sin(((f32)x + (chunk_tab[index]->pos.x *
                                         CHUNK_DIAMETER)) / 30) + 1) * 20) + 2;
-                sin_y = (u16)((sin(((f32)y + (chunk_tab[index]->pos.y *
+                sin_y = (u32)((sin(((f32)y + (chunk_tab[index]->pos.y *
                                         CHUNK_DIAMETER)) / 30) + 1) * 20) + 2;
 
                 if (z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <= sin_x - 3 &&
@@ -325,6 +322,11 @@ generate_chunk(u16 index)
                     chunk_tab[index]->color = COLOR_CHUNK_RENDER;
                 }
             }
+}
+
+static void
+mesh_chunk(u32 index)
+{
 }
 
 /* TODO: make serialize_chunk() */
@@ -341,7 +343,7 @@ deserialize_chunk(Chunk *chunk, str *world_name)
 }
 
 static void
-push_chunk_buf(u16 index, v3i16 player_delta_chunk)
+push_chunk_buf(u32 index, v3i16 player_delta_chunk)
 {
     v3u16 coordinates =
     {
@@ -375,31 +377,10 @@ push_chunk_buf(u16 index, v3i16 player_delta_chunk)
 }
 
 static void
-pop_chunk_buf(u16 index)
+pop_chunk_buf(u32 index)
 {
     *chunk_tab[index] = (Chunk){0};
     chunk_tab[index] = NULL;
-}
-
-void
-check_chunk_tab()
-{
-    for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        if (chunk_tab[i] == NULL)
-            printf("  ");
-        else if (chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
-        {
-            if (chunk_tab[i]->flag & FLAG_CHUNK_RENDER)
-                printf("L ");
-            else
-                printf("R ");
-        }
-        if ((i + 1) % CHUNK_BUF_LAYER == 0)
-            printf("  Layer[%03d]\n\n", (u32)((f32)i / CHUNK_BUF_LAYER));
-        else if ((i + 1) % CHUNK_BUF_DIAMETER == 0)
-            putchar('\n');
-    }
 }
 
 void
@@ -654,13 +635,16 @@ draw_chunk_tab(Uniform *uniform)
         {
             offset_cursor = index_to_coordinates_v3f32(j, CHUNK_DIAMETER);
             if (chunk_tab[i]->block
-                        [(u32)offset_cursor.z]
-                        [(u32)offset_cursor.y]
-                        [(u32)offset_cursor.x] & NOT_EMPTY)
+                    [(u32)offset_cursor.z]
+                    [(u32)offset_cursor.y]
+                    [(u32)offset_cursor.x] & NOT_EMPTY)
             {
                 glUniform3fv(uniform->voxel.offset_cursor, 1,
                         (GLfloat*)&offset_cursor);
                 draw_mesh(&globals.voxel);
+                glBindVertexArray(globals.voxel.vao);
+                glDrawElements(GL_POINTS,
+                        globals.voxel.ebo_len, GL_UNSIGNED_INT, 0);
             }
         }
     }
