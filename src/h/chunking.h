@@ -124,6 +124,10 @@ enum ChunkStates
     SHIFT_X = 1,
     SHIFT_Y = 2,
     SHIFT_Z = 3,
+
+    COLOR_CHUNK_LOADED  = 0x4c2607ff,
+    COLOR_CHUNK_RENDER  = 0x5e7a0aff,
+    COLOR_CHUNK_SHIFTED = 0x990f05ff,
 }; /* ChunkStates */
 
 typedef struct Chunk
@@ -139,7 +143,7 @@ typedef struct Chunk
 /* ---- section: declarations ----------------------------------------------- */
 
 /* chunk pointer look-up table */
-static Chunk *chunk_tab[CHUNK_BUF_VOLUME];
+extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 
 /* pointer arithmetic redundancy optimization */
 static v3u32 block_coordinates;
@@ -156,12 +160,22 @@ get_block_index(u8 x, u8 y, u8 z)
 }
 
 static inline v3u32
-get_block_coordinates(u32 i)
+index_to_coordinates_v3u32(u32 i, u64 size)
 {
     return (v3u32){
-        (i) % CHUNK_DIAMETER,
-            ((i) / CHUNK_DIAMETER) % CHUNK_DIAMETER,
-            (i) / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+        (i) % (size),
+            ((i) / (size)) % (size),
+            (i) / ((size) * (size)),
+    };
+}
+
+static inline v3f32
+index_to_coordinates_v3f32(u32 i, u64 size)
+{
+    return (v3f32){
+        (i) % (size),
+            ((i) / (size)) % (size),
+            (i) / ((size) * (size)),
     };
 }
 
@@ -216,6 +230,7 @@ void remove_block(u16 index, u32 x, u32 y, u32 z);
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
 void draw_chunk_tab(Uniform *uniform);
+void draw_chunk_gizmo(Mesh *mesh);
 #ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);

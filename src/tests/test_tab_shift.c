@@ -9,20 +9,7 @@
 #include "../h/gui.h"
 #include "../h/logic.h"
 
-#define CHUNK_LOADED    1
-#define CHUNK_EDGE      2
-#define CHUNK_SHIFTED   3
-static u8 test_tab[CHUNK_BUF_VOLUME] = {0};
-
-static void
-init_test_tab(void)
-{
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-        if (distance_v3i32((v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
-                    (v3i32){16, 16, 16}) <
-                (u32)powf(settings.render_distance, 2.0f) + 2)
-            test_tab[i] = CHUNK_LOADED;
-}
+static u32 test_tab[CHUNK_BUF_VOLUME] = {0};
 
 static void
 mark_test_tab(u8 direction)
@@ -34,8 +21,8 @@ mark_test_tab(u8 direction)
     u8 is_on_edge = 0;
 
     for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-        if (test_tab[i] >= CHUNK_EDGE)
-            test_tab[i] = CHUNK_LOADED;
+        if (test_tab[i] >= COLOR_CHUNK_RENDER)
+            test_tab[i] = COLOR_CHUNK_LOADED;
 
     for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
@@ -112,9 +99,9 @@ mark_test_tab(u8 direction)
 
         if (is_on_edge)
         {
-            test_tab[i] = CHUNK_SHIFTED;
+            test_tab[i] = COLOR_CHUNK_SHIFTED;
             if (test_tab[mirror_index])
-                test_tab[mirror_index] = CHUNK_EDGE;
+                test_tab[mirror_index] = COLOR_CHUNK_RENDER;
         }
     }
 }
@@ -195,7 +182,7 @@ shift_test_tab(u8 direction)
         }
 
         test_tab[i] = test_tab[target_index];
-        if (test_tab[i] && test_tab[i] == CHUNK_EDGE)
+        if (test_tab[i] && test_tab[i] == COLOR_CHUNK_RENDER)
         {
             test_tab[target_index] = 0;
         }
@@ -253,7 +240,6 @@ void
 main__shift_test_tab(void)
 {
     lily.camera_distance = 64.0f;
-    init_test_tab();
     settings.render_distance = SETTING_RENDER_DISTANCE_MAX;
 
     while (!glfwWindowShouldClose(render.window))
@@ -288,7 +274,12 @@ main__shift_test_tab(void)
 
         glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
         glUniform1f(uniform.voxel.opacity, 1.0f);
-        v3f32 open_cursor = {-16.5f, -16.5f, -16.5f};
+        v3f32 open_cursor =
+        {
+            -(CHUNK_BUF_RADIUS + 0.5f),
+            -(CHUNK_BUF_RADIUS + 0.5f),
+            -(CHUNK_BUF_RADIUS + 0.5f),
+        };
         glUniform3fv(uniform.voxel.open_cursor, 1, (GLfloat*)&open_cursor);
 
         static u8 direction = 0;
@@ -328,7 +319,7 @@ main__shift_test_tab(void)
             for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             {
                 if (!test_tab[i]) continue;
-                test_tab[i] = CHUNK_LOADED;
+                test_tab[i] = COLOR_CHUNK_LOADED;
             }
         }
 
@@ -339,34 +330,25 @@ main__shift_test_tab(void)
         static v4f32 voxel_color = {0};
         for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
         {
-            if (!test_tab[i]) continue;
+            if ((chunk_tab[i] == NULL) ||
+                    !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
+                continue;
 
-            v3f32 offset_cursor =
-            {
-                i % CHUNK_BUF_DIAMETER,
-                (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-                i / (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER),
-            };
+            open_cursor = index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
             glUniform3fv(uniform.voxel.offset_cursor, 1,
-                    (GLfloat*)&offset_cursor);
+                    (GLfloat*)&open_cursor);
 
-            pulse = (sinf((offset_cursor.y * 0.3f) +
+            pulse = (sinf((open_cursor.y * 0.3f) +
                         (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
             glUniform1f(uniform.voxel.size, pulse);
 
-            switch (test_tab[i])
-            {
-                default:
-                case CHUNK_LOADED:
-                    voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
-                    break;
-                case CHUNK_EDGE:
-                    voxel_color = (v4f32){0.37f, 0.48f, 0.04f, 1.0f};
-                    break;
-                case CHUNK_SHIFTED:
-                    voxel_color = (v4f32){0.6f, 0.06f, 0.02f, 1.0f};
-                    break;
-            }
+            voxel_color =
+                (v4f32){
+                   (f32)((chunk_tab[i]->color >> 24) & 0xff) / 0xff,
+                   (f32)((chunk_tab[i]->color >> 16) & 0xff) / 0xff,
+                   (f32)((chunk_tab[i]->color >> 8) & 0xff) / 0xff,
+                   (f32)((chunk_tab[i]->color & 0xff)) / 0xff,
+                };
             glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
             draw_mesh(&mesh_cube_of_happiness);
         }

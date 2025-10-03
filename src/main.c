@@ -26,7 +26,7 @@ Settings settings =
     .reach_distance       = SETTING_REACH_DISTANCE_MAX,
     .lerp_speed           = SETTING_LERP_SPEED_DEFAULT,
     .mouse_sensitivity    = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-    .render_distance      = SETTING_RENDER_DISTANCE_DEFAULT,
+    .render_distance      = SETTING_RENDER_DISTANCE_MAX,
     .target_fps           = SETTING_TARGET_FPS_DEFAULT,
     .gui_scale            = SETTING_GUI_SCALE_DEFAULT,
 };
@@ -102,6 +102,15 @@ ShaderProgram shader_gizmo =
     .vertex.file_name = "gizmo.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .fragment.file_name = "gizmo.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
+
+ShaderProgram shader_gizmo_chunk =
+{
+    .name = "gizmo_chunk",
+    .vertex.file_name = "gizmo_chunk.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "gizmo_chunk.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
@@ -386,8 +395,6 @@ bind_shader_uniforms(void)
     uniform.defaults.sky_color =
         glGetUniformLocation(shader_default.id, "sky_color");
 
-    uniform.gizmo.render_ratio =
-        glGetUniformLocation(shader_gizmo.id, "ratio");
     uniform.gizmo.mat_translation =
         glGetUniformLocation(shader_gizmo.id, "mat_translation");
     uniform.gizmo.mat_rotation =
@@ -396,6 +403,27 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_gizmo.id, "mat_orientation");
     uniform.gizmo.mat_projection =
         glGetUniformLocation(shader_gizmo.id, "mat_projection");
+
+    uniform.gizmo_chunk.render_size =
+        glGetUniformLocation(shader_gizmo_chunk.id, "render_size");
+    uniform.gizmo_chunk.mat_translation =
+        glGetUniformLocation(shader_gizmo_chunk.id, "mat_translation");
+    uniform.gizmo_chunk.mat_rotation =
+        glGetUniformLocation(shader_gizmo_chunk.id, "mat_rotation");
+    uniform.gizmo_chunk.mat_orientation =
+        glGetUniformLocation(shader_gizmo_chunk.id, "mat_orientation");
+    uniform.gizmo_chunk.mat_projection =
+        glGetUniformLocation(shader_gizmo_chunk.id, "mat_projection");
+    uniform.gizmo_chunk.cursor =
+        glGetUniformLocation(shader_gizmo_chunk.id, "cursor");
+    uniform.gizmo_chunk.size =
+        glGetUniformLocation(shader_gizmo_chunk.id, "size");
+    uniform.gizmo_chunk.camera_position =
+        glGetUniformLocation(shader_gizmo_chunk.id, "camera_position");
+    uniform.gizmo_chunk.sky_color =
+        glGetUniformLocation(shader_gizmo_chunk.id, "sky_color");
+    uniform.gizmo_chunk.color =
+        glGetUniformLocation(shader_gizmo_chunk.id, "chunk_color");
 
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader_voxel.id, "mat_perspective");
@@ -751,8 +779,6 @@ void
 draw_hud(Player *player)
 {
     glUseProgram(shader_gizmo.id);
-    glUniform1f(uniform.gizmo.render_ratio,
-            (GLfloat)player->camera.ratio);
 
     glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
             (GLfloat*)&projection.target);
@@ -767,6 +793,37 @@ draw_hud(Player *player)
             (GLfloat*)&projection.projection);
 
     draw_mesh(&mesh_gizmo);
+
+    glUseProgram(shader_gizmo_chunk.id);
+
+    glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render.size);
+
+    glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&projection.target);
+
+    glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation, 1, GL_FALSE,
+            (GLfloat*)&projection.rotation);
+
+    glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation, 1, GL_FALSE,
+            (GLfloat*)&projection.orientation);
+
+    glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection, 1, GL_FALSE,
+            (GLfloat*)&projection.projection);
+
+    v3f32 camera_position =
+    {
+        (lily.cos_yaw * lily.cos_pitch),
+        -(lily.sin_yaw * lily.cos_pitch),
+        lily.sin_pitch,
+    };
+
+    glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
+            (GLfloat*)&camera_position);
+
+    glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
+            (GLfloat*)&skybox_data.color);
+
+    draw_chunk_gizmo(&mesh_cube_of_happiness);
 }
 
 void
@@ -921,6 +978,9 @@ main(int argc, char **argv)
                 &shader_gizmo) != 0 ||
 
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_gizmo_chunk) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
                 &shader_skybox) != 0 ||
 
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
@@ -975,9 +1035,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
     generate_standard_meshes();
 
     main__shift_test_tab();
-    v4f32 voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
-    glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
-    glUniform1f(uniform.voxel.size, 1.0f);
     goto cleanup;
 
     while (!glfwWindowShouldClose(render.window))
@@ -1021,6 +1078,7 @@ cleanup: /* ----------------------------------------------------------------- */
     glDeleteProgram(shader_text.id);
     glDeleteProgram(shader_skybox.id);
     glDeleteProgram(shader_gizmo.id);
+    glDeleteProgram(shader_gizmo_chunk.id);
     glDeleteProgram(shader_voxel.id);
     glfwDestroyWindow(render.window);
     glfwTerminate();

@@ -2,6 +2,7 @@
 #include "engine/h/math.h"
 #include "engine/h/logger.h"
 
+#include "h/main.h"
 #include "h/chunking.h"
 #include "h/logic.h"
 
@@ -11,7 +12,7 @@
 static Chunk *chunk_buf = {0};
 
 /* chunk pointer look-up table */
-static Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
+Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
 
 static struct Globals
 {
@@ -320,6 +321,7 @@ generate_chunk(u16 index)
                 {
                     add_block(index, x, y, z);
                     chunk_tab[index]->flag |= FLAG_CHUNK_RENDER;
+                    chunk_tab[index]->color = COLOR_CHUNK_RENDER;
                 }
             }
 }
@@ -364,6 +366,7 @@ push_chunk_buf(u16 index, v3i16 player_delta_chunk)
             ((u64)(chunk_buf[i].pos.z & 0xffff));
 
         chunk_buf[i].flag = FLAG_CHUNK_LOADED;
+        chunk_buf[i].color = COLOR_CHUNK_LOADED;
         chunk_tab[index] = &chunk_buf[i];
         return;
     }
@@ -508,6 +511,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         {
             chunk_tab[i]->flag &= ~FLAG_CHUNK_RENDER;
             chunk_tab[i]->flag &= ~FLAG_CHUNK_LOADED;
+            chunk_tab[i]->color = 0;
             if (chunk_tab[mirror_index] != NULL)
                 chunk_tab[mirror_index]->flag |= FLAG_CHUNK_EDGE;
         }
@@ -630,14 +634,46 @@ draw_chunk_tab(Uniform *uniform)
                         [(u32)offset_cursor.y]
                         [(u32)offset_cursor.x] & NOT_EMPTY))
                 continue;
-            offset_cursor = (v3f32){
-                floorf(j % CHUNK_DIAMETER),
-                    floorf((j / CHUNK_DIAMETER) % CHUNK_DIAMETER),
-                    floorf(j / (CHUNK_DIAMETER * CHUNK_DIAMETER))};
+
+            offset_cursor = index_to_coordinates_v3f32(j, CHUNK_BUF_DIAMETER);
             glUniform3fv(uniform->voxel.offset_cursor, 1,
                     (GLfloat*)&offset_cursor);
             draw_mesh(&globals.voxel);
         }
+    }
+}
+
+void
+draw_chunk_gizmo(Mesh *mesh)
+{
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    {
+        if ((chunk_tab[i] == NULL) ||
+                !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
+            continue;
+
+        v3f32 cursor =
+            index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
+        cursor = sub_v3f32(cursor, (v3f32){
+                CHUNK_BUF_RADIUS + 0.5f,
+                CHUNK_BUF_RADIUS + 0.5f,
+                CHUNK_BUF_RADIUS + 0.5f});
+        glUniform3fv(uniform.gizmo_chunk.cursor, 1,
+                (GLfloat*)&cursor);
+
+        f32 pulse = (sinf((cursor.y * 0.3f) +
+                    (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
+        glUniform1f(uniform.gizmo_chunk.size, pulse);
+
+        v4f32 color =
+        {
+            (f32)((chunk_tab[i]->color >> 24) & 0xff) / 0xff,
+            (f32)((chunk_tab[i]->color >> 16) & 0xff) / 0xff,
+            (f32)((chunk_tab[i]->color >> 8) & 0xff) / 0xff,
+            (f32)((chunk_tab[i]->color & 0xff)) / 0xff,
+        };
+        glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
+        draw_mesh(mesh);
     }
 }
 
