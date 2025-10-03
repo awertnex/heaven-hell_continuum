@@ -8,7 +8,8 @@
 #define WIDTH 1280
 #define HEIGHT 720
 #define MARGIN 20
-#define color(r, g, b, v, a) (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
+#define color(r, g, b, v, a) \
+    (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
 
 /* ---- states -------------------------------------------------------------- */
 enum States
@@ -34,4 +35,3 @@ void close_launcher();
 void update_launcher_input();
 
 #endif /* GAME_LAUNCHER_H */
-

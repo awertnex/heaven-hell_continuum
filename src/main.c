@@ -76,15 +76,6 @@ ShaderProgram shader_default =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_testing =
-{
-    .name = "testing",
-    .vertex.file_name = "testing.vert",
-    .vertex.type = GL_VERTEX_SHADER,
-    .fragment.file_name = "testing.frag",
-    .fragment.type = GL_FRAGMENT_SHADER,
-};
-
 ShaderProgram shader_text =
 {
     .name = "text",
@@ -148,11 +139,14 @@ void error_callback(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
-static void gl_frame_buffer_size_callback(
+
+static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
-static void gl_cursor_pos_callback(
+
+static void callback_cursor_pos(
         GLFWwindow* window, double xpos, double ypos);
-static void gl_key_callback(
+
+static void callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods);
 
 /* ---- section: signatures ------------------------------------------------- */
@@ -169,7 +163,9 @@ void draw_hud(Player *player);
 void draw_everything(Player *player);
 
 /* ---- section: functions -------------------------------------------------- */
-static void gl_frame_buffer_size_callback(
+
+static void
+callback_framebuffer_size(
         GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
@@ -182,7 +178,8 @@ static void gl_frame_buffer_size_callback(
     realloc_fbo(&render, &fbo_text);
 }
 
-static void gl_cursor_pos_callback(
+static void
+callback_cursor_pos(
         GLFWwindow* window, double xpos, double ypos)
 {
     render.mouse_delta =
@@ -201,7 +198,8 @@ static void gl_cursor_pos_callback(
     }
 }
 
-static void gl_key_callback(
+static void
+callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
@@ -216,7 +214,8 @@ static void gl_key_callback(
     }
 }
 
-void some_weird_shit(f32 unit_x, f32 unit_y)
+void
+some_weird_shit(f32 unit_x, f32 unit_y)
 {
     for (u32 i = 0; i < 8; ++i)
     {
@@ -238,7 +237,8 @@ void some_weird_shit(f32 unit_x, f32 unit_y)
 #if 0 // TODO: maybe remove
 #endif
 
-void generate_standard_meshes()
+void
+generate_standard_meshes()
 {
     const u32 VBO_LEN_SKYBOX        = 24;
     const u32 EBO_LEN_SKYBOX        = 36;
@@ -356,7 +356,8 @@ cleanup:
     LOGERROR("%s\n", "Mesh Generation Failed");
 }
 
-void bind_shader_uniforms(void)
+void
+bind_shader_uniforms(void)
 {
     font.uniform.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
@@ -431,13 +432,16 @@ void bind_shader_uniforms(void)
         glGetUniformLocation(shader_voxel.id, "open_cursor");
     uniform.voxel.offset_cursor =
         glGetUniformLocation(shader_voxel.id, "offset_cursor");
+    uniform.voxel.color =
+        glGetUniformLocation(shader_voxel.id, "voxel_color");
     uniform.voxel.opacity =
         glGetUniformLocation(shader_voxel.id, "opacity");
     uniform.voxel.size =
         glGetUniformLocation(shader_voxel.id, "size");
 }
 
-void update_input(Player *player)
+void
+update_input(Player *player)
 {
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
@@ -544,23 +548,27 @@ void update_input(Player *player)
 
     /* ---- inventory ------------------------------------------------------- */
     for (u32 i = 0; i < 10; ++i)
-        if (is_key_press(bind_hotbar_slot[i]) || is_key_press(bind_hotbar_slot_kp[i]))
+        if (is_key_press(bind_hotbar_slot[i]) ||
+                is_key_press(bind_hotbar_slot_kp[i]))
             hotbar_slot_selected = i + 1;
 
     if (is_key_press(bind_inventory))
     {
-        if ((player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
+        if ((player->container_state & STATE_CONTR_INVENTORY) &&
+                state_menu_depth)
         {
             state_menu_depth = 0;
             player->container_state &= ~STATE_CONTR_INVENTORY;
         }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY) && !state_menu_depth)
+        else if (!(player->container_state & STATE_CONTR_INVENTORY) &&
+                !state_menu_depth)
         {
             state_menu_depth = 1;
             player->container_state |= STATE_CONTR_INVENTORY;
         }
 
-        if (!(player->container_state & STATE_CONTR_INVENTORY) && state_menu_depth)
+        if (!(player->container_state & STATE_CONTR_INVENTORY) &&
+                state_menu_depth)
             --state_menu_depth;
     }
 
@@ -586,14 +594,16 @@ void update_input(Player *player)
     }
 }
 
-b8 init_world(str *string)
+b8
+init_world(str *string)
 {
     if (!strlen(string)) return FALSE;
     init_world_directory(string);
     if (init_chunking(&shader_voxel) != 0) return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 8, 8, 22);
+    set_player_block(&lily, 8, 8, 8);
+    lily.state |= FLAG_FLYING;
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i32){
@@ -611,11 +621,15 @@ b8 init_world(str *string)
     return TRUE;
 }
 
-void update_world(Player *player)
+void
+update_world(Player *player)
 {
-    game_tick = 6000 + (floor(render.frame_start * 20)) - (SETTING_DAY_TICKS_MAX * game_days);
+    game_tick = 6000 + (floor(render.frame_start * 20)) -
+        (SETTING_DAY_TICKS_MAX * game_days);
+
     if (game_tick >= SETTING_DAY_TICKS_MAX)
         ++game_days;
+
     if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
@@ -632,39 +646,64 @@ void update_world(Player *player)
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
+        //shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
 
     /* ---- player targeting ------------------------------------------------ */
-    if (is_in_volume_i32(lily.delta_target,
-                (v3i32){-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
-                (v3i32){WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
+    if (is_in_volume_i32(
+                lily.delta_target,
+                (v3i32){
+                -WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
+                (v3i32){
+                WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
         state |= FLAG_PARSE_TARGET;
     else state &= ~FLAG_PARSE_TARGET;
 
     /* TODO: make a function 'index_to_bounding_box()' */
-    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera), (BoundingBox){&lily.previous_target}).hit) {}
+    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera),
+    //(BoundingBox){&lily.previous_target}).hit)
+    //{
+    //}
 }
 
-void draw_skybox(Player *player)
+void
+draw_skybox(Player *player)
 {
     skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
-    skybox_data.sun_rotation = (v3f32){-cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f, 12.0f};
+    skybox_data.sun_rotation =
+        (v3f32){
+            -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f,
+            -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f,
+            12.0f,
+        };
 
-    f32 intensity =     0.0039f;
+    f32 intensity = 0.0039f;
     f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
-    f32 pre_burn =      fabsf(sinf(powf(sinf((skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
-    f32 burn =          fabsf(sinf(1.5f * powf(sinf((skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
-    f32 burn_boost =    fabsf(powf(sinf((skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
-    f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(skybox_data.time * PI), 3.0f)));
+
+    f32 pre_burn =      fabsf(sinf(powf(sinf(
+                        (skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
+
+    f32 burn =          fabsf(sinf(1.5f * powf(sinf(
+                        (skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
+
+    f32 burn_boost =    fabsf(powf(sinf(
+                        (skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+
+    f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(
+                        skybox_data.time * PI), 3.0f)));
 
     skybox_data.color =
     (v3f32){
-        (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) + (pre_burn * 13.0f) + (burn_boost * 76.0f),
-        (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) + (pre_burn * 7.0f) + (burn_boost * 34.0f),
-        (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) + (pre_burn * 20.0f),
+        (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) +
+            (pre_burn * 13.0f) + (burn_boost * 76.0f),
+
+        (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) +
+            (pre_burn * 7.0f) + (burn_boost * 34.0f),
+
+        (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) +
+            (pre_burn * 20.0f),
     };
 
     skybox_data.color =
@@ -675,45 +714,86 @@ void draw_skybox(Player *player)
         };
 
     glUseProgram(shader_skybox.id);
-    glUniform3fv(uniform.skybox.camera_position, 1, (GLfloat*)&player->camera.pos);
-    glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
-    glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
-    glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
-    glUniform3fv(uniform.skybox.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
-    glUniform3fv(uniform.skybox.sky_color, 1, (GLfloat*)&skybox_data.color);
+    glUniform3fv(uniform.skybox.camera_position, 1,
+            (GLfloat*)&player->camera.pos);
+
+    glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
+            (GLfloat*)&projection.rotation);
+
+    glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
+            (GLfloat*)&projection.orientation);
+
+    glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
+            (GLfloat*)&projection.projection);
+
+    glUniform3fv(uniform.skybox.sun_rotation, 1,
+            (GLfloat*)&skybox_data.sun_rotation);
+
+    glUniform3fv(uniform.skybox.sky_color, 1,
+            (GLfloat*)&skybox_data.color);
+
     draw_mesh(&mesh_skybox);
 }
 
-void draw_world(Player *player)
+void
+draw_world(Player *player)
 {
     glUseProgram(shader_voxel.id);
-    glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    glUniform3fv(uniform.voxel.camera_position, 1, (GLfloat*)&player->camera.pos);
-    glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
-    glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
+
+    glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&projection.perspective);
+
+    glUniform3fv(uniform.voxel.camera_position, 1,
+            (GLfloat*)&player->camera.pos);
+
+    glUniform3fv(uniform.voxel.sun_rotation, 1,
+            (GLfloat*)&skybox_data.sun_rotation);
+
+    glUniform3fv(uniform.voxel.sky_color, 1,
+            (GLfloat*)&skybox_data.color);
+
     draw_chunk_tab(&uniform);
 
 #if 0 // TODO: maybe remove
     glUseProgram(shader_default.id);
-    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-    glUniform3fv(uniform.defaults.camera_position, 1, (GLfloat*)&lily.camera.pos);
-    glUniform3fv(uniform.defaults.sky_color, 1, (GLfloat*)&skybox_data.color);
+
+    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&projection.perspective);
+
+    glUniform3fv(uniform.defaults.camera_position, 1,
+            (GLfloat*)&lily.camera.pos);
+
+    glUniform3fv(uniform.defaults.sky_color, 1,
+            (GLfloat*)&skybox_data.color);
+
     draw_mesh(&mesh_cube_of_happiness);
 #endif
 }
 
-void draw_hud(Player *player)
+void
+draw_hud(Player *player)
 {
     glUseProgram(shader_gizmo.id);
-    glUniform1f(uniform.gizmo.render_ratio, (GLfloat)player->camera.ratio);
-    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE, (GLfloat*)&projection.target);
-    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE, (GLfloat*)&projection.rotation);
-    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE, (GLfloat*)&projection.orientation);
-    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE, (GLfloat*)&projection.projection);
+    glUniform1f(uniform.gizmo.render_ratio,
+            (GLfloat)player->camera.ratio);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&projection.target);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
+            (GLfloat*)&projection.rotation);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
+            (GLfloat*)&projection.orientation);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
+            (GLfloat*)&projection.projection);
+
     draw_mesh(&mesh_gizmo);
 }
 
-void draw_everything(Player *player)
+void
+draw_everything(Player *player)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -756,20 +836,199 @@ void draw_everything(Player *player)
 /* ---- section: testing ---------------------------------------------------- */
 
 #if 0
-void render_font_atlas_example(void)
+void
+render_font_atlas_example(void)
 {
     glUseProgram(shader_text.id);
     glBindVertexArray(mesh_fbo.vao);
     glBindTexture(GL_TEXTURE_2D, font.id);
-    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT, (v3f32){0.0f, 0.0f, 0.0f}, 0xffffffff, 0, 0);
-    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, 0xffffffff, 0, 0);
-    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT, (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, 0xffffffff, 0, 0);
+
+    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT,
+            (v3f32){0.0f, 0.0f, 0.0f}, 0xffffffff, 0, 0);
+
+    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT,
+            (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, 0xffffffff, 0, 0);
+
+    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT,
+            (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, 0xffffffff, 0, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 #endif
 
-int main(int argc, char **argv)
+#define CHUNK_LOADED    1
+#define CHUNK_EDGE      2
+#define CHUNK_SHIFTED   3
+#define TEST_TAB_DIAMETER   33
+#define TEST_TAB_LAYER      (33 * 33)
+#define TEST_TAB_VOLUME     (33 * 33 * 33)
+static u8 test_tab[TEST_TAB_VOLUME] = {0};
+static u8 test_tab_val[TEST_TAB_VOLUME] = {0};
+const u32 test_tab_center = 17 + (17 * 33) + (17 * 33 * 33);
+const f32 render_distance = (16 * 16) + 2;
+
+static void
+init_test_tab(void)
+{
+    for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+        if (distance_v3i32((v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
+                    (v3i32){16, 16, 16}) < (u32)render_distance)
+            test_tab[i] = CHUNK_LOADED;
+}
+
+static void
+mark_test_tab(u8 direction)
+{
+    i8 increment = (direction % 2 == 1) - (direction % 2 == 0);
+    v3u16 coordinates = {0};
+    u16 mirror_index = 0;
+    u16 target_index = 0;
+    u8 is_on_edge = 0;
+
+    for (u16 i = 0; i < TEST_TAB_VOLUME; ++i)
+        if (test_tab[i] == CHUNK_EDGE)
+            test_tab[i] = CHUNK_LOADED;
+
+    /* ---- mark chunks on-edge --------------------------------------------- */
+    for (u16 i = 0; i < TEST_TAB_VOLUME; ++i)
+    {
+        if (!test_tab[i]) continue;
+        coordinates =
+            (v3u16){
+                i % TEST_TAB_DIAMETER,
+                (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
+                i / TEST_TAB_LAYER,
+            };
+
+        switch (direction)
+        {
+            case SHIFT_PX:
+                mirror_index = i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2);
+                is_on_edge = (coordinates.x == 0) ||
+                    (test_tab[i - 1] == 0);
+                break;
+
+            case SHIFT_NX:
+                mirror_index = i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2);
+                is_on_edge = (coordinates.x == TEST_TAB_DIAMETER - 1) ||
+                    (test_tab[i + 1] == 0);
+                break;
+
+            case SHIFT_PY:
+                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
+                        ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
+                        TEST_TAB_DIAMETER) + coordinates.x;
+                is_on_edge = (coordinates.y == 0) ||
+                    (test_tab[i - TEST_TAB_DIAMETER] == 0);
+                break;
+
+            case SHIFT_NY:
+                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
+                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
+                        TEST_TAB_DIAMETER) + coordinates.x;
+                is_on_edge = (coordinates.y == TEST_TAB_DIAMETER - 1) ||
+                    (test_tab[i + TEST_TAB_DIAMETER] == 0);
+                break;
+
+            case SHIFT_PZ:
+                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
+                        TEST_TAB_LAYER) + (coordinates.y *
+                            TEST_TAB_DIAMETER) + coordinates.x;
+                is_on_edge = (coordinates.z == 0) ||
+                    (test_tab[i - TEST_TAB_LAYER] == 0);
+                break;
+
+            case SHIFT_NZ:
+                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
+                        TEST_TAB_LAYER) + (coordinates.y *
+                            TEST_TAB_DIAMETER) + coordinates.x;
+                is_on_edge = (coordinates.z == TEST_TAB_DIAMETER - 1) ||
+                    (test_tab[i + TEST_TAB_LAYER] == 0);
+                break;
+        }
+
+        if (is_on_edge && test_tab[mirror_index])
+                test_tab[mirror_index] = CHUNK_EDGE;
+    }
+}
+
+static void
+shift_test_tab(u8 direction)
+{
+    i8 increment = (direction % 2 == 1) - (direction % 2 == 0);
+    v3u16 coordinates = {0};
+    u16 mirror_index = 0;
+    u16 target_index = 0;
+    u8 is_on_edge = 0;
+
+    /* ---- shift test_tab -------------------------------------------------- */
+    for (u16 i = (increment == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
+            i >= 0 && i < CHUNK_BUF_VOLUME; i += increment)
+    {
+        if (!test_tab[i]) continue;
+        coordinates =
+            (v3u16){
+                i % TEST_TAB_DIAMETER,
+                (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
+                i / TEST_TAB_LAYER,
+            };
+
+        switch (direction)
+        {
+            case SHIFT_PX:
+                mirror_index = i + TEST_TAB_DIAMETER - 1 -
+                    (coordinates.x * 2);
+                target_index = (coordinates.x == TEST_TAB_DIAMETER - 1)
+                    ? i : i + 1;
+                break;
+
+            case SHIFT_NX:
+                mirror_index = i + TEST_TAB_DIAMETER - 1 -
+                    (coordinates.x * 2);
+                target_index = (coordinates.x == 0) ? i : i - 1;
+                break;
+
+            case SHIFT_PY:
+                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
+                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
+                        TEST_TAB_DIAMETER) + coordinates.x;
+                target_index = (coordinates.y == TEST_TAB_DIAMETER - 1) ?
+                    i : i + TEST_TAB_DIAMETER;
+                break;
+
+            case SHIFT_NY:
+                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
+                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
+                        TEST_TAB_DIAMETER) + coordinates.x;
+                target_index = (coordinates.y == 0) ?
+                    i : i - TEST_TAB_DIAMETER;
+                break;
+
+            case SHIFT_PZ:
+                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
+                        TEST_TAB_LAYER) + (coordinates.y *
+                            TEST_TAB_DIAMETER) + coordinates.x;
+                target_index = (coordinates.z == TEST_TAB_DIAMETER - 1) ?
+                    i : i + TEST_TAB_LAYER;
+                break;
+
+            case SHIFT_NZ:
+                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
+                        TEST_TAB_LAYER) + (coordinates.y *
+                            TEST_TAB_DIAMETER) + coordinates.x;
+                target_index = (coordinates.z == 0) ? i : i - TEST_TAB_LAYER;
+                break;
+        }
+
+        test_tab[i] = test_tab[target_index];
+        if (test_tab[i] == CHUNK_EDGE)
+            test_tab[target_index] = 0;
+        test_tab[mirror_index] = CHUNK_SHIFTED;
+    }
+}
+
+int
+main(int argc, char **argv)
 {
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {
@@ -797,7 +1056,7 @@ int main(int argc, char **argv)
         LOGDEBUG("%s\n", "Debugging Enabled");
 
     if (init_paths() != 0 ||
-            create_instance("new_instance") != 0) /* TODO: make editable instance name */
+            create_instance("new_instance") != 0)
         return -1;
 
     if (init_glfw() != 0 ||
@@ -826,26 +1085,47 @@ int main(int argc, char **argv)
         LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
     }
     else LOGERROR("%s\n", "GLFW: Raw Mouse Motion Not Supported");
-    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
+    glfwGetCursorPos(render.window,
+            &render.mouse_position.x,
+            &render.mouse_position.y);
 
     /* ---- section: set callbacks ------------------------------------------ */
 
-    glfwSetFramebufferSizeCallback(render.window, gl_frame_buffer_size_callback);
-    gl_frame_buffer_size_callback(render.window, render.size.x, render.size.y);
+    glfwSetFramebufferSizeCallback(render.window,
+            callback_framebuffer_size);
+    callback_framebuffer_size(render.window,
+            render.size.x,
+            render.size.y);
 
-    glfwSetKeyCallback(render.window, gl_key_callback);
-    gl_key_callback(render.window, 0, 0, 0, 0);
+    //glfwSetCursorPosCallback(render.window, callback_cursor_pos);
+    //callback_cursor_pos(render.window,
+    //        render.mouse_position.x,
+    //        render.mouse_position.y);
+
+    glfwSetKeyCallback(render.window, callback_key);
+    callback_key(render.window, 0, 0, 0, 0);
 
     /* ---- section: graphics ----------------------------------------------- */
 
     if (
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_fbo) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_default) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_testing) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_text) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_gizmo) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_skybox) != 0 ||
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS], &shader_voxel) != 0 ||
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_fbo) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_default) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_text) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_gizmo) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_skybox) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_voxel) != 0 ||
+
             init_fbo(&render, &fbo_skybox, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_world, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_hud, &mesh_fbo, 0) != 0 ||
@@ -858,13 +1138,16 @@ int main(int argc, char **argv)
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
+            GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     if (init_gui() != 0 ||
             init_text() != 0)
         goto cleanup;
 
-    //init_super_debugger(&render.size); /*temp off*/
+    /*temp off
+    init_super_debugger(&render.size);
+    */
 
     lily.camera =
         (Camera){
@@ -891,28 +1174,20 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
     generate_standard_meshes();
 
-    lily.perspective = 2;
-    lily.camera_distance = 64.0f;
-    u8 test_tab[33 * 33 * 33] = {0};
-    while (!glfwWindowShouldClose(render.window))
+    while (glfwWindowShouldClose(render.window))
     {
+        lily.perspective = 1;
+        lily.camera_distance = 64.0f;
+        init_test_tab();
         render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
         render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
-        game_tick = 4000.0f + (floor(render.frame_start * 200)) -
+        game_tick = (floor(render.frame_start * 1000)) -
             (SETTING_DAY_TICKS_MAX * game_days);
         if (game_tick >= SETTING_DAY_TICKS_MAX) ++game_days;
         glEnable(GL_DEPTH_TEST);
-        glfwGetCursorPos(render.window,
-                &render.mouse_position.x,
-                &render.mouse_position.y);
-        render.mouse_delta =
-            (v2f64){
-                render.mouse_position.x - render.mouse_last.x,
-                render.mouse_position.y - render.mouse_last.y,
-            };
-        render.mouse_last = render.mouse_position;
+        update_mouse_movement(&render);
         update_key_states(&render);
 
         if (glfwGetMouseButton(render.window,
@@ -939,26 +1214,67 @@ section_main: /* ---- section: main loop ------------------------------------ */
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(shader_voxel.id);
-        glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE, (GLfloat*)&projection.perspective);
-        glUniform3fv(uniform.voxel.camera_position, 1, (GLfloat*)&lily.camera.pos);
+
+        glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
+                (GLfloat*)&projection.perspective);
+
+        glUniform3fv(uniform.voxel.camera_position, 1,
+                (GLfloat*)&lily.camera.pos);
+
         glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
-        glUniform1f(uniform.voxel.opacity, 0.2f);
-        v3f32 open_cursor = {-17.5f, -17.5f, -16.0f};
+        glUniform1f(uniform.voxel.opacity, 1.0f);
+        v3f32 open_cursor = {-16.5f, -16.5f, -15.0f};
         glUniform3fv(uniform.voxel.open_cursor, 1, (GLfloat*)&open_cursor);
 
-        static f32 render_distance = (16 * 16) + 2;
-        static f32 pulse;
-        static f32 pulse_distance;
-        static u32 test_tab_center = 17 + (17 * 33) + (17 * 33 * 33);
-        for (u32 i = 0; i < 33 * 33 * 33; ++i)
+        u8 direction = 0;
+        if (is_key_press(KEY_KP_8))
         {
-            if (distance_v3i32(
-                        (v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
-                        (v3i32){17, 17, 17}) > (i32)render_distance) continue;
+            direction = 1;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_2))
+        {
+            direction = 2;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_4))
+        {
+            direction = 3;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_6))
+        {
+            direction = 4;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_9))
+        {
+            direction = 5;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_3))
+        {
+            direction = 6;
+            mark_test_tab(direction);
+        }
+        else if (is_key_press(KEY_KP_5))
+        {
+            direction = 0;
+            for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+            {
+                if (!test_tab[i]) continue;
+                test_tab[i] = CHUNK_LOADED;
+            }
+        }
 
-            glUniform1f(uniform.voxel.opacity, 0.2f);
-            if (i == test_tab_center)
-                glUniform1f(uniform.voxel.opacity, 1.0f);
+        if (is_key_press(KEY_ENTER))
+            shift_test_tab(direction);
+
+        static f32 pulse;
+        static v4f32 voxel_color = {0};
+        for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+        {
+            if (!test_tab[i]) continue;
 
             v3f32 offset_cursor =
             {
@@ -969,13 +1285,24 @@ section_main: /* ---- section: main loop ------------------------------------ */
             glUniform3fv(uniform.voxel.offset_cursor, 1,
                     (GLfloat*)&offset_cursor);
 
-            pulse_distance = distance_v3f32(
-                    (v3f32){offset_cursor.x, offset_cursor.y, offset_cursor.z},
-                    (v3f32){17.0f, ((render.frame_start * 20.0f) -
-                     (floorf((render.frame_start * 20.0f) / 90.0f) * 90.0f)) - 30.0f, 17.0f}) * 0.2f;
-            pulse = (sinf(pulse_distance * DEG2RAD) * 0.3f) + 0.7f;
+            pulse = (sinf((offset_cursor.y * 0.3f) +
+                        (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
             glUniform1f(uniform.voxel.size, pulse);
 
+            switch (test_tab[i])
+            {
+                default:
+                case CHUNK_LOADED:
+                    voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
+                    break;
+                case CHUNK_EDGE:
+                    voxel_color = (v4f32){0.37f, 0.48f, 0.04f, 1.0f};
+                    break;
+                case CHUNK_SHIFTED:
+                    voxel_color = (v4f32){0.6f, 0.06f, 0.02f, 1.0f};
+                    break;
+            }
+            glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
             draw_mesh(&mesh_cube_of_happiness);
         }
 
@@ -998,7 +1325,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
         snprintf(string, 511, "MOUSE XY: %.2f %.2f\n" "DELTA XY: %.2f %.2f\n",
                 render.mouse_position.x, render.mouse_position.y,
                 render.mouse_delta.x, render.mouse_delta.y);
-        push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 2)}, 0, 0);
+        push_text(string, (v2f32){MARGIN, MARGIN +
+                (FONT_SIZE_DEFAULT * 2)}, 0, 0);
         render_text(0x3f6f9fff);
 
         snprintf(string, 511,
@@ -1008,7 +1336,8 @@ section_main: /* ---- section: main loop ------------------------------------ */
                 render_distance);
         start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
                 &render, &shader_text, &fbo_text, 0);
-        push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 4)}, 0, 0);
+        push_text(string, (v2f32){MARGIN, MARGIN +
+                (FONT_SIZE_DEFAULT * 4)}, 0, 0);
         render_text(0x3f9f3fff);
         stop_text();
 
@@ -1027,8 +1356,10 @@ section_main: /* ---- section: main loop ------------------------------------ */
         glfwSwapBuffers(render.window);
         glfwPollEvents();
     }
-    goto cleanup;
 
+    v4f32 voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
+    glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
+    glUniform1f(uniform.voxel.size, 1.0f);
     while (!glfwWindowShouldClose(render.window))
     {
         render.frame_start = glfwGetTime() - game_start_time;
@@ -1036,6 +1367,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
         render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
 
+        update_mouse_movement(&render);
         update_render_settings(&render);
         update_world(&lily);
         draw_everything(&lily);
@@ -1069,6 +1401,7 @@ cleanup: /* ----------------------------------------------------------------- */
     glDeleteProgram(shader_text.id);
     glDeleteProgram(shader_skybox.id);
     glDeleteProgram(shader_gizmo.id);
+    glDeleteProgram(shader_voxel.id);
     glfwDestroyWindow(render.window);
     glfwTerminate();
     return 0;

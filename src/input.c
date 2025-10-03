@@ -70,4 +70,3 @@ u32 bind_left                       = KEY_LEFT;
 u32 bind_right                      = KEY_RIGHT;
 u32 bind_down                       = KEY_DOWN;
 u32 bind_up                         = KEY_UP;
-

@@ -17,7 +17,9 @@ u64 factorial(i32 n);
 f64 pow_f64(f64 n, u8 exp);
 f64 sine_f64(f64 x);
 
-b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *out_hit)
+b8
+raycast_block_hit(v3f32 camera, v3f32 target,
+        u8 target_type, BlockHitInfo *out_hit)
 {
     v3f32 dir = normalize_v3f32(sub_v3f32(target, camera));
     i32 x = (i32)floorf(camera.x);
@@ -28,9 +30,14 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
     i32 step_y = (dir.y > 0) ? 1 : -1;
     i32 step_z = (dir.z > 0) ? 1 : -1;
 
-    float t_max_x = (floorf(camera.x) + (step_x > 0 ? 1.0f : 0.0f) - camera.x) / dir.x;
-    float t_max_y = (floorf(camera.y) + (step_y > 0 ? 1.0f : 0.0f) - camera.y) / dir.y;
-    float t_max_z = (floorf(camera.z) + (step_z > 0 ? 1.0f : 0.0f) - camera.z) / dir.z;
+    float t_max_x =
+        (floorf(camera.x) + (step_x > 0 ? 1.0f : 0.0f) - camera.x) / dir.x;
+
+    float t_max_y =
+        (floorf(camera.y) + (step_y > 0 ? 1.0f : 0.0f) - camera.y) / dir.y;
+
+    float t_max_z =
+        (floorf(camera.z) + (step_z > 0 ? 1.0f : 0.0f) - camera.z) / dir.z;
 
     float t_delta_x = fabsf(1.0f / dir.x);
     float t_delay_y = fabsf(1.0f / dir.y);
@@ -111,7 +118,8 @@ b8 raycast_block_hit(v3f32 camera, v3f32 target, u8 target_type, BlockHitInfo *o
     return false;
 }
 
-u64 factorial(i32 n)
+u64
+factorial(i32 n)
 {
     if (n == 0) return 1;
     u64 result = 1;
@@ -120,7 +128,8 @@ u64 factorial(i32 n)
     return result;
 }
 
-f64 pow_f64(f64 n, u8 exp)
+f64
+pow_f64(f64 n, u8 exp)
 {
     f64 result = 1.0;
     for (u8 i = 0; i < exp; ++i)
@@ -129,7 +138,8 @@ f64 pow_f64(f64 n, u8 exp)
 }
 
 /* Approximate sine using Taylor Series */
-f64 sin_f64(f64 x)
+f64
+sin_f64(f64 x)
 {
     while (x > PI)
         x -= 2 * PI;
@@ -145,4 +155,3 @@ f64 sin_f64(f64 x)
     }
     return result;
 }
-

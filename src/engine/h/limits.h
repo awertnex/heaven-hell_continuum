@@ -30,6 +30,4 @@
 #define OUT_STRING_MAX      (STRING_MAX * 2)
 #define GLYPH_MAX           256
 
-
 #endif /* ENGINE_LIMITS_H */
-

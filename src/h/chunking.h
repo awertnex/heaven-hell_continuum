@@ -20,7 +20,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        2
+#define CHUNK_BUF_RADIUS        3
 #define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
@@ -28,9 +28,9 @@
     (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 
 #define CHUNK_TAB_CENTER \
-    (CHUNK_BUF_RADIUS_ODD \
-     + (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER) \
-     + (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
+    (CHUNK_BUF_RADIUS_ODD + \
+     (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER) + \
+     (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
 /* ---- section: general ---------------------------------------------------- */
 
@@ -145,10 +145,14 @@ static u16 chunk_tab_index;
 
 /* ---- section: getters & setters ------------------------------------------ */
 
-static inline u16 get_block_index(u8 x, u8 y, u8 z)
-{return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));}
+static inline u16
+get_block_index(u8 x, u8 y, u8 z)
+{
+    return ((x) + ((y) * CHUNK_DIAMETER) + ((z) * CHUNK_DIAMETER * CHUNK_DIAMETER));
+}
 
-static inline v3u32 get_block_coordinates(u32 i)
+static inline v3u32
+get_block_coordinates(u32 i)
 {
     return (v3u32){
         (i) % CHUNK_DIAMETER,
@@ -157,36 +161,58 @@ static inline v3u32 get_block_coordinates(u32 i)
     };
 }
 
-static inline u8 get_mirror_axis(u8 axis)
-{return (CHUNK_DIAMETER - 1 - (axis));}
+static inline u8
+get_mirror_axis(u8 axis)
+{
+    return (CHUNK_DIAMETER - 1 - (axis));
+}
 
-static inline u16 get_block_id(u32 i)
-{return ((i) & BLOCKID);}
+static inline u16
+get_block_id(u32 i)
+{
+    return ((i) & BLOCKID);
+}
 
-static inline void set_block_id(u32 i, u16 id)
-{(i) = ((i) & ~BLOCKID) | (id);}
+static inline void
+set_block_id(u32 i, u16 id)
+{
+    (i) = ((i) & ~BLOCKID) | (id);
+}
 
-static inline u16 get_block_state(u32 i)
-{return (((i) & BLOCKSTATE) >> 10);}
+static inline u16
+get_block_state(u32 i)
+{
+    return (((i) & BLOCKSTATE) >> 10);
+}
 
-static inline void set_block_state(u32 i, u16 state)
-{((i) = ((i) & ~BLOCKSTATE) | ((state) << 10));}
+static inline void
+set_block_state(u32 i, u16 state)
+{
+    ((i) = ((i) & ~BLOCKSTATE) | ((state) << 10));
+}
 
-static inline u32 get_block_data(u32 i)
-{return ((i) & BLOCKDATA);}
+static inline u32
+get_block_data(u32 i)
+{
+    return ((i) & BLOCKDATA);
+}
 
 /* ---- section: signatures ------------------------------------------------- */
 
 u8 init_chunking(ShaderProgram *program);
 void update_chunking(v3i16 player_delta_chunk);
 void free_chunking();
+
+/* index = (chunk_tab index); */
 void add_block(u16 index, u32 x, u32 y, u32 z);
+
+/* index = (chunk_tab index); */
 void remove_block(u16 index, u32 x, u32 y, u32 z);
+
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
 void draw_chunk_tab(Uniform *uniform);
 #ifdef FUCK // TODO: undef FUCK
-void draw_block(Chunk *chunk, u32 x, u32 y, u32 z);
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);
 void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);

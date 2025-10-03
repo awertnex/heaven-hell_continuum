@@ -44,4 +44,3 @@ f32 easeout_f32(f32 start, f32 end, f32 scale);
 f32 smoothstep_f32(f32 start, f32 end, f32 scale);
 
 #endif /* ENGINE_MATH_H */
-

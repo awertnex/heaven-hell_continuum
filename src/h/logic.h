@@ -119,35 +119,29 @@ void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
 
-static inline void set_player_pos(Player *player, f32 x, f32 y, f32 z)
-{player->raw_pos = (v3f32){x, y, z};}
+static inline void
+set_player_pos(Player *player, f32 x, f32 y, f32 z)
+{
+    player->raw_pos = (v3f32){x, y, z};
+}
 
-static inline void set_player_block(Player *player, i32 x, i32 y, i32 z)
-{player->raw_pos = (v3f32){(f32)(x + 0.5f), (f32)(y + 0.5f), (f32)(z + 0.5f)};}
+static inline void
+set_player_block(Player *player, i32 x, i32 y, i32 z)
+{
+    player->raw_pos =
+        (v3f32){(f32)(x) + 0.5f, (f32)(y) + 0.5f, (f32)(z) + 0.5f};
+}
 
-void set_player_pos(Player *player, f32 x, f32 y, f32 z);
-void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void player_kill(Player *player);
 void player_respawn(Player *player);
-
-u32 get_distance(v3i32 a, v3i32 b);
-b8 is_range_within_i(i32 pos, i32 start, i32 end);
-b8 is_range_within_f(f32 pos, f32 start, f32 end);
-b8 is_range_within_v2f(v2f32 pos, v2f32 start, v2f32 end);
-b8 is_range_within_v3i(v3i32 pos, v3i32 start, v3i32 end);
-b8 is_range_within_v3fi(v3f32 pos, v3i32 start, v3i32 end);
 b8 is_ray_intersect(Player *player);
-
 void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
 f64 get_time_ms();
 b8 get_timer(f64 *time_start, f32 interval);
-
-void update_debug_strings(Player *player);
 
 #ifdef FUCK // TODO: undef FUCK
 void draw_default_grid(v4u8 x, v4u8 y, v4u8 z);
 #endif // TODO: undef FUCK
 
 #endif /* GAME_LOGIC_H */
-

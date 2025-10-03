@@ -9,7 +9,8 @@
 #include "h/logger.h"
 #include "h/memory.h"
 
-int make_dir(const str *path)
+int
+make_dir(const str *path)
 {
     int exit_code = mkdir(path);
     if (exit_code == 0)
@@ -18,14 +19,16 @@ int make_dir(const str *path)
     return exit_code;
 }
 
-b8 _get_path_absolute(const str *path, str *path_real)
+b8
+_get_path_absolute(const str *path, str *path_real)
 {
     if (!GetFullPathNameA(path, PATH_MAX, path_real, NULL))
         return FALSE;
     return TRUE;
 }
 
-b8 _get_path_bin_root(str *path)
+b8
+_get_path_bin_root(str *path)
 {
     if (!GetModuleFileNameA(NULL, path, PATH_MAX - 1))
     {
@@ -38,7 +41,8 @@ b8 _get_path_bin_root(str *path)
     return TRUE;
 }
 
-b8 exec(buf *cmd, str *cmd_name)
+b8
+exec(buf *cmd, str *cmd_name)
 {
     str *cmd_cat = NULL;
     STARTUPINFOA        startup_info = {0};
@@ -57,7 +61,8 @@ b8 exec(buf *cmd, str *cmd_name)
     for (u64 i = 0; i < cmd->memb; ++i)
         strncat(cmd_cat, stringf("%s ", cmd->i[i]), cmd->size);
 
-    if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info))
+    if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL,
+                &startup_info, &process_info))
     {
         LOGFATAL("'%s' Fork Failed, Process Aborted\n", cmd_name);
         goto cleanup;
@@ -86,4 +91,3 @@ cleanup:
     mem_free((void*)&cmd_cat, cmd->memb * cmd->size, cmd_name);
     return FALSE;
 }
-

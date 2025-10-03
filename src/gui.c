@@ -33,7 +33,8 @@ str str_vertex_count[32];
 
 /* ---- section: functions -------------------------------------------------- */
 
-void print_menu_layers()
+void
+print_menu_layers()
 {
     str menu_names[10][24] =
     {
@@ -55,7 +56,8 @@ void print_menu_layers()
     putchar('\n');
 }
 
-b8 init_gui(void)
+b8
+init_gui(void)
 {
     str font_path[4][PATH_MAX] = {0};
 
@@ -91,12 +93,14 @@ cleanup:
     return 1;
 }
 
-void update_render_settings(Render *render)
+void
+update_render_settings(Render *render)
 {
     settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
 }
 
-void free_gui(void)
+void
+free_gui(void)
 {
     free_font(&font);
     free_font(&font_bold);
@@ -104,7 +108,8 @@ void free_gui(void)
     free_font(&font_mono_bold);
 }
 
-void draw_debug_info(Player *player,
+void
+draw_debug_info(Player *player,
         f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
         Render *render, ShaderProgram *program, FBO *fbo)
 {
@@ -137,7 +142,9 @@ void draw_debug_info(Player *player,
             "PITCH[%.2f] YAW[%.2f]\n",
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
-            (i32)floorf(player->pos.x), (i32)floorf(player->pos.y), (i32)floorf(player->pos.z),
+            (i32)floorf(player->pos.x),
+            (i32)floorf(player->pos.y),
+            (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
     push_text(string, (v2f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT}, 0, 0);
@@ -163,25 +170,6 @@ void draw_debug_info(Player *player,
     render_text(0x3f6f9fff);
 
     snprintf(string, 511,
-            "Key            [Space ]:\n"
-            "Press          [%d][%d] Press Double\n"
-            "Hold           [%d][%d] Hold Double\n"
-            "Release        [%d][%d] Release Double\n"
-            "Listen         [%d][%d] Listen Double\n\n",
-            is_key_press(0),
-            is_key_press_double(0),
-            _is_key_hold(0),
-            _is_key_hold_double(0),
-            _is_key_release(0),
-            _is_key_release_double(0),
-            !keyboard_key[0],
-            _is_key_listen_double(0));
-    start_text(0, 32.0f, &font_mono_bold,
-            render, program, fbo, 0);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 14)}, 0, 0);
-    render_text(0x9f6f3fff);
-
-    snprintf(string, 511,
             "Game:     %s v%s\n"
             "Engine:   %s v%s\n"
             "Author:   %s\n"
@@ -197,7 +185,8 @@ void draw_debug_info(Player *player,
             glGetString(GL_RENDERER));
     start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
             render, program, fbo, 0);
-    push_text(string, (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
+    push_text(string,
+            (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
     render_text(0x3f9f3fff);
     stop_text();
 }
@@ -207,7 +196,8 @@ void draw_debug_info(Player *player,
 /* 
  * scale = (source.scale * scl);
  */
-void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
+void
+draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -237,8 +227,8 @@ void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 p
     rlVertex2f(pos.x + tile_width, pos.y);
 }
 
-
-void update_menus(v2f32 render_size)
+void
+update_menus(v2f32 render_size)
 {
     if (!menu_index)
         return;
@@ -404,7 +394,8 @@ void update_menus(v2f32 render_size)
     }
 }
 
-void draw_hud()
+void
+draw_hud()
 {
     rlBegin(RL_QUADS);
 
@@ -437,7 +428,8 @@ void draw_hud()
     rlSetTexture(0);
 }
 
-float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
+float
+get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
     f32 text_offset_x = 0.0f;
@@ -474,7 +466,8 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
  * align_x = (0 = left, 1 = center, 2 = right);
  * align_y = (0 = top, 1 = center, 2 = bottom);
  */
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
+void
+draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -531,7 +524,8 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
 /* 
  * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
  */
-void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
+void
+draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -627,7 +621,8 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
 
 /* raylib/rtextures.c/DrawTexturePro refactored;
    scale = (scl); */
-void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
+void
+draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
     if (texture.id <= 0) return;
     f32 width = (f32)texture.width;
@@ -652,7 +647,8 @@ void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 s
 
 /* align_x = (0 = left, 1 = center, 2 = right);
    align_y = (0 = top, 1 = center, 2 = bottom); */
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
+void
+draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
     switch (align_x)
     {
@@ -705,7 +701,8 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
             0, 0, COL_TEXTURE_DEFAULT);
 }
 
-void btn_func_singleplayer()
+void
+btn_func_singleplayer()
 {
     menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
@@ -715,26 +712,30 @@ void btn_func_singleplayer()
     init_world("Poop Consistency Tester"); /*temp*/
 }
 
-void btn_func_multiplayer()
+void
+btn_func_multiplayer()
 {
     menu_index = MENU_MULTIPLAYER;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
 
-void btn_func_settings()
+void
+btn_func_settings()
 {
     menu_index = MENU_SETTINGS;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
 
-void btn_func_quit_game()
+void
+btn_func_quit_game()
 {
     state &= ~FLAG_ACTIVE;
 }
 
-void btn_func_unpause()
+void
+btn_func_unpause()
 {
     menu_index = 0;
     state_menu_depth = 0;
@@ -744,7 +745,8 @@ void btn_func_unpause()
     lily.container_state = 0;
 }
 
-void btn_func_quit_world()
+void
+btn_func_quit_world()
 {
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
@@ -753,7 +755,8 @@ void btn_func_quit_world()
     state &= ~FLAG_WORLD_LOADED;
 }
 
-void btn_func_back()
+void
+btn_func_back()
 {
     menu_layer[state_menu_depth] = 0;
     --state_menu_depth;
@@ -761,4 +764,3 @@ void btn_func_back()
     is_menu_ready = 0;
 }
 #endif // TODO: undef FUCK
-

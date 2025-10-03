@@ -77,4 +77,3 @@ void init_world_directory(const str *world_name);
 void init_world_files(const str *world_name);
 
 #endif /* GAME_DIR_H */
-

@@ -5,4 +5,3 @@
 
 
 #endif /* GAME_VOXEL_H */
-

@@ -38,18 +38,21 @@ str out_message[OUT_STRING_MAX] = {0};
 
 /* ---- section: functions -------------------------------------------------- */
 
-b8 init_logger()
+b8
+init_logger()
 {
     // TODO: init logger
     return TRUE;
 }
 
-void close_logger()
+void
+close_logger()
 {
     // TODO: close logger
 }
 
-void log_output(u8 level, const str* format, ...)
+void
+log_output(u8 level, const str* format, ...)
 {
     if (level > log_level) return;
 
@@ -58,7 +61,9 @@ void log_output(u8 level, const str* format, ...)
     vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);
 
-    snprintf(out_message, OUT_STRING_MAX, "%s: %s", log_tag[level], in_message);
-    fprintf(stderr, "%s%s%s", esc_code_open[level], out_message, esc_code_close);
-}
+    snprintf(out_message, OUT_STRING_MAX, "%s: %s",
+            log_tag[level], in_message);
 
+    fprintf(stderr, "%s%s%s", esc_code_open[level],
+            out_message, esc_code_close);
+}

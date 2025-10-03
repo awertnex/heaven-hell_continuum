@@ -51,6 +51,7 @@ typedef struct Uniform
         GLint sky_color;
         GLint open_cursor;
         GLint offset_cursor;
+        GLint color;
         GLint opacity;
         GLint size;
     } voxel;
@@ -68,4 +69,3 @@ extern Projection projection;
 extern Uniform uniform;
 
 #endif /* GAME_MAIN_H */
-

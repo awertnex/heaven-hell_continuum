@@ -149,7 +149,8 @@ void list(void);
 
 /* ---- section: functions -------------------------------------------------- */
 
-void init_build(void)
+void
+init_build(void)
 {
     str_bin_root = get_path_bin_root();
     if (str_bin_root == NULL)
@@ -163,7 +164,8 @@ void init_build(void)
     snprintf(str_bin_old, CMD_SIZE, "%sbuild_old%s", str_bin_root, EXTENSION);
 }
 
-b8 is_source_changed(void)
+b8
+is_source_changed(void)
 {
     unsigned long mtime_src = 0;
     unsigned long mtime_bin = 0;
@@ -186,7 +188,8 @@ b8 is_source_changed(void)
     return FALSE;
 }
 
-void rebuild_self(int argc, char **argv)
+void
+rebuild_self(int argc, char **argv)
 {
     if (!mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd"))
         fail_cmd();
@@ -200,7 +203,9 @@ void rebuild_self(int argc, char **argv)
     snprintf(cmd.i[3], CMD_SIZE - 1, "%s", "-Wall");
     snprintf(cmd.i[4], CMD_SIZE - 1, "%s", "-Wextra");
     snprintf(cmd.i[5], CMD_SIZE - 1, "%s", "-fno-builtin");
-    snprintf(cmd.i[6], CMD_SIZE - 1, "%s", "-Wno-implicit-function-declaration");
+    snprintf(cmd.i[6], CMD_SIZE - 1, "%s",
+            "-Wno-implicit-function-declaration");
+
     snprintf(cmd.i[7], CMD_SIZE - 1, "%s", "-o");
     snprintf(cmd.i[8], CMD_SIZE - 1, "%s", str_bin_new);
     normalize_slash(cmd.i[8]);
@@ -231,7 +236,8 @@ cleanup:
     fail_cmd();
 }
 
-u64 compare_argv(str *arg, int argc, char **argv)
+u64
+compare_argv(str *arg, int argc, char **argv)
 {
     if (argc == 1)
         return 0;
@@ -242,7 +248,8 @@ u64 compare_argv(str *arg, int argc, char **argv)
     return 0;
 }
 
-b8 evaluate_extension(const str *file_name)
+b8
+evaluate_extension(const str *file_name)
 {
     u64 len = strlen(file_name);
     if (len > 2 && strncmp(file_name + len - 2, ".c", 2) == 0)
@@ -250,7 +257,8 @@ b8 evaluate_extension(const str *file_name)
     return FALSE;
 }
 
-void strip_extension(const str *file_name, str *dest) // TODO: make this function
+void
+strip_extension(const str *file_name, str *dest)
 {
     u64 len = strlen(file_name);
     str file_name_buf[NAME_MAX] = {0};
@@ -261,7 +269,8 @@ void strip_extension(const str *file_name, str *dest) // TODO: make this functio
     }
 }
 
-void show_cmd(void)
+void
+show_cmd(void)
 {
     printf("\nCMD:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
@@ -274,7 +283,8 @@ void show_cmd(void)
         putchar('\n');
 }
 
-void raw_cmd(void)
+void
+raw_cmd(void)
 {
     printf("\nRAW:\n");
     for (u32 i = 0; i < CMD_MEMB; ++i)
@@ -286,7 +296,8 @@ void raw_cmd(void)
     printf("%s", "\n\n");
 }
 
-void push_cmd(const str *string)
+void
+push_cmd(const str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
     {
@@ -304,7 +315,8 @@ void push_cmd(const str *string)
     ++cmd_pos;
 }
 
-void build_main(void)
+void
+build_main(void)
 {
     if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
@@ -357,7 +369,8 @@ void build_main(void)
 #endif
 }
 
-void build_cmd(int argc, char **argv)
+void
+build_cmd(int argc, char **argv)
 {
     if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
@@ -379,17 +392,21 @@ void build_cmd(int argc, char **argv)
             printf("dir count: %ld\n", str_tests.memb);
             if (test_index >= str_tests.memb)
             {
-                LOGERROR("'%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
+                LOGERROR("'%s' Invalid, Try './build%s list'"
+                        "to List Available Options..\n", argv[2], EXTENSION);
                 fail_cmd();
             }
 
-            if (!mem_alloc_buf(&str_tests, str_tests.memb, CMD_SIZE, "str_tests"))
+            if (!mem_alloc_buf(&str_tests, str_tests.memb,
+                        CMD_SIZE, "str_tests"))
                 fail_cmd();
 
 
             sort_buf(&str_tests);
-            snprintf(str_main, CMD_SIZE, "%s%s.c", DIR_TESTS, (str*)str_tests.i[test_index]);
-            snprintf(str_out, CMD_SIZE, "./%s%s%s", DIR_ROOT_TESTS, (str*)str_tests.i[test_index], EXTENSION);
+            snprintf(str_main, CMD_SIZE, "%s%s.c",
+                    DIR_TESTS, (str*)str_tests.i[test_index]);
+            snprintf(str_out, CMD_SIZE, "./%s%s%s",
+                    DIR_ROOT_TESTS, (str*)str_tests.i[test_index], EXTENSION);
             push_cmd(str_main);
             break;
 
@@ -463,7 +480,8 @@ void build_cmd(int argc, char **argv)
 #endif
 }
 
-void build_test(int argc, char **argv)
+void
+build_test(int argc, char **argv)
 {
     if (!argv[2])
     {
@@ -477,7 +495,8 @@ void build_test(int argc, char **argv)
     printf("dir count: %ld\n", str_tests.memb);
     if (test_index >= str_tests.memb)
     {
-        LOGERROR("'%s' Invalid, Try './build%s list' to List Available Options..\n", argv[2], EXTENSION);
+        LOGERROR("'%s' Invalid, Try './build%s list'"
+                "to List Available Options..\n", argv[2], EXTENSION);
         fail_cmd();
     }
 
@@ -536,53 +555,31 @@ void build_test(int argc, char **argv)
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
-    push_cmd(stringf("./%s%s%s.c", DIR_ROOT_TESTS, str_tests.i[test_index], EXTENSION));
+    push_cmd(stringf("./%s%s%s.c", DIR_ROOT_TESTS,
+                str_tests.i[test_index], EXTENSION));
 
 #if defined(__linux__) || defined(__linux)
     cmd.i[cmd_pos] = NULL;
 #endif
 }
 
-/*
- * scrap function, for reference;
- */
-#if 0
-#include <glob.h>
-
-void push_glob(const str *pattern)
-{
-    b8 ret = glob(pattern, 0, NULL, &glob_buf);
-    if (ret != 0)
-    {
-        LOGFATAL("Glob() Failed, Pattern: %s, Process Aborted\n", pattern);
-        globfree(&glob_buf);
-        fail_cmd();
-    }
-
-    for (u64 i = 0; i < glob_buf.gl_pathc; ++i)
-    {
-        if (strstr(glob_buf.gl_pathv[i], str_main))
-            continue;
-        strncpy(cmd.i[cmd_pos], glob_buf.gl_pathv[i], NAME_MAX);
-        ++cmd_pos;
-    }
-}
-#endif /* 0 */
-
-void free_cmd(void)
+void
+free_cmd(void)
 {
     mem_free((void*)&str_bin_root, CMD_SIZE, "str_bin_root");
     mem_free_buf(&str_tests, "str_tests");
     mem_free_buf(&cmd, "cmd");
 }
 
-void fail_cmd(void)
+void
+fail_cmd(void)
 {
     free_cmd();
     _exit(EXIT_FAILURE);
 }
 
-void help(void)
+void
+help(void)
 {
     LOGINFO("%s%s%s%s%s%s",
             "Usage: ./build [options]...\n",
@@ -595,7 +592,8 @@ void help(void)
     exit(EXIT_SUCCESS);
 }
 
-void list(void)
+void
+list(void)
 {
     printf("%s%s%s%s%s",
             "Options:\n",
@@ -635,7 +633,8 @@ void list(void)
 
 /* ---- section: main ------------------------------------------------------- */
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     log_level = LOGLEVEL_INFO;
     if (compare_argv("LOGFATAL", argc, argv)) log_level = LOGLEVEL_FATAL;
@@ -699,19 +698,25 @@ int main(int argc, char **argv)
     make_dir(cmd_asset_out);
 
     snprintf(cmd_asset_in, CMD_SIZE - 1, "%slib/"PLATFORM, str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1,
+            "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
+
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     snprintf(cmd_asset_in, CMD_SIZE - 1, "%sresources/", str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"resources/", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1,
+            "%s"DIR_ROOT"resources/", str_bin_root);
+
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
 
     snprintf(cmd_asset_in, CMD_SIZE - 1, "%sshaders/", str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"resources/shaders/", str_bin_root);
+    snprintf(cmd_asset_out, CMD_SIZE - 1,
+            "%s"DIR_ROOT"resources/shaders/", str_bin_root);
+
     normalize_slash(cmd_asset_in);
     normalize_slash(cmd_asset_out);
     if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;

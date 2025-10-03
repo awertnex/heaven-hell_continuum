@@ -9,7 +9,8 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-b8 mem_alloc(void **x, u64 size, const str *name)
+b8
+mem_alloc(void **x, u64 size, const str *name)
 {
     if (*x != NULL)
         return TRUE;
@@ -17,15 +18,18 @@ b8 mem_alloc(void **x, u64 size, const str *name)
     *x = calloc(1, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n", name, (void*)(uintptr_t)(*x));
+        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
-    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
+    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), size);
 
     return TRUE;
 }
 
-b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
+b8
+mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
 {
     if (*x != NULL)
         return TRUE;
@@ -33,15 +37,18 @@ b8 mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
     *x = calloc(memb, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n", name, (void*)(uintptr_t)(*x));
+        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
-    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n", name, (void*)(uintptr_t)(*x), memb * size);
+    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), memb * size);
 
     return TRUE;
 }
 
-b8 mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
+b8
+mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
 {
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
@@ -66,95 +73,112 @@ b8 mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
     return TRUE;
 }
 
-b8 mem_realloc(void **x, u64 size, const str *name)
+b8
+mem_realloc(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
     void *temp = realloc(*x, size);
     if (temp == NULL)
     {
-        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n", name, (void*)(uintptr_t)(*x));
+        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
     *x = temp;
-    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
+    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), size);
 
     return TRUE;
 }
 
-b8 mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
+b8
+mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, (void*)(uintptr_t)(*x));
+        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
     void *temp = realloc(*x, memb * size);
     if (temp == NULL)
     {
-        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n", name, (void*)(uintptr_t)(*x));
+        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n",
+                name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
 
     *x = temp;
-    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n", name, (void*)(uintptr_t)(*x), memb * size);
+    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), memb * size);
 
     return TRUE;
 }
 
-void mem_free(void **x, u64 size, const str *name)
+void
+mem_free(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
         return;
 
     memset(*x, 0, size);
     free(*x);
-    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
+    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), size);
     *x = NULL;
 }
 
-void mem_free_buf(buf *x, const str *name)
+void
+mem_free_buf(buf *x, const str *name)
 {
     if (x->i != NULL)
     {
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
-        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->i), x->memb * sizeof(str*));
+        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n",
+                name, (void*)(uintptr_t)(x->i), x->memb * sizeof(str*));
     }
 
     if (x->buf != NULL)
     {
         memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
-        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n", name, (void*)(uintptr_t)(x->buf), x->memb * x->size);
+        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n",
+                name, (void*)(uintptr_t)(x->buf), x->memb * x->size);
     }
 
     *x = (buf){NULL};
 }
 
-void mem_zero(void **x, u64 size, const str *name)
+void
+mem_zero(void **x, u64 size, const str *name)
 {
     if (*x == NULL)
         return;
 
     memset(*x, 0, size);
-    LOGTRACE("%s[%p] Memory Cleared[%lldB]\n", name, (void*)(uintptr_t)(*x), size);
+    LOGTRACE("%s[%p] Memory Cleared[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), size);
 }
 
-void print_bits(u64 x, u8 bit_count)
+void
+print_bits(u64 x, u8 bit_count)
 {
     while(bit_count--)
         putchar('0' + ((x >> bit_count) & 1));
     putchar('\n');
 }
 
-void swap_bits(char *c1, char *c2, u8 bit_count)
+void
+swap_bits(char *c1, char *c2, u8 bit_count)
 {
     for (u8 i = 0; i < bit_count; ++i)
     {
@@ -166,14 +190,16 @@ void swap_bits(char *c1, char *c2, u8 bit_count)
     }
 }
 
-void swap_strings(str *s1, str *s2)
+void
+swap_strings(str *s1, str *s2)
 {
     u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
     for (u16 i = 0; i <= len; ++i)
         swap_bits(&s1[i], &s2[i], 8);
 }
 
-str *swap_string_char(str *string, char c1, char c2)
+str *
+swap_string_char(str *string, char c1, char c2)
 {
     u64 len = strlen(string);
     if (!len) return string;
@@ -187,7 +213,8 @@ str *swap_string_char(str *string, char c1, char c2)
     return string;
 }
 
-str *stringf(const str* format, ...)
+str *
+stringf(const str* format, ...)
 {
     static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
     static u64 index = 0;
@@ -210,7 +237,8 @@ str *stringf(const str* format, ...)
     return string;
 }
 
-void sort_buf(buf *buffer) /* TODO: fucking fix this */
+void
+sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
 #if 0
     for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
@@ -238,4 +266,3 @@ void sort_buf(buf *buffer) /* TODO: fucking fix this */
     }
 #endif
 }
-
