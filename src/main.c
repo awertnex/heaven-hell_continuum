@@ -26,7 +26,7 @@ Settings settings =
     .reach_distance       = SETTING_REACH_DISTANCE_MAX,
     .lerp_speed           = SETTING_LERP_SPEED_DEFAULT,
     .mouse_sensitivity    = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
-    .render_distance      = SETTING_RENDER_DISTANCE_MAX,
+    .render_distance      = CHUNK_BUF_RADIUS,
     .target_fps           = SETTING_TARGET_FPS_DEFAULT,
     .gui_scale            = SETTING_GUI_SCALE_DEFAULT,
 };
@@ -651,7 +651,7 @@ update_world(Player *player)
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
-        //shift_chunk_tab(lily.chunk, &lily.delta_chunk);
+        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
     }
@@ -1033,9 +1033,6 @@ section_main: /* ---- section: main loop ------------------------------------ */
     }
 
     generate_standard_meshes();
-
-    main__shift_test_tab();
-    goto cleanup;
 
     while (!glfwWindowShouldClose(render.window))
     {

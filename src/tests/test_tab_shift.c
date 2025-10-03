@@ -14,8 +14,8 @@ static u32 test_tab[CHUNK_BUF_VOLUME] = {0};
 static void
 mark_test_tab(u8 direction)
 {
-    const i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
     const u8 AXIS = (direction + 1) / 2;
+    const i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
 
     u32 mirror_index = 0;
     u8 is_on_edge = 0;
@@ -338,8 +338,8 @@ main__shift_test_tab(void)
             glUniform3fv(uniform.voxel.offset_cursor, 1,
                     (GLfloat*)&open_cursor);
 
-            pulse = (sinf((open_cursor.y * 0.3f) +
-                        (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
+            pulse = (sinf((open_cursor.z * 0.3f) -
+                        (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
             glUniform1f(uniform.voxel.size, pulse);
 
             voxel_color =

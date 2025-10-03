@@ -11,8 +11,7 @@ out vec3 vertex_position;
 
 void main()
 {
-    vec3 voxel_size = (a_pos * size) + ((1.0 - size) / 2.0);
-    vertex_position = voxel_size + open_cursor + offset_cursor;
+    vertex_position = a_pos + open_cursor + offset_cursor;
     gl_Position = mat_perspective * vec4(vertex_position, 1.0);
     //voxel_data = a_voxel;
 }
