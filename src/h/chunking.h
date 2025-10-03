@@ -120,6 +120,10 @@ enum ChunkStates
     SHIFT_NY = 4,
     SHIFT_PZ = 5,
     SHIFT_NZ = 6,
+
+    SHIFT_X = 1,
+    SHIFT_Y = 2,
+    SHIFT_Z = 3,
 }; /* ChunkStates */
 
 typedef struct Chunk

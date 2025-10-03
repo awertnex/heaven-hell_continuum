@@ -100,15 +100,15 @@ update_player(Render *render, Player *player)
 void
 update_camera_movement_player(Render *render, Player *player)
 {
-    const f32 ANGLE = 90.0f;
-    const f32 RANGE = 360.0f;
-
     player->yaw += render->mouse_delta.x;
     player->pitch += render->mouse_delta.y;
 
-    player->yaw = fmodf(player->yaw, RANGE);
-    if (player->yaw < 0.0f) player->yaw += RANGE;
-    player->pitch = clamp_f32(player->pitch, -ANGLE, ANGLE);
+    player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
+    if (player->yaw < 0.0f)
+        player->yaw += CAMERA_RANGE_MAX;
+
+    player->pitch = clamp_f32(player->pitch,
+            -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
 
     player->sin_pitch = sin(player->pitch * DEG2RAD);
     player->cos_pitch = cos(player->pitch * DEG2RAD);
@@ -152,9 +152,9 @@ update_camera_movement_player(Render *render, Player *player)
                         player->eye_height + (SPCH * player->camera_distance),
                 };
             player->camera.sin_yaw =
-                sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+                sin((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
             player->camera.cos_yaw =
-                cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+                cos((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
             break;
 
             /* TODO: make the stalker camera mode */

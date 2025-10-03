@@ -135,16 +135,13 @@ Mesh mesh_gizmo = {0};
 
 /* ---- section: callbacks -------------------------------------------------- */
 
-void error_callback(int error, const char* message)
+void callback_error(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
 
 static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
-
-static void callback_cursor_pos(
-        GLFWwindow* window, double xpos, double ypos);
 
 static void callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -176,26 +173,6 @@ callback_framebuffer_size(
     realloc_fbo(&render, &fbo_world);
     realloc_fbo(&render, &fbo_hud);
     realloc_fbo(&render, &fbo_text);
-}
-
-static void
-callback_cursor_pos(
-        GLFWwindow* window, double xpos, double ypos)
-{
-    render.mouse_delta =
-        (v2f64){
-            xpos - render.mouse_position.x,
-            ypos - render.mouse_position.y,
-        };
-    render.mouse_position = (v2f64){xpos, ypos};
-
-    if ((state & FLAG_PARSE_CURSOR) && !(state & FLAG_SUPER_DEBUG))
-    {
-        lily.yaw +=
-            (f32)render.mouse_delta.x * settings.mouse_sensitivity;
-        lily.pitch +=
-            (f32)render.mouse_delta.y * settings.mouse_sensitivity;
-    }
 }
 
 static void
@@ -856,176 +833,7 @@ render_font_atlas_example(void)
 }
 #endif
 
-#define CHUNK_LOADED    1
-#define CHUNK_EDGE      2
-#define CHUNK_SHIFTED   3
-#define TEST_TAB_DIAMETER   33
-#define TEST_TAB_LAYER      (33 * 33)
-#define TEST_TAB_VOLUME     (33 * 33 * 33)
-static u8 test_tab[TEST_TAB_VOLUME] = {0};
-static u8 test_tab_val[TEST_TAB_VOLUME] = {0};
-const u32 test_tab_center = 17 + (17 * 33) + (17 * 33 * 33);
-const f32 render_distance = (16 * 16) + 2;
-
-static void
-init_test_tab(void)
-{
-    for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
-        if (distance_v3i32((v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
-                    (v3i32){16, 16, 16}) < (u32)render_distance)
-            test_tab[i] = CHUNK_LOADED;
-}
-
-static void
-mark_test_tab(u8 direction)
-{
-    i8 increment = (direction % 2 == 1) - (direction % 2 == 0);
-    v3u16 coordinates = {0};
-    u16 mirror_index = 0;
-    u16 target_index = 0;
-    u8 is_on_edge = 0;
-
-    for (u16 i = 0; i < TEST_TAB_VOLUME; ++i)
-        if (test_tab[i] == CHUNK_EDGE)
-            test_tab[i] = CHUNK_LOADED;
-
-    /* ---- mark chunks on-edge --------------------------------------------- */
-    for (u16 i = 0; i < TEST_TAB_VOLUME; ++i)
-    {
-        if (!test_tab[i]) continue;
-        coordinates =
-            (v3u16){
-                i % TEST_TAB_DIAMETER,
-                (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
-                i / TEST_TAB_LAYER,
-            };
-
-        switch (direction)
-        {
-            case SHIFT_PX:
-                mirror_index = i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2);
-                is_on_edge = (coordinates.x == 0) ||
-                    (test_tab[i - 1] == 0);
-                break;
-
-            case SHIFT_NX:
-                mirror_index = i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2);
-                is_on_edge = (coordinates.x == TEST_TAB_DIAMETER - 1) ||
-                    (test_tab[i + 1] == 0);
-                break;
-
-            case SHIFT_PY:
-                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
-                        ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                        TEST_TAB_DIAMETER) + coordinates.x;
-                is_on_edge = (coordinates.y == 0) ||
-                    (test_tab[i - TEST_TAB_DIAMETER] == 0);
-                break;
-
-            case SHIFT_NY:
-                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
-                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                        TEST_TAB_DIAMETER) + coordinates.x;
-                is_on_edge = (coordinates.y == TEST_TAB_DIAMETER - 1) ||
-                    (test_tab[i + TEST_TAB_DIAMETER] == 0);
-                break;
-
-            case SHIFT_PZ:
-                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
-                        TEST_TAB_LAYER) + (coordinates.y *
-                            TEST_TAB_DIAMETER) + coordinates.x;
-                is_on_edge = (coordinates.z == 0) ||
-                    (test_tab[i - TEST_TAB_LAYER] == 0);
-                break;
-
-            case SHIFT_NZ:
-                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
-                        TEST_TAB_LAYER) + (coordinates.y *
-                            TEST_TAB_DIAMETER) + coordinates.x;
-                is_on_edge = (coordinates.z == TEST_TAB_DIAMETER - 1) ||
-                    (test_tab[i + TEST_TAB_LAYER] == 0);
-                break;
-        }
-
-        if (is_on_edge && test_tab[mirror_index])
-                test_tab[mirror_index] = CHUNK_EDGE;
-    }
-}
-
-static void
-shift_test_tab(u8 direction)
-{
-    i8 increment = (direction % 2 == 1) - (direction % 2 == 0);
-    v3u16 coordinates = {0};
-    u16 mirror_index = 0;
-    u16 target_index = 0;
-    u8 is_on_edge = 0;
-
-    /* ---- shift test_tab -------------------------------------------------- */
-    for (u16 i = (increment == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
-            i >= 0 && i < CHUNK_BUF_VOLUME; i += increment)
-    {
-        if (!test_tab[i]) continue;
-        coordinates =
-            (v3u16){
-                i % TEST_TAB_DIAMETER,
-                (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
-                i / TEST_TAB_LAYER,
-            };
-
-        switch (direction)
-        {
-            case SHIFT_PX:
-                mirror_index = i + TEST_TAB_DIAMETER - 1 -
-                    (coordinates.x * 2);
-                target_index = (coordinates.x == TEST_TAB_DIAMETER - 1)
-                    ? i : i + 1;
-                break;
-
-            case SHIFT_NX:
-                mirror_index = i + TEST_TAB_DIAMETER - 1 -
-                    (coordinates.x * 2);
-                target_index = (coordinates.x == 0) ? i : i - 1;
-                break;
-
-            case SHIFT_PY:
-                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
-                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                        TEST_TAB_DIAMETER) + coordinates.x;
-                target_index = (coordinates.y == TEST_TAB_DIAMETER - 1) ?
-                    i : i + TEST_TAB_DIAMETER;
-                break;
-
-            case SHIFT_NY:
-                mirror_index = (coordinates.z * TEST_TAB_LAYER) +
-                    ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                        TEST_TAB_DIAMETER) + coordinates.x;
-                target_index = (coordinates.y == 0) ?
-                    i : i - TEST_TAB_DIAMETER;
-                break;
-
-            case SHIFT_PZ:
-                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
-                        TEST_TAB_LAYER) + (coordinates.y *
-                            TEST_TAB_DIAMETER) + coordinates.x;
-                target_index = (coordinates.z == TEST_TAB_DIAMETER - 1) ?
-                    i : i + TEST_TAB_LAYER;
-                break;
-
-            case SHIFT_NZ:
-                mirror_index = ((TEST_TAB_DIAMETER - 1 - coordinates.z) *
-                        TEST_TAB_LAYER) + (coordinates.y *
-                            TEST_TAB_DIAMETER) + coordinates.x;
-                target_index = (coordinates.z == 0) ? i : i - TEST_TAB_LAYER;
-                break;
-        }
-
-        test_tab[i] = test_tab[target_index];
-        if (test_tab[i] == CHUNK_EDGE)
-            test_tab[target_index] = 0;
-        test_tab[mirror_index] = CHUNK_SHIFTED;
-    }
-}
+#include "tests/test_tab_shift.c"
 
 int
 main(int argc, char **argv)
@@ -1046,7 +854,7 @@ main(int argc, char **argv)
             log_level = LOGLEVEL_TRACE;
     }
 
-    glfwSetErrorCallback(error_callback);
+    glfwSetErrorCallback(callback_error);
     /*temp*/ render.size = (v2i32){1280, 720};
 
     if (!RELEASE_BUILD)
@@ -1091,16 +899,8 @@ main(int argc, char **argv)
 
     /* ---- section: set callbacks ------------------------------------------ */
 
-    glfwSetFramebufferSizeCallback(render.window,
-            callback_framebuffer_size);
-    callback_framebuffer_size(render.window,
-            render.size.x,
-            render.size.y);
-
-    //glfwSetCursorPosCallback(render.window, callback_cursor_pos);
-    //callback_cursor_pos(render.window,
-    //        render.mouse_position.x,
-    //        render.mouse_position.y);
+    glfwSetFramebufferSizeCallback(render.window, callback_framebuffer_size);
+    callback_framebuffer_size(render.window, render.size.x, render.size.y);
 
     glfwSetKeyCallback(render.window, callback_key);
     callback_key(render.window, 0, 0, 0, 0);
@@ -1174,192 +974,12 @@ section_main: /* ---- section: main loop ------------------------------------ */
 
     generate_standard_meshes();
 
-    while (glfwWindowShouldClose(render.window))
-    {
-        lily.perspective = 1;
-        lily.camera_distance = 64.0f;
-        init_test_tab();
-        render.frame_start = glfwGetTime() - game_start_time;
-        render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_delta_square = pow(render.frame_delta, 2.0f);
-        render.frame_last = render.frame_start;
-        game_tick = (floor(render.frame_start * 1000)) -
-            (SETTING_DAY_TICKS_MAX * game_days);
-        if (game_tick >= SETTING_DAY_TICKS_MAX) ++game_days;
-        glEnable(GL_DEPTH_TEST);
-        update_mouse_movement(&render);
-        update_key_states(&render);
-
-        if (glfwGetMouseButton(render.window,
-                    GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-        {
-            lily.camera_distance += (f32)render.mouse_delta.y;
-            lily.camera_distance =
-                clamp_f32(lily.camera_distance, 10.0f, 100.0f);
-        }
-        else
-        {
-            lily.yaw +=
-                (f32)render.mouse_delta.x * settings.mouse_sensitivity;
-            lily.pitch +=
-                (f32)render.mouse_delta.y * settings.mouse_sensitivity;
-        }
-
-        update_camera_movement_player(&render, &lily);
-        update_camera_perspective(&lily.camera, &projection);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        draw_skybox(&lily);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(shader_voxel.id);
-
-        glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection.perspective);
-
-        glUniform3fv(uniform.voxel.camera_position, 1,
-                (GLfloat*)&lily.camera.pos);
-
-        glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
-        glUniform1f(uniform.voxel.opacity, 1.0f);
-        v3f32 open_cursor = {-16.5f, -16.5f, -15.0f};
-        glUniform3fv(uniform.voxel.open_cursor, 1, (GLfloat*)&open_cursor);
-
-        u8 direction = 0;
-        if (is_key_press(KEY_KP_8))
-        {
-            direction = 1;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_2))
-        {
-            direction = 2;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_4))
-        {
-            direction = 3;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_6))
-        {
-            direction = 4;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_9))
-        {
-            direction = 5;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_3))
-        {
-            direction = 6;
-            mark_test_tab(direction);
-        }
-        else if (is_key_press(KEY_KP_5))
-        {
-            direction = 0;
-            for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
-            {
-                if (!test_tab[i]) continue;
-                test_tab[i] = CHUNK_LOADED;
-            }
-        }
-
-        if (is_key_press(KEY_ENTER))
-            shift_test_tab(direction);
-
-        static f32 pulse;
-        static v4f32 voxel_color = {0};
-        for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
-        {
-            if (!test_tab[i]) continue;
-
-            v3f32 offset_cursor =
-            {
-                floorf(i % 33),
-                floorf((i / 33) % 33),
-                floorf(i / (33 * 33)),
-            };
-            glUniform3fv(uniform.voxel.offset_cursor, 1,
-                    (GLfloat*)&offset_cursor);
-
-            pulse = (sinf((offset_cursor.y * 0.3f) +
-                        (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
-            glUniform1f(uniform.voxel.size, pulse);
-
-            switch (test_tab[i])
-            {
-                default:
-                case CHUNK_LOADED:
-                    voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
-                    break;
-                case CHUNK_EDGE:
-                    voxel_color = (v4f32){0.37f, 0.48f, 0.04f, 1.0f};
-                    break;
-                case CHUNK_SHIFTED:
-                    voxel_color = (v4f32){0.6f, 0.06f, 0.02f, 1.0f};
-                    break;
-            }
-            glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
-            draw_mesh(&mesh_cube_of_happiness);
-        }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        draw_hud(&lily);
-
-        static str string[512] = {0};
-        start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
-                &render, &shader_text, &fbo_text, 1);
-
-        snprintf(string, 511, "FPS[%d]", (u32)(1.0f / render.frame_delta));
-        push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
-        render_text(0x6f9f3fff);
-
-        snprintf(string, 511, "PITCH[%.2f] YAW[%.2f]\n", lily.pitch, lily.yaw);
-        push_text(string, (v2f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT}, 0, 0);
-        render_text(0xffffffff);
-
-        snprintf(string, 511, "MOUSE XY: %.2f %.2f\n" "DELTA XY: %.2f %.2f\n",
-                render.mouse_position.x, render.mouse_position.y,
-                render.mouse_delta.x, render.mouse_delta.y);
-        push_text(string, (v2f32){MARGIN, MARGIN +
-                (FONT_SIZE_DEFAULT * 2)}, 0, 0);
-        render_text(0x3f6f9fff);
-
-        snprintf(string, 511,
-                "CAMERA DISTANCE: %.2f\n"
-                "RENDER DISTANCE: %.2f\n",
-                lily.camera_distance,
-                render_distance);
-        start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
-                &render, &shader_text, &fbo_text, 0);
-        push_text(string, (v2f32){MARGIN, MARGIN +
-                (FONT_SIZE_DEFAULT * 4)}, 0, 0);
-        render_text(0x3f9f3fff);
-        stop_text();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(shader_fbo.id);
-        glBindVertexArray(mesh_fbo.vao);
-        glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glfwSwapBuffers(render.window);
-        glfwPollEvents();
-    }
-
+    main__shift_test_tab();
     v4f32 voxel_color = (v4f32){0.3f, 0.15f, 0.03f, 1.0f};
     glUniform4fv(uniform.voxel.color, 1, (GLfloat*)&voxel_color);
     glUniform1f(uniform.voxel.size, 1.0f);
+    goto cleanup;
+
     while (!glfwWindowShouldClose(render.window))
     {
         render.frame_start = glfwGetTime() - game_start_time;

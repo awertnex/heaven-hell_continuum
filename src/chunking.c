@@ -514,8 +514,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
     /* ---- shift chunk_tab ------------------------------------------------- */
     for (u16 i = (increment == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
-            i >= 0 && i < CHUNK_BUF_VOLUME;
-            i += increment)
+            i < CHUNK_BUF_VOLUME; i += increment)
     {
         if (chunk_tab[i] == NULL) continue;
         coordinates =

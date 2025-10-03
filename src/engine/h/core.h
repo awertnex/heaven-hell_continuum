@@ -16,6 +16,8 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
+#define CAMERA_ANGLE_MAX 90.0f
+#define CAMERA_RANGE_MAX 360.0f
 #define KEYBOARD_KEYS_MAX 120
 #define KEYBOARD_DOUBLE_PRESS_TIME 25.0f
 #define FONT_ATLAS_CELL_RESOLUTION 16
