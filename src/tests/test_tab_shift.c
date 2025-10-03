@@ -11,20 +11,15 @@
 #define CHUNK_LOADED    1
 #define CHUNK_EDGE      2
 #define CHUNK_SHIFTED   3
-#define TEST_TAB_DIAMETER   33
-#define TEST_TAB_LAYER      (33 * 33)
-#define TEST_TAB_VOLUME     (33 * 33 * 33)
-static u8 test_tab[TEST_TAB_VOLUME] = {0};
-static u8 test_tab_val[TEST_TAB_VOLUME] = {0};
-const u32 test_tab_center = 17 + (17 * 33) + (17 * 33 * 33);
-const f32 render_distance = (16 * 16) + 2;
+static u8 test_tab[CHUNK_BUF_VOLUME] = {0};
 
 static void
 init_test_tab(void)
 {
-    for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
         if (distance_v3i32((v3i32){i % 33, (i / 33) % 33, i / (33 * 33)},
-                    (v3i32){16, 16, 16}) < (u32)render_distance)
+                    (v3i32){16, 16, 16}) <
+                (u32)powf(settings.render_distance, 2.0f) + 2)
             test_tab[i] = CHUNK_LOADED;
 }
 
@@ -33,35 +28,35 @@ mark_test_tab(u8 direction)
 {
     const i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
     const u8 AXIS = (direction + 1) / 2;
+
     u32 mirror_index = 0;
     u8 is_on_edge = 0;
 
-    for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
         if (test_tab[i] == CHUNK_EDGE)
             test_tab[i] = CHUNK_LOADED;
 
-    /* ---- mark chunks on-edge --------------------------------------------- */
-    for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         if (!test_tab[i]) continue;
 
         v3u32 coordinates =
         {
-            i % TEST_TAB_DIAMETER,
-            (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
-            i / TEST_TAB_LAYER,
+            i % CHUNK_BUF_DIAMETER,
+            (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
+            i / CHUNK_BUF_LAYER,
         };
 
         v3u32 _mirror_index =
         {
-            i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2),
+            i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2),
 
-            (coordinates.z * TEST_TAB_LAYER) +
-                ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                 TEST_TAB_DIAMETER) + coordinates.x,
+            (coordinates.z * CHUNK_BUF_LAYER) +
+                ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) *
+                 CHUNK_BUF_DIAMETER) + coordinates.x,
 
-            ((TEST_TAB_DIAMETER - 1 - coordinates.z) * TEST_TAB_LAYER) +
-                (coordinates.y * TEST_TAB_DIAMETER) + coordinates.x,
+            ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER) +
+                (coordinates.y * CHUNK_BUF_DIAMETER) + coordinates.x,
         };
 
         v3u8 _is_on_edge = {0};
@@ -71,14 +66,14 @@ mark_test_tab(u8 direction)
             case -1:
                 _is_on_edge =
                     (v3u8){
-                        (coordinates.x == TEST_TAB_DIAMETER - 1) ||
+                        (coordinates.x == CHUNK_BUF_DIAMETER - 1) ||
                             (test_tab[i + 1] == 0),
 
-                        (coordinates.y == TEST_TAB_DIAMETER - 1) ||
-                            (test_tab[i + TEST_TAB_DIAMETER] == 0),
+                        (coordinates.y == CHUNK_BUF_DIAMETER - 1) ||
+                            (test_tab[i + CHUNK_BUF_DIAMETER] == 0),
 
-                        (coordinates.z == TEST_TAB_DIAMETER - 1) ||
-                            (test_tab[i + TEST_TAB_LAYER] == 0),
+                        (coordinates.z == CHUNK_BUF_DIAMETER - 1) ||
+                            (test_tab[i + CHUNK_BUF_LAYER] == 0),
                     };
                 break;
 
@@ -88,10 +83,10 @@ mark_test_tab(u8 direction)
                         (coordinates.x == 0) || (test_tab[i - 1] == 0),
 
                         (coordinates.y == 0) ||
-                            (test_tab[i - TEST_TAB_DIAMETER] == 0),
+                            (test_tab[i - CHUNK_BUF_DIAMETER] == 0),
 
                         (coordinates.z == 0) ||
-                            (test_tab[i - TEST_TAB_LAYER] == 0),
+                            (test_tab[i - CHUNK_BUF_LAYER] == 0),
                     };
                 break;
         }
@@ -123,34 +118,34 @@ static void
 shift_test_tab(u8 direction)
 {
     i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
-    u8 AXIS = direction / 2;
+    u8 AXIS = (direction + 1) / 2;
+
     u32 mirror_index = 0;
     u32 target_index = 0;
     u8 is_on_edge = 0;
 
-    /* ---- shift test_tab -------------------------------------------------- */
-    for (u32 i = (INCREMENT == 1) ? 0 : TEST_TAB_VOLUME - 1;
-            i < TEST_TAB_VOLUME; i += INCREMENT)
+    for (u32 i = (INCREMENT == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
+            i < CHUNK_BUF_VOLUME; i += INCREMENT)
     {
         if (!test_tab[i]) continue;
 
         v3u32 coordinates =
         {
-            i % TEST_TAB_DIAMETER,
-            (i / TEST_TAB_DIAMETER) % TEST_TAB_DIAMETER,
-            i / TEST_TAB_LAYER,
+            i % CHUNK_BUF_DIAMETER,
+            (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
+            i / CHUNK_BUF_LAYER,
         };
 
         v3u32 _mirror_index =
         {
-            i + TEST_TAB_DIAMETER - 1 - (coordinates.x * 2),
+            i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2),
 
-            (coordinates.z * TEST_TAB_LAYER) +
-                ((TEST_TAB_DIAMETER - 1 - coordinates.y) *
-                 TEST_TAB_DIAMETER) + coordinates.x,
+            (coordinates.z * CHUNK_BUF_LAYER) +
+                ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) *
+                 CHUNK_BUF_DIAMETER) + coordinates.x,
 
-            ((TEST_TAB_DIAMETER - 1 - coordinates.z) * TEST_TAB_LAYER) +
-                (coordinates.y * TEST_TAB_DIAMETER) + coordinates.x,
+            ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER) +
+                (coordinates.y * CHUNK_BUF_DIAMETER) + coordinates.x,
         };
 
         v3u32 _target_index = {0};
@@ -160,19 +155,19 @@ shift_test_tab(u8 direction)
             case -1:
                 _target_index = (v3u32){
                         (coordinates.x == 0) ? i : i - 1,
-                        (coordinates.y == 0) ? i : i - TEST_TAB_DIAMETER,
-                        (coordinates.z == 0) ? i : i - TEST_TAB_LAYER};
+                        (coordinates.y == 0) ? i : i - CHUNK_BUF_DIAMETER,
+                        (coordinates.z == 0) ? i : i - CHUNK_BUF_LAYER};
                 break;
 
             case 1:
                 _target_index = (v3u32){
-                        (coordinates.x == TEST_TAB_DIAMETER - 1) ? i : i + 1,
+                        (coordinates.x == CHUNK_BUF_DIAMETER - 1) ? i : i + 1,
 
-                        (coordinates.y == TEST_TAB_DIAMETER - 1) ?
-                            i : i + TEST_TAB_DIAMETER,
+                        (coordinates.y == CHUNK_BUF_DIAMETER - 1) ?
+                            i : i + CHUNK_BUF_DIAMETER,
 
-                        (coordinates.z == TEST_TAB_DIAMETER - 1) ?
-                            i : i + TEST_TAB_LAYER};
+                        (coordinates.z == CHUNK_BUF_DIAMETER - 1) ?
+                            i : i + CHUNK_BUF_LAYER};
                 break;
         }
 
@@ -255,6 +250,7 @@ main__shift_test_tab(void)
 {
     lily.camera_distance = 64.0f;
     init_test_tab();
+    settings.render_distance = SETTING_RENDER_DISTANCE_MAX;
 
     while (!glfwWindowShouldClose(render.window))
     {
@@ -325,7 +321,7 @@ main__shift_test_tab(void)
         else if (is_key_press(KEY_KP_5))
         {
             direction = 0;
-            for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+            for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             {
                 if (!test_tab[i]) continue;
                 test_tab[i] = CHUNK_LOADED;
@@ -337,7 +333,7 @@ main__shift_test_tab(void)
 
         static f32 pulse;
         static v4f32 voxel_color = {0};
-        for (u32 i = 0; i < TEST_TAB_VOLUME; ++i)
+        for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
         {
             if (!test_tab[i]) continue;
 
@@ -398,7 +394,7 @@ main__shift_test_tab(void)
                 "CAMERA DISTANCE: %.2f\n"
                 "RENDER DISTANCE: %d\n",
                 lily.camera_distance,
-                (u32)sqrt(render_distance));
+                settings.render_distance);
         push_text(string, (v2f32){MARGIN, MARGIN +
                 (FONT_SIZE_DEFAULT * 4)}, 0, 0);
         render_text(0x3f9f3fff);
@@ -412,9 +408,10 @@ main__shift_test_tab(void)
                 "        :       Mark Shift Direction NY\n"
                 "        :       Mark Shift Direction PZ\n"
                 "        :       Mark Shift Direction NZ\n"
-                "     :          Shift Into Marked Direction\n");
+                "     :          Shift Into Marked Direction\n"
+                " :              Toggle Cursor\n");
         push_text(string, (v2f32){MARGIN, render.size.y - MARGIN -
-                (FONT_SIZE_DEFAULT * 9)}, 0, 0);
+                (FONT_SIZE_DEFAULT * 10)}, 0, 0);
         render_text(0x845c5cff);
 
         snprintf(string, 511,
@@ -426,9 +423,10 @@ main__shift_test_tab(void)
                 "NUMPAD 6\n"
                 "NUMPAD 9\n"
                 "NUMPAD 3\n"
-                "ENTER\n");
+                "ENTER\n"
+                "C\n");
         push_text(string, (v2f32){MARGIN, render.size.y - MARGIN -
-                (FONT_SIZE_DEFAULT * 9)}, 0, 0);
+                (FONT_SIZE_DEFAULT * 10)}, 0, 0);
         render_text(0x9f3f3fff);
         stop_text();
 
