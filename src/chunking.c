@@ -75,6 +75,7 @@ void
 update_chunking(v3i16 player_delta_chunk)
 {
     u32 distance = (u32)powf(settings.render_distance, 2.0f) + 2;
+
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         v3u16 coordinates =
@@ -412,7 +413,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
             player_delta_chunk->x,
             player_delta_chunk->y,
             player_delta_chunk->z}) >
-            (u32)powf(settings.render_distance, 2) + 2)
+            (u32)powf(settings.render_distance, 2.0f) + 2)
     {
         for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i] != NULL)

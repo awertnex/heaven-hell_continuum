@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "../engine/h/core.h"
+#include "../engine/h/logger.h"
 #include "../engine/h/math.h"
 #include "../h/main.h"
 #include "../h/settings.h"
@@ -33,7 +34,7 @@ mark_test_tab(u8 direction)
     u8 is_on_edge = 0;
 
     for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-        if (test_tab[i] == CHUNK_EDGE)
+        if (test_tab[i] >= CHUNK_EDGE)
             test_tab[i] = CHUNK_LOADED;
 
     for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
@@ -109,8 +110,12 @@ mark_test_tab(u8 direction)
                 break;
         }
 
-        if (is_on_edge && test_tab[mirror_index])
+        if (is_on_edge)
+        {
+            test_tab[i] = CHUNK_SHIFTED;
+            if (test_tab[mirror_index])
                 test_tab[mirror_index] = CHUNK_EDGE;
+        }
     }
 }
 
@@ -190,10 +195,9 @@ shift_test_tab(u8 direction)
         }
 
         test_tab[i] = test_tab[target_index];
-        if (test_tab[i] == CHUNK_EDGE)
+        if (test_tab[i] && test_tab[i] == CHUNK_EDGE)
         {
-            test_tab[mirror_index] = CHUNK_SHIFTED;
-            test_tab[i] = 0;
+            test_tab[target_index] = 0;
         }
     }
 }
@@ -339,9 +343,9 @@ main__shift_test_tab(void)
 
             v3f32 offset_cursor =
             {
-                floorf(i % 33),
-                floorf((i / 33) % 33),
-                floorf(i / (33 * 33)),
+                i % CHUNK_BUF_DIAMETER,
+                (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
+                i / (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER),
             };
             glUniform3fv(uniform.voxel.offset_cursor, 1,
                     (GLfloat*)&offset_cursor);
