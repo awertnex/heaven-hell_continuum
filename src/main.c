@@ -187,11 +187,11 @@ callback_framebuffer_size(
     lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
-    realloc_fbo(&render, &fbo_skybox);
-    realloc_fbo(&render, &fbo_world);
-    realloc_fbo(&render, &fbo_hud);
-    realloc_fbo(&render, &fbo_text);
-    realloc_fbo(&render, &fbo_post_processing);
+    realloc_fbo(&render, &fbo_skybox, FALSE, 4);
+    realloc_fbo(&render, &fbo_world, FALSE, 4);
+    realloc_fbo(&render, &fbo_hud, FALSE, 4);
+    realloc_fbo(&render, &fbo_text, FALSE, 4);
+    realloc_fbo(&render, &fbo_post_processing, FALSE, 4);
 }
 
 static void
@@ -916,7 +916,7 @@ main(int argc, char **argv)
             create_instance("new_instance") != 0)
         return -1;
 
-    if (init_glfw() != 0 ||
+    if (init_glfw(TRUE) != 0 ||
             init_window(&render) != 0 ||
             init_glad() != 0)
     {
@@ -978,17 +978,19 @@ main(int argc, char **argv)
                 &shader_post_processing) != 0 ||
 
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_voxel) != 0 ||
+                    &shader_voxel) != 0 ||
 
-            init_fbo(&render, &fbo_skybox, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_world, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_hud, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_text, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_post_processing, &mesh_fbo, 0) != 0)
+            init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_post_processing, &mesh_fbo, FALSE,
+                    4, FALSE) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);

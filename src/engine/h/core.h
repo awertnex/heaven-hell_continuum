@@ -308,8 +308,10 @@ extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/* return non-zero on failure */
-int init_glfw(void);
+/* multisample = turn on multisampling;
+ *
+ * return non-zero on failure */
+int init_glfw(b8 multisample);
 
 /* return non-zero on failure */
 int init_window(Render *render);
@@ -321,9 +323,10 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo, b8 flip_vertical);
+int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
+        b8 multisample, u32 samples, b8 flip_vertical);
 
-int realloc_fbo(Render *render, FBO *fbo);
+int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
