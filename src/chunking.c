@@ -49,7 +49,7 @@ init_chunking(ShaderProgram *program)
                 CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
         return 0;
 
-    terrain_noise();
+    terrain_noise((v3u32){0});
 
 cleanup:
     free_chunking();
@@ -295,15 +295,14 @@ generate_chunk(u32 index)
         for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
             for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
             {
-                v3u32 coordinates =
+                v3i32 coordinates =
                 {
                     x + (chunk_tab[index]->pos.x * CHUNK_DIAMETER),
                     y + (chunk_tab[index]->pos.y * CHUNK_DIAMETER),
                     z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER),
                 };
 
-                if (terrain_noise(coordinates) <
-                        coordinates.z)
+                if ((rand() % 128) - 64 > coordinates.z)
                 {
                     add_block(index, x, y, z);
                     chunk_tab[index]->flag |= FLAG_CHUNK_RENDER;
