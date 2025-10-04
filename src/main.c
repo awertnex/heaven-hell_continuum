@@ -114,9 +114,17 @@ ShaderProgram shader_gizmo_chunk =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
+ShaderProgram shader_post_processing =
+{
+    .name = "post_processing",
+    .vertex.file_name = "post_processing.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "post_processing.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
 ShaderProgram shader_voxel =
 {
-    .name = "default",
+    .name = "voxel",
     .vertex.file_name = "voxel.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .geometry.file_name = "voxel.geom",
@@ -136,6 +144,7 @@ FBO fbo_skybox;
 FBO fbo_world;
 FBO fbo_hud;
 FBO fbo_text;
+FBO fbo_post_processing;
 
 Mesh mesh_fbo = {0};
 Mesh mesh_skybox = {0};
@@ -182,6 +191,7 @@ callback_framebuffer_size(
     realloc_fbo(&render, &fbo_world);
     realloc_fbo(&render, &fbo_hud);
     realloc_fbo(&render, &fbo_text);
+    realloc_fbo(&render, &fbo_post_processing);
 }
 
 static void
@@ -601,8 +611,7 @@ init_world(str *string)
     if (init_chunking(&shader_voxel) != 0) return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 8, 128, 8);
-    lily.state |= FLAG_FLYING;
+    set_player_block(&lily, 1, 1, 72);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i32){
@@ -771,6 +780,7 @@ draw_hud(Player *player)
     if (state & FLAG_DEBUG)
         draw_mesh(&mesh_gizmo);
 
+    glClear(GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader_gizmo_chunk.id);
 
     glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render.size);
@@ -825,7 +835,8 @@ draw_everything(Player *player)
                     skybox_data.sun_rotation,
                     &render, &shader_text, &fbo_text);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_post_processing.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader_fbo.id);
     glBindVertexArray(mesh_fbo.vao);
     glDisable(GL_DEPTH_TEST);
@@ -842,6 +853,11 @@ draw_everything(Player *player)
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader_post_processing.id);
+    glBindVertexArray(mesh_fbo.vao);
+    glBindTexture(GL_TEXTURE_2D, fbo_post_processing.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindVertexArray(0);
 }
 
@@ -959,12 +975,16 @@ main(int argc, char **argv)
                 &shader_skybox) != 0 ||
 
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                &shader_post_processing) != 0 ||
+
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
                 &shader_voxel) != 0 ||
 
             init_fbo(&render, &fbo_skybox, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_world, &mesh_fbo, 0) != 0 ||
             init_fbo(&render, &fbo_hud, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_text, &mesh_fbo, 0) != 0)
+            init_fbo(&render, &fbo_text, &mesh_fbo, 0) != 0 ||
+            init_fbo(&render, &fbo_post_processing, &mesh_fbo, 0) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
