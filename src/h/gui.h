@@ -135,4 +135,3 @@ void btn_func_quit_game();
 void btn_func_quit_world();
 
 #endif /* GAME_GUI_H */
-

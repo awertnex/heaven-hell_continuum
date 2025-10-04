@@ -16,8 +16,10 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
+#define CAMERA_ANGLE_MAX 90.0f
+#define CAMERA_RANGE_MAX 360.0f
 #define KEYBOARD_KEYS_MAX 120
-#define KEYBOARD_DOUBLE_PRESS_TIME_THRESHOLD 0.4f
+#define KEYBOARD_DOUBLE_PRESS_TIME 0.5f
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
@@ -189,17 +191,17 @@ typedef struct Mesh
 typedef struct Shader
 {
     str *file_name;
-    GLuint id;                  /* used by opengl's "glCreateShader()" */
-    GLuint type;                /* GL_<x>_SHADER */
-    GLchar *source;             /* shader file source code */
-    GLint loaded;               /* used by opengl's "glGetShaderiv()" */
+    GLuint id;          /* used by opengl's "glCreateShader()" */
+    GLuint type;        /* GL_<x>_SHADER */
+    GLchar *source;     /* shader file source code */
+    GLint loaded;       /* used by opengl's "glGetShaderiv()" */
 } Shader;
 
 typedef struct ShaderProgram
 {
-    str *name;                  /* for stress-free debugging */
-    GLuint id;                  /* used by opengl's glCreateProgram() */
-    GLint loaded;               /* used by opengl's "glGetProgramiv()" */
+    str *name;          /* for stress-free debugging */
+    GLuint id;          /* used by opengl's glCreateProgram() */
+    GLint loaded;       /* used by opengl's "glGetProgramiv()" */
     Shader vertex;
     Shader geometry;
     Shader fragment;
@@ -259,22 +261,35 @@ typedef struct Glyphf
 
 typedef struct Font
 {
-    str path[PATH_MAX];         /* font file name, assigned in load_font() automatically */
-    u32 resolution;             /* glyph bitmap diameter in bytes */
-    f32 char_size;              /* for font atlas sampling */
-    i32 ascent;                 /* glyphs highest points' deviation from baseline */
-    i32 descent;                /* glyphs lowest points' deviation from baseline */
+    /* font file name,
+     * assigned in load_font() automatically */
+    str path[PATH_MAX];
+
+    u32 resolution;         /* glyph bitmap diameter in bytes */
+    f32 char_size;          /* for font atlas sampling */
+
+    /* glyphs highest points' deviation from baseline */
+    i32 ascent;
+
+    /* glyphs lowest points' deviation from baseline */
+    i32 descent;
+
     i32 line_gap;
     i32 line_height;
-    f32 size;                   /* global font size for text uniformity */
-    v2i32 scale;                /* biggest glyph bounding box in pixels */
+    f32 size;               /* global font size for text uniformity */
+    v2i32 scale;            /* biggest glyph bounding box in pixels */
 
-    stbtt_fontinfo info;        /* used by stb_truetype.h's stbtt_InitFont() */
-    u8 *buf;                    /* font file contents, used by stb_truetype.h's stbtt_InitFont() */
-    u64 buf_len;                /* buf size in bytes */
-    u8 *bitmap;                 /* memory block for all font glyph bitmaps */
+    /* used by stb_truetype.h's stbtt_InitFont() */
+    stbtt_fontinfo info;
 
-    GLuint id;                  /* used by opengl's glGenTextures() */
+    /* font file contents,
+     * used by stb_truetype.h's stbtt_InitFont() */
+    u8 *buf;
+
+    u64 buf_len;            /* buf size in bytes */
+    u8 *bitmap;             /* memory block for all font glyph bitmaps */
+
+    GLuint id;              /* used by opengl's glGenTextures() */
     Glyph glyph[GLYPH_MAX];
 
     struct /* uniform */
@@ -293,19 +308,13 @@ extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/*
- * return non-zero on failure;
- */
+/* return non-zero on failure */
 int init_glfw(void);
 
-/*
- * return non-zero on failure;
- */
+/* return non-zero on failure */
 int init_window(Render *render);
 
-/*
- * return non-zero on failure;
- */
+/* return non-zero on failure */
 int init_glad(void);
 
 int init_shader(const str *shaders_dir, Shader *shader);
@@ -318,136 +327,101 @@ int realloc_fbo(Render *render, FBO *fbo);
 
 void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
 
-/*
- * return FALSE (0) on failure;
- */
-b8 generate_texture(GLuint *id, const GLint format, u32 width, u32 height, void *buffer);
+/* return FALSE (0) on failure */
+b8 generate_texture(GLuint *id, const GLint format,
+        u32 width, u32 height, void *buffer);
 
 int generate_mesh_fbo(Mesh *mesh);
 
-/* 
- * usage = GL_<x>_DRAW;
- */
-int generate_mesh(Mesh *mesh, GLenum usage, GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
+/* usage = GL_<x>_DRAW */
+int generate_mesh(Mesh *mesh, GLenum usage,
+        GLuint vbo_len, GLuint ebo_len,
+        GLfloat *vbo_data, GLuint *ebo_data);
 
 void draw_mesh(Mesh *mesh);
 
 void free_mesh(Mesh *mesh);
 
+/* apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw)
+ * from camera rotation,
+ * restrict rotation ranges: roll: 0 - 0, pitch: -90 - 90, yaw: 0 - 360 */
 void update_camera_movement(Camera *camera);
 
+/* setup camera matrices for Z-up right-handed coordinates
+ * and vertical fov (fovy) */
 void update_camera_perspective(Camera *camera, Projection *projection);
 
-/*
- * update internal key states: press, double-press, hold, release;
- */
+void update_mouse_movement(Render *render);
+
+/* update internal key states: press, double-press, hold, release */
 void update_key_states(Render *render);
 
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_press(const u32 key)
-{return (keyboard_key[key] == KEY_PRESS);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_listen_double(const u32 key)
-{return (keyboard_key[key] == KEY_LISTEN_DOUBLE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold(const u32 key)
-{return (keyboard_key[key] == KEY_HOLD);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold_double(const u32 key)
-{return (keyboard_key[key] == KEY_HOLD_DOUBLE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release(const u32 key)
-{return (keyboard_key[key] == KEY_RELEASE);}
-
-/*
- * -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release_double(const u32 key)
-{return (keyboard_key[key] == KEY_RELEASE_DOUBLE);}
-
 static inline b8 is_key_press(const u32 key)
-{return (keyboard_key[key] == KEY_PRESS || keyboard_key[key] == KEY_PRESS_DOUBLE);}
+{
+    return (keyboard_key[key] == KEY_PRESS ||
+            keyboard_key[key] == KEY_PRESS_DOUBLE);
+}
 
 static inline b8 is_key_press_double(const u32 key)
-{return (keyboard_key[key] == KEY_PRESS_DOUBLE);}
+{
+    return (keyboard_key[key] == KEY_PRESS_DOUBLE);
+}
 
 static inline b8 is_key_hold(const u32 key)
-{return (keyboard_key[key] == KEY_HOLD || keyboard_key[key] == KEY_HOLD_DOUBLE);}
+{
+    return (keyboard_key[key] == KEY_HOLD ||
+            keyboard_key[key] == KEY_HOLD_DOUBLE);
+}
 
 static inline b8 is_key_release(const u32 key)
-{return (keyboard_key[key] == KEY_RELEASE || keyboard_key[key] == KEY_RELEASE_DOUBLE);}
+{
+    return (keyboard_key[key] == KEY_RELEASE ||
+            keyboard_key[key] == KEY_RELEASE_DOUBLE);
+}
 
-/*
- * load font from file at font_path;
- * allocate memory for font.buf and load file contents into it in binary format;
- * allocate memory for font.bitmap and render glyphs onto it;
- * generate square texture of diameter "size * 16" and bake bitmap onto it;
+/* load font from file at font_path,
+ * allocate memory for font.buf and load file contents into it in binary format,
+ * allocate memory for font.bitmap and render glyphs onto it,
+ * generate square texture of diameter "size * 16" and bake bitmap onto it.
  *
- * size = font size & character bitmap diameter;
- * font_path = font path;
+ * size = font size & character bitmap diameter,
+ * font_path = font path.
  *
- * return FALSE (0) on failure;
- */
+ * return FALSE (0) on failure */
 b8 init_font(Font *font, u32 size, const str *font_path);
 
 void free_font(Font *font);
 
-/*
- * init text rendering settings;
- */
+/* init text rendering settings */
 u8 init_text(void);
 
-/*
- * start text rendering batch;
+/* start text rendering batch.
  *
- * length = pre-allocate buffer for string;
- * length = if 0, STRING_MAX is allocated;
- * size = font height in pixels;
- * color = hex format: 0xrrggbbaa;
- * clear = clear the framebuffer before rendering;
- */
+ * length = pre-allocate buffer for string (if 0, STRING_MAX is allocated),
+ * size = font height in pixels,
+ * color = hex format: 0xrrggbbaa,
+ * clear = clear the framebuffer before rendering */
 void start_text(
         u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
-
-/*
- * push string's glyph metrics, position
- * and alignment to render buffer;
+/* push string's glyph metrics, position
+ * and alignment to render buffer.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'render_text()';
- */
+ * batch, chained with 'render_text()' */
 void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
-/*
- * render text to framebuffer;
+/* render text to framebuffer.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'push_text()';
- */
+ * batch, chained with 'push_text()' */
 void render_text(u32 color);
 
-/*
- * cleanup for text rendering;
- * unbind text framebuffer;
- * enable depth test;
- */
+/* cleanup for text rendering.
+ * unbind text framebuffer, enable depth test */
 void stop_text(void);
 
-#endif /* ENGINE_CORE_H */
+void free_text(void);
 
+#endif /* ENGINE_CORE_H */

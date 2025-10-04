@@ -7,7 +7,8 @@
 #include "h/chunking.h"
 #include "h/settings.h"
 
-void update_player(Render *render, Player *player)
+void
+update_player(Render *render, Player *player)
 {
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / CHUNK_DIAMETER),
@@ -24,9 +25,9 @@ void update_player(Render *render, Player *player)
             !(player->state & FLAG_FLYING))
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
 
         update_gravity(render, player);
     }
@@ -34,11 +35,11 @@ void update_player(Render *render, Player *player)
     if (player->state & FLAG_FLYING)
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
 
         player->vel = v3fzero;
         player->movement_speed =
@@ -47,7 +48,7 @@ void update_player(Render *render, Player *player)
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
                     80.0f,
-                    settings.lerp_speed);
+                    settings.lerp_speed, render->frame_delta);
     }
 
     if ((player->state & FLAG_SNEAKING)
@@ -63,7 +64,7 @@ void update_player(Render *render, Player *player)
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         75.0f,
-                        settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
         }
         else
         {
@@ -72,7 +73,7 @@ void update_player(Render *render, Player *player)
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         90.0f,
-                        settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
         }
     }
     else if (!(player->state & FLAG_SNEAKING)
@@ -80,11 +81,11 @@ void update_player(Render *render, Player *player)
             && !(player->state & FLAG_FLYING))
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
         player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_RIGID * render->frame_delta;
+            SETTING_LERP_SPEED_RIGID;
 
         player->movement_speed =
             SETTING_PLAYER_SPEED_WALK * render->frame_delta;
@@ -92,18 +93,22 @@ void update_player(Render *render, Player *player)
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
                     70.0f,
-                    settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
     }
 }
 
-void update_camera_movement_player(Render *render, Player *player)
+void
+update_camera_movement_player(Render *render, Player *player)
 {
-    const f32 ANGLE = 90.0f;
-    const f32 RANGE = 360.0f;
+    player->yaw += render->mouse_delta.x;
+    player->pitch += render->mouse_delta.y;
 
-    player->yaw = fmodf(player->yaw, RANGE);
-    if (player->yaw < 0.0f) player->yaw += RANGE;
-    player->pitch = clamp_f32(player->pitch, -ANGLE, ANGLE);
+    player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
+    if (player->yaw < 0.0f)
+        player->yaw += CAMERA_RANGE_MAX;
+
+    player->pitch = clamp_f32(player->pitch,
+            -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
 
     player->sin_pitch = sin(player->pitch * DEG2RAD);
     player->cos_pitch = cos(player->pitch * DEG2RAD);
@@ -123,9 +128,8 @@ void update_camera_movement_player(Render *render, Player *player)
         case 0: /* ---- 1st person ------------------------------------------ */
             player->camera.pos =
                 (v3f32){
-                    player->pos.x,
-                    player->pos.y,
-                    player->pos.z + player->eye_height
+                    player->pos.x, player->pos.y, player->pos.z +
+                        player->eye_height
                 };
             break;
 
@@ -148,9 +152,9 @@ void update_camera_movement_player(Render *render, Player *player)
                         player->eye_height + (SPCH * player->camera_distance),
                 };
             player->camera.sin_yaw =
-                sin((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+                sin((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
             player->camera.cos_yaw =
-                cos((player->yaw + (RANGE / 2.0f)) * DEG2RAD);
+                cos((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
             break;
 
             /* TODO: make the stalker camera mode */
@@ -163,7 +167,8 @@ void update_camera_movement_player(Render *render, Player *player)
     }
 }
 
-void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
+void
+update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
 {
     if ((i32)player_delta_target->x != floorf(player_target->x)
             || (i32)player_delta_target->y != floorf(player_target->y)
@@ -175,7 +180,8 @@ void update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
                 (i32)floorf(player_target->z)};
 }
 
-void player_kill(Player *player)
+void
+player_kill(Player *player)
 {
     player->vel = v3fzero;
     player->mass = 0.0f;
@@ -184,7 +190,8 @@ void player_kill(Player *player)
     player->state = FLAG_DEAD;
 }
 
-void player_respawn(Player *player)
+void
+player_respawn(Player *player)
 {
     player->pos =
         (v3f32){
@@ -195,22 +202,26 @@ void player_respawn(Player *player)
     player->state = 0;
 }
 
-b8 is_ray_intersect(Player *player) /* TODO: make the player ray intersection */
+/* TODO: make is_ray_intersect() */
+b8
+is_ray_intersect(Player *player)
 {
     //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
         //return TRUE;
     return FALSE;
 }
 
-void update_gravity(Render *render, Player *player)
+void
+update_gravity(Render *render, Player *player)
 {
     if (player->state & FLAG_FALLING)
-        player->vel.z +=
-            (GRAVITY * player->mass * render->frame_delta_square);
-    player->raw_pos.z += player->vel.z;
+        player->vel.z += (GRAVITY * player->mass * render->frame_delta);
+    player->raw_pos.z += player->vel.z * render->frame_delta;
 }
 
-void update_collision_static(Player *player) /* TODO: make AABB collision work */
+/* TODO: make AABB collision work */
+void
+update_collision_static(Player *player)
 {
     player->collision_check_start = (v3f32){
             floorf(player->pos.x - (player->scl.x / 2.0f)) - 1.0f,
@@ -256,14 +267,16 @@ void update_collision_static(Player *player) /* TODO: make AABB collision work *
 #endif
 }
 
-f64 get_time_ms()
+f64
+get_time_ms()
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
-b8 get_timer(f64 *time_start, f32 interval)
+b8
+get_timer(f64 *time_start, f32 interval)
 {
     if (get_time_ms() - *time_start >= interval)
     {
@@ -274,7 +287,8 @@ b8 get_timer(f64 *time_start, f32 interval)
 }
 
 #if 0 // TODO: undef
-void draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
+void
+draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
 {
     v4u8 color = {0xff, 0xff, 0xff, 0xff};
 
@@ -302,4 +316,3 @@ void draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
     draw_line_3d(v3izero, (v3i32){0, 0, 2}, z);
 }
 #endif // TODO: undef
-

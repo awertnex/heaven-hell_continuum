@@ -64,4 +64,3 @@ typedef struct Settings
 extern Settings settings;
 
 #endif /* GAME_SETTING_H */
-

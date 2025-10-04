@@ -48,4 +48,3 @@ extern u32 bind_toggle_perspective;
 // extern u32 bind_up;
 
 #endif /* GAME_INPUT_H */
-

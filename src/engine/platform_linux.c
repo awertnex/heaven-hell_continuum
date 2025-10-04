@@ -10,7 +10,8 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-int make_dir(const str *path)
+int
+make_dir(const str *path)
 {
     int exit_code = mkdir(path, 0755);
 
@@ -20,14 +21,16 @@ int make_dir(const str *path)
     return exit_code;
 }
 
-b8 _get_path_absolute(const str *path, str *path_real)
+b8
+_get_path_absolute(const str *path, str *path_real)
 {
     if (!realpath(path, path_real))
         return FALSE;
     return TRUE;
 }
 
-b8 _get_path_bin_root(str *path)
+b8
+_get_path_bin_root(str *path)
 {
     if (!readlink("/proc/self/exe", path, PATH_MAX - 1))
     {
@@ -38,7 +41,8 @@ b8 _get_path_bin_root(str *path)
     return TRUE;
 }
 
-b8 exec(buf *cmd, str *cmd_name)
+b8
+exec(buf *cmd, str *cmd_name)
 {
     pid_t pid = fork();
     if (pid < 0)
@@ -74,7 +78,8 @@ b8 exec(buf *cmd, str *cmd_name)
     else if (WIFSIGNALED(status))
     {
         int sig = WTERMSIG(status);
-        LOGFATAL("'%s' Terminated by Signal: %d, Process Aborted\n", cmd_name, sig);
+        LOGFATAL("'%s' Terminated by Signal: %d, Process Aborted\n",
+                cmd_name, sig);
         return FALSE;
     }
     else
@@ -89,4 +94,3 @@ b8 exec(buf *cmd, str *cmd_name)
 #ifdef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif /* _GNU_SOURCE */
-

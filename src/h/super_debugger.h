@@ -24,6 +24,7 @@ typedef struct DebugRect
 } DebugRect;
 
 /* ---- declarations -------------------------------------------------------- */
+
 extern Texture texture_super_debugger;
 extern DebugRect debug_rectangle;
 
@@ -31,9 +32,9 @@ extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
 
 /* ---- signatures ---------------------------------------------------------- */
+
 void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
 void draw_super_debugger(v2f32 render_size);
 
 #endif /* GAME_SUPER_DEBUGGER_H */
-

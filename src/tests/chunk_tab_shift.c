@@ -1,11 +1,11 @@
 #include <math.h>
 
-#include "../include/raylib.h"
-#include "../include/rlgl.h"
+#include "../../include/raylib/raylib.h"
+#include "../../include/raylib/rlgl.h"
 
 #include "../engine/h/defines.h"
-#include "../engine/h/memory.h"
 #include "../engine/logger.c"
+#include "../engine/memory.c"
 
 #define MC_C_OFF                    (Color){0x10, 0x10, 0x10, 0xff}
 #define MC_C_GRAY                   (Color){0x40, 0x40, 0x40, 0xff}
@@ -68,7 +68,7 @@ typedef struct /* Chunk */
 
 // ---- declarations -----------------------------------------------------------
 Font font;
-f32 font_size = 32;
+f32 font_size = 28;
 f32 font_size_small = 14;
 u8 flag = 0;
 u8 render_distance = 1;
@@ -92,7 +92,8 @@ void free_chunking();
 void parse_input();
 void draw_gui();
 
-Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
+Chunk *
+push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (!(chunk_buf[i].flag & FLAG_CHUNK_LOADED))
@@ -109,7 +110,8 @@ Chunk *push_chunk_buf(v2i16 player_delta_chunk, v2u16 pos)
     return NULL;
 }
 
-void update_chunk_tab(v2i16 player_delta_chunk)
+void
+update_chunk_tab(v2i16 player_delta_chunk)
 {
     for (u16 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
@@ -121,8 +123,8 @@ void update_chunk_tab(v2i16 player_delta_chunk)
             if (chunk_tab[i] == NULL)
                 chunk_tab[i] = push_chunk_buf(player_delta_chunk, chunk_tab_coordinates);
         }
-        else if (chunk_tab[i] != NULL)
-            if (chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
+        else if (chunk_tab[i] != NULL &&
+                chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
             {
                 memset(chunk_tab[i], 0, sizeof(Chunk));
                 chunk_tab[i] = NULL;
@@ -130,14 +132,17 @@ void update_chunk_tab(v2i16 player_delta_chunk)
     }
 }
 
-void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
+void
+shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
 {
     if (chunk_parse_lock) return;
     chunk_parse_lock = 1;
 
-    v2i16 delta = {
+    v2i16 delta =
+    {
         player_chunk.x - player_delta_chunk->x,
-        player_chunk.y - player_delta_chunk->y};
+        player_chunk.y - player_delta_chunk->y,
+    };
     u8 direction =
         (delta.x > 0) ? 1 : (delta.x < 0) ? 2 :
         (delta.y > 0) ? 3 : (delta.y < 0) ? 4 : 0;
@@ -238,7 +243,8 @@ void shift_chunk_tab(v2i16 player_chunk, v2i16 *player_delta_chunk)
     chunk_parse_lock = 0;
 }
 
-void draw_chunk_buf(u32 i)
+void
+draw_chunk_buf(u32 i)
 {
     chunk_tab_coordinates = (v2u16){i % CHUNK_BUF_DIAMETER, i / CHUNK_BUF_DIAMETER};
 
@@ -293,14 +299,16 @@ void draw_chunk_buf(u32 i)
     }
 }
 
-b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
+b8
+is_distance_within(u16 distance, v2i32 start, v2i32 end)
 {
     if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) < (distance * distance) + 2)
         return TRUE;
     return FALSE;
 }
 
-int main(void)
+int
+main(void)
 {
     // ---- main_init ----------------------------------------------------------
     flag = FLAG_ACTIVE;
@@ -309,7 +317,7 @@ int main(void)
     SetTargetFPS(30);
     SetExitKey(KEY_Q);
 
-    font = LoadFont("fonts/code_saver_regular.otf");
+    font = LoadFont("resources/fonts/dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
     init_chunking();
 
     while ((flag & FLAG_ACTIVE) && (!WindowShouldClose()))
@@ -336,9 +344,10 @@ int main(void)
     return 0;
 }
 
-void init_chunking()
+void
+init_chunking()
 {
-    MC_C_ALLOC(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+    mem_alloc((void*)&chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk), "chunk_buf");
     return;
 
 cleanup:
@@ -346,12 +355,14 @@ cleanup:
     exit(-1);
 }
 
-void free_chunking()
+void
+free_chunking()
 {
-    MC_C_FREE(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
+    mem_free((void*)&chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk), "chunk_buf");
 }
 
-void parse_input()
+void
+parse_input()
 {
     if (IsKeyPressed(KEY_ENTER))
         update_chunk_tab(player_chunk);
@@ -390,7 +401,8 @@ void parse_input()
     }
 }
 
-void draw_gui()
+void
+draw_gui()
 {
     // ---- title --------------------------------------------------------------
     DrawTextEx(font, "Chunk Buf",
@@ -482,4 +494,3 @@ void draw_gui()
                 font_size, 1, MC_C_GRAY);
     }
 }
-

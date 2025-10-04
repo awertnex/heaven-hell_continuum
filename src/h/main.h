@@ -36,12 +36,25 @@ typedef struct Uniform
 
     struct /* gizmo */
     {
-        GLint render_ratio;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;
         GLint mat_projection;
     } gizmo;
+
+    struct /* gizmo_chunk */
+    {
+        GLint render_size;
+        GLint mat_translation;
+        GLint mat_rotation;
+        GLint mat_orientation;
+        GLint mat_projection;
+        GLint cursor;
+        GLint size;
+        GLint camera_position;
+        GLint sky_color;
+        GLint color;
+    } gizmo_chunk;
 
     struct /* voxel */
     {
@@ -49,8 +62,8 @@ typedef struct Uniform
         GLint camera_position;
         GLint sun_rotation;
         GLint sky_color;
-        GLint open_cursor;
-        GLint offset_cursor;
+        GLint chunk_position;
+        GLint color;
         GLint opacity;
     } voxel;
 
@@ -63,7 +76,7 @@ extern u32 state;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
+extern Projection projection;
 extern Uniform uniform;
 
 #endif /* GAME_MAIN_H */
-

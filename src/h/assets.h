@@ -57,4 +57,3 @@ void init_textures();
 void unload_textures();
 
 #endif /* GAME_ASSETS_H */
-

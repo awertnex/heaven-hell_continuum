@@ -12,7 +12,8 @@
 #include "h/logger.h"
 #include "h/memory.h"
 
-u64 get_file_type(const str *path)
+u64
+get_file_type(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -24,7 +25,8 @@ u64 get_file_type(const str *path)
     return 0;
 }
 
-b8 is_file(const str *path)
+b8
+is_file(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0 && S_ISREG(stats.st_mode))
@@ -32,7 +34,8 @@ b8 is_file(const str *path)
     return FALSE;
 }
 
-b8 is_file_exists(const str *path)
+b8
+is_file_exists(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -49,7 +52,8 @@ b8 is_file_exists(const str *path)
     return FALSE;
 }
 
-b8 is_dir(const str *path)
+b8
+is_dir(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0 && S_ISDIR(stats.st_mode))
@@ -57,7 +61,8 @@ b8 is_dir(const str *path)
     return FALSE;
 }
 
-b8 is_dir_exists(const str *path)
+b8
+is_dir_exists(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -74,7 +79,8 @@ b8 is_dir_exists(const str *path)
     return FALSE;
 }
 
-u8 copy_file(const str *path, const str *destination)
+u8
+copy_file(const str *path, const str *destination)
 {
     if (!is_file_exists(path))
             return -1;
@@ -84,11 +90,13 @@ u8 copy_file(const str *path, const str *destination)
 
     FILE *in_file = NULL;
     if (is_dir(destination))
-        strncat(destination_string, strrchr(path, SLASH_NATIVE), PATH_MAX - 1);
+        strncat(destination_string,
+                strrchr(path, SLASH_NATIVE), PATH_MAX - 1);
 
     if ((in_file = fopen(destination_string, "w")) == NULL)
     {
-        LOGERROR("File Copying '%s' -> '%s' Failed\n", path, destination_string);
+        LOGERROR("File Copying '%s' -> '%s' Failed\n",
+                path, destination_string);
         return -1;
     }
 
@@ -107,7 +115,8 @@ u8 copy_file(const str *path, const str *destination)
     return 0;
 }
 
-u8 copy_dir(const str *path, const str *destination, b8 overwrite)
+u8
+copy_dir(const str *path, const str *destination, b8 overwrite)
 {
     if (!is_dir_exists(path))
         return -1;
@@ -127,7 +136,8 @@ u8 copy_dir(const str *path, const str *destination, b8 overwrite)
 
     if (is_dir_exists(destination_string) && !overwrite)
     {
-        strncat(destination_string, strrchr(path_string, SLASH_NATIVE), PATH_MAX - 1);
+        strncat(destination_string,
+                strrchr(path_string, SLASH_NATIVE), PATH_MAX - 1);
         check_slash(destination_string);
     }
     else make_dir(destination_string);
@@ -136,8 +146,12 @@ u8 copy_dir(const str *path, const str *destination, b8 overwrite)
     str out_dir[PATH_MAX] = {0};
     for (u64 i = 0; i < dir_contents.memb; ++i)
     {
-        snprintf(in_dir, PATH_MAX - 1, "%s%s", path_string, (str*)dir_contents.i[i]);
-        snprintf(out_dir, PATH_MAX - 1, "%s%s", destination_string, (str*)dir_contents.i[i]);
+        snprintf(in_dir, PATH_MAX - 1, "%s%s",
+                path_string, (str*)dir_contents.i[i]);
+
+        snprintf(out_dir, PATH_MAX - 1, "%s%s",
+                destination_string, (str*)dir_contents.i[i]);
+
         if (is_dir(in_dir))
         {
             copy_dir(in_dir, out_dir, 1);
@@ -150,7 +164,8 @@ u8 copy_dir(const str *path, const str *destination, b8 overwrite)
     return 0;
 }
 
-void *get_file_contents(const str *path, u64 *file_len, const str *format)
+void *
+get_file_contents(const str *path, u64 *file_len, const str *format)
 {
     if (!is_file_exists(path))
             return NULL;
@@ -184,7 +199,8 @@ cleanup:
     return NULL;
 }
 
-buf get_dir_contents(const str *path)
+buf
+get_dir_contents(const str *path)
 {
     if (!path || !is_dir_exists(path))
         return (buf){NULL};
@@ -206,7 +222,8 @@ buf get_dir_contents(const str *path)
     contents.memb -= 2;
 
     if (!contents.memb
-            || !mem_alloc_buf(&contents, contents.memb, NAME_MAX, "dir_contents"))
+            || !mem_alloc_buf(&contents, contents.memb,
+                NAME_MAX, "dir_contents"))
         goto cleanup;
 
     rewinddir(dir);
@@ -214,31 +231,38 @@ buf get_dir_contents(const str *path)
     str path_full[PATH_MAX] = {0};
     while ((entry = readdir(dir)) != NULL)
     {
-        if (!strncmp(entry->d_name, ".\0", 2) || !strncmp(entry->d_name, "..\0", 3))
+        if (!strncmp(entry->d_name, ".\0", 2) ||
+                !strncmp(entry->d_name, "..\0", 3))
             continue;
 
         contents.i[i] = contents.buf + (i * NAME_MAX);
         memcpy(contents.i[i], entry->d_name, NAME_MAX - 1);
-        snprintf(path_full, PATH_MAX, "%s%s", dir_path_absolute_usable, entry->d_name);
+        snprintf(path_full, PATH_MAX, "%s%s",
+                dir_path_absolute_usable, entry->d_name);
+
         if (is_dir(path_full))
             check_slash(contents.i[i]);
         ++i;
     }
 
     closedir(dir);
-    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute), "dir_path_absolute");
+    mem_free((void*)&dir_path_absolute,
+            strlen(dir_path_absolute), "dir_path_absolute");
 
     return contents;
 
 cleanup:
     if (dir != NULL)
         closedir(dir);
-    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute), "dir_path_absolute");
+    mem_free((void*)&dir_path_absolute,
+            strlen(dir_path_absolute), "dir_path_absolute");
+
     mem_free_buf((void*)&contents, "dir_contents");
     return (buf){NULL};
 }
 
-u64 get_dir_entry_count(const str *path)
+u64
+get_dir_entry_count(const str *path)
 {
     if (!path || !is_dir_exists(path))
         return 0;
@@ -254,7 +278,8 @@ u64 get_dir_entry_count(const str *path)
     return count;
 }
 
-str *get_path_absolute(const str *path)
+str *
+get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
     {
@@ -280,7 +305,8 @@ str *get_path_absolute(const str *path)
     return result;
 }
 
-str *get_path_bin_root(void)
+str *
+get_path_bin_root(void)
 {
     str path_bin_root[PATH_MAX] = {0};
     if (!_get_path_bin_root(path_bin_root))
@@ -308,7 +334,8 @@ str *get_path_bin_root(void)
     return result;
 }
 
-void check_slash(str *path)
+void
+check_slash(str *path)
 {
     if (path == NULL)
         return;
@@ -331,7 +358,8 @@ void check_slash(str *path)
     path[len + 1] = 0;
 }
 
-void normalize_slash(str *path)
+void
+normalize_slash(str *path)
 {
     if (path == NULL)
         return;
@@ -344,7 +372,8 @@ void normalize_slash(str *path)
     }
 }
 
-void posix_slash(str *path)
+void
+posix_slash(str *path)
 {
     if (path == NULL)
         return;
@@ -357,7 +386,8 @@ void posix_slash(str *path)
     }
 }
 
-str *retract_path(str *path)
+str *
+retract_path(str *path)
 {
     u64 len = strlen(path);
     if (len <= 1) return path;
@@ -379,4 +409,3 @@ str *retract_path(str *path)
 
     return path;
 }
-

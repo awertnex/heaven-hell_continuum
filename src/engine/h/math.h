@@ -38,10 +38,9 @@ m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
 
-f32 lerp_f32(f32 start, f32 end, f32 scale);
+f32 lerp_f32(f32 start, f32 end, f32 speed, f64 frame_delta);
 f32 easein_f32(f32 start, f32 end, f32 scale);
 f32 easeout_f32(f32 start, f32 end, f32 scale);
 f32 smoothstep_f32(f32 start, f32 end, f32 scale);
 
 #endif /* ENGINE_MATH_H */
-

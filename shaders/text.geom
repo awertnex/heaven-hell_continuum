@@ -5,10 +5,10 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = MAX_VERTICES) out;
 
-in vec2 vs_tex_coords[];
-out vec2 tex_coords;
 uniform float char_size;
 uniform vec2 font_size;
+in vec2 vs_tex_coords[];
+out vec2 tex_coords;
 
 void main()
 {
