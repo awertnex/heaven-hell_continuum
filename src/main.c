@@ -120,7 +120,7 @@ ShaderProgram shader_voxel =
     .vertex.file_name = "voxel.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .geometry.file_name = "voxel.geom",
-    .geometry.type = 0,
+    .geometry.type = GL_GEOMETRY_SHADER,
     .fragment.file_name = "voxel.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -433,16 +433,12 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_voxel.id, "sun_rotation");
     uniform.voxel.sky_color =
         glGetUniformLocation(shader_voxel.id, "sky_color");
-    uniform.voxel.open_cursor =
-        glGetUniformLocation(shader_voxel.id, "open_cursor");
-    uniform.voxel.offset_cursor =
-        glGetUniformLocation(shader_voxel.id, "offset_cursor");
+    uniform.voxel.chunk_position =
+        glGetUniformLocation(shader_voxel.id, "chunk_position");
     uniform.voxel.color =
         glGetUniformLocation(shader_voxel.id, "voxel_color");
     uniform.voxel.opacity =
         glGetUniformLocation(shader_voxel.id, "opacity");
-    uniform.voxel.size =
-        glGetUniformLocation(shader_voxel.id, "size");
 }
 
 void
@@ -457,13 +453,13 @@ update_input(Player *player)
             player->pos.z =
                 lerp_f32(player->pos.z,
                         player->raw_pos.z,
-                        player->pos_lerp_speed.z);
+                        player->pos_lerp_speed.z, render.frame_delta);
         }
 
         if (player->state & FLAG_CAN_JUMP)
         {
             player->vel.z +=
-                SETTING_PLAYER_JUMP_HEIGHT * render.frame_delta;
+                SETTING_PLAYER_JUMP_HEIGHT;
             player->state &= ~FLAG_CAN_JUMP;
         }
     }
@@ -512,11 +508,11 @@ update_input(Player *player)
     if (is_key_press_double(bind_walk_forwards))
         player->state |= FLAG_SPRINTING;
 
-    player->pos.x =
-        lerp_f32(player->pos.x, player->raw_pos.x, player->pos_lerp_speed.x);
+    player->pos.x = lerp_f32(player->pos.x, player->raw_pos.x,
+                player->pos_lerp_speed.x, render.frame_delta);
 
-    player->pos.y =
-        lerp_f32(player->pos.y, player->raw_pos.y, player->pos_lerp_speed.y);
+    player->pos.y = lerp_f32(player->pos.y, player->raw_pos.y,
+            player->pos_lerp_speed.y, render.frame_delta);
 
     player->pos.z = player->raw_pos.z;
 
@@ -639,11 +635,11 @@ update_world(Player *player)
         show_cursor;
     else disable_cursor;
 
-    update_collision_static(&lily);
     update_camera_movement_player(&render, player);
+    update_camera_perspective(&player->camera, &projection);
     update_player(&render, player);
     update_player_target(&lily.target, &lily.delta_target);
-    update_camera_perspective(&player->camera, &projection);
+    update_collision_static(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -758,21 +754,6 @@ draw_world(Player *player)
             (GLfloat*)&skybox_data.color);
 
     draw_chunk_tab(&uniform);
-
-#if 0 // TODO: maybe remove
-    glUseProgram(shader_default.id);
-
-    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection.perspective);
-
-    glUniform3fv(uniform.defaults.camera_position, 1,
-            (GLfloat*)&lily.camera.pos);
-
-    glUniform3fv(uniform.defaults.sky_color, 1,
-            (GLfloat*)&skybox_data.color);
-
-    draw_mesh(&mesh_cube_of_happiness);
-#endif
 }
 
 void
@@ -812,8 +793,8 @@ draw_hud(Player *player)
 
     v3f32 camera_position =
     {
-        (lily.cos_yaw * lily.cos_pitch),
-        -(lily.sin_yaw * lily.cos_pitch),
+        -(lily.cos_yaw * lily.cos_pitch),
+        (lily.sin_yaw * lily.cos_pitch),
         lily.sin_pitch,
     };
 

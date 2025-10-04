@@ -14,7 +14,7 @@ out vec3 vertex_position;
 
 void main()
 {
-    float gizmo_scale = 0.006;
+    float gizmo_scale = 0.008;
 
     mat4 mat_offset = mat4(
             1.0, 0.0, 0.0, 0.0,

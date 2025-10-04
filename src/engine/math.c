@@ -216,10 +216,9 @@ matrix_multiply_vector(m4f32 a, v4f32 b)
 }
 
 f32
-lerp_f32(f32 start, f32 end, f32 scale)
+lerp_f32(f32 start, f32 end, f32 speed, f64 frame_delta)
 {
-    return end;
-    return start + (end - start) * scale;
+    return start + (end - start) * (1.0f - expf(-speed * frame_delta));
 }
 
 f32

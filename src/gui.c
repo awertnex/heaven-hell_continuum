@@ -96,7 +96,7 @@ cleanup:
 void
 update_render_settings(Render *render)
 {
-    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT;
 }
 
 void

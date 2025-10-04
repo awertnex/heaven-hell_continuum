@@ -20,7 +20,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        4
+#define CHUNK_BUF_RADIUS        SETTING_RENDER_DISTANCE_DEFAULT
 #define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
@@ -89,17 +89,17 @@ enum BlockFlags
      * run-length encoding */
     RLE_TRIGGER =   0x0000000000008000,
 
-    /* 63 [00000000 00000000 00000000 11111111] 32
+    /* 63 [00000000 00000000 00000000 00001111] 32
      * 31 [00000000 00000000 00000000 00000000] 0 */
-    BLOCK_X =       0x000000ff00000000,
+    BLOCK_X =       0x0000000f00000000,
 
-    /* 63 [00000000 00000000 11111111 00000000] 32
+    /* 63 [00000000 00000000 00000000 11110000] 32
      * 31 [00000000 00000000 00000000 00000000] 0 */
-    BLOCK_Y =       0x0000ff0000000000,
+    BLOCK_Y =       0x000000f000000000,
 
-    /* 63 [00000000 11111111 00000000 00000000] 32
+    /* 63 [00000000 00000000 00001111 00000000] 32
      * 31 [00000000 00000000 00000000 00000000] 0 */
-    BLOCK_Z =       0x00ff000000000000,
+    BLOCK_Z =       0x00000f0000000000,
 }; /* BlockFlags */
 
 enum ChunkFlags
@@ -127,16 +127,8 @@ typedef struct Chunk
     v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
     u32 color;  /* debug color: 0xrrggbbaa */
     u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
-    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
-
-    struct /* mesh */
-    {
-        GLuint vao;
-        GLuint vbo;
-        u64 vbo_len;
-        u32 *vbo_data;
-    } mesh;
-
+    Mesh mesh;
+    u64 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
 

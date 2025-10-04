@@ -211,6 +211,10 @@ add_block(u32 index, u32 x, u32 y, u32 z)
     else chunk_tab[index]->block[z][y][x] |= NEGATIVE_Z;
 
     chunk_tab[index]->block[z][y][x] |= NOT_EMPTY;
+    chunk_tab[index]->block[z][y][x] |=
+        (((u64)x & 0xf) << 32) |
+        (((u64)y & 0xf) << 36) |
+        (((u64)z & 0xf) << 40);
 }
 
 void
@@ -303,6 +307,9 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 static void
 generate_chunk(u32 index)
 {
+    if (!chunk_tab[index])
+        return;
+
     u16 sin_x = 0, sin_y = 0;
 
     for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
@@ -322,11 +329,41 @@ generate_chunk(u32 index)
                     chunk_tab[index]->color = COLOR_CHUNK_RENDER;
                 }
             }
+
+    if (!(chunk_tab[index]->flag & FLAG_CHUNK_RENDER))
+        return;
+
+    glGenVertexArrays(1, &chunk_tab[index]->mesh.vao);
+    glGenBuffers(1, &chunk_tab[index]->mesh.vbo);
+
+    glBindVertexArray(chunk_tab[index]->mesh.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->mesh.vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
+            chunk_tab[index]->block, GL_DYNAMIC_DRAW);
+
+    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT,
+            sizeof(u64), (void*)(1 * sizeof(u32)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 static void
 mesh_chunk(u32 index)
 {
+    glBindVertexArray(chunk_tab[index]->mesh.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->mesh.vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
+            chunk_tab[index]->block, GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /* TODO: make serialize_chunk() */
@@ -608,8 +645,7 @@ get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
 void
 draw_chunk_tab(Uniform *uniform)
 {
-    v3f32 open_cursor = {0};
-    v3f32 offset_cursor = {0};
+    v3f32 chunk_position = {0};
 
     if (state & FLAG_DEBUG_MORE)
         globals.opacity = 0.2f;
@@ -623,31 +659,20 @@ draw_chunk_tab(Uniform *uniform)
                 !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
             continue;
 
-        open_cursor =
+        chunk_position =
             (v3f32){
                 (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
                 (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
                 (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER),
             };
-        glUniform3fv(uniform->voxel.open_cursor, 1, (GLfloat*)&open_cursor);
 
-        for (u32 j = 0; j < CHUNK_VOLUME; ++j)
-        {
-            offset_cursor = index_to_coordinates_v3f32(j, CHUNK_DIAMETER);
-            if (chunk_tab[i]->block
-                    [(u32)offset_cursor.z]
-                    [(u32)offset_cursor.y]
-                    [(u32)offset_cursor.x] & NOT_EMPTY)
-            {
-                glUniform3fv(uniform->voxel.offset_cursor, 1,
-                        (GLfloat*)&offset_cursor);
-                draw_mesh(&globals.voxel);
-                glBindVertexArray(globals.voxel.vao);
-                glDrawElements(GL_POINTS,
-                        globals.voxel.ebo_len, GL_UNSIGNED_INT, 0);
-            }
-        }
+        glUniform3fv(uniform->voxel.chunk_position, 1,
+                (GLfloat*)&chunk_position);
+
+        glBindVertexArray(chunk_tab[i]->mesh.vao);
+        glDrawArrays(GL_POINTS, 0, CHUNK_VOLUME);
     }
+    glBindVertexArray(0);
 }
 
 void

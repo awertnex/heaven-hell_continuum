@@ -678,8 +678,7 @@ update_key_states(Render *render)
         else if (key_press && _is_key_listen_double(i))
         {
             if ((glfwGetTime() - key_press_start_time[i])
-                    < KEYBOARD_DOUBLE_PRESS_TIME *
-                    render->frame_delta)
+                    < KEYBOARD_DOUBLE_PRESS_TIME)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
                 keyboard_key[i] = KEY_PRESS;

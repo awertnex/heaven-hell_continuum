@@ -25,9 +25,9 @@ update_player(Render *render, Player *player)
             !(player->state & FLAG_FLYING))
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
 
         update_gravity(render, player);
     }
@@ -35,11 +35,11 @@ update_player(Render *render, Player *player)
     if (player->state & FLAG_FLYING)
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE * render->frame_delta;
+            SETTING_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
 
         player->vel = v3fzero;
         player->movement_speed =
@@ -48,7 +48,7 @@ update_player(Render *render, Player *player)
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
                     80.0f,
-                    settings.lerp_speed);
+                    settings.lerp_speed, render->frame_delta);
     }
 
     if ((player->state & FLAG_SNEAKING)
@@ -64,7 +64,7 @@ update_player(Render *render, Player *player)
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         75.0f,
-                        settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
         }
         else
         {
@@ -73,7 +73,7 @@ update_player(Render *render, Player *player)
             player->camera.fovy =
                 lerp_f32(player->camera.fovy,
                         90.0f,
-                        settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
         }
     }
     else if (!(player->state & FLAG_SNEAKING)
@@ -81,11 +81,11 @@ update_player(Render *render, Player *player)
             && !(player->state & FLAG_FLYING))
     {
         player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
         player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_DEFAULT * render->frame_delta;
+            SETTING_LERP_SPEED_DEFAULT;
         player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_RIGID * render->frame_delta;
+            SETTING_LERP_SPEED_RIGID;
 
         player->movement_speed =
             SETTING_PLAYER_SPEED_WALK * render->frame_delta;
@@ -93,7 +93,7 @@ update_player(Render *render, Player *player)
         player->camera.fovy =
             lerp_f32(player->camera.fovy,
                     70.0f,
-                    settings.lerp_speed);
+                        settings.lerp_speed, render->frame_delta);
     }
 }
 
@@ -215,9 +215,8 @@ void
 update_gravity(Render *render, Player *player)
 {
     if (player->state & FLAG_FALLING)
-        player->vel.z +=
-            (GRAVITY * player->mass * render->frame_delta_square);
-    player->raw_pos.z += player->vel.z;
+        player->vel.z += (GRAVITY * player->mass * render->frame_delta);
+    player->raw_pos.z += player->vel.z * render->frame_delta;
 }
 
 /* TODO: make AABB collision work */

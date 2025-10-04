@@ -4,15 +4,16 @@ uniform vec3 camera_position;
 uniform vec3 sun_rotation; // TODO: use sun_rotation
 uniform vec3 sky_color;
 uniform float opacity;
-in vec3 vertex_position;
+in vec4 gs_diffuse;
+in vec3 gs_position;
 out vec4 color;
 
-vec4 base_color = vec4(0.3, 0.15, 0.03, 1.0);
+vec4 base_color = vec4(0.3, 0.15, 0.03, 1.0) * gs_diffuse;
 float sky_influence = 0.13;
 
 void main()
 {
-    float distance = length(vertex_position - camera_position);
+    float distance = length(gs_position - camera_position);
     distance /= sqrt(distance);
     distance /= sqrt(distance);
 

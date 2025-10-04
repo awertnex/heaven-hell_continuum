@@ -62,11 +62,9 @@ typedef struct Uniform
         GLint camera_position;
         GLint sun_rotation;
         GLint sky_color;
-        GLint open_cursor;
-        GLint offset_cursor;
+        GLint chunk_position;
         GLint color;
         GLint opacity;
-        GLint size;
     } voxel;
 
 } Uniform;
