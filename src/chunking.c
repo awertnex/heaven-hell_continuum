@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "engine/h/memory.h"
 #include "engine/h/math.h"
 #include "engine/h/logger.h"
@@ -17,13 +19,14 @@ Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
 static struct Globals
 {
     f32 opacity;
-    Mesh voxel;
 } globals;
 
 /* ---- section: signatures ------------------------------------------------- */
 
 /* index = (chunk_tab index); */
 static void generate_chunk(u32 index);
+
+static f32 terrain_noise(v3u32 coordinates);
 
 /* index = (chunk_tab index); */
 static void mesh_chunk(u32 index);
@@ -42,33 +45,11 @@ static void pop_chunk_buf(u32 index);
 u8
 init_chunking(ShaderProgram *program)
 {
-    if (!mem_alloc_memb((void*)&chunk_buf,
+    if (mem_alloc_memb((void*)&chunk_buf,
                 CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
-        goto cleanup;
+        return 0;
 
-    GLfloat vbo[] =
-    {
-        0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
-    };
-    GLuint ebo[] =
-    {
-        0, 4, 5, 5, 1, 0,
-        1, 5, 7, 7, 3, 1,
-        3, 7, 6, 6, 2, 3,
-        2, 6, 4, 4, 0, 2,
-        4, 6, 7, 7, 5, 4,
-        0, 1, 3, 3, 2, 0,
-    };
-
-    generate_mesh(&globals.voxel, GL_DYNAMIC_DRAW, 24, 36, vbo, ebo);
-    return 0;
+    terrain_noise();
 
 cleanup:
     free_chunking();
@@ -82,12 +63,7 @@ update_chunking(v3i16 player_delta_chunk)
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
-        v3u16 coordinates =
-        {
-            i % CHUNK_BUF_DIAMETER,
-            (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-            i / CHUNK_BUF_LAYER,
-        };
+        v3u32 coordinates = index_to_coordinates_v3u32(i, CHUNK_BUF_DIAMETER);
 
         if (distance_v3i32(
                     (v3i32){
@@ -303,6 +279,11 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
     chunk_tab[index]->block[z][y][x] = 0;
 }
 
+static f32
+terrain_noise(v3u32 coordinates)
+{
+}
+
 /* TODO: make generate_chunk() */
 static void
 generate_chunk(u32 index)
@@ -310,43 +291,48 @@ generate_chunk(u32 index)
     if (!chunk_tab[index])
         return;
 
-    u16 sin_x = 0, sin_y = 0;
-
     for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
         for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
             for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
             {
-                sin_x = (u32)((sin(((f32)x + (chunk_tab[index]->pos.x *
-                                        CHUNK_DIAMETER)) / 30) + 1) * 20) + 2;
-                sin_y = (u32)((sin(((f32)y + (chunk_tab[index]->pos.y *
-                                        CHUNK_DIAMETER)) / 30) + 1) * 20) + 2;
+                v3u32 coordinates =
+                {
+                    x + (chunk_tab[index]->pos.x * CHUNK_DIAMETER),
+                    y + (chunk_tab[index]->pos.y * CHUNK_DIAMETER),
+                    z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER),
+                };
 
-                if (z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <= sin_x - 3 &&
-                        z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <= sin_y - 3)
+                if (terrain_noise(coordinates) <
+                        coordinates.z)
                 {
                     add_block(index, x, y, z);
                     chunk_tab[index]->flag |= FLAG_CHUNK_RENDER;
                     chunk_tab[index]->color = COLOR_CHUNK_RENDER;
                 }
             }
+    //if (z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <=
+    //        sin_x - 3 &&
+    //        z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER) <=
+    //        sin_y - 3)
 
     if (!(chunk_tab[index]->flag & FLAG_CHUNK_RENDER))
         return;
 
-    glGenVertexArrays(1, &chunk_tab[index]->mesh.vao);
-    glGenBuffers(1, &chunk_tab[index]->mesh.vbo);
+    glGenVertexArrays(1, &chunk_tab[index]->vao);
+    glGenBuffers(1, &chunk_tab[index]->vbo);
 
-    glBindVertexArray(chunk_tab[index]->mesh.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->mesh.vbo);
+    glBindVertexArray(chunk_tab[index]->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->vbo);
 
     glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
             chunk_tab[index]->block, GL_DYNAMIC_DRAW);
 
-    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
+    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
+            (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT,
-            sizeof(u64), (void*)(1 * sizeof(u32)));
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64),
+            (void*)(1 * sizeof(u32)));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
@@ -356,8 +342,8 @@ generate_chunk(u32 index)
 static void
 mesh_chunk(u32 index)
 {
-    glBindVertexArray(chunk_tab[index]->mesh.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->mesh.vbo);
+    glBindVertexArray(chunk_tab[index]->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->vbo);
 
     glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
             chunk_tab[index]->block, GL_DYNAMIC_DRAW);
@@ -382,12 +368,7 @@ deserialize_chunk(Chunk *chunk, str *world_name)
 static void
 push_chunk_buf(u32 index, v3i16 player_delta_chunk)
 {
-    v3u16 coordinates =
-    {
-        index % CHUNK_BUF_DIAMETER,
-        (index / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-        index / CHUNK_BUF_LAYER,
-    };
+    v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
 
     for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
@@ -423,7 +404,7 @@ pop_chunk_buf(u32 index)
 void
 shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
-    const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
+    const f32 RENDER_DISTANCE = powf(settings.render_distance, 2.0f) + 2.0f;
 
     v3i16 delta =
     {
@@ -432,11 +413,13 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         player_chunk.z - player_delta_chunk->z,
     };
 
-    if (distance_v3i32((v3i32){player_chunk.x, player_chunk.y, player_chunk.z},
-            (v3i32){
-            player_delta_chunk->x,
-            player_delta_chunk->y,
-            player_delta_chunk->z}) > RENDER_DISTANCE)
+    if (distance_v3f32(
+                (v3f32){
+                (f32)player_chunk.x, (f32)player_chunk.y, (f32)player_chunk.z},
+                (v3f32){
+                (f32)player_delta_chunk->x,
+                (f32)player_delta_chunk->y,
+                (f32)player_delta_chunk->z}) > RENDER_DISTANCE)
     {
         for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i] != NULL)
@@ -447,12 +430,10 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
     }
 
     const u8 AXIS =
-        (delta.x) ? SHIFT_X :
-        (delta.y) ? SHIFT_Y :
-        (delta.z) ? SHIFT_Z : 0;
-    const i8 INCREMENT =
-        (delta.x > 0 || delta.y > 0 || delta.z > 0) -
-        (delta.x < 0 || delta.y < 0 || delta.z < 0);
+        (delta.x > 0) ? SHIFT_PX : (delta.x < 0) ? SHIFT_NX :
+        (delta.y > 0) ? SHIFT_PY : (delta.y < 0) ? SHIFT_NY :
+        (delta.z > 0) ? SHIFT_PZ : (delta.z < 0) ? SHIFT_NZ : 0;
+    const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
     v3u32 coordinates = {0};
     u32 mirror_index = 0;
     u32 target_index = 0;
@@ -460,15 +441,18 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
     switch (AXIS)
     {
-        case SHIFT_X:
+        case SHIFT_PX:
+        case SHIFT_NX:
             player_delta_chunk->x += INCREMENT;
             break;
 
-        case SHIFT_Y:
+        case SHIFT_PY:
+        case SHIFT_NY:
             player_delta_chunk->y += INCREMENT;
             break;
 
-        case SHIFT_Z:
+        case SHIFT_PZ:
+        case SHIFT_NZ:
             player_delta_chunk->z += INCREMENT;
             break;
     }
@@ -530,17 +514,20 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         switch (AXIS)
         {
-            case SHIFT_X:
+            case SHIFT_PX:
+            case SHIFT_NX:
                 mirror_index = _mirror_index.x;
                 is_on_edge = _is_on_edge.x;
                 break;
 
-            case SHIFT_Y:
+            case SHIFT_PY:
+            case SHIFT_NY:
                 mirror_index = _mirror_index.y;
                 is_on_edge = _is_on_edge.y;
                 break;
 
-            case SHIFT_Z:
+            case SHIFT_PZ:
+            case SHIFT_NZ:
                 mirror_index = _mirror_index.z;
                 is_on_edge = _is_on_edge.z;
                 break;
@@ -601,17 +588,20 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         switch (AXIS)
         {
-            case SHIFT_X:
+            case SHIFT_PX:
+            case SHIFT_NX:
                 mirror_index = _mirror_index.x;
                 target_index = _target_index.x;
                 break;
 
-            case SHIFT_Y:
+            case SHIFT_PY:
+            case SHIFT_NY:
                 mirror_index = _mirror_index.y;
                 target_index = _target_index.y;
                 break;
 
-            case SHIFT_Z:
+            case SHIFT_PZ:
+            case SHIFT_NZ:
                 mirror_index = _mirror_index.z;
                 target_index = _target_index.z;
                 break;
@@ -645,8 +635,6 @@ get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target)
 void
 draw_chunk_tab(Uniform *uniform)
 {
-    v3f32 chunk_position = {0};
-
     if (state & FLAG_DEBUG_MORE)
         globals.opacity = 0.2f;
     else
@@ -659,17 +647,17 @@ draw_chunk_tab(Uniform *uniform)
                 !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
             continue;
 
-        chunk_position =
-            (v3f32){
-                (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
-                (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
-                (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER),
-            };
+        v3f32 chunk_position =
+        {
+            (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
+            (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
+            (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER),
+        };
 
         glUniform3fv(uniform->voxel.chunk_position, 1,
                 (GLfloat*)&chunk_position);
 
-        glBindVertexArray(chunk_tab[i]->mesh.vao);
+        glBindVertexArray(chunk_tab[i]->vao);
         glDrawArrays(GL_POINTS, 0, CHUNK_VOLUME);
     }
     glBindVertexArray(0);
@@ -684,8 +672,7 @@ draw_chunk_gizmo(Mesh *mesh)
                 !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
             continue;
 
-        v3f32 cursor =
-            index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
+        v3f32 cursor = index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
         cursor = sub_v3f32(cursor, (v3f32){
                 CHUNK_BUF_RADIUS + 0.5f,
                 CHUNK_BUF_RADIUS + 0.5f,
@@ -694,7 +681,7 @@ draw_chunk_gizmo(Mesh *mesh)
                 (GLfloat*)&cursor);
 
         f32 pulse = (sinf((cursor.z * 0.3f) -
-                    (render.frame_start * 5.0f)) * 0.2f) + 0.8f;
+                    (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
         glUniform1f(uniform.gizmo_chunk.size, pulse);
 
         v4f32 color =

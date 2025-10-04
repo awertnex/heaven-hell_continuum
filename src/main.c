@@ -49,7 +49,7 @@ Player lily =
     .yaw = 0.0f,
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
     .sin_yaw = 0.0f, .cos_yaw = 0.0f,
-    .eye_height = 1.5f,
+    .eye_height = SETTING_PLAYER_EYE_HEIGHT,
     .mass = 2.0f,
     .movement_speed = SETTING_PLAYER_SPEED_WALK,
     .container_state = 0,
@@ -190,14 +190,6 @@ callback_key(
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-
-    if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            show_cursor;
-        else
-            disable_cursor;
-    }
 }
 
 void
@@ -593,6 +585,12 @@ update_input(Player *player)
             ++player->perspective;
         else player->perspective = 0;
     }
+
+    /* ---- debug ----------------------------------------------------------- */
+#if !RELEASE_BUILD
+    if (is_key_press(KEY_TAB))
+        state ^= FLAG_SUPER_DEBUG;
+#endif /* RELEASE_BUILD */
 }
 
 b8
@@ -613,9 +611,6 @@ init_world(str *string)
             (i32)lily.target.z,
         };
 
-    update_chunking(lily.delta_chunk);
-    //shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-
     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
     disable_cursor;
     center_cursor;
@@ -625,7 +620,7 @@ init_world(str *string)
 void
 update_world(Player *player)
 {
-    game_tick = 6000 + (floor(render.frame_start * 20)) -
+    game_tick = 6000 + (u64)(render.frame_start * 20) -
         (SETTING_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SETTING_DAY_TICKS_MAX)
@@ -773,7 +768,8 @@ draw_hud(Player *player)
     glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
             (GLfloat*)&projection.projection);
 
-    draw_mesh(&mesh_gizmo);
+    if (state & FLAG_DEBUG)
+        draw_mesh(&mesh_gizmo);
 
     glUseProgram(shader_gizmo_chunk.id);
 
@@ -804,7 +800,8 @@ draw_hud(Player *player)
     glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
             (GLfloat*)&skybox_data.color);
 
-    draw_chunk_gizmo(&mesh_cube_of_happiness);
+    if (state & FLAG_DEBUG)
+        draw_chunk_gizmo(&mesh_cube_of_happiness);
 }
 
 void
@@ -917,8 +914,7 @@ main(int argc, char **argv)
     state =
         FLAG_ACTIVE |
         FLAG_PARSE_CURSOR |
-        FLAG_DEBUG |
-        FLAG_DEBUG_MORE;
+        FLAG_DEBUG;
 
     /* ---- section: set mouse input ---------------------------------------- */
 

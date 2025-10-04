@@ -100,8 +100,8 @@ update_player(Render *render, Player *player)
 void
 update_camera_movement_player(Render *render, Player *player)
 {
-    player->yaw += render->mouse_delta.x;
-    player->pitch += render->mouse_delta.y;
+    player->yaw += render->mouse_delta.x * settings.mouse_sensitivity;
+    player->pitch += render->mouse_delta.y * settings.mouse_sensitivity;
 
     player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
     if (player->yaw < 0.0f)

@@ -173,12 +173,6 @@ update_input(Player *player)
             else btn_func_back();
         }
     }
-
-    /* ---- debug ----------------------------------------------------------- */
-#if !RELEASE_BUILD
-    if (IsKeyPressed(KEY_TAB))
-        state ^= FLAG_SUPER_DEBUG;
-#endif /* RELEASE_BUILD */
 }
 
 void

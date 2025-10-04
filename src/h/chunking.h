@@ -20,7 +20,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        SETTING_RENDER_DISTANCE_DEFAULT
+#define CHUNK_BUF_RADIUS        5
 #define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
@@ -114,9 +114,12 @@ enum ChunkFlags
 
 enum ChunkStates
 {
-    SHIFT_X = 1,
-    SHIFT_Y = 2,
-    SHIFT_Z = 3,
+    SHIFT_PX = 1,
+    SHIFT_NX = 2,
+    SHIFT_PY = 3,
+    SHIFT_NY = 4,
+    SHIFT_PZ = 5,
+    SHIFT_NZ = 6,
 
     COLOR_CHUNK_LOADED  = 0x4c2607ff,
     COLOR_CHUNK_RENDER  = 0x5e7a0aff,
@@ -127,7 +130,8 @@ typedef struct Chunk
     v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
     u32 color;  /* debug color: 0xrrggbbaa */
     u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
-    Mesh mesh;
+    GLuint vao;
+    GLuint vbo;
     u64 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
@@ -160,6 +164,15 @@ index_to_coordinates_v3f32(u32 i, u64 size)
             ((i) / (size)) % (size),
             (i) / ((size) * (size)),
     };
+}
+
+static inline u32
+coordinates_to_index_v3u32(v3u32 coordinates, u64 size)
+{
+    return (u32)
+        ((coordinates.x) +
+         ((coordinates.y) * (size)) +
+         ((coordinates.z) * (size) * (size)));
 }
 
 static inline u8

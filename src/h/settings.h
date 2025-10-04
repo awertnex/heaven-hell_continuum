@@ -11,6 +11,7 @@
 #define SETTING_LERP_SPEED_GLIDE            3.0f
 #define SETTING_LERP_SPEED_RIGID            100.0f
 
+#define SETTING_PLAYER_EYE_HEIGHT           1.6f
 #define SETTING_PLAYER_JUMP_HEIGHT          8.0f
 #define SETTING_PLAYER_SPEED_WALK           3.5f
 #define SETTING_PLAYER_SPEED_FLY            9.0f
@@ -24,8 +25,8 @@
 #define SETTING_FOV_DEFAULT                 70.0f
 #define SETTING_FOV_MIN                     30.0f
 #define SETTING_FOV_MAX                     150.0f
-#define SETTING_MOUSE_SENSITIVITY_DEFAULT   120.0f
-#define SETTING_MOUSE_SENSITIVITY_MIN       0.0f
+#define SETTING_MOUSE_SENSITIVITY_DEFAULT   110.0f
+#define SETTING_MOUSE_SENSITIVITY_MIN       10.0f
 #define SETTING_MOUSE_SENSITIVITY_MAX       200.0f
 
 /* ---- video --------------------------------------------------------------- */
