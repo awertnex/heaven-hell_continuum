@@ -49,7 +49,7 @@ Player lily =
     .yaw = 0.0f,
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
     .sin_yaw = 0.0f, .cos_yaw = 0.0f,
-    .eye_height = 1.5f,
+    .eye_height = SETTING_PLAYER_EYE_HEIGHT,
     .mass = 2.0f,
     .movement_speed = SETTING_PLAYER_SPEED_WALK,
     .container_state = 0,
@@ -114,9 +114,17 @@ ShaderProgram shader_gizmo_chunk =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
+ShaderProgram shader_post_processing =
+{
+    .name = "post_processing",
+    .vertex.file_name = "post_processing.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "post_processing.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
 ShaderProgram shader_voxel =
 {
-    .name = "default",
+    .name = "voxel",
     .vertex.file_name = "voxel.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .geometry.file_name = "voxel.geom",
@@ -134,8 +142,12 @@ struct /* skybox_data */
 
 FBO fbo_skybox;
 FBO fbo_world;
+FBO fbo_world_msaa;
 FBO fbo_hud;
+FBO fbo_hud_msaa;
 FBO fbo_text;
+FBO fbo_text_msaa;
+FBO fbo_post_processing;
 
 Mesh mesh_fbo = {0};
 Mesh mesh_skybox = {0};
@@ -157,16 +169,15 @@ static void callback_key(
 
 /* ---- section: signatures ------------------------------------------------- */
 
-void some_weird_shit(f32 unit_x, f32 unit_y);
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_input(Player *player);
-b8 init_world(str *string);
+b8 init_world(str *name);
 void update_world(Player *player);
-void draw_skybox(Player *player);
-void draw_world(Player *player);
-void draw_hud(Player *player);
-void draw_everything(Player *player);
+void draw_skybox(void);
+void draw_world(void);
+void draw_hud(void);
+void draw_everything(void);
 
 /* ---- section: functions -------------------------------------------------- */
 
@@ -178,10 +189,14 @@ callback_framebuffer_size(
     lily.camera.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
-    realloc_fbo(&render, &fbo_skybox);
-    realloc_fbo(&render, &fbo_world);
-    realloc_fbo(&render, &fbo_hud);
-    realloc_fbo(&render, &fbo_text);
+    realloc_fbo(&render, &fbo_skybox, FALSE, 4);
+    realloc_fbo(&render, &fbo_world, FALSE, 4);
+    realloc_fbo(&render, &fbo_world_msaa, TRUE, 4);
+    realloc_fbo(&render, &fbo_hud, FALSE, 4);
+    realloc_fbo(&render, &fbo_hud_msaa, TRUE, 4);
+    realloc_fbo(&render, &fbo_text, FALSE, 4);
+    realloc_fbo(&render, &fbo_text_msaa, TRUE, 4);
+    realloc_fbo(&render, &fbo_post_processing, FALSE, 4);
 }
 
 static void
@@ -190,48 +205,17 @@ callback_key(
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-
-    if (key == GLFW_KEY_C && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    {
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            show_cursor;
-        else
-            disable_cursor;
-    }
 }
 
 void
-some_weird_shit(f32 unit_x, f32 unit_y)
+generate_standard_meshes(void)
 {
-    for (u32 i = 0; i < 8; ++i)
-    {
-        mesh_cube_of_happiness.vbo_data[i * 3] +=
-            (unit_x * render.frame_delta);
-
-        mesh_cube_of_happiness.vbo_data[(i * 3) + 1] +=
-            (unit_y * render.frame_delta);
-    }
-
-    glBindVertexArray(mesh_cube_of_happiness.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh_cube_of_happiness.vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-            mesh_cube_of_happiness.vbo_len * sizeof(GLfloat),
-            mesh_cube_of_happiness.vbo_data,
-            GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-#if 0 // TODO: maybe remove
-#endif
-
-void
-generate_standard_meshes()
-{
-    const u32 VBO_LEN_SKYBOX        = 24;
-    const u32 EBO_LEN_SKYBOX        = 36;
-    const u32 VBO_LEN_COH           = 24;
-    const u32 EBO_LEN_COH           = 36;
-    const u32 VBO_LEN_GIZMO         = 51;
-    const u32 EBO_LEN_GIZMO         = 90;
+    const u32 VBO_LEN_SKYBOX    = 24;
+    const u32 EBO_LEN_SKYBOX    = 36;
+    const u32 VBO_LEN_COH       = 24;
+    const u32 EBO_LEN_COH       = 36;
+    const u32 VBO_LEN_GIZMO     = 51;
+    const u32 EBO_LEN_GIZMO     = 90;
 
     GLfloat vbo_data_skybox[] =
     {
@@ -406,6 +390,8 @@ bind_shader_uniforms(void)
 
     uniform.gizmo_chunk.render_size =
         glGetUniformLocation(shader_gizmo_chunk.id, "render_size");
+    uniform.gizmo_chunk.render_distance =
+        glGetUniformLocation(shader_gizmo_chunk.id, "render_distance");
     uniform.gizmo_chunk.mat_translation =
         glGetUniformLocation(shader_gizmo_chunk.id, "mat_translation");
     uniform.gizmo_chunk.mat_rotation =
@@ -593,28 +579,34 @@ update_input(Player *player)
             ++player->perspective;
         else player->perspective = 0;
     }
+
+    /* ---- debug ----------------------------------------------------------- */
+#if !RELEASE_BUILD
+    if (is_key_press(KEY_TAB))
+        state ^= FLAG_SUPER_DEBUG;
+#endif /* RELEASE_BUILD */
 }
 
 b8
-init_world(str *string)
+init_world(str *name)
 {
-    if (!strlen(string)) return FALSE;
-    init_world_directory(string);
-    if (init_chunking(&shader_voxel) != 0) return FALSE;
+    if (!strlen(name))
+        return FALSE;
+
+    init_world_directory(name);
+
+    if (init_chunking() != 0)
+        return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 8, 128, 8);
-    lily.state |= FLAG_FLYING;
+    set_player_block(&lily, 32700, 270, 2);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
-        (v3i32){
-            (i32)lily.target.x,
-            (i32)lily.target.y,
-            (i32)lily.target.z,
+        (v3i64){
+            (i64)lily.target.x,
+            (i64)lily.target.y,
+            (i64)lily.target.z,
         };
-
-    update_chunking(lily.delta_chunk);
-    //shift_chunk_tab(lily.chunk, &lily.delta_chunk);
 
     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
     disable_cursor;
@@ -625,7 +617,7 @@ init_world(str *string)
 void
 update_world(Player *player)
 {
-    game_tick = 6000 + (floor(render.frame_start * 20)) -
+    game_tick = 6000 + (u64)(render.frame_start * 20) -
         (SETTING_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SETTING_DAY_TICKS_MAX)
@@ -653,11 +645,11 @@ update_world(Player *player)
     }
 
     /* ---- player targeting ------------------------------------------------ */
-    if (is_in_volume_i32(
+    if (is_in_volume_i64(
                 lily.delta_target,
-                (v3i32){
+                (v3i64){
                 -WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
-                (v3i32){
+                (v3i64){
                 WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
         state |= FLAG_PARSE_TARGET;
     else state &= ~FLAG_PARSE_TARGET;
@@ -670,7 +662,7 @@ update_world(Player *player)
 }
 
 void
-draw_skybox(Player *player)
+draw_skybox(void)
 {
     skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
     skybox_data.sun_rotation =
@@ -716,7 +708,7 @@ draw_skybox(Player *player)
 
     glUseProgram(shader_skybox.id);
     glUniform3fv(uniform.skybox.camera_position, 1,
-            (GLfloat*)&player->camera.pos);
+            (GLfloat*)&lily.camera.pos);
 
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
             (GLfloat*)&projection.rotation);
@@ -737,7 +729,7 @@ draw_skybox(Player *player)
 }
 
 void
-draw_world(Player *player)
+draw_world(void)
 {
     glUseProgram(shader_voxel.id);
 
@@ -745,7 +737,7 @@ draw_world(Player *player)
             (GLfloat*)&projection.perspective);
 
     glUniform3fv(uniform.voxel.camera_position, 1,
-            (GLfloat*)&player->camera.pos);
+            (GLfloat*)&lily.camera.pos);
 
     glUniform3fv(uniform.voxel.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
@@ -757,7 +749,7 @@ draw_world(Player *player)
 }
 
 void
-draw_hud(Player *player)
+draw_hud(void)
 {
     glUseProgram(shader_gizmo.id);
 
@@ -773,11 +765,14 @@ draw_hud(Player *player)
     glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
             (GLfloat*)&projection.projection);
 
-    draw_mesh(&mesh_gizmo);
+    if (state & FLAG_DEBUG)
+        draw_mesh(&mesh_gizmo);
 
+    glClear(GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader_gizmo_chunk.id);
 
     glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render.size);
+    glUniform1i(uniform.gizmo_chunk.render_distance, settings.render_distance);
 
     glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation, 1, GL_FALSE,
             (GLfloat*)&projection.target);
@@ -804,72 +799,67 @@ draw_hud(Player *player)
     glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
             (GLfloat*)&skybox_data.color);
 
-    draw_chunk_gizmo(&mesh_cube_of_happiness);
+    if (state & FLAG_DEBUG)
+        draw_chunk_gizmo(&mesh_cube_of_happiness);
 }
 
 void
-draw_everything(Player *player)
+draw_everything(void)
 {
+    glEnable(GL_DEPTH_TEST);
+
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    draw_skybox(player);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo);
+    draw_skybox();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_world(player);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo);
+    draw_world();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
+    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_hud(player);
+    draw_hud();
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
+    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     if (state & FLAG_DEBUG)
-            draw_debug_info(player,
+            draw_debug_info(&lily,
                     skybox_data.time,
                     skybox_data.color,
                     skybox_data.sun_rotation,
                     &render, &shader_text, &fbo_text);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_post_processing.fbo);
     glUseProgram(shader_fbo.id);
     glBindVertexArray(mesh_fbo.vao);
-    glDisable(GL_DEPTH_TEST);
     glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
     if (state & FLAG_DEBUG)
     {
         glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
-    glBindVertexArray(0);
-}
-
-/* ---- section: testing ---------------------------------------------------- */
-
-#if 0
-void
-render_font_atlas_example(void)
-{
-    glUseProgram(shader_text.id);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(shader_post_processing.id);
     glBindVertexArray(mesh_fbo.vao);
-    glBindTexture(GL_TEXTURE_2D, font.id);
+    glBindTexture(GL_TEXTURE_2D, fbo_post_processing.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    draw_text(&render, &font, "FPS:", FONT_SIZE_DEFAULT,
-            (v3f32){0.0f, 0.0f, 0.0f}, 0xffffffff, 0, 0);
-
-    draw_text(&render, &font, "XYZ:", FONT_SIZE_DEFAULT,
-            (v3f32){0.0f, FONT_SIZE_DEFAULT, 0.0f}, 0xffffffff, 0, 0);
-
-    draw_text(&render, &font, "Lgbubu!labubu!", FONT_SIZE_DEFAULT,
-            (v3f32){0.0f, FONT_SIZE_DEFAULT * 2.0f, 0.0f}, 0xffffffff, 0, 0);
-
+    glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-#endif
 
 int
 main(int argc, char **argv)
@@ -896,14 +886,19 @@ main(int argc, char **argv)
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
 
-    if (MODE_DEBUG)
-        LOGDEBUG("%s\n", "Debugging Enabled");
+    if (MODE_INTERNAL_DEBUG)
+        LOGWARNING("%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
+    else LOGDEBUG("%s\n", "Debugging Enabled");
+
+    if (MODE_INTERNAL_COLLIDE)
+        LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
+
 
     if (init_paths() != 0 ||
             create_instance("new_instance") != 0)
         return -1;
 
-    if (init_glfw() != 0 ||
+    if (init_glfw(FALSE) != 0 ||
             init_window(&render) != 0 ||
             init_glad() != 0)
     {
@@ -917,8 +912,7 @@ main(int argc, char **argv)
     state =
         FLAG_ACTIVE |
         FLAG_PARSE_CURSOR |
-        FLAG_DEBUG |
-        FLAG_DEBUG_MORE;
+        FLAG_DEBUG;
 
     /* ---- section: set mouse input ---------------------------------------- */
 
@@ -963,12 +957,27 @@ main(int argc, char **argv)
                 &shader_skybox) != 0 ||
 
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_voxel) != 0 ||
+                &shader_post_processing) != 0 ||
 
-            init_fbo(&render, &fbo_skybox, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_world, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_hud, &mesh_fbo, 0) != 0 ||
-            init_fbo(&render, &fbo_text, &mesh_fbo, 0) != 0)
+            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
+                    &shader_voxel) != 0 ||
+
+            init_fbo(&render, &fbo_skybox,          &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world,           &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world_msaa,      &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud,             &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud_msaa,        &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text,            &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text_msaa,       &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_post_processing, &mesh_fbo,
+                    FALSE, 4, FALSE) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
@@ -977,8 +986,8 @@ main(int argc, char **argv)
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
-            GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_MULTISAMPLE);
 
     if (init_gui() != 0 ||
             init_text() != 0)
@@ -1023,7 +1032,7 @@ section_main: /* ---- section: main loop ------------------------------------ */
         update_mouse_movement(&render);
         update_render_settings(&render);
         update_world(&lily);
-        draw_everything(&lily);
+        draw_everything();
 
         glfwSwapBuffers(render.window);
         glfwPollEvents();
@@ -1044,10 +1053,11 @@ cleanup: /* ----------------------------------------------------------------- */
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
-    free_fbo(&fbo_skybox.fbo, &fbo_skybox.color_buf, &fbo_skybox.rbo);
-    free_fbo(&fbo_world.fbo, &fbo_world.color_buf, &fbo_world.rbo);
-    free_fbo(&fbo_hud.fbo, &fbo_hud.color_buf, &fbo_hud.rbo);
-    free_fbo(&fbo_text.fbo, &fbo_text.color_buf, &fbo_text.rbo);
+    free_fbo(&fbo_skybox);
+    free_fbo(&fbo_world);
+    free_fbo(&fbo_hud);
+    free_fbo(&fbo_text);
+    free_fbo(&fbo_post_processing);
     free_text();
     glDeleteProgram(shader_fbo.id);
     glDeleteProgram(shader_default.id);
@@ -1056,6 +1066,7 @@ cleanup: /* ----------------------------------------------------------------- */
     glDeleteProgram(shader_gizmo.id);
     glDeleteProgram(shader_gizmo_chunk.id);
     glDeleteProgram(shader_voxel.id);
+    glDeleteProgram(shader_post_processing.id);
     glfwDestroyWindow(render.window);
     glfwTerminate();
     return 0;

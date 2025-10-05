@@ -15,4 +15,3 @@ void main()
         mat_rotation *
         vec4(a_pos, 1.0);
 }
-

@@ -71,6 +71,12 @@ is_in_range_f32(f32 pos, f32 start, f32 end)
 }
 
 b8
+is_in_range_i64(i64 pos, i64 start, i64 end)
+{
+    return ((pos - start) >= 0) & ((end - pos) >= 0);
+}
+
+b8
 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end)
 {
     return
@@ -102,6 +108,15 @@ is_in_volume_f32(v3f32 pos, v3f32 start, v3f32 end)
         ((pos.x - start.x) >= 0.0f) & ((end.x - pos.x) >= 0.0f) &
         ((pos.y - start.y) >= 0.0f) & ((end.y - pos.y) >= 0.0f) &
         ((pos.z - start.z) >= 0.0f) & ((end.z - pos.z) >= 0.0f);
+}
+
+b8
+is_in_volume_i64(v3i64 pos, v3i64 start, v3i64 end)
+{
+    return
+        ((pos.x - start.x) >= 0) & ((end.x - pos.x) >= 0) &
+        ((pos.y - start.y) >= 0) & ((end.y - pos.y) >= 0) &
+        ((pos.z - start.z) >= 0) & ((end.z - pos.z) >= 0);
 }
 
 m4f32

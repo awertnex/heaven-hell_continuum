@@ -10,4 +10,3 @@ void main()
     gl_Position = vec4(a_pos, 0.0, 1.0);
     vs_tex_coords = a_tex_coords;
 }
-

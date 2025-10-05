@@ -1,17 +1,22 @@
 #ifndef GAME_H
 #define GAME_H
 
+#define GAME_VERSION_STABLE "-stable"
+#define GAME_VERSION_BETA   "-beta"
+#define GAME_VERSION_ALPHA  "-alpha"
+#define GAME_VERSION_DEV    "-dev"
+
 #define GAME_AUTHOR         "Author: Lily Awertnex"
 #define GAME_NAME           "Heaven-Hell Continuum"
-#define GAME_VERSION        "0.2.0-alpha"
+#define GAME_VERSION        "0.2.0"GAME_VERSION_BETA
 
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define MODE_DEBUG          1
-#define MODE_COLLIDE        0
+#define MODE_INTERNAL_DEBUG     1
+#define MODE_INTERNAL_COLLIDE   0
 
 typedef struct Uniform
 {
@@ -45,6 +50,7 @@ typedef struct Uniform
     struct /* gizmo_chunk */
     {
         GLint render_size;
+        GLint render_distance;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;

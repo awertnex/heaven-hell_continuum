@@ -9,4 +9,3 @@ void main()
 {
     color = text_color * texture(texture_font_atlas, tex_coords).r;
 }
-

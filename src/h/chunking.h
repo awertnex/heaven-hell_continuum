@@ -9,6 +9,7 @@
 /* ---- section: world stuff ------------------------------------------------ */
 
 #define CHUNK_DIAMETER  16
+#define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
 #define WORLD_SEA_LEVEL         62
@@ -20,17 +21,16 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        SETTING_RENDER_DISTANCE_DEFAULT
-#define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
+#define CHUNK_BUF_RADIUS        5
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
     (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 
 #define CHUNK_TAB_CENTER \
-    (CHUNK_BUF_RADIUS_ODD + \
-     (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER) + \
-     (CHUNK_BUF_RADIUS_ODD * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
+    (CHUNK_BUF_RADIUS + \
+     (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
+     (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
 /* ---- section: general ---------------------------------------------------- */
 
@@ -104,19 +104,23 @@ enum BlockFlags
 
 enum ChunkFlags
 {
-    FLAG_CHUNK_LOADED = 0x01,
-    FLAG_CHUNK_RENDER = 0x02,
-    FLAG_CHUNK_DIRTY =  0x04,
+    FLAG_CHUNK_LOADED       = 0x01,
+    FLAG_CHUNK_GENERATED    = 0x02,
+    FLAG_CHUNK_RENDER       = 0x04,
+    FLAG_CHUNK_DIRTY        = 0x08,
 
     /* chunk marking for chunk_tab shifting logic */
-    FLAG_CHUNK_EDGE =   0x08,
+    FLAG_CHUNK_EDGE =   0x10,
 }; /* ChunkFlags */
 
 enum ChunkStates
 {
-    SHIFT_X = 1,
-    SHIFT_Y = 2,
-    SHIFT_Z = 3,
+    SHIFT_PX = 1,
+    SHIFT_NX = 2,
+    SHIFT_PY = 3,
+    SHIFT_NY = 4,
+    SHIFT_PZ = 5,
+    SHIFT_NZ = 6,
 
     COLOR_CHUNK_LOADED  = 0x4c2607ff,
     COLOR_CHUNK_RENDER  = 0x5e7a0aff,
@@ -127,7 +131,8 @@ typedef struct Chunk
     v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
     u32 color;  /* debug color: 0xrrggbbaa */
     u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
-    Mesh mesh;
+    GLuint vao;
+    GLuint vbo;
     u64 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
@@ -160,6 +165,15 @@ index_to_coordinates_v3f32(u32 i, u64 size)
             ((i) / (size)) % (size),
             (i) / ((size) * (size)),
     };
+}
+
+static inline u32
+coordinates_to_index_v3u32(v3u32 coordinates, u64 size)
+{
+    return (u32)
+        ((coordinates.x) +
+         ((coordinates.y) * (size)) +
+         ((coordinates.z) * (size) * (size)));
 }
 
 static inline u8
@@ -200,7 +214,7 @@ get_block_data(u32 i)
 
 /* ---- section: signatures ------------------------------------------------- */
 
-u8 init_chunking(ShaderProgram *program);
+u8 init_chunking(void);
 void update_chunking(v3i16 player_delta_chunk);
 void free_chunking();
 
@@ -211,7 +225,7 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
-u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
+u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 void draw_chunk_tab(Uniform *uniform);
 void draw_chunk_gizmo(Mesh *mesh);
 #ifdef FUCK // TODO: undef FUCK

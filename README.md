@@ -11,8 +11,8 @@
 
 Format | Linux (latest) | Windows (latest)
 --- | --- | ---
-tar | [v0.2.0-alpha_linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.tar.gz)
-zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_linux-x86_64.zip) | [v0.2.0-alpha_win64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-alpha/heaven-hell_continuum_v0.2.0-alpha_win64.zip)
+tar | [v0.2.0-beta-linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-linux-x86_64.tar.gz)
+zip | [v0.2.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-linux-x86_64.zip) | not yet available
 [All Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
 
 
@@ -20,7 +20,7 @@ zip | [v0.2.0-alpha_linux-x86_64.zip](https://github.com/awertnex/heaven-hell_co
 
 - [glfw v3.4](https://github.com/glfw/glfw/releases) (headers modified)
 - [glad v0.1.36](https://github.com/dav1dde/glad-web) (header modified)
-- [stb_image_write.h v1.26](https://github.com/nothings/stb/blob/master/stb_image_write.h) (modified)
+- [stb_image_write.h v1.26 (unused)](https://github.com/nothings/stb/blob/master/stb_image_write.h) (modified)
 - [stb_truetype.h v1.26](https://github.com/nothings/stb/blob/master/stb_truetype.h) (modified)
 - [dejavu-fonts v2.37](https://github.com/dejavu-fonts/dejavu-fonts) (modified)
     - dejavu_sans_ansi.ttf (subset: U+0000-00ff)
@@ -60,19 +60,19 @@ cd heaven-hell_continuum/
 ### additional build commands:
 
 - `./build help`: show help
-- `./build engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine`
-- `./build launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher`
+- (I broke this command) `./build engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine`
+- (I broke this command) `./build launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher`
     - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances/'
 - `./build list`: list all available options and tests
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to list
 - `./build show`: show build command
 - `./build raw`: show build command, raw
-- `./build test [n]`: build test [n]
+- (I broke this command) `./build test [n]`: build test [n]
     - this command searches the directory 'src/tests/' and loads all `.c` file names into an array to execute by index [n]
 
 - - -
 
-### for windows (using any C compiler, a suggestion is "gcc" from "mingw"):
+### for windows (using any C compiler, a suggestion is "gcc" from "mingw"): (it is very broken)
 
 if you don't already have a C compiler:
 - [w64devkit v2.4.0](https://github.com/skeeto/w64devkit) (includes gcc toolchain)
@@ -94,14 +94,14 @@ cd heaven-hell_continuum
 ### additional build commands:
 
 - `./build.exe help`: show help
-- `./build.exe engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine.exe`
-- `./build.exe launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher.exe`
+- (I broke this command) `./build.exe engine`: build engine, and run with `./Heaven-Hell\ Continuum/engine.exe`
+- (I broke this command) `./build.exe launcher`: build launcher (for instance management), run with `./Heaven-Hell\ Continuum/launcher.exe`
     - all 'Heaven-Hell Continuum' instances will be stored in 'Heaven-Hell Continuum/instances/'
 - `./build.exe list`: list all available options and tests
     - this command searches the folder './src/tests' and loads all `.c` file names into an array to list
 - `./build.exe show`: show build command
 - `./build.exe raw`: show build command, raw
-- `./build.exe test [n]`: build test [n]
+- (I broke this command) `./build.exe test [n]`: build test [n]
     - this command searches the folder './src/tests' and loads all `.c` file names into an array to execute by index [n]
 
 - - -
@@ -113,7 +113,7 @@ gcc.exe build.c -o build.exe
 ```
 
 ## Contributing:
-I'm currently not accepting contributions at this early stage, maybe when I have something more stable and actually usable
+currently not accepting contributions since the project is in an early stage, maybe when I have something stable and actually usable
 
 ## Contributors:
 - [sofia](https://github.com/EdgySofia666): alpha-testing on windows

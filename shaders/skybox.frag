@@ -8,4 +8,3 @@ void main()
 {
     color = vec4(sky_color, 1.0);
 }
-

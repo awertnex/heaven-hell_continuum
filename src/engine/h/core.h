@@ -1,9 +1,14 @@
 #ifndef ENGINE_CORE_H
 #define ENGINE_CORE_H
 
-#define ENGINE_AUTHOR       "Lily Awertnex"
-#define ENGINE_NAME         "Fossil Engine"
-#define ENGINE_VERSION      "0.1.0"
+#define ENGINE_VERSION_STABLE   "-stable"
+#define ENGINE_VERSION_BETA     "-beta"
+#define ENGINE_VERSION_ALPHA    "-alpha"
+#define ENGINE_VERSION_DEV      "-dev"
+
+#define ENGINE_AUTHOR           "Lily Awertnex"
+#define ENGINE_NAME             "Fossil Engine"
+#define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
 
 #include "../../../include/glad/glad_modified.h"
 #define GLFW_INCLUDE_NONE
@@ -301,6 +306,15 @@ typedef struct Font
 
 } Font;
 
+enum TextAlignment
+{
+    TEXT_ALIGN_LEFT = 0,
+    TEXT_ALIGN_CENTER = 1,
+    TEXT_ALIGN_RIGHT = 2,
+    TEXT_ALIGN_TOP = 0,
+    TEXT_ALIGN_BOTTOM = 2,
+}; /* TextAlignment */
+
 /* ---- section: declarations ----------------------------------------------- */
 
 extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
@@ -308,8 +322,10 @@ extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/* return non-zero on failure */
-int init_glfw(void);
+/* multisample = turn on multisampling;
+ *
+ * return non-zero on failure */
+int init_glfw(b8 multisample);
 
 /* return non-zero on failure */
 int init_window(Render *render);
@@ -321,11 +337,12 @@ int init_shader(const str *shaders_dir, Shader *shader);
 
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
-int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo, b8 flip_vertical);
+int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
+        b8 multisample, u32 samples, b8 flip_vertical);
 
-int realloc_fbo(Render *render, FBO *fbo);
+int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
-void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
+void free_fbo(FBO *fbo);
 
 /* return FALSE (0) on failure */
 b8 generate_texture(GLuint *id, const GLint format,
@@ -407,6 +424,11 @@ void start_text(
 
 /* push string's glyph metrics, position
  * and alignment to render buffer.
+ *
+ * align_x = TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT,
+ * align_y = TEXT_ALIGN_TOP, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM,
+ * default alignment (e.g. (0, 0)) top left,
+ * enum: TextAlignment.
  *
  * can be called multiple times within a text rendering
  * batch, chained with 'render_text()' */

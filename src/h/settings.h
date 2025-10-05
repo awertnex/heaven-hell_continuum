@@ -8,15 +8,16 @@
 #define SETTING_REACH_DISTANCE_MAX          5.0f
 #define SETTING_DAY_TICKS_MAX               24000
 #define SETTING_LERP_SPEED_DEFAULT          20.0f
-#define SETTING_LERP_SPEED_GLIDE            3.0f
+#define SETTING_LERP_SPEED_GLIDE            2.5f
 #define SETTING_LERP_SPEED_RIGID            100.0f
 
+#define SETTING_PLAYER_EYE_HEIGHT           1.6f
 #define SETTING_PLAYER_JUMP_HEIGHT          8.0f
-#define SETTING_PLAYER_SPEED_WALK           3.5f
+#define SETTING_PLAYER_SPEED_WALK           4.0f
 #define SETTING_PLAYER_SPEED_FLY            9.0f
 #define SETTING_PLAYER_SPEED_FLY_FAST       40.0f
 #define SETTING_PLAYER_SPEED_SNEAK          1.5f
-#define SETTING_PLAYER_SPEED_SPRINT         7.0f
+#define SETTING_PLAYER_SPEED_SPRINT         8.0f
 #define SETTING_PLAYER_SPEED_MAX            100.0f
 
 
@@ -24,8 +25,8 @@
 #define SETTING_FOV_DEFAULT                 70.0f
 #define SETTING_FOV_MIN                     30.0f
 #define SETTING_FOV_MAX                     150.0f
-#define SETTING_MOUSE_SENSITIVITY_DEFAULT   120.0f
-#define SETTING_MOUSE_SENSITIVITY_MIN       0.0f
+#define SETTING_MOUSE_SENSITIVITY_DEFAULT   110.0f
+#define SETTING_MOUSE_SENSITIVITY_MIN       10.0f
 #define SETTING_MOUSE_SENSITIVITY_MAX       200.0f
 
 /* ---- video --------------------------------------------------------------- */

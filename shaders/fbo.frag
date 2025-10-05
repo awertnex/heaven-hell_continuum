@@ -8,4 +8,3 @@ void main()
 { 
     color = texture(texture_screen, tex_coords);
 }
-

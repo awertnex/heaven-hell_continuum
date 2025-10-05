@@ -8,10 +8,10 @@
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
-    v3f32 pos;                      /* player processed raw_pos */
-    v3f32 raw_pos;                  /* player current coordinates in world */
+    v3f64 pos;                      /* player processed raw_pos */
+    v3f64 raw_pos;                  /* player current coordinates in world */
     v3f32 pos_lerp_speed;
-    v3f32 target;                   /* player arm (or whatever) */
+    v3f64 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
@@ -31,14 +31,15 @@ typedef struct Player
     Camera camera;
     f32 camera_distance;            /* for camera collision detection */
 
-    /* TODO: do player overflow */
-    u8 overflow;                    /* player at world edge, enum: PlayerFlags */
-    v3i32 delta_pos;                /* for collision tunneling prevention */
-    v3i32 delta_target;             /* player arm snapped to grid */
+    /* player at world edge, enum: PlayerFlags */
+    u8 overflow;
+
+    v3i64 delta_pos;                /* for collision tunneling prevention */
+    v3i64 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
     v3i16 delta_chunk;              /* previous chunk player was in */
 
-    v3i32 spawn_point;
+    v3i64 spawn_point;
 } Player;
 
 /* ---- section: flags ------------------------------------------------------ */
@@ -75,9 +76,12 @@ enum PlayerFlags
     FLAG_OVERFLOW_X =               0x0001,
     FLAG_OVERFLOW_Y =               0x0002,
     FLAG_OVERFLOW_Z =               0x0004,
-    FLAG_OVERFLOW_DIRECTION_X =     0x0008,
-    FLAG_OVERFLOW_DIRECTION_Y =     0x0010,
-    FLAG_OVERFLOW_DIRECTION_Z =     0x0020,
+
+    /* positive overflow direction flags,
+     * negative is the default (0) */
+    FLAG_OVERFLOW_PX =              0x0008,
+    FLAG_OVERFLOW_PY =              0x0010,
+    FLAG_OVERFLOW_PZ =              0x0020,
 }; /* PlayerFlags */
 
 enum ContainerStates
@@ -117,19 +121,21 @@ extern Player lily;
 
 void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
-void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
+void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
 
 static inline void
-set_player_pos(Player *player, f32 x, f32 y, f32 z)
+set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
-    player->raw_pos = (v3f32){x, y, z};
+    player->raw_pos = (v3f64){x, y, z};
+    player->pos = player->raw_pos;
 }
 
 static inline void
 set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
     player->raw_pos =
-        (v3f32){(f32)(x) + 0.5f, (f32)(y) + 0.5f, (f32)(z) + 0.5f};
+        (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
+    player->pos = player->raw_pos;
 }
 
 void player_kill(Player *player);
@@ -137,7 +143,8 @@ void player_respawn(Player *player);
 b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
-f64 get_time_ms();
+void wrap_coordinates(Player *player);
+f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);
 
 #ifdef FUCK // TODO: undef FUCK
