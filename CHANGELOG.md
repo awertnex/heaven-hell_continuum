@@ -1,6 +1,6 @@
 # changelog
 
-## v0.2.0-alpha (DD MMM 2025)
+## v0.2.0-beta (05 Oct 2025)
 
 #### changes
 - added skybox colors for day/night cycle
@@ -58,6 +58,19 @@
 - optimized and expanded input handling
 - fixed gravity's framerate-dependence
 - added easy motion
+- added text newline wrapping
+- added text alignment support for all 6 modes
+- added anti-aliasing
+- recovered chunk drawing and chunk generation
+- added chunk gizmo
+- added debug info for opengl version and other general info
+
+### bugs
+- chunk rendering draws chunk boundary faces for the furthest chunks at chunk-shift direction
+- chunk gizmo size is screen size dependent
+- gizmo size is screen size dependent
+- geometry shaders' precision errors show up sometimes in DEBUG_MORE mode (semi-transparent blocks)
+- setting render distance to 0 segfaults (ofc, but I'm not gonna patch that)
 
 - - -
 ## v0.1.4-alpha (08 Apr 2025)
