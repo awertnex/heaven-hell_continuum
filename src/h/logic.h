@@ -127,6 +127,7 @@ static inline void
 set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
     player->raw_pos = (v3f64){x, y, z};
+    player->pos = player->raw_pos;
 }
 
 static inline void
@@ -134,6 +135,7 @@ set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
     player->raw_pos =
         (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
+    player->pos = player->raw_pos;
 }
 
 void player_kill(Player *player);

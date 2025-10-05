@@ -173,35 +173,29 @@ draw_debug_info(Player *player,
     render_text(0x995429ff);
 
     snprintf(string, 511,
-            "                  %s \n"
-            "                  %s \n"
-            "                  %s \n",
-            (player->overflow & FLAG_OVERFLOW_X) ?
-            (player->overflow & FLAG_OVERFLOW_PX) ?
-            "        " : "NEGATIVE" : "    ",
-            (player->overflow & FLAG_OVERFLOW_Y) ?
-            (player->overflow & FLAG_OVERFLOW_PY) ?
-            "        " : "NEGATIVE" : "    ",
-            (player->overflow & FLAG_OVERFLOW_Z) ?
-            (player->overflow & FLAG_OVERFLOW_PZ) ?
-            "        " : "NEGATIVE" : "    ");
+            "                   %s\n"
+            "                   %s\n"
+            "                   %s\n",
+            (player->overflow & FLAG_OVERFLOW_X) &&
+            !(player->overflow & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
+            (player->overflow & FLAG_OVERFLOW_Y) &&
+            !(player->overflow & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
+            (player->overflow & FLAG_OVERFLOW_Z) &&
+            !(player->overflow & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : "");
     push_text(string,
         (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
     render_text(0xec6051ff);
 
     snprintf(string, 511,
-            "                  %s \n"
-            "                  %s \n"
-            "                  %s \n",
-            (player->overflow & FLAG_OVERFLOW_X) ?
-            (player->overflow & FLAG_OVERFLOW_PX) ?
-            "POSITIVE" : "        " : "    ",
-            (player->overflow & FLAG_OVERFLOW_Y) ?
-            (player->overflow & FLAG_OVERFLOW_PY) ?
-            "POSITIVE" : "        " : "    ",
-            (player->overflow & FLAG_OVERFLOW_Z) ?
-            (player->overflow & FLAG_OVERFLOW_PZ) ?
-            "POSITIVE" : "        " : "    ");
+            "                   %s\n"
+            "                   %s\n"
+            "                   %s\n",
+            (player->overflow & FLAG_OVERFLOW_X) &&
+            (player->overflow & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
+            (player->overflow & FLAG_OVERFLOW_Y) &&
+            (player->overflow & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
+            (player->overflow & FLAG_OVERFLOW_Z) &&
+            (player->overflow & FLAG_OVERFLOW_PZ) ? "POSITIVE" : "");
     push_text(string,
         (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
     render_text(0x79ec50ff);

@@ -1024,6 +1024,15 @@ push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         g = &text_info.glyph[text[i]];
         if (text[i] == '\n')
         {
+            if (align_x == TEXT_ALIGN_CENTER)
+                for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
+                    mesh_text.vbo_data[(text_info.cursor - j) * 4] -=
+                        advance / 2.0f;
+            else if (align_x == TEXT_ALIGN_RIGHT)
+                for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
+                    mesh_text.vbo_data[(text_info.cursor - j) * 4] -=
+                        advance;
+
             advance = 0.0f;
             text_info.line += (line_height * ndc_size.y);
             continue;
