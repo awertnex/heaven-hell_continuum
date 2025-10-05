@@ -211,8 +211,7 @@ typedef struct FBO
 {
     GLuint fbo;
     GLuint color_buf;
-    GLuint fbo_msaa;
-    GLuint color_buf_msaa;
+    GLuint rbo;
 } FBO;
 
 typedef struct Camera

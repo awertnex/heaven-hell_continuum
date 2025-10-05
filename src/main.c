@@ -142,8 +142,11 @@ struct /* skybox_data */
 
 FBO fbo_skybox;
 FBO fbo_world;
+FBO fbo_world_msaa;
 FBO fbo_hud;
+FBO fbo_hud_msaa;
 FBO fbo_text;
+FBO fbo_text_msaa;
 FBO fbo_post_processing;
 
 Mesh mesh_fbo = {0};
@@ -187,9 +190,12 @@ callback_framebuffer_size(
     glViewport(0, 0, render.size.x, render.size.y);
 
     realloc_fbo(&render, &fbo_skybox, FALSE, 4);
-    realloc_fbo(&render, &fbo_world, TRUE, 4);
-    realloc_fbo(&render, &fbo_hud, TRUE, 4);
-    realloc_fbo(&render, &fbo_text, TRUE, 4);
+    realloc_fbo(&render, &fbo_world, FALSE, 4);
+    realloc_fbo(&render, &fbo_world_msaa, TRUE, 4);
+    realloc_fbo(&render, &fbo_hud, FALSE, 4);
+    realloc_fbo(&render, &fbo_hud_msaa, TRUE, 4);
+    realloc_fbo(&render, &fbo_text, FALSE, 4);
+    realloc_fbo(&render, &fbo_text_msaa, TRUE, 4);
     realloc_fbo(&render, &fbo_post_processing, FALSE, 4);
 }
 
@@ -806,18 +812,18 @@ draw_everything(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_skybox();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world.fbo_msaa);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_world();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world.fbo_msaa);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud.fbo_msaa);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_hud();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud.fbo_msaa);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -831,7 +837,6 @@ draw_everything(void)
 
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_post_processing.fbo);
-
     glUseProgram(shader_fbo.id);
     glBindVertexArray(mesh_fbo.vao);
     glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
@@ -881,8 +886,13 @@ main(int argc, char **argv)
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
 
-    if (MODE_DEBUG)
-        LOGDEBUG("%s\n", "Debugging Enabled");
+    if (MODE_INTERNAL_DEBUG)
+        LOGWARNING("%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
+    else LOGDEBUG("%s\n", "Debugging Enabled");
+
+    if (MODE_INTERNAL_COLLIDE)
+        LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
+
 
     if (init_paths() != 0 ||
             create_instance("new_instance") != 0)
@@ -952,23 +962,32 @@ main(int argc, char **argv)
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
                     &shader_voxel) != 0 ||
 
-            init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_world, &mesh_fbo, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_hud, &mesh_fbo, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_text, &mesh_fbo, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_post_processing, &mesh_fbo, FALSE,
-                    4, FALSE) != 0)
+            init_fbo(&render, &fbo_skybox,          &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world,           &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world_msaa,      &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud,             &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud_msaa,        &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text,            &mesh_fbo,
+                    FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text_msaa,       &mesh_fbo,
+                    TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_post_processing, &mesh_fbo,
+                    FALSE, 4, FALSE) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glEnable(GL_MULTISAMPLE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA,
-            GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_MULTISAMPLE);
 
     if (init_gui() != 0 ||
             init_text() != 0)

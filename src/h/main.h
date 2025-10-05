@@ -10,8 +10,8 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define MODE_DEBUG          1
-#define MODE_COLLIDE        0
+#define MODE_INTERNAL_DEBUG     1
+#define MODE_INTERNAL_COLLIDE   0
 
 typedef struct Uniform
 {
