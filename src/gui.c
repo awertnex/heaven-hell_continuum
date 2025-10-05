@@ -114,8 +114,7 @@ draw_debug_info(Player *player,
         Render *render, ShaderProgram *program, FBO *fbo)
 {
     static str string[512] = {0};
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
-            render, program, fbo, 1);
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold, render, program, fbo, 1);
 
     snprintf(string, 511,
             "FPS               [%d]\n"
@@ -133,26 +132,23 @@ draw_debug_info(Player *player,
             "PLAYER BLOCK      [%d %d %d]\n"
             "PLAYER CHUNK      [%d %d %d]\n"
             "CURRENT CHUNK     [%d %d %d]\n"
-            "PITCH[%.2f] YAW   [%.2f]\n",
+            "PLAYER PITCH      [%.2f]\n"
+            "PLAYER YAW        [%.2f]\n",
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
             (i32)floorf(player->pos.x),
             (i32)floorf(player->pos.y),
             (i32)floorf(player->pos.z),
-
             (chunk_tab[CHUNK_TAB_CENTER]) ?
             chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
-
             (chunk_tab[CHUNK_TAB_CENTER]) ?
             chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
-
             (chunk_tab[CHUNK_TAB_CENTER]) ?
             chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
-
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    push_text(string,
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)},
+            0, 0);
     render_text(0xffffffff);
 
     snprintf(string, 511,
@@ -168,8 +164,8 @@ draw_debug_info(Player *player,
             (player->overflow & FLAG_OVERFLOW_Z) ?
             (player->overflow & FLAG_OVERFLOW_PZ) ?
             "        " : "        " : "NONE");
-    push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
+        0, 0);
     render_text(0x995429ff);
 
     snprintf(string, 511,
@@ -182,8 +178,8 @@ draw_debug_info(Player *player,
             !(player->overflow & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
             (player->overflow & FLAG_OVERFLOW_Z) &&
             !(player->overflow & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : "");
-    push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
+            0, 0);
     render_text(0xec6051ff);
 
     snprintf(string, 511,
@@ -196,19 +192,18 @@ draw_debug_info(Player *player,
             (player->overflow & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
             (player->overflow & FLAG_OVERFLOW_Z) &&
             (player->overflow & FLAG_OVERFLOW_PZ) ? "POSITIVE" : "");
-    push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
+        0, 0);
     render_text(0x79ec50ff);
 
     snprintf(string, 511,
-            "MOUSE XY: %.2f %.2f\n"
-            "DELTA XY: %.2f %.2f\n"
-            "RENDER RATIO: %.4f\n"
-            "TICKS: %"PRId64" DAYS: %"PRId64"\n"
-            "SKYBOX TIME: %.2f\n"
-            "Lgbubu!labubu!\n"
-            "SKYBOX RGB: %.2f %.2f %.2f\n"
-            "SUN ANGLE: %.2f %.2f %.2f\n",
+            "MOUSE XY          [%.2f %.2f]\n"
+            "DELTA XY          [%.2f %.2f]\n"
+            "RENDER RATIO      [%.4f]\n"
+            "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
+            "SKYBOX TIME       [%.2f]\n"
+            "SKYBOX RGB        [%.2f %.2f %.2f]\n"
+            "SUN ANGLE         [%.2f %.2f %.2f]\n",
             render->mouse_position.x, render->mouse_position.y,
             render->mouse_delta.x, render->mouse_delta.y,
             (f32)render->size.x / render->size.y,
@@ -216,8 +211,8 @@ draw_debug_info(Player *player,
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    push_text(string,
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 12.0f)}, 0, 0);
+    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)},
+            0, 0);
     render_text(0x3f6f9fff);
 
     snprintf(string, 511,
@@ -234,16 +229,9 @@ draw_debug_info(Player *player,
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono,
-            render, program, fbo, 0);
-    push_text(string,
-            (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7.0f)},
-            0, 0);
-    render_text(0x3f9f3fff);
-
-    push_text(string,
-            (v2f32){render->size.x / 2.0f, render->size.y / 2.0f},
-            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER);
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono, render, program, fbo, 0);
+    push_text(string, (v2f32){MARGIN, render->size.y - MARGIN},
+            0, TEXT_ALIGN_BOTTOM);
     render_text(0x3f9f3fff);
     stop_text();
 }
