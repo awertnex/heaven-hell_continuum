@@ -18,7 +18,7 @@
             <a href="https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-linux-x86_64.zip">linux-x86_64.zip</a>
         </td>
         <td>
-            <a href="https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-win64.zip">win64.zip</a>
+            <a href=""></a>
         </td>
     </tr>
     <tr>
