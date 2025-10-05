@@ -65,7 +65,7 @@
 - added chunk gizmo
 - added debug info for opengl version and other general info
 
-### bugs
+#### bugs
 - chunk rendering draws chunk boundary faces for the furthest chunks at chunk-shift direction
 - chunk gizmo size is screen size dependent
 - gizmo size is screen size dependent
