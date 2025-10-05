@@ -999,7 +999,8 @@ push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
     };
     pos.x *= text_info.screen_size.x;
     pos.y *= text_info.screen_size.y;
-    pos.y -= (align_y - 1.0f) * (text_info.font->scale.y) * ndc_size.y;
+    pos.y += text_info.font->scale.y * ndc_size.y;
+
 
     Glyphf *g = NULL;
     for (u64 i = 0; i < GLYPH_MAX; ++i)
@@ -1059,6 +1060,13 @@ push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         advance += g->advance;
         ++text_info.cursor;
     }
+
+    if (align_y == TEXT_ALIGN_CENTER)
+        for (u64 i = 0; i < text_info.cursor; ++i)
+            mesh_text.vbo_data[(i * 4) + 1] += text_info.line / 2.0f;
+    else if (align_y == TEXT_ALIGN_BOTTOM)
+        for (u64 i = 0; i < text_info.cursor; ++i)
+            mesh_text.vbo_data[(i * 4) + 1] += text_info.line;
 }
 
 void

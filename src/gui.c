@@ -234,11 +234,16 @@ draw_debug_info(Player *player,
             glGetString(GL_SHADING_LANGUAGE_VERSION),
             glGetString(GL_VENDOR),
             glGetString(GL_RENDERER));
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono,
             render, program, fbo, 0);
     push_text(string,
             (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7.0f)},
             0, 0);
+    render_text(0x3f9f3fff);
+
+    push_text(string,
+            (v2f32){render->size.x / 2.0f, render->size.y / 2.0f},
+            TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER);
     render_text(0x3f9f3fff);
     stop_text();
 }
