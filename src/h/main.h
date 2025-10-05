@@ -45,6 +45,7 @@ typedef struct Uniform
     struct /* gizmo_chunk */
     {
         GLint render_size;
+        GLint render_distance;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;

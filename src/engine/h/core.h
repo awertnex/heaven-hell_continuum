@@ -211,7 +211,8 @@ typedef struct FBO
 {
     GLuint fbo;
     GLuint color_buf;
-    GLuint rbo;
+    GLuint fbo_msaa;
+    GLuint color_buf_msaa;
 } FBO;
 
 typedef struct Camera
@@ -328,7 +329,7 @@ int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
 
 int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
-void free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo);
+void free_fbo(FBO *fbo);
 
 /* return FALSE (0) on failure */
 b8 generate_texture(GLuint *id, const GLint format,

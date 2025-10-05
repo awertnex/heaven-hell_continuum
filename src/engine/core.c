@@ -298,19 +298,40 @@ int
 init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples, b8 flip_vertical)
 {
-    free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
+    free_fbo(fbo);
 
     glGenFramebuffers(1, &fbo->fbo);
-    glGenTextures(1, &fbo->color_buf);
-    glGenRenderbuffers(1, &fbo->rbo);
-
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
+
+    glGenTextures(1, &fbo->color_buf);
+    glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, fbo->color_buf, 0);
+
+    GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+                fbo->fbo, status);
+        return -1;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (multisample)
     {
-        /* ---- color buffer ------------------------------------------------ */
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf);
+        glGenFramebuffers(1, &fbo->fbo_msaa);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo_msaa);
+
+        glGenTextures(1, &fbo->color_buf_msaa);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf_msaa);
         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA,
                 render->size.x, render->size.y, GL_TRUE);
 
@@ -327,43 +348,18 @@ init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
                 GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf, 0);
+                GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf_msaa, 0);
 
-        /* ---- render buffer ----------------------------------------------- */
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
-                GL_DEPTH_COMPONENT, render->size.x, render->size.y);
+        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+                    fbo->fbo_msaa, status);
+            return -1;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-    else
-    {
-        /* ---- color buffer ------------------------------------------------ */
-        glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D, fbo->color_buf, 0);
-
-        /* ---- render buffer ----------------------------------------------- */
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-                render->size.x, render->size.y);
-    }
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-            GL_RENDERBUFFER, fbo->rbo);
-
-    GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
-                fbo->fbo, status);
-        return -1;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     /* ---- mesh data ------------------------------------------------------- */
     if (mesh_fbo == NULL || mesh_fbo->vbo_data != NULL) return 0;
@@ -413,7 +409,7 @@ init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
     return 0;
 
 cleanup:
-    free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
+    free_fbo(fbo);
     free_mesh(mesh_fbo);
     return -1;
 }
@@ -423,26 +419,9 @@ realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
 
-    if (multisample)
-    {
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf);
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA,
-                render->size.x, render->size.y, GL_TRUE);
-
-        glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
-                GL_DEPTH_COMPONENT, render->size.x, render->size.y);
-    }
-    else
-    {
-        glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
-
-        glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-                render->size.x, render->size.y);
-    }
+    glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -450,20 +429,44 @@ realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples)
         LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
                 &fbo->fbo, status);
 
-        free_fbo(&fbo->fbo, &fbo->color_buf, &fbo->rbo);
+        free_fbo(fbo);
         return -1;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if (multisample)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo_msaa);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf_msaa);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA,
+                render->size.x, render->size.y, GL_TRUE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf_msaa, 0);
+
+        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+                    &fbo->fbo_msaa, status);
+
+            free_fbo(fbo);
+            return -1;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
     return 0;
 }
 
 void
-free_fbo(GLuint *fbo, GLuint *color_buf, GLuint *rbo)
+free_fbo(FBO *fbo)
 {
-    rbo ? glDeleteRenderbuffers(1, rbo) : 0;
-    color_buf ? glDeleteTextures(1, color_buf) : 0;
-    fbo ? glDeleteFramebuffers(1, fbo) : 0;
+    fbo->color_buf ? glDeleteTextures(1, &fbo->color_buf) : 0;
+    fbo->fbo ? glDeleteFramebuffers(1, &fbo->fbo) : 0;
+    fbo->color_buf_msaa ? glDeleteTextures(1, &fbo->color_buf_msaa) : 0;
+    fbo->fbo_msaa ? glDeleteFramebuffers(1, &fbo->fbo_msaa) : 0;
 };
 
 b8

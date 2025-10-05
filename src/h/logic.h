@@ -8,10 +8,10 @@
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
-    v3f32 pos;                      /* player processed raw_pos */
-    v3f32 raw_pos;                  /* player current coordinates in world */
+    v3f64 pos;                      /* player processed raw_pos */
+    v3f64 raw_pos;                  /* player current coordinates in world */
     v3f32 pos_lerp_speed;
-    v3f32 target;                   /* player arm (or whatever) */
+    v3f64 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
@@ -33,12 +33,12 @@ typedef struct Player
 
     /* TODO: do player overflow */
     u8 overflow;                    /* player at world edge, enum: PlayerFlags */
-    v3i32 delta_pos;                /* for collision tunneling prevention */
-    v3i32 delta_target;             /* player arm snapped to grid */
+    v3i64 delta_pos;                /* for collision tunneling prevention */
+    v3i64 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
     v3i16 delta_chunk;              /* previous chunk player was in */
 
-    v3i32 spawn_point;
+    v3i64 spawn_point;
 } Player;
 
 /* ---- section: flags ------------------------------------------------------ */
@@ -117,19 +117,19 @@ extern Player lily;
 
 void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
-void update_player_target(v3f32 *player_target, v3i32 *player_delta_target);
+void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
 
 static inline void
-set_player_pos(Player *player, f32 x, f32 y, f32 z)
+set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
-    player->raw_pos = (v3f32){x, y, z};
+    player->raw_pos = (v3f64){x, y, z};
 }
 
 static inline void
 set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
     player->raw_pos =
-        (v3f32){(f32)(x) + 0.5f, (f32)(y) + 0.5f, (f32)(z) + 0.5f};
+        (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
 }
 
 void player_kill(Player *player);
@@ -137,7 +137,7 @@ void player_respawn(Player *player);
 b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
-f64 get_time_ms();
+f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);
 
 #ifdef FUCK // TODO: undef FUCK

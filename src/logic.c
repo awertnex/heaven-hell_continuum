@@ -168,16 +168,16 @@ update_camera_movement_player(Render *render, Player *player)
 }
 
 void
-update_player_target(v3f32 *player_target, v3i32 *player_delta_target)
+update_player_target(v3f64 *player_target, v3i64 *player_delta_target)
 {
-    if ((i32)player_delta_target->x != floorf(player_target->x)
-            || (i32)player_delta_target->y != floorf(player_target->y)
-            || (i32)player_delta_target->z != floorf(player_target->z))
+    if (player_delta_target->x != floorf(player_target->x) ||
+            player_delta_target->y != floorf(player_target->y) ||
+            player_delta_target->z != floorf(player_target->z))
         *player_delta_target =
-            (v3i32){
-                (i32)floorf(player_target->x),
-                (i32)floorf(player_target->y),
-                (i32)floorf(player_target->z)};
+            (v3i64){
+                (i64)floorf(player_target->x),
+                (i64)floorf(player_target->y),
+                (i64)floorf(player_target->z)};
 }
 
 void
@@ -194,7 +194,7 @@ void
 player_respawn(Player *player)
 {
     player->pos =
-        (v3f32){
+        (v3f64){
             player->spawn_point.x,
             player->spawn_point.y,
             player->spawn_point.z
@@ -268,7 +268,7 @@ update_collision_static(Player *player)
 }
 
 f64
-get_time_ms()
+get_time_ms(void)
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);

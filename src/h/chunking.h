@@ -9,6 +9,7 @@
 /* ---- section: world stuff ------------------------------------------------ */
 
 #define CHUNK_DIAMETER  16
+#define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
 #define WORLD_SEA_LEVEL         62
@@ -20,7 +21,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        7
+#define CHUNK_BUF_RADIUS        4
 #define CHUNK_BUF_RADIUS_ODD    (CHUNK_BUF_RADIUS + 1)
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
@@ -104,12 +105,13 @@ enum BlockFlags
 
 enum ChunkFlags
 {
-    FLAG_CHUNK_LOADED = 0x01,
-    FLAG_CHUNK_RENDER = 0x02,
-    FLAG_CHUNK_DIRTY =  0x04,
+    FLAG_CHUNK_LOADED       = 0x01,
+    FLAG_CHUNK_GENERATED    = 0x02,
+    FLAG_CHUNK_RENDER       = 0x04,
+    FLAG_CHUNK_DIRTY        = 0x08,
 
     /* chunk marking for chunk_tab shifting logic */
-    FLAG_CHUNK_EDGE =   0x08,
+    FLAG_CHUNK_EDGE =   0x10,
 }; /* ChunkFlags */
 
 enum ChunkStates
@@ -213,7 +215,7 @@ get_block_data(u32 i)
 
 /* ---- section: signatures ------------------------------------------------- */
 
-u8 init_chunking(ShaderProgram *program);
+u8 init_chunking(void);
 void update_chunking(v3i16 player_delta_chunk);
 void free_chunking();
 
@@ -224,7 +226,7 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
-u16 get_target_chunk_index(v3i16 player_chunk, v3i32 player_delta_target);
+u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 void draw_chunk_tab(Uniform *uniform);
 void draw_chunk_gizmo(Mesh *mesh);
 #ifdef FUCK // TODO: undef FUCK
