@@ -1,9 +1,14 @@
 #ifndef ENGINE_CORE_H
 #define ENGINE_CORE_H
 
-#define ENGINE_AUTHOR       "Lily Awertnex"
-#define ENGINE_NAME         "Fossil Engine"
-#define ENGINE_VERSION      "0.1.0"
+#define ENGINE_VERSION_STABLE   "-stable"
+#define ENGINE_VERSION_BETA     "-beta"
+#define ENGINE_VERSION_ALPHA    "-alpha"
+#define ENGINE_VERSION_DEV      "-dev"
+
+#define ENGINE_AUTHOR           "Lily Awertnex"
+#define ENGINE_NAME             "Fossil Engine"
+#define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
 
 #include "../../../include/glad/glad_modified.h"
 #define GLFW_INCLUDE_NONE
