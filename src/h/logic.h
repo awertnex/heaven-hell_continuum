@@ -31,8 +31,9 @@ typedef struct Player
     Camera camera;
     f32 camera_distance;            /* for camera collision detection */
 
-    /* TODO: do player overflow */
-    u8 overflow;                    /* player at world edge, enum: PlayerFlags */
+    /* player at world edge, enum: PlayerFlags */
+    u8 overflow;
+
     v3i64 delta_pos;                /* for collision tunneling prevention */
     v3i64 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
@@ -75,9 +76,12 @@ enum PlayerFlags
     FLAG_OVERFLOW_X =               0x0001,
     FLAG_OVERFLOW_Y =               0x0002,
     FLAG_OVERFLOW_Z =               0x0004,
-    FLAG_OVERFLOW_DIRECTION_X =     0x0008,
-    FLAG_OVERFLOW_DIRECTION_Y =     0x0010,
-    FLAG_OVERFLOW_DIRECTION_Z =     0x0020,
+
+    /* positive overflow direction flags,
+     * negative is the default (0) */
+    FLAG_OVERFLOW_PX =              0x0008,
+    FLAG_OVERFLOW_PY =              0x0010,
+    FLAG_OVERFLOW_PZ =              0x0020,
 }; /* PlayerFlags */
 
 enum ContainerStates
@@ -137,6 +141,7 @@ void player_respawn(Player *player);
 b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
+void wrap_coordinates(Player *player);
 f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);
 

@@ -10,6 +10,8 @@
 void
 update_player(Render *render, Player *player)
 {
+    wrap_coordinates(player);
+
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / CHUNK_DIAMETER),
             floorf((f32)player->pos.y / CHUNK_DIAMETER),
@@ -265,6 +267,85 @@ update_collision_static(Player *player)
     // TODO: move to new 'void parse_camera_collisions()'
     player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
 #endif
+}
+
+void
+wrap_coordinates(Player *player)
+{
+    const i64 RADIUS            = WORLD_RADIUS * CHUNK_DIAMETER;
+    const i64 RADIUS_V          = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER;
+    const i64 DIAMETER          = WORLD_DIAMETER * CHUNK_DIAMETER;
+    const i64 DIAMETER_V        = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
+
+    const i64 OVERFLOW_EDGE     = (WORLD_RADIUS + 1) * CHUNK_DIAMETER;
+    const i64 OVERFLOW_EDGE_V   = (WORLD_RADIUS_VERTICAL + 1) * CHUNK_DIAMETER;
+
+    const i64 WORLD_MARGIN =
+        (WORLD_RADIUS - SETTING_RENDER_DISTANCE_MAX) * CHUNK_DIAMETER;
+    const i64 WORLD_MARGIN_V =
+        (WORLD_RADIUS_VERTICAL - SETTING_RENDER_DISTANCE_MAX) * CHUNK_DIAMETER;
+
+    /* ---- overflow edge --------------------------------------------------- */
+    if (player->raw_pos.x > OVERFLOW_EDGE)
+    {
+        player->raw_pos.x -= DIAMETER;
+        player->pos.x -= DIAMETER;
+    }
+    if (player->raw_pos.x < -OVERFLOW_EDGE)
+    {
+        player->raw_pos.x += DIAMETER;
+        player->pos.x += DIAMETER;
+    }
+
+    if (player->raw_pos.y > OVERFLOW_EDGE)
+    {
+        player->raw_pos.y -= DIAMETER;
+        player->pos.y -= DIAMETER;
+    }
+    if (player->raw_pos.y < -OVERFLOW_EDGE)
+    {
+        player->raw_pos.y += DIAMETER;
+        player->pos.y += DIAMETER;
+    }
+
+    if (player->raw_pos.z > OVERFLOW_EDGE_V)
+    {
+        player->raw_pos.z -= DIAMETER_V;
+        player->pos.z -= DIAMETER_V;
+    }
+    if (player->raw_pos.z < -OVERFLOW_EDGE_V)
+    {
+        player->raw_pos.z += DIAMETER_V;
+        player->pos.z += DIAMETER_V;
+    }
+
+    /* ---- world margin ---------------------------------------------------- */
+    if (player->pos.x > WORLD_MARGIN)
+        player->overflow |= FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX;
+    else if (player->pos.x < -WORLD_MARGIN)
+    {
+        player->overflow |= FLAG_OVERFLOW_X;
+        player->overflow &= ~FLAG_OVERFLOW_PX;
+    }
+    else player->overflow &= ~(FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX);
+
+    if (player->pos.y > WORLD_MARGIN)
+        player->overflow |= FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY;
+    else if (player->pos.y < -WORLD_MARGIN)
+    {
+        player->overflow |= FLAG_OVERFLOW_Y;
+        player->overflow &= ~FLAG_OVERFLOW_PY;
+    }
+    else player->overflow &= ~(FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY);
+
+    if (player->pos.z > WORLD_MARGIN_V)
+        player->overflow |= FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ;
+    else if (player->pos.z < -WORLD_MARGIN_V)
+    {
+        player->overflow |= FLAG_OVERFLOW_Z;
+        player->overflow &= ~FLAG_OVERFLOW_PZ;
+    }
+    else player->overflow &= ~(FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ);
 }
 
 f64

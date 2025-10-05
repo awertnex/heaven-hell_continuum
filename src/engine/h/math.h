@@ -28,11 +28,12 @@ u32 distance_v3i32(v3i32 a, v3i32 b);
 f32 distance_v3f32(v3f32 a, v3f32 b);
 b8 is_in_range_i32(i32 pos, i32 start, i32 end);
 b8 is_in_range_f32(f32 pos, f32 start, f32 end);
+b8 is_in_range_i64(i64 pos, i64 start, i64 end);
 b8 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end);
 b8 is_in_area_f32(v2f32 pos, v2f32 start, v2f32 end);
 b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end);
-b8 is_in_volume_i64(v3i64 pos, v3i64 start, v3i64 end);
 b8 is_in_volume_f32(v3f32 pos, v3f32 start, v3f32 end);
+b8 is_in_volume_i64(v3i64 pos, v3i64 start, v3i64 end);
 
 m4f32 matrix_add(m4f32 a, m4f32 b);
 m4f32 matrix_subtract(m4f32 a, m4f32 b);

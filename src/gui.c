@@ -118,24 +118,17 @@ draw_debug_info(Player *player,
             render, program, fbo, 1);
 
     snprintf(string, 511,
-            "FPS[%d]", (u32)(1.0f / render->frame_delta));
-    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
-    render_text(0x6f9f3fff);
-
-    snprintf(string, 511,
-            "               FRAME TIME[%.2lf]",
-            render->frame_start);
-    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
-    render_text(0x6f9f3fff);
-
-    snprintf(string, 511,
-            "                                   FRAME DELTA[%.5lf]",
+            "FPS[%d]\n"
+            "FRAME TIME[%.2lf]\n"
+            "FRAME DELTA[%.5lf]\n",
+            (u32)(1.0f / render->frame_delta),
+            render->frame_start,
             render->frame_delta);
     push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
     render_text(0x6f9f3fff);
 
     snprintf(string, 511,
-            "PLAYER NAME[%-16s]\n"
+            "PLAYER NAME[%s]\n"
             "PLAYER XYZ[%.2f %.2f %.2f]\n"
             "PLAYER BLOCK[%d %d %d]\n"
             "PLAYER CHUNK[%d %d %d]\n"
@@ -147,8 +140,60 @@ draw_debug_info(Player *player,
             (i32)floorf(player->pos.z),
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
-    push_text(string, (v2f32){MARGIN, MARGIN + FONT_SIZE_DEFAULT}, 0, 0);
+    push_text(string,
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
     render_text(0xffffffff);
+
+    snprintf(string, 511,
+            "PLAYER OVERFLOW X[%s]\n"
+            "PLAYER OVERFLOW Y[%s]\n"
+            "PLAYER OVERFLOW Z[%s]\n",
+            (player->overflow & FLAG_OVERFLOW_X) ?
+            (player->overflow & FLAG_OVERFLOW_PX) ?
+            "        " : "        " : "NONE",
+            (player->overflow & FLAG_OVERFLOW_Y) ?
+            (player->overflow & FLAG_OVERFLOW_PY) ?
+            "        " : "        " : "NONE",
+            (player->overflow & FLAG_OVERFLOW_Z) ?
+            (player->overflow & FLAG_OVERFLOW_PZ) ?
+            "        " : "        " : "NONE");
+    push_text(string,
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+    render_text(0x995429ff);
+
+    snprintf(string, 511,
+            "                  %s \n"
+            "                  %s \n"
+            "                  %s \n",
+            (player->overflow & FLAG_OVERFLOW_X) ?
+            (player->overflow & FLAG_OVERFLOW_PX) ?
+            "        " : "NEGATIVE" : "    ",
+            (player->overflow & FLAG_OVERFLOW_Y) ?
+            (player->overflow & FLAG_OVERFLOW_PY) ?
+            "        " : "NEGATIVE" : "    ",
+            (player->overflow & FLAG_OVERFLOW_Z) ?
+            (player->overflow & FLAG_OVERFLOW_PZ) ?
+            "        " : "NEGATIVE" : "    ");
+    push_text(string,
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+    render_text(0xec6051ff);
+
+    snprintf(string, 511,
+            "                  %s \n"
+            "                  %s \n"
+            "                  %s \n",
+            (player->overflow & FLAG_OVERFLOW_X) ?
+            (player->overflow & FLAG_OVERFLOW_PX) ?
+            "POSITIVE" : "        " : "    ",
+            (player->overflow & FLAG_OVERFLOW_Y) ?
+            (player->overflow & FLAG_OVERFLOW_PY) ?
+            "POSITIVE" : "        " : "    ",
+            (player->overflow & FLAG_OVERFLOW_Z) ?
+            (player->overflow & FLAG_OVERFLOW_PZ) ?
+            "POSITIVE" : "        " : "    ");
+    push_text(string,
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+    render_text(0x79ec50ff);
 
     snprintf(string, 511,
             "MOUSE XY: %.2f %.2f\n"
@@ -166,7 +211,8 @@ draw_debug_info(Player *player,
             skybox_time,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 6)}, 0, 0);
+    push_text(string,
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 11.0f)}, 0, 0);
     render_text(0x3f6f9fff);
 
     snprintf(string, 511,
@@ -186,7 +232,8 @@ draw_debug_info(Player *player,
     start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold,
             render, program, fbo, 0);
     push_text(string,
-            (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7)}, 0, 0);
+            (v2f32){MARGIN, render->size.y - (FONT_SIZE_DEFAULT * 7.0f)},
+            0, 0);
     render_text(0x3f9f3fff);
     stop_text();
 }
