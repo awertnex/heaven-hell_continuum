@@ -599,7 +599,7 @@ init_world(str *name)
         return FALSE;
 
     update_player(&render, &lily);
-    set_player_block(&lily, 1, 1, 72);
+    set_player_block(&lily, 32700, 270, 2);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i64){

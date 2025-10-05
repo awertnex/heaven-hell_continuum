@@ -118,9 +118,9 @@ draw_debug_info(Player *player,
             render, program, fbo, 1);
 
     snprintf(string, 511,
-            "FPS[%d]\n"
-            "FRAME TIME[%.2lf]\n"
-            "FRAME DELTA[%.5lf]\n",
+            "FPS               [%d]\n"
+            "FRAME TIME        [%.2lf]\n"
+            "FRAME DELTA       [%.5lf]\n",
             (u32)(1.0f / render->frame_delta),
             render->frame_start,
             render->frame_delta);
@@ -128,16 +128,27 @@ draw_debug_info(Player *player,
     render_text(0x6f9f3fff);
 
     snprintf(string, 511,
-            "PLAYER NAME[%s]\n"
-            "PLAYER XYZ[%.2f %.2f %.2f]\n"
-            "PLAYER BLOCK[%d %d %d]\n"
-            "PLAYER CHUNK[%d %d %d]\n"
-            "PITCH[%.2f] YAW[%.2f]\n",
+            "PLAYER NAME       [%s]\n"
+            "PLAYER XYZ        [%.2f %.2f %.2f]\n"
+            "PLAYER BLOCK      [%d %d %d]\n"
+            "PLAYER CHUNK      [%d %d %d]\n"
+            "CURRENT CHUNK     [%d %d %d]\n"
+            "PITCH[%.2f] YAW   [%.2f]\n",
             player->name,
             player->pos.x, player->pos.y, player->pos.z,
             (i32)floorf(player->pos.x),
             (i32)floorf(player->pos.y),
             (i32)floorf(player->pos.z),
+
+            (chunk_tab[CHUNK_TAB_CENTER]) ?
+            chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
+
+            (chunk_tab[CHUNK_TAB_CENTER]) ?
+            chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
+
+            (chunk_tab[CHUNK_TAB_CENTER]) ?
+            chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
+
             player->chunk.x, player->chunk.y, player->chunk.z,
             player->pitch, player->yaw);
     push_text(string,
@@ -145,9 +156,9 @@ draw_debug_info(Player *player,
     render_text(0xffffffff);
 
     snprintf(string, 511,
-            "PLAYER OVERFLOW X[%s]\n"
-            "PLAYER OVERFLOW Y[%s]\n"
-            "PLAYER OVERFLOW Z[%s]\n",
+            "PLAYER OVERFLOW X [%s]\n"
+            "PLAYER OVERFLOW Y [%s]\n"
+            "PLAYER OVERFLOW Z [%s]\n",
             (player->overflow & FLAG_OVERFLOW_X) ?
             (player->overflow & FLAG_OVERFLOW_PX) ?
             "        " : "        " : "NONE",
@@ -158,7 +169,7 @@ draw_debug_info(Player *player,
             (player->overflow & FLAG_OVERFLOW_PZ) ?
             "        " : "        " : "NONE");
     push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
     render_text(0x995429ff);
 
     snprintf(string, 511,
@@ -175,7 +186,7 @@ draw_debug_info(Player *player,
             (player->overflow & FLAG_OVERFLOW_PZ) ?
             "        " : "NEGATIVE" : "    ");
     push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
     render_text(0xec6051ff);
 
     snprintf(string, 511,
@@ -192,7 +203,7 @@ draw_debug_info(Player *player,
             (player->overflow & FLAG_OVERFLOW_PZ) ?
             "POSITIVE" : "        " : "    ");
     push_text(string,
-        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 8.0f)}, 0, 0);
+        (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 9.0f)}, 0, 0);
     render_text(0x79ec50ff);
 
     snprintf(string, 511,
@@ -212,7 +223,7 @@ draw_debug_info(Player *player,
             skybox_color.x, skybox_color.y, skybox_color.z,
             sun_rotation.x, sun_rotation.y, sun_rotation.z);
     push_text(string,
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 11.0f)}, 0, 0);
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 12.0f)}, 0, 0);
     render_text(0x3f6f9fff);
 
     snprintf(string, 511,
