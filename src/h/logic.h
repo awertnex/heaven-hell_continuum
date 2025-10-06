@@ -3,8 +3,6 @@
 
 #include "../engine/h/core.h"
 
-/* ---- section: player defaults -------------------------------------------- */
-
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
@@ -42,46 +40,53 @@ typedef struct Player
     v3i64 spawn_point;
 } Player;
 
-/* ---- section: flags ------------------------------------------------------ */
+enum CameraModes
+{
+    CAMERA_MODE_1ST_PERSON = 0,
+    CAMERA_MODE_3RD_PERSON,
+    CAMERA_MODE_3RD_PERSON_FRONT,
+    CAMERA_MODE_STALKER,
+    CAMERA_MODE_SPECTATOR,
+}; /* CameraModes */
 
 enum StateFlags
 {
-    FLAG_ACTIVE =                   0x0001,
-    FLAG_PAUSED =                   0x0002,
-    FLAG_PARSE_CURSOR =             0x0004,
-    FLAG_HUD =                      0x0008,
-    FLAG_DEBUG =                    0x0010,
-    FLAG_DEBUG_MORE =               0x0020,
-    FLAG_SUPER_DEBUG =              0x0040,
-    FLAG_FULLSCREEN =               0x0080,
-    FLAG_MENU_OPEN =                0x0100,
-    FLAG_DOUBLE_PRESS =             0x0200,
-    FLAG_PARSE_TARGET =             0x0400,
-    FLAG_WORLD_LOADED =             0x0800,
-    FLAG_CHUNK_BUF_DIRTY =          0x1000,
+    FLAG_ACTIVE             = 0x0001,
+    FLAG_PAUSED             = 0x0002,
+    FLAG_PARSE_CURSOR       = 0x0004,
+    FLAG_HUD                = 0x0008,
+    FLAG_DEBUG              = 0x0010,
+    FLAG_DEBUG_MORE         = 0x0020,
+    FLAG_SUPER_DEBUG        = 0x0040,
+    FLAG_FULLSCREEN         = 0x0080,
+    FLAG_MENU_OPEN          = 0x0100,
+    FLAG_DOUBLE_PRESS       = 0x0200,
+    FLAG_PARSE_TARGET       = 0x0400,
+    FLAG_WORLD_LOADED       = 0x0800,
+    FLAG_CHUNK_BUF_DIRTY    = 0x1000,
 }; /* StateFlags */
 
 enum PlayerFlags
 {
-    FLAG_CAN_JUMP =                 0x0001,
-    FLAG_SNEAKING =                 0x0002,
-    FLAG_SPRINTING =                0x0004,
-    FLAG_FLYING =                   0x0008,
-    FLAG_SWIMMING =                 0x0010,
-    FLAG_FALLING =                  0x0020,
-    FLAG_VELOCITY_DIRTY =           0x0040,
-    FLAG_HUNGRY =                   0x0080,
-    FLAG_DEAD =                     0x0100,
+    FLAG_CAN_JUMP           = 0x00000001,
+    FLAG_SNEAKING           = 0x00000002,
+    FLAG_SPRINTING          = 0x00000004,
+    FLAG_FLYING             = 0x00000008,
+    FLAG_SWIMMING           = 0x00000010,
+    FLAG_FALLING            = 0x00000020,
+    FLAG_VELOCITY_DIRTY     = 0x00000040,
+    FLAG_HUNGRY             = 0x00000080,
+    FLAG_DEAD               = 0x00000100,
 
-    FLAG_OVERFLOW_X =               0x0001,
-    FLAG_OVERFLOW_Y =               0x0002,
-    FLAG_OVERFLOW_Z =               0x0004,
+    FLAG_OVERFLOW_X         = 0x00001000,
+    FLAG_OVERFLOW_Y         = 0x00002000,
+    FLAG_OVERFLOW_Z         = 0x00004000,
 
     /* positive overflow direction flags,
-     * negative is the default (0) */
-    FLAG_OVERFLOW_PX =              0x0008,
-    FLAG_OVERFLOW_PY =              0x0010,
-    FLAG_OVERFLOW_PZ =              0x0020,
+     * default is negative (or 0) */
+    FLAG_OVERFLOW_PX        = 0x00008000,
+    FLAG_OVERFLOW_PY        = 0x00010000,
+    FLAG_OVERFLOW_PZ        = 0x00020000,
 }; /* PlayerFlags */
 
 enum ContainerStates
@@ -113,13 +118,11 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-/* ---- section: declarations ----------------------------------------------- */
-
 extern Player lily;
 
-/* ---- section: signatures ------------------------------------------------- */
+void update_player(Render *render, Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
-void update_player(Render *render, Player *player);
 void update_camera_movement_player(Render *render, Player *player);
 void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
 
@@ -143,7 +146,10 @@ void player_respawn(Player *player);
 b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
 void update_collision_static(Player *player);
-void wrap_coordinates(Player *player);
+
+void wrap_coordinates(Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
+
 f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);
 

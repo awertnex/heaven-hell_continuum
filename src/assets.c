@@ -4,8 +4,6 @@
 #include "engine/h/math.h"
 #include "engine/h/memory.h"
 
-/* ---- declarations -------------------------------------------------------- */
-
 u16 base_texture_size;
 TextureLayout one_side;
 TextureLayout two_side;
@@ -13,8 +11,6 @@ TextureLayout three_side;
 TextureLayout three_side_alt;
 TextureLayout four_side;
 Block block[1023];              /* standard block array */
-
-/* ---- functions ----------------------------------------------------------- */
 
 void
 init_textures()
@@ -25,14 +21,11 @@ init_textures()
     one_side = (TextureLayout){0, 0, 0, 0, 0, 0};
     two_side =
         (TextureLayout){0, 0, base_texture_size, 0, 0, base_texture_size};
-
     three_side =
         (TextureLayout){0, 0, base_texture_size, 0, 0, (base_texture_size*2)};
-
     three_side_alt = (TextureLayout){
         0, base_texture_size, (base_texture_size*2),
             0, base_texture_size, (base_texture_size*2)};
-
     four_side = (TextureLayout){
         0, base_texture_size, (base_texture_size*2),
             base_texture_size, base_texture_size,  (base_texture_size*3)};

@@ -14,10 +14,8 @@ int
 make_dir(const str *path)
 {
     int exit_code = mkdir(path, 0755);
-
     if (exit_code == 0)
         LOGTRACE("Directory Created '%s'\n", path);
-
     return exit_code;
 }
 
@@ -37,7 +35,6 @@ _get_path_bin_root(str *path)
         LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;
     }
-
     return TRUE;
 }
 

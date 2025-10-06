@@ -13,8 +13,6 @@
 #include "../engine/h/core.h"
 #include "../engine/h/defines.h"
 
-/* ---- section: definitions ------------------------------------------------ */
-
 #define MODE_INTERNAL_DEBUG     1
 #define MODE_INTERNAL_COLLIDE   0
 
@@ -74,8 +72,6 @@ typedef struct Uniform
     } voxel;
 
 } Uniform;
-
-/* ---- section: declarations ----------------------------------------------- */
 
 extern Render render;
 extern u32 state;

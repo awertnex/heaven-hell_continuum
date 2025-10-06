@@ -52,8 +52,6 @@ str WORLD_DIR[][NAME_MAX] =
     "player_data/",
 };
 
-/* ---- section: functions -------------------------------------------------- */
-
 int
 init_paths(void)
 {

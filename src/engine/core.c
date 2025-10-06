@@ -12,8 +12,6 @@
 #include "h/math.h"
 #include "h/memory.h"
 
-/* ---- section: declarations ----------------------------------------------- */
-
 u32 keyboard_key[KEYBOARD_KEYS_MAX];
 u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 {
@@ -139,8 +137,6 @@ u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
     GLFW_KEY_RIGHT_SUPER,
     GLFW_KEY_MENU,
 }; /* keyboard_tab */
-
-/* ---- section: declarations ----------------------------------------------- */
 
 static Mesh mesh_text = {0};
 static struct TextInfo
@@ -479,7 +475,7 @@ free_fbo(FBO *fbo)
 
 b8
 generate_texture(GLuint *id, const GLint format,
-        u32 width, u32 height, void *buffer)
+        u32 width, u32 height, void *buffer, b8 grayscale)
 {
     if (width <= 2 || height <= 2)
     {
@@ -489,15 +485,14 @@ generate_texture(GLuint *id, const GLint format,
 
     glGenTextures(1, id);
     glBindTexture(GL_TEXTURE_2D, *id);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, format,
             width, height, 0, format, GL_UNSIGNED_BYTE, buffer);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (grayscale)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glBindTexture(GL_TEXTURE_2D, 0);
     return TRUE;
@@ -742,8 +737,7 @@ update_key_states(Render *render)
             key_press_start_time[i] = render->frame_start;
             continue;
         }
-
-        if (key_release)
+        else if (key_release && keyboard_key[i] != KEY_PRESS)
         {
             if (_is_key_hold(i))
                 keyboard_key[i] = KEY_RELEASE;
@@ -862,7 +856,7 @@ init_font(Font *font, u32 resolution, const str *font_path)
 
     if (!generate_texture(&font->id, GL_RED,
                 FONT_ATLAS_CELL_RESOLUTION * resolution,
-                FONT_ATLAS_CELL_RESOLUTION * resolution, font->bitmap))
+                FONT_ATLAS_CELL_RESOLUTION * resolution, font->bitmap, TRUE))
         goto cleanup;
 
     mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");

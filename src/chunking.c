@@ -8,8 +8,6 @@
 #include "h/chunking.h"
 #include "h/logic.h"
 
-/* ---- section: declarations ----------------------------------------------- */
-
 /* chunk buffer, raw chunk data */
 static Chunk *chunk_buf = {0};
 
@@ -20,8 +18,6 @@ static struct Globals
 {
     f32 opacity;
 } globals;
-
-/* ---- section: signatures ------------------------------------------------- */
 
 /* index = (chunk_tab index); */
 static void generate_chunk(u32 index);
@@ -39,8 +35,6 @@ static void push_chunk_buf(u32 index, v3i16 player_delta_chunk);
 
 /* index = (chunk_tab index); */
 static void pop_chunk_buf(u32 index);
-
-/* ---- section: functions -------------------------------------------------- */
 
 u8
 init_chunking(void)
@@ -281,6 +275,7 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 static f32
 terrain_noise(v3i32 coordinates)
 {
+    return 0.0f;
 }
 
 static void
@@ -412,22 +407,31 @@ pop_chunk_buf(u32 index)
 void
 shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
-    const f32 RENDER_DISTANCE = powf(settings.render_distance, 2.0f) + 2.0f;
-
-    v3i16 delta =
+    v3u32 coordinates = {0};
+    u32 mirror_index = 0;
+    u32 target_index = 0;
+    u8 is_on_edge = 0;
+    const v3i16 DELTA =
     {
         player_chunk.x - player_delta_chunk->x,
         player_chunk.y - player_delta_chunk->y,
         player_chunk.z - player_delta_chunk->z,
     };
+    const u8 AXIS =
+        (DELTA.x > 0) ? SHIFT_PX : (DELTA.x < 0) ? SHIFT_NX :
+        (DELTA.y > 0) ? SHIFT_PY : (DELTA.y < 0) ? SHIFT_NY :
+        (DELTA.z > 0) ? SHIFT_PZ : (DELTA.z < 0) ? SHIFT_NZ : 0;
+    const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
+    const b8 TOO_FAR = distance_v3f32(
+            (v3f32){
+            (f32)player_chunk.x, (f32)player_chunk.y, (f32)player_chunk.z},
+            (v3f32){
+            (f32)player_delta_chunk->x,
+            (f32)player_delta_chunk->y,
+            (f32)player_delta_chunk->z}) >
+        powf(settings.render_distance, 2.0f) + 2.0f;
 
-    if (distance_v3f32(
-                (v3f32){
-                (f32)player_chunk.x, (f32)player_chunk.y, (f32)player_chunk.z},
-                (v3f32){
-                (f32)player_delta_chunk->x,
-                (f32)player_delta_chunk->y,
-                (f32)player_delta_chunk->z}) > RENDER_DISTANCE)
+    if (TOO_FAR)
     {
         for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i] != NULL)
@@ -436,16 +440,6 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         *player_delta_chunk = player_chunk;
         return;
     }
-
-    const u8 AXIS =
-        (delta.x > 0) ? SHIFT_PX : (delta.x < 0) ? SHIFT_NX :
-        (delta.y > 0) ? SHIFT_PY : (delta.y < 0) ? SHIFT_NY :
-        (delta.z > 0) ? SHIFT_PZ : (delta.z < 0) ? SHIFT_NZ : 0;
-    const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
-    v3u32 coordinates = {0};
-    u32 mirror_index = 0;
-    u32 target_index = 0;
-    u8 is_on_edge = 0;
 
     switch (AXIS)
     {

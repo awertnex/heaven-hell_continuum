@@ -8,8 +8,6 @@
 #include "h/logic.h"
 #include "h/dir.h"
 
-/* ---- section: declarations ----------------------------------------------- */
-
 Font font = {0};
 Font font_bold = {0};
 Font font_mono = {0};
@@ -30,8 +28,6 @@ str str_block_count[32];
 str str_quad_count[32];
 str str_tri_count[32];
 str str_vertex_count[32];
-
-/* ---- section: functions -------------------------------------------------- */
 
 void
 print_menu_layers()
@@ -155,14 +151,14 @@ draw_debug_info(Player *player,
             "PLAYER OVERFLOW X [%s]\n"
             "PLAYER OVERFLOW Y [%s]\n"
             "PLAYER OVERFLOW Z [%s]\n",
-            (player->overflow & FLAG_OVERFLOW_X) ?
-            (player->overflow & FLAG_OVERFLOW_PX) ?
+            (player->state & FLAG_OVERFLOW_X) ?
+            (player->state & FLAG_OVERFLOW_PX) ?
             "        " : "        " : "NONE",
-            (player->overflow & FLAG_OVERFLOW_Y) ?
-            (player->overflow & FLAG_OVERFLOW_PY) ?
+            (player->state & FLAG_OVERFLOW_Y) ?
+            (player->state & FLAG_OVERFLOW_PY) ?
             "        " : "        " : "NONE",
-            (player->overflow & FLAG_OVERFLOW_Z) ?
-            (player->overflow & FLAG_OVERFLOW_PZ) ?
+            (player->state & FLAG_OVERFLOW_Z) ?
+            (player->state & FLAG_OVERFLOW_PZ) ?
             "        " : "        " : "NONE");
     push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
         0, 0);
@@ -172,12 +168,12 @@ draw_debug_info(Player *player,
             "                   %s\n"
             "                   %s\n"
             "                   %s\n",
-            (player->overflow & FLAG_OVERFLOW_X) &&
-            !(player->overflow & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
-            (player->overflow & FLAG_OVERFLOW_Y) &&
-            !(player->overflow & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
-            (player->overflow & FLAG_OVERFLOW_Z) &&
-            !(player->overflow & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : "");
+            (player->state & FLAG_OVERFLOW_X) &&
+            !(player->state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
+            (player->state & FLAG_OVERFLOW_Y) &&
+            !(player->state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
+            (player->state & FLAG_OVERFLOW_Z) &&
+            !(player->state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : "");
     push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
             0, 0);
     render_text(0xec6051ff);
@@ -186,12 +182,12 @@ draw_debug_info(Player *player,
             "                   %s\n"
             "                   %s\n"
             "                   %s\n",
-            (player->overflow & FLAG_OVERFLOW_X) &&
-            (player->overflow & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
-            (player->overflow & FLAG_OVERFLOW_Y) &&
-            (player->overflow & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
-            (player->overflow & FLAG_OVERFLOW_Z) &&
-            (player->overflow & FLAG_OVERFLOW_PZ) ? "POSITIVE" : "");
+            (player->state & FLAG_OVERFLOW_X) &&
+            (player->state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
+            (player->state & FLAG_OVERFLOW_Y) &&
+            (player->state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
+            (player->state & FLAG_OVERFLOW_Z) &&
+            (player->state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : "");
     push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
         0, 0);
     render_text(0x79ec50ff);

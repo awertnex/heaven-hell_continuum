@@ -19,8 +19,6 @@
 #include "platform.h"
 #include "limits.h"
 
-/* ---- section: definitions ------------------------------------------------ */
-
 #define CAMERA_ANGLE_MAX 90.0f
 #define CAMERA_RANGE_MAX 360.0f
 #define KEYBOARD_KEYS_MAX 120
@@ -315,12 +313,8 @@ enum TextAlignment
     TEXT_ALIGN_BOTTOM = 2,
 }; /* TextAlignment */
 
-/* ---- section: declarations ----------------------------------------------- */
-
 extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
 extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
-
-/* ---- section: signatures ------------------------------------------------- */
 
 /* multisample = turn on multisampling;
  *
@@ -333,22 +327,24 @@ int init_window(Render *render);
 /* return non-zero on failure */
 int init_glad(void);
 
+/* return non-zero on failure */
 int init_shader(const str *shaders_dir, Shader *shader);
 
+/* return non-zero on failure */
 int init_shader_program(const str *shaders_dir, ShaderProgram *program);
 
+/* return non-zero on failure */
 int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples, b8 flip_vertical);
 
+/* return non-zero on failure */
 int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
 void free_fbo(FBO *fbo);
 
 /* return FALSE (0) on failure */
 b8 generate_texture(GLuint *id, const GLint format,
-        u32 width, u32 height, void *buffer);
-
-int generate_mesh_fbo(Mesh *mesh);
+        u32 width, u32 height, void *buffer, b8 grayscale);
 
 /* usage = GL_<x>_DRAW */
 int generate_mesh(Mesh *mesh, GLenum usage,

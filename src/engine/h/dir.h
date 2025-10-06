@@ -3,8 +3,6 @@
 
 #include "defines.h"
 
-/* ---- section: signatures ------------------------------------------------- */
-
 /* return file type.
  *
  * return 0 on failure */

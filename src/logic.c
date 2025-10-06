@@ -3,19 +3,21 @@
 #include <inttypes.h>
 
 #include "engine/h/math.h"
+#include "h/main.h"
 #include "h/logic.h"
-#include "h/chunking.h"
 #include "h/settings.h"
 
 void
-update_player(Render *render, Player *player)
+update_player(Render *render, Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
-    wrap_coordinates(player);
+    wrap_coordinates(player, chunk_diameter,
+            radius, radius_v, diameter, diameter_v);
 
     player->chunk = (v3i16){
-            floorf((f32)player->pos.x / CHUNK_DIAMETER),
-            floorf((f32)player->pos.y / CHUNK_DIAMETER),
-            floorf((f32)player->pos.z / CHUNK_DIAMETER),
+            floorf((f32)player->pos.x / chunk_diameter),
+            floorf((f32)player->pos.y / chunk_diameter),
+            floorf((f32)player->pos.z / chunk_diameter),
         };
 
     if ((player->delta_chunk.x - player->chunk.x)
@@ -127,7 +129,7 @@ update_camera_movement_player(Render *render, Player *player)
 
     switch (player->perspective)
     {
-        case 0: /* ---- 1st person ------------------------------------------ */
+        case CAMERA_MODE_1ST_PERSON:
             player->camera.pos =
                 (v3f32){
                     player->pos.x, player->pos.y, player->pos.z +
@@ -135,7 +137,7 @@ update_camera_movement_player(Render *render, Player *player)
                 };
             break;
 
-        case 1: /* ---- 3rd person ------------------------------------------ */
+        case CAMERA_MODE_3RD_PERSON:
             player->camera.pos =
                 (v3f32){
                     player->pos.x - ((CYAW * CPCH) * player->camera_distance),
@@ -145,14 +147,15 @@ update_camera_movement_player(Render *render, Player *player)
                 };
             break;
 
-        case 2: /* ---- 3rd person opposite --------------------------------- */
+        case CAMERA_MODE_3RD_PERSON_FRONT:
             player->camera.pos =
                 (v3f32){
                     player->pos.x + ((CYAW * CPCH) * player->camera_distance),
                     player->pos.y - ((SYAW * CPCH) * player->camera_distance),
                     player->pos.z +
-                        player->eye_height + (SPCH * player->camera_distance),
+                        player->eye_height - (SPCH * player->camera_distance),
                 };
+            player->camera.sin_pitch = -SPCH;
             player->camera.sin_yaw =
                 sin((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
             player->camera.cos_yaw =
@@ -160,11 +163,11 @@ update_camera_movement_player(Render *render, Player *player)
             break;
 
             /* TODO: make the stalker camera mode */
-        case 3: /* ---- stalker --------------------------------------------- */
+        case CAMERA_MODE_STALKER:
             break;
 
             /* TODO: make the spectator camera mode */
-        case 4: /* ---- spectator ------------------------------------------- */
+        case CAMERA_MODE_SPECTATOR:
             break;
     }
 }
@@ -270,20 +273,21 @@ update_collision_static(Player *player)
 }
 
 void
-wrap_coordinates(Player *player)
+wrap_coordinates(Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
-    const i64 RADIUS            = WORLD_RADIUS * CHUNK_DIAMETER;
-    const i64 RADIUS_V          = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER;
-    const i64 DIAMETER          = WORLD_DIAMETER * CHUNK_DIAMETER;
-    const i64 DIAMETER_V        = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
+    const i64 RADIUS            = radius * chunk_diameter;
+    const i64 RADIUS_V          = radius_v * chunk_diameter;
+    const i64 DIAMETER          = diameter * chunk_diameter;
+    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
 
-    const i64 OVERFLOW_EDGE     = (WORLD_RADIUS + 1) * CHUNK_DIAMETER;
-    const i64 OVERFLOW_EDGE_V   = (WORLD_RADIUS_VERTICAL + 1) * CHUNK_DIAMETER;
+    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
 
     const i64 WORLD_MARGIN =
-        (WORLD_RADIUS - SETTING_RENDER_DISTANCE_MAX) * CHUNK_DIAMETER;
+        (radius - SETTING_RENDER_DISTANCE_MAX) * chunk_diameter;
     const i64 WORLD_MARGIN_V =
-        (WORLD_RADIUS_VERTICAL - SETTING_RENDER_DISTANCE_MAX) * CHUNK_DIAMETER;
+        (radius_v - SETTING_RENDER_DISTANCE_MAX) * chunk_diameter;
 
     /* ---- overflow edge --------------------------------------------------- */
     if (player->raw_pos.x > OVERFLOW_EDGE)
@@ -321,31 +325,31 @@ wrap_coordinates(Player *player)
 
     /* ---- world margin ---------------------------------------------------- */
     if (player->pos.x > WORLD_MARGIN)
-        player->overflow |= FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX;
+        player->state |= FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX;
     else if (player->pos.x < -WORLD_MARGIN)
     {
-        player->overflow |= FLAG_OVERFLOW_X;
-        player->overflow &= ~FLAG_OVERFLOW_PX;
+        player->state |= FLAG_OVERFLOW_X;
+        player->state &= ~FLAG_OVERFLOW_PX;
     }
-    else player->overflow &= ~(FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX);
+    else player->state &= ~(FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX);
 
     if (player->pos.y > WORLD_MARGIN)
-        player->overflow |= FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY;
+        player->state |= FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY;
     else if (player->pos.y < -WORLD_MARGIN)
     {
-        player->overflow |= FLAG_OVERFLOW_Y;
-        player->overflow &= ~FLAG_OVERFLOW_PY;
+        player->state |= FLAG_OVERFLOW_Y;
+        player->state &= ~FLAG_OVERFLOW_PY;
     }
-    else player->overflow &= ~(FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY);
+    else player->state &= ~(FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY);
 
     if (player->pos.z > WORLD_MARGIN_V)
-        player->overflow |= FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ;
+        player->state |= FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ;
     else if (player->pos.z < -WORLD_MARGIN_V)
     {
-        player->overflow |= FLAG_OVERFLOW_Z;
-        player->overflow &= ~FLAG_OVERFLOW_PZ;
+        player->state |= FLAG_OVERFLOW_Z;
+        player->state &= ~FLAG_OVERFLOW_PZ;
     }
-    else player->overflow &= ~(FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ);
+    else player->state &= ~(FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ);
 }
 
 f64

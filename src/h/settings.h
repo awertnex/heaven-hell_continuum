@@ -20,6 +20,7 @@
 #define SETTING_PLAYER_SPEED_SPRINT         8.0f
 #define SETTING_PLAYER_SPEED_MAX            100.0f
 
+#define SETTING_HOTBAR_SLOTS_MAX            10
 
 /* ---- options menu -------------------------------------------------------- */
 #define SETTING_FOV_DEFAULT                 70.0f
@@ -32,7 +33,7 @@
 /* ---- video --------------------------------------------------------------- */
 #define SETTING_RENDER_DISTANCE_DEFAULT     6
 #define SETTING_RENDER_DISTANCE_MIN         2
-#define SETTING_RENDER_DISTANCE_MAX         16
+#define SETTING_RENDER_DISTANCE_MAX         32
 #define SETTING_TARGET_FPS_DEFAULT          60
 #define SETTING_TARGET_FPS_MIN              1
 #define SETTING_TARGET_FPS_MAX              256
@@ -42,8 +43,6 @@
 #define SETTING_GUI_SCALE_2                 2.0f
 #define SETTING_GUI_SCALE_3                 3.0f
 #define SETTING_GUI_SCALE_4                 4.0f
-
-/* ---- section: settings --------------------------------------------------- */
 
 typedef struct Settings
 {
@@ -59,8 +58,6 @@ typedef struct Settings
     u32 target_fps;
     f32 gui_scale;
 } Settings;
-
-/* ---- section: declarations ----------------------------------------------- */
 
 extern Settings settings;
 

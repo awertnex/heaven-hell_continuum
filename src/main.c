@@ -13,8 +13,6 @@
 #include "h/input.h"
 #include "h/voxel.h"
 
-/* ---- section: declarations ----------------------------------------------- */
-
 Render render =
 {
     .title = ENGINE_NAME": "ENGINE_VERSION,
@@ -154,21 +152,17 @@ Mesh mesh_skybox = {0};
 Mesh mesh_cube_of_happiness = {0};
 Mesh mesh_gizmo = {0};
 
-/* ---- section: callbacks -------------------------------------------------- */
-
+/* ---- callbacks ----------------------------------------------------------- */
 void callback_error(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
-
 static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
-
 static void callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods);
 
-/* ---- section: signatures ------------------------------------------------- */
-
+/* ---- signatures ---------------------------------------------------------- */
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_input(Player *player);
@@ -178,8 +172,6 @@ void draw_skybox(void);
 void draw_world(void);
 void draw_hud(void);
 void draw_everything(void);
-
-/* ---- section: functions -------------------------------------------------- */
 
 static void
 callback_framebuffer_size(
@@ -565,12 +557,14 @@ update_input(Player *player)
 
     if (is_key_press(bind_toggle_debug))
     {
-        if (!(state & FLAG_DEBUG))
-            state |= FLAG_DEBUG;
-        else if (!(state & FLAG_DEBUG_MORE))
-            state |= FLAG_DEBUG_MORE;
-        else
+        if (state & FLAG_DEBUG)
             state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+        else
+        {
+            state |= FLAG_DEBUG;
+            if (is_key_hold(KEY_LEFT_SHIFT))
+                state |= FLAG_DEBUG_MORE;
+        }
     }
 
     if (is_key_press(bind_toggle_perspective))
@@ -598,7 +592,9 @@ init_world(str *name)
     if (init_chunking() != 0)
         return FALSE;
 
-    update_player(&render, &lily);
+    update_player(&render, &lily, CHUNK_DIAMETER,
+            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
+            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
     set_player_block(&lily, 32700, 270, 2);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
@@ -629,7 +625,9 @@ update_world(Player *player)
 
     update_camera_movement_player(&render, player);
     update_camera_perspective(&player->camera, &projection);
-    update_player(&render, player);
+    update_player(&render, &lily, CHUNK_DIAMETER,
+            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
+            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
     update_player_target(&lily.target, &lily.delta_target);
     update_collision_static(&lily);
 
@@ -914,8 +912,7 @@ main(int argc, char **argv)
         FLAG_PARSE_CURSOR |
         FLAG_DEBUG;
 
-    /* ---- section: set mouse input ---------------------------------------- */
-
+    /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     if (glfwRawMouseMotionSupported())
     {
@@ -927,16 +924,14 @@ main(int argc, char **argv)
             &render.mouse_position.x,
             &render.mouse_position.y);
 
-    /* ---- section: set callbacks ------------------------------------------ */
-
+    /* ---- set callbacks --------------------------------------------------- */
     glfwSetFramebufferSizeCallback(render.window, callback_framebuffer_size);
     callback_framebuffer_size(render.window, render.size.x, render.size.y);
 
     glfwSetKeyCallback(render.window, callback_key);
     callback_key(render.window, 0, 0, 0, 0);
 
-    /* ---- section: graphics ----------------------------------------------- */
-
+    /* ---- graphics -------------------------------------------------------- */
     if (
             init_shader_program(INSTANCE_DIR[DIR_SHADERS],
                 &shader_fbo) != 0 ||
@@ -980,7 +975,7 @@ main(int argc, char **argv)
                     FALSE, 4, FALSE) != 0)
         goto cleanup;
 
-    glfwSwapInterval(0); /* vsync off */
+    glfwSwapInterval(1); /* vsync off */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -1008,11 +1003,11 @@ main(int argc, char **argv)
     bind_shader_uniforms();
     game_start_time = glfwGetTime();
 
-section_menu_title: /* ---- section: title menu ----------------------------- */
+section_menu_title:
 
-section_menu_pause: /* ---- section: pause menu ----------------------------- */
+section_menu_pause:
 
-section_main: /* ---- section: main loop ------------------------------------ */
+section_main:
 
     if (!(state & FLAG_WORLD_LOADED))
     {

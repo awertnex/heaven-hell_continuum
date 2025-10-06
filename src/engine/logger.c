@@ -36,8 +36,6 @@ str esc_code_close[] = "\033[0m";
 str in_message[IN_STRING_MAX] = {0};
 str out_message[OUT_STRING_MAX] = {0};
 
-/* ---- section: functions -------------------------------------------------- */
-
 b8
 init_logger()
 {

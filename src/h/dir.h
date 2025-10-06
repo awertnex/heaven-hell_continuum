@@ -8,8 +8,6 @@
 
 #define DIR_MAX     64
 
-/* ---- section: definitions ------------------------------------------------ */
-
 enum Directories
 {
     /* ---- source code directories ----------------------------------------- */
@@ -47,8 +45,6 @@ enum Directories
     DIR_WORLD_PLAYER_DATA,
 }; /* Directories */
 
-/* ---- section: declarations ----------------------------------------------- */
-
 extern str path_grandpath[PATH_MAX];
 extern str path_subpath[PATH_MAX];
 extern str path_launcherpath[PATH_MAX];
@@ -56,8 +52,6 @@ extern str path_worldpath[PATH_MAX];
 extern str GRANDPATH_DIR[][NAME_MAX];
 extern str INSTANCE_DIR[][NAME_MAX];
 extern str WORLD_DIR[][NAME_MAX];
-
-/* ---- section: signatures ------------------------------------------------- */
 
 int init_paths(void);
 

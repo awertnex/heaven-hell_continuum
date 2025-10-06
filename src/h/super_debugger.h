@@ -23,15 +23,11 @@ typedef struct DebugRect
     Vector2 scl;
 } DebugRect;
 
-/* ---- declarations -------------------------------------------------------- */
-
 extern Texture texture_super_debugger;
 extern DebugRect debug_rectangle;
 
 extern Rectangle debug_button_add;
 extern Rectangle debug_button_sub;
-
-/* ---- signatures ---------------------------------------------------------- */
 
 void init_super_debugger(v2f32 render_size);
 void free_super_debugger();

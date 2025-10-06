@@ -6,13 +6,11 @@
 #include "main.h"
 #include "settings.h"
 
-/* ---- section: world stuff ------------------------------------------------ */
-
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
 
-#define WORLD_SEA_LEVEL         62
+#define WORLD_SEA_LEVEL         0
 #define WORLD_RADIUS            2048    /* chunk count */
 #define WORLD_RADIUS_VERTICAL   64      /* chunk count */
 
@@ -21,7 +19,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        5
+#define CHUNK_BUF_RADIUS        3
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
@@ -31,8 +29,6 @@
     (CHUNK_BUF_RADIUS + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
-
-/* ---- section: general ---------------------------------------------------- */
 
 enum BlockFlags
 {
@@ -137,15 +133,11 @@ typedef struct Chunk
     u8 flag;
 } Chunk;
 
-/* ---- section: declarations ----------------------------------------------- */
-
 /* chunk pointer look-up table */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 
 /* player relative chunk tab access */
 static u16 chunk_tab_index;
-
-/* ---- section: getters & setters ------------------------------------------ */
 
 static inline v3u32
 index_to_coordinates_v3u32(u32 i, u64 size)
@@ -211,8 +203,6 @@ get_block_data(u32 i)
 {
     return ((i) & BLOCKDATA);
 }
-
-/* ---- section: signatures ------------------------------------------------- */
 
 u8 init_chunking(void);
 void update_chunking(v3i16 player_delta_chunk);

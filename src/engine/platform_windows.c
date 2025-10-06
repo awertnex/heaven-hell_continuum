@@ -15,7 +15,6 @@ make_dir(const str *path)
     int exit_code = mkdir(path);
     if (exit_code == 0)
         LOGINFO("Directory Created '%s'\n", path);
-
     return exit_code;
 }
 
@@ -35,9 +34,7 @@ _get_path_bin_root(str *path)
         LOGFATAL("%s\n", "'GetModuleFileNameA()' Failed, Process Aborted");
         return FALSE;
     }
-
     retract_path(path);
-
     return TRUE;
 }
 
