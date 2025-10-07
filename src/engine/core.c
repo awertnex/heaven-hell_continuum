@@ -1016,7 +1016,7 @@ push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
     f32 line_height = text_info.font->line_height;
     for (u64 i = 0; i < len; ++i)
     {
-        g = &text_info.glyph[text[i]];
+        g = &text_info.glyph[(u64)text[i]];
         if (text[i] == '\n')
         {
             if (align_x == TEXT_ALIGN_CENTER)
