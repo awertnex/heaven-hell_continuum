@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include "src/engine/h/platform.h"
+#include "src/engine/h/defines.h"
 #include "src/engine/memory.c"
 #include "src/engine/dir.c"
 #include "src/engine/logger.c"
@@ -12,6 +13,7 @@
 #define DIR_TESTS       DIR_SRC"tests/"
 #define CMD_MEMB        64
 #define CMD_SIZE        512
+#define ASSET_COUNT     4
 
 /* ---- section: c_standard ------------------------------------------------- */
 
@@ -112,6 +114,7 @@ str str_src[CMD_SIZE] = {0};            /* path: ./build.c */
 str str_bin[CMD_SIZE] = {0};            /* path: ./build%s, EXTENSION */
 str str_bin_new[CMD_SIZE] = {0};        /* path: ./build_new%s, EXTENSION */
 str str_bin_old[CMD_SIZE] = {0};        /* path: ./build_old%s, EXTENSION */
+str str_dir_root[CMD_SIZE] = {0};       /* bundle directory name */
 buf cmd = {NULL};
 u64 cmd_pos = 0;
 buf str_tests = {NULL};
@@ -312,6 +315,8 @@ push_cmd(const str *string)
 void
 build_main(void)
 {
+    snprintf(str_dir_root, CMD_SIZE, "%s%s", str_bin_root, DIR_ROOT);
+
     if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
 
@@ -460,6 +465,10 @@ build_test(int argc, char **argv)
     for (u64 i = 0; i < str_tests.memb; ++i)
         strip_extension(str_tests.i[i], str_tests.i[i]);
 
+    snprintf(str_dir_root, CMD_SIZE, "%s%s%s/",
+            str_bin_root, DIR_ROOT_TESTS, (str*)str_tests.i[test_index]);
+
+    /* ---- start ----------------------------------------------------------- */
     push_cmd(COMPILER);
     push_cmd(stringf("%s%s.c", DIR_TESTS, str_tests.i[test_index]));
 
@@ -472,7 +481,7 @@ build_test(int argc, char **argv)
     push_cmd(DIR_SRC"engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
-    snprintf(temp, CMD_SIZE - 1, "%sinclude/glad/glad.c", str_bin_root);
+    snprintf(temp, CMD_SIZE, "%sinclude/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
@@ -484,15 +493,15 @@ build_test(int argc, char **argv)
     push_cmd("-fno-builtin");
 
     /* ---- libs ------------------------------------------------------------ */
-    snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
+    snprintf(temp, CMD_SIZE, "-L%slib/"PLATFORM, str_bin_root);
     push_cmd(temp);
     push_cmd("-lm");
     push_cmd("-lglfw");
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
-    push_cmd(stringf("./%s%s%s",
-                DIR_ROOT_TESTS, str_tests.i[test_index], EXTENSION));
+    push_cmd(stringf("./%s%s/%s%s", DIR_ROOT_TESTS,
+                str_tests.i[test_index], str_tests.i[test_index], EXTENSION));
 
 #if defined(__linux__) || defined(__linux)
     cmd.i[cmd_pos] = NULL;
@@ -524,7 +533,6 @@ help(void)
             "    list       list all available options and tests\n",
             "    show       show build command\n",
             "    raw        show build command, raw\n");
-
     exit(EXIT_SUCCESS);
 }
 
@@ -607,54 +615,50 @@ main(int argc, char **argv)
     else
         build_cmd(argc, argv);
 
-    if (flags & FLAG_SHOW_CMD)
-        show_cmd();
+    if (flags & FLAG_SHOW_CMD)                  show_cmd();
+    if (flags & FLAG_RAW_CMD)                   raw_cmd();
 
-    if (flags & FLAG_RAW_CMD)
-        raw_cmd();
-
-    if (!is_dir_exists(DIR_ROOT) && state != STATE_TEST)
-        make_dir(DIR_ROOT);
+    if (!is_dir_exists(str_dir_root))
+        make_dir(str_dir_root);
 
     if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
         make_dir(DIR_ROOT_TESTS);
 
-    str cmd_asset_in[CMD_SIZE] = {0};
-    str cmd_asset_out[CMD_SIZE] = {0};
+    str str_from[ASSET_COUNT][CMD_SIZE] = {0};
+    str str_to[ASSET_COUNT][CMD_SIZE] = {0};
+    str str_mkdir[ASSET_COUNT][CMD_SIZE] = {0};
 
-    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sLICENSE", str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"LICENSE", str_bin_root);
-    normalize_slash(cmd_asset_in);
-    normalize_slash(cmd_asset_out);
-    if (copy_file(cmd_asset_in, cmd_asset_out) != 0) goto cleanup;
+    snprintf(str_from[0], CMD_SIZE, "%sLICENSE", str_bin_root);
+    snprintf(str_from[1], CMD_SIZE, "%slib/"PLATFORM, str_bin_root);
+    snprintf(str_from[2], CMD_SIZE, "%sresources/", str_bin_root);
+    snprintf(str_from[3], CMD_SIZE, "%sshaders/", str_bin_root);
+    snprintf(str_to[0], CMD_SIZE, "%sLICENSE", str_dir_root);
+    snprintf(str_to[1], CMD_SIZE,
+            "%slib/"PLATFORM, str_dir_root);
+    snprintf(str_to[2], CMD_SIZE,
+            "%sresources/", str_dir_root);
+    snprintf(str_to[3], CMD_SIZE,
+            "%sresources/shaders/", str_dir_root);
+    snprintf(str_mkdir[0], CMD_SIZE, "%slib/", str_dir_root);
 
-    snprintf(cmd_asset_out, CMD_SIZE - 1, "%s"DIR_ROOT"lib/", str_bin_root);
-    normalize_slash(cmd_asset_out);
-    make_dir(cmd_asset_out);
+    for (u64 i = 0; i < 4; ++i)
+    {
+        normalize_slash(str_from[i]);
+        normalize_slash(str_to[i]);
+    }
+    normalize_slash(str_mkdir[0]);
+    make_dir(str_mkdir[0]);
 
-    snprintf(cmd_asset_in, CMD_SIZE - 1, "%slib/"PLATFORM, str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1,
-            "%s"DIR_ROOT"lib/"PLATFORM, str_bin_root);
-
-    normalize_slash(cmd_asset_in);
-    normalize_slash(cmd_asset_out);
-    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
-
-    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sresources/", str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1,
-            "%s"DIR_ROOT"resources/", str_bin_root);
-
-    normalize_slash(cmd_asset_in);
-    normalize_slash(cmd_asset_out);
-    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
-
-    snprintf(cmd_asset_in, CMD_SIZE - 1, "%sshaders/", str_bin_root);
-    snprintf(cmd_asset_out, CMD_SIZE - 1,
-            "%s"DIR_ROOT"resources/shaders/", str_bin_root);
-
-    normalize_slash(cmd_asset_in);
-    normalize_slash(cmd_asset_out);
-    if (copy_dir(cmd_asset_in, cmd_asset_out, 1) != 0) goto cleanup;
+    for (u64 i = 0; i < ASSET_COUNT; ++i)
+    {
+        if (is_file(str_from[i]))
+        {
+            if (copy_file(str_from[i], str_to[i]) != 0)
+                goto cleanup;
+        }
+        else if (copy_dir(str_from[i], str_to[i], TRUE) != 0)
+            goto cleanup;
+    }
 
     if (!exec(&cmd, "build"))
         goto cleanup;
