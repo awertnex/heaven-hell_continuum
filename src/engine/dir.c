@@ -268,13 +268,21 @@ get_dir_entry_count(const str *path)
         return 0;
 
     DIR *dir = NULL;
-    u64 count;
+    u64 count = 0;
     struct dirent *entry;
     dir = opendir(path);
+    if (dir == NULL)
+        return 0;
 
     while ((entry = readdir(dir)) != NULL)
+    {
+        if (!strncmp(entry->d_name, ".\0", 2) ||
+                !strncmp(entry->d_name, "..\0", 3))
+            continue;
         ++count;
+    }
 
+    closedir(dir);
     return count;
 }
 

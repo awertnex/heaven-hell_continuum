@@ -143,7 +143,7 @@ mem_free_buf(buf *x, const str *name)
     {
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
-        LOGTRACE("%s.entry[%p] Memory Unloaded[%lldB]\n",
+        LOGTRACE("%s.i[%p] Memory Unloaded[%lldB]\n",
                 name, (void*)(uintptr_t)(x->i), x->memb * sizeof(str*));
     }
 
