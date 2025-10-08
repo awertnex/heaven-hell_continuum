@@ -18,6 +18,7 @@ enum Directories
     DIR_ROOT_LIB =          0,
     DIR_ROOT_LIB_PLATFORM,
     DIR_ROOT_RESOURCES,
+    DIR_ROOT_FONTS,
     DIR_ROOT_SHADERS,
     DIR_ROOT_INSTANCES,
 

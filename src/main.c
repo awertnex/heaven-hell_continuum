@@ -15,7 +15,7 @@
 
 Render render =
 {
-    .title = ENGINE_NAME": "ENGINE_VERSION,
+    .title = GAME_NAME": "GAME_VERSION,
     .size = {854, 480},
 };
 
@@ -56,7 +56,7 @@ Player lily =
     .spawn_point = {0},
 };
 
-ShaderProgram shader_fbo =
+static ShaderProgram shader_fbo =
 {
     .name = "fbo",
     .vertex.file_name = "fbo.vert",
@@ -65,7 +65,7 @@ ShaderProgram shader_fbo =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_default =
+static ShaderProgram shader_default =
 {
     .name = "default",
     .vertex.file_name = "default.vert",
@@ -74,7 +74,7 @@ ShaderProgram shader_default =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_text =
+static ShaderProgram shader_text =
 {
     .name = "text",
     .vertex.file_name = "text.vert",
@@ -85,7 +85,7 @@ ShaderProgram shader_text =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_skybox =
+static ShaderProgram shader_skybox =
 {
     .name = "skybox",
     .vertex.file_name = "skybox.vert",
@@ -94,7 +94,7 @@ ShaderProgram shader_skybox =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_gizmo =
+static ShaderProgram shader_gizmo =
 {
     .name = "gizmo",
     .vertex.file_name = "gizmo.vert",
@@ -103,7 +103,7 @@ ShaderProgram shader_gizmo =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_gizmo_chunk =
+static ShaderProgram shader_gizmo_chunk =
 {
     .name = "gizmo_chunk",
     .vertex.file_name = "gizmo_chunk.vert",
@@ -112,7 +112,7 @@ ShaderProgram shader_gizmo_chunk =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-ShaderProgram shader_post_processing =
+static ShaderProgram shader_post_processing =
 {
     .name = "post_processing",
     .vertex.file_name = "post_processing.vert",
@@ -120,7 +120,8 @@ ShaderProgram shader_post_processing =
     .fragment.file_name = "post_processing.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
-ShaderProgram shader_voxel =
+
+static ShaderProgram shader_voxel =
 {
     .name = "voxel",
     .vertex.file_name = "voxel.vert",
@@ -131,21 +132,21 @@ ShaderProgram shader_voxel =
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
-struct /* skybox_data */
+static struct /* skybox_data */
 {
     f32 time;
     v3f32 sun_rotation;
     v3f32 color;
 } skybox_data;
 
-FBO fbo_skybox;
-FBO fbo_world;
-FBO fbo_world_msaa;
-FBO fbo_hud;
-FBO fbo_hud_msaa;
-FBO fbo_text;
-FBO fbo_text_msaa;
-FBO fbo_post_processing;
+FBO fbo_skybox = {0};
+FBO fbo_world = {0};
+FBO fbo_world_msaa = {0};
+FBO fbo_hud = {0};
+FBO fbo_hud_msaa = {0};
+FBO fbo_text = {0};
+FBO fbo_text_msaa = {0};
+FBO fbo_post_processing = {0};
 
 Mesh mesh_fbo = {0};
 Mesh mesh_skybox = {0};
@@ -153,7 +154,7 @@ Mesh mesh_cube_of_happiness = {0};
 Mesh mesh_gizmo = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
-void callback_error(int error, const char* message)
+static void callback_error(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
@@ -933,49 +934,35 @@ main(int argc, char **argv)
 
     /* ---- graphics -------------------------------------------------------- */
     if (
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_fbo) != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_fbo, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_default, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_text, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_gizmo, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_gizmo_chunk, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_skybox, "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_post_processing,
+                "r") != 0 ||
+            init_shader_program(
+                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0 ||
 
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_default) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_text) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_gizmo) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_gizmo_chunk) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_skybox) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                &shader_post_processing) != 0 ||
-
-            init_shader_program(INSTANCE_DIR[DIR_SHADERS],
-                    &shader_voxel) != 0 ||
-
-            init_fbo(&render, &fbo_skybox,          &mesh_fbo,
-                    FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_world,           &mesh_fbo,
-                    FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_world_msaa,      &mesh_fbo,
-                    TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_hud,             &mesh_fbo,
-                    FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_hud_msaa,        &mesh_fbo,
-                    TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_text,            &mesh_fbo,
-                    FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_text_msaa,       &mesh_fbo,
-                    TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_post_processing, &mesh_fbo,
-                    FALSE, 4, FALSE) != 0)
+            init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud,         NULL, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_hud_msaa,    NULL, TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text,        NULL, FALSE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_text_msaa,   NULL, TRUE, 4, FALSE) != 0 ||
+            init_fbo(&render, &fbo_post_processing, NULL, FALSE, 4, FALSE) != 0)
         goto cleanup;
 
-    glfwSwapInterval(1); /* vsync off */
+    glfwSwapInterval(0); /* vsync off */
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -1023,6 +1010,9 @@ section_main:
         render.frame_delta = render.frame_start - render.frame_last;
         render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
+        glfwPollEvents();
+        update_key_states(&render);
+        update_input(&lily);
 
         update_mouse_movement(&render);
         update_render_settings(&render);
@@ -1030,9 +1020,6 @@ section_main:
         draw_everything();
 
         glfwSwapBuffers(render.window);
-        glfwPollEvents();
-        update_key_states(&render);
-        update_input(&lily);
 
         if (!(state & FLAG_WORLD_LOADED))
             goto section_menu_title;
@@ -1050,18 +1037,21 @@ cleanup: /* ----------------------------------------------------------------- */
     free_mesh(&mesh_gizmo);
     free_fbo(&fbo_skybox);
     free_fbo(&fbo_world);
+    free_fbo(&fbo_world_msaa);
     free_fbo(&fbo_hud);
+    free_fbo(&fbo_hud_msaa);
     free_fbo(&fbo_text);
+    free_fbo(&fbo_text_msaa);
     free_fbo(&fbo_post_processing);
     free_text();
-    glDeleteProgram(shader_fbo.id);
-    glDeleteProgram(shader_default.id);
-    glDeleteProgram(shader_text.id);
-    glDeleteProgram(shader_skybox.id);
-    glDeleteProgram(shader_gizmo.id);
-    glDeleteProgram(shader_gizmo_chunk.id);
-    glDeleteProgram(shader_voxel.id);
-    glDeleteProgram(shader_post_processing.id);
+    free_shader_program(&shader_fbo);
+    free_shader_program(&shader_default);
+    free_shader_program(&shader_text);
+    free_shader_program(&shader_skybox);
+    free_shader_program(&shader_gizmo);
+    free_shader_program(&shader_gizmo_chunk);
+    free_shader_program(&shader_voxel);
+    free_shader_program(&shader_post_processing);
     glfwDestroyWindow(render.window);
     glfwTerminate();
     return 0;

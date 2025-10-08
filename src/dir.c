@@ -21,6 +21,7 @@ str GRANDPATH_DIR[][NAME_MAX] =
     "lib/",
     "lib/"PLATFORM"/",
     "resources/",
+    "resources/fonts/",
     "resources/shaders/",
     "instances/",
 };
@@ -148,15 +149,15 @@ init_instance_directory(const str *instance_name)
 }
 
 int
-init_instance_files()
+init_instance_files(void)
 {
     if (is_dir_exists(path_subpath))
     {
         copy_dir(GRANDPATH_DIR[DIR_ROOT_RESOURCES],
-                INSTANCE_DIR[DIR_RESOURCES], 1);
+                INSTANCE_DIR[DIR_RESOURCES], 1, "r", "w");
 
         copy_dir(GRANDPATH_DIR[DIR_ROOT_SHADERS],
-                INSTANCE_DIR[DIR_SHADERS], 1);
+                INSTANCE_DIR[DIR_SHADERS], 1, "r", "w");
         return 0;
     }
     LOGFATAL("Instance Directory '%s' Not Found,"
