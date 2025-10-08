@@ -59,7 +59,10 @@ void swap_strings(str *s1, str *s2);
  * return string */
 str *swap_string_char(str *string, char c1, char c2);
 
-/* return string format */
+/* return formatted string.
+ *
+/* inspired by 'github.com/raysan5/raylib':
+ * raylib/src/rtext.c/TextFormat() */
 str *stringf(const str* format, ...);
 
 void sort_buf(buf *s_buf);

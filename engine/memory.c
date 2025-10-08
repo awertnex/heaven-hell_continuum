@@ -213,6 +213,8 @@ swap_string_char(str *string, char c1, char c2)
     return string;
 }
 
+/* inspired by 'github.com/raysan5/raylib':
+ * raylib/src/rtext.c/TextFormat() */
 str *
 stringf(const str* format, ...)
 {
@@ -233,7 +235,7 @@ stringf(const str* format, ...)
         snprintf(trunc_buf, 4, "...");
     }
 
-    index = (index + 1) % STRINGF_BUFFERS_MAX;
+    index = ++index % STRINGF_BUFFERS_MAX;
     return string;
 }
 

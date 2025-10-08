@@ -3,6 +3,7 @@
 #include <math.h>
 #include <inttypes.h>
 
+#include "../engine/h/memory.h"
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
@@ -112,17 +113,16 @@ draw_debug_info(Player *player,
     static str string[512] = {0};
     start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold, render, program, fbo, 1);
 
-    snprintf(string, 511,
-            "FPS               [%d]\n"
-            "FRAME TIME        [%.2lf]\n"
-            "FRAME DELTA       [%.5lf]\n",
-            (u32)(1.0f / render->frame_delta),
-            render->frame_start,
-            render->frame_delta);
-    push_text(string, (v2f32){MARGIN, MARGIN}, 0, 0);
+    push_text(stringf(
+                "FPS               [%d]\n"
+                "FRAME TIME        [%.2lf]\n"
+                "FRAME DELTA       [%.5lf]\n",
+                (u32)(1.0f / render->frame_delta),
+                render->frame_start,
+                render->frame_delta), (v2f32){MARGIN, MARGIN}, 0, 0);
     render_text(0x6f9f3fff);
 
-    snprintf(string, 511,
+    push_text(stringf(
             "PLAYER NAME       [%s]\n"
             "PLAYER XYZ        [%.2f %.2f %.2f]\n"
             "PLAYER BLOCK      [%d %d %d]\n"
@@ -142,92 +142,86 @@ draw_debug_info(Player *player,
             (chunk_tab[CHUNK_TAB_CENTER]) ?
             chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
             player->chunk.x, player->chunk.y, player->chunk.z,
-            player->pitch, player->yaw);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)},
-            0, 0);
+            player->pitch, player->yaw),
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
     render_text(0xffffffff);
 
-    snprintf(string, 511,
-            "PLAYER OVERFLOW X [%s]\n"
-            "PLAYER OVERFLOW Y [%s]\n"
-            "PLAYER OVERFLOW Z [%s]\n",
-            (player->state & FLAG_OVERFLOW_X) ?
-            (player->state & FLAG_OVERFLOW_PX) ?
-            "        " : "        " : "NONE",
-            (player->state & FLAG_OVERFLOW_Y) ?
-            (player->state & FLAG_OVERFLOW_PY) ?
-            "        " : "        " : "NONE",
-            (player->state & FLAG_OVERFLOW_Z) ?
-            (player->state & FLAG_OVERFLOW_PZ) ?
-            "        " : "        " : "NONE");
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
-        0, 0);
+    push_text(stringf(
+                "PLAYER OVERFLOW X [%s]\n"
+                "PLAYER OVERFLOW Y [%s]\n"
+                "PLAYER OVERFLOW Z [%s]\n",
+                (player->state & FLAG_OVERFLOW_X) ?
+                (player->state & FLAG_OVERFLOW_PX) ?
+                "        " : "        " : "NONE",
+                (player->state & FLAG_OVERFLOW_Y) ?
+                (player->state & FLAG_OVERFLOW_PY) ?
+                "        " : "        " : "NONE",
+                (player->state & FLAG_OVERFLOW_Z) ?
+                (player->state & FLAG_OVERFLOW_PZ) ?
+                "        " : "        " : "NONE"),
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
     render_text(0x995429ff);
 
-    snprintf(string, 511,
-            "                   %s\n"
-            "                   %s\n"
-            "                   %s\n",
-            (player->state & FLAG_OVERFLOW_X) &&
-            !(player->state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
-            (player->state & FLAG_OVERFLOW_Y) &&
-            !(player->state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
-            (player->state & FLAG_OVERFLOW_Z) &&
-            !(player->state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : "");
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
-            0, 0);
+    push_text(stringf(
+                "                   %s\n"
+                "                   %s\n"
+                "                   %s\n",
+                (player->state & FLAG_OVERFLOW_X) &&
+                !(player->state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
+                (player->state & FLAG_OVERFLOW_Y) &&
+                !(player->state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
+                (player->state & FLAG_OVERFLOW_Z) &&
+                !(player->state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
     render_text(0xec6051ff);
 
-    snprintf(string, 511,
-            "                   %s\n"
-            "                   %s\n"
-            "                   %s\n",
-            (player->state & FLAG_OVERFLOW_X) &&
-            (player->state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
-            (player->state & FLAG_OVERFLOW_Y) &&
-            (player->state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
-            (player->state & FLAG_OVERFLOW_Z) &&
-            (player->state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : "");
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)},
-        0, 0);
+    push_text(stringf(
+                "                   %s\n"
+                "                   %s\n"
+                "                   %s\n",
+                (player->state & FLAG_OVERFLOW_X) &&
+                (player->state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
+                (player->state & FLAG_OVERFLOW_Y) &&
+                (player->state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
+                (player->state & FLAG_OVERFLOW_Z) &&
+                (player->state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : ""),
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
     render_text(0x79ec50ff);
 
-    snprintf(string, 511,
-            "MOUSE XY          [%.2f %.2f]\n"
-            "DELTA XY          [%.2f %.2f]\n"
-            "RENDER RATIO      [%.4f]\n"
-            "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
-            "SKYBOX TIME       [%.2f]\n"
-            "SKYBOX RGB        [%.2f %.2f %.2f]\n"
-            "SUN ANGLE         [%.2f %.2f %.2f]\n",
-            render->mouse_position.x, render->mouse_position.y,
-            render->mouse_delta.x, render->mouse_delta.y,
-            (f32)render->size.x / render->size.y,
-            game_tick, game_days,
-            skybox_time,
-            skybox_color.x, skybox_color.y, skybox_color.z,
-            sun_rotation.x, sun_rotation.y, sun_rotation.z);
-    push_text(string, (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)},
-            0, 0);
+    push_text(stringf(
+                "MOUSE XY          [%.2f %.2f]\n"
+                "DELTA XY          [%.2f %.2f]\n"
+                "RENDER RATIO      [%.4f]\n"
+                "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
+                "SKYBOX TIME       [%.2f]\n"
+                "SKYBOX RGB        [%.2f %.2f %.2f]\n"
+                "SUN ANGLE         [%.2f %.2f %.2f]\n",
+                render->mouse_position.x, render->mouse_position.y,
+                render->mouse_delta.x, render->mouse_delta.y,
+                (f32)render->size.x / render->size.y,
+                game_tick, game_days,
+                skybox_time,
+                skybox_color.x, skybox_color.y, skybox_color.z,
+                sun_rotation.x, sun_rotation.y, sun_rotation.z),
+            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
     render_text(0x3f6f9fff);
 
-    snprintf(string, 511,
-            "Game:     %s v%s\n"
-            "Engine:   %s v%s\n"
-            "Author:   %s\n"
-            "OpenGL:   %s\n"
-            "GLSL:     %s\n"
-            "Vendor:   %s\n"
-            "Renderer: %s\n",
-            GAME_NAME, GAME_VERSION,
-            ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
-            glGetString(GL_VERSION),
-            glGetString(GL_SHADING_LANGUAGE_VERSION),
-            glGetString(GL_VENDOR),
-            glGetString(GL_RENDERER));
     start_text(0, FONT_SIZE_DEFAULT, &font_mono, render, program, fbo, 0);
-    push_text(string, (v2f32){MARGIN, render->size.y - MARGIN},
-            0, TEXT_ALIGN_BOTTOM);
+    push_text(stringf(
+                "Game:     %s v%s\n"
+                "Engine:   %s v%s\n"
+                "Author:   %s\n"
+                "OpenGL:   %s\n"
+                "GLSL:     %s\n"
+                "Vendor:   %s\n"
+                "Renderer: %s\n",
+                GAME_NAME, GAME_VERSION,
+                ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
+                glGetString(GL_VERSION),
+                glGetString(GL_SHADING_LANGUAGE_VERSION),
+                glGetString(GL_VENDOR),
+                glGetString(GL_RENDERER)),
+            (v2f32){MARGIN, render->size.y - MARGIN}, 0, TEXT_ALIGN_BOTTOM);
     render_text(0x3f9f3fff);
     stop_text();
 }
