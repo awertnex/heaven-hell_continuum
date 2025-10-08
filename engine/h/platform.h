@@ -4,6 +4,7 @@
 #include "defines.h"
 
 #if defined(__linux__) || defined(__linux)
+#define PLATFORM_LINUX 1
 #define PLATFORM "linux"
 #define _PLATFORM "linux"
 
@@ -11,6 +12,7 @@
 #define SLASH_NON_NATIVE '\\'
 
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#define PLATFORM_WIN 1
 #define PLATFORM "win"
 #define _PLATFORM "windows"
 

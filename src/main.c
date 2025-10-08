@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "../engine/h/core.h"
-#include "../engine/h/logger.h"
-#include "../engine/h/math.h"
+#include <engine/h/core.h>
+#include <engine/h/logger.h>
+#include <engine/h/math.h>
 
 #include "h/main.h"
 #include "h/settings.h"
@@ -860,9 +860,14 @@ draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#include <stdio.h>
 int
 main(int argc, char **argv)
 {
+    str *bontoot = get_path_bin_root();
+    printf("  BONTOOOOOOOOOOOT: %s\n", bontoot);
+    return 0;
+
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))
@@ -891,7 +896,6 @@ main(int argc, char **argv)
 
     if (MODE_INTERNAL_COLLIDE)
         LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
-
 
     if (init_paths() != 0 ||
             create_instance("new_instance") != 0)
@@ -950,8 +954,10 @@ main(int argc, char **argv)
                 INSTANCE_DIR[DIR_SHADERS], &shader_post_processing,
                 "r") != 0 ||
             init_shader_program(
-                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0 ||
+                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0)
+        goto cleanup;
 
+    if(
             init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
             init_fbo(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
             init_fbo(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||

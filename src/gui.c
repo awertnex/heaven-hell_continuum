@@ -3,7 +3,7 @@
 #include <math.h>
 #include <inttypes.h>
 
-#include "../engine/h/memory.h"
+#include <engine/h/memory.h>
 #include "h/gui.h"
 #include "h/chunking.h"
 #include "h/logic.h"
@@ -56,16 +56,17 @@ print_menu_layers()
 b8
 init_gui(void)
 {
-    str font_path[4][PATH_MAX] = {0};
-
-    snprintf(font_path[0], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf");
-    snprintf(font_path[1], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf");
-    snprintf(font_path[2], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf");
-    snprintf(font_path[3], PATH_MAX, "%s%s", INSTANCE_DIR[DIR_FONTS],
-            "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf");
+    str *font_path[4] =
+    {
+        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+                "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
+        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+                "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf"),
+        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+                "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf"),
+        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+                "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
+    };
 
     normalize_slash(font_path[0]);
     normalize_slash(font_path[1]);

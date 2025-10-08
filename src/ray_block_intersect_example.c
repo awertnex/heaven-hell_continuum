@@ -1,5 +1,5 @@
-#include "../engine/h/defines.h"
-#include "../engine/h/math.h"
+#include <engine/h/defines.h>
+#include <engine/h/math.h>
 
 typedef struct BlockHitInfo
 {

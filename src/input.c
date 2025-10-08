@@ -1,5 +1,5 @@
-#include "../engine/h/core.h"
-#include "../engine/h/defines.h"
+#include <engine/h/core.h>
+#include <engine/h/defines.h>
 #include "h/input.h"
 #include "h/main.h"
 #include "h/logic.h"

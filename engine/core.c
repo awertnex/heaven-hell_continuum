@@ -3,10 +3,8 @@
 #include <sys/stat.h>
 
 #include "h/core.h"
-
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "include/stb_truetype_modified.h"
-
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/math.h"
@@ -799,7 +797,7 @@ init_font(Font *font, u32 resolution, const str *font_path)
     if (font->buf == NULL)
         return FALSE;
 
-    if (!stbtt_InitFont(&font->info, font->buf, 0))
+    if (!stbtt_InitFont(&font->info, (const unsigned char*)font->buf, 0))
     {
         LOGERROR("Font Initializing '%s' Failed, 'stbtt_InitFont' Failed\n",
                 font_path);

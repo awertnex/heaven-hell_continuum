@@ -1,7 +1,7 @@
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
 
-#include "../../engine/h/core.h"
+#include <engine/h/core.h>
 
 typedef struct Player
 {

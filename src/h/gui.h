@@ -1,7 +1,7 @@
 #ifndef GAME_GUI_H
 #define GAME_GUI_H
 
-#include "../../engine/h/core.h"
+#include <engine/h/core.h>
 #include "logic.h"
 
 #define MARGIN 10
