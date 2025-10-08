@@ -863,9 +863,6 @@ draw_everything(void)
 int
 main(int argc, char **argv)
 {
-    get_path_bin_root();
-    return 0;
-
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))
