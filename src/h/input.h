@@ -1,8 +1,8 @@
 #ifndef GAME_INPUT_H
 #define GAME_INPUT_H
 
-#include "../engine/h/core.h"
-#include "../engine/h/defines.h"
+#include "../../engine/h/core.h"
+#include "../../engine/h/defines.h"
 #include "settings.h"
 
 /* ---- movement ------------------------------------------------------------ */

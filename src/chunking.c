@@ -1,8 +1,8 @@
 #include <stdlib.h>
 
-#include "engine/h/memory.h"
-#include "engine/h/math.h"
-#include "engine/h/logger.h"
+#include "../engine/h/memory.h"
+#include "../engine/h/math.h"
+#include "../engine/h/logger.h"
 
 #include "h/main.h"
 #include "h/chunking.h"
@@ -87,9 +87,7 @@ free_chunking(void)
 void
 add_block(u32 index, u32 x, u32 y, u32 z)
 {
-    v3u32 chunk_tab_coordinates =
-        index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
-
+    v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
     u8 is_on_edge = 0;
 
     x %= CHUNK_DIAMETER;
@@ -98,9 +96,8 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 
     if (x == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.x == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + 1] == NULL);
+        is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)])
             chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)] &= ~NEGATIVE_X;
@@ -112,8 +109,7 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 
     if (x == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
+        is_on_edge = (coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)])
             chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)] &= ~POSITIVE_X;
@@ -125,9 +121,8 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 
     if (y == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.y == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
+        is_on_edge = (coordinates.y == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
             chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] &= ~NEGATIVE_Y;
@@ -139,9 +134,8 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 
     if (y == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.y == 0)
-            || (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
+        is_on_edge = (coordinates.y == 0) ||
+            (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x]))
             chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] &= ~POSITIVE_Y;
@@ -153,9 +147,8 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 
     if (z == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.z == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
+        is_on_edge = (coordinates.z == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
             chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] &= ~NEGATIVE_Z;
@@ -167,9 +160,8 @@ add_block(u32 index, u32 x, u32 y, u32 z)
     
     if (z == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.z == 0)
-            || (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
+        is_on_edge = (coordinates.z == 0) ||
+            (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
             chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] &= ~POSITIVE_Z;
@@ -189,8 +181,7 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 void
 remove_block(u32 index, u32 x, u32 y, u32 z)
 {
-    v3u32 chunk_tab_coordinates =
-        index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
+    v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
 
     u8 is_on_edge = 0;
 
@@ -200,9 +191,8 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (x == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.x == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + 1] == NULL);
+        is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)])
             chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)] |= NEGATIVE_X;
@@ -212,8 +202,7 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (x == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
+        is_on_edge = (coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)])
             chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)] |= POSITIVE_X;
@@ -223,9 +212,8 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (y == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.y == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
+        is_on_edge = (coordinates.y == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
             chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= NEGATIVE_Y;
@@ -235,9 +223,8 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (y == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.y == 0)
-            || (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
+        is_on_edge = (coordinates.y == 0) ||
+            (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
             chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= POSITIVE_Y;
@@ -247,9 +234,8 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (z == CHUNK_DIAMETER - 1)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.z == CHUNK_BUF_DIAMETER - 1)
-            || (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
+        is_on_edge = (coordinates.z == CHUNK_BUF_DIAMETER - 1) ||
+            (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
             chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= NEGATIVE_Z;
@@ -259,9 +245,8 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
     if (z == 0)
     {
-        is_on_edge =
-            (chunk_tab_coordinates.z == 0)
-            || (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
+        is_on_edge = (coordinates.z == 0) ||
+            (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
             chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= POSITIVE_Z;
@@ -281,11 +266,13 @@ terrain_noise(v3i32 coordinates)
 static void
 generate_chunk(u32 index)
 {
-    if (!chunk_tab[index] || chunk_tab[index]->flag & FLAG_CHUNK_GENERATED)
+    if (!chunk_tab[index])
         return;
 
     for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
+    {
         for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
+        {
             for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
             {
                 v3i32 coordinates =
@@ -294,6 +281,7 @@ generate_chunk(u32 index)
                     y + (chunk_tab[index]->pos.y * CHUNK_DIAMETER),
                     z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER),
                 };
+
                 f32 sin_x = (u32)((sinf((f32)coordinates.x * DEG2RAD)
                              + 1.0f) * 80.0f) + 2;
                 f32 sin_y = (u32)((sinf((f32)coordinates.y * DEG2RAD)
@@ -310,6 +298,14 @@ generate_chunk(u32 index)
                     chunk_tab[index]->color = COLOR_CHUNK_RENDER;
                 }
             }
+        }
+    }
+
+    if (chunk_tab[index]->flag & FLAG_CHUNK_GENERATED)
+    {
+        mesh_chunk(index);
+        return;
+    }
 
     chunk_tab[index]->vbo ?
         glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
@@ -330,7 +326,7 @@ generate_chunk(u32 index)
     glEnableVertexAttribArray(0);
 
     glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64),
-            (void*)(1 * sizeof(u32)));
+            (void*)sizeof(u32));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);

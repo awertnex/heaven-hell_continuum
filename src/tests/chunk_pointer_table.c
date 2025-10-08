@@ -3,9 +3,9 @@
 #include "../../include/raylib/raylib.h"
 #include "../../include/raylib/rlgl.h"
 
-#include "../engine/h/defines.h"
-#include "../engine/h/memory.h"
-#include "../engine/logger.c"
+#include "../../engine/h/defines.h"
+#include "../../engine/h/memory.h"
+#include "../../engine/logger.c"
 
 #define MC_C_OFF                    (Color){0x10, 0x10, 0x10, 0xff}
 #define MC_C_GRAY                   (Color){0x40, 0x40, 0x40, 0xff}

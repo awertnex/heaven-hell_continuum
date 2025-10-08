@@ -3,11 +3,11 @@
 #include <string.h>
 #include <dirent.h>
 
-#include "engine/h/core.h"
-#include "engine/h/platform.h"
-#include "engine/h/dir.h"
-#include "engine/h/logger.h"
-#include "engine/h/memory.h"
+#include "../engine/h/core.h"
+#include "../engine/h/platform.h"
+#include "../engine/h/dir.h"
+#include "../engine/h/logger.h"
+#include "../engine/h/memory.h"
 #include "h/main.h"
 #include "h/dir.h"
 

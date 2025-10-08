@@ -1,4 +1,4 @@
-#include "engine/core.c"
+#include "../engine/core.c"
 #include "h/main.h"
 
 /* ---- declarations -------------------------------------------------------- */

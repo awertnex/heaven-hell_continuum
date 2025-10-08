@@ -5,14 +5,14 @@
 #include "h/core.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "../../include/stb_truetype_modified.h"
+#include "include/stb_truetype_modified.h"
 
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/math.h"
 #include "h/memory.h"
 
-u32 keyboard_key[KEYBOARD_KEYS_MAX];
+u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 {
     GLFW_KEY_SPACE,
@@ -233,6 +233,8 @@ init_shader(const str *shaders_dir, Shader *shader, const str *read_format)
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
+    mem_free((void*)&shader->source, strlen(shader->source), "shader.source");
+    shader->source = NULL;
 
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
     if (!shader->loaded)
@@ -293,15 +295,15 @@ free_shader_program(ShaderProgram *program)
     if (!program->id) return;
     glDeleteProgram(program->id);
 
-    if (program->vertex.type)
+    if (program->vertex.source)
         mem_free((void*)&program->vertex.source,
                 strlen(program->vertex.source), "vertex.source");
 
-    if (program->fragment.type)
+    if (program->fragment.source)
         mem_free((void*)&program->fragment.source,
                 strlen(program->fragment.source), "fragment.source");
 
-    if (program->geometry.type && program->geometry.source)
+    if (program->geometry.source)
         mem_free((void*)&program->geometry.source,
                 strlen(program->geometry.source), "geometry.source");
 }

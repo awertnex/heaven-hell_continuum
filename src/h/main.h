@@ -10,8 +10,8 @@
 #define GAME_NAME           "Heaven-Hell Continuum"
 #define GAME_VERSION        "0.2.1"GAME_VERSION_DEV
 
-#include "../engine/h/core.h"
-#include "../engine/h/defines.h"
+#include "../../engine/h/core.h"
+#include "../../engine/h/defines.h"
 
 #define MODE_INTERNAL_DEBUG     1
 #define MODE_INTERNAL_COLLIDE   0

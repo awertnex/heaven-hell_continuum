@@ -9,11 +9,10 @@
 #include "../../include/raylib/raylib.h"
 #include "../../include/raylib/rlgl.h"
 
+#include "../../engine/h/defines.h"
+#include "../../engine/logger.c"
 #include "../chunking.c"
 #include "../dir.c"
-
-#include "../engine/h/defines.h"
-#include "../engine/logger.c"
 
 
 u8 active = 1;

@@ -1,5 +1,5 @@
 #ifdef SUPER_DEBUGGER_ENGINE
-#include "../include/raylib.h"
+#include "include/raylib.h"
 
 #include "h/super_debugger.h"
 

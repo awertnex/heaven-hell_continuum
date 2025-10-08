@@ -1,10 +1,10 @@
 #include <unistd.h>
 
-#include "src/engine/h/platform.h"
-#include "src/engine/h/defines.h"
-#include "src/engine/memory.c"
-#include "src/engine/dir.c"
-#include "src/engine/logger.c"
+#include "engine/h/platform.h"
+#include "engine/h/defines.h"
+#include "engine/memory.c"
+#include "engine/dir.c"
+#include "engine/logger.c"
 
 #define DIR_ROOT        "Heaven-Hell Continuum/"
 #define DIR_ROOT_TESTS  "tests/"
@@ -28,7 +28,7 @@ const long C_STD = __STDC_VERSION__;
 /* ---- section: platform --------------------------------------------------- */
 
 #if defined(__linux__) || defined(__linux)
-#include "src/engine/platform_linux.c"
+#include "engine/platform_linux.c"
 
 #define EXTENSION       ""
 #define COMPILER        "gcc"EXTENSION
@@ -42,12 +42,12 @@ str str_children[][32] =
     DIR_SRC"input.c",
     DIR_SRC"logic.c",
     DIR_SRC"voxel.c",
-    DIR_SRC"engine/core.c",
-    DIR_SRC"engine/dir.c",
-    DIR_SRC"engine/logger.c",
-    DIR_SRC"engine/math.c",
-    DIR_SRC"engine/memory.c",
-    DIR_SRC"engine/platform_linux.c",
+    "engine/core.c",
+    "engine/dir.c",
+    "engine/logger.c",
+    "engine/math.c",
+    "engine/memory.c",
+    "engine/platform_linux.c",
 };
 
 str str_libs[][32] =
@@ -64,7 +64,7 @@ str str_libs[][32] =
 };
 
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#include "src/engine/platform_windows.c"
+#include "engine/platform_windows.c"
 
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
@@ -78,12 +78,12 @@ str str_children[][32] =
     DIR_SRC"input.c",
     DIR_SRC"logic.c",
     DIR_SRC"voxel.c",
-    DIR_SRC"engine/core.c",
-    DIR_SRC"engine/dir.c",
-    DIR_SRC"engine/logger.c",
-    DIR_SRC"engine/math.c",
-    DIR_SRC"engine/memory.c",
-    DIR_SRC"engine/platform_windows.c",
+    "engine/core.c",
+    "engine/dir.c",
+    "engine/logger.c",
+    "engine/math.c",
+    "engine/memory.c",
+    "engine/platform_windows.c",
 };
 
 str str_libs[][24] =
@@ -332,15 +332,15 @@ build_main(void)
     push_cmd(DIR_SRC"input.c");
     push_cmd(DIR_SRC"logic.c");
     push_cmd(DIR_SRC"voxel.c");
-    push_cmd(DIR_SRC"engine/core.c");
-    push_cmd(DIR_SRC"engine/dir.c");
-    push_cmd(DIR_SRC"engine/logger.c");
-    push_cmd(DIR_SRC"engine/math.c");
-    push_cmd(DIR_SRC"engine/memory.c");
-    push_cmd(DIR_SRC"engine/platform_linux.c");
+    push_cmd("engine/core.c");
+    push_cmd("engine/dir.c");
+    push_cmd("engine/logger.c");
+    push_cmd("engine/math.c");
+    push_cmd("engine/memory.c");
+    push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
-    snprintf(temp, CMD_SIZE - 1, "%sinclude/glad/glad.c", str_bin_root);
+    snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
@@ -391,15 +391,15 @@ build_cmd(int argc, char **argv)
     }
 
     /* ---- children -------------------------------------------------------- */
-    push_cmd(DIR_SRC"engine/core.c");
-    push_cmd(DIR_SRC"engine/dir.c");
-    push_cmd(DIR_SRC"engine/logger.c");
-    push_cmd(DIR_SRC"engine/math.c");
-    push_cmd(DIR_SRC"engine/memory.c");
-    push_cmd(DIR_SRC"engine/platform_linux.c");
+    push_cmd("engine/core.c");
+    push_cmd("engine/dir.c");
+    push_cmd("engine/logger.c");
+    push_cmd("engine/math.c");
+    push_cmd("engine/memory.c");
+    push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
-    snprintf(temp, CMD_SIZE - 1, "%sinclude/glad/glad.c", str_bin_root);
+    snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
@@ -473,15 +473,15 @@ build_test(int argc, char **argv)
     push_cmd(stringf("%s%s.c", DIR_TESTS, str_tests.i[test_index]));
 
     /* ---- children -------------------------------------------------------- */
-    push_cmd(DIR_SRC"engine/core.c");
-    push_cmd(DIR_SRC"engine/dir.c");
-    push_cmd(DIR_SRC"engine/logger.c");
-    push_cmd(DIR_SRC"engine/math.c");
-    push_cmd(DIR_SRC"engine/memory.c");
-    push_cmd(DIR_SRC"engine/platform_"_PLATFORM".c");
+    push_cmd("engine/core.c");
+    push_cmd("engine/dir.c");
+    push_cmd("engine/logger.c");
+    push_cmd("engine/math.c");
+    push_cmd("engine/memory.c");
+    push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
-    snprintf(temp, CMD_SIZE, "%sinclude/glad/glad.c", str_bin_root);
+    snprintf(temp, CMD_SIZE, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
@@ -526,12 +526,12 @@ fail_cmd(void)
 void
 help(void)
 {
-    LOGINFO("%s%s%s%s%s%s",
-            "Usage: ./build [options]...\n",
-            "Options:\n",
-            "    help       print this help\n",
-            "    list       list all available options and tests\n",
-            "    show       show build command\n",
+    printf("%s",
+            "Usage: ./build [options]...\n"
+            "Options:\n"
+            "    help       print this help\n"
+            "    list       list all available options and tests\n"
+            "    show       show build command\n"
             "    raw        show build command, raw\n");
     exit(EXIT_SUCCESS);
 }
@@ -539,11 +539,11 @@ help(void)
 void
 list(void)
 {
-    printf("%s%s%s%s%s",
-            "Options:\n",
-            "    engine\n",
-            "    launcher\n",
-            "    test [n]\n",
+    printf("%s",
+            "Options:\n"
+            "    engine\n"
+            "    launcher\n"
+            "    test [n]\n"
             "Tests:\n");
 
     str_tests = get_dir_contents(DIR_TESTS);
@@ -570,7 +570,7 @@ list(void)
     }
 
     mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
-    free_cmd();
+    mem_free_buf(&str_tests, "str_tests");
     exit(EXIT_SUCCESS);
 }
 

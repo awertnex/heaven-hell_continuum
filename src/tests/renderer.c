@@ -1,7 +1,7 @@
-#include "../engine/core.c"
-#include "../engine/logger.c"
-#include "../engine/dir.c"
-#include "../engine/math.c"
+#include "../../engine/core.c"
+#include "../../engine/logger.c"
+#include "../../engine/dir.c"
+#include "../../engine/math.c"
 
 #define DIR_SHADERS "src/shaders/"
 #define SETTING_DAY_TICKS_MAX   24000 /*temp*/
