@@ -1,8 +1,5 @@
-#include "../engine/core.c"
+#include <engine/core.c>
 #include "h/main.h"
-
-/* ---- declarations -------------------------------------------------------- */
-// pthread_t thrd_chunk_handler;
 
 /* ---- signatures ---------------------------------------------------------- */
 void *chunk_handler();

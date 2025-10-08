@@ -1,7 +1,7 @@
 #ifndef GAME_SETTING_H
 #define GAME_SETTING_H
 
-#include "../../engine/h/defines.h"
+#include <engine/h/defines.h>
 
 /* ---- internal ------------------------------------------------------------ */
 #define SETTING_CAMERA_DISTANCE_MAX         4.0f

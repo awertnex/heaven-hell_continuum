@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <inttypes.h>
 
-#include "../engine/h/math.h"
+#include <engine/h/math.h>
 #include "h/main.h"
 #include "h/logic.h"
 #include "h/settings.h"

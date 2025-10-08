@@ -1,8 +1,8 @@
 #ifndef GAME_LAUNCHER_H
 #define GAME_LAUNCHER_H
 
-#include "../../engine/include/raylib.h"
-#include "../../engine/h/defines.h"
+#include <raylib.h>
+#include <engine/h/defines.h>
 
 #define WIDTH 1280
 #define HEIGHT 720

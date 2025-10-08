@@ -27,64 +27,25 @@ const long C_STD = __STDC_VERSION__;
 
 /* ---- section: platform --------------------------------------------------- */
 
-#if defined(__linux__) || defined(__linux)
+#if PLATFORM_LINUX
 #include "engine/platform_linux.c"
 
 #define EXTENSION       ""
 #define COMPILER        "gcc"EXTENSION
 #define STR_OUT         DIR_ROOT"hhc"
 
-str str_children[][32] =
-{
-    DIR_SRC"chunking.c",
-    DIR_SRC"dir.c",
-    DIR_SRC"gui.c",
-    DIR_SRC"input.c",
-    DIR_SRC"logic.c",
-    DIR_SRC"voxel.c",
-    "engine/core.c",
-    "engine/dir.c",
-    "engine/logger.c",
-    "engine/math.c",
-    "engine/memory.c",
-    "engine/platform_linux.c",
-};
-
-str str_libs[][32] =
+str str_libs[][24] =
 {
     "-lm",
-    //"-lpthread",
     "-lglfw",
-    //"-lXrandr",
-    //"-lXi",
-    //"-lX11",
-    //"-lXxf86vm",
-    //"-ldl",
-    //"-lXinerama",
 };
 
-#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#elif PLATFORM_WIN
 #include "engine/platform_windows.c"
 
 #define EXTENSION       ".exe"
 #define COMPILER        "gcc"EXTENSION
 #define STR_OUT         "\""DIR_ROOT"hhc"EXTENSION"\""
-
-str str_children[][32] =
-{
-    DIR_SRC"chunking.c",
-    DIR_SRC"dir.c",
-    DIR_SRC"gui.c",
-    DIR_SRC"input.c",
-    DIR_SRC"logic.c",
-    DIR_SRC"voxel.c",
-    "engine/core.c",
-    "engine/dir.c",
-    "engine/logger.c",
-    "engine/math.c",
-    "engine/memory.c",
-    "engine/platform_windows.c",
-};
 
 str str_libs[][24] =
 {
@@ -123,7 +84,7 @@ str str_main[CMD_SIZE] = DIR_SRC"main.c";
 
 str str_cflags[][48] =
 {
-    "-Wl,-rpath=$ORIGIN/lib/"PLATFORM,
+    ("-Wl,-rpath=$ORIGIN/lib/"PLATFORM),
     "-std=c99",
     "-Wall",
     "-Wextra",
@@ -199,22 +160,23 @@ rebuild_self(int argc, char **argv)
 
     LOGINFO("%s\n", "Rebuilding Self..");
 
-    snprintf(cmd.i[0], CMD_SIZE - 1, "%s", COMPILER);
-    snprintf(cmd.i[1], CMD_SIZE - 1, "%s", str_src);
+    snprintf(cmd.i[0], CMD_SIZE, "%s", COMPILER);
+    snprintf(cmd.i[1], CMD_SIZE, "%s", str_src);
     normalize_slash(cmd.i[1]);
-    snprintf(cmd.i[2], CMD_SIZE - 1, "%s", "-std=c99");
-    snprintf(cmd.i[3], CMD_SIZE - 1, "%s", "-Wall");
-    snprintf(cmd.i[4], CMD_SIZE - 1, "%s", "-Wextra");
-    snprintf(cmd.i[5], CMD_SIZE - 1, "%s", "-fno-builtin");
-    snprintf(cmd.i[6], CMD_SIZE - 1, "%s",
+    snprintf(cmd.i[2], CMD_SIZE, "%s", "-std=c99");
+    snprintf(cmd.i[3], CMD_SIZE, "%s", "-Wall");
+    snprintf(cmd.i[4], CMD_SIZE, "%s", "-Wextra");
+    snprintf(cmd.i[5], CMD_SIZE, "%s", "-fno-builtin");
+    snprintf(cmd.i[6], CMD_SIZE, "%s",
             "-Wno-implicit-function-declaration");
+    snprintf(cmd.i[7], CMD_SIZE, "-I%s", str_bin_root);
 
-    snprintf(cmd.i[7], CMD_SIZE - 1, "%s", "-o");
-    snprintf(cmd.i[8], CMD_SIZE - 1, "%s", str_bin_new);
-    normalize_slash(cmd.i[8]);
+    snprintf(cmd.i[8], CMD_SIZE, "%s", "-o");
+    snprintf(cmd.i[9], CMD_SIZE, "%s", str_bin_new);
+    normalize_slash(cmd.i[9]);
 
-#if defined(__linux__) || defined(__linux)
-    cmd.i[9] = NULL;
+#if PLATFORM_LINUX
+    cmd.i[10] = NULL;
 #endif
 
     if (exec(&cmd, "cmd"))
@@ -340,12 +302,13 @@ build_main(void)
     push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
+    push_cmd(stringf("-I%s", str_bin_root));
     snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
-    push_cmd("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
     push_cmd("-std=c99");
     push_cmd("-Wall");
     push_cmd("-Wextra");
@@ -356,14 +319,14 @@ build_main(void)
     snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
     posix_slash(temp);
     push_cmd(temp);
-    push_cmd("-lm");
-    push_cmd("-lglfw");
+    for (u32 i = 0; i < arr_len(str_libs); ++i)
+        push_cmd(str_libs[i]);
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(STR_OUT);
 
-#if defined(__linux__) || defined(__linux)
+#if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
 #endif
 }
@@ -399,13 +362,14 @@ build_cmd(int argc, char **argv)
     push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
+    push_cmd(stringf("-I%s", str_bin_root));
     snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
     if (compare_argv("raylib", argc, argv))
-        push_cmd("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+        push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
     else
     {
         posix_slash(str_cflags[0]);
@@ -434,7 +398,7 @@ build_cmd(int argc, char **argv)
     push_cmd("-o");
     push_cmd(str_out);
 
-#if defined(__linux__) || defined(__linux)
+#if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
 #endif
 }
@@ -481,12 +445,13 @@ build_test(int argc, char **argv)
     push_cmd("engine/platform_"_PLATFORM".c");
 
     /* ---- includes -------------------------------------------------------- */
+    push_cmd(stringf("-I%s", str_bin_root));
     snprintf(temp, CMD_SIZE, "%sengine/include/glad/glad.c", str_bin_root);
     normalize_slash(temp);
     push_cmd(temp);
 
     /* ---- cflags ---------------------------------------------------------- */
-    push_cmd("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
     push_cmd("-std=c99");
     push_cmd("-Wall");
     push_cmd("-Wextra");
@@ -495,15 +460,15 @@ build_test(int argc, char **argv)
     /* ---- libs ------------------------------------------------------------ */
     snprintf(temp, CMD_SIZE, "-L%slib/"PLATFORM, str_bin_root);
     push_cmd(temp);
-    push_cmd("-lm");
-    push_cmd("-lglfw");
+    for (u32 i = 0; i < arr_len(str_libs); ++i)
+        push_cmd(str_libs[i]);
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(stringf("./%s%s/%s%s", DIR_ROOT_TESTS,
                 str_tests.i[test_index], str_tests.i[test_index], EXTENSION));
 
-#if defined(__linux__) || defined(__linux)
+#if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
 #endif
 }

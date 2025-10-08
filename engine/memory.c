@@ -19,12 +19,11 @@ mem_alloc(void **x, u64 size, const str *name)
     if (*x == NULL)
     {
         LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
+                name, NULL);
         return FALSE;
     }
     LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
             name, (void*)(uintptr_t)(*x), size);
-
     return TRUE;
 }
 
@@ -38,12 +37,11 @@ mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
     if (*x == NULL)
     {
         LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
+                name, NULL);
         return FALSE;
     }
     LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
             name, (void*)(uintptr_t)(*x), memb * size);
-
     return TRUE;
 }
 
@@ -57,7 +55,6 @@ mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
 
     if (!mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i))
         return FALSE;
-
     if (!mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
     {
         mem_free((void*)&x->i, memb * sizeof(str*), name_i);
@@ -66,7 +63,6 @@ mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
 
     for (u64 i = 0; i < memb; ++i)
         x->i[i] = x->buf + (i * size);
-
     x->memb = memb;
     x->size = size;
     x->loaded = TRUE;
@@ -79,10 +75,9 @@ mem_realloc(void **x, u64 size, const str *name)
     if (*x == NULL)
     {
         LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
-                name, (void*)(uintptr_t)(*x));
+                name, NULL);
         return FALSE;
     }
-
     void *temp = realloc(*x, size);
     if (temp == NULL)
     {
@@ -90,11 +85,9 @@ mem_realloc(void **x, u64 size, const str *name)
                 name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
-
     *x = temp;
     LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
             name, (void*)(uintptr_t)(*x), size);
-
     return TRUE;
 }
 
@@ -104,10 +97,9 @@ mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
     if (*x == NULL)
     {
         LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
-                name, (void*)(uintptr_t)(*x));
+                name, NULL);
         return FALSE;
     }
-
     void *temp = realloc(*x, memb * size);
     if (temp == NULL)
     {
@@ -115,11 +107,9 @@ mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
                 name, (void*)(uintptr_t)(*x));
         return FALSE;
     }
-
     *x = temp;
     LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
             name, (void*)(uintptr_t)(*x), memb * size);
-
     return TRUE;
 }
 
@@ -129,32 +119,34 @@ mem_free(void **x, u64 size, const str *name)
     if (*x == NULL)
         return;
 
+    void *temp = *x;
     memset(*x, 0, size);
     free(*x);
-    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
     *x = NULL;
+    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n",
+            name, (void*)(uintptr_t)(temp), size);
 }
 
 void
 mem_free_buf(buf *x, const str *name)
 {
+    void *temp = NULL;
     if (x->i != NULL)
     {
+        temp = x->i;
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
         LOGTRACE("%s.i[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(x->i), x->memb * sizeof(str*));
+                name, (void*)(uintptr_t)(temp), x->memb * sizeof(str*));
     }
-
     if (x->buf != NULL)
     {
+        temp = x->buf;
         memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
         LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(x->buf), x->memb * x->size);
+                name, (void*)(uintptr_t)(temp), x->memb * x->size);
     }
-
     *x = (buf){NULL};
 }
 

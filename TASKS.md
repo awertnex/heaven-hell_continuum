@@ -34,3 +34,4 @@ quirks:
 - [ ] get subpixel mouse deltas, PLEASE
 - [ ] limit framerate
 - [ ] add camera look-at
+- [ ] fix double press for windows

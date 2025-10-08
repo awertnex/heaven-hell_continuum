@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../../engine/h/core.h"
-#include "../../engine/h/logger.h"
-#include "../../engine/h/math.h"
-#include "../../engine/h/memory.h"
+#include <engine/h/core.h>
+#include <engine/h/logger.h>
+#include <engine/h/math.h>
+#include <engine/h/memory.h>
 #include "../h/main.h"
 #include "../h/settings.h"
 #include "../h/chunking.h"

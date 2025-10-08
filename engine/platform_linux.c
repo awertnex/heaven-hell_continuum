@@ -30,7 +30,7 @@ _get_path_absolute(const str *path, str *path_real)
 b8
 _get_path_bin_root(str *path)
 {
-    if (!readlink("/proc/self/exe", path, PATH_MAX - 1))
+    if (!readlink("/proc/self/exe", path, PATH_MAX))
     {
         LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;

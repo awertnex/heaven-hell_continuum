@@ -26,15 +26,28 @@ _get_path_absolute(const str *path, str *path_real)
     return TRUE;
 }
 
+#include <stdio.h>
 b8
 _get_path_bin_root(str *path)
 {
-    if (!GetModuleFileNameA(NULL, path, PATH_MAX - 1))
+    if (strlen(_pgmptr) + 1 >= STRING_MAX)
     {
-        LOGFATAL("%s\n", "'GetModuleFileNameA()' Failed, Process Aborted");
+        LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;
     }
-    retract_path(path);
+    str temp[STRING_MAX] = {0};
+    u64 cursor = 0;
+    strncpy(temp, _pgmptr, STRING_MAX);
+    retract_path(temp);
+    while (temp[cursor] != '\0' &&
+            temp[cursor] != '\\' &&
+            cursor < STRING_MAX)
+        ++cursor;
+    if (cursor + 1 >= STRING_MAX)
+        return FALSE;
+    strncpy(path, temp, cursor);
+    strncat(path, "\\", STRING_MAX - cursor);
+    strncat(path, temp + cursor, STRING_MAX - cursor);
     return TRUE;
 }
 

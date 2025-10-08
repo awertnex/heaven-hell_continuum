@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "../engine/h/core.h"
-#include "../engine/h/logger.h"
-#include "../engine/h/math.h"
+#include <engine/h/core.h>
+#include <engine/h/logger.h>
+#include <engine/h/math.h>
 
 #include "h/main.h"
 #include "h/settings.h"
@@ -892,7 +892,6 @@ main(int argc, char **argv)
     if (MODE_INTERNAL_COLLIDE)
         LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
 
-
     if (init_paths() != 0 ||
             create_instance("new_instance") != 0)
         return -1;
@@ -950,8 +949,10 @@ main(int argc, char **argv)
                 INSTANCE_DIR[DIR_SHADERS], &shader_post_processing,
                 "r") != 0 ||
             init_shader_program(
-                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0 ||
+                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0)
+        goto cleanup;
 
+    if(
             init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
             init_fbo(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
             init_fbo(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||

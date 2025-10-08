@@ -1,7 +1,7 @@
 #ifndef GAME_CHUNKING_H
 #define GAME_CHUNKING_H
 
-#include "../../engine/h/defines.h"
+#include <engine/h/defines.h>
 
 #include "main.h"
 #include "settings.h"

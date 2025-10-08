@@ -6,11 +6,11 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
-#include "../../include/raylib/raylib.h"
-#include "../../include/raylib/rlgl.h"
+#include <raylib.h>
+#include <rlgl.h>
 
-#include "../../engine/h/defines.h"
-#include "../../engine/logger.c"
+#include <engine/h/defines.h>
+#include <engine/logger.c>
 #include "../chunking.c"
 #include "../dir.c"
 
