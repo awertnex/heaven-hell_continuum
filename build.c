@@ -653,10 +653,10 @@ main(int argc, char **argv)
     {
         if (is_file(str_from[i]))
         {
-            if (copy_file(str_from[i], str_to[i]) != 0)
+            if (copy_file(str_from[i], str_to[i], "r", "w") != 0)
                 goto cleanup;
         }
-        else if (copy_dir(str_from[i], str_to[i], TRUE) != 0)
+        else if (copy_dir(str_from[i], str_to[i], TRUE, "r", "w") != 0)
             goto cleanup;
     }
 
