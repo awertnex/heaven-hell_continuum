@@ -860,12 +860,10 @@ draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#include <stdio.h>
 int
 main(int argc, char **argv)
 {
-    str *bontoot = get_path_bin_root();
-    printf("  BONTOOOOOOOOOOOT: %s\n", bontoot);
+    get_path_bin_root();
     return 0;
 
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))

@@ -30,22 +30,24 @@ _get_path_absolute(const str *path, str *path_real)
 b8
 _get_path_bin_root(str *path)
 {
-    str temp[PATH_MAX] = {0};
-    u64 cursor = 0;
-    if (!GetModuleFileNameA(NULL, temp, PATH_MAX))
+    if (strlen(_pgmptr) + 1 >= STRING_MAX)
     {
         LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;
     }
+    str temp[STRING_MAX] = {0};
+    u64 cursor = 0;
+    strncpy(temp, _pgmptr, STRING_MAX);
     retract_path(temp);
-    while (temp[cursor] != '\0' && temp[cursor] != '\\' && cursor < PATH_MAX)
+    while (temp[cursor] != '\0' &&
+            temp[cursor] != '\\' &&
+            cursor < STRING_MAX)
         ++cursor;
-    if (cursor + 1 >= PATH_MAX)
+    if (cursor + 1 >= STRING_MAX)
         return FALSE;
     strncpy(path, temp, cursor);
-    strncat(path, "\\", PATH_MAX - cursor);
-    strncat(path, temp + cursor, PATH_MAX - cursor);
-    printf("OPEN. CURSOR. %s\n", path);
+    strncat(path, "\\", STRING_MAX - cursor);
+    strncat(path, temp + cursor, STRING_MAX - cursor);
     return TRUE;
 }
 
