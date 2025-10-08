@@ -1,7 +1,7 @@
 #ifndef GAME_GUI_H
 #define GAME_GUI_H
 
-#include "../engine/h/core.h"
+#include "../../engine/h/core.h"
 #include "logic.h"
 
 #define MARGIN 10
@@ -11,8 +11,6 @@
 #define center_cursor   glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
 
 #define BTN_COUNT 110
-
-/* ---- section: colors ----------------------------------------------------- */
 
 #define COL_MENU_BG_OVERLAY color(0x00, 0x00, 0x00, 0xff, 0x46)
 #define COL_TEXTURE_DEFAULT color(0xff, 0xff, 0xff, 0xff, 0xff)
@@ -24,8 +22,6 @@
 #define COL_Y               color(0x32, 0xff, 0x32, 0xff, 0xff)
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
 #define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
-
-/* ---- section: declarations ----------------------------------------------- */
 
 extern Font font;
 extern Font font_bold;
@@ -53,8 +49,6 @@ enum MenuNames
     MENU_DEATH,
 
 }; /* MenuNames */
-
-/* ---- section: button stuff ----------------------------------------------- */
 
 enum ButtonNames
 {
@@ -105,10 +99,8 @@ enum ButtonNames
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-/* ---- section: signatures ------------------------------------------------- */
-
 b8 init_gui(void);
-void update_render_settings(v2f32 render_size);
+void update_render_settings(Render *render);
 void free_gui(void);
 
 void draw_debug_info(Player *player,
@@ -135,4 +127,3 @@ void btn_func_quit_game();
 void btn_func_quit_world();
 
 #endif /* GAME_GUI_H */
-

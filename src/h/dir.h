@@ -2,13 +2,11 @@
 #define GAME_DIR_H
 
 #include "main.h"
-#include "../engine/h/defines.h"
-#include "../engine/h/dir.h"
-#include "../engine/h/limits.h"
+#include "../../engine/h/defines.h"
+#include "../../engine/h/dir.h"
+#include "../../engine/h/limits.h"
 
 #define DIR_MAX     64
-
-/* ---- section: definitions ------------------------------------------------ */
 
 enum Directories
 {
@@ -20,6 +18,7 @@ enum Directories
     DIR_ROOT_LIB =          0,
     DIR_ROOT_LIB_PLATFORM,
     DIR_ROOT_RESOURCES,
+    DIR_ROOT_FONTS,
     DIR_ROOT_SHADERS,
     DIR_ROOT_INSTANCES,
 
@@ -47,8 +46,6 @@ enum Directories
     DIR_WORLD_PLAYER_DATA,
 }; /* Directories */
 
-/* ---- section: declarations ----------------------------------------------- */
-
 extern str path_grandpath[PATH_MAX];
 extern str path_subpath[PATH_MAX];
 extern str path_launcherpath[PATH_MAX];
@@ -56,8 +53,6 @@ extern str path_worldpath[PATH_MAX];
 extern str GRANDPATH_DIR[][NAME_MAX];
 extern str INSTANCE_DIR[][NAME_MAX];
 extern str WORLD_DIR[][NAME_MAX];
-
-/* ---- section: signatures ------------------------------------------------- */
 
 int init_paths(void);
 
@@ -77,4 +72,3 @@ void init_world_directory(const str *world_name);
 void init_world_files(const str *world_name);
 
 #endif /* GAME_DIR_H */
-

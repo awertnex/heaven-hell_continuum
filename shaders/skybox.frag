@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 uniform vec3 sun_rotation;
 uniform vec3 sky_color;
@@ -8,4 +8,3 @@ void main()
 {
     color = vec4(sky_color, 1.0);
 }
-

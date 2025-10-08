@@ -1,4 +1,4 @@
-#include "engine/core.c"
+#include "../engine/core.c"
 #include "h/main.h"
 
 /* ---- declarations -------------------------------------------------------- */
@@ -10,7 +10,8 @@ void update_input(Player *player);
 void draw_world();
 void draw_gui();
 
-int main(void)
+int
+main(void)
 {
     /* ---- init main ------------------------------------------------------- */
     init_textures();
@@ -20,7 +21,9 @@ section_menu_title: /* ------------------------------------------------------ */
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
         mouse_delta = GetMouseDelta();
-        if (!(state & FLAG_PARSE_CURSOR)) /* for fullscreen cursor jump prevention */
+
+        /* for fullscreen cursor jump prevention */
+        if (!(state & FLAG_PARSE_CURSOR))
         {
             state |= FLAG_PARSE_CURSOR;
             mouse_delta = (Vector2){0.0f, 0.0f};
@@ -32,8 +35,11 @@ section_menu_title: /* ------------------------------------------------------ */
 
         BeginDrawing();
         {
-            //draw_texture_tiled(); /* TODO: draw tiled texture of title screen */
-            ClearBackground(DARKBROWN); /* TODO: make actual panoramic scene */
+            /* TODO: draw tiled texture of title screen */
+            //draw_texture_tiled();
+
+            /* TODO: make actual panoramic scene */
+            ClearBackground(DARKBROWN);
             update_menus(setting.render_size);
         }
         EndDrawing();
@@ -43,7 +49,8 @@ section_menu_title: /* ------------------------------------------------------ */
     }
 
 section_menu_world: /* ------------------------------------------------------ */
-                    /* TODO: make real pausing instead of using the uncleared bg as still */
+
+    /* TODO: make real pausing instead of using the uncleared bg as still */
     BeginDrawing();
     draw_menu_overlay(setting.render_size);
     EndDrawing();
@@ -74,20 +81,6 @@ section_main: /* ------------------------------------------------------------ */
             disable_cursor;
             center_cursor;
         }
-//         update_input(&lily);
-        update_render_settings(setting.render_size);
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-//
-//         BeginDrawing();
-//         {
-//             BeginMode3D(lily.camera);
-//             draw_skybox();
-//            draw_chunk_tab(&block[dirt].texture);
-//            draw_world();
-//             EndMode3D();
-//         }
-//        draw_gui();
-//         EndDrawing();
     }
 
     /* ---- section_cleanup ------------------------------------------------- */
@@ -105,13 +98,16 @@ struct /* Chunk Handler Args */
     v3i16 player_delta_chunk;
     u8 lock;
 } chunk_handler_args;
-void *chunk_handler()
+void *
+chunk_handler()
 {
     chunk_handler_args.player_delta_chunk = lily.delta_chunk;
     chunk_handler_args.lock = 1;
     while (!WindowShouldClose() && (state & FLAG_ACTIVE))
     {
-        LOGINFO("Delta[%03d %03d]", chunk_handler_args.player_delta_chunk.x, chunk_handler_args.player_delta_chunk.y);
+        LOGINFO("Delta[%03d %03d]",
+                chunk_handler_args.player_delta_chunk.x,
+                chunk_handler_args.player_delta_chunk.y);
         if (!(state & FLAG_CHUNK_BUF_DIRTY)) continue;
 
         chunk_handler_args.lock = 0;
@@ -121,9 +117,12 @@ void *chunk_handler()
     return NULL;
 }
 
-void update_input(Player *player)
+void
+update_input(Player *player)
 {
-//    player->movement_step_length = sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
+//    player->movement_step_length =
+//    sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
+//
 //    if (player->movement_step_length > 0.0f)
 //    {
 //        player->v.x /= player->movement_step_length;
@@ -132,7 +131,8 @@ void update_input(Player *player)
 //        player->pos.x += player->v.x * player->movement_speed;
 //        player->pos.y += player->v.y * player->movement_speed;
 //    }
-//    /* ---- misc ------------------------------------------------------- */
+
+    /* ---- misc ------------------------------------------------------------ */
 
     if (IsKeyPressed(bind_toggle_fullscreen))
     {
@@ -173,27 +173,27 @@ void update_input(Player *player)
             else btn_func_back();
         }
     }
-
-    /* ---- debug ----------------------------------------------------------- */
-#if !RELEASE_BUILD
-    if (IsKeyPressed(KEY_TAB))
-        state ^= FLAG_SUPER_DEBUG;
-#endif /* RELEASE_BUILD */
 }
 
-void draw_world()
+void
+draw_world()
 {
     /* ---- player chunk bounding box --------------------------------------- */
     if (state & FLAG_DEBUG_MORE)
         draw_bounding_box(
                 (Vector3){
-                (f32)(lily.chunk.x * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.y * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.z * CHUNK_DIAMETER) + ((f32)CHUNK_DIAMETER / 2)},
+                (f32)(lily.chunk.x * CHUNK_DIAMETER) +
+                ((f32)CHUNK_DIAMETER / 2),
+                (f32)(lily.chunk.y * CHUNK_DIAMETER) +
+                ((f32)CHUNK_DIAMETER / 2),
+                (f32)(lily.chunk.z * CHUNK_DIAMETER) +
+                ((f32)CHUNK_DIAMETER / 2)},
+
                 (Vector3){
                 (f32)CHUNK_DIAMETER,
                 (f32)CHUNK_DIAMETER,
                 (f32)CHUNK_DIAMETER},
+
                 ORANGE);
 
     /* ---- player target bounding box -------------------------------------- */
@@ -202,34 +202,43 @@ void draw_world()
             && chunk_tab[chunk_tab_index] != NULL)
     {
         if (chunk_tab[chunk_tab_index]->block
-                [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER)]
-                [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER)]
-                [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER)]
-                & NOT_EMPTY)
+                [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
+                    CHUNK_DIAMETER)]
+                [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
+                    CHUNK_DIAMETER)]
+                [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
+                    CHUNK_DIAMETER)] & NOT_EMPTY)
         {
             draw_block_wires(lily.delta_target);
             if (state & FLAG_DEBUG_MORE)
-                DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+                DrawLine3D(Vector3Subtract(lily.camera.position,
+                            (Vector3){0.0f, 0.0f, 0.5f}),
                         lily.camera.target, RED);
         }
         else if (state & FLAG_DEBUG_MORE)
-            DrawLine3D(Vector3Subtract(lily.camera.position, (Vector3){0.0f, 0.0f, 0.5f}),
+            DrawLine3D(Vector3Subtract(lily.camera.position,
+                        (Vector3){0.0f, 0.0f, 0.5f}),
                     lily.camera.target, GREEN);
     }
 
     if (state & FLAG_DEBUG_MORE)
     {
-        /*temp
-          draw_block_wires(&target_coordinates_feet);
-          printf("feet: %d %d %d\n", target_coordinates_feet.x, target_coordinates_feet.y, target_coordinates_feet.z);
-          */
+//        draw_block_wires(&target_coordinates_feet);
+//        printf("feet: %d %d %d\n",
+//                target_coordinates_feet.x,
+//                target_coordinates_feet.y,
+//                target_coordinates_feet.z);
+
         DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
         draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
-        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z); /*temp AABB collision*/
+
+        /*temp AABB collision*/
+        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z);
     }
 }
 
-void draw_gui()
+void
+draw_gui()
 {
     if (state & FLAG_HUD)
     {
@@ -243,4 +252,3 @@ void draw_gui()
     if (state & FLAG_SUPER_DEBUG)
         draw_super_debugger(setting.render_size);
 }
-

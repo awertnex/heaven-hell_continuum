@@ -1,8 +1,7 @@
-#version 330 core
+#version 430 core
 
 layout (location = 0) in vec3 a_pos;
 
-uniform float ratio;
 uniform mat4 mat_translation;
 uniform mat4 mat_rotation;
 uniform mat4 mat_orientation;
@@ -29,4 +28,3 @@ void main()
 
     vertex_color = vec4(floor(a_pos), 1.0) * 20.0;
 }
-

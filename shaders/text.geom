@@ -1,14 +1,14 @@
-#version 330 core
+#version 430 core
+
+#define MAX_VERTICES 6
 
 layout (points) in;
 layout (triangle_strip, max_vertices = MAX_VERTICES) out;
 
-#define MAX_VERTICES 6
-
-in vec2 vs_tex_coords[];
-out vec2 tex_coords;
 uniform float char_size;
 uniform vec2 font_size;
+in vec2 vs_tex_coords[];
+out vec2 tex_coords;
 
 void main()
 {
@@ -38,4 +38,3 @@ void main()
             EndPrimitive();
     }
 }
-

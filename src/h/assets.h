@@ -1,7 +1,7 @@
 #ifndef GAME_ASSETS_H
 #define GAME_ASSETS_H
 
-#include "../engine/h/defines.h"
+#include "../../engine/h/defines.h"
 #include "dir.h"
 
 enum BlockStateFlags
@@ -41,8 +41,6 @@ typedef struct TextureLayout
     u8 nx, ny, nz;
 } TextureLayout;
 
-/* ---- section: declarations ----------------------------------------------- */
-
 extern u16 base_texture_size;
 extern TextureLayout one_side;
 extern TextureLayout two_side;
@@ -51,10 +49,7 @@ extern TextureLayout three_side_alt;
 extern TextureLayout four_side;
 extern Block block[1023];               /* standard block array */
 
-/* ---- section: signatures ------------------------------------------------- */
-
 void init_textures();
 void unload_textures();
 
 #endif /* GAME_ASSETS_H */
-
