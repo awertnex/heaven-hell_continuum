@@ -228,7 +228,6 @@ init_shader(const str *shaders_dir, Shader *shader, const str *read_format)
     if (shader->source == NULL)
         return -1;
     shader->source[cursor] = 0;
-    printf("cursorstrlen: %ld %ld\n", cursor, strlen(shader->source));
     (shader->id) ? glDeleteShader(shader->id) : 0;
 
     shader->id = glCreateShader(shader->type);
