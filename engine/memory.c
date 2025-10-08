@@ -235,7 +235,7 @@ stringf(const str* format, ...)
         snprintf(trunc_buf, 4, "...");
     }
 
-    index = ++index % STRINGF_BUFFERS_MAX;
+    index = (index + 1) % STRINGF_BUFFERS_MAX;
     return string;
 }
 

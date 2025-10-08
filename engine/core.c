@@ -938,8 +938,7 @@ cleanup:
 }
 
 void
-start_text(
-        u64 length, f32 size, Font *font,
+start_text(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear)
 {
     if (!length)

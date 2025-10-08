@@ -424,8 +424,7 @@ u8 init_text(void);
  * size = font height in pixels,
  * color = hex format: 0xrrggbbaa,
  * clear = clear the framebuffer before rendering */
-void start_text(
-        u64 length, f32 size, Font *font,
+void start_text(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
 /* push string's glyph metrics, position

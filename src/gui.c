@@ -110,9 +110,8 @@ draw_debug_info(Player *player,
         f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
         Render *render, ShaderProgram *program, FBO *fbo)
 {
-    static str string[512] = {0};
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono_bold, render, program, fbo, 1);
-
+    start_text(0, FONT_SIZE_DEFAULT,
+            &font_mono_bold, render, program, fbo, TRUE);
     push_text(stringf(
                 "FPS               [%d]\n"
                 "FRAME TIME        [%.2lf]\n"
@@ -123,27 +122,27 @@ draw_debug_info(Player *player,
     render_text(0x6f9f3fff);
 
     push_text(stringf(
-            "PLAYER NAME       [%s]\n"
-            "PLAYER XYZ        [%.2f %.2f %.2f]\n"
-            "PLAYER BLOCK      [%d %d %d]\n"
-            "PLAYER CHUNK      [%d %d %d]\n"
-            "CURRENT CHUNK     [%d %d %d]\n"
-            "PLAYER PITCH      [%.2f]\n"
-            "PLAYER YAW        [%.2f]\n",
-            player->name,
-            player->pos.x, player->pos.y, player->pos.z,
-            (i32)floorf(player->pos.x),
-            (i32)floorf(player->pos.y),
-            (i32)floorf(player->pos.z),
-            (chunk_tab[CHUNK_TAB_CENTER]) ?
-            chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
-            (chunk_tab[CHUNK_TAB_CENTER]) ?
-            chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
-            (chunk_tab[CHUNK_TAB_CENTER]) ?
-            chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
-            player->chunk.x, player->chunk.y, player->chunk.z,
-            player->pitch, player->yaw),
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
+                "PLAYER NAME       [%s]\n"
+                "PLAYER XYZ        [%.2f %.2f %.2f]\n"
+                "PLAYER BLOCK      [%d %d %d]\n"
+                "PLAYER CHUNK      [%d %d %d]\n"
+                "CURRENT CHUNK     [%d %d %d]\n"
+                "PLAYER PITCH      [%.2f]\n"
+                "PLAYER YAW        [%.2f]\n",
+                player->name,
+                player->pos.x, player->pos.y, player->pos.z,
+                (i32)floorf(player->pos.x),
+                (i32)floorf(player->pos.y),
+                (i32)floorf(player->pos.z),
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
+                player->chunk.x, player->chunk.y, player->chunk.z,
+                player->pitch, player->yaw),
+                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
     render_text(0xffffffff);
 
     push_text(stringf(
@@ -206,7 +205,7 @@ draw_debug_info(Player *player,
             (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
     render_text(0x3f6f9fff);
 
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono, render, program, fbo, 0);
+    start_text(0, FONT_SIZE_DEFAULT, &font_mono, render, program, fbo, FALSE);
     push_text(stringf(
                 "Game:     %s v%s\n"
                 "Engine:   %s v%s\n"

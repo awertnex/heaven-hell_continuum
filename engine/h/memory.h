@@ -61,7 +61,7 @@ str *swap_string_char(str *string, char c1, char c2);
 
 /* return formatted string.
  *
-/* inspired by 'github.com/raysan5/raylib':
+ * inspired by 'github.com/raysan5/raylib':
  * raylib/src/rtext.c/TextFormat() */
 str *stringf(const str* format, ...);
 
