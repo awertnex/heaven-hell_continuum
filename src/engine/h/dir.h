@@ -20,26 +20,13 @@ b8 is_dir(const str *path);
 /* return FALSE (0) on failure */
 b8 is_dir_exists(const str *path);
 
-/* copy file at path into file/directory at destination.
+/* return calloc'd buf of file contents, not NULL terminated,
+ * return file size in bytes to file_len.
  *
- * return non-zero on failure */
-u8 copy_file(const str *path, const str *destination);
-
-/* copy directory at path into directory at destination.
- *
- * overwrite TRUE will copy contents at path
- * into directory at destination,
- * overwrite FALSE will copy directory at path itself
- * into directory at destination.
- *
- * return non-zero on failure */
-u8 copy_dir(const str *path, const str *destination, b8 overwrite);
-
-/* return calloc'd buf of file contents,
- * return file size in bytes + 1 to file_len.
+ * read_format = read file at path in specified format (fopen() parameter).
  *
  * return NULL on failure */
-void *get_file_contents(const str *path, u64 *file_len, const str *format);
+str *get_file_contents(const str *path, u64 *file_len, const str *format);
 
 /* return directory entries at dir_path.
  *
@@ -47,6 +34,32 @@ void *get_file_contents(const str *path, u64 *file_len, const str *format);
 buf get_dir_contents(const str *path);
 
 u64 get_dir_entry_count(const str *path);
+
+/* copy file at path into file/directory at destination.
+ *
+ * read_format = read file at path in specified format (fopen() parameter),
+ * write_format = write new file at destination in specified format
+ * (fopen() parameter).
+ *
+ * return non-zero on failure */
+u8 copy_file(const str *path, const str *destination,
+        const str *read_format, const str *write_format);
+
+/* copy directory at path into directory at destination.
+ *
+ * overwrite TRUE will copy contents at path
+ * into directory at destination,
+ * overwrite FALSE will copy directory at path itself
+ * into directory at destination,
+ *
+ * read_format = read files within path in specified format
+ * (fopen() parameter),
+ * write_format = write new files at destination in specified format
+ * (fopen() parameter).
+ *
+ * return non-zero on failure */
+u8 copy_dir(const str *path, const str *destination, b8 overwrite,
+        const str *read_format, const str *write_format);
 
 str *get_path_absolute(const str *path);
 

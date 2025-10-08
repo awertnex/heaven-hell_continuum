@@ -327,11 +327,21 @@ int init_window(Render *render);
 /* return non-zero on failure */
 int init_glad(void);
 
-/* return non-zero on failure */
-int init_shader(const str *shaders_dir, Shader *shader);
+/* read_format = read files within path in specified format
+ * (fread() parameter),
+ *
+ * return non-zero on failure */
+int init_shader(const str *shaders_dir, Shader *shader,
+        const str *read_format);
 
-/* return non-zero on failure */
-int init_shader_program(const str *shaders_dir, ShaderProgram *program);
+/* read_format = read files within path in specified format
+ * (fread() parameter),
+ *
+ * return non-zero on failure */
+int init_shader_program(const str *shaders_dir, ShaderProgram *program,
+        const str *read_format);
+
+void free_shader_program(ShaderProgram *program);
 
 /* return non-zero on failure */
 int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,

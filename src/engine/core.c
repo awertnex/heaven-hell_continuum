@@ -205,56 +205,57 @@ init_glad(void)
         return -1;
     }
 
-    LOGDEBUG("OpenGL:    %s\n", glGetString(GL_VERSION));
-    LOGDEBUG("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    LOGDEBUG("Vendor:    %s\n", glGetString(GL_VENDOR));
-    LOGDEBUG("Renderer:  %s\n", glGetString(GL_RENDERER));
-
+    LOGINFO("OpenGL:    %s\n", glGetString(GL_VERSION));
+    LOGINFO("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOGINFO("Vendor:    %s\n", glGetString(GL_VENDOR));
+    LOGINFO("Renderer:  %s\n", glGetString(GL_RENDERER));
     return 0;
 }
 
 /* ---- section: shaders ---------------------------------------------------- */
 
 int
-init_shader(const str *shaders_dir, Shader *shader)
+init_shader(const str *shaders_dir, Shader *shader, const str *read_format)
 {
     if (!shader->type)
         return 0;
-
     str str_reg[PATH_MAX] = {0};
     snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
 
-    if ((shader->source = get_file_contents(str_reg, NULL, "r")) == NULL)
+    u64 cursor = 0;
+    shader->source =
+        (GLchar*)get_file_contents(str_reg, &cursor, read_format);
+    if (shader->source == NULL)
         return -1;
+    shader->source[cursor] = 0;
+    printf("cursorstrlen: %ld %ld\n", cursor, strlen(shader->source));
     (shader->id) ? glDeleteShader(shader->id) : 0;
 
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
 
-    mem_free((void*)&shader->source, strlen(shader->source), "shader.source");
-
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
     if (!shader->loaded)
     {
-        char log[2048];
-        glGetShaderInfoLog(shader->id, 2048, NULL, log);
+        char log[STRING_MAX];
+        glGetShaderInfoLog(shader->id, STRING_MAX, NULL, log);
         LOGERROR("Shader '%s':\n%s\n", shader->file_name, log);
         return -1;
     }
     else LOGINFO("Shader %d '%s' Loaded\n", shader->id, shader->file_name);
-
     return 0;
 }
 
 int
-init_shader_program(const str *shaders_dir, ShaderProgram *program)
+init_shader_program(const str *shaders_dir, ShaderProgram *program,
+        const str *read_format)
 {
-    if (init_shader(shaders_dir, &program->vertex) != 0)
+    if (init_shader(shaders_dir, &program->vertex, read_format) != 0)
         return -1;
-    if (init_shader(shaders_dir, &program->geometry) != 0)
+    if (init_shader(shaders_dir, &program->geometry, read_format) != 0)
         return -1;
-    if (init_shader(shaders_dir, &program->fragment) != 0)
+    if (init_shader(shaders_dir, &program->fragment, read_format) != 0)
         return -1;
     (program->id) ? glDeleteProgram(program->id) : 0;
 
@@ -270,8 +271,8 @@ init_shader_program(const str *shaders_dir, ShaderProgram *program)
     glGetProgramiv(program->id, GL_LINK_STATUS, &program->loaded);
     if (!program->loaded)
     {
-        char log[2048];
-        glGetProgramInfoLog(program->id, 2048, NULL, log);
+        char log[STRING_MAX];
+        glGetProgramInfoLog(program->id, STRING_MAX, NULL, log);
         LOGERROR("Shader Program '%s':\n%s\n", program->name, log);
         return -1;
     }
@@ -284,8 +285,26 @@ init_shader_program(const str *shaders_dir, ShaderProgram *program)
         glDeleteShader(program->geometry.id);
     if (program->fragment.loaded)
         glDeleteShader(program->fragment.id);
-
     return 0;
+}
+
+void
+free_shader_program(ShaderProgram *program)
+{
+    if (!program->id) return;
+    glDeleteProgram(program->id);
+
+    if (program->vertex.type)
+        mem_free((void*)&program->vertex.source,
+                strlen(program->vertex.source), "vertex.source");
+
+    if (program->fragment.type)
+        mem_free((void*)&program->fragment.source,
+                strlen(program->fragment.source), "fragment.source");
+
+    if (program->geometry.type && program->geometry.source)
+        mem_free((void*)&program->geometry.source,
+                strlen(program->geometry.source), "geometry.source");
 }
 
 /* ---- section: meat ------------------------------------------------------- */
