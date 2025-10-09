@@ -51,7 +51,9 @@ void mem_free_buf(buf *x, const str *name);
 void mem_zero(void **x, u64 size, const str *name);
 
 void print_bits(u64 x, u8 bit_count);
-void swap_bits(char *c1, char *c2, u8 bit_count);
+void swap_bits(char *c1, char *c2);
+void swap_bits_u8(u8 *c1, u8 *c2);
+void swap_bits_u32(u32 *c1, u32 *c2);
 void swap_strings(str *s1, str *s2);
 
 /* swap all occurrences of c1 in string with c2.
