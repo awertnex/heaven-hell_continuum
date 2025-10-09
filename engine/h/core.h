@@ -361,8 +361,6 @@ int generate_mesh(Mesh *mesh, GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data);
 
-void draw_mesh(Mesh *mesh);
-
 void free_mesh(Mesh *mesh);
 
 /* apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw)
@@ -416,7 +414,7 @@ b8 init_font(Font *font, u32 size, const str *font_path);
 void free_font(Font *font);
 
 /* init text rendering settings */
-u8 init_text(void);
+u8 text_init(void);
 
 /* start text rendering batch.
  *
@@ -424,7 +422,7 @@ u8 init_text(void);
  * size = font height in pixels,
  * color = hex format: 0xrrggbbaa,
  * clear = clear the framebuffer before rendering */
-void start_text(u64 length, f32 size, Font *font,
+void text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
 /* push string's glyph metrics, position
@@ -436,19 +434,19 @@ void start_text(u64 length, f32 size, Font *font,
  * enum: TextAlignment.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'render_text()' */
-void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
+ * batch, chained with 'text_render()' */
+void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
 /* render text to framebuffer.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'push_text()' */
-void render_text(u32 color);
+ * batch, chained with 'text_push()' */
+void text_render(u32 color);
 
 /* cleanup for text rendering.
  * unbind text framebuffer, enable depth test */
-void stop_text(void);
+void text_stop(void);
 
-void free_text(void);
+void text_free(void);
 
 #endif /* ENGINE_CORE_H */

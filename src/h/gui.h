@@ -100,12 +100,7 @@ enum ButtonNames
 }; /* ButtonNames */
 
 b8 init_gui(void);
-void update_render_settings(Render *render);
 void free_gui(void);
-
-void draw_debug_info(Player *player,
-        f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
-        Render *render, ShaderProgram *program, FBO *fbo);
 
 #if 0 // TODO: undef
 void update_menus(v2f32 render_size);

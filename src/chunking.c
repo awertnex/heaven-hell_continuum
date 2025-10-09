@@ -9,15 +9,10 @@
 #include "h/logic.h"
 
 /* chunk buffer, raw chunk data */
-static Chunk *chunk_buf = {0};
+Chunk *chunk_buf = {0};
 
 /* chunk pointer look-up table */
 Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
-
-static struct Globals
-{
-    f32 opacity;
-} globals;
 
 /* index = (chunk_tab index); */
 static void generate_chunk(u32 index);
@@ -613,70 +608,6 @@ get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
     return offset.x +
         (offset.y * CHUNK_BUF_DIAMETER) +
         (offset.z * CHUNK_BUF_LAYER);
-}
-
-void
-draw_chunk_tab(Uniform *uniform)
-{
-    if (state & FLAG_DEBUG_MORE)
-        globals.opacity = 0.2f;
-    else
-        globals.opacity = 1.0f;
-    glUniform1f(uniform->voxel.opacity, globals.opacity);
-
-    for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        if ((chunk_tab[i] == NULL) ||
-                !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
-            continue;
-
-        v3f32 chunk_position =
-        {
-            (f32)(chunk_tab[i]->pos.x * CHUNK_DIAMETER),
-            (f32)(chunk_tab[i]->pos.y * CHUNK_DIAMETER),
-            (f32)(chunk_tab[i]->pos.z * CHUNK_DIAMETER),
-        };
-
-        glUniform3fv(uniform->voxel.chunk_position, 1,
-                (GLfloat*)&chunk_position);
-
-        glBindVertexArray(chunk_tab[i]->vao);
-        glDrawArrays(GL_POINTS, 0, CHUNK_VOLUME);
-    }
-    glBindVertexArray(0);
-}
-
-void
-draw_chunk_gizmo(Mesh *mesh)
-{
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        if ((chunk_tab[i] == NULL) ||
-                !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
-            continue;
-
-        v3f32 cursor = index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
-        cursor = sub_v3f32(cursor, (v3f32){
-                CHUNK_BUF_RADIUS + 0.5f,
-                CHUNK_BUF_RADIUS + 0.5f,
-                CHUNK_BUF_RADIUS + 0.5f});
-        glUniform3fv(uniform.gizmo_chunk.cursor, 1,
-                (GLfloat*)&cursor);
-
-        f32 pulse = (sinf((cursor.z * 0.3f) -
-                    (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
-        glUniform1f(uniform.gizmo_chunk.size, pulse);
-
-        v4f32 color =
-        {
-            (f32)((chunk_tab[i]->color >> 24) & 0xff) / 0xff,
-            (f32)((chunk_tab[i]->color >> 16) & 0xff) / 0xff,
-            (f32)((chunk_tab[i]->color >> 8) & 0xff) / 0xff,
-            (f32)((chunk_tab[i]->color & 0xff)) / 0xff,
-        };
-        glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
-        draw_mesh(mesh);
-    }
 }
 
 #ifdef FUCK // TODO: undef FUCK

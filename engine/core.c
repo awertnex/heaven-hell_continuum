@@ -564,13 +564,6 @@ cleanup:
 }
 
 void
-draw_mesh(Mesh *mesh)
-{
-    glBindVertexArray(mesh->vao);
-    glDrawElements(GL_TRIANGLES, mesh->ebo_len, GL_UNSIGNED_INT, 0);
-}
-
-void
 free_mesh(Mesh *mesh)
 {
     mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
@@ -899,7 +892,7 @@ free_font(Font *font)
 /* ---- section: text ------------------------------------------------------- */
 
 u8
-init_text(void)
+text_init(void)
 {
     if (!mem_alloc((void*)&mesh_text.vbo_data,
                 STRING_MAX * sizeof(GLfloat) * 4, "mesh_text.vbo_data"))
@@ -936,7 +929,7 @@ cleanup:
 }
 
 void
-start_text(u64 length, f32 size, Font *font,
+text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear)
 {
     if (!length)
@@ -972,7 +965,7 @@ cleanup:
 }
 
 void
-push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
+text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 {
     if (!mesh_text.vbo_data)
     {
@@ -1081,7 +1074,7 @@ push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 }
 
 void
-render_text(u32 color)
+text_render(u32 color)
 {
     if (!mesh_text.vbo_data)
     {
@@ -1122,7 +1115,7 @@ render_text(u32 color)
 }
 
 void
-stop_text(void)
+text_stop(void)
 {
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1130,7 +1123,7 @@ stop_text(void)
 }
 
 void
-free_text(void)
+text_free(void)
 {
     free_mesh(&mesh_text);
 }

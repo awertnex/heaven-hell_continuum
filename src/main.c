@@ -1,4 +1,5 @@
 #include <string.h>
+#include <inttypes.h>
 
 #include <engine/h/core.h>
 #include <engine/h/logger.h>
@@ -166,12 +167,10 @@ static void callback_key(
 /* ---- signatures ---------------------------------------------------------- */
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
+void update_render_settings(void);
 void update_input(Player *player);
 b8 init_world(str *name);
 void update_world(Player *player);
-void draw_skybox(void);
-void draw_world(void);
-void draw_hud(void);
 void draw_everything(void);
 
 static void
@@ -198,6 +197,12 @@ callback_key(
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+void
+update_render_settings(void)
+{
+    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT;
 }
 
 void
@@ -661,8 +666,18 @@ update_world(Player *player)
 }
 
 void
-draw_skybox(void)
+draw_everything(void)
 {
+    f32 opacity = 1.0f;
+    if (state & FLAG_DEBUG_MORE)
+        opacity = 0.2f;
+
+    glEnable(GL_DEPTH_TEST);
+
+    /* ---- skybox ---------------------------------------------------------- */
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
     skybox_data.sun_rotation =
         (v3f32){
@@ -708,132 +723,281 @@ draw_skybox(void)
     glUseProgram(shader_skybox.id);
     glUniform3fv(uniform.skybox.camera_position, 1,
             (GLfloat*)&lily.camera.pos);
-
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
             (GLfloat*)&projection.rotation);
-
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
             (GLfloat*)&projection.orientation);
-
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
             (GLfloat*)&projection.projection);
-
     glUniform3fv(uniform.skybox.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
-
     glUniform3fv(uniform.skybox.sky_color, 1,
             (GLfloat*)&skybox_data.color);
 
-    draw_mesh(&mesh_skybox);
-}
+    glBindVertexArray(mesh_skybox.vao);
+    glDrawElements(GL_TRIANGLES, mesh_skybox.ebo_len, GL_UNSIGNED_INT, 0);
 
-void
-draw_world(void)
-{
+    /* ---- world ----------------------------------------------------------- */
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     glUseProgram(shader_voxel.id);
-
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection.perspective);
-
     glUniform3fv(uniform.voxel.camera_position, 1,
             (GLfloat*)&lily.camera.pos);
-
     glUniform3fv(uniform.voxel.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
-
     glUniform3fv(uniform.voxel.sky_color, 1,
             (GLfloat*)&skybox_data.color);
 
-    draw_chunk_tab(&uniform);
-}
+    glUniform1f(uniform.voxel.opacity, opacity);
 
-void
-draw_hud(void)
-{
-    glUseProgram(shader_gizmo.id);
-
-    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
-            (GLfloat*)&projection.target);
-
-    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection.rotation);
-
-    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection.orientation);
-
-    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection.projection);
-
-    if (state & FLAG_DEBUG)
-        draw_mesh(&mesh_gizmo);
-
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glUseProgram(shader_gizmo_chunk.id);
-
-    glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render.size);
-    glUniform1i(uniform.gizmo_chunk.render_distance, settings.render_distance);
-
-    glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation, 1, GL_FALSE,
-            (GLfloat*)&projection.target);
-
-    glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection.rotation);
-
-    glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection.orientation);
-
-    glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection.projection);
-
-    v3f32 camera_position =
+    Chunk *p = &chunk_buf[CHUNK_BUF_VOLUME];
+    Chunk *i = &chunk_buf[0];
+    for (; i < p; ++i)
     {
-        -(lily.cos_yaw * lily.cos_pitch),
-        (lily.sin_yaw * lily.cos_pitch),
-        lily.sin_pitch,
-    };
+        if (!(i->flag & FLAG_CHUNK_RENDER))
+            continue;
 
-    glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
-            (GLfloat*)&camera_position);
+        v3f32 chunk_position =
+        {
+            (f32)(i->pos.x * CHUNK_DIAMETER),
+            (f32)(i->pos.y * CHUNK_DIAMETER),
+            (f32)(i->pos.z * CHUNK_DIAMETER),
+        };
 
-    glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
-            (GLfloat*)&skybox_data.color);
+        glUniform3fv(uniform.voxel.chunk_position, 1,
+                (GLfloat*)&chunk_position);
 
-    if (state & FLAG_DEBUG)
-        draw_chunk_gizmo(&mesh_cube_of_happiness);
-}
+        glBindVertexArray(i->vao);
+        glDrawArrays(GL_POINTS, 0, CHUNK_VOLUME);
+    }
 
-void
-draw_everything(void)
-{
-    glEnable(GL_DEPTH_TEST);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_skybox();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_world();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_hud();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
-    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+    /* ---- hud ------------------------------------------------------------- */
     if (state & FLAG_DEBUG)
-            draw_debug_info(&lily,
-                    skybox_data.time,
-                    skybox_data.color,
-                    skybox_data.sun_rotation,
-                    &render, &shader_text, &fbo_text);
+    {
+        /* ---- gizmo ------------------------------------------------------- */
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glUseProgram(shader_gizmo.id);
+
+        glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
+                (GLfloat*)&projection.target);
+
+        glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
+                (GLfloat*)&projection.rotation);
+
+        glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
+                (GLfloat*)&projection.orientation);
+
+        glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
+                (GLfloat*)&projection.projection);
+
+        glBindVertexArray(mesh_gizmo.vao);
+        glDrawElements(GL_TRIANGLES, mesh_gizmo.ebo_len, GL_UNSIGNED_INT, 0);
+
+        /* ---- chunk gizmo ------------------------------------------------- */
+        if (state & FLAG_DEBUG_MORE)
+        {
+            glClear(GL_DEPTH_BUFFER_BIT);
+            glUseProgram(shader_gizmo_chunk.id);
+
+            glUniform2iv(uniform.gizmo_chunk.render_size, 1,
+                    (GLint*)&render.size);
+            glUniform1i(uniform.gizmo_chunk.render_distance,
+                    settings.render_distance);
+
+            glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation, 1, GL_FALSE,
+                    (GLfloat*)&projection.target);
+
+            glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation, 1, GL_FALSE,
+                    (GLfloat*)&projection.rotation);
+
+            glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation, 1, GL_FALSE,
+                    (GLfloat*)&projection.orientation);
+
+            glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection, 1, GL_FALSE,
+                    (GLfloat*)&projection.projection);
+
+            v3f32 camera_position =
+            {
+                -(lily.cos_yaw * lily.cos_pitch),
+                (lily.sin_yaw * lily.cos_pitch),
+                lily.sin_pitch,
+            };
+
+            glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
+                    (GLfloat*)&camera_position);
+
+            glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
+                    (GLfloat*)&skybox_data.color);
+
+            for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+            {
+                if ((chunk_tab[i] == NULL) ||
+                        !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
+                    continue;
+
+                v3f32 cursor =
+                    index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
+                cursor = sub_v3f32(cursor, (v3f32){
+                        CHUNK_BUF_RADIUS + 0.5f,
+                        CHUNK_BUF_RADIUS + 0.5f,
+                        CHUNK_BUF_RADIUS + 0.5f});
+                glUniform3fv(uniform.gizmo_chunk.cursor, 1,
+                        (GLfloat*)&cursor);
+
+                f32 pulse = (sinf((cursor.z * 0.3f) -
+                            (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
+                glUniform1f(uniform.gizmo_chunk.size, pulse);
+
+                v4f32 color =
+                {
+                    (f32)((chunk_tab[i]->color >> 24) & 0xff) / 0xff,
+                    (f32)((chunk_tab[i]->color >> 16) & 0xff) / 0xff,
+                    (f32)((chunk_tab[i]->color >> 8) & 0xff) / 0xff,
+                    (f32)((chunk_tab[i]->color & 0xff)) / 0xff,
+                };
+                glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
+                glBindVertexArray(mesh_cube_of_happiness.vao);
+                glDrawElements(GL_TRIANGLES,
+                        mesh_cube_of_happiness.ebo_len, GL_UNSIGNED_INT, 0);
+            }
+        }
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
+        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        /* ---- debug info -------------------------------------------------- */
+        text_start(0, FONT_SIZE_DEFAULT,
+                &font_mono_bold, &render, &shader_text, &fbo_text, TRUE);
+        text_push(stringf(
+                    "FPS               [%d]\n"
+                    "FRAME TIME        [%.2lf]\n"
+                    "FRAME DELTA       [%.5lf]\n",
+                    (u32)(1.0f / render.frame_delta),
+                    render.frame_start,
+                    render.frame_delta), (v2f32){MARGIN, MARGIN}, 0, 0);
+        text_render(0x6f9f3fff);
+
+        text_push(stringf(
+                    "PLAYER NAME       [%s]\n"
+                    "PLAYER XYZ        [%.2f %.2f %.2f]\n"
+                    "PLAYER BLOCK      [%d %d %d]\n"
+                    "PLAYER CHUNK      [%d %d %d]\n"
+                    "CURRENT CHUNK     [%d %d %d]\n"
+                    "PLAYER PITCH      [%.2f]\n"
+                    "PLAYER YAW        [%.2f]\n",
+                    lily.name,
+                    lily.pos.x, lily.pos.y, lily.pos.z,
+                    (i32)floorf(lily.pos.x),
+                    (i32)floorf(lily.pos.y),
+                    (i32)floorf(lily.pos.z),
+                    (chunk_tab[CHUNK_TAB_CENTER]) ?
+                    chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
+                    (chunk_tab[CHUNK_TAB_CENTER]) ?
+                    chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
+                    (chunk_tab[CHUNK_TAB_CENTER]) ?
+                    chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
+                    lily.chunk.x, lily.chunk.y, lily.chunk.z,
+                    lily.pitch, lily.yaw),
+                    (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
+        text_render(0xffffffff);
+
+        text_push(stringf(
+                    "PLAYER OVERFLOW X [%s]\n"
+                    "PLAYER OVERFLOW Y [%s]\n"
+                    "PLAYER OVERFLOW Z [%s]\n",
+                    (lily.state & FLAG_OVERFLOW_X) ?
+                    (lily.state & FLAG_OVERFLOW_PX) ?
+                    "        " : "        " : "NONE",
+                    (lily.state & FLAG_OVERFLOW_Y) ?
+                    (lily.state & FLAG_OVERFLOW_PY) ?
+                    "        " : "        " : "NONE",
+                    (lily.state & FLAG_OVERFLOW_Z) ?
+                    (lily.state & FLAG_OVERFLOW_PZ) ?
+                    "        " : "        " : "NONE"),
+                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+        text_render(0x995429ff);
+
+        text_push(stringf(
+                    "                   %s\n"
+                    "                   %s\n"
+                    "                   %s\n",
+                    (lily.state & FLAG_OVERFLOW_X) &&
+                    !(lily.state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
+                    (lily.state & FLAG_OVERFLOW_Y) &&
+                    !(lily.state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
+                    (lily.state & FLAG_OVERFLOW_Z) &&
+                    !(lily.state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+        text_render(0xec6051ff);
+
+        text_push(stringf(
+                    "                   %s\n"
+                    "                   %s\n"
+                    "                   %s\n",
+                    (lily.state & FLAG_OVERFLOW_X) &&
+                    (lily.state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
+                    (lily.state & FLAG_OVERFLOW_Y) &&
+                    (lily.state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
+                    (lily.state & FLAG_OVERFLOW_Z) &&
+                    (lily.state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : ""),
+                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+        text_render(0x79ec50ff);
+
+        text_push(stringf(
+                    "MOUSE XY          [%.2f %.2f]\n"
+                    "DELTA XY          [%.2f %.2f]\n"
+                    "RENDER RATIO      [%.4f]\n"
+                    "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
+                    "SKYBOX TIME       [%.2f]\n"
+                    "SKYBOX RGB        [%.2f %.2f %.2f]\n"
+                    "SUN ANGLE         [%.2f %.2f %.2f]\n",
+                    render.mouse_position.x, render.mouse_position.y,
+                    render.mouse_delta.x, render.mouse_delta.y,
+                    (f32)render.size.x / render.size.y,
+                    game_tick, game_days,
+                    skybox_data.time,
+                    skybox_data.color.x,
+                    skybox_data.color.y,
+                    skybox_data.color.z,
+                    skybox_data.sun_rotation.x,
+                    skybox_data.sun_rotation.y,
+                    skybox_data.sun_rotation.z),
+                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
+        text_render(0x3f6f9fff);
+
+        text_start(0, FONT_SIZE_DEFAULT,
+                &font_mono, &render, &shader_text, &fbo_text, FALSE);
+        text_push(stringf(
+                    "Game:     %s v%s\n"
+                    "Engine:   %s v%s\n"
+                    "Author:   %s\n"
+                    "OpenGL:   %s\n"
+                    "GLSL:     %s\n"
+                    "Vendor:   %s\n"
+                    "Renderer: %s\n",
+                    GAME_NAME, GAME_VERSION,
+                    ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
+                    glGetString(GL_VERSION),
+                    glGetString(GL_SHADING_LANGUAGE_VERSION),
+                    glGetString(GL_VENDOR),
+                    glGetString(GL_RENDERER)),
+                (v2f32){MARGIN, render.size.y - MARGIN}, 0, TEXT_ALIGN_BOTTOM);
+        text_render(0x3f9f3fff);
+        text_stop();
+    }
+
+    /* ---- post processing ------------------------------------------------- */
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_post_processing.fbo);
     glUseProgram(shader_fbo.id);
@@ -842,14 +1006,15 @@ draw_everything(void)
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     if (state & FLAG_DEBUG)
     {
+        glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
+    /* ---- everything ------------------------------------------------------ */
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_post_processing.id);
     glBindVertexArray(mesh_fbo.vao);
@@ -931,7 +1096,7 @@ main(int argc, char **argv)
     glfwSetKeyCallback(render.window, callback_key);
     callback_key(render.window, 0, 0, 0, 0);
 
-    /* ---- graphics -------------------------------------------------------- */
+    /* ---- set graphics ---------------------------------------------------- */
     if (
             init_shader_program(
                 INSTANCE_DIR[DIR_SHADERS], &shader_fbo, "r") != 0 ||
@@ -973,7 +1138,7 @@ main(int argc, char **argv)
     glEnable(GL_MULTISAMPLE);
 
     if (init_gui() != 0 ||
-            init_text() != 0)
+            text_init() != 0)
         goto cleanup;
 
     /*temp off
@@ -1016,7 +1181,7 @@ section_main:
         update_input(&lily);
 
         update_mouse_movement(&render);
-        update_render_settings(&render);
+        update_render_settings();
         update_world(&lily);
         draw_everything();
 
@@ -1044,7 +1209,7 @@ cleanup: /* ----------------------------------------------------------------- */
     free_fbo(&fbo_text);
     free_fbo(&fbo_text_msaa);
     free_fbo(&fbo_post_processing);
-    free_text();
+    text_free();
     free_shader_program(&shader_fbo);
     free_shader_program(&shader_default);
     free_shader_program(&shader_text);

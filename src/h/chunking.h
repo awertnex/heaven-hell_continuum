@@ -19,7 +19,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        3
+#define CHUNK_BUF_RADIUS        7
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
@@ -133,6 +133,10 @@ typedef struct Chunk
     u8 flag;
 } Chunk;
 
+
+/* chunk buffer, raw chunk data */
+extern Chunk *chunk_buf;
+
 /* chunk pointer look-up table */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 
@@ -216,8 +220,6 @@ void remove_block(u32 index, u32 x, u32 y, u32 z);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
-void draw_chunk_tab(Uniform *uniform);
-void draw_chunk_gizmo(Mesh *mesh);
 #ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);

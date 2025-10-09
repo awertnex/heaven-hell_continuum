@@ -3,5 +3,6 @@
 
 #include <engine/h/core.h>
 
+void init_voxel(void);
 
 #endif /* GAME_VOXEL_H */
