@@ -19,7 +19,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        8
+#define CHUNK_BUF_RADIUS        10
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
@@ -229,11 +229,8 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index); */
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
-void chunk_queue_sort(void);
-void chunk_queue_update(void);
-
 /* rate = number of chunks to generate per frame */
-void chunk_queue_generate(u32 rate);
+void chunk_queue_update(u32 rate);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);

@@ -647,12 +647,7 @@ update_world(Player *player)
         state &= ~FLAG_CHUNK_BUF_DIRTY;
         update_chunking(lily.delta_chunk);
     }
-    else
-    {
-        chunk_queue_update();
-        //chunk_queue_sort();
-        chunk_queue_generate(16);
-    }
+    else chunk_queue_update(CHUNK_BUF_DIAMETER * 2);
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(

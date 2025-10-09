@@ -34,8 +34,8 @@ static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
 /* index = (chunk_tab index); */
 static void chunk_buf_pop(u32 index);
 
-/* index = (chunk_tab index); */
-static void chunk_queue_push(u32 index);
+static void chunk_queue_sort(void);
+
 
 u8
 init_chunking(void)
@@ -395,21 +395,6 @@ chunk_buf_pop(u32 index)
 }
 
 static void
-chunk_queue_push(u32 index)
-{
-    Chunk *p = chunk_tab[index];
-    if (!p) return;
-    for (u32 i = 0; i < CHUNK_QUEUE_MAX; ++i)
-        if (!(p->flag & FLAG_CHUNK_QUEUED) && !chunk_queue.chunk[i])
-        {
-            p->flag |= FLAG_CHUNK_QUEUED;
-            chunk_queue.chunk[i] = p;
-            chunk_queue.index[i] = index;
-            (chunk_queue.count < CHUNK_QUEUE_MAX) ? ++chunk_queue.count : 0;
-        }
-}
-
-void
 chunk_queue_sort(void)
 {
     Chunk *chunk_0 = NULL;
@@ -449,11 +434,34 @@ chunk_queue_sort(void)
 
 /* TODO: grab chunks from disk if previously generated */
 void
-chunk_queue_generate(u32 rate)
+chunk_queue_update(u32 rate)
 {
-    if (!chunk_queue.count) return;
-    rate = clamp_u32(rate, 1, CHUNK_QUEUE_MAX);
+    /* ---- push chunk queue ------------------------------------------------ */
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    {
+        Chunk *p = chunk_tab[i];
+        if (p && (p->flag & FLAG_CHUNK_DIRTY) &&
+                !(p->flag & FLAG_CHUNK_QUEUED))
+        {
+            for (u32 j = 0; j < CHUNK_QUEUE_MAX; ++j)
+                if (!chunk_queue.chunk[j] &&
+                        !(p->flag & FLAG_CHUNK_QUEUED))
+                {
+                    p->flag |= FLAG_CHUNK_QUEUED;
+                    chunk_queue.chunk[j] = p;
+                    chunk_queue.index[j] = i;
+                    (chunk_queue.count < CHUNK_QUEUE_MAX) ?
+                        ++chunk_queue.count : 0;
+                }
+        }
+    }
 
+    if (!chunk_queue.count) return;
+    rate = clamp_u32(rate, 1, CHUNK_QUEUE_MAX - 1);
+
+    //chunk_queue_sort();
+
+    /* ---- generate enqueued chunks ---------------------------------------- */
     for (u32 i = chunk_queue.count - 1; i < CHUNK_QUEUE_MAX; --i)
         if (chunk_queue.chunk[i])
         {
@@ -468,18 +476,6 @@ chunk_queue_generate(u32 rate)
                 }
             return;
         }
-}
-
-void
-chunk_queue_update(void)
-{
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        Chunk *p = chunk_tab[i];
-        if (p && (p->flag & FLAG_CHUNK_DIRTY) &&
-                !(p->flag & FLAG_CHUNK_QUEUED))
-            chunk_queue_push(i);
-    }
 }
 
 void
