@@ -12,8 +12,32 @@ sub_v3f32(v3f32 a, v3f32 b)
     return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
 }
 
+i32
+clamp_i32(i32 val, i32 min, i32 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
+u32
+clamp_u32(u32 val, u32 min, u32 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
 f32
 clamp_f32(f32 val, f32 min, f32 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
+i64
+clamp_i64(i64 val, i64 min, i64 max)
+{
+    return ((val < min) ? min : ((val > max) ? max : val));
+}
+
+u64
+clamp_u64(u64 val, u64 min, u64 max)
 {
     return ((val < min) ? min : ((val > max) ? max : val));
 }

@@ -16,7 +16,11 @@
 
 v3f32 add_v3f32(v3f32 a, v3f32 b);
 v3f32 sub_v3f32(v3f32 a, v3f32 b);
+i32 clamp_i32(i32 val, i32 min, i32 max);
+u32 clamp_u32(u32 val, u32 min, u32 max);
 f32 clamp_f32(f32 val, f32 min, f32 max);
+i64 clamp_i64(i64 val, i64 min, i64 max);
+u64 clamp_u64(u64 val, u64 min, u64 max);
 f64 clamp_f64(f64 val, f64 min, f64 max);
 f32 len_v3f32(v3f32 v);
 v3f32 normalize_v3f32(v3f32 v);

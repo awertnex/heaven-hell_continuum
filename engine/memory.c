@@ -170,9 +170,9 @@ print_bits(u64 x, u8 bit_count)
 }
 
 void
-swap_bits(char *c1, char *c2, u8 bit_count)
+swap_bits(char *c1, char *c2)
 {
-    for (u8 i = 0; i < bit_count; ++i)
+    for (u8 i = 0; i < 8; ++i)
     {
         if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
             continue;
@@ -183,11 +183,36 @@ swap_bits(char *c1, char *c2, u8 bit_count)
 }
 
 void
+swap_bits_u8(u8 *c1, u8 *c2)
+{
+    for (u8 i = 0; i < 8; ++i)
+    {
+        if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
+            continue;
+
+        *c1 ^= (1 << i);
+        *c2 ^= (1 << i);
+    }
+}
+
+void
+swap_bits_u32(u32 *c1, u32 *c2)
+{
+    for (u8 i = 0; i < 32; ++i)
+    {
+        if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
+            continue;
+
+        *c1 ^= (1 << i);
+        *c2 ^= (1 << i);
+    }
+}
+void
 swap_strings(str *s1, str *s2)
 {
     u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
     for (u16 i = 0; i <= len; ++i)
-        swap_bits(&s1[i], &s2[i], 8);
+        swap_bits(&s1[i], &s2[i]);
 }
 
 str *
