@@ -36,4 +36,4 @@ quirks:
 - [ ] add camera look-at
 - [ ] fix double press for windows
 - [ ] fix chunk queue sort
-- [ ] make the chunk cycle generation count
+- [x] make the chunk generation count per frame (09 Oct 2025)
