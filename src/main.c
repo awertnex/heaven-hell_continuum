@@ -650,7 +650,8 @@ update_world(Player *player)
     else
     {
         chunk_queue_update();
-        chunk_queue_generate();
+        //chunk_queue_sort();
+        chunk_queue_generate(16);
     }
 
     /* ---- player targeting ------------------------------------------------ */
@@ -1033,6 +1034,31 @@ draw_everything(void)
 int
 main(int argc, char **argv)
 {
+#if 0
+    u32 chunk[10] = {34, 0 ,23, 9, 12, 57, 222, 93, 1, 3945};
+    u32 chunk_0 = 0;
+    u32 chunk_1 = 0;
+    u32 temp = 0;
+    for (u32 i = 0; i < 10; ++i)
+    {
+        chunk_0 = chunk[i];
+        chunk_1 = chunk[i];
+
+        for (u32 j = i; j < 10; ++j)
+            if (chunk[j] < chunk[i])
+            {
+                temp = chunk[i];
+                chunk[i] = chunk[j];
+                chunk[j] = temp;
+            }
+    }
+
+    for (u32 i = 0; i < 10; ++i)
+        printf("dist: %d\n", chunk[i]);
+    putchar('\n');
+    return 0;
+#endif
+
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))

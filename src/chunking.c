@@ -29,7 +29,7 @@ static void serialize_chunk(Chunk *chunk, str *world_name);
 static void deserialize_chunk(Chunk *chunk, str *world_name);
 
 /* index = (chunk_tab index); */
-static void chunk_buf_push(u32 index, v3i16 player_delta_chunk);
+static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
 
 /* index = (chunk_tab index); */
 static void chunk_buf_pop(u32 index);
@@ -58,16 +58,13 @@ update_chunking(v3i16 player_delta_chunk)
     {
         Chunk *p = chunk_tab[i];
         v3u32 coordinates = index_to_coordinates_v3u32(i, CHUNK_BUF_DIAMETER);
+        u32 distance = distance_v3i32(
+                (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
+                (v3i32){coordinates.x, coordinates.y, coordinates.z});
 
-        if (distance_v3i32(
-                    (v3i32){
-                    CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                    (v3i32){
-                    coordinates.x, coordinates.y, coordinates.z}) <
-                RENDER_DISTANCE)
+        if (distance < RENDER_DISTANCE)
         {
-            if (p == NULL)
-                chunk_buf_push(i, player_delta_chunk);
+            if (!p) chunk_buf_push(i, player_delta_chunk, distance);
         }
         else if (p && p->flag & FLAG_CHUNK_LOADED)
             chunk_buf_pop(i);
@@ -356,7 +353,7 @@ deserialize_chunk(Chunk *chunk, str *world_name)
 }
 
 static void
-chunk_buf_push(u32 index, v3i16 player_delta_chunk)
+chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance)
 {
     v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
 
@@ -375,6 +372,7 @@ chunk_buf_push(u32 index, v3i16 player_delta_chunk)
             ((u64)(chunk_buf[i].pos.x & 0xffff) << 32) |
             ((u64)(chunk_buf[i].pos.y & 0xffff) << 16) |
             ((u64)(chunk_buf[i].pos.z & 0xffff));
+        chunk_buf[i].distance = distance;
 
         chunk_buf[i].flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
         chunk_buf[i].color = COLOR_CHUNK_LOADED;
@@ -402,7 +400,7 @@ chunk_queue_push(u32 index)
     Chunk *p = chunk_tab[index];
     if (!p) return;
     for (u32 i = 0; i < CHUNK_QUEUE_MAX; ++i)
-        if (chunk_queue.chunk[i] == NULL)
+        if (!(p->flag & FLAG_CHUNK_QUEUED) && !chunk_queue.chunk[i])
         {
             p->flag |= FLAG_CHUNK_QUEUED;
             chunk_queue.chunk[i] = p;
@@ -411,23 +409,64 @@ chunk_queue_push(u32 index)
         }
 }
 
+void
+chunk_queue_sort(void)
+{
+    Chunk *chunk_0 = NULL;
+    Chunk *chunk_1 = NULL;
+    Chunk *chunk_temp = NULL;
+    u32 *index_0 = NULL;
+    u32 *index_1 = NULL;
+    u32 index_temp = 0;
+    for (u32 i = 0; i < CHUNK_QUEUE_MAX; ++i)
+    {
+        chunk_0 = chunk_queue.chunk[i];
+        chunk_1 = chunk_queue.chunk[i];
+
+        index_0 = &chunk_queue.index[i];
+        index_1 = &chunk_queue.index[i];
+
+        for (u32 j = i; j < CHUNK_QUEUE_MAX; ++j)
+        {
+            if (chunk_0 && chunk_1 &&
+                    chunk_0->distance > chunk_1->distance)
+            {
+                chunk_temp = chunk_0;
+                *chunk_0 = *chunk_1;
+                *chunk_1 = *chunk_temp;
+
+                index_temp = *index_0;
+                *index_0 = *index_1;
+                *index_1 = index_temp;
+            }
+            ++chunk_1;
+            ++index_1;
+        }
+        LOGWARNING("Dist: %d %d\n", chunk_1->distance, *index_1);
+    }
+    LOGWARNING("%s\n", "");
+}
+
 /* TODO: grab chunks from disk if previously generated */
 void
-chunk_queue_generate(void)
+chunk_queue_generate(u32 rate)
 {
     if (!chunk_queue.count) return;
-    Chunk *p = chunk_queue.chunk[chunk_queue.cycle];
-    if (!p) return;
+    rate = clamp_u32(rate, 1, CHUNK_QUEUE_MAX);
 
-    for (u32 i = chunk_queue.cycle; i < CHUNK_QUEUE_MAX; ++i)
+    for (u32 i = chunk_queue.count - 1; i < CHUNK_QUEUE_MAX; --i)
         if (chunk_queue.chunk[i])
         {
-            generate_chunk(chunk_queue.index[i]);
-            chunk_queue.chunk[i]->flag &= ~FLAG_CHUNK_QUEUED;
-            chunk_queue.chunk[i] = NULL;
-            chunk_queue.cycle = (chunk_queue.cycle + 1) % CHUNK_QUEUE_MAX;
-            (chunk_queue.count > 0) ? --chunk_queue.count : 0;
-            break;
+            rate = i - rate;
+            for (u32 j = i; j > rate && j < CHUNK_QUEUE_MAX; --j)
+                if (chunk_queue.chunk[j])
+                {
+                    generate_chunk(chunk_queue.index[j]);
+                    chunk_queue.chunk[j]->flag &= ~FLAG_CHUNK_QUEUED;
+                    chunk_queue.chunk[j] = NULL;
+                    (chunk_queue.count > 0) ? --chunk_queue.count : 0;
+                }
+            return;
         }
 }
 
@@ -438,8 +477,7 @@ chunk_queue_update(void)
     {
         Chunk *p = chunk_tab[i];
         if (p && (p->flag & FLAG_CHUNK_DIRTY) &&
-                !(p->flag & FLAG_CHUNK_QUEUED) &&
-                chunk_queue.count < CHUNK_QUEUE_MAX)
+                !(p->flag & FLAG_CHUNK_QUEUED))
             chunk_queue_push(i);
     }
 }

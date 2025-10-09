@@ -30,7 +30,7 @@
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
-#define CHUNK_QUEUE_MAX         (CHUNK_BUF_DIAMETER * 2)
+#define CHUNK_QUEUE_MAX         CHUNK_BUF_LAYER
 
 enum BlockFlags
 {
@@ -127,9 +127,10 @@ enum ChunkStates
 
 typedef struct Chunk
 {
-    v3i16 pos;  /* (world XYZ) / CHUNK_DIAMETER */
-    u32 color;  /* debug color: 0xrrggbbaa */
-    u64 id;     /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
+    v3i16 pos;      /* (world XYZ) / CHUNK_DIAMETER */
+    u64 id;         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
+    u32 color;      /* debug color: 0xrrggbbaa */
+    u32 distance;   /* chunk's distance away from player */
     GLuint vao;
     GLuint vbo;
     u64 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
@@ -228,8 +229,12 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index); */
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
+void chunk_queue_sort(void);
 void chunk_queue_update(void);
-void chunk_queue_generate(void);
+
+/* rate = number of chunks to generate per frame */
+void chunk_queue_generate(u32 rate);
+
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 #ifdef FUCK // TODO: undef FUCK
