@@ -35,3 +35,5 @@ quirks:
 - [ ] limit framerate
 - [ ] add camera look-at
 - [ ] fix double press for windows
+- [ ] fix chunk queue sort
+- [ ] make the chunk cycle generation count
