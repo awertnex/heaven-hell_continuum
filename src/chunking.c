@@ -8,6 +8,9 @@
 #include "h/chunking.h"
 #include "h/logic.h"
 
+/* queue of chunks to be processed */
+static ChunkQueue chunk_queue = {0};
+
 /* chunk buffer, raw chunk data */
 Chunk *chunk_buf = {0};
 
@@ -26,10 +29,13 @@ static void serialize_chunk(Chunk *chunk, str *world_name);
 static void deserialize_chunk(Chunk *chunk, str *world_name);
 
 /* index = (chunk_tab index); */
-static void push_chunk_buf(u32 index, v3i16 player_delta_chunk);
+static void chunk_buf_push(u32 index, v3i16 player_delta_chunk);
 
 /* index = (chunk_tab index); */
-static void pop_chunk_buf(u32 index);
+static void chunk_buf_pop(u32 index);
+
+/* index = (chunk_tab index); */
+static void chunk_queue_push(u32 index);
 
 u8
 init_chunking(void)
@@ -48,8 +54,9 @@ update_chunking(v3i16 player_delta_chunk)
 {
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
 
-    for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
+        Chunk *p = chunk_tab[i];
         v3u32 coordinates = index_to_coordinates_v3u32(i, CHUNK_BUF_DIAMETER);
 
         if (distance_v3i32(
@@ -59,17 +66,11 @@ update_chunking(v3i16 player_delta_chunk)
                     coordinates.x, coordinates.y, coordinates.z}) <
                 RENDER_DISTANCE)
         {
-            if (chunk_tab[i] == NULL)
-                push_chunk_buf(i, player_delta_chunk);
-
-            /* TODO: grab chunks from disk if previously generated */
-            if (chunk_tab[i] &&
-                    !(chunk_tab[i]->flag & FLAG_CHUNK_GENERATED))
-                generate_chunk(i);
+            if (p == NULL)
+                chunk_buf_push(i, player_delta_chunk);
         }
-        else if (chunk_tab[i] &&
-                chunk_tab[i]->flag & FLAG_CHUNK_LOADED)
-            pop_chunk_buf(i);
+        else if (p && p->flag & FLAG_CHUNK_LOADED)
+            chunk_buf_pop(i);
     }
 }
 
@@ -261,8 +262,8 @@ terrain_noise(v3i32 coordinates)
 static void
 generate_chunk(u32 index)
 {
-    if (!chunk_tab[index])
-        return;
+    Chunk *p = chunk_tab[index];
+    if (!p) return;
 
     for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
     {
@@ -272,9 +273,9 @@ generate_chunk(u32 index)
             {
                 v3i32 coordinates =
                 {
-                    x + (chunk_tab[index]->pos.x * CHUNK_DIAMETER),
-                    y + (chunk_tab[index]->pos.y * CHUNK_DIAMETER),
-                    z + (chunk_tab[index]->pos.z * CHUNK_DIAMETER),
+                    x + (p->pos.x * CHUNK_DIAMETER),
+                    y + (p->pos.y * CHUNK_DIAMETER),
+                    z + (p->pos.z * CHUNK_DIAMETER),
                 };
 
                 f32 sin_x = (u32)((sinf((f32)coordinates.x * DEG2RAD)
@@ -282,39 +283,36 @@ generate_chunk(u32 index)
                 f32 sin_y = (u32)((sinf((f32)coordinates.y * DEG2RAD)
                              + 1.0f) * 80.0f) + 2;
 
-                if (chunk_tab[index]->block[z][y][x])
+                if (p->block[z][y][x])
                     add_block(index, x, y, z);
                 else if ((f32)coordinates.z <= sin_x - 3.0f &&
                         (f32)coordinates.z <= sin_y - 3.0f)
                 {
                     add_block(index, x, y, z);
-                    chunk_tab[index]->flag |=
-                        FLAG_CHUNK_RENDER;
-                    chunk_tab[index]->color = COLOR_CHUNK_RENDER;
+                    p->flag |= FLAG_CHUNK_RENDER;
+                    p->color = COLOR_CHUNK_RENDER;
                 }
             }
         }
     }
 
-    if (chunk_tab[index]->flag & FLAG_CHUNK_GENERATED)
+    if (p->flag & FLAG_CHUNK_GENERATED)
     {
         mesh_chunk(index);
+        p->flag &= ~FLAG_CHUNK_DIRTY;
         return;
     }
 
-    chunk_tab[index]->vbo ?
-        glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
-    chunk_tab[index]->vao ?
-        glDeleteVertexArrays(1, &chunk_tab[index]->vao) : 0;
+    (p->vbo) ? glDeleteBuffers(1, &p->vbo) : 0;
+    (p->vao) ? glDeleteVertexArrays(1, &p->vao) : 0;
 
-    glGenVertexArrays(1, &chunk_tab[index]->vao);
-    glGenBuffers(1, &chunk_tab[index]->vbo);
+    glGenVertexArrays(1, &p->vao);
+    glGenBuffers(1, &p->vbo);
 
-    glBindVertexArray(chunk_tab[index]->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->vbo);
-
+    glBindVertexArray(p->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, p->vbo);
     glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
-            chunk_tab[index]->block, GL_DYNAMIC_DRAW);
+            p->block, GL_DYNAMIC_DRAW);
 
     glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
             (void*)0);
@@ -326,16 +324,19 @@ generate_chunk(u32 index)
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    p->flag &= ~FLAG_CHUNK_DIRTY;
 }
 
 static void
 mesh_chunk(u32 index)
 {
-    glBindVertexArray(chunk_tab[index]->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_tab[index]->vbo);
+    Chunk *p = chunk_tab[index];
+    if (!p) return;
 
+    glBindVertexArray(p->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, p->vbo);
     glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
-            chunk_tab[index]->block, GL_DYNAMIC_DRAW);
+            p->block, GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -355,7 +356,7 @@ deserialize_chunk(Chunk *chunk, str *world_name)
 }
 
 static void
-push_chunk_buf(u32 index, v3i16 player_delta_chunk)
+chunk_buf_push(u32 index, v3i16 player_delta_chunk)
 {
     v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
 
@@ -375,7 +376,7 @@ push_chunk_buf(u32 index, v3i16 player_delta_chunk)
             ((u64)(chunk_buf[i].pos.y & 0xffff) << 16) |
             ((u64)(chunk_buf[i].pos.z & 0xffff));
 
-        chunk_buf[i].flag = FLAG_CHUNK_LOADED;
+        chunk_buf[i].flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
         chunk_buf[i].color = COLOR_CHUNK_LOADED;
         chunk_tab[index] = &chunk_buf[i];
         return;
@@ -384,7 +385,7 @@ push_chunk_buf(u32 index, v3i16 player_delta_chunk)
 }
 
 static void
-pop_chunk_buf(u32 index)
+chunk_buf_pop(u32 index)
 {
     chunk_tab[index]->vbo ?
         glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
@@ -393,6 +394,54 @@ pop_chunk_buf(u32 index)
 
     *chunk_tab[index] = (Chunk){0};
     chunk_tab[index] = NULL;
+}
+
+static void
+chunk_queue_push(u32 index)
+{
+    Chunk *p = chunk_tab[index];
+    if (!p) return;
+    for (u32 i = 0; i < CHUNK_QUEUE_MAX; ++i)
+        if (chunk_queue.chunk[i] == NULL)
+        {
+            p->flag |= FLAG_CHUNK_QUEUED;
+            chunk_queue.chunk[i] = p;
+            chunk_queue.index[i] = index;
+            (chunk_queue.count < CHUNK_QUEUE_MAX) ? ++chunk_queue.count : 0;
+        }
+}
+
+/* TODO: grab chunks from disk if previously generated */
+void
+chunk_queue_generate(void)
+{
+    if (!chunk_queue.count) return;
+    Chunk *p = chunk_queue.chunk[chunk_queue.cycle];
+    if (!p) return;
+
+    for (u32 i = chunk_queue.cycle; i < CHUNK_QUEUE_MAX; ++i)
+        if (chunk_queue.chunk[i])
+        {
+            generate_chunk(chunk_queue.index[i]);
+            chunk_queue.chunk[i]->flag &= ~FLAG_CHUNK_QUEUED;
+            chunk_queue.chunk[i] = NULL;
+            chunk_queue.cycle = (chunk_queue.cycle + 1) % CHUNK_QUEUE_MAX;
+            (chunk_queue.count > 0) ? --chunk_queue.count : 0;
+            break;
+        }
+}
+
+void
+chunk_queue_update(void)
+{
+    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    {
+        Chunk *p = chunk_tab[i];
+        if (p && (p->flag & FLAG_CHUNK_DIRTY) &&
+                !(p->flag & FLAG_CHUNK_QUEUED) &&
+                chunk_queue.count < CHUNK_QUEUE_MAX)
+            chunk_queue_push(i);
+    }
 }
 
 void
@@ -426,7 +475,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
     {
         for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i] != NULL)
-                pop_chunk_buf(i);
+                chunk_buf_pop(i);
 
         *player_delta_chunk = player_chunk;
         return;

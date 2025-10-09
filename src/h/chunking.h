@@ -19,7 +19,7 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        7
+#define CHUNK_BUF_RADIUS        8
 #define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
 #define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 #define CHUNK_BUF_VOLUME \
@@ -29,6 +29,8 @@
     (CHUNK_BUF_RADIUS + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
+
+#define CHUNK_QUEUE_MAX         (CHUNK_BUF_DIAMETER * 2)
 
 enum BlockFlags
 {
@@ -101,12 +103,13 @@ enum BlockFlags
 enum ChunkFlags
 {
     FLAG_CHUNK_LOADED       = 0x01,
-    FLAG_CHUNK_GENERATED    = 0x02,
-    FLAG_CHUNK_RENDER       = 0x04,
-    FLAG_CHUNK_DIRTY        = 0x08,
+    FLAG_CHUNK_DIRTY        = 0x02,
+    FLAG_CHUNK_QUEUED       = 0x04,
+    FLAG_CHUNK_GENERATED    = 0x08,
+    FLAG_CHUNK_RENDER       = 0x10,
 
     /* chunk marking for chunk_tab shifting logic */
-    FLAG_CHUNK_EDGE =   0x10,
+    FLAG_CHUNK_EDGE =   0x20,
 }; /* ChunkFlags */
 
 enum ChunkStates
@@ -133,6 +136,13 @@ typedef struct Chunk
     u8 flag;
 } Chunk;
 
+typedef struct ChunkQueue
+{
+    u32 cycle;                      /* current index in chunk queue */
+    u32 count;                      /* number of chunks queued */
+    u32 index[CHUNK_QUEUE_MAX];     /* chunk_tab indices */
+    Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_buf addresses */
+} ChunkQueue;
 
 /* chunk buffer, raw chunk data */
 extern Chunk *chunk_buf;
@@ -218,6 +228,8 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index); */
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
+void chunk_queue_update(void);
+void chunk_queue_generate(void);
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 #ifdef FUCK // TODO: undef FUCK

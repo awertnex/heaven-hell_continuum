@@ -644,8 +644,13 @@ update_world(Player *player)
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        update_chunking(lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
+        update_chunking(lily.delta_chunk);
+    }
+    else
+    {
+        chunk_queue_update();
+        chunk_queue_generate();
     }
 
     /* ---- player targeting ------------------------------------------------ */
