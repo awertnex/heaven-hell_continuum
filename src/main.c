@@ -428,6 +428,9 @@ bind_shader_uniforms(void)
 void
 update_input(Player *player)
 {
+    if (is_key_press(KEY_ENTER))
+        add_block(1281, 8, 8, 8);
+
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
     {
@@ -601,7 +604,7 @@ init_world(str *name)
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_block(&lily, 32700, 270, 2);
+    set_player_block(&lily, 0, 0, 2);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i64){
@@ -610,6 +613,7 @@ init_world(str *name)
             (i64)lily.target.z,
         };
 
+    update_chunking(lily.delta_chunk);
     state |= (FLAG_HUD | FLAG_WORLD_LOADED);
     disable_cursor;
     center_cursor;
@@ -643,11 +647,11 @@ update_world(Player *player)
 
     if (state & FLAG_CHUNK_BUF_DIRTY)
     {
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         state &= ~FLAG_CHUNK_BUF_DIRTY;
+        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
     }
-    else chunk_queue_update(CHUNK_BUF_DIAMETER * 2);
+    chunk_queue_update(CHUNK_BUF_DIAMETER * 6);
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(

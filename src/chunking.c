@@ -81,6 +81,7 @@ void
 add_block(u32 index, u32 x, u32 y, u32 z)
 {
     v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
+    Chunk *chunk = chunk_tab[index];
     u8 is_on_edge = 0;
 
     x %= CHUNK_DIAMETER;
@@ -92,90 +93,109 @@ add_block(u32 index, u32 x, u32 y, u32 z)
         is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) ||
             (chunk_tab[index + 1] == NULL);
 
-        if (!is_on_edge && chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)])
-            chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)] &= ~NEGATIVE_X;
-        else chunk_tab[index]->block[z][y][x] |= POSITIVE_X;
+        if (!is_on_edge && chunk_tab[index + 1]->block[z][y][0])
+        {
+            chunk_tab[index + 1]->block[z][y][0] &= ~FACE_NX;
+            chunk_tab[index + 1]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_PX;
     }
-    else if (chunk_tab[index]->block[z][y][x + 1])
-        chunk_tab[index]->block[z][y][x + 1] &= ~NEGATIVE_X;
-    else chunk_tab[index]->block[z][y][x] |= POSITIVE_X;
+    else if (chunk->block[z][y][x + 1])
+        chunk->block[z][y][x + 1] &= ~FACE_NX;
+    else chunk->block[z][y][x] |= FACE_PX;
 
     if (x == 0)
     {
         is_on_edge = (coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
 
-        if (!is_on_edge && chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)])
-            chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)] &= ~POSITIVE_X;
-        else chunk_tab[index]->block[z][y][x] |= NEGATIVE_X;
+        if (!is_on_edge && chunk_tab[index - 1]->block[z][y][CHUNK_DIAMETER - 1])
+        {
+            chunk_tab[index - 1]->block[z][y][CHUNK_DIAMETER - 1] &= ~FACE_PX;
+            chunk_tab[index - 1]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_NX;
     }
-    else if (chunk_tab[index]->block[z][y][x - 1])
-        chunk_tab[index]->block[z][y][x - 1] &= ~POSITIVE_X;
-    else chunk_tab[index]->block[z][y][x] |= NEGATIVE_X;
+    else if (chunk->block[z][y][x - 1])
+        chunk->block[z][y][x - 1] &= ~FACE_PX;
+    else chunk->block[z][y][x] |= FACE_NX;
 
     if (y == CHUNK_DIAMETER - 1)
     {
         is_on_edge = (coordinates.y == CHUNK_BUF_DIAMETER - 1) ||
             (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
 
-        if (!is_on_edge && chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
-            chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] &= ~NEGATIVE_Y;
-        else chunk_tab[index]->block[z][y][x] |= POSITIVE_Y;
+        if (!is_on_edge && chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][0][x])
+        {
+            chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][0][x] &= ~FACE_NY;
+            chunk_tab[index + CHUNK_BUF_DIAMETER]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_PY;
     }
-    else if (chunk_tab[index]->block[z][y + 1][x])
-        chunk_tab[index]->block[z][y + 1][x] &= ~NEGATIVE_Y;
-    else chunk_tab[index]->block[z][y][x] |= POSITIVE_Y;
+    else if (chunk->block[z][y + 1][x])
+        chunk->block[z][y + 1][x] &= ~FACE_NY;
+    else chunk->block[z][y][x] |= FACE_PY;
 
     if (y == 0)
     {
         is_on_edge = (coordinates.y == 0) ||
             (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
 
-        if (!is_on_edge && (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x]))
-            chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] &= ~POSITIVE_Y;
-        else chunk_tab[index]->block[z][y][x] |= NEGATIVE_Y;
+        if (!is_on_edge && (chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][CHUNK_DIAMETER - 1][x]))
+        {
+            chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][CHUNK_DIAMETER - 1][x] &= ~FACE_PY;
+            chunk_tab[index - CHUNK_BUF_DIAMETER]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_NY;
     }
-    else if (chunk_tab[index]->block[z][y - 1][x])
-        chunk_tab[index]->block[z][y - 1][x] &= ~POSITIVE_Y;
-    else chunk_tab[index]->block[z][y][x] |= NEGATIVE_Y;
+    else if (chunk->block[z][y - 1][x])
+        chunk->block[z][y - 1][x] &= ~FACE_PY;
+    else chunk->block[z][y][x] |= FACE_NY;
 
     if (z == CHUNK_DIAMETER - 1)
     {
         is_on_edge = (coordinates.z == CHUNK_BUF_DIAMETER - 1) ||
             (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
 
-        if (!is_on_edge && chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
-            chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] &= ~NEGATIVE_Z;
-        else chunk_tab[index]->block[z][y][x] |= POSITIVE_Z;
+        if (!is_on_edge && chunk_tab[index + CHUNK_BUF_LAYER]->block[0][y][x])
+        {
+            chunk_tab[index + CHUNK_BUF_LAYER]->block[0][y][x] &= ~FACE_NZ;
+            chunk_tab[index + CHUNK_BUF_LAYER]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_PZ;
     }
-    else if (chunk_tab[index]->block[z + 1][y][x])
-        chunk_tab[index]->block[z + 1][y][x] &= ~NEGATIVE_Z;
-    else chunk_tab[index]->block[z][y][x] |= POSITIVE_Z;
+    else if (chunk->block[z + 1][y][x])
+        chunk->block[z + 1][y][x] &= ~FACE_NZ;
+    else chunk->block[z][y][x] |= FACE_PZ;
     
     if (z == 0)
     {
         is_on_edge = (coordinates.z == 0) ||
             (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
 
-        if (!is_on_edge && chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
-            chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] &= ~POSITIVE_Z;
-        else chunk_tab[index]->block[z][y][x] |= NEGATIVE_Z;
+        if (!is_on_edge && chunk_tab[index - CHUNK_BUF_LAYER]->block[CHUNK_DIAMETER - 1][y][x])
+        {
+            chunk_tab[index - CHUNK_BUF_LAYER]->block[CHUNK_DIAMETER - 1][y][x] &= ~FACE_PZ;
+            chunk_tab[index - CHUNK_BUF_LAYER]->flag |= FLAG_CHUNK_DIRTY;
+        }
+        else chunk->block[z][y][x] |= FACE_NZ;
     }
-    else if (chunk_tab[index]->block[z - 1][y][x])
-        chunk_tab[index]->block[z - 1][y][x] &= ~POSITIVE_Z;
-    else chunk_tab[index]->block[z][y][x] |= NEGATIVE_Z;
+    else if (chunk->block[z - 1][y][x])
+        chunk->block[z - 1][y][x] &= ~FACE_PZ;
+    else chunk->block[z][y][x] |= FACE_NZ;
 
-    chunk_tab[index]->block[z][y][x] |= NOT_EMPTY;
-    chunk_tab[index]->block[z][y][x] |=
+    chunk->block[z][y][x] |= NOT_EMPTY;
+    chunk->block[z][y][x] |=
         (((u64)x & 0xf) << 32) |
         (((u64)y & 0xf) << 36) |
         (((u64)z & 0xf) << 40);
+    chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
 void
 remove_block(u32 index, u32 x, u32 y, u32 z)
 {
     v3u32 coordinates = index_to_coordinates_v3u32(index, CHUNK_BUF_DIAMETER);
-
+    Chunk *chunk = chunk_tab[index];
     u8 is_on_edge = 0;
 
     x %= CHUNK_DIAMETER;
@@ -188,20 +208,20 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
             (chunk_tab[index + 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)])
-            chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)] |= NEGATIVE_X;
+            chunk_tab[index + 1]->block[z][y][get_mirror_axis(x)] |= FACE_NX;
     }
-    else if (chunk_tab[index]->block[z][y][x + 1])
-        chunk_tab[index]->block[z][y][x + 1] |= NEGATIVE_X;
+    else if (chunk->block[z][y][x + 1])
+        chunk->block[z][y][x + 1] |= FACE_NX;
 
     if (x == 0)
     {
         is_on_edge = (coordinates.x == 0) || (chunk_tab[index - 1] == NULL);
 
         if (!is_on_edge && chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)])
-            chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)] |= POSITIVE_X;
+            chunk_tab[index - 1]->block[z][y][get_mirror_axis(x)] |= FACE_PX;
     }
-    else if (chunk_tab[index]->block[z][y][x - 1])
-        chunk_tab[index]->block[z][y][x - 1] |= POSITIVE_X;
+    else if (chunk->block[z][y][x - 1])
+        chunk->block[z][y][x - 1] |= FACE_PX;
 
     if (y == CHUNK_DIAMETER - 1)
     {
@@ -209,10 +229,10 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
             (chunk_tab[index + CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
-            chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= NEGATIVE_Y;
+            chunk_tab[index + CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= FACE_NY;
     }
-    else if (chunk_tab[index]->block[z][y + 1][x])
-        chunk_tab[index]->block[z][y + 1][x] |= NEGATIVE_Y;
+    else if (chunk->block[z][y + 1][x])
+        chunk->block[z][y + 1][x] |= FACE_NY;
 
     if (y == 0)
     {
@@ -220,10 +240,10 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
             (chunk_tab[index - CHUNK_BUF_DIAMETER] == NULL);
 
         if (!is_on_edge && chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x])
-            chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= POSITIVE_Y;
+            chunk_tab[index - CHUNK_BUF_DIAMETER]->block[z][get_mirror_axis(y)][x] |= FACE_PY;
     }
-    else if (chunk_tab[index]->block[z][y - 1][x])
-        chunk_tab[index]->block[z][y - 1][x] |= POSITIVE_Y;
+    else if (chunk->block[z][y - 1][x])
+        chunk->block[z][y - 1][x] |= FACE_PY;
 
     if (z == CHUNK_DIAMETER - 1)
     {
@@ -231,10 +251,10 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
             (chunk_tab[index + CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
-            chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= NEGATIVE_Z;
+            chunk_tab[index + CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= FACE_NZ;
     }
-    else if (chunk_tab[index]->block[z + 1][y][x])
-        chunk_tab[index]->block[z + 1][y][x] |= NEGATIVE_Z;
+    else if (chunk->block[z + 1][y][x])
+        chunk->block[z + 1][y][x] |= FACE_NZ;
 
     if (z == 0)
     {
@@ -242,12 +262,13 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
             (chunk_tab[index - CHUNK_BUF_LAYER] == NULL);
 
         if (!is_on_edge && chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x])
-            chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= POSITIVE_Z;
+            chunk_tab[index - CHUNK_BUF_LAYER]->block[get_mirror_axis(z)][y][x] |= FACE_PZ;
     }
-    else if (chunk_tab[index]->block[z - 1][y][x])
-        chunk_tab[index]->block[z - 1][y][x] |= POSITIVE_Z;
+    else if (chunk->block[z - 1][y][x])
+        chunk->block[z - 1][y][x] |= FACE_PZ;
 
-    chunk_tab[index]->block[z][y][x] = 0;
+    chunk->block[z][y][x] = 0;
+    chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
 static f32
@@ -293,13 +314,6 @@ generate_chunk(u32 index)
         }
     }
 
-    if (p->flag & FLAG_CHUNK_GENERATED)
-    {
-        mesh_chunk(index);
-        p->flag &= ~FLAG_CHUNK_DIRTY;
-        return;
-    }
-
     (p->vbo) ? glDeleteBuffers(1, &p->vbo) : 0;
     (p->vao) ? glDeleteVertexArrays(1, &p->vao) : 0;
 
@@ -321,7 +335,7 @@ generate_chunk(u32 index)
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    p->flag &= ~FLAG_CHUNK_DIRTY;
+    p->flag |= FLAG_CHUNK_GENERATED | FLAG_CHUNK_DIRTY;
 }
 
 static void
@@ -337,6 +351,7 @@ mesh_chunk(u32 index)
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    p->flag &= ~FLAG_CHUNK_DIRTY;
 }
 
 /* TODO: make serialize_chunk() */
@@ -447,7 +462,7 @@ chunk_queue_update(u32 rate)
                 if (!chunk_queue.chunk[j] &&
                         !(p->flag & FLAG_CHUNK_QUEUED))
                 {
-                    p->flag |= FLAG_CHUNK_QUEUED;
+                    p->flag |= FLAG_CHUNK_QUEUED | FLAG_CHUNK_DIRTY;
                     chunk_queue.chunk[j] = p;
                     chunk_queue.index[j] = i;
                     (chunk_queue.count < CHUNK_QUEUE_MAX) ?
@@ -469,7 +484,9 @@ chunk_queue_update(u32 rate)
             for (u32 j = i; j > rate && j < CHUNK_QUEUE_MAX; --j)
                 if (chunk_queue.chunk[j])
                 {
-                    generate_chunk(chunk_queue.index[j]);
+                    if (chunk_queue.chunk[j]->flag & FLAG_CHUNK_GENERATED)
+                        mesh_chunk(chunk_queue.index[j]);
+                    else generate_chunk(chunk_queue.index[j]);
                     chunk_queue.chunk[j]->flag &= ~FLAG_CHUNK_QUEUED;
                     chunk_queue.chunk[j] = NULL;
                     (chunk_queue.count > 0) ? --chunk_queue.count : 0;
@@ -483,6 +500,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
     v3u32 coordinates = {0};
     u32 mirror_index = 0;
+    v3u32 _mirror_index = {0};
     u32 target_index = 0;
     u8 is_on_edge = 0;
     const v3i16 DELTA =
@@ -544,8 +562,8 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         coordinates = index_to_coordinates_v3u32(i, CHUNK_BUF_DIAMETER);
 
-        v3u32 _mirror_index =
-        {
+        _mirror_index =
+        (v3u32){
             i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2),
 
             (coordinates.z * CHUNK_BUF_LAYER) +
@@ -627,6 +645,18 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         coordinates = index_to_coordinates_v3u32(i, CHUNK_BUF_DIAMETER);
 
+        _mirror_index =
+        (v3u32){
+            i + CHUNK_BUF_DIAMETER - 1 - (coordinates.x * 2),
+
+            (coordinates.z * CHUNK_BUF_LAYER) +
+                ((CHUNK_BUF_DIAMETER - 1 - coordinates.y) *
+                 CHUNK_BUF_DIAMETER) + coordinates.x,
+
+            ((CHUNK_BUF_DIAMETER - 1 - coordinates.z) * CHUNK_BUF_LAYER) +
+                (coordinates.y * CHUNK_BUF_DIAMETER) + coordinates.x,
+        };
+
         v3u32 _target_index = {0};
 
         switch (INCREMENT)
@@ -654,22 +684,25 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         {
             case SHIFT_PX:
             case SHIFT_NX:
+                mirror_index = _mirror_index.x;
                 target_index = _target_index.x;
                 break;
 
             case SHIFT_PY:
             case SHIFT_NY:
+                mirror_index = _mirror_index.y;
                 target_index = _target_index.y;
                 break;
 
             case SHIFT_PZ:
             case SHIFT_NZ:
+                mirror_index = _mirror_index.z;
                 target_index = _target_index.z;
                 break;
         }
 
         chunk_tab[i] = chunk_tab[target_index];
-        if (chunk_tab[i] != NULL && chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
+        if (chunk_tab[i] && chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
             chunk_tab[target_index] = NULL;
     }
 }
