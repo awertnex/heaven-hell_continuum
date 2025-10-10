@@ -1,5 +1,21 @@
 # changelog
 
+## v0.2.2-beta (DD MMM YYYY)
+
+#### changes
+- optimized chunk rendering:
+    - added a queue for qirty chunks to process at a reasonable rate per frame
+    - changed block data from 'u64' -> 'u32' to save memory, and sacrifice
+      some performance by calculating position data at meshing time,
+      very worth it
+    - removed render flags from invisible inside chunks
+    - meshed each chunk and loaded only the blocks with faces into an array
+      to send to the gpu
+    - added 'vbo_len' member to struct 'Chunk' to determine draw-call length
+      (major performance gain)
+    - changed some loop iteration to linear pointer iteration
+- added silly fog
+
 ## v0.2.0-beta (05 Oct 2025)
 
 #### changes
