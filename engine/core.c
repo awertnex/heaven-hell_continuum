@@ -1031,11 +1031,11 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         {
             if (align_x == TEXT_ALIGN_CENTER)
                 for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[(text_info.cursor - j) * 4] -=
+                    mesh_text.vbo_data[text_info.cursor - j] -=
                         advance / 2.0f;
             else if (align_x == TEXT_ALIGN_RIGHT)
                 for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[(text_info.cursor - j) * 4] -=
+                    mesh_text.vbo_data[text_info.cursor - j] -=
                         advance;
 
             advance = 0.0f;
@@ -1049,28 +1049,27 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
             continue;
         }
 
-        mesh_text.vbo_data[(text_info.cursor * 4) + 0] =
+        mesh_text.vbo_data[text_info.cursor++] =
             pos.x + advance + g->bearing.x;
 
-        mesh_text.vbo_data[(text_info.cursor * 4) + 1] =
+        mesh_text.vbo_data[text_info.cursor++] =
             -pos.y - descent - text_info.line - g->bearing.y;
 
-        mesh_text.vbo_data[(text_info.cursor * 4) + 2] =
+        mesh_text.vbo_data[text_info.cursor++] =
             g->texture_sample.x;
 
-        mesh_text.vbo_data[(text_info.cursor * 4) + 3] =
+        mesh_text.vbo_data[text_info.cursor++] =
             g->texture_sample.y;
 
         advance += g->advance;
-        ++text_info.cursor;
     }
 
     if (align_y == TEXT_ALIGN_CENTER)
-        for (u64 i = 0; i < text_info.cursor; ++i)
-            mesh_text.vbo_data[(i * 4) + 1] += text_info.line / 2.0f;
+        for (u64 i = 0; i < text_info.cursor; i += 4)
+            mesh_text.vbo_data[i + 1] += text_info.line / 2.0f;
     else if (align_y == TEXT_ALIGN_BOTTOM)
-        for (u64 i = 0; i < text_info.cursor; ++i)
-            mesh_text.vbo_data[(i * 4) + 1] += text_info.line;
+        for (u64 i = 0; i < text_info.cursor; i += 4)
+            mesh_text.vbo_data[i + 1] += text_info.line;
 }
 
 void
@@ -1106,10 +1105,9 @@ text_render(u32 color)
     glUniform2fv(text_info.font->uniform.font_size, 1, (GLfloat*)&font_size);
     glUniform4fv(text_info.font->uniform.text_color, 1, (GLfloat*)&text_color);
 
-    glDrawArrays(GL_POINTS, 0, text_info.cursor);
+    glDrawArrays(GL_POINTS, 0, (text_info.cursor / 4));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    memset(mesh_text.vbo_data, 0, text_info.cursor);
     text_info.cursor = 0;
     text_info.line = 0;
 }
