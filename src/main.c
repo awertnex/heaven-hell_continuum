@@ -642,7 +642,7 @@ update_world(Player *player)
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
     }
-    chunk_queue_update(CHUNK_BUF_DIAMETER * 6);
+    chunk_queue_update(CHUNK_BUF_DIAMETER * 8);
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(

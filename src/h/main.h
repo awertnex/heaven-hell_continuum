@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             18
+#define SET_RENDER_DISTANCE             16
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -344,14 +344,13 @@ enum BlockMasks
 enum ChunkFlags
 {
     FLAG_CHUNK_LOADED       = 0x01,
-    FLAG_CHUNK_NOT_EMPTY    = 0x02,
-    FLAG_CHUNK_DIRTY        = 0x04,
-    FLAG_CHUNK_QUEUED       = 0x08,
-    FLAG_CHUNK_GENERATED    = 0x10,
-    FLAG_CHUNK_RENDER       = 0x20,
+    FLAG_CHUNK_DIRTY        = 0x02,
+    FLAG_CHUNK_QUEUED       = 0x04,
+    FLAG_CHUNK_GENERATED    = 0x08,
+    FLAG_CHUNK_RENDER       = 0x10,
 
     /* chunk marking for chunk_tab shifting logic */
-    FLAG_CHUNK_EDGE         = 0x40,
+    FLAG_CHUNK_EDGE         = 0x20,
 }; /* ChunkFlags */
 
 enum ChunkStates
@@ -379,7 +378,6 @@ typedef struct Chunk
 
 typedef struct ChunkQueue
 {
-    u32 cycle;                      /* current index in chunk queue */
     u32 count;                      /* number of chunks queued */
     u32 index[CHUNK_QUEUE_MAX];     /* chunk_tab indices */
     Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_buf addresses */

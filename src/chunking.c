@@ -443,7 +443,6 @@ generate_chunk(u32 index)
                         (f32)coordinates.z <= sin_y - 3.0f)
                 {
                     add_block(index, x, y, z);
-                    chunk->flag |= FLAG_CHUNK_NOT_EMPTY;
                     chunk->color = COLOR_CHUNK_RENDER;
                 }
             }
@@ -628,7 +627,7 @@ chunk_queue_update(u32 rate)
                 if (!chunk_queue.chunk[j] &&
                         !(p->flag & FLAG_CHUNK_QUEUED))
                 {
-                    p->flag |= FLAG_CHUNK_QUEUED | FLAG_CHUNK_DIRTY;
+                    p->flag |= FLAG_CHUNK_QUEUED;
                     chunk_queue.chunk[j] = p;
                     chunk_queue.index[j] = i;
                     (chunk_queue.count < CHUNK_QUEUE_MAX) ?
@@ -657,7 +656,7 @@ chunk_queue_update(u32 rate)
                     chunk_queue.chunk[j] = NULL;
                     (chunk_queue.count > 0) ? --chunk_queue.count : 0;
                 }
-            return;
+            break;
         }
 }
 
