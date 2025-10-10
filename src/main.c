@@ -11,7 +11,6 @@
 #include "h/gui.h"
 #include "h/input.h"
 #include "h/logic.h"
-#include "h/voxel.h"
 
 Render render =
 {
@@ -201,6 +200,7 @@ callback_key(
 void
 update_render_settings(void)
 {
+    settings.ndc_scale = (v2f32){2.0f / render.size.x, 2.0f / render.size.y};
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 }
 
@@ -624,7 +624,8 @@ update_world(Player *player)
         show_cursor;
     else disable_cursor;
 
-    update_camera_movement_player(&render, player);
+    b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
+    update_camera_movement_player(&render, player, use_mouse);
     update_camera_perspective(&player->camera, &projection);
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
@@ -767,7 +768,7 @@ draw_everything(void)
                 (GLfloat*)&chunk_position);
 
         glBindVertexArray(i->vao);
-        glDrawArrays(GL_POINTS, 0, CHUNK_VOLUME);
+        glDrawArrays(GL_POINTS, 0, i->vbo_len);
     }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
@@ -1196,19 +1197,24 @@ section_menu_pause:
 section_main:
 
     if (!(flag & FLAG_MAIN_WORLD_LOADED))
-    {
         init_world("Poop Consistency Tester");
-        init_voxel();
-    }
 
     generate_standard_meshes();
 
-    while (!glfwWindowShouldClose(render.window))
+    while (!glfwWindowShouldClose(render.window) && (flag & FLAG_MAIN_ACTIVE))
     {
         render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
         render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
+
+        /* for cursor mode change jitter prevention */
+        if (!(flag & FLAG_MAIN_PARSE_CURSOR))
+        {
+            flag |= FLAG_MAIN_PARSE_CURSOR;
+            render.mouse_delta = (v2f64){0.0f, 0.0f};
+        }
+
         glfwPollEvents();
         update_key_states(&render);
         update_input(&lily);

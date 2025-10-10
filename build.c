@@ -293,7 +293,6 @@ build_main(void)
     push_cmd(DIR_SRC"gui.c");
     push_cmd(DIR_SRC"input.c");
     push_cmd(DIR_SRC"logic.c");
-    push_cmd(DIR_SRC"voxel.c");
     push_cmd("engine/core.c");
     push_cmd("engine/dir.c");
     push_cmd("engine/logger.c");

@@ -481,6 +481,7 @@ mesh_chunk(Chunk *chunk, b8 generate)
     }
     cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
+    chunk->vbo_len = len;
 
     if (generate)
     {

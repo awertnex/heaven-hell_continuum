@@ -101,10 +101,14 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
 }
 
 void
-update_camera_movement_player(Render *render, Player *player)
+update_camera_movement_player(Render *render, Player *player,
+        b8 use_mouse)
 {
-    player->yaw += render->mouse_delta.x * settings.mouse_sensitivity;
-    player->pitch += render->mouse_delta.y * settings.mouse_sensitivity;
+    if (use_mouse)
+    {
+        player->yaw += render->mouse_delta.x * settings.mouse_sensitivity;
+        player->pitch += render->mouse_delta.y * settings.mouse_sensitivity;
+    }
 
     player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
     if (player->yaw < 0.0f)

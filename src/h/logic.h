@@ -35,7 +35,9 @@ enum ContainerStates
 void update_player(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
-void update_camera_movement_player(Render *render, Player *player);
+void update_camera_movement_player(Render *render, Player *player,
+        b8 use_mouse);
+
 void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
 
 static inline void

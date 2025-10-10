@@ -1,8 +1,3 @@
-#include <engine/core.c>
-#include "h/main.h"
-
-/* ---- signatures ---------------------------------------------------------- */
-void *chunk_handler();
 void update_input(Player *player);
 void draw_world();
 void draw_gui();
@@ -10,22 +5,12 @@ void draw_gui();
 int
 main(void)
 {
-    /* ---- init main ------------------------------------------------------- */
     init_textures();
     init_super_debugger(setting.render_size);
 
 section_menu_title: /* ------------------------------------------------------ */
     while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
-        mouse_delta = GetMouseDelta();
-
-        /* for fullscreen cursor jump prevention */
-        if (!(flag & FLAG_PARSE_CURSOR))
-        {
-            flag |= FLAG_PARSE_CURSOR;
-            mouse_delta = (Vector2){0.0f, 0.0f};
-        }
-
         update_input(&lily);
         update_render_settings(setting.render_size);
         setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
@@ -88,30 +73,6 @@ section_main: /* ------------------------------------------------------------ */
     free_super_debugger();
     CloseWindow();
     return 0;
-}
-
-struct /* Chunk Handler Args */
-{
-    v3i16 player_delta_chunk;
-    u8 lock;
-} chunk_handler_args;
-void *
-chunk_handler()
-{
-    chunk_handler_args.player_delta_chunk = lily.delta_chunk;
-    chunk_handler_args.lock = 1;
-    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
-    {
-        LOGINFO("Delta[%03d %03d]",
-                chunk_handler_args.player_delta_chunk.x,
-                chunk_handler_args.player_delta_chunk.y);
-        if (!(flag & FLAG_CHUNK_BUF_DIRTY)) continue;
-
-        chunk_handler_args.lock = 0;
-        shift_chunk_tab(lily.chunk, &chunk_handler_args.player_delta_chunk);
-        flag &= ~FLAG_CHUNK_BUF_DIRTY;
-    }
-    return NULL;
 }
 
 void

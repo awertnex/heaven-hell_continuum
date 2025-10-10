@@ -112,6 +112,7 @@ enum MainFlags
 typedef struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
+    v2f32 ndc_scale;    /* conversion from world-space to screen-space */
     u8 reach_distance;  /* for player reach (arm length basically) */
     f32 lerp_speed;
 
@@ -372,6 +373,7 @@ typedef struct Chunk
     u32 distance;   /* chunk's distance away from player */
     GLuint vao;
     GLuint vbo;
+    u64 vbo_len;
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
