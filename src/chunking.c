@@ -197,10 +197,6 @@ add_block(u32 index, u32 x, u32 y, u32 z)
     else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_NZ;
 
     chunk->block[z][y][x] |= FLAG_BLOCK_NOT_EMPTY;
-    chunk->block[z][y][x] |=
-        (((u64)x & 0xf) << 32) |
-        (((u64)y & 0xf) << 36) |
-        (((u64)z & 0xf) << 40);
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 #else
@@ -463,10 +459,25 @@ mesh_chunk(Chunk *chunk, b8 generate)
     u64 *buf = &buffer[cur_buf][0];
     u64 *cursor = buf;
     {
-        u64 *i = &chunk->block[0][0][0];
-        u64 *p = i + CHUNK_VOLUME;
+        u32 *i = &chunk->block[0][0][0];
+        u32 *p = i + CHUNK_VOLUME;
+        u64 current = 0;
+        v3u64 coordinates = {0};
         for (; i < p; ++i)
-            if (*i & MASK_BLOCK_FACES) *(cursor++) = *i;
+            if (*i & MASK_BLOCK_FACES)
+            {
+                current = CHUNK_VOLUME - (u64)(p - i);
+                coordinates =
+                (v3u64){
+                    current % CHUNK_DIAMETER,
+                    (current / CHUNK_DIAMETER) % CHUNK_DIAMETER,
+                    current / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+                };
+                *(cursor++) = (u64)*i |
+                    (((u64)coordinates.x & 0xf) << 32) |
+                    (((u64)coordinates.y & 0xf) << 36) |
+                    (((u64)coordinates.z & 0xf) << 40);
+            }
     }
     cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
@@ -506,8 +517,8 @@ mesh_chunk(Chunk *chunk, b8 generate)
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    u64 *i = &chunk->block[0][0][0];
-    u64 *p = i + CHUNK_VOLUME;
+    u32 *i = &chunk->block[0][0][0];
+    u32 *p = i + CHUNK_VOLUME;
     for (; i < p; ++i)
         if (*i & MASK_BLOCK_FACES)
         {

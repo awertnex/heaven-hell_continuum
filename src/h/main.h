@@ -372,7 +372,7 @@ typedef struct Chunk
     u32 distance;   /* chunk's distance away from player */
     GLuint vao;
     GLuint vbo;
-    u64 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
 
