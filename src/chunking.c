@@ -439,12 +439,7 @@ generate_chunk(u32 index)
                 f32 sin_y = (u32)((sinf((f32)coordinates.y * DEG2RAD)
                              + 1.0f) * 80.0f) + 2;
 
-                if (chunk->block[z][y][x])
-                {
-                    add_block(index, x, y, z);
-                    chunk->flag |= FLAG_CHUNK_NOT_EMPTY;
-                }
-                else if ((f32)coordinates.z <= sin_x - 3.0f &&
+                if ((f32)coordinates.z <= sin_x - 3.0f &&
                         (f32)coordinates.z <= sin_y - 3.0f)
                 {
                     add_block(index, x, y, z);
@@ -462,7 +457,21 @@ generate_chunk(u32 index)
 static void
 mesh_chunk(Chunk *chunk, b8 generate)
 {
+    static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u64 cur_buf = 0;
+
     if (!chunk) return;
+    u64 *buf = &buffer[cur_buf][0];
+    u64 *cursor = buf;
+    {
+        u64 *i = &chunk->block[0][0][0];
+        u64 *p = i + CHUNK_VOLUME;
+        for (; i < p; ++i)
+            if (*i & MASK_BLOCK_FACES) *(cursor++) = *i;
+    }
+    cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
+    u64 len = cursor - buf;
+
     if (generate)
     {
         (chunk->vbo) ? glDeleteBuffers(1, &chunk->vbo) : 0;
@@ -472,8 +481,8 @@ mesh_chunk(Chunk *chunk, b8 generate)
         glGenBuffers(1, &chunk->vbo);
         glBindVertexArray(chunk->vao);
         glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-        glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
-                chunk->block, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
+                buf, GL_DYNAMIC_DRAW);
 
         glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
                 (void*)0);
@@ -489,8 +498,8 @@ mesh_chunk(Chunk *chunk, b8 generate)
     {
         glBindVertexArray(chunk->vao);
         glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-        glBufferData(GL_ARRAY_BUFFER, CHUNK_VOLUME * sizeof(u64),
-                chunk->block, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
+                buf, GL_DYNAMIC_DRAW);
 
         chunk->flag &= ~FLAG_CHUNK_DIRTY;
     }
@@ -498,14 +507,14 @@ mesh_chunk(Chunk *chunk, b8 generate)
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
-        for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
-            for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
-                if (chunk->block[z][y][x] & MASK_BLOCK_FACES)
-                {
-                    chunk->flag |= FLAG_CHUNK_RENDER;
-                    return;
-                }
+    u64 *i = &chunk->block[0][0][0];
+    u64 *p = i + CHUNK_VOLUME;
+    for (; i < p; ++i)
+        if (*i & MASK_BLOCK_FACES)
+        {
+            chunk->flag |= FLAG_CHUNK_RENDER;
+            return;
+        }
     chunk->flag &= ~FLAG_CHUNK_RENDER;
 }
 
