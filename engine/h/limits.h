@@ -27,7 +27,7 @@
 #define I64_MIN (-I64_MAX - 1)
 
 #define STRING_MAX          2048
-#define STRINGF_BUFFERS_MAX 8
+#define STRINGF_BUFFERS_MAX 4
 #define IN_STRING_MAX       STRING_MAX
 #define OUT_STRING_MAX      (STRING_MAX * 2)
 #define GLYPH_MAX           256

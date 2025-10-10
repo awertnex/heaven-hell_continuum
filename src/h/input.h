@@ -3,7 +3,7 @@
 
 #include <engine/h/core.h>
 #include <engine/h/defines.h>
-#include "settings.h"
+#include "main.h"
 
 /* ---- movement ------------------------------------------------------------ */
 extern u32 bind_jump;
@@ -21,8 +21,8 @@ extern u32 bind_use_item_or_place_block;
 
 /* ---- inventory ----------------------------------------------------------- */
 // extern u32 bind_drop_selected_item;
-extern u32 bind_hotbar_slot[SETTING_HOTBAR_SLOTS_MAX];
-extern u32 bind_hotbar_slot_kp[SETTING_HOTBAR_SLOTS_MAX];
+extern u32 bind_hotbar_slot[SET_HOTBAR_SLOTS_MAX];
+extern u32 bind_hotbar_slot_kp[SET_HOTBAR_SLOTS_MAX];
 extern u32 bind_inventory;
 // extern u32 bind_swap_item_with_offhand;
 

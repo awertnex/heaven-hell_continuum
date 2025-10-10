@@ -6,12 +6,11 @@
 #include <engine/h/math.h>
 
 #include "h/main.h"
-#include "h/settings.h"
 #include "h/chunking.h"
 #include "h/dir.h"
 #include "h/gui.h"
-#include "h/logic.h"
 #include "h/input.h"
+#include "h/logic.h"
 #include "h/voxel.h"
 
 Render render =
@@ -22,15 +21,15 @@ Render render =
 
 Settings settings =
 (Settings){
-    .reach_distance       = SETTING_REACH_DISTANCE_MAX,
-    .lerp_speed           = SETTING_LERP_SPEED_DEFAULT,
-    .mouse_sensitivity    = SETTING_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
+    .reach_distance       = SET_REACH_DISTANCE_MAX,
+    .lerp_speed           = SET_LERP_SPEED_DEFAULT,
+    .mouse_sensitivity    = SET_MOUSE_SENSITIVITY_DEFAULT / 256.0f,
     .render_distance      = CHUNK_BUF_RADIUS,
-    .target_fps           = SETTING_TARGET_FPS_DEFAULT,
-    .gui_scale            = SETTING_GUI_SCALE_DEFAULT,
+    .target_fps           = SET_TARGET_FPS_DEFAULT,
+    .gui_scale            = SET_GUI_SCALE_DEFAULT,
 };
 
-u32 state = 0;
+u32 flag = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
@@ -48,12 +47,12 @@ Player lily =
     .yaw = 0.0f,
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
     .sin_yaw = 0.0f, .cos_yaw = 0.0f,
-    .eye_height = SETTING_PLAYER_EYE_HEIGHT,
+    .eye_height = SET_PLAYER_EYE_HEIGHT,
     .mass = 2.0f,
-    .movement_speed = SETTING_PLAYER_SPEED_WALK,
+    .movement_speed = SET_PLAYER_SPEED_WALK,
     .container_state = 0,
     .perspective = 0,
-    .camera_distance = SETTING_CAMERA_DISTANCE_MAX,
+    .camera_distance = SET_CAMERA_DISTANCE_MAX,
     .spawn_point = {0},
 };
 
@@ -202,7 +201,7 @@ callback_key(
 void
 update_render_settings(void)
 {
-    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT;
+    settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 }
 
 void
@@ -327,33 +326,25 @@ cleanup:
 void
 bind_shader_uniforms(void)
 {
-    font.uniform.char_size =
+    uniform.font.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
-    font.uniform.font_size =
+    uniform.font.font_size =
         glGetUniformLocation(shader_text.id, "font_size");
-    font.uniform.text_color =
+    uniform.font.text_color =
         glGetUniformLocation(shader_text.id, "text_color");
 
-    font_bold.uniform.char_size =
-        glGetUniformLocation(shader_text.id, "char_size");
-    font_bold.uniform.font_size =
-        glGetUniformLocation(shader_text.id, "font_size");
-    font_bold.uniform.text_color =
-        glGetUniformLocation(shader_text.id, "text_color");
-
-    font_mono.uniform.char_size =
-        glGetUniformLocation(shader_text.id, "char_size");
-    font_mono.uniform.font_size =
-        glGetUniformLocation(shader_text.id, "font_size");
-    font_mono.uniform.text_color =
-        glGetUniformLocation(shader_text.id, "text_color");
-
-    font_mono_bold.uniform.char_size =
-        glGetUniformLocation(shader_text.id, "char_size");
-    font_mono_bold.uniform.font_size =
-        glGetUniformLocation(shader_text.id, "font_size");
-    font_mono_bold.uniform.text_color =
-        glGetUniformLocation(shader_text.id, "text_color");
+    font.uniform.char_size = uniform.font.char_size;
+    font.uniform.font_size = uniform.font.font_size;
+    font.uniform.text_color = uniform.font.text_color;
+    font_bold.uniform.char_size = uniform.font.char_size;
+    font_bold.uniform.font_size = uniform.font.font_size;
+    font_bold.uniform.text_color = uniform.font.text_color;
+    font_mono.uniform.char_size = uniform.font.char_size;
+    font_mono.uniform.font_size = uniform.font.font_size;
+    font_mono.uniform.text_color = uniform.font.text_color;
+    font_mono_bold.uniform.char_size = uniform.font.char_size;
+    font_mono_bold.uniform.font_size = uniform.font.font_size;
+    font_mono_bold.uniform.text_color = uniform.font.text_color;
 
     uniform.skybox.camera_position =
         glGetUniformLocation(shader_skybox.id, "camera_position");
@@ -434,7 +425,7 @@ update_input(Player *player)
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
     {
-        if (player->state & FLAG_FLYING)
+        if (player->flag & FLAG_PLAYER_FLYING)
         {
             player->raw_pos.z += player->movement_speed;
             player->pos.z =
@@ -443,30 +434,30 @@ update_input(Player *player)
                         player->pos_lerp_speed.z, render.frame_delta);
         }
 
-        if (player->state & FLAG_CAN_JUMP)
+        if (player->flag & FLAG_PLAYER_CAN_JUMP)
         {
             player->vel.z +=
-                SETTING_PLAYER_JUMP_HEIGHT;
-            player->state &= ~FLAG_CAN_JUMP;
+                SET_PLAYER_JUMP_HEIGHT;
+            player->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }
     if (is_key_press_double(bind_jump))
-        player->state ^= FLAG_FLYING;
+        player->flag ^= FLAG_PLAYER_FLYING;
 
     /* ---- sneaking -------------------------------------------------------- */
     if (is_key_hold(bind_sneak))
     {
-        if (player->state & FLAG_FLYING)
+        if (player->flag & FLAG_PLAYER_FLYING)
             player->raw_pos.z -= player->movement_speed;
-        else player->state |= FLAG_SNEAKING;
+        else player->flag |= FLAG_PLAYER_SNEAKING;
     }
-    else player->state &= ~FLAG_SNEAKING;
+    else player->flag &= ~FLAG_PLAYER_SNEAKING;
 
     /* ---- sprinting ------------------------------------------------------- */
     if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forwards))
-        player->state |= FLAG_SPRINTING;
+        player->flag |= FLAG_PLAYER_SPRINTING;
     else if (is_key_release(bind_walk_forwards))
-        player->state &= ~FLAG_SPRINTING;
+        player->flag &= ~FLAG_PLAYER_SPRINTING;
 
     /* ---- movement -------------------------------------------------------- */
     if (is_key_hold(bind_strafe_left))
@@ -493,7 +484,7 @@ update_input(Player *player)
         player->raw_pos.y -= (player->movement_speed * player->sin_yaw);
     }
     if (is_key_press_double(bind_walk_forwards))
-        player->state |= FLAG_SPRINTING;
+        player->flag |= FLAG_PLAYER_SPRINTING;
 
     player->pos.x = lerp_f32(player->pos.x, player->raw_pos.x,
                 player->pos_lerp_speed.x, render.frame_delta);
@@ -506,8 +497,8 @@ update_input(Player *player)
     /* ---- gameplay -------------------------------------------------------- */
     if (is_key_hold(bind_attack_or_destroy))
     {
-        if ((state & FLAG_PARSE_TARGET)
-                && !(state & FLAG_CHUNK_BUF_DIRTY)
+        if ((flag & FLAG_MAIN_PARSE_TARGET)
+                && !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
                 && (chunk_tab[chunk_tab_index] != NULL))
         {
             remove_block(chunk_tab_index,
@@ -523,8 +514,8 @@ update_input(Player *player)
 
     if (is_key_hold(bind_use_item_or_place_block))
     {
-        if ((state & FLAG_PARSE_TARGET)
-                && !(state & FLAG_CHUNK_BUF_DIRTY)
+        if ((flag & FLAG_MAIN_PARSE_TARGET)
+                && !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
                 && (chunk_tab[chunk_tab_index] != NULL))
         {
             add_block(chunk_tab_index,
@@ -562,17 +553,17 @@ update_input(Player *player)
 
     /* ---- miscellaneous --------------------------------------------------- */
     if (is_key_press(bind_toggle_hud))
-        state ^= FLAG_HUD;
+        flag ^= FLAG_MAIN_HUD;
 
     if (is_key_press(bind_toggle_debug))
     {
-        if (state & FLAG_DEBUG)
-            state &= ~(FLAG_DEBUG | FLAG_DEBUG_MORE);
+        if (flag & FLAG_MAIN_DEBUG)
+            flag &= ~(FLAG_MAIN_DEBUG | FLAG_MAIN_DEBUG_MORE);
         else
         {
-            state |= FLAG_DEBUG;
+            flag |= FLAG_MAIN_DEBUG;
             if (is_key_hold(KEY_LEFT_SHIFT))
-                state |= FLAG_DEBUG_MORE;
+                flag |= FLAG_MAIN_DEBUG_MORE;
         }
     }
 
@@ -586,7 +577,7 @@ update_input(Player *player)
     /* ---- debug ----------------------------------------------------------- */
 #if !RELEASE_BUILD
     if (is_key_press(KEY_TAB))
-        state ^= FLAG_SUPER_DEBUG;
+        flag ^= FLAG_MAIN_SUPER_DEBUG;
 #endif /* RELEASE_BUILD */
 }
 
@@ -604,7 +595,7 @@ init_world(str *name)
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_block(&lily, 0, 0, 2);
+    set_player_block(&lily, 0, 270, 2);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i64){
@@ -614,7 +605,7 @@ init_world(str *name)
         };
 
     update_chunking(lily.delta_chunk);
-    state |= (FLAG_HUD | FLAG_WORLD_LOADED);
+    flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
     disable_cursor;
     center_cursor;
     return TRUE;
@@ -624,12 +615,12 @@ void
 update_world(Player *player)
 {
     game_tick = 6000 + (u64)(render.frame_start * 20) -
-        (SETTING_DAY_TICKS_MAX * game_days);
+        (SET_DAY_TICKS_MAX * game_days);
 
-    if (game_tick >= SETTING_DAY_TICKS_MAX)
+    if (game_tick >= SET_DAY_TICKS_MAX)
         ++game_days;
 
-    if (state_menu_depth || (state & FLAG_SUPER_DEBUG))
+    if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
         show_cursor;
     else disable_cursor;
 
@@ -645,9 +636,9 @@ update_world(Player *player)
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
         ? chunk_tab_index = CHUNK_TAB_CENTER : 0;
 
-    if (state & FLAG_CHUNK_BUF_DIRTY)
+    if (flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
     {
-        state &= ~FLAG_CHUNK_BUF_DIRTY;
+        flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
     }
@@ -660,8 +651,8 @@ update_world(Player *player)
                 -WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
                 (v3i64){
                 WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
-        state |= FLAG_PARSE_TARGET;
-    else state &= ~FLAG_PARSE_TARGET;
+        flag |= FLAG_MAIN_PARSE_TARGET;
+    else flag &= ~FLAG_MAIN_PARSE_TARGET;
 
     /* TODO: make a function 'index_to_bounding_box()' */
     //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera),
@@ -674,8 +665,8 @@ void
 draw_everything(void)
 {
     f32 opacity = 1.0f;
-    if (state & FLAG_DEBUG_MORE)
-        opacity = 0.2f;
+    if (flag & FLAG_MAIN_DEBUG_MORE)
+        opacity = 0.75f;
 
     glEnable(GL_DEPTH_TEST);
 
@@ -683,7 +674,7 @@ draw_everything(void)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_data.time = (f32)game_tick / (f32)SETTING_DAY_TICKS_MAX;
+    skybox_data.time = (f32)game_tick / (f32)SET_DAY_TICKS_MAX;
     skybox_data.sun_rotation =
         (v3f32){
             -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f,
@@ -758,8 +749,8 @@ draw_everything(void)
 
     glUniform1f(uniform.voxel.opacity, opacity);
 
-    Chunk *p = &chunk_buf[CHUNK_BUF_VOLUME];
     Chunk *i = &chunk_buf[0];
+    Chunk *p = i + CHUNK_BUF_VOLUME;
     for (; i < p; ++i)
     {
         if (!(i->flag & FLAG_CHUNK_RENDER))
@@ -785,7 +776,7 @@ draw_everything(void)
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     /* ---- hud ------------------------------------------------------------- */
-    if (state & FLAG_DEBUG)
+    if (flag & FLAG_MAIN_DEBUG)
     {
         /* ---- gizmo ------------------------------------------------------- */
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
@@ -809,7 +800,7 @@ draw_everything(void)
         glDrawElements(GL_TRIANGLES, mesh_gizmo.ebo_len, GL_UNSIGNED_INT, 0);
 
         /* ---- chunk gizmo ------------------------------------------------- */
-        if (state & FLAG_DEBUG_MORE)
+        if (flag & FLAG_MAIN_DEBUG_MORE)
         {
             glClear(GL_DEPTH_BUFFER_BIT);
             glUseProgram(shader_gizmo_chunk.id);
@@ -851,7 +842,11 @@ draw_everything(void)
                     continue;
 
                 v3f32 cursor =
-                    index_to_coordinates_v3f32(i, CHUNK_BUF_DIAMETER);
+                {
+                    (f32)(i % CHUNK_BUF_DIAMETER),
+                    (f32)((i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER),
+                    (f32)i / CHUNK_BUF_LAYER,
+                };
                 cursor = sub_v3f32(cursor, (v3f32){
                         CHUNK_BUF_RADIUS + 0.5f,
                         CHUNK_BUF_RADIUS + 0.5f,
@@ -890,7 +885,8 @@ draw_everything(void)
                     "FRAME DELTA       [%.5lf]\n",
                     (u32)(1.0f / render.frame_delta),
                     render.frame_start,
-                    render.frame_delta), (v2f32){MARGIN, MARGIN}, 0, 0);
+                    render.frame_delta),
+                (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
         text_render(0x6f9f3fff);
 
         text_push(stringf(
@@ -914,49 +910,53 @@ draw_everything(void)
                     chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
                     lily.chunk.x, lily.chunk.y, lily.chunk.z,
                     lily.pitch, lily.yaw),
-                    (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
+                    (v2f32){SET_MARGIN,
+                        SET_MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
         text_render(0xffffffff);
 
         text_push(stringf(
                     "PLAYER OVERFLOW X [%s]\n"
                     "PLAYER OVERFLOW Y [%s]\n"
                     "PLAYER OVERFLOW Z [%s]\n",
-                    (lily.state & FLAG_OVERFLOW_X) ?
-                    (lily.state & FLAG_OVERFLOW_PX) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ?
                     "        " : "        " : "NONE",
-                    (lily.state & FLAG_OVERFLOW_Y) ?
-                    (lily.state & FLAG_OVERFLOW_PY) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ?
                     "        " : "        " : "NONE",
-                    (lily.state & FLAG_OVERFLOW_Z) ?
-                    (lily.state & FLAG_OVERFLOW_PZ) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) ?
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
                     "        " : "        " : "NONE"),
-                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+                (v2f32){SET_MARGIN,
+                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
         text_render(0x995429ff);
 
         text_push(stringf(
                     "                   %s\n"
                     "                   %s\n"
                     "                   %s\n",
-                    (lily.state & FLAG_OVERFLOW_X) &&
-                    !(lily.state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
-                    (lily.state & FLAG_OVERFLOW_Y) &&
-                    !(lily.state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
-                    (lily.state & FLAG_OVERFLOW_Z) &&
-                    !(lily.state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : ""),
-                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+                (v2f32){SET_MARGIN,
+                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
         text_render(0xec6051ff);
 
         text_push(stringf(
                     "                   %s\n"
                     "                   %s\n"
                     "                   %s\n",
-                    (lily.state & FLAG_OVERFLOW_X) &&
-                    (lily.state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
-                    (lily.state & FLAG_OVERFLOW_Y) &&
-                    (lily.state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
-                    (lily.state & FLAG_OVERFLOW_Z) &&
-                    (lily.state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : ""),
-                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "",
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                    (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
+                (v2f32){SET_MARGIN,
+                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
         text_render(0x79ec50ff);
 
         text_push(stringf(
@@ -978,7 +978,8 @@ draw_everything(void)
                     skybox_data.sun_rotation.x,
                     skybox_data.sun_rotation.y,
                     skybox_data.sun_rotation.z),
-                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
+                (v2f32){SET_MARGIN,
+                SET_MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
         text_render(0x3f6f9fff);
 
         text_start(0, FONT_SIZE_DEFAULT,
@@ -997,7 +998,8 @@ draw_everything(void)
                     glGetString(GL_SHADING_LANGUAGE_VERSION),
                     glGetString(GL_VENDOR),
                     glGetString(GL_RENDERER)),
-                (v2f32){MARGIN, render.size.y - MARGIN}, 0, TEXT_ALIGN_BOTTOM);
+                (v2f32){SET_MARGIN,
+                render.size.y - SET_MARGIN}, 0, TEXT_ALIGN_BOTTOM);
         text_render(0x3f9f3fff);
         text_stop();
     }
@@ -1011,7 +1013,7 @@ draw_everything(void)
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    if (state & FLAG_DEBUG)
+    if (flag & FLAG_MAIN_DEBUG)
     {
         glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -1102,10 +1104,11 @@ main(int argc, char **argv)
     /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 25);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
-    state =
-        FLAG_ACTIVE |
-        FLAG_PARSE_CURSOR |
-        FLAG_DEBUG;
+    flag =
+        FLAG_MAIN_ACTIVE |
+        FLAG_MAIN_PARSE_CURSOR |
+        FLAG_MAIN_DEBUG |
+        FLAG_MAIN_DEBUG_MORE;
 
     /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1177,7 +1180,7 @@ main(int argc, char **argv)
 
     lily.camera =
         (Camera){
-            .fovy = SETTING_FOV_DEFAULT,
+            .fovy = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
@@ -1192,7 +1195,7 @@ section_menu_pause:
 
 section_main:
 
-    if (!(state & FLAG_WORLD_LOADED))
+    if (!(flag & FLAG_MAIN_WORLD_LOADED))
     {
         init_world("Poop Consistency Tester");
         init_voxel();
@@ -1217,10 +1220,10 @@ section_main:
 
         glfwSwapBuffers(render.window);
 
-        if (!(state & FLAG_WORLD_LOADED))
+        if (!(flag & FLAG_MAIN_WORLD_LOADED))
             goto section_menu_title;
 
-        if (state & FLAG_PAUSED)
+        if (flag & FLAG_MAIN_PAUSED)
             goto section_menu_pause;
     }
 
@@ -1231,6 +1234,7 @@ cleanup: /* ----------------------------------------------------------------- */
     free_mesh(&mesh_skybox);
     free_mesh(&mesh_cube_of_happiness);
     free_mesh(&mesh_gizmo);
+    free_chunking();
     free_fbo(&fbo_skybox);
     free_fbo(&fbo_world);
     free_fbo(&fbo_world_msaa);

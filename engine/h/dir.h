@@ -11,14 +11,18 @@ u64 get_file_type(const str *path);
 /* return FALSE (0) on failure */
 b8 is_file(const str *path);
 
-/* return FALSE (0) on failure */
-b8 is_file_exists(const str *path);
+/* log = enable/disable logging.
+ *
+ * return FALSE (0) on failure */
+b8 is_file_exists(const str *path, b8 log);
 
 /* return FALSE (0) on failure */
 b8 is_dir(const str *path);
 
+/* log = enable/disable logging.
+ *
 /* return FALSE (0) on failure */
-b8 is_dir_exists(const str *path);
+b8 is_dir_exists(const str *path, b8 log);
 
 /* return calloc'd buf of file contents, not NULL terminated,
  * return file size in bytes to file_len.

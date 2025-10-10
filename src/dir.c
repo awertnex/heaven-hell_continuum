@@ -72,7 +72,7 @@ init_paths(void)
         normalize_slash(string);
         snprintf(GRANDPATH_DIR[i], PATH_MAX, "%s", string);
 
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, FALSE))
             make_dir(string);
     }
 
@@ -95,7 +95,7 @@ create_instance(const str *instance_name)
 int
 init_instance_directory(const str *instance_name)
 {
-    if (!is_dir_exists(path_grandpath))
+    if (!is_dir_exists(path_grandpath, FALSE))
     {
         LOGFATAL("Main Directory '%s' Not Found, Instance Creation Failed,"
                 "Process Aborted\n", path_grandpath);
@@ -131,13 +131,13 @@ init_instance_directory(const str *instance_name)
         snprintf(INSTANCE_DIR[i], PATH_MAX, "%s", string);
         if (!make_dirs)
         {
-            if (!is_dir_exists(string))
+            if (!is_dir_exists(string, TRUE))
                 return -1;
             continue;
         }
 
         make_dir(string);
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, FALSE))
         {
             LOGFATAL("Directory Creation Failed '%s',"
                     "Process Aborted\n", string);
@@ -151,7 +151,7 @@ init_instance_directory(const str *instance_name)
 int
 init_instance_files(void)
 {
-    if (is_dir_exists(path_subpath))
+    if (is_dir_exists(path_subpath, FALSE))
     {
         copy_dir(GRANDPATH_DIR[DIR_ROOT_RESOURCES],
                 INSTANCE_DIR[DIR_RESOURCES], 1, "r", "w");
@@ -191,7 +191,7 @@ init_world_directory(const str *world_name)
         normalize_slash(string);
         make_dir(string);
 
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, TRUE))
             LOGERROR("Directory Creation Failed '%s'\n", WORLD_DIR[i]);
 
         snprintf(WORLD_DIR[i], PATH_MAX, "%s", string);

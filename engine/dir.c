@@ -35,7 +35,7 @@ is_file(const str *path)
 }
 
 b8
-is_file_exists(const str *path)
+is_file_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -44,7 +44,7 @@ is_file_exists(const str *path)
             return TRUE;
         else
         {
-            LOGERROR("'%s' is Not a Regular File\n", path);
+            if (log) LOGERROR("'%s' is Not a Regular File\n", path);
             return FALSE;
         }
     }
@@ -62,7 +62,7 @@ is_dir(const str *path)
 }
 
 b8
-is_dir_exists(const str *path)
+is_dir_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -71,18 +71,18 @@ is_dir_exists(const str *path)
             return TRUE;
         else
         {
-            LOGERROR("'%s' is Not a Directory\n", path);
+            if (log) LOGERROR("'%s' is Not a Directory\n", path);
             return FALSE;
         }
     }
-    LOGERROR("Directory '%s' Not Found\n", path);
+    if (log) LOGERROR("Directory '%s' Not Found\n", path);
     return FALSE;
 }
 
 str *
 get_file_contents(const str *path, u64 *file_len, const str *read_format)
 {
-    if (!is_file_exists(path))
+    if (!is_file_exists(path, TRUE))
             return NULL;
 
     FILE *file = NULL;
@@ -114,7 +114,7 @@ cleanup:
 buf
 get_dir_contents(const str *path)
 {
-    if (!path || !is_dir_exists(path))
+    if (!path || !is_dir_exists(path, TRUE))
         return (buf){NULL};
 
     str *dir_path_absolute = get_path_absolute(path);
@@ -176,7 +176,7 @@ cleanup:
 u64
 get_dir_entry_count(const str *path)
 {
-    if (!path || !is_dir_exists(path))
+    if (!path || !is_dir_exists(path, TRUE))
         return 0;
 
     DIR *dir = NULL;
@@ -202,7 +202,7 @@ u8
 copy_file(const str *path, const str *destination,
         const str *read_format, const str *write_format)
 {
-    if (!is_file_exists(path))
+    if (!is_file_exists(path, TRUE))
             return -1;
 
     str destination_string[PATH_MAX] = {0};
@@ -239,7 +239,7 @@ u8
 copy_dir(const str *path, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format)
 {
-    if (!is_dir_exists(path))
+    if (!is_dir_exists(path, TRUE))
         return -1;
 
     buf dir_contents = {0};
@@ -255,7 +255,7 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
     snprintf(destination_string, PATH_MAX, "%s", destination);
     check_slash(destination_string);
 
-    if (is_dir_exists(destination_string) && !overwrite)
+    if (is_dir_exists(destination_string, FALSE) && !overwrite)
     {
         strncat(destination_string,
                 strrchr(path_string, SLASH_NATIVE), PATH_MAX - 1);
@@ -294,7 +294,7 @@ get_path_absolute(const str *path)
         return NULL;
     }
 
-    if (!is_dir_exists(path))
+    if (!is_dir_exists(path, TRUE))
         return NULL;
 
     str path_absolute[PATH_MAX] = {0};

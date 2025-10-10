@@ -15,14 +15,14 @@ main(void)
     init_super_debugger(setting.render_size);
 
 section_menu_title: /* ------------------------------------------------------ */
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
+    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
         mouse_delta = GetMouseDelta();
 
         /* for fullscreen cursor jump prevention */
-        if (!(state & FLAG_PARSE_CURSOR))
+        if (!(flag & FLAG_PARSE_CURSOR))
         {
-            state |= FLAG_PARSE_CURSOR;
+            flag |= FLAG_PARSE_CURSOR;
             mouse_delta = (Vector2){0.0f, 0.0f};
         }
 
@@ -41,7 +41,7 @@ section_menu_title: /* ------------------------------------------------------ */
         }
         EndDrawing();
 
-        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+        if (!(flag & FLAG_PAUSED) && (flag & FLAG_WORLD_LOADED))
             goto section_main;
     }
 
@@ -52,7 +52,7 @@ section_menu_world: /* ------------------------------------------------------ */
     draw_menu_overlay(setting.render_size);
     EndDrawing();
 
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
+    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
         update_input(&lily);
         setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
@@ -62,18 +62,18 @@ section_menu_world: /* ------------------------------------------------------ */
         update_menus(setting.render_size);
         EndDrawing();
 
-        if (!(state & FLAG_WORLD_LOADED))
+        if (!(flag & FLAG_WORLD_LOADED))
             goto section_menu_title;
 
-        if (!(state & FLAG_PAUSED) && (state & FLAG_WORLD_LOADED))
+        if (!(flag & FLAG_PAUSED) && (flag & FLAG_WORLD_LOADED))
             break;
     }
 
 section_main: /* ------------------------------------------------------------ */
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
+    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
         mouse_delta = GetMouseDelta();
-        if (!state_menu_depth && !(state & FLAG_SUPER_DEBUG))
+        if (!state_menu_depth && !(flag & FLAG_SUPER_DEBUG))
         {
             disable_cursor;
             center_cursor;
@@ -100,16 +100,16 @@ chunk_handler()
 {
     chunk_handler_args.player_delta_chunk = lily.delta_chunk;
     chunk_handler_args.lock = 1;
-    while (!WindowShouldClose() && (state & FLAG_ACTIVE))
+    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
         LOGINFO("Delta[%03d %03d]",
                 chunk_handler_args.player_delta_chunk.x,
                 chunk_handler_args.player_delta_chunk.y);
-        if (!(state & FLAG_CHUNK_BUF_DIRTY)) continue;
+        if (!(flag & FLAG_CHUNK_BUF_DIRTY)) continue;
 
         chunk_handler_args.lock = 0;
         shift_chunk_tab(lily.chunk, &chunk_handler_args.player_delta_chunk);
-        state &= ~FLAG_CHUNK_BUF_DIRTY;
+        flag &= ~FLAG_CHUNK_BUF_DIRTY;
     }
     return NULL;
 }
@@ -133,10 +133,10 @@ update_input(Player *player)
 
     if (IsKeyPressed(bind_toggle_fullscreen))
     {
-        state ^= FLAG_FULLSCREEN;
-        state &= ~FLAG_PARSE_CURSOR;
+        flag ^= FLAG_FULLSCREEN;
+        flag &= ~FLAG_PARSE_CURSOR;
 
-        if (state & FLAG_FULLSCREEN)
+        if (flag & FLAG_FULLSCREEN)
         {
             ToggleBorderlessWindowed();
             SetConfigFlags(FLAG_FULLSCREEN_MODE);
@@ -148,15 +148,15 @@ update_input(Player *player)
         }
     }
 
-    if (IsKeyPressed(bind_pause) && (state & FLAG_WORLD_LOADED))
+    if (IsKeyPressed(bind_pause) && (flag & FLAG_WORLD_LOADED))
     {
-        if (state & FLAG_WORLD_LOADED)
+        if (flag & FLAG_WORLD_LOADED)
         {
             if (!state_menu_depth)
             {
                 state_menu_depth = 1;
                 menu_index = MENU_GAME;
-                state |= FLAG_PAUSED;
+                flag |= FLAG_PAUSED;
                 player->container_state = 0;
                 show_cursor;
             }
@@ -166,7 +166,7 @@ update_input(Player *player)
         else
         {
             if (state_menu_depth == 1)
-                state &= ~FLAG_ACTIVE;
+                flag &= ~FLAG_ACTIVE;
             else btn_func_back();
         }
     }
@@ -176,7 +176,7 @@ void
 draw_world()
 {
     /* ---- player chunk bounding box --------------------------------------- */
-    if (state & FLAG_DEBUG_MORE)
+    if (flag & FLAG_DEBUG_MORE)
         draw_bounding_box(
                 (Vector3){
                 (f32)(lily.chunk.x * CHUNK_DIAMETER) +
@@ -194,8 +194,8 @@ draw_world()
                 ORANGE);
 
     /* ---- player target bounding box -------------------------------------- */
-    if ((state & FLAG_PARSE_TARGET)
-            && (state & FLAG_HUD)
+    if ((flag & FLAG_PARSE_TARGET)
+            && (flag & FLAG_HUD)
             && chunk_tab[chunk_tab_index] != NULL)
     {
         if (chunk_tab[chunk_tab_index]->block
@@ -207,18 +207,18 @@ draw_world()
                     CHUNK_DIAMETER)] & NOT_EMPTY)
         {
             draw_block_wires(lily.delta_target);
-            if (state & FLAG_DEBUG_MORE)
+            if (flag & FLAG_DEBUG_MORE)
                 DrawLine3D(Vector3Subtract(lily.camera.position,
                             (Vector3){0.0f, 0.0f, 0.5f}),
                         lily.camera.target, RED);
         }
-        else if (state & FLAG_DEBUG_MORE)
+        else if (flag & FLAG_DEBUG_MORE)
             DrawLine3D(Vector3Subtract(lily.camera.position,
                         (Vector3){0.0f, 0.0f, 0.5f}),
                     lily.camera.target, GREEN);
     }
 
-    if (state & FLAG_DEBUG_MORE)
+    if (flag & FLAG_DEBUG_MORE)
     {
 //        draw_block_wires(&target_coordinates_feet);
 //        printf("feet: %d %d %d\n",
@@ -237,7 +237,7 @@ draw_world()
 void
 draw_gui()
 {
-    if (state & FLAG_HUD)
+    if (flag & FLAG_HUD)
     {
         draw_hud();
         draw_debug_info(&lily.camera_debug_info);
@@ -246,6 +246,6 @@ draw_gui()
     if (state_menu_depth && lily.container_state)
         draw_containers(&lily, setting.render_size);
 
-    if (state & FLAG_SUPER_DEBUG)
+    if (flag & FLAG_SUPER_DEBUG)
         draw_super_debugger(setting.render_size);
 }

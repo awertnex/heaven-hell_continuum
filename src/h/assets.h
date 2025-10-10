@@ -4,20 +4,6 @@
 #include <engine/h/defines.h>
 #include "dir.h"
 
-enum BlockStateFlags
-{
-    BLOCK_STATE_SOLID =     0x1,
-    BLOCK_STATE_FLUID =     0x2,
-    BLOCK_STATE_EMISSIVE =  0x4,
-    BLOCK_STATE_HOT =       0x8,
-    BLOCK_STATE_COLD =      0x10,
-    BLOCK_STATE_SLIPPERY =  0x20,
-    BLOCK_STATE_BOUNCY =    0x40,
-    BLOCK_STATE_SLOW =      0x80,
-    BLOCK_STATE_QUICK =     0x100,
-    BLOCK_STATE_ANIMATED =  0x200,
-}; /* BlockStateFlags */
-
 enum BlockID
 {
     grass,

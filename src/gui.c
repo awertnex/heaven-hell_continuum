@@ -3,8 +3,8 @@
 #include <math.h>
 
 #include <engine/h/memory.h>
+#include "h/main.h"
 #include "h/gui.h"
-#include "h/logic.h"
 #include "h/dir.h"
 
 Font font = {0};
@@ -325,7 +325,7 @@ draw_hud()
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
-    if (!(state & FLAG_DEBUG))
+    if (!(flag & FLAG_DEBUG))
         draw_texture(texture_hud_widgets, crosshair,
                 crosshair_pos, 
                 (v2i16){setting.gui_scale, setting.gui_scale},
@@ -614,7 +614,7 @@ btn_func_singleplayer()
     menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
     is_menu_ready = 0;
-    state &= ~FLAG_PAUSED; /*temp*/
+    flag &= ~FLAG_PAUSED; /*temp*/
 
     init_world("Poop Consistency Tester"); /*temp*/
 }
@@ -638,7 +638,7 @@ btn_func_settings()
 void
 btn_func_quit_game()
 {
-    state &= ~FLAG_ACTIVE;
+    flag &= ~FLAG_ACTIVE;
 }
 
 void
@@ -647,8 +647,8 @@ btn_func_unpause()
     menu_index = 0;
     state_menu_depth = 0;
     is_menu_ready = 0;
-    state &= ~FLAG_PAUSED;
-    lily.state &= ~FLAG_MENU_OPEN;
+    flag &= ~FLAG_PAUSED;
+    lily.flag &= ~FLAG_MENU_OPEN;
     lily.container_state = 0;
 }
 
@@ -659,7 +659,7 @@ btn_func_quit_world()
     state_menu_depth = 1;
     is_menu_ready = 0;
     /* TODO: save and unload world */
-    state &= ~FLAG_WORLD_LOADED;
+    flag &= ~FLAG_WORLD_LOADED;
 }
 
 void

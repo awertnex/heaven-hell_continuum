@@ -46,14 +46,14 @@ void log_output(const str *file, u64 line, u8 level, const str* format, ...);
     #define LOGDEBUG(format, ...) \
         log_output(__FILE__, __LINE__, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
 #else
-    #define LOGDEBUG(format, ...)
+    #define LOGDEBUG()
 #endif /* LOGGING_DEBUG */
 
 #if LOGGING_TRACE == 1
     #define LOGTRACE(format, ...) \
         log_output(__FILE__, __LINE__, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
 #else
-    #define LOGTRACE(format, ...)
+    #define LOGTRACE()
 #endif /* LOGGING_TRACE */
 
 #endif /* ENGINE_LOGGER_H */

@@ -6,7 +6,7 @@
 #include <engine/h/limits.h>
 #include "main.h"
 
-#define DIR_MAX     64
+#define DIR_MAX             64
 
 enum Directories
 {

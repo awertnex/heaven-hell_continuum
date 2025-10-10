@@ -783,7 +783,7 @@ init_font(Font *font, u32 resolution, const str *font_path)
         return FALSE;
     }
 
-    if (!is_file_exists(font_path))
+    if (!is_file_exists(font_path, TRUE))
         return FALSE;
 
     font->buf = (u8*)get_file_contents(font_path, &font->buf_len, "rb");

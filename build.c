@@ -568,9 +568,9 @@ main(int argc, char **argv)
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
     if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
-    if (!is_dir_exists(DIR_SRC) ||
-            !is_dir_exists(DIR_TESTS) ||
-            !is_dir_exists(DIR_LAUNCHER))
+    if (!is_dir_exists(DIR_SRC, TRUE) ||
+            !is_dir_exists(DIR_TESTS, TRUE) ||
+            !is_dir_exists(DIR_LAUNCHER, TRUE))
         return -1;
 
     if (!state)
@@ -583,10 +583,10 @@ main(int argc, char **argv)
     if (flags & FLAG_SHOW_CMD)                  show_cmd();
     if (flags & FLAG_RAW_CMD)                   raw_cmd();
 
-    if (!is_dir_exists(str_dir_root))
+    if (!is_dir_exists(str_dir_root, FALSE))
         make_dir(str_dir_root);
 
-    if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS))
+    if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS, FALSE))
         make_dir(DIR_ROOT_TESTS);
 
     str str_from[ASSET_COUNT][CMD_SIZE] = {0};

@@ -6,16 +6,16 @@
 layout(points) in;
 layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 
-/* from src/h/chunking.h */
-#define POSITIVE_X      0x0000000000010000
-#define NEGATIVE_X      0x0000000000020000
-#define POSITIVE_Y      0x0000000000040000
-#define NEGATIVE_Y      0x0000000000080000
-#define POSITIVE_Z      0x0000000000100000
-#define NEGATIVE_Z      0x0000000000200000
-#define NOT_EMPTY       0x0000000000400000
+/* from src/h/main.h */
+#define POSITIVE_X      0x00000000010000
+#define NEGATIVE_X      0x00000000020000
+#define POSITIVE_Y      0x00000000040000
+#define NEGATIVE_Y      0x00000000080000
+#define POSITIVE_Z      0x00000000100000
+#define NEGATIVE_Z      0x00000000200000
+#define NOT_EMPTY       0x00000000400000
 
-in int vs_data[];
+in uint vs_data[];
 in vec3 vs_position[];
 out vec4 gs_diffuse;
 out vec3 gs_position;

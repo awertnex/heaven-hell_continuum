@@ -9,8 +9,32 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
+#define mem_alloc(x, size, name) \
+    _mem_alloc(x, size, name, __FILE__, __LINE__)
+
+#define mem_alloc_memb(x, memb, size, name) \
+    _mem_alloc_memb(x, memb, size, name, __FILE__, __LINE__)
+
+#define mem_alloc_buf(x, memb, size, name) \
+    _mem_alloc_buf(x, memb, size, name, __FILE__, __LINE__)
+
+#define mem_realloc(x, size, name) \
+    _mem_realloc(x, size, name, __FILE__, __LINE__)
+
+#define mem_realloc_memb(x, memb, size, name) \
+    _mem_realloc_memb(x, memb, size, name, __FILE__, __LINE__)
+
+#define mem_free(x, size, name) \
+    _mem_free(x, size, name, __FILE__, __LINE__)
+
+#define mem_free_buf(x, name) \
+    _mem_free_buf(x, name, __FILE__, __LINE__)
+
+#define mem_zero(x, size, name) \
+    _mem_zero(x, size, name, __FILE__, __LINE__)
+
 b8
-mem_alloc(void **x, u64 size, const str *name)
+_mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
         return TRUE;
@@ -28,7 +52,8 @@ mem_alloc(void **x, u64 size, const str *name)
 }
 
 b8
-mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
+_mem_alloc_memb(void **x, u64 memb, u64 size, const str *name,
+        const str *file, u64 line)
 {
     if (*x != NULL)
         return TRUE;
@@ -46,7 +71,8 @@ mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
 }
 
 b8
-mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
+_mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name,
+        const str *file, u64 line)
 {
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
@@ -70,7 +96,7 @@ mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
 }
 
 b8
-mem_realloc(void **x, u64 size, const str *name)
+_mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
@@ -92,7 +118,8 @@ mem_realloc(void **x, u64 size, const str *name)
 }
 
 b8
-mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
+_mem_realloc_memb(void **x, u64 memb, u64 size, const str *name,
+        const str *file, u64 line)
 {
     if (*x == NULL)
     {
@@ -114,7 +141,7 @@ mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
 }
 
 void
-mem_free(void **x, u64 size, const str *name)
+_mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
         return;
@@ -128,7 +155,7 @@ mem_free(void **x, u64 size, const str *name)
 }
 
 void
-mem_free_buf(buf *x, const str *name)
+_mem_free_buf(buf *x, const str *name, const str *file, u64 line)
 {
     void *temp = NULL;
     if (x->i != NULL)
@@ -151,7 +178,7 @@ mem_free_buf(buf *x, const str *name)
 }
 
 void
-mem_zero(void **x, u64 size, const str *name)
+_mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
         return;
@@ -237,9 +264,7 @@ stringf(const str* format, ...)
 {
     static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
     static u64 index = 0;
-
     str *string = str_buf[index];
-    mem_zero((void*)&string, OUT_STRING_MAX, "stringf_current_buf");
 
     __builtin_va_list args;
     va_start(args, format);
@@ -252,7 +277,7 @@ stringf(const str* format, ...)
         snprintf(trunc_buf, 4, "...");
     }
 
-    index = (index + 1) % STRINGF_BUFFERS_MAX;
+    index = ++index % STRINGF_BUFFERS_MAX;
     return string;
 }
 

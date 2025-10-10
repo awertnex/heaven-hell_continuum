@@ -1,8 +1,8 @@
 #include <engine/h/core.h>
 #include <engine/h/defines.h>
-#include "h/input.h"
+
 #include "h/main.h"
-#include "h/logic.h"
+#include "h/input.h"
 
 /* ---- movement ------------------------------------------------------------ */
 u32 bind_jump                       = KEY_SPACE;
@@ -20,31 +20,15 @@ u32 bind_use_item_or_place_block    = GLFW_MOUSE_BUTTON_RIGHT;
 
 /* ---- inventory ----------------------------------------------------------- */
 u32 bind_drop_selected_item         = KEY_Q;
-u32 bind_hotbar_slot[SETTING_HOTBAR_SLOTS_MAX] =
+u32 bind_hotbar_slot[SET_HOTBAR_SLOTS_MAX] =
 {
-    KEY_1,
-    KEY_2,
-    KEY_3,
-    KEY_4,
-    KEY_5,
-    KEY_6,
-    KEY_7,
-    KEY_8,
-    KEY_9,
-    KEY_0,
+    KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
+    KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
 };
-u32 bind_hotbar_slot_kp[SETTING_HOTBAR_SLOTS_MAX] =
+u32 bind_hotbar_slot_kp[SET_HOTBAR_SLOTS_MAX] =
 {
-    KEY_KP_1,
-    KEY_KP_2,
-    KEY_KP_3,
-    KEY_KP_4,
-    KEY_KP_5,
-    KEY_KP_6,
-    KEY_KP_7,
-    KEY_KP_8,
-    KEY_KP_9,
-    KEY_KP_0,
+    KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5,
+    KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9, KEY_KP_0,
 };
 u32 bind_inventory                  = KEY_E;
 u32 bind_swap_item_with_offhand     = KEY_F;

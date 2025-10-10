@@ -2,13 +2,7 @@
 #define GAME_GUI_H
 
 #include <engine/h/core.h>
-#include "logic.h"
-
-#define MARGIN 10
-
-#define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
-#define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
-#define center_cursor   glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
+#include "main.h"
 
 #define BTN_COUNT 110
 
@@ -22,11 +16,6 @@
 #define COL_Y               color(0x32, 0xff, 0x32, 0xff, 0xff)
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
 #define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
-
-extern Font font;
-extern Font font_bold;
-extern Font font_mono;
-extern Font font_mono_bold;
 
 extern v2i16 hotbar_pos;
 extern u8 hotbar_slot_selected;
