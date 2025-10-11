@@ -458,27 +458,27 @@ mesh_chunk(Chunk *chunk, b8 generate)
     if (!chunk) return;
     u64 *buf = &buffer[cur_buf][0];
     u64 *cursor = buf;
-    {
-        u32 *i = &chunk->block[0][0][0];
-        u32 *p = i + CHUNK_VOLUME;
-        u64 current = 0;
-        v3u64 coordinates = {0};
-        for (; i < p; ++i)
-            if (*i & MASK_BLOCK_FACES)
-            {
-                current = CHUNK_VOLUME - (u64)(p - i);
-                coordinates =
+    u32 *i = &chunk->block[0][0][0];
+    u32 *p = i + CHUNK_VOLUME;
+    u64 index = 0;
+    v3u64 pos = {0};
+    b8 should_render = FALSE;
+    for (; i < p; ++i)
+        if (*i & MASK_BLOCK_FACES)
+        {
+            should_render = TRUE;
+            index = CHUNK_VOLUME - (u64)(p - i);
+            pos =
                 (v3u64){
-                    current % CHUNK_DIAMETER,
-                    (current / CHUNK_DIAMETER) % CHUNK_DIAMETER,
-                    current / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+                    index % CHUNK_DIAMETER,
+                    (index / CHUNK_DIAMETER) % CHUNK_DIAMETER,
+                    index / (CHUNK_DIAMETER * CHUNK_DIAMETER),
                 };
-                *(cursor++) = (u64)*i |
-                    (((u64)coordinates.x & 0xf) << 32) |
-                    (((u64)coordinates.y & 0xf) << 36) |
-                    (((u64)coordinates.z & 0xf) << 40);
-            }
-    }
+            *(cursor++) = (u64)*i |
+                (((u64)pos.x & 0xf) << 32) |
+                (((u64)pos.y & 0xf) << 36) |
+                (((u64)pos.z & 0xf) << 40);
+        }
     cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
     chunk->vbo_len = len;
@@ -518,15 +518,9 @@ mesh_chunk(Chunk *chunk, b8 generate)
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    u32 *i = &chunk->block[0][0][0];
-    u32 *p = i + CHUNK_VOLUME;
-    for (; i < p; ++i)
-        if (*i & MASK_BLOCK_FACES)
-        {
-            chunk->flag |= FLAG_CHUNK_RENDER;
-            return;
-        }
-    chunk->flag &= ~FLAG_CHUNK_RENDER;
+    if (should_render)
+        chunk->flag |= FLAG_CHUNK_RENDER;
+    else chunk->flag &= ~FLAG_CHUNK_RENDER;
 }
 
 /* TODO: make serialize_chunk() */
