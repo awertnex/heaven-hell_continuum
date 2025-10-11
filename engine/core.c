@@ -691,32 +691,32 @@ update_mouse_movement(Render *render)
     render->mouse_last = render->mouse_position;
 }
 
-static inline b8 _is_key_press(const u32 key)
+static b8 _is_key_press(const u32 key)
 {
     return (keyboard_key[key] == KEY_PRESS);
 }
 
-static inline b8 _is_key_listen_double(const u32 key)
+static b8 _is_key_listen_double(const u32 key)
 {
     return (keyboard_key[key] == KEY_LISTEN_DOUBLE);
 }
 
-static inline b8 _is_key_hold(const u32 key)
+static b8 _is_key_hold(const u32 key)
 {
     return (keyboard_key[key] == KEY_HOLD);
 }
 
-static inline b8 _is_key_hold_double(const u32 key)
+static b8 _is_key_hold_double(const u32 key)
 {
     return (keyboard_key[key] == KEY_HOLD_DOUBLE);
 }
 
-static inline b8 _is_key_release(const u32 key)
+static b8 _is_key_release(const u32 key)
 {
     return (keyboard_key[key] == KEY_RELEASE);
 }
 
-static inline b8 _is_key_release_double(const u32 key)
+static b8 _is_key_release_double(const u32 key)
 {
     return (keyboard_key[key] == KEY_RELEASE_DOUBLE);
 }
@@ -725,7 +725,8 @@ void
 update_key_states(Render *render)
 {
     static f64 key_press_start_time[KEYBOARD_KEYS_MAX];
-    for (u32 i = 0; i < KEYBOARD_KEYS_MAX; ++i)
+    u32 i = 0;
+    for (; i < KEYBOARD_KEYS_MAX; ++i)
     {
         b8 key_press =
             (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_PRESS);
@@ -817,7 +818,8 @@ init_font(Font *font, u32 resolution, const str *font_path)
     font->size = resolution;
 
     f32 scale = stbtt_ScaleForPixelHeight(&font->info, resolution);
-    for (i32 i = 0; i < GLYPH_MAX; ++i)
+    i32 i = 0;
+    for (; i < GLYPH_MAX; ++i)
     {
         int glyph_index = stbtt_FindGlyphIndex(&font->info, i);
         if (!glyph_index)
@@ -850,9 +852,10 @@ init_font(Font *font, u32 resolution, const str *font_path)
                 (col * resolution) +
                 (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION);
 
-            for (u32 y = 0; y < resolution; ++y)
+            u32 y = 0, x = 0;
+            for (; y < resolution; ++y)
             {
-                for (u32 x = 0; x < resolution; ++x)
+                for (x = 0; x < resolution; ++x)
                     memcpy((bitmap_offset + x +
                                 (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
                             (canvas + x + (y * resolution)), 1);
@@ -1007,7 +1010,8 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 
 
     Glyphf *g = NULL;
-    for (u64 i = 0; i < GLYPH_MAX; ++i)
+    u64 i = 0;
+    for (; i < GLYPH_MAX; ++i)
     {
         if (!text_info.font->glyph[i].loaded)
             continue;
@@ -1024,17 +1028,18 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
     f32 advance = 0.0f;
     f32 descent = text_info.font->descent * ndc_size.y;
     f32 line_height = text_info.font->line_height;
-    for (u64 i = 0; i < len; ++i)
+    for (i = 0; i < len; ++i)
     {
         g = &text_info.glyph[(u64)text[i]];
         if (text[i] == '\n')
         {
+            i64 j = 0;
             if (align_x == TEXT_ALIGN_CENTER)
-                for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
+                for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
                     mesh_text.vbo_data[text_info.cursor - j] -=
                         advance / 2.0f;
             else if (align_x == TEXT_ALIGN_RIGHT)
-                for (i64 j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
+                for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
                     mesh_text.vbo_data[text_info.cursor - j] -=
                         advance;
 
@@ -1065,10 +1070,10 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
     }
 
     if (align_y == TEXT_ALIGN_CENTER)
-        for (u64 i = 0; i < text_info.cursor; i += 4)
+        for (i = 0; i < text_info.cursor; i += 4)
             mesh_text.vbo_data[i + 1] += text_info.line / 2.0f;
     else if (align_y == TEXT_ALIGN_BOTTOM)
-        for (u64 i = 0; i < text_info.cursor; i += 4)
+        for (i = 0; i < text_info.cursor; i += 4)
             mesh_text.vbo_data[i + 1] += text_info.line;
 }
 

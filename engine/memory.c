@@ -87,7 +87,8 @@ _mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name,
         return FALSE;
     }
 
-    for (u64 i = 0; i < memb; ++i)
+    u64 i = 0;
+    for (; i < memb; ++i)
         x->i[i] = x->buf + (i * size);
     x->memb = memb;
     x->size = size;
@@ -199,7 +200,8 @@ print_bits(u64 x, u8 bit_count)
 void
 swap_bits(char *c1, char *c2)
 {
-    for (u8 i = 0; i < 8; ++i)
+    u8 i = 0;
+    for (; i < 8; ++i)
     {
         if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
             continue;
@@ -210,35 +212,35 @@ swap_bits(char *c1, char *c2)
 }
 
 void
-swap_bits_u8(u8 *c1, u8 *c2)
+swap_bits_u8(u8 *a, u8 *b)
 {
-    for (u8 i = 0; i < 8; ++i)
-    {
-        if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
-            continue;
-
-        *c1 ^= (1 << i);
-        *c2 ^= (1 << i);
-    }
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
 }
 
 void
-swap_bits_u32(u32 *c1, u32 *c2)
+swap_bits_u32(u32 *a, u32 *b)
 {
-    for (u8 i = 0; i < 32; ++i)
-    {
-        if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
-            continue;
-
-        *c1 ^= (1 << i);
-        *c2 ^= (1 << i);
-    }
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
 }
+
+void
+swap_bits_u64(u64 *a, u64 *b)
+{
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
+}
+
 void
 swap_strings(str *s1, str *s2)
 {
     u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
-    for (u16 i = 0; i <= len; ++i)
+    u16 i = 0;
+    for (; i <= len; ++i)
         swap_bits(&s1[i], &s2[i]);
 }
 
@@ -248,7 +250,8 @@ swap_string_char(str *string, char c1, char c2)
     u64 len = strlen(string);
     if (!len) return string;
 
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (string[i] == c1)
             string[i] = c2;

@@ -40,14 +40,14 @@ static str out_message[OUT_STRING_MAX] = {0};
 b8
 init_logger()
 {
-    // TODO: init logger
+    /* TODO: init logger */
     return TRUE;
 }
 
 void
 close_logger()
 {
-    // TODO: close logger
+    /* TODO: close logger */
 }
 
 void

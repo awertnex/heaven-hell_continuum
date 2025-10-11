@@ -644,6 +644,8 @@ update_world(Player *player)
         update_chunking(lily.delta_chunk);
     }
     chunk_queue_update(CHUNK_BUF_DIAMETER * 10);
+    //if (chunk_queue.count)
+    //    chunk_order_sort();
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(
@@ -671,7 +673,7 @@ draw_everything(void)
 
     glEnable(GL_DEPTH_TEST);
 
-    /* ---- skybox ---------------------------------------------------------- */
+    /* ---- draw skybox ----------------------------------------------------- */
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -734,7 +736,7 @@ draw_everything(void)
     glBindVertexArray(mesh_skybox.vao);
     glDrawElements(GL_TRIANGLES, mesh_skybox.ebo_len, GL_UNSIGNED_INT, 0);
 
-    /* ---- world ----------------------------------------------------------- */
+    /* ---- draw world ------------------------------------------------------ */
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -750,25 +752,28 @@ draw_everything(void)
 
     glUniform1f(uniform.voxel.opacity, opacity);
 
-    Chunk *i = &chunk_buf[0];
-    Chunk *p = i + CHUNK_BUF_VOLUME;
-    for (; i < p; ++i)
+    Chunk ***cursor = chunk_order;
+    Chunk ***end = cursor + CHUNK_BUF_VOLUME;
+    Chunk *chunk = NULL;
+    for (; cursor && cursor < end; ++cursor)
     {
-        if (!(i->flag & FLAG_CHUNK_RENDER))
+        chunk = **cursor;
+        if (!chunk) break;
+        if (!(chunk->flag & FLAG_CHUNK_RENDER))
             continue;
 
         v3f32 chunk_position =
         {
-            (f32)(i->pos.x * CHUNK_DIAMETER),
-            (f32)(i->pos.y * CHUNK_DIAMETER),
-            (f32)(i->pos.z * CHUNK_DIAMETER),
+            (f32)(chunk->pos.x * CHUNK_DIAMETER),
+            (f32)(chunk->pos.y * CHUNK_DIAMETER),
+            (f32)(chunk->pos.z * CHUNK_DIAMETER),
         };
 
         glUniform3fv(uniform.voxel.chunk_position, 1,
                 (GLfloat*)&chunk_position);
 
-        glBindVertexArray(i->vao);
-        glDrawArrays(GL_POINTS, 0, i->vbo_len);
+        glBindVertexArray(chunk->vao);
+        glDrawArrays(GL_POINTS, 0, chunk->vbo_len);
     }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
@@ -776,7 +781,7 @@ draw_everything(void)
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    /* ---- hud ------------------------------------------------------------- */
+    /* ---- draw hud -------------------------------------------------------- */
     if (flag & FLAG_MAIN_DEBUG)
     {
         /* ---- gizmo ------------------------------------------------------- */
@@ -877,7 +882,7 @@ draw_everything(void)
         glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
                 render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-        /* ---- debug info -------------------------------------------------- */
+        /* ---- draw debug info --------------------------------------------- */
         text_start(0, FONT_SIZE_DEFAULT,
                 &font_mono_bold, &render, &shader_text, &fbo_text, TRUE);
         text_push(stringf(
@@ -1036,31 +1041,6 @@ draw_everything(void)
 int
 main(int argc, char **argv)
 {
-#if 0
-    u32 chunk[10] = {34, 0 ,23, 9, 12, 57, 222, 93, 1, 3945};
-    u32 chunk_0 = 0;
-    u32 chunk_1 = 0;
-    u32 temp = 0;
-    for (u32 i = 0; i < 10; ++i)
-    {
-        chunk_0 = chunk[i];
-        chunk_1 = chunk[i];
-
-        for (u32 j = i; j < 10; ++j)
-            if (chunk[j] < chunk[i])
-            {
-                temp = chunk[i];
-                chunk[i] = chunk[j];
-                chunk[j] = temp;
-            }
-    }
-
-    for (u32 i = 0; i < 10; ++i)
-        printf("dist: %d\n", chunk[i]);
-    putchar('\n');
-    return 0;
-#endif
-
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))

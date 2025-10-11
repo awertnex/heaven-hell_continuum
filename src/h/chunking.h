@@ -11,6 +11,13 @@ extern Chunk *chunk_buf;
 /* chunk pointer look-up table */
 extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
 
+/* chunk pointer pointer look-up table that points to chunk_tab addresses.
+ * order of chunks based on distance away from player */
+extern Chunk **chunk_order[CHUNK_BUF_VOLUME];
+
+/* queue of chunks to be processed */
+extern ChunkQueue chunk_queue;
+
 /* player relative chunk tab access */
 static u16 chunk_tab_index;
 

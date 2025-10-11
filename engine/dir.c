@@ -265,7 +265,8 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
 
     str in_dir[PATH_MAX] = {0};
     str out_dir[PATH_MAX] = {0};
-    for (u64 i = 0; i < dir_contents.memb; ++i)
+    u64 i = 0;
+    for (; i < dir_contents.memb; ++i)
     {
         snprintf(in_dir, PATH_MAX - 1, "%s%s",
                 path_string, (str*)dir_contents.i[i]);
@@ -372,7 +373,8 @@ normalize_slash(str *path)
         return;
 
     u64 len = strlen(path);
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (path[i] == SLASH_NON_NATIVE)
             path[i] = SLASH_NATIVE;
@@ -386,7 +388,8 @@ posix_slash(str *path)
         return;
 
     u64 len = strlen(path);
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (path[i] == '\\')
             path[i] = '/';
@@ -403,7 +406,8 @@ retract_path(str *path)
     normalize_slash(path);
 
     u8 stage = 0;
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (stage == 1 && path[len - i - 1] == SLASH_NATIVE)
             break;

@@ -84,8 +84,9 @@ extern void _mem_zero(void **x, u64 size,
 
 void print_bits(u64 x, u8 bit_count);
 void swap_bits(char *c1, char *c2);
-void swap_bits_u8(u8 *c1, u8 *c2);
-void swap_bits_u32(u32 *c1, u32 *c2);
+void swap_bits_u8(u8 *a, u8 *b);
+void swap_bits_u32(u32 *a, u32 *b);
+void swap_bits_u64(u64 *a, u64 *b);
 void swap_strings(str *s1, str *s2);
 
 /* swap all occurrences of c1 in string with c2.

@@ -15,23 +15,18 @@
 #define CMD_SIZE        512
 #define ASSET_COUNT     4
 
-/* ---- section: c_standard ------------------------------------------------- */
-
-#ifndef __STDC_VERSION__
-#define __STDC_VERSION__ 0L
-#endif
+#if defined(__STDC_VERSION__)
+    #define STD __STDC_VERSION__
+#elif defined(__STDC__)
+    #define STD 89
+#endif /* STD */
 
 #define STD_C99 199901L
-
-const long C_STD = __STDC_VERSION__;
-
-/* ---- section: platform --------------------------------------------------- */
 
 #if PLATFORM_LINUX
 #include "engine/platform_linux.c"
 
-#define EXTENSION       ""
-#define COMPILER        "gcc"EXTENSION
+#define COMPILER        "gcc"EXE
 #define STR_OUT         DIR_ROOT"hhc"
 
 str str_libs[][24] =
@@ -43,9 +38,8 @@ str str_libs[][24] =
 #elif PLATFORM_WIN
 #include "engine/platform_windows.c"
 
-#define EXTENSION       ".exe"
-#define COMPILER        "gcc"EXTENSION
-#define STR_OUT         "\""DIR_ROOT"hhc"EXTENSION"\""
+#define COMPILER        "gcc"EXE
+#define STR_OUT         "\""DIR_ROOT"hhc"EXE"\""
 
 str str_libs[][24] =
 {
@@ -72,9 +66,9 @@ u8 state = 0;
 u16 flags = 0;
 str *str_bin_root = NULL;
 str str_src[CMD_SIZE] = {0};            /* path: ./build.c */
-str str_bin[CMD_SIZE] = {0};            /* path: ./build%s, EXTENSION */
-str str_bin_new[CMD_SIZE] = {0};        /* path: ./build_new%s, EXTENSION */
-str str_bin_old[CMD_SIZE] = {0};        /* path: ./build_old%s, EXTENSION */
+str str_bin[CMD_SIZE] = {0};            /* path: ./build%s, EXE */
+str str_bin_new[CMD_SIZE] = {0};        /* path: ./build_new%s, EXE */
+str str_bin_old[CMD_SIZE] = {0};        /* path: ./build_old%s, EXE */
 str str_dir_root[CMD_SIZE] = {0};       /* bundle directory name */
 buf cmd = {NULL};
 u64 cmd_pos = 0;
@@ -97,15 +91,16 @@ str str_out[CMD_SIZE] = STR_OUT;
 
 void init_build(void);
 b8 is_source_changed(void);
-void rebuild_self(int argc, char **argv);
+void rebuild_self(char **argv);
 u64 compare_argv(str *arg, int argc, str **argv);
 b8 evaluate_extension(const str *file_name);
 void strip_extension(const str *file_name, str *dest);
 void show_cmd(void);
 void raw_cmd(void);
 void push_cmd(const str *string);
-void build_cmd(int argc, char **argv);
 void build_main(void);
+void build_cmd(int argc, char **argv);
+void build_test(char **argv);
 void free_cmd(void);
 void fail_cmd(void);
 void help(void);
@@ -123,9 +118,9 @@ init_build(void)
     check_slash(str_bin_root);
     normalize_slash(str_bin_root);
     snprintf(str_src, CMD_SIZE, "%sbuild.c", str_bin_root);
-    snprintf(str_bin, CMD_SIZE, "%sbuild%s", str_bin_root, EXTENSION);
-    snprintf(str_bin_new, CMD_SIZE, "%sbuild_new%s", str_bin_root, EXTENSION);
-    snprintf(str_bin_old, CMD_SIZE, "%sbuild_old%s", str_bin_root, EXTENSION);
+    snprintf(str_bin, CMD_SIZE, "%sbuild%s", str_bin_root, EXE);
+    snprintf(str_bin_new, CMD_SIZE, "%sbuild_new%s", str_bin_root, EXE);
+    snprintf(str_bin_old, CMD_SIZE, "%sbuild_old%s", str_bin_root, EXE);
 }
 
 b8
@@ -144,7 +139,7 @@ is_source_changed(void)
     if (stat(str_bin, &stats) == 0)
         mtime_bin = stats.st_mtime;
     else
-        LOGERROR("File 'build%s' Not Found\n", EXTENSION);
+        LOGERROR("File 'build%s' Not Found\n", EXE);
 
     if (mtime_src && mtime_bin && mtime_src > mtime_bin)
         return TRUE;
@@ -153,7 +148,7 @@ is_source_changed(void)
 }
 
 void
-rebuild_self(int argc, char **argv)
+rebuild_self(char **argv)
 {
     if (!mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd"))
         fail_cmd();
@@ -187,7 +182,7 @@ rebuild_self(int argc, char **argv)
         remove(str_bin_old);
 
         execvp(argv[0], (str *const *)argv);
-        LOGFATAL("'build%s' Failed, Process Aborted\n", EXTENSION);
+        LOGFATAL("'build%s' Failed, Process Aborted\n", EXE);
         fail_cmd();
     }
 
@@ -201,7 +196,8 @@ compare_argv(str *arg, int argc, char **argv)
     if (argc == 1)
         return 0;
 
-    for (u64 i = 1; i < argc; ++i)
+    u32 i = 1;
+    for (; (int)i < argc; ++i)
         if (!strncmp(argv[i], arg, strlen(arg) + 1))
             return i;
     return 0;
@@ -232,7 +228,8 @@ void
 show_cmd(void)
 {
     printf("\nCMD:\n");
-    for (u32 i = 0; i < CMD_MEMB; ++i)
+    u32 i = 0;
+    for (; i < CMD_MEMB; ++i)
     {
         if (!cmd.i[i]) break;
         printf("    %.3d: %s\n", i, (str*)cmd.i[i]);
@@ -246,7 +243,8 @@ void
 raw_cmd(void)
 {
     printf("\nRAW:\n");
-    for (u32 i = 0; i < CMD_MEMB; ++i)
+    u32 i = 0;
+    for (; i < CMD_MEMB; ++i)
     {
         if (!cmd.i[i]) break;
         printf("%s ", (str*)cmd.i[i]);
@@ -318,7 +316,8 @@ build_main(void)
     snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
     posix_slash(temp);
     push_cmd(temp);
-    for (u32 i = 0; i < arr_len(str_libs); ++i)
+    u32 i = 0;
+    for (; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
     /* ---- out ------------------------------------------------------------- */
@@ -336,6 +335,7 @@ build_cmd(int argc, char **argv)
     if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
 
+    u32 i = 0;
     str temp[CMD_SIZE] = {0};
 
     push_cmd(COMPILER);
@@ -344,7 +344,7 @@ build_cmd(int argc, char **argv)
         case STATE_LAUNCHER:
             snprintf(str_main, CMD_SIZE, "%slauncher.c", DIR_LAUNCHER);
             push_cmd(str_main);
-            snprintf(str_out, CMD_SIZE, "./%slauncher%s", DIR_ROOT, EXTENSION);
+            snprintf(str_out, CMD_SIZE, "./%slauncher%s", DIR_ROOT, EXE);
             break;
 
         default:
@@ -374,7 +374,7 @@ build_cmd(int argc, char **argv)
         posix_slash(str_cflags[0]);
         push_cmd(str_cflags[0]);
     }
-    for (u32 i = 1; i < arr_len(str_cflags); ++i)
+    for (i = 1; i < arr_len(str_cflags); ++i)
     {
         normalize_slash(str_cflags[i]);
         push_cmd(str_cflags[i]);
@@ -390,8 +390,10 @@ build_cmd(int argc, char **argv)
         push_cmd("-lraylib");
     }
     else
-        for (u32 i = 0; i < arr_len(str_libs); ++i)
+    {
+        for (i = 0; i < arr_len(str_libs); ++i)
             push_cmd(str_libs[i]);
+    }
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
@@ -403,20 +405,21 @@ build_cmd(int argc, char **argv)
 }
 
 void
-build_test(int argc, char **argv)
+build_test(char **argv)
 {
     if (!argv[2])
     {
-        LOGERROR("Usage: ./build%s test [n]\n", EXTENSION);
+        LOGERROR("Usage: ./build%s test [n]\n", EXE);
         fail_cmd();
     }
+    u32 i = 0;
     str temp[CMD_SIZE] = {0};
     u64 test_index = atoi(argv[2]);
     str_tests.memb = get_dir_entry_count(DIR_TESTS);
     if (test_index >= str_tests.memb)
     {
         LOGERROR("'%s' Invalid, Try './build%s list'"
-                "to List Available Options..\n", argv[2], EXTENSION);
+                "to List Available Options..\n", argv[2], EXE);
         fail_cmd();
     }
     str_tests = get_dir_contents(DIR_TESTS);
@@ -425,7 +428,7 @@ build_test(int argc, char **argv)
     if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
         fail_cmd();
 
-    for (u64 i = 0; i < str_tests.memb; ++i)
+    for (i = 0; i < str_tests.memb; ++i)
         strip_extension(str_tests.i[i], str_tests.i[i]);
 
     snprintf(str_dir_root, CMD_SIZE, "%s%s%s/",
@@ -459,13 +462,13 @@ build_test(int argc, char **argv)
     /* ---- libs ------------------------------------------------------------ */
     snprintf(temp, CMD_SIZE, "-L%slib/"PLATFORM, str_bin_root);
     push_cmd(temp);
-    for (u32 i = 0; i < arr_len(str_libs); ++i)
+    for (i = 0; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
     /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(stringf("./%s%s/%s%s", DIR_ROOT_TESTS,
-                str_tests.i[test_index], str_tests.i[test_index], EXTENSION));
+                str_tests.i[test_index], str_tests.i[test_index], EXE));
 
 #if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
@@ -524,7 +527,8 @@ list(void)
         fail_cmd();
     }
 
-    for (u32 i = 0; i < str_tests.memb; ++i)
+    u32 i = 0;
+    for (; i < str_tests.memb; ++i)
     {
         if (!evaluate_extension(str_tests.i[i]))
             continue;
@@ -551,14 +555,14 @@ main(int argc, char **argv)
 
     init_build();
 
-    if (C_STD != STD_C99)
+    if (STD != STD_C99)
     {
         LOGINFO("%s\n", "Rebuilding Self With -std=c99..");
-        rebuild_self(argc, argv);
+        rebuild_self(argv);
     }
 
     if (is_source_changed())
-        rebuild_self(argc, argv);
+        rebuild_self(argv);
 
     if (compare_argv("help", argc, argv))       help();
     if (compare_argv("list", argc, argv))       list();
@@ -575,7 +579,7 @@ main(int argc, char **argv)
     if (!state)
         build_main();
     else if (state == STATE_TEST)
-        build_test(argc, argv);
+        build_test(argv);
     else
         build_cmd(argc, argv);
 
@@ -605,7 +609,8 @@ main(int argc, char **argv)
             "%sresources/shaders/", str_dir_root);
     snprintf(str_mkdir[0], CMD_SIZE, "%slib/", str_dir_root);
 
-    for (u64 i = 0; i < 4; ++i)
+    u32 i = 0;
+    for (; i < 4; ++i)
     {
         normalize_slash(str_from[i]);
         normalize_slash(str_to[i]);
@@ -613,7 +618,7 @@ main(int argc, char **argv)
     normalize_slash(str_mkdir[0]);
     make_dir(str_mkdir[0]);
 
-    for (u64 i = 0; i < ASSET_COUNT; ++i)
+    for (i = 0; i < ASSET_COUNT; ++i)
     {
         if (is_file(str_from[i]))
         {
@@ -632,4 +637,5 @@ main(int argc, char **argv)
 
 cleanup:
     fail_cmd();
+    return -1;
 }

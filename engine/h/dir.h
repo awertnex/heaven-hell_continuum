@@ -21,7 +21,7 @@ b8 is_dir(const str *path);
 
 /* log = enable/disable logging.
  *
-/* return FALSE (0) on failure */
+ * return FALSE (0) on failure */
 b8 is_dir_exists(const str *path, b8 log);
 
 /* return calloc'd buf of file contents, not NULL terminated,

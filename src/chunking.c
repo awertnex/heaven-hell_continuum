@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <engine/h/memory.h>
@@ -7,14 +8,18 @@
 #include "h/main.h"
 #include "h/chunking.h"
 
-/* queue of chunks to be processed */
-static ChunkQueue chunk_queue = {0};
-
 /* chunk buffer, raw chunk data */
 Chunk *chunk_buf = {0};
 
 /* chunk pointer look-up table */
 Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
+
+/* chunk pointer pointer look-up table that points to chunk_tab addresses.
+ * order of chunks based on distance away from player */
+Chunk **chunk_order[CHUNK_BUF_VOLUME] = {0};
+
+/* queue of chunks to be processed */
+ChunkQueue chunk_queue = {0};
 
 /* index = (chunk_tab index); */
 static void generate_chunk(u32 index);
@@ -33,19 +38,40 @@ static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
 /* index = (chunk_tab index); */
 static void chunk_buf_pop(u32 index);
 
+void chunk_order_sort(void);
 static void chunk_queue_sort(void);
-
 
 u8
 init_chunking(void)
 {
-    if (mem_alloc_memb((void*)&chunk_buf,
+    if (!mem_alloc_memb((void*)&chunk_buf,
                 CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
-        return 0;
+        return -1;
 
-cleanup:
-    free_chunking();
-    return -1;
+    v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
+    v3i32 pos = {0};
+    f32 distance[CHUNK_BUF_VOLUME] = {0};
+    u64 i, j;
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    {
+        pos =
+            (v3i32){
+                i % CHUNK_BUF_DIAMETER,
+                (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
+                i / CHUNK_BUF_LAYER,
+            };
+        distance[i] = distance_v3i32(pos, center);
+    }
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+        chunk_order[i] = &chunk_tab[i];
+    for (i = CHUNK_BUF_VOLUME - 1; i < CHUNK_BUF_VOLUME; --i)
+        for (j = CHUNK_BUF_VOLUME - 1; j < CHUNK_BUF_VOLUME; --j)
+            if (distance[j] < distance[i])
+            {
+                swap_bits_u32((u32*)&distance[i], (u32*)&distance[j]);
+                swap_bits_u64((u64*)&chunk_order[i], (u64*)&chunk_order[j]);
+            }
+    return 0;
 }
 
 void
@@ -53,7 +79,8 @@ update_chunking(v3i16 player_delta_chunk)
 {
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
 
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    u32 i = 0;
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         Chunk *p = chunk_tab[i];
         v3u32 coordinates =
@@ -78,7 +105,8 @@ update_chunking(v3i16 player_delta_chunk)
 void
 free_chunking(void)
 {
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    u32 i = 0;
+    for (; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i])
             chunk_buf_pop(i);
     mem_free((void*)&chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_buf");
@@ -417,11 +445,12 @@ generate_chunk(u32 index)
     Chunk *chunk = chunk_tab[index];
     if (!chunk) return;
 
-    for (u8 z = 0; z < CHUNK_DIAMETER; ++z)
+    u8 x, y, z;
+    for (z = 0; z < CHUNK_DIAMETER; ++z)
     {
-        for (u8 y = 0; y < CHUNK_DIAMETER; ++y)
+        for (y = 0; y < CHUNK_DIAMETER; ++y)
         {
-            for (u8 x = 0; x < CHUNK_DIAMETER; ++x)
+            for (x = 0; x < CHUNK_DIAMETER; ++x)
             {
                 v3i32 coordinates =
                 {
@@ -580,90 +609,49 @@ chunk_buf_pop(u32 index)
     chunk_tab[index] = NULL;
 }
 
-static void
-chunk_queue_sort(void)
-{
-    Chunk *chunk_0 = NULL;
-    Chunk *chunk_1 = NULL;
-    Chunk *chunk_temp = NULL;
-    u32 *index_0 = NULL;
-    u32 *index_1 = NULL;
-    u32 index_temp = 0;
-    for (u32 i = 0; i < CHUNK_QUEUE_MAX; ++i)
-    {
-        chunk_0 = chunk_queue.chunk[i];
-        chunk_1 = chunk_queue.chunk[i];
-
-        index_0 = &chunk_queue.index[i];
-        index_1 = &chunk_queue.index[i];
-
-        for (u32 j = i; j < CHUNK_QUEUE_MAX; ++j)
-        {
-            if (chunk_0 && chunk_1 &&
-                    chunk_0->distance > chunk_1->distance)
-            {
-                chunk_temp = chunk_0;
-                *chunk_0 = *chunk_1;
-                *chunk_1 = *chunk_temp;
-
-                index_temp = *index_0;
-                *index_0 = *index_1;
-                *index_1 = index_temp;
-            }
-            ++chunk_1;
-            ++index_1;
-        }
-        LOGWARNING("Dist: %d %d\n", chunk_1->distance, *index_1);
-    }
-    LOGWARNING("%s\n", "");
-}
-
 /* TODO: grab chunks from disk if previously generated */
 void
 chunk_queue_update(u32 rate)
 {
     /* ---- push chunk queue ------------------------------------------------ */
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    u32 i, j;
+    static u32 *k = &chunk_queue.cursor;
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
-        Chunk *p = chunk_tab[i];
-        if (p && (p->flag & FLAG_CHUNK_DIRTY) &&
-                !(p->flag & FLAG_CHUNK_QUEUED))
+        Chunk *chunk = **(chunk_order + i);
+        if (chunk && (chunk->flag & FLAG_CHUNK_DIRTY) &&
+                !(chunk->flag & FLAG_CHUNK_QUEUED))
         {
-            for (u32 j = 0; j < CHUNK_QUEUE_MAX; ++j)
-                if (!chunk_queue.chunk[j] &&
-                        !(p->flag & FLAG_CHUNK_QUEUED))
+            if (!(chunk_queue.chunk[*k]))
                 {
-                    p->flag |= FLAG_CHUNK_QUEUED;
-                    chunk_queue.chunk[j] = p;
-                    chunk_queue.index[j] = i;
+                    chunk->flag |= FLAG_CHUNK_QUEUED;
+                    chunk_queue.chunk[*k] = chunk;
+                    chunk_queue.index[*k] = chunk_order[i] - chunk_tab;
                     (chunk_queue.count < CHUNK_QUEUE_MAX) ?
                         ++chunk_queue.count : 0;
                 }
+            *k = ++*k % CHUNK_QUEUE_MAX;
         }
     }
 
     if (!chunk_queue.count) return;
     rate = clamp_u32(rate, 1, CHUNK_QUEUE_MAX - 1);
 
-    //chunk_queue_sort();
-
     /* ---- generate enqueued chunks ---------------------------------------- */
-    for (u32 i = chunk_queue.count - 1; i < CHUNK_QUEUE_MAX; --i)
-        if (chunk_queue.chunk[i])
+    for (i = 0; i < CHUNK_QUEUE_MAX && rate; ++i)
+    {
+        if (chunk_queue.chunk[*k])
         {
-            rate = i - rate;
-            for (u32 j = i; j > rate && j < CHUNK_QUEUE_MAX; --j)
-                if (chunk_queue.chunk[j])
-                {
-                    if (chunk_queue.chunk[j]->flag & FLAG_CHUNK_GENERATED)
-                        mesh_chunk(chunk_queue.chunk[j], FALSE);
-                    else generate_chunk(chunk_queue.index[j]);
-                    chunk_queue.chunk[j]->flag &= ~FLAG_CHUNK_QUEUED;
-                    chunk_queue.chunk[j] = NULL;
-                    (chunk_queue.count > 0) ? --chunk_queue.count : 0;
-                }
-            break;
+            if (chunk_queue.chunk[*k]->flag & FLAG_CHUNK_GENERATED)
+                mesh_chunk(chunk_queue.chunk[*k], FALSE);
+            else generate_chunk(chunk_queue.index[*k]);
+            chunk_queue.chunk[*k]->flag &= ~FLAG_CHUNK_QUEUED;
+            chunk_queue.chunk[*k] = NULL;
+            (chunk_queue.count > 0) ? --chunk_queue.count : 0;
+            --rate;
         }
+        *k = ++*k % CHUNK_QUEUE_MAX;
+    }
 }
 
 void
@@ -674,6 +662,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
     v3u32 _mirror_index = {0};
     u32 target_index = 0;
     u8 is_on_edge = 0;
+    u32 i = 0;
     const v3i16 DELTA =
     {
         player_chunk.x - player_delta_chunk->x,
@@ -700,7 +689,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
                 player_delta_chunk->y,
                 player_delta_chunk->z}) > RENDER_DISTANCE)
     {
-        for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+        for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i])
                 chunk_buf_pop(i);
 
@@ -726,7 +715,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
             break;
     }
 
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i])
         {
             chunk_tab[i]->flag &= ~FLAG_CHUNK_EDGE;
@@ -734,7 +723,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
         }
 
     /* ---- mark chunks on-edge --------------------------------------------- */
-    for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         if (!chunk_tab[i]) continue;
 
@@ -821,7 +810,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
     }
 
     /* ---- shift chunk_tab ------------------------------------------------- */
-    for (u32 i = (INCREMENT == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
+    for (i = (INCREMENT == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
             i < CHUNK_BUF_VOLUME; i += INCREMENT)
     {
         if (!chunk_tab[i]) continue;

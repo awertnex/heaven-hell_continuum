@@ -377,24 +377,24 @@ void update_mouse_movement(Render *render);
 /* update internal key states: press, double-press, hold, release */
 void update_key_states(Render *render);
 
-static inline b8 is_key_press(const u32 key)
+static b8 is_key_press(const u32 key)
 {
     return (keyboard_key[key] == KEY_PRESS ||
             keyboard_key[key] == KEY_PRESS_DOUBLE);
 }
 
-static inline b8 is_key_press_double(const u32 key)
+static b8 is_key_press_double(const u32 key)
 {
     return (keyboard_key[key] == KEY_PRESS_DOUBLE);
 }
 
-static inline b8 is_key_hold(const u32 key)
+static b8 is_key_hold(const u32 key)
 {
     return (keyboard_key[key] == KEY_HOLD ||
             keyboard_key[key] == KEY_HOLD_DOUBLE);
 }
 
-static inline b8 is_key_release(const u32 key)
+static b8 is_key_release(const u32 key)
 {
     return (keyboard_key[key] == KEY_RELEASE ||
             keyboard_key[key] == KEY_RELEASE_DOUBLE);

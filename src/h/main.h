@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             16
+#define SET_RENDER_DISTANCE             10
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -380,9 +380,10 @@ typedef struct Chunk
 
 typedef struct ChunkQueue
 {
+    u32 cursor;                     /* current processed chunk in queue */
     u32 count;                      /* number of chunks queued */
     u32 index[CHUNK_QUEUE_MAX];     /* chunk_tab indices */
-    Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_buf addresses */
+    Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_tab addresses */
 } ChunkQueue;
 
 extern Render render;
