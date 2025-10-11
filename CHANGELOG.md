@@ -15,6 +15,11 @@
       (major performance gain)
     - changed some loop iteration to linear pointer iteration
 - added silly fog
+- better chunk rendering:
+    - added buffer that sorts chunks based on distance from player:
+        - helped push dirty chunks to meshing queue based on distance
+        - leveraged buffer advantage for depth sorting as well
+        - leveraged buffer for breaking the draw loop short
 
 ## v0.2.0-beta (05 Oct 2025)
 
