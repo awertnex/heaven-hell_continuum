@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             10
+#define SET_RENDER_DISTANCE             18
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -89,7 +89,13 @@
 #define CHUNK_QUEUE_MAX         CHUNK_BUF_LAYER
 #define BLOCK_BUFFERS_MAX       4
 
-#define COLOR_CHUNK_LOADED      0x4c2607ff
+/* number of chunks to process per frame */
+#define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * SET_RENDER_DISTANCE)
+
+/* number of blocks to process per chunk */
+#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * CHUNK_DIAMETER)
+
+#define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
 
 enum MainFlags
@@ -374,13 +380,14 @@ typedef struct Chunk
     GLuint vao;
     GLuint vbo;
     u64 vbo_len;
+    u32 cursor;     /* block iterator for generation */
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
 
 typedef struct ChunkQueue
 {
-    u32 cursor;                     /* current processed chunk in queue */
+    u32 cursor;                     /* chunk enqueuer current position */
     u32 count;                      /* number of chunks queued */
     u32 index[CHUNK_QUEUE_MAX];     /* chunk_tab indices */
     Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_tab addresses */

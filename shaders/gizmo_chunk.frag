@@ -30,4 +30,5 @@ void main()
     vec3 solid_color = (chunk_color.rgb * sky_brightness) + flashlight;
     color = vec4(((solid_color / (distance * 2.0)) +
         (sky_color.rgb * SKY_INFLUENCE)), 1.0);
+    color *= chunk_color.a;
 }

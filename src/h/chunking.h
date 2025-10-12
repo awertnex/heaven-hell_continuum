@@ -32,7 +32,7 @@ void add_block(u32 index, u32 x, u32 y, u32 z);
 void remove_block(u32 index, u32 x, u32 y, u32 z);
 
 /* rate = number of chunks to generate per frame */
-void chunk_queue_update(u32 rate);
+void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);

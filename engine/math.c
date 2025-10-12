@@ -271,3 +271,9 @@ easeout_f32(f32 start, f32 end, f32 scale) /* TODO: write this function */
 {
     return 0.0f;
 }
+
+f32 smoothstep(f32 a, f32 b, f32 i)
+{
+   i = clamp_f32((i - a) / (b - a), -1.0f, 1.0f);
+   return i * i * (3.0f - 2.0f * i);
+}

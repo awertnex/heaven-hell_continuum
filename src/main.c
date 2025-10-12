@@ -643,9 +643,7 @@ update_world(Player *player)
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
         update_chunking(lily.delta_chunk);
     }
-    chunk_queue_update(CHUNK_BUF_DIAMETER * 10);
-    //if (chunk_queue.count)
-    //    chunk_order_sort();
+    chunk_queue_update(CHUNK_PARSE_RATE_MAX, BLOCK_PARSE_RATE_MAX);
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(
@@ -755,10 +753,9 @@ draw_everything(void)
     Chunk ***cursor = chunk_order;
     Chunk ***end = cursor + CHUNK_BUF_VOLUME;
     Chunk *chunk = NULL;
-    for (; cursor && cursor < end; ++cursor)
+    for (; **cursor && cursor < end; ++cursor)
     {
         chunk = **cursor;
-        if (!chunk) break;
         if (!(chunk->flag & FLAG_CHUNK_RENDER))
             continue;
 
@@ -841,35 +838,34 @@ draw_everything(void)
             glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
                     (GLfloat*)&skybox_data.color);
 
-            for (u32 i = 0; i < CHUNK_BUF_VOLUME; ++i)
+            cursor = chunk_order;
+            for (; **cursor && cursor < end; ++cursor)
             {
-                if ((chunk_tab[i] == NULL) ||
-                        !(chunk_tab[i]->flag & FLAG_CHUNK_RENDER))
-                    continue;
-
-                v3f32 cursor =
+                chunk = **cursor;
+                u32 i = *cursor - chunk_tab;
+                v3f32 pos =
                 {
                     (f32)(i % CHUNK_BUF_DIAMETER),
                     (f32)((i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER),
                     (f32)i / CHUNK_BUF_LAYER,
                 };
-                cursor = sub_v3f32(cursor, (v3f32){
+                pos = sub_v3f32(pos, (v3f32){
                         CHUNK_BUF_RADIUS + 0.5f,
                         CHUNK_BUF_RADIUS + 0.5f,
                         CHUNK_BUF_RADIUS + 0.5f});
                 glUniform3fv(uniform.gizmo_chunk.cursor, 1,
-                        (GLfloat*)&cursor);
+                        (GLfloat*)&pos);
 
-                f32 pulse = (sinf((cursor.z * 0.3f) -
+                f32 pulse = (sinf((pos.z * 0.3f) -
                             (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
                 glUniform1f(uniform.gizmo_chunk.size, pulse);
 
                 v4f32 color =
                 {
-                    (f32)((chunk_tab[i]->color >> 24) & 0xff) / 0xff,
-                    (f32)((chunk_tab[i]->color >> 16) & 0xff) / 0xff,
-                    (f32)((chunk_tab[i]->color >> 8) & 0xff) / 0xff,
-                    (f32)((chunk_tab[i]->color & 0xff)) / 0xff,
+                    (f32)((chunk->color >> 24) & 0xff) / 0xff,
+                    (f32)((chunk->color >> 16) & 0xff) / 0xff,
+                    (f32)((chunk->color >> 8) & 0xff) / 0xff,
+                    (f32)((chunk->color & 0xff)) / 0xff,
                 };
                 glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
                 glBindVertexArray(mesh_cube_of_happiness.vao);
@@ -1088,8 +1084,7 @@ main(int argc, char **argv)
     flag =
         FLAG_MAIN_ACTIVE |
         FLAG_MAIN_PARSE_CURSOR |
-        FLAG_MAIN_DEBUG |
-        FLAG_MAIN_DEBUG_MORE;
+        FLAG_MAIN_DEBUG;
 
     /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

@@ -30,14 +30,18 @@
 #define mem_zero(x, size, name) \
     _mem_zero(x, size, name, __FILE__, __LINE__)
 
-/* size = size in bytes,
+/* -- INTERNAL USE ONLY --;
+ *
+ * size = size in bytes,
  * name = pointer name (for logging).
  *
  * return FALSE (0) on failure */
 extern b8 _mem_alloc(void **x, u64 size, const str *name,
         const str *file, u64 line);
 
-/* memb = number of members,
+/* -- INTERNAL USE ONLY --;
+ *
+ * memb = number of members,
  * size = member size in bytes,
  * name = pointer name (for logging).
  *
@@ -45,7 +49,9 @@ extern b8 _mem_alloc(void **x, u64 size, const str *name,
 extern b8 _mem_alloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line);
 
-/* memb = number of members,
+/* -- INTERNAL USE ONLY --;
+ *
+ * memb = number of members,
  * size = member size in bytes,
  * name = pointer name (for logging).
  *
@@ -53,14 +59,18 @@ extern b8 _mem_alloc_memb(void **x, u64 memb, u64 size,
 extern b8 _mem_alloc_buf(buf *x, u64 memb, u64 size,
         const str *name, const str *file, u64 line);
 
-/* size = size in bytes,
+/* -- INTERNAL USE ONLY --;
+ *
+ * size = size in bytes,
  * name = pointer name (for logging).
  *
  * return FALSE (0) on failure */
 extern b8 _mem_realloc(void **x, u64 size,
         const str *name, const str *file, u64 line);
 
-/* memb = number of members,
+/* -- INTERNAL USE ONLY --;
+ *
+ * memb = number of members,
  * size = member size in bytes,
  * name = pointer name (for logging).
  *
@@ -68,16 +78,22 @@ extern b8 _mem_realloc(void **x, u64 size,
 extern b8 _mem_realloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line);
 
-/* size = size in bytes,
+/* -- INTERNAL USE ONLY --;
+ *
+ * size = size in bytes,
  * name = pointer name (for logging) */
 extern void _mem_free(void **x, u64 size,
         const str *name, const str *file, u64 line);
 
-/* name = pointer name (for logging) */
+/* -- INTERNAL USE ONLY --;
+ *
+ * name = pointer name (for logging) */
 extern void _mem_free_buf(buf *x,
         const str *name, const str *file, u64 line);
 
-/* size = size in bytes,
+/* -- INTERNAL USE ONLY --;
+ *
+ * size = size in bytes,
  * name = pointer name (for logging) */
 extern void _mem_zero(void **x, u64 size,
         const str *name, const str *file, u64 line);

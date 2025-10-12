@@ -21,13 +21,15 @@ Chunk **chunk_order[CHUNK_BUF_VOLUME] = {0};
 /* queue of chunks to be processed */
 ChunkQueue chunk_queue = {0};
 
-/* index = (chunk_tab index); */
-static void generate_chunk(u32 index);
+/* index = (chunk_tab index);
+ * rate = number of blocks to generate per frame per chunk */
+static void chunk_generate(u32 index, u32 rate);
 
-static f32 terrain_noise(v3i32 coordinates);
+static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
+static void mesh_chunk(Chunk *chunk);
 
-/* index = (chunk_tab index); */
-static void mesh_chunk(Chunk *chunk, b8 generate);
+/* -- INTERNAL USE ONLY --; */
+static void _mesh_chunk(Chunk *chunk);
 
 static void serialize_chunk(Chunk *chunk, str *world_name);
 static void deserialize_chunk(Chunk *chunk, str *world_name);
@@ -38,9 +40,11 @@ static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
 /* index = (chunk_tab index); */
 static void chunk_buf_pop(u32 index);
 
-void chunk_order_sort(void);
-static void chunk_queue_sort(void);
+/* rate_chunk = number of chunks to process per frame
+ * rate_block = number of blocks to process per frame per chunk */
+void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
+static v3f32 table_rand[1024] = {0};
 u8
 init_chunking(void)
 {
@@ -52,6 +56,13 @@ init_chunking(void)
     v3i32 pos = {0};
     f32 distance[CHUNK_BUF_VOLUME] = {0};
     u64 i, j;
+    for (i = 0; i < 1024; ++i)
+        table_rand[i].x = (f32)(rand() % 36000) / 100.0f;
+    for (i = 0; i < 1024; ++i)
+        table_rand[i].y = (f32)(rand() % 36000) / 100.0f;
+    for (i = 0; i < 1024; ++i)
+        table_rand[i].z = (f32)(rand() % 36000) / 100.0f;
+
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         pos =
@@ -433,53 +444,152 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-static f32
-terrain_noise(v3i32 coordinates)
+v3f32 random(f32 x0, f32 y0)
 {
-    return 0.0f;
+    const u32 w = 8 * sizeof(unsigned);
+    const u32 s = w / 2; 
+    u32 a = (i32)x0, b = (i32)y0;
+    a *= 3284157443;
+ 
+    b ^= a << s | a >> w - s;
+    b *= 1911520717;
+ 
+    a ^= b << s | b >> w - s;
+    a *= 2048419325;
+    f32 random = a * (PI / ~(~0u >> 1));
+    
+    return
+        (v3f32){
+            sin(random),
+                cos(random),
+                1.0f,
+        };
+}
+
+f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
+{
+    v3f32 grad = random(x0, y0);
+    f32 dx = x0 - x;
+    f32 dy = y0 - y;
+    return ((dx * grad.x) + (dy * grad.y));
+}
+
+f32 interp(f32 a, f32 b, f32 scale)
+{
+    return (b - a) * (3.0f - scale * 2.0f) * scale * scale + a;
+}
+
+static f32
+terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
+{
+    f32 root = 0;
+    f32 x = (f32)coordinates.x / frequency;
+    f32 y = (f32)coordinates.y / frequency;
+    i32 x0 = (i32)x;
+    i32 y0 = (i32)y;
+    i32 x1 = x0 + 1;
+    i32 y1 = y0 + 1;
+
+    f32 sx = x - (f32)x0;
+    f32 sy = y - (f32)y0;
+
+    f32 n0 = gradient(x0, y0, x, y);
+    f32 n1 = gradient(x1, y0, x, y);
+    f32 ix0 = interp(n0, n1, sx);
+
+    n0 = gradient(x0, y1, x, y);
+    n1 = gradient(x1, y1, x, y);
+    f32 ix1 = interp(n0, n1, sx);
+
+    return interp(ix0, ix1, sy) * amplitude;
 }
 
 static void
-generate_chunk(u32 index)
+chunk_generate(u32 index, u32 rate)
 {
     Chunk *chunk = chunk_tab[index];
     if (!chunk) return;
-
-    u8 x, y, z;
-    for (z = 0; z < CHUNK_DIAMETER; ++z)
+    u32 *i = &chunk->cursor;
+    for (; *i < CHUNK_VOLUME && rate; ++*i)
     {
-        for (y = 0; y < CHUNK_DIAMETER; ++y)
+        v3u32 pos =
         {
-            for (x = 0; x < CHUNK_DIAMETER; ++x)
-            {
-                v3i32 coordinates =
-                {
-                    x + (chunk->pos.x * CHUNK_DIAMETER),
-                    y + (chunk->pos.y * CHUNK_DIAMETER),
-                    z + (chunk->pos.z * CHUNK_DIAMETER),
-                };
+            *i % CHUNK_DIAMETER,
+            (*i / CHUNK_DIAMETER) % CHUNK_DIAMETER,
+            *i / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+        };
+        v3i32 coordinates =
+        {
+            pos.x + (chunk->pos.x * CHUNK_DIAMETER),
+            pos.y + (chunk->pos.y * CHUNK_DIAMETER),
+            pos.z + (chunk->pos.z * CHUNK_DIAMETER),
+        };
 
-                f32 sin_x = (u32)((sinf((f32)coordinates.x * DEG2RAD)
-                             + 1.0f) * 80.0f) + 2;
-                f32 sin_y = (u32)((sinf((f32)coordinates.y * DEG2RAD)
-                             + 1.0f) * 80.0f) + 2;
-
-                if ((f32)coordinates.z <= sin_x - 3.0f &&
-                        (f32)coordinates.z <= sin_y - 3.0f)
-                {
-                    add_block(index, x, y, z);
-                    chunk->color = COLOR_CHUNK_RENDER;
-                }
-            }
-        }
+        if (terrain_noise(coordinates, 40.0f, 64.0f) > coordinates.z)
+            add_block(index, pos.x, pos.y, pos.z);
+        --rate;
     }
 
-    if (!(chunk->flag & FLAG_CHUNK_GENERATED))
-        mesh_chunk(chunk, TRUE);
+    if (chunk->cursor == CHUNK_VOLUME &&
+            !(chunk->flag & FLAG_CHUNK_GENERATED))
+        _mesh_chunk(chunk);
 }
 
 static void
-mesh_chunk(Chunk *chunk, b8 generate)
+mesh_chunk(Chunk *chunk)
+{
+    static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u64 cur_buf = 0;
+    if (!chunk || !chunk->vbo || !chunk->vao) return;
+    u64 *buf = &buffer[cur_buf][0];
+    u64 *cursor = buf;
+    u32 *i = &chunk->block[0][0][0];
+    u32 *p = i + CHUNK_VOLUME;
+    u64 index = 0;
+    v3u64 pos = {0};
+    b8 should_render = FALSE;
+    for (; i < p; ++i)
+        if (*i & MASK_BLOCK_FACES)
+        {
+            should_render = TRUE;
+            index = CHUNK_VOLUME - (u64)(p - i);
+            pos =
+                (v3u64){
+                    index % CHUNK_DIAMETER,
+                    (index / CHUNK_DIAMETER) % CHUNK_DIAMETER,
+                    index / (CHUNK_DIAMETER * CHUNK_DIAMETER),
+                };
+            *(cursor++) = (u64)*i |
+                (((u64)pos.x & 0xf) << 32) |
+                (((u64)pos.y & 0xf) << 36) |
+                (((u64)pos.z & 0xf) << 40);
+        }
+    cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
+    u64 len = cursor - buf;
+    chunk->vbo_len = len;
+
+    glBindVertexArray(chunk->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
+    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
+            buf, GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    chunk->flag &= ~FLAG_CHUNK_DIRTY;
+
+    if (should_render)
+    {
+        chunk->flag |= FLAG_CHUNK_RENDER;
+        chunk->color = COLOR_CHUNK_RENDER;
+    }
+    else
+    {
+        chunk->flag &= ~FLAG_CHUNK_RENDER;
+        chunk->color = COLOR_CHUNK_LOADED;
+    }
+}
+static void
+_mesh_chunk(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
@@ -512,44 +622,38 @@ mesh_chunk(Chunk *chunk, b8 generate)
     u64 len = cursor - buf;
     chunk->vbo_len = len;
 
-    if (generate)
-    {
-        (chunk->vbo) ? glDeleteBuffers(1, &chunk->vbo) : 0;
-        (chunk->vao) ? glDeleteVertexArrays(1, &chunk->vao) : 0;
+    (chunk->vbo) ? glDeleteBuffers(1, &chunk->vbo) : 0;
+    (chunk->vao) ? glDeleteVertexArrays(1, &chunk->vao) : 0;
 
-        glGenVertexArrays(1, &chunk->vao);
-        glGenBuffers(1, &chunk->vbo);
-        glBindVertexArray(chunk->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-        glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
-                buf, GL_DYNAMIC_DRAW);
+    glGenVertexArrays(1, &chunk->vao);
+    glGenBuffers(1, &chunk->vbo);
+    glBindVertexArray(chunk->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
+    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
+            buf, GL_DYNAMIC_DRAW);
 
-        glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
-                (void*)0);
-        glEnableVertexAttribArray(0);
+    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
+            (void*)0);
+    glEnableVertexAttribArray(0);
 
-        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64),
-                (void*)sizeof(u32));
-        glEnableVertexAttribArray(1);
-
-        chunk->flag |= FLAG_CHUNK_GENERATED | FLAG_CHUNK_DIRTY;
-    }
-    else
-    {
-        glBindVertexArray(chunk->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-        glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
-                buf, GL_DYNAMIC_DRAW);
-
-        chunk->flag &= ~FLAG_CHUNK_DIRTY;
-    }
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64),
+            (void*)sizeof(u32));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    chunk->flag |= FLAG_CHUNK_GENERATED | FLAG_CHUNK_DIRTY;
 
     if (should_render)
+    {
         chunk->flag |= FLAG_CHUNK_RENDER;
-    else chunk->flag &= ~FLAG_CHUNK_RENDER;
+        chunk->color = COLOR_CHUNK_RENDER;
+    }
+    else
+    {
+        chunk->flag &= ~FLAG_CHUNK_RENDER;
+        chunk->color = COLOR_CHUNK_LOADED;
+    }
 }
 
 /* TODO: make serialize_chunk() */
@@ -611,47 +715,47 @@ chunk_buf_pop(u32 index)
 
 /* TODO: grab chunks from disk if previously generated */
 void
-chunk_queue_update(u32 rate)
+chunk_queue_update(u32 rate_chunk, u32 rate_block)
 {
     /* ---- push chunk queue ------------------------------------------------ */
-    u32 i, j;
-    static u32 *k = &chunk_queue.cursor;
+    u32 i, j, *k = &chunk_queue.cursor;
+    if (chunk_queue.count == CHUNK_QUEUE_MAX) goto generate;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         Chunk *chunk = **(chunk_order + i);
-        if (chunk && (chunk->flag & FLAG_CHUNK_DIRTY) &&
-                !(chunk->flag & FLAG_CHUNK_QUEUED))
+        if (chunk && (chunk->flag & FLAG_CHUNK_DIRTY))
         {
-            if (!(chunk_queue.chunk[*k]))
-                {
-                    chunk->flag |= FLAG_CHUNK_QUEUED;
-                    chunk_queue.chunk[*k] = chunk;
-                    chunk_queue.index[*k] = chunk_order[i] - chunk_tab;
-                    (chunk_queue.count < CHUNK_QUEUE_MAX) ?
-                        ++chunk_queue.count : 0;
-                }
+            if (!(chunk->flag & FLAG_CHUNK_QUEUED) &&
+                    !(chunk_queue.chunk[*k]))
+            {
+                chunk->flag |= FLAG_CHUNK_QUEUED;
+                chunk_queue.chunk[*k] = chunk;
+                chunk_queue.index[*k] = chunk_order[i] - chunk_tab;
+                (chunk_queue.count < CHUNK_QUEUE_MAX) ?
+                    ++chunk_queue.count : 0;
+            }
             *k = ++*k % CHUNK_QUEUE_MAX;
         }
     }
 
     if (!chunk_queue.count) return;
-    rate = clamp_u32(rate, 1, CHUNK_QUEUE_MAX - 1);
+
+generate:
+    rate_chunk = clamp_u32(rate_chunk, 1, CHUNK_QUEUE_MAX - 1);
+    rate_block = clamp_u32(rate_block, 1, BLOCK_PARSE_RATE_MAX - 1);
 
     /* ---- generate enqueued chunks ---------------------------------------- */
-    for (i = 0; i < CHUNK_QUEUE_MAX && rate; ++i)
-    {
-        if (chunk_queue.chunk[*k])
+    for (i = 0; i < CHUNK_QUEUE_MAX && rate_chunk; ++i)
+        if (chunk_queue.chunk[i])
         {
-            if (chunk_queue.chunk[*k]->flag & FLAG_CHUNK_GENERATED)
-                mesh_chunk(chunk_queue.chunk[*k], FALSE);
-            else generate_chunk(chunk_queue.index[*k]);
-            chunk_queue.chunk[*k]->flag &= ~FLAG_CHUNK_QUEUED;
-            chunk_queue.chunk[*k] = NULL;
+            if (chunk_queue.chunk[i]->flag & FLAG_CHUNK_GENERATED)
+                mesh_chunk(chunk_queue.chunk[i]);
+            else chunk_generate(chunk_queue.index[i], rate_block);
+            chunk_queue.chunk[i]->flag &= ~FLAG_CHUNK_QUEUED;
+            chunk_queue.chunk[i] = NULL;
             (chunk_queue.count > 0) ? --chunk_queue.count : 0;
-            --rate;
+            --rate_chunk;
         }
-        *k = ++*k % CHUNK_QUEUE_MAX;
-    }
 }
 
 void
