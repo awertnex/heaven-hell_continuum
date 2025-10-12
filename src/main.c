@@ -614,7 +614,7 @@ init_world(str *name)
 void
 update_world(Player *player)
 {
-    game_tick = 6000 + (u64)(render.frame_start * 20) -
+    game_tick = 2000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -1078,7 +1078,9 @@ main(int argc, char **argv)
         return -1;
     }
 
-    /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 25);
+    /*temp*/ glfwSetWindowPos(render.window,
+            (1920 / 2) - (render.size.x / 2),
+            (1080 / 2) - (render.size.y / 2));
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
     flag =
@@ -1171,8 +1173,8 @@ section_menu_pause:
 
 section_main:
 
-    if (!(flag & FLAG_MAIN_WORLD_LOADED))
-        init_world("Poop Consistency Tester");
+    if (!(flag & FLAG_MAIN_WORLD_LOADED) && !init_world("Poop Consistency Tester"))
+            goto cleanup;
 
     generate_standard_meshes();
 

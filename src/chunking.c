@@ -53,7 +53,7 @@ init_chunking(void)
 
     v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
     v3i32 pos = {0};
-    f32 distance[CHUNK_BUF_VOLUME] = {0};
+    u32 distance[CHUNK_BUF_VOLUME] = {0};
     u64 i, j;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
@@ -64,12 +64,11 @@ init_chunking(void)
                 i / CHUNK_BUF_LAYER,
             };
         distance[i] = distance_v3i32(pos, center);
+        chunk_order[i] = &chunk_tab[i];
     }
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-        chunk_order[i] = &chunk_tab[i];
-    for (i = CHUNK_BUF_VOLUME - 1; i < CHUNK_BUF_VOLUME; --i)
-        for (j = CHUNK_BUF_VOLUME - 1; j < CHUNK_BUF_VOLUME; --j)
-            if (distance[j] < distance[i])
+        for (j = 0; j < CHUNK_BUF_VOLUME; ++j)
+            if (distance[j] > distance[i])
             {
                 swap_bits_u32((u32*)&distance[i], (u32*)&distance[j]);
                 swap_bits_u64((u64*)&chunk_order[i], (u64*)&chunk_order[j]);
@@ -896,8 +895,7 @@ shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         if (is_on_edge)
         {
-            chunk_tab[i]->flag &= ~FLAG_CHUNK_RENDER;
-            chunk_tab[i]->flag &= ~FLAG_CHUNK_LOADED;
+            chunk_tab[i]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER);
             chunk_tab[i]->color = 0;
             if (chunk_tab[mirror_index])
                 chunk_tab[mirror_index]->flag |= FLAG_CHUNK_EDGE;
