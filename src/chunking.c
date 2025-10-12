@@ -446,7 +446,7 @@ remove_block(u32 index, u32 x, u32 y, u32 z)
 
 v3f32 random(f32 x0, f32 y0)
 {
-    const u32 w = 8 * sizeof(unsigned);
+    const u32 w = 8 * sizeof(u64);
     const u32 s = w / 2; 
     u32 a = (i32)x0, b = (i32)y0;
     a *= 3284157443;
@@ -458,12 +458,11 @@ v3f32 random(f32 x0, f32 y0)
     a *= 2048419325;
     f32 random = a * (PI / ~(~0u >> 1));
     
-    return
-        (v3f32){
-            sin(random),
-                cos(random),
-                1.0f,
-        };
+    return (v3f32){
+        sin(random),
+            cos(random),
+            1.0f,
+    };
 }
 
 f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
@@ -485,8 +484,8 @@ terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
     f32 root = 0;
     f32 x = (f32)coordinates.x / frequency;
     f32 y = (f32)coordinates.y / frequency;
-    i32 x0 = (i32)x;
-    i32 y0 = (i32)y;
+    i32 x0 = (i32)floorf(x);
+    i32 y0 = (i32)floorf(y);
     i32 x1 = x0 + 1;
     i32 y1 = y0 + 1;
 
