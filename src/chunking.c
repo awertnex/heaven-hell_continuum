@@ -44,7 +44,6 @@ static void chunk_buf_pop(u32 index);
  * rate_block = number of blocks to process per frame per chunk */
 void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
-static v3f32 table_rand[1024] = {0};
 u8
 init_chunking(void)
 {
@@ -56,13 +55,6 @@ init_chunking(void)
     v3i32 pos = {0};
     f32 distance[CHUNK_BUF_VOLUME] = {0};
     u64 i, j;
-    for (i = 0; i < 1024; ++i)
-        table_rand[i].x = (f32)(rand() % 36000) / 100.0f;
-    for (i = 0; i < 1024; ++i)
-        table_rand[i].y = (f32)(rand() % 36000) / 100.0f;
-    for (i = 0; i < 1024; ++i)
-        table_rand[i].z = (f32)(rand() % 36000) / 100.0f;
-
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         pos =
@@ -524,7 +516,7 @@ chunk_generate(u32 index, u32 rate)
             pos.z + (chunk->pos.z * CHUNK_DIAMETER),
         };
 
-        if (terrain_noise(coordinates, 40.0f, 64.0f) > coordinates.z)
+        if (terrain_noise(coordinates, 50.0f, 128.0f) > coordinates.z)
             add_block(index, pos.x, pos.y, pos.z);
         --rate;
     }

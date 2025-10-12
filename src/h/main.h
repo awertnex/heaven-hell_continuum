@@ -93,7 +93,7 @@
 #define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * SET_RENDER_DISTANCE)
 
 /* number of blocks to process per chunk */
-#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * CHUNK_DIAMETER)
+#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * 3)
 
 #define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
