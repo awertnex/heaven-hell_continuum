@@ -45,7 +45,7 @@ static void chunk_buf_pop(u32 index);
 void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
 u8
-init_chunking(void)
+chunking_init(void)
 {
     if (!mem_alloc_memb((void*)&chunk_buf,
                 CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
@@ -77,7 +77,7 @@ init_chunking(void)
 }
 
 void
-update_chunking(v3i16 player_delta_chunk)
+chunking_update(v3i16 player_delta_chunk)
 {
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
 
@@ -105,7 +105,7 @@ update_chunking(v3i16 player_delta_chunk)
 }
 
 void
-free_chunking(void)
+chunking_free(void)
 {
     u32 i = 0;
     for (; i < CHUNK_BUF_VOLUME; ++i)
@@ -116,7 +116,7 @@ free_chunking(void)
 
 #if 1
 void
-add_block(u32 index, u32 x, u32 y, u32 z)
+block_place(u32 index, u32 x, u32 y, u32 z)
 {
     Chunk *chunk = chunk_tab[index];
     u8 is_on_edge = 0;
@@ -231,7 +231,7 @@ add_block(u32 index, u32 x, u32 y, u32 z)
 }
 #else
 void
-add_block(u32 index, u32 x, u32 y, u32 z)
+block_place(u32 index, u32 x, u32 y, u32 z)
 {
     Chunk *chunk = chunk_tab[index];
     u8 is_on_edge = 0;
@@ -348,10 +348,10 @@ add_block(u32 index, u32 x, u32 y, u32 z)
         (((u64)z & 0xf) << 40);
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
-#endif /* add_block() */
+#endif /* block_place() */
 
 void
-remove_block(u32 index, u32 x, u32 y, u32 z)
+block_remove(u32 index, u32 x, u32 y, u32 z)
 {
     Chunk *chunk = chunk_tab[index];
     u8 is_on_edge = 0;
@@ -516,7 +516,7 @@ chunk_generate(u32 index, u32 rate)
         };
 
         if (terrain_noise(coordinates, 50.0f, 128.0f) > coordinates.z)
-            add_block(index, pos.x, pos.y, pos.z);
+            block_place(index, pos.x, pos.y, pos.z);
         --rate;
     }
 

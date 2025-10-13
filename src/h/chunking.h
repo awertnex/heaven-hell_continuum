@@ -26,10 +26,10 @@ void update_chunking(v3i16 player_delta_chunk);
 void free_chunking();
 
 /* index = (chunk_tab index); */
-void add_block(u32 index, u32 x, u32 y, u32 z);
+void block_place(u32 index, u32 x, u32 y, u32 z);
 
 /* index = (chunk_tab index); */
-void remove_block(u32 index, u32 x, u32 y, u32 z);
+void block_remove(u32 index, u32 x, u32 y, u32 z);
 
 /* rate = number of chunks to generate per frame */
 void chunk_queue_update(u32 rate_chunk, u32 rate_block);

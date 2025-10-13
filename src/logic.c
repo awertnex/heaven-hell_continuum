@@ -47,11 +47,7 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         player->vel = v3fzero;
         player->movement_speed =
             SET_PLAYER_SPEED_FLY * render->frame_delta;
-
-        player->camera.fovy =
-            lerp_f32(player->camera.fovy,
-                    80.0f,
-                    settings.lerp_speed, render->frame_delta);
+        player->camera.fovy_raw = 80.0f - player->camera.zoom;
     }
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
@@ -64,19 +60,13 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy =
-                lerp_f32(player->camera.fovy,
-                        75.0f,
-                        settings.lerp_speed, render->frame_delta);
+            player->camera.fovy_raw = 75.0f - player->camera.zoom;
         }
         else
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy =
-                lerp_f32(player->camera.fovy,
-                        90.0f,
-                        settings.lerp_speed, render->frame_delta);
+            player->camera.fovy_raw = 90.0f - player->camera.zoom;
         }
     }
     else if (!(player->flag & FLAG_PLAYER_SNEAKING)
@@ -92,12 +82,12 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
 
         player->movement_speed =
             SET_PLAYER_SPEED_WALK * render->frame_delta;
-
-        player->camera.fovy =
-            lerp_f32(player->camera.fovy,
-                    70.0f,
-                        settings.lerp_speed, render->frame_delta);
+        player->camera.fovy_raw = 70.0f - player->camera.zoom;
     }
+    player->camera.fovy =
+        lerp_f32(player->camera.fovy,
+                player->camera.fovy_raw,
+                settings.lerp_speed, render->frame_delta);
 }
 
 void
@@ -173,6 +163,12 @@ update_camera_movement_player(Render *render, Player *player,
         case MODE_CAMERA_SPECTATOR:
             break;
     }
+
+    player->camera_hud.pos =        player->camera.pos;
+    player->camera_hud.sin_pitch =  player->camera.sin_pitch;
+    player->camera_hud.cos_pitch =  player->camera.cos_pitch;
+    player->camera_hud.sin_yaw =    player->camera.sin_yaw;
+    player->camera_hud.cos_yaw =    player->camera.cos_yaw;
 }
 
 void
