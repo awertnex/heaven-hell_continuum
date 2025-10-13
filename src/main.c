@@ -35,6 +35,8 @@ u64 game_days = 0;
 Projection projection_world = {0};
 Projection projection_hud = {0};
 Uniform uniform = {0};
+Font font[FONT_LAST];
+Texture texture[TEXTURE_LAST] = {0};
 
 Player lily =
 {
@@ -217,7 +219,7 @@ static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset)
 {
     lily.camera.zoom = clamp_f64(lily.camera.zoom + yoffset *
-            CAMERA_ZOOM_SENSITIVITY, 0.0f, CAMERA_ZOOM_MAX);
+            CAMERA_ZOOM_SPEED, 0.0f, CAMERA_ZOOM_MAX);
 }
 
 void
@@ -366,6 +368,10 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_ui.id, "render_size");
     uniform.ui.ndc_scale =
         glGetUniformLocation(shader_ui.id, "ndc_scale");
+    uniform.ui.alignment =
+        glGetUniformLocation(shader_ui.id, "alignment");
+    uniform.ui.tint =
+        glGetUniformLocation(shader_ui.id, "tint");
 
     uniform.font.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
@@ -374,18 +380,18 @@ bind_shader_uniforms(void)
     uniform.font.text_color =
         glGetUniformLocation(shader_text.id, "text_color");
 
-    font.uniform.char_size = uniform.font.char_size;
-    font.uniform.font_size = uniform.font.font_size;
-    font.uniform.text_color = uniform.font.text_color;
-    font_bold.uniform.char_size = uniform.font.char_size;
-    font_bold.uniform.font_size = uniform.font.font_size;
-    font_bold.uniform.text_color = uniform.font.text_color;
-    font_mono.uniform.char_size = uniform.font.char_size;
-    font_mono.uniform.font_size = uniform.font.font_size;
-    font_mono.uniform.text_color = uniform.font.text_color;
-    font_mono_bold.uniform.char_size = uniform.font.char_size;
-    font_mono_bold.uniform.font_size = uniform.font.font_size;
-    font_mono_bold.uniform.text_color = uniform.font.text_color;
+    font[FONT_REG].uniform.char_size = uniform.font.char_size;
+    font[FONT_REG].uniform.font_size = uniform.font.font_size;
+    font[FONT_REG].uniform.text_color = uniform.font.text_color;
+    font[FONT_REG_BOLD].uniform.char_size = uniform.font.char_size;
+    font[FONT_REG_BOLD].uniform.font_size = uniform.font.font_size;
+    font[FONT_REG_BOLD].uniform.text_color = uniform.font.text_color;
+    font[FONT_MONO].uniform.char_size = uniform.font.char_size;
+    font[FONT_MONO].uniform.font_size = uniform.font.font_size;
+    font[FONT_MONO].uniform.text_color = uniform.font.text_color;
+    font[FONT_MONO_BOLD].uniform.char_size = uniform.font.char_size;
+    font[FONT_MONO_BOLD].uniform.font_size = uniform.font.font_size;
+    font[FONT_MONO_BOLD].uniform.text_color = uniform.font.text_color;
 
     uniform.skybox.camera_position =
         glGetUniformLocation(shader_skybox.id, "camera_position");
@@ -558,7 +564,8 @@ update_input(Player *player)
     }
 
     /* ---- inventory ------------------------------------------------------- */
-    for (u32 i = 0; i < 10; ++i)
+    u32 i = 0;
+    for (; i < 10; ++i)
         if (is_key_press(bind_hotbar_slot[i]) ||
                 is_key_press(bind_hotbar_slot_kp[i]))
             hotbar_slot_selected = i + 1;
@@ -606,6 +613,9 @@ update_input(Player *player)
         else player->perspective = 0;
     }
 
+    if (is_key_press(bind_toggle_zoom))
+        player->flag ^= FLAG_PLAYER_ZOOMER;
+
     /* ---- debug ----------------------------------------------------------- */
 #if !RELEASE_BUILD
     if (is_key_press(KEY_TAB))
@@ -638,6 +648,7 @@ init_world(str *name)
 
     chunking_update(lily.delta_chunk);
     flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
+    lily.flag |= FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
     return TRUE;
@@ -646,7 +657,7 @@ init_world(str *name)
 void
 update_world(Player *player)
 {
-    game_tick = 2000 + (u64)(render.frame_start * 20) -
+    game_tick = 6000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -698,13 +709,8 @@ update_world(Player *player)
 void
 draw_everything(void)
 {
-    f32 opacity = 1.0f;
-    if (flag & FLAG_MAIN_DEBUG_MORE)
-        opacity = 0.75f;
-
-    glEnable(GL_DEPTH_TEST);
-
     /* ---- draw skybox ----------------------------------------------------- */
+    glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -726,22 +732,22 @@ draw_everything(void)
                         (skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
 
     f32 burn_boost =    fabsf(powf(sinf(
-                        (skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+                    (skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
 
     f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(
                         skybox_data.time * PI), 3.0f)));
 
     skybox_data.color =
-    (v3f32){
-        (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) +
-            (pre_burn * 13.0f) + (burn_boost * 76.0f),
+        (v3f32){
+            (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) +
+                (pre_burn * 13.0f) + (burn_boost * 76.0f),
 
-        (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) +
-            (pre_burn * 7.0f) + (burn_boost * 34.0f),
+            (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) +
+                (pre_burn * 7.0f) + (burn_boost * 34.0f),
 
-        (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) +
-            (pre_burn * 20.0f),
-    };
+            (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) +
+                (pre_burn * 20.0f),
+        };
 
     skybox_data.color =
         (v3f32){
@@ -780,6 +786,10 @@ draw_everything(void)
             (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_color, 1,
             (GLfloat*)&skybox_data.color);
+
+    f32 opacity = 1.0f;
+    if (flag & FLAG_MAIN_DEBUG_MORE)
+        opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
 
@@ -915,22 +925,41 @@ draw_everything(void)
     glUseProgram(shader_ui.id);
     glBindVertexArray(mesh_unit.vao);
 
-    glUniform2fv(uniform.ui.position, 1,
-            (GLfloat*)(f32[]){
-            ((f32)render.size.x / 2.0f),
-            ((f32)render.size.y / 2.0f),
-            });
-    glUniform2iv(uniform.ui.size, 1, (GLint*)&texture_cursor.size);
     glUniform2iv(uniform.ui.render_size, 1, (GLint*)&render.size);
     glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
 
-    glBindTexture(GL_TEXTURE_2D, texture_cursor.id);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    if (!(flag & FLAG_MAIN_DEBUG))
+    {
+        glUniform2f(uniform.ui.position,
+                (f32)render.size.x / 2.0f,
+                (f32)render.size.y / 2.0f);
+        glUniform2iv(uniform.ui.size, 1,
+                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
+        glUniform2i(uniform.ui.alignment, 0, 0);
+        glUniform4fv(uniform.ui.tint, 1,
+                (GLfloat*)(f32[]){1.0f, 1.0f, 1.0f, 1.0f});
+
+        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+
+    if (flag & FLAG_MAIN_SUPER_DEBUG)
+    {
+        glUniform2f(uniform.ui.position, (f32)SET_MARGIN, (f32)SET_MARGIN);
+        glUniform2i(uniform.ui.size, 400, render.size.y - (SET_MARGIN * 2));
+        glUniform2i(uniform.ui.alignment, 1, 1);
+        glUniform4fv(uniform.ui.tint, 1,
+                (GLfloat*)(f32[]){1.0f, 1.0f, 1.0f, 0.8f});
+
+        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SDB_ACTIVE].id);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+
     glEnable(GL_DEPTH_TEST);
 
     /* ---- draw debug info ------------------------------------------------- */
     text_start(0, FONT_SIZE_DEFAULT,
-            &font_mono_bold, &render, &shader_text, &fbo_text, TRUE);
+            &font[FONT_MONO_BOLD], &render, &shader_text, &fbo_text, TRUE);
     text_push(stringf(
                 "FPS               [%d]\n"
                 "FRAME TIME        [%.2lf]\n"
@@ -1035,7 +1064,7 @@ draw_everything(void)
     text_render(0x3f6f9fff);
 
     text_start(0, FONT_SIZE_DEFAULT,
-            &font_mono, &render, &shader_text, &fbo_text, FALSE);
+            &font[FONT_MONO], &render, &shader_text, &fbo_text, FALSE);
     text_push(stringf(
                 "Game:     %s v%s\n"
                 "Engine:   %s v%s\n"
@@ -1077,17 +1106,11 @@ draw_everything(void)
     {
         glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    }
-    else
-    {
-        glBindTexture(GL_TEXTURE_2D, fbo_ui.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    }
-    if (flag & FLAG_MAIN_DEBUG)
-    {
         glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+    glBindTexture(GL_TEXTURE_2D, fbo_ui.color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);

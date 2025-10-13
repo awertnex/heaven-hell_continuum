@@ -24,6 +24,11 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
             || (player->delta_chunk.z - player->chunk.z))
         flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
+    static f32 zoom = 0.0f;
+    if (lily.flag & FLAG_PLAYER_ZOOMER)
+        zoom = player->camera.zoom;
+    else zoom = 0.0f;
+
     if (!(player->flag & FLAG_PLAYER_CAN_JUMP) &&
             !(player->flag & FLAG_PLAYER_FLYING))
     {
@@ -47,7 +52,7 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         player->vel = v3fzero;
         player->movement_speed =
             SET_PLAYER_SPEED_FLY * render->frame_delta;
-        player->camera.fovy_raw = 80.0f - player->camera.zoom;
+        player->camera.fovy_raw = 80.0f - zoom;
     }
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
@@ -60,13 +65,13 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy_raw = 75.0f - player->camera.zoom;
+            player->camera.fovy_raw = 75.0f - zoom;
         }
         else
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy_raw = 90.0f - player->camera.zoom;
+            player->camera.fovy_raw = 90.0f - zoom;
         }
     }
     else if (!(player->flag & FLAG_PLAYER_SNEAKING)
@@ -82,7 +87,7 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
 
         player->movement_speed =
             SET_PLAYER_SPEED_WALK * render->frame_delta;
-        player->camera.fovy_raw = 70.0f - player->camera.zoom;
+        player->camera.fovy_raw = 70.0f - zoom;
     }
     player->camera.fovy =
         lerp_f32(player->camera.fovy,
@@ -94,10 +99,18 @@ void
 update_camera_movement_player(Render *render, Player *player,
         b8 use_mouse)
 {
+    static f32 zoom = 0.0f;
+    if (lily.flag & FLAG_PLAYER_ZOOMER)
+        zoom = player->camera.zoom;
+    else zoom = 0.0f;
+
     if (use_mouse)
     {
-        player->yaw += render->mouse_delta.x * settings.mouse_sensitivity;
-        player->pitch += render->mouse_delta.y * settings.mouse_sensitivity;
+        f32 sensitivity = settings.mouse_sensitivity /
+            ((zoom / CAMERA_ZOOM_SENSITIVITY) + 1.0f);
+
+        player->yaw += render->mouse_delta.x * sensitivity;
+        player->pitch += render->mouse_delta.y * sensitivity;
     }
 
     player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);

@@ -8,11 +8,6 @@
 #include "h/gui.h"
 #include "h/dir.h"
 
-Font font = {0};
-Font font_bold = {0};
-Font font_mono = {0};
-Font font_mono_bold = {0};
-
 v2i16 hotbar_pos;
 u8 hotbar_slot_selected = 1;
 v2i16 crosshair_pos;
@@ -46,14 +41,12 @@ print_menu_layers()
     };
 
     printf("menu layers:\n");
-    for (u8 i = 0; i < 9; ++i)
+    u8 i = 0;
+    for (; i < 9; ++i)
         printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
 
     putchar('\n');
 }
-
-Texture texture_cursor = {0};
-Texture texture_stone = {0};
 
 b8
 gui_init(void)
@@ -76,31 +69,41 @@ gui_init(void)
     normalize_slash(font_path[3]);
 
     if (
-            !font_init(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !font_init(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !font_init(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !font_init(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
+            !font_init(&font[FONT_REG],
+                FONT_RESOLUTION_DEFAULT, font_path[0]) ||
+            !font_init(&font[FONT_REG_BOLD],
+                FONT_RESOLUTION_DEFAULT, font_path[1]) ||
+            !font_init(&font[FONT_MONO],
+                FONT_RESOLUTION_DEFAULT, font_path[2]) ||
+            !font_init(&font[FONT_MONO_BOLD],
+                FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
     str *asset_path[] =
     {
-        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "cursor.png"),
-        stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "stone.png"),
+        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "crosshair.png"),
+        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_active.png"),
+        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_inactive.png"),
     };
 
     if (
-            !texture_init(&texture_cursor, (v2i32){16, 16},
+            !texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST,
                 0, FALSE, asset_path[0]) ||
 
-            !texture_init(&texture_stone, (v2i32){16, 16},
+            !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST,
+                0, FALSE, asset_path[1]) ||
+
+            !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST,
                 0, FALSE, asset_path[1]))
         goto cleanup;
 
     if (
-            !texture_generate(&texture_cursor) ||
-            !texture_generate(&texture_stone))
+            !texture_generate(&texture[TEXTURE_CROSSHAIR]) ||
+            !texture_generate(&texture[TEXTURE_SDB_ACTIVE]) ||
+            !texture_generate(&texture[TEXTURE_SDB_INACTIVE]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
@@ -116,12 +119,13 @@ cleanup:
 void
 gui_free(void)
 {
-    font_free(&font);
-    font_free(&font_bold);
-    font_free(&font_mono);
-    font_free(&font_mono_bold);
-    texture_free(&texture_cursor);
-    texture_free(&texture_stone);
+    font_free(&font[FONT_REG]);
+    font_free(&font[FONT_REG]);
+    font_free(&font[FONT_MONO]);
+    font_free(&font[FONT_MONO_BOLD]);
+    texture_free(&texture[TEXTURE_CROSSHAIR]);
+    texture_free(&texture[TEXTURE_SDB_ACTIVE]);
+    texture_free(&texture[TEXTURE_SDB_INACTIVE]);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */

@@ -40,6 +40,7 @@ u32 bind_toggle_debug               = KEY_F3;
 u32 bind_toggle_cinematic_camera    = KEY_F6;
 u32 bind_toggle_fullscreen          = KEY_F11;
 u32 bind_toggle_perspective         = KEY_F5;
+u32 bind_toggle_zoom                = KEY_Z;
 u32 bind_pause                      = KEY_ESCAPE;
 u32 bind_chat_or_command            = KEY_SLASH;
 

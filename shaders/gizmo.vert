@@ -1,5 +1,7 @@
 #version 430 core
 
+#define SCALE 0.02
+
 layout (location = 0) in vec3 a_pos;
 
 uniform mat4 mat_translation;
@@ -10,8 +12,6 @@ out vec4 vertex_color;
 
 void main()
 {
-    float scale = 0.04;
-
     mat4 mat_offset = mat4(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
@@ -24,7 +24,7 @@ void main()
         mat_rotation *
         mat_translation *
         mat_offset *
-        vec4(a_pos * scale, 1.0);
+        vec4(a_pos * SCALE, 1.0);
 
     vertex_color = vec4(floor(a_pos), 1.0) * 20.0;
 }

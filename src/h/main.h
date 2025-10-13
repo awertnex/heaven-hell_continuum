@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             6
+#define SET_RENDER_DISTANCE             14
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -93,7 +93,7 @@
 #define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * 8)
 
 /* number of blocks to process per chunk */
-#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * 3)
+#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * 4)
 
 #define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
@@ -147,6 +147,8 @@ typedef struct Uniform
         GLint size;
         GLint render_size;
         GLint ndc_scale;
+        GLint alignment;
+        GLint tint;
     } ui;
 
     struct /* font */
@@ -202,6 +204,23 @@ typedef struct Uniform
     } voxel;
 
 } Uniform;
+
+enum FontIndices
+{
+    FONT_REG,
+    FONT_REG_BOLD,
+    FONT_MONO,
+    FONT_MONO_BOLD,
+    FONT_LAST,
+}; /* FontIndices */
+
+enum TextureIndices
+{
+    TEXTURE_CROSSHAIR,
+    TEXTURE_SDB_ACTIVE,
+    TEXTURE_SDB_INACTIVE,
+    TEXTURE_LAST,
+}; /* TextureIndices */
 
 enum PlayerFlags
 {
@@ -405,12 +424,10 @@ typedef struct ChunkQueue
 
 extern Render render;
 extern Projection projection;
-extern Font font;
-extern Font font_bold;
-extern Font font_mono;
-extern Font font_mono_bold;
 extern Settings settings;
 extern Uniform uniform;
+extern Font font[FONT_LAST];
+extern Texture texture[TEXTURE_LAST];
 extern Player lily;
 extern u32 flag;
 extern f64 game_start_time;
