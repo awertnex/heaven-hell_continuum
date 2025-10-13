@@ -31,7 +31,8 @@ void block_place(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index); */
 void block_remove(u32 index, u32 x, u32 y, u32 z);
 
-/* rate = number of chunks to generate per frame */
+/* rate_chunk = number of chunks to process per frame,
+ * rate_block = number of blocks to process per chunk per frame */
 void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
 void shift_chunk_tab(v3i16 player_chunk, v3i16 *player_delta_chunk);

@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             14
+#define SET_RENDER_DISTANCE             16
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -56,7 +56,7 @@
 #define SET_PLAYER_JUMP_HEIGHT          8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       40.0f
+#define SET_PLAYER_SPEED_FLY_FAST       300.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
@@ -90,10 +90,10 @@
 #define BLOCK_BUFFERS_MAX       4
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * 8)
+#define CHUNK_PARSE_RATE_MAX    128
 
-/* number of blocks to process per chunk */
-#define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * 4)
+/* number of blocks to process per chunk per frame */
+#define BLOCK_PARSE_RATE_MAX    700
 
 #define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
@@ -118,8 +118,12 @@ enum MainFlags
 typedef struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
-    v2f32 ndc_scale;    /* conversion from world-space to screen-space */
-    u8 reach_distance;  /* for player reach (arm length basically) */
+    /* conversion from world-space to screen-space */
+    v2f32 ndc_scale;
+
+    /* for player reach (arm length basically) */
+    u8 reach_distance;
+
     f32 lerp_speed;
 
     /* ---- options --------------------------------------------------------- */
@@ -211,7 +215,7 @@ enum FontIndices
     FONT_REG_BOLD,
     FONT_MONO,
     FONT_MONO_BOLD,
-    FONT_LAST,
+    FONT_COUNT,
 }; /* FontIndices */
 
 enum TextureIndices
@@ -219,7 +223,7 @@ enum TextureIndices
     TEXTURE_CROSSHAIR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
-    TEXTURE_LAST,
+    TEXTURE_COUNT,
 }; /* TextureIndices */
 
 enum PlayerFlags
@@ -259,8 +263,8 @@ enum CameraModes
 typedef struct Player
 {
     str name[100];                  /* player in-game name */
-    v3f64 pos;                      /* player processed raw_pos */
-    v3f64 raw_pos;                  /* player current coordinates in world */
+    v3f64 pos;                      /* player current coordinates in world */
+    v3f64 pos_smooth;               /* player processed pos */
     v3f32 pos_lerp_speed;
     v3f64 target;                   /* player arm (or whatever) */
     v3f32 scl;                      /* player size for collision detection */
@@ -426,8 +430,8 @@ extern Render render;
 extern Projection projection;
 extern Settings settings;
 extern Uniform uniform;
-extern Font font[FONT_LAST];
-extern Texture texture[TEXTURE_LAST];
+extern Font font[FONT_COUNT];
+extern Texture texture[TEXTURE_COUNT];
 extern Player lily;
 extern u32 flag;
 extern f64 game_start_time;

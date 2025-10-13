@@ -52,7 +52,7 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         player->vel = v3fzero;
         player->movement_speed =
             SET_PLAYER_SPEED_FLY * render->frame_delta;
-        player->camera.fovy_raw = 80.0f - zoom;
+        player->camera.fovy = 80.0f - zoom;
     }
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
@@ -65,13 +65,13 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy_raw = 75.0f - zoom;
+            player->camera.fovy = 75.0f - zoom;
         }
         else
         {
             player->movement_speed =
                 SET_PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy_raw = 90.0f - zoom;
+            player->camera.fovy = 90.0f - zoom;
         }
     }
     else if (!(player->flag & FLAG_PLAYER_SNEAKING)
@@ -87,11 +87,14 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
 
         player->movement_speed =
             SET_PLAYER_SPEED_WALK * render->frame_delta;
-        player->camera.fovy_raw = 70.0f - zoom;
+        player->camera.fovy = 70.0f - zoom;
     }
+
     player->camera.fovy =
-        lerp_f32(player->camera.fovy,
-                player->camera.fovy_raw,
+        clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
+    player->camera.fovy_smooth =
+        lerp_f32(player->camera.fovy_smooth,
+                player->camera.fovy,
                 settings.lerp_speed, render->frame_delta);
 }
 
@@ -100,12 +103,13 @@ update_camera_movement_player(Render *render, Player *player,
         b8 use_mouse)
 {
     static f32 zoom = 0.0f;
-    if (lily.flag & FLAG_PLAYER_ZOOMER)
-        zoom = player->camera.zoom;
-    else zoom = 0.0f;
 
     if (use_mouse)
     {
+        if (player->flag & FLAG_PLAYER_ZOOMER)
+            zoom = player->camera.zoom;
+        else zoom = 0.0f;
+
         f32 sensitivity = settings.mouse_sensitivity /
             ((zoom / CAMERA_ZOOM_SENSITIVITY) + 1.0f);
 
@@ -138,28 +142,33 @@ update_camera_movement_player(Render *render, Player *player,
         case MODE_CAMERA_1ST_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x, player->pos.y, player->pos.z +
-                        player->eye_height
+                    player->pos_smooth.x,
+                    player->pos_smooth.y,
+                    player->pos_smooth.z + player->eye_height
                 };
             break;
 
         case MODE_CAMERA_3RD_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x - ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y + ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z +
-                        player->eye_height + (SPCH * player->camera_distance),
+                    player->pos_smooth.x -
+                        ((CYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.y +
+                        ((SYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.z + player->eye_height +
+                        (SPCH * player->camera_distance),
                 };
             break;
 
         case MODE_CAMERA_3RD_PERSON_FRONT:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x + ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y - ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z +
-                        player->eye_height - (SPCH * player->camera_distance),
+                    player->pos_smooth.x +
+                        ((CYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.y -
+                        ((SYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.z + player->eye_height -
+                        (SPCH * player->camera_distance),
                 };
             player->camera.sin_pitch = -SPCH;
             player->camera.sin_yaw =
@@ -233,7 +242,7 @@ update_gravity(Render *render, Player *player)
 {
     if (player->flag & FLAG_PLAYER_FALLING)
         player->vel.z += (GRAVITY * player->mass * render->frame_delta);
-    player->raw_pos.z += player->vel.z * render->frame_delta;
+    player->pos.z += player->vel.z * render->frame_delta;
 }
 
 /* TODO: make AABB collision work */
@@ -252,11 +261,11 @@ update_collision_static(Player *player)
             ceilf(player->scl.z) + 2.0f,
         };
 
-    if (player->raw_pos.z < 0.0f)
+    if (player->pos.z < 0.0f)
     {
         if (player->flag & FLAG_PLAYER_FLYING)
             player->flag &= ~FLAG_PLAYER_FLYING;
-        player->raw_pos.z = 0.0f;
+        player->pos.z = 0.0f;
         player->vel.z = 0.0f;
         player->flag |= FLAG_PLAYER_CAN_JUMP;
         player->flag &= ~FLAG_PLAYER_FALLING;
@@ -302,37 +311,37 @@ wrap_coordinates(Player *player, u64 chunk_diameter,
         (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
 
     /* ---- overflow edge --------------------------------------------------- */
-    if (player->raw_pos.x > OVERFLOW_EDGE)
+    if (player->pos.x > OVERFLOW_EDGE)
     {
-        player->raw_pos.x -= DIAMETER;
         player->pos.x -= DIAMETER;
+        player->pos_smooth.x -= DIAMETER;
     }
-    if (player->raw_pos.x < -OVERFLOW_EDGE)
+    if (player->pos.x < -OVERFLOW_EDGE)
     {
-        player->raw_pos.x += DIAMETER;
         player->pos.x += DIAMETER;
+        player->pos_smooth.x += DIAMETER;
     }
 
-    if (player->raw_pos.y > OVERFLOW_EDGE)
+    if (player->pos.y > OVERFLOW_EDGE)
     {
-        player->raw_pos.y -= DIAMETER;
         player->pos.y -= DIAMETER;
+        player->pos_smooth.y -= DIAMETER;
     }
-    if (player->raw_pos.y < -OVERFLOW_EDGE)
+    if (player->pos.y < -OVERFLOW_EDGE)
     {
-        player->raw_pos.y += DIAMETER;
         player->pos.y += DIAMETER;
+        player->pos_smooth.y += DIAMETER;
     }
 
-    if (player->raw_pos.z > OVERFLOW_EDGE_V)
+    if (player->pos.z > OVERFLOW_EDGE_V)
     {
-        player->raw_pos.z -= DIAMETER_V;
         player->pos.z -= DIAMETER_V;
+        player->pos_smooth.z -= DIAMETER_V;
     }
-    if (player->raw_pos.z < -OVERFLOW_EDGE_V)
+    if (player->pos.z < -OVERFLOW_EDGE_V)
     {
-        player->raw_pos.z += DIAMETER_V;
         player->pos.z += DIAMETER_V;
+        player->pos_smooth.z += DIAMETER_V;
     }
 
     /* ---- world margin ---------------------------------------------------- */

@@ -22,7 +22,7 @@ Chunk **chunk_order[CHUNK_BUF_VOLUME] = {0};
 ChunkQueue chunk_queue = {0};
 
 /* index = (chunk_tab index);
- * rate = number of blocks to generate per frame per chunk */
+ * rate = number of blocks to process per chunk per frame */
 static void chunk_generate(u32 index, u32 rate);
 
 static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
@@ -39,10 +39,6 @@ static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
 
 /* index = (chunk_tab index); */
 static void chunk_buf_pop(u32 index);
-
-/* rate_chunk = number of chunks to process per frame
- * rate_block = number of blocks to process per frame per chunk */
-void chunk_queue_update(u32 rate_chunk, u32 rate_block);
 
 u8
 chunking_init(void)
@@ -82,7 +78,7 @@ chunking_update(v3i16 player_delta_chunk)
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
 
     u32 i = 0;
-    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+    for (; i < CHUNK_BUF_VOLUME; ++i)
     {
         Chunk *p = chunk_tab[i];
         v3u32 coordinates =
@@ -515,7 +511,7 @@ chunk_generate(u32 index, u32 rate)
             pos.z + (chunk->pos.z * CHUNK_DIAMETER),
         };
 
-        if (terrain_noise(coordinates, 50.0f, 128.0f) > coordinates.z)
+        if (terrain_noise(coordinates, 100.0f, 256.0f) > coordinates.z)
             block_place(index, pos.x, pos.y, pos.z);
         --rate;
     }
@@ -708,7 +704,7 @@ void
 chunk_queue_update(u32 rate_chunk, u32 rate_block)
 {
     /* ---- push chunk queue ------------------------------------------------ */
-    u32 i, j, *k = &chunk_queue.cursor;
+    u32 i, *j = &chunk_queue.cursor;
     if (chunk_queue.count == CHUNK_QUEUE_MAX) goto generate;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
@@ -716,15 +712,15 @@ chunk_queue_update(u32 rate_chunk, u32 rate_block)
         if (chunk && (chunk->flag & FLAG_CHUNK_DIRTY))
         {
             if (!(chunk->flag & FLAG_CHUNK_QUEUED) &&
-                    !(chunk_queue.chunk[*k]))
+                    !(chunk_queue.chunk[*j]))
             {
                 chunk->flag |= FLAG_CHUNK_QUEUED;
-                chunk_queue.chunk[*k] = chunk;
-                chunk_queue.index[*k] = chunk_order[i] - chunk_tab;
+                chunk_queue.chunk[*j] = chunk;
+                chunk_queue.index[*j] = chunk_order[i] - chunk_tab;
                 (chunk_queue.count < CHUNK_QUEUE_MAX) ?
                     ++chunk_queue.count : 0;
+                *j = ++*j % CHUNK_QUEUE_MAX;
             }
-            *k = ++*k % CHUNK_QUEUE_MAX;
         }
     }
 

@@ -35,8 +35,8 @@ u64 game_days = 0;
 Projection projection_world = {0};
 Projection projection_hud = {0};
 Uniform uniform = {0};
-Font font[FONT_LAST];
-Texture texture[TEXTURE_LAST] = {0};
+Font font[FONT_COUNT];
+Texture texture[TEXTURE_COUNT] = {0};
 
 Player lily =
 {
@@ -163,6 +163,7 @@ FBO fbo_post_processing = {0};
 Mesh mesh_unit = {0};
 Mesh mesh_skybox = {0};
 Mesh mesh_cube_of_happiness = {0};
+Mesh mesh_player = {0};
 Mesh mesh_gizmo = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
@@ -283,6 +284,18 @@ generate_standard_meshes(void)
         0, 1, 3, 3, 2, 0,
     };
 
+    GLfloat vbo_data_player[] =
+    {
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 2.0f,
+        1.0f, 0.0f, 2.0f,
+        0.0f, 1.0f, 2.0f,
+        1.0f, 1.0f, 2.0f,
+    };
+
     const GLfloat THIC = 0.06f;
     GLfloat vbo_data_gizmo[] =
     {
@@ -335,6 +348,12 @@ generate_standard_meshes(void)
                 vbo_data_coh, ebo_data_coh) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
+
+    if (mesh_generate(&mesh_player, GL_STATIC_DRAW,
+                VBO_LEN_COH, EBO_LEN_COH,
+                vbo_data_player, ebo_data_coh) != 0)
+        goto cleanup;
+    LOGINFO("%s\n", "'Player' Mesh Generated");
 
     if (mesh_generate(&mesh_gizmo, GL_STATIC_DRAW,
                 VBO_LEN_GIZMO, EBO_LEN_GIZMO,
@@ -465,10 +484,10 @@ update_input(Player *player)
     {
         if (player->flag & FLAG_PLAYER_FLYING)
         {
-            player->raw_pos.z += player->movement_speed;
-            player->pos.z =
-                lerp_f32(player->pos.z,
-                        player->raw_pos.z,
+            player->pos.z += player->movement_speed;
+            player->pos_smooth.z =
+                lerp_f32(player->pos_smooth.z,
+                        player->pos.z,
                         player->pos_lerp_speed.z, render.frame_delta);
         }
 
@@ -486,7 +505,7 @@ update_input(Player *player)
     if (is_key_hold(bind_sneak))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
-            player->raw_pos.z -= player->movement_speed;
+            player->pos.z -= player->movement_speed;
         else player->flag |= FLAG_PLAYER_SNEAKING;
     }
     else player->flag &= ~FLAG_PLAYER_SNEAKING;
@@ -500,37 +519,37 @@ update_input(Player *player)
     /* ---- movement -------------------------------------------------------- */
     if (is_key_hold(bind_strafe_left))
     {
-        player->raw_pos.x += (player->movement_speed * player->sin_yaw);
-        player->raw_pos.y += (player->movement_speed * player->cos_yaw);
+        player->pos.x += (player->movement_speed * player->sin_yaw);
+        player->pos.y += (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_strafe_right))
     {
-        player->raw_pos.x -= (player->movement_speed * player->sin_yaw);
-        player->raw_pos.y -= (player->movement_speed * player->cos_yaw);
+        player->pos.x -= (player->movement_speed * player->sin_yaw);
+        player->pos.y -= (player->movement_speed * player->cos_yaw);
     }
 
     if (is_key_hold(bind_walk_backwards))
     {
-        player->raw_pos.x -= (player->movement_speed * player->cos_yaw);
-        player->raw_pos.y += (player->movement_speed * player->sin_yaw);
+        player->pos.x -= (player->movement_speed * player->cos_yaw);
+        player->pos.y += (player->movement_speed * player->sin_yaw);
     }
 
     if (is_key_hold(bind_walk_forwards))
     {
-        player->raw_pos.x += (player->movement_speed * player->cos_yaw);
-        player->raw_pos.y -= (player->movement_speed * player->sin_yaw);
+        player->pos.x += (player->movement_speed * player->cos_yaw);
+        player->pos.y -= (player->movement_speed * player->sin_yaw);
     }
     if (is_key_press_double(bind_walk_forwards))
         player->flag |= FLAG_PLAYER_SPRINTING;
 
-    player->pos.x = lerp_f32(player->pos.x, player->raw_pos.x,
+    player->pos_smooth.x = lerp_f32(player->pos_smooth.x, player->pos.x,
                 player->pos_lerp_speed.x, render.frame_delta);
 
-    player->pos.y = lerp_f32(player->pos.y, player->raw_pos.y,
+    player->pos_smooth.y = lerp_f32(player->pos_smooth.y, player->pos.y,
             player->pos_lerp_speed.y, render.frame_delta);
 
-    player->pos.z = player->raw_pos.z;
+    player->pos_smooth.z = player->pos.z;
 
     /* ---- gameplay -------------------------------------------------------- */
     if (is_key_hold(bind_attack_or_destroy))
@@ -637,7 +656,7 @@ init_world(str *name)
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_block(&lily, 0, 270, 2);
+    set_player_block(&lily, 0, 0, 0);
     lily.delta_chunk = lily.chunk;
     lily.delta_target =
         (v3i64){
@@ -657,7 +676,7 @@ init_world(str *name)
 void
 update_world(Player *player)
 {
-    game_tick = 6000 + (u64)(render.frame_start * 20) -
+    game_tick = (u64)(render.frame_start * 2000) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -714,12 +733,12 @@ draw_everything(void)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_skybox.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_data.time = (f32)game_tick / (f32)SET_DAY_TICKS_MAX;
+    skybox_data.time = (f32)game_tick / SET_DAY_TICKS_MAX;
     skybox_data.sun_rotation =
         (v3f32){
-            -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f,
-            -cos((skybox_data.time * 360.0f) * DEG2RAD) + 1.0f,
-            12.0f,
+            cos(skybox_data.time * PI * 2.0f),
+            cos(skybox_data.time * PI * 2.0f) * 0.3f,
+            sin(skybox_data.time * PI * 2.0f),
         };
 
     f32 intensity = 0.0039f;
@@ -815,6 +834,18 @@ draw_everything(void)
         glBindVertexArray(chunk->vao);
         glDrawArrays(GL_POINTS, 0, chunk->vbo_len);
     }
+
+    glUseProgram(shader_default.id);
+    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&projection_world.perspective);
+    glUniform3fv(uniform.defaults.camera_position, 1,
+            (GLfloat*)&lily.camera.pos);
+    glUniform3fv(uniform.defaults.sun_rotation, 1,
+            (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.defaults.sky_color, 1,
+            (GLfloat*)&skybox_data.color);
+    glBindVertexArray(mesh_player.vao);
+    glDrawArrays(GL_POINTS, 0, mesh_player.vbo_len);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
@@ -930,14 +961,11 @@ draw_everything(void)
 
     if (!(flag & FLAG_MAIN_DEBUG))
     {
-        glUniform2f(uniform.ui.position,
-                (f32)render.size.x / 2.0f,
-                (f32)render.size.y / 2.0f);
+        glUniform2i(uniform.ui.position, render.size.x / 2, render.size.y / 2);
         glUniform2iv(uniform.ui.size, 1,
                 (GLint*)&texture[TEXTURE_CROSSHAIR].size);
         glUniform2i(uniform.ui.alignment, 0, 0);
-        glUniform4fv(uniform.ui.tint, 1,
-                (GLfloat*)(f32[]){1.0f, 1.0f, 1.0f, 1.0f});
+        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
 
         glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -945,11 +973,10 @@ draw_everything(void)
 
     if (flag & FLAG_MAIN_SUPER_DEBUG)
     {
-        glUniform2f(uniform.ui.position, (f32)SET_MARGIN, (f32)SET_MARGIN);
+        glUniform2i(uniform.ui.position, SET_MARGIN, SET_MARGIN);
         glUniform2i(uniform.ui.size, 400, render.size.y - (SET_MARGIN * 2));
         glUniform2i(uniform.ui.alignment, 1, 1);
-        glUniform4fv(uniform.ui.tint, 1,
-                (GLfloat*)(f32[]){1.0f, 1.0f, 1.0f, 0.8f});
+        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 0.7f);
 
         glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SDB_ACTIVE].id);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -1167,8 +1194,7 @@ main(int argc, char **argv)
 
     flag =
         FLAG_MAIN_ACTIVE |
-        FLAG_MAIN_PARSE_CURSOR |
-        FLAG_MAIN_DEBUG;
+        FLAG_MAIN_PARSE_CURSOR;
 
     /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1247,19 +1273,19 @@ main(int argc, char **argv)
     lily.camera =
         (Camera){
             .fovy = SET_FOV_DEFAULT,
-            .fovy_raw = SET_FOV_DEFAULT,
+            .fovy_smooth = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
-            .near = 0.05f,
+            .near = 0.03f,
         };
 
     lily.camera_hud =
         (Camera){
             .fovy = SET_FOV_DEFAULT,
-            .fovy_raw = SET_FOV_DEFAULT,
+            .fovy_smooth = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
-            .near = 0.05f,
+            .near = 0.03f,
         };
 
     bind_shader_uniforms();
@@ -1280,7 +1306,6 @@ section_main:
     {
         render.frame_start = glfwGetTime() - game_start_time;
         render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_delta_square = pow(render.frame_delta, 2.0f);
         render.frame_last = render.frame_start;
 
         /* for cursor mode change jitter prevention */

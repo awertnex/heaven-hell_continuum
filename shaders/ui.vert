@@ -3,7 +3,7 @@
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec2 a_tex_coords;
 
-uniform vec2 position;
+uniform ivec2 position;
 uniform ivec2 size;
 uniform vec2 ndc_scale;
 uniform ivec2 alignment;
@@ -17,7 +17,7 @@ void main()
 
     gl_Position =
         vec4(-1.0, 1.0, 0.0, 0.0) +
-        (vec4(a_pos + vs_alignment, 0.0, 1.0) * vec4(scale, 0.0, 1.0)) +
-        vec4(vs_position, 0.0, 0.0);
+        vec4(vs_position, 0.0, 0.0) +
+        (vec4((a_pos + vs_alignment) * scale, 0.0, 1.0));
     tex_coords = a_tex_coords;
 }

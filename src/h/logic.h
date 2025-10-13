@@ -2,6 +2,7 @@
 #define GAME_LOGIC_H
 
 #include <engine/h/core.h>
+#include "main.h"
 
 enum ContainerStates
 {
@@ -43,16 +44,16 @@ void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
 static inline void
 set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
-    player->raw_pos = (v3f64){x, y, z};
-    player->pos = player->raw_pos;
+    player->pos = (v3f64){x, y, z};
+    player->pos_smooth = player->pos;
 }
 
 static inline void
 set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
-    player->raw_pos =
+    player->pos =
         (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
-    player->pos = player->raw_pos;
+    player->pos_smooth = player->pos;
 }
 
 void player_kill(Player *player);
