@@ -141,6 +141,7 @@ typedef struct Uniform
     {
         GLint offset;
         GLint scale;
+        GLint mat_rotation;
         GLint mat_perspective;
         GLint camera_position;
         GLint sun_rotation;
@@ -286,6 +287,7 @@ typedef struct Player
     u16 flag;                       /* enum: PlayerFlags */
 
     Camera camera;
+    Camera camera_rigid;
     Camera camera_hud;
     f32 camera_distance;            /* for camera collision detection */
 

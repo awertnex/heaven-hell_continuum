@@ -11,7 +11,7 @@
 uniform vec3 camera_position;
 uniform vec3 sun_rotation;
 uniform vec3 sky_color;
-in vec3 vs_position;
+in vec4 vs_position;
 in vec3 vs_normal;
 out vec4 color;
 
@@ -19,7 +19,7 @@ vec3 base_color = vec3(0.35, 0.58, 1.41);
 
 void main()
 {
-    float distance = length(vs_position - camera_position);
+    float distance = length(vs_position.xyz - camera_position);
     float flashlight = FLASHLIGHT_INTENSITY / (distance * FALLOFF);
     float sky_brightness = SKY_BRIGHTNESS *
         dot(sky_color.rgb, vec3(0.2126, 0.0722, 0.6152));

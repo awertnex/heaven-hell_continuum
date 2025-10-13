@@ -1,9 +1,9 @@
 #version 430 core
 
-#define FLASHLIGHT_INTENSITY 15.0
+#define FLASHLIGHT_INTENSITY 10.0
 #define FALLOFF 2.0
 #define SKY_BRIGHTNESS 2.0
-#define SKY_INFLUENCE 0.2
+#define SKY_INFLUENCE 0.25
 #define SUN_INFLUENCE 0.5
 #define BRIGHTNESS 1.0
 #define CONTRAST 0.5

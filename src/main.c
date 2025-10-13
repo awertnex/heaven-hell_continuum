@@ -33,6 +33,7 @@ f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
 Projection projection_world = {0};
+Projection projection_player = {0};
 Projection projection_hud = {0};
 Uniform uniform = {0};
 Font font[FONT_COUNT];
@@ -403,6 +404,8 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_default.id, "offset");
     uniform.defaults.scale =
         glGetUniformLocation(shader_default.id, "scale");
+    uniform.defaults.mat_rotation =
+        glGetUniformLocation(shader_default.id, "mat_rotation");
     uniform.defaults.mat_perspective =
         glGetUniformLocation(shader_default.id, "mat_perspective");
     uniform.defaults.camera_position =
@@ -722,6 +725,7 @@ update_world(Player *player)
     b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     update_camera_movement_player(&render, player, use_mouse);
     update_camera_perspective(&player->camera, &projection_world);
+    update_camera_perspective(&player->camera_rigid, &projection_player);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
@@ -870,10 +874,20 @@ draw_everything(void)
 
     if (lily.perspective != MODE_CAMERA_1ST_PERSON)
     {
+        m4f32 rotation =
+        {
+            lily.cos_yaw, lily.sin_yaw, 0.0f, 0.0f,
+            -lily.sin_yaw, lily.cos_yaw, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+        };
+
         glUseProgram(shader_default.id);
         glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.scale);
         glUniform3f(uniform.defaults.offset,
                 lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z);
+        glUniformMatrix4fv(uniform.defaults.mat_rotation, 1, GL_FALSE,
+                (GLfloat*)&rotation);
         glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
                 (GLfloat*)&projection_world.perspective);
         glUniform3fv(uniform.defaults.camera_position, 1,
