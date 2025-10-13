@@ -3,6 +3,8 @@
 ## v0.2.3-beta (DD MMM YYYY)
 
 #### changes
+- added image loading with stb_image.h
+- added UI parsing shaders
 
 - - -
 ## v0.2.2-beta (12 Oct 2025)
