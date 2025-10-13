@@ -181,7 +181,6 @@ typedef struct Render
     f64 frame_start;
     f64 frame_last;
     f64 frame_delta;
-    f64 frame_delta_square;
 } Render;
 
 typedef struct Mesh
@@ -246,7 +245,7 @@ typedef struct Camera
     f32 sin_yaw;
     f32 cos_yaw;
     f32 fovy;
-    f32 fovy_raw;
+    f32 fovy_smooth;
     f32 ratio;
     f32 far;
     f32 near;

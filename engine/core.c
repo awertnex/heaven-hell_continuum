@@ -661,7 +661,7 @@ update_camera_perspective(Camera *camera, Projection *projection)
     const f32 CYAW = camera->cos_yaw;
 
     f32 ratio = camera->ratio;
-    f32 fovy = 1.0f / tanf((camera->fovy / 2.0f) * DEG2RAD);
+    f32 fovy = 1.0f / tanf((camera->fovy_smooth / 2.0f) * DEG2RAD);
     f32 far = camera->far;
     f32 near = camera->near;
     f32 clip = -(far + near) / (far - near);
