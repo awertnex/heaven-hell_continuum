@@ -1,18 +1,22 @@
 #version 430 core
 
-#define FLASHLIGHT_INTENSITY 0.1
-#define FALLOFF 0.01
+#define FLASHLIGHT_INTENSITY 15.0
+#define FALLOFF 2.0
 #define SKY_BRIGHTNESS 2.0
 #define SKY_INFLUENCE 0.2
+#define SUN_INFLUENCE 0.5
+#define BRIGHTNESS 1.0
+#define CONTRAST 0.5
+
 uniform vec3 camera_position;
-uniform vec3 sun_rotation; /* TODO: use sun_rotation */
+uniform vec3 sun_rotation;
 uniform vec3 sky_color;
 uniform float opacity;
-in vec4 gs_diffuse;
+in vec3 gs_normal;
 in vec3 gs_position;
 out vec4 color;
 
-vec4 base_color = vec4(1.0, 0.84, 0.50, 1.0);
+vec3 base_color = vec3(1.0, 0.74, 0.41);
 
 void main()
 {
@@ -20,13 +24,19 @@ void main()
     float flashlight = FLASHLIGHT_INTENSITY / (distance * FALLOFF);
     float sky_brightness = SKY_BRIGHTNESS *
         dot(sky_color.rgb, vec3(0.2126, 0.0722, 0.6152));
-    float sky_brightness_range = max(sky_brightness + 1.0, 0.001);
-    float sky_influence = clamp(sky_brightness * SKY_INFLUENCE, 0.0, 1.0);
+    float sky_color_influence = clamp(sky_brightness * SKY_INFLUENCE, 0.0, 1.0);
+    float sun_direction = dot(gs_normal, sun_rotation);
+    sun_direction = (sun_direction + 1.0) / 2.0;
 
-    color = base_color * gs_diffuse * opacity;
-    color.rgb *= sky_brightness + (flashlight / sky_brightness_range);
-    color.rgb = mix(color.rgb, sky_color.rgb, sky_influence);
+    base_color += (sun_direction * SUN_INFLUENCE);
+    base_color *= sky_brightness + flashlight;
+    base_color = mix(base_color.rgb, sky_color.rgb, sky_color_influence);
 
     /* reinhard tone mapping */
-    color.rgb /= color.rgb + vec3(1.0);
+    base_color /= base_color + vec3(1.0);
+
+    /* brightness & contrast */
+    base_color *= BRIGHTNESS;
+    base_color = ((base_color - CONTRAST) * (CONTRAST + 1.0)) + CONTRAST;
+    color = vec4(base_color, 1.0) * opacity;
 }
