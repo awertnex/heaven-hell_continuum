@@ -42,7 +42,7 @@ Player lily =
 {
     .name = "Lily",
     .pos = {0.0f},
-    .scl = {0.6f, 0.6f, 1.8f},
+    .scale = {0.6f, 0.6f, 1.8f},
     .collision_check_start = {0.0f},
     .collision_check_end = {0.0f},
     .pitch = 0.0f,
@@ -163,7 +163,6 @@ FBO fbo_post_processing = {0};
 Mesh mesh_unit = {0};
 Mesh mesh_skybox = {0};
 Mesh mesh_cube_of_happiness = {0};
-Mesh mesh_player = {0};
 Mesh mesh_gizmo = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
@@ -237,6 +236,7 @@ generate_standard_meshes(void)
     const u32 EBO_LEN_SKYBOX    = 36;
     const u32 VBO_LEN_COH       = 24;
     const u32 EBO_LEN_COH       = 36;
+    const u32 VBO_LEN_PLAYER    = 216;
     const u32 VBO_LEN_GIZMO     = 51;
     const u32 EBO_LEN_GIZMO     = 90;
 
@@ -284,16 +284,51 @@ generate_standard_meshes(void)
         0, 1, 3, 3, 2, 0,
     };
 
+    const f32 HEIGHT = 2.0f;
     GLfloat vbo_data_player[] =
     {
-        0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 2.0f,
-        1.0f, 0.0f, 2.0f,
-        0.0f, 1.0f, 2.0f,
-        1.0f, 1.0f, 2.0f,
+        /* pos            normals */
+        1.0f, 0.0f, HEIGHT, 1.0f, 0.0f, 0.0f, /* px */
+        1.0f, 1.0f, HEIGHT, 1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, HEIGHT, 1.0f, 0.0f, 0.0f,
+
+        0.0f, 0.0f, HEIGHT, -1.0f, 0.0f, 0.0f, /* nx */
+        0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, HEIGHT, -1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, HEIGHT, -1.0f, 0.0f, 0.0f,
+
+        0.0f, 1.0f, HEIGHT, 0.0f, -1.0f, 0.0f, /* py */
+        0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, HEIGHT, 0.0f, -1.0f, 0.0f,
+        0.0f, 1.0f, HEIGHT, 0.0f, -1.0f, 0.0f,
+
+        0.0f, 0.0f, HEIGHT, 0.0f, 1.0f, 0.0f, /* ny */
+        1.0f, 0.0f, HEIGHT, 0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, HEIGHT, 0.0f, 1.0f, 0.0f,
+
+        0.0f, 0.0f, HEIGHT, 0.0f, 0.0f, -1.0f, /* pz */
+        0.0f, 1.0f, HEIGHT, 0.0f, 0.0f, -1.0f,
+        1.0f, 1.0f, HEIGHT, 0.0f, 0.0f, -1.0f,
+        1.0f, 1.0f, HEIGHT, 0.0f, 0.0f, -1.0f,
+        1.0f, 0.0f, HEIGHT, 0.0f, 0.0f, -1.0f,
+        0.0f, 0.0f, HEIGHT, 0.0f, 0.0f, -1.0f,
+
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, /* nz */
+        1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
     };
 
     const GLfloat THIC = 0.06f;
@@ -349,12 +384,6 @@ generate_standard_meshes(void)
         goto cleanup;
     LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
 
-    if (mesh_generate(&mesh_player, GL_STATIC_DRAW,
-                VBO_LEN_COH, EBO_LEN_COH,
-                vbo_data_player, ebo_data_coh) != 0)
-        goto cleanup;
-    LOGINFO("%s\n", "'Player' Mesh Generated");
-
     if (mesh_generate(&mesh_gizmo, GL_STATIC_DRAW,
                 VBO_LEN_GIZMO, EBO_LEN_GIZMO,
                 vbo_data_gizmo, ebo_data_gizmo) != 0)
@@ -370,6 +399,10 @@ cleanup:
 void
 bind_shader_uniforms(void)
 {
+    uniform.defaults.offset =
+        glGetUniformLocation(shader_default.id, "offset");
+    uniform.defaults.scale =
+        glGetUniformLocation(shader_default.id, "scale");
     uniform.defaults.mat_perspective =
         glGetUniformLocation(shader_default.id, "mat_perspective");
     uniform.defaults.camera_position =
@@ -835,17 +868,25 @@ draw_everything(void)
         glDrawArrays(GL_POINTS, 0, chunk->vbo_len);
     }
 
-    glUseProgram(shader_default.id);
-    glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection_world.perspective);
-    glUniform3fv(uniform.defaults.camera_position, 1,
-            (GLfloat*)&lily.camera.pos);
-    glUniform3fv(uniform.defaults.sun_rotation, 1,
-            (GLfloat*)&skybox_data.sun_rotation);
-    glUniform3fv(uniform.defaults.sky_color, 1,
-            (GLfloat*)&skybox_data.color);
-    glBindVertexArray(mesh_player.vao);
-    glDrawArrays(GL_POINTS, 0, mesh_player.vbo_len);
+    if (lily.perspective != MODE_CAMERA_1ST_PERSON)
+    {
+        glUseProgram(shader_default.id);
+        glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.scale);
+        glUniform3f(uniform.defaults.offset,
+                lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z);
+        glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
+                (GLfloat*)&projection_world.perspective);
+        glUniform3fv(uniform.defaults.camera_position, 1,
+                (GLfloat*)&lily.camera.pos);
+        glUniform3fv(uniform.defaults.sun_rotation, 1,
+                (GLfloat*)&skybox_data.sun_rotation);
+        glUniform3fv(uniform.defaults.sky_color, 1,
+                (GLfloat*)&skybox_data.color);
+
+        glBindVertexArray(mesh_cube_of_happiness.vao);
+        glDrawElements(GL_TRIANGLES,
+                mesh_cube_of_happiness.ebo_len, GL_UNSIGNED_INT, 0);
+    }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);

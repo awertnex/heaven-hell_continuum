@@ -52,7 +52,7 @@
 #define SET_LERP_SPEED_DEFAULT          20.0f
 #define SET_LERP_SPEED_GLIDE            2.5f
 #define SET_LERP_SPEED_RIGID            100.0f
-#define SET_PLAYER_EYE_HEIGHT           1.6f
+#define SET_PLAYER_EYE_HEIGHT           1.55f
 #define SET_PLAYER_JUMP_HEIGHT          8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
@@ -139,6 +139,8 @@ typedef struct Uniform
 {
     struct /* defaults */
     {
+        GLint offset;
+        GLint scale;
         GLint mat_perspective;
         GLint camera_position;
         GLint sun_rotation;
@@ -267,7 +269,7 @@ typedef struct Player
     v3f64 pos_smooth;               /* player processed pos */
     v3f32 pos_lerp_speed;
     v3f64 target;                   /* player arm (or whatever) */
-    v3f32 scl;                      /* player size for collision detection */
+    v3f32 scale;                    /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
     f32 pitch, yaw;                 /* for player camera direction and target */

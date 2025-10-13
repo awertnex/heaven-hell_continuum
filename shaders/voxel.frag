@@ -12,8 +12,8 @@ uniform vec3 camera_position;
 uniform vec3 sun_rotation;
 uniform vec3 sky_color;
 uniform float opacity;
-in vec3 gs_normal;
 in vec3 gs_position;
+in vec3 gs_normal;
 out vec4 color;
 
 vec3 base_color = vec3(1.0, 0.74, 0.41);

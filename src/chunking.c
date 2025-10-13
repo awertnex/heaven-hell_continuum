@@ -511,7 +511,7 @@ chunk_generate(u32 index, u32 rate)
             pos.z + (chunk->pos.z * CHUNK_DIAMETER),
         };
 
-        if (terrain_noise(coordinates, 100.0f, 256.0f) > coordinates.z)
+        if (terrain_noise(coordinates, 200.0f, 256.0f) > coordinates.z)
             block_place(index, pos.x, pos.y, pos.z);
         --rate;
     }

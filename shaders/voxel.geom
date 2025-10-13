@@ -17,8 +17,8 @@ layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 
 in uint vs_data[];
 in vec3 vs_position[];
-out vec3 gs_normal;
 out vec3 gs_position;
+out vec3 gs_normal;
 uniform mat4 mat_perspective;
 
 void main()

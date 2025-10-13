@@ -250,15 +250,15 @@ void
 update_collision_static(Player *player)
 {
     player->collision_check_start = (v3f32){
-            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1.0f,
-            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1.0f,
+            floorf(player->pos.x - (player->scale.x / 2.0f)) - 1.0f,
+            floorf(player->pos.y - (player->scale.y / 2.0f)) - 1.0f,
             floorf(player->pos.z) - 1.0f,
         };
 
     player->collision_check_end = (v3f32){
-            ceilf(player->scl.x) + 2.0f,
-            ceilf(player->scl.y) + 2.0f,
-            ceilf(player->scl.z) + 2.0f,
+            ceilf(player->scale.x) + 2.0f,
+            ceilf(player->scale.y) + 2.0f,
+            ceilf(player->scale.z) + 2.0f,
         };
 
     if (player->pos.z < 0.0f)
