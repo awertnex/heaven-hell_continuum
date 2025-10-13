@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             5
+#define SET_RENDER_DISTANCE             6
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -90,7 +90,7 @@
 #define BLOCK_BUFFERS_MAX       4
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * SET_RENDER_DISTANCE)
+#define CHUNK_PARSE_RATE_MAX    (CHUNK_BUF_DIAMETER * 8)
 
 /* number of blocks to process per chunk */
 #define BLOCK_PARSE_RATE_MAX    (CHUNK_DIAMETER * 3)
@@ -140,6 +140,14 @@ typedef struct Uniform
         GLint sun_rotation;
         GLint sky_color;
     } defaults;
+
+    struct /* ui */
+    {
+        GLint position;
+        GLint size;
+        GLint render_size;
+        GLint ndc_scale;
+    } ui;
 
     struct /* font */
     {
@@ -206,6 +214,7 @@ enum PlayerFlags
     FLAG_PLAYER_VELOCITY_DIRTY  = 0x00000040,
     FLAG_PLAYER_HUNGRY          = 0x00000080,
     FLAG_PLAYER_DEAD            = 0x00000100,
+    FLAG_PLAYER_ZOOMER          = 0x00000200,
 
     FLAG_PLAYER_OVERFLOW_X      = 0x00001000,
     FLAG_PLAYER_OVERFLOW_Y      = 0x00002000,
@@ -252,6 +261,7 @@ typedef struct Player
     u16 flag;                       /* enum: PlayerFlags */
 
     Camera camera;
+    Camera camera_hud;
     f32 camera_distance;            /* for camera collision detection */
 
     /* player at world edge, enum: PlayerFlags */

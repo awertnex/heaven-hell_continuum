@@ -17,6 +17,9 @@
 #define COL_Z               color(0x32, 0x32, 0xff, 0xff, 0xff)
 #define TINT_BUTTON_HOVER   color(0xb0, 0xff, 0xf3, 0xff, 0xff)
 
+extern Texture texture_cursor;
+extern Texture texture_stone;
+
 extern v2i16 hotbar_pos;
 extern u8 hotbar_slot_selected;
 extern v2i16 crosshair_pos;
@@ -88,8 +91,8 @@ enum ButtonNames
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-b8 init_gui(void);
-void free_gui(void);
+b8 gui_init(void);
+void gui_free(void);
 
 #if 0 // TODO: undef
 void update_menus(v2f32 render_size);

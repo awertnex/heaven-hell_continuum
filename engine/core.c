@@ -3,12 +3,14 @@
 #include <sys/stat.h>
 
 #include "h/core.h"
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "include/stb_truetype_modified.h"
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/math.h"
 #include "h/memory.h"
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "include/stb_truetype_modified.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <engine/include/stb_image_modified.h>
 
 u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
@@ -213,7 +215,7 @@ init_glad(void)
 /* ---- section: shaders ---------------------------------------------------- */
 
 int
-init_shader(const str *shaders_dir, Shader *shader, const str *read_format)
+shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
 {
     if (!shader->type)
         return 0;
@@ -247,14 +249,14 @@ init_shader(const str *shaders_dir, Shader *shader, const str *read_format)
 }
 
 int
-init_shader_program(const str *shaders_dir, ShaderProgram *program,
+shader_program_init(const str *shaders_dir, ShaderProgram *program,
         const str *read_format)
 {
-    if (init_shader(shaders_dir, &program->vertex, read_format) != 0)
+    if (shader_init(shaders_dir, &program->vertex, read_format) != 0)
         return -1;
-    if (init_shader(shaders_dir, &program->geometry, read_format) != 0)
+    if (shader_init(shaders_dir, &program->geometry, read_format) != 0)
         return -1;
-    if (init_shader(shaders_dir, &program->fragment, read_format) != 0)
+    if (shader_init(shaders_dir, &program->fragment, read_format) != 0)
         return -1;
     (program->id) ? glDeleteProgram(program->id) : 0;
 
@@ -288,7 +290,7 @@ init_shader_program(const str *shaders_dir, ShaderProgram *program,
 }
 
 void
-free_shader_program(ShaderProgram *program)
+shader_program_free(ShaderProgram *program)
 {
     if (!program->id) return;
     glDeleteProgram(program->id);
@@ -309,10 +311,10 @@ free_shader_program(ShaderProgram *program)
 /* ---- section: meat ------------------------------------------------------- */
 
 int
-init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
+fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples, b8 flip_vertical)
 {
-    free_fbo(fbo);
+    fbo_free(fbo);
 
     glGenFramebuffers(1, &fbo->fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
@@ -431,13 +433,13 @@ init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
     return 0;
 
 cleanup:
-    free_fbo(fbo);
-    free_mesh(mesh_fbo);
+    fbo_free(fbo);
+    mesh_free(mesh_fbo);
     return -1;
 }
 
 int
-realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples)
+fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
 
@@ -475,7 +477,7 @@ realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples)
         LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
                 &fbo->fbo, status);
 
-        free_fbo(fbo);
+        fbo_free(fbo);
         return -1;
     }
 
@@ -484,7 +486,7 @@ realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples)
 }
 
 void
-free_fbo(FBO *fbo)
+fbo_free(FBO *fbo)
 {
     fbo->rbo ? glDeleteFramebuffers(1, &fbo->rbo) : 0;
     fbo->color_buf ? glDeleteTextures(1, &fbo->color_buf) : 0;
@@ -492,10 +494,56 @@ free_fbo(FBO *fbo)
 };
 
 b8
-generate_texture(GLuint *id, const GLint format,
-        u32 width, u32 height, void *buffer, b8 grayscale)
+texture_init(Texture *texture, v2i32 size,
+        const GLint format_internal, const GLint format,
+        GLint filter, int channels, b8 grayscale, const str *file_name)
 {
-    if (width <= 2 || height <= 2)
+    if (!size.x || !size.y)
+    {
+        LOGERROR("Texture Initialization '%s' Failed, Image Size Too Small\n",
+                file_name);
+        return FALSE;
+    }
+
+    if (strlen(file_name) >= PATH_MAX)
+    {
+        LOGERROR("Texture Initialization '%s' Failed, File Path Too Long\n",
+                file_name);
+        return FALSE;
+    }
+
+    if (!is_file_exists(file_name, TRUE))
+        return FALSE;
+
+    texture->buf = (u8*)stbi_load(file_name,
+            &texture->size.x, &texture->size.y, &texture->channels, 4);
+    if (!texture->buf)
+        return FALSE;
+
+    texture->format = format;
+    texture->format_internal = format_internal;
+    texture->filter = filter;
+    texture->grayscale = grayscale;
+    return TRUE;
+}
+
+b8
+texture_generate(Texture *texture)
+{
+    b8 success = _texture_generate(
+            &texture->id, texture->format_internal, texture->format,
+            texture->filter, texture->size.x, texture->size.y,
+            texture->buf, texture->grayscale);
+    (texture->buf) ? stbi_image_free(texture->buf) : 0;
+    return success;
+}
+
+b8
+_texture_generate(
+        GLuint *id, const GLint format_internal,  const GLint format,
+        GLint filter, u32 width, u32 height, void *buf, b8 grayscale)
+{
+    if (!width || !height)
     {
         LOGERROR("Texture Generation '%d' Failed, Size Too Small\n", *id);
         return FALSE;
@@ -503,10 +551,10 @@ generate_texture(GLuint *id, const GLint format,
 
     glGenTextures(1, id);
     glBindTexture(GL_TEXTURE_2D, *id);
-    glTexImage2D(GL_TEXTURE_2D, 0, format,
-            width, height, 0, format, GL_UNSIGNED_BYTE, buffer);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, format_internal,
+            width, height, 0, format, GL_UNSIGNED_BYTE, buf);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     if (grayscale)
@@ -516,8 +564,15 @@ generate_texture(GLuint *id, const GLint format,
     return TRUE;
 }
 
+void
+texture_free(Texture *texture)
+{
+    (texture->id) ? glDeleteTextures(1, &texture->id) : 0;
+    *texture = (Texture){0};
+}
+
 int
-generate_mesh(Mesh *mesh, GLenum usage,
+mesh_generate(Mesh *mesh, GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data)
 {
@@ -559,12 +614,12 @@ generate_mesh(Mesh *mesh, GLenum usage,
     return 0;
 
 cleanup:
-    free_mesh(mesh);
+    mesh_free(mesh);
     return -1;
 }
 
 void
-free_mesh(Mesh *mesh)
+mesh_free(Mesh *mesh)
 {
     mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
     mesh->vbo ? glDeleteBuffers(1, &mesh->vbo) : 0;
@@ -768,38 +823,38 @@ update_key_states(Render *render)
 /* ---- section: font ------------------------------------------------------- */
 
 b8
-init_font(Font *font, u32 resolution, const str *font_path)
+font_init(Font *font, u32 resolution, const str *file_name)
 {
     if (resolution <= 2)
     {
         LOGERROR("Font Initialization '%s' Failed, Font Size Too Small\n",
-                font_path);
+                file_name);
         return FALSE;
     }
 
-    if (strlen(font_path) >= PATH_MAX)
+    if (strlen(file_name) >= PATH_MAX)
     {
-        LOGERROR("Font Initialization '%s' Failed, Font Path Too Long\n",
-                font_path);
+        LOGERROR("Font Initialization '%s' Failed, File Path Too Long\n",
+                file_name);
         return FALSE;
     }
 
-    if (!is_file_exists(font_path, TRUE))
+    if (!is_file_exists(file_name, TRUE))
         return FALSE;
 
-    font->buf = (u8*)get_file_contents(font_path, &font->buf_len, "rb");
-    if (font->buf == NULL)
+    font->buf = (u8*)get_file_contents(file_name, &font->buf_len, "rb");
+    if (!font->buf)
         return FALSE;
 
     if (!stbtt_InitFont(&font->info, (const unsigned char*)font->buf, 0))
     {
         LOGERROR("Font Initializing '%s' Failed, 'stbtt_InitFont' Failed\n",
-                font_path);
+                file_name);
         goto cleanup;
     }
 
     if (!mem_alloc((void*)&font->bitmap,
-                GLYPH_MAX * resolution * resolution, font_path))
+                GLYPH_MAX * resolution * resolution, file_name))
         goto cleanup;
 
     u8 *canvas = {NULL};
@@ -807,7 +862,7 @@ init_font(Font *font, u32 resolution, const str *font_path)
                 resolution * resolution, "font_glyph_canvas"))
         goto cleanup;
 
-    snprintf(font->path, PATH_MAX, "%s", font_path);
+    snprintf(font->path, PATH_MAX, "%s", file_name);
 
     stbtt_GetFontVMetrics(&font->info,
             &font->ascent, &font->descent, &font->line_gap);
@@ -868,7 +923,7 @@ init_font(Font *font, u32 resolution, const str *font_path)
         font->glyph[i].loaded = TRUE;
     }
 
-    if (!generate_texture(&font->id, GL_RED,
+    if (!_texture_generate(&font->id, GL_RED, GL_RED, GL_LINEAR,
                 FONT_ATLAS_CELL_RESOLUTION * resolution,
                 FONT_ATLAS_CELL_RESOLUTION * resolution, font->bitmap, TRUE))
         goto cleanup;
@@ -878,12 +933,12 @@ init_font(Font *font, u32 resolution, const str *font_path)
 
 cleanup:
     mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
-    free_font(font);
+    font_free(font);
     return FALSE;
 }
 
 void
-free_font(Font *font)
+font_free(Font *font)
 {
     mem_free((void*)&font->buf, font->buf_len, "file_contents");
     mem_free((void*)&font->bitmap,
@@ -926,7 +981,7 @@ text_init(void)
     return 0;
 
 cleanup:
-    free_mesh(&mesh_text);
+    mesh_free(&mesh_text);
     LOGFATAL("%s\n", "Failed to Initialize Text, Process Aborted");
     return -1;
 }
@@ -963,7 +1018,7 @@ text_start(u64 length, f32 size, Font *font,
     return;
 
 cleanup:
-    free_mesh(&mesh_text);
+    mesh_free(&mesh_text);
     LOGERROR("%s\n", "Failed to Start Text");
 }
 
@@ -989,7 +1044,7 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
                     (mesh_text.vbo_len + STRING_MAX) *
                     sizeof(GLfloat) * 4, "mesh_text.vbo_data"))
         {
-            free_mesh(&mesh_text);
+            mesh_free(&mesh_text);
             LOGERROR("%s\n", "Failed to Push Text");
         }
         mesh_text.vbo_len += STRING_MAX * 4;
@@ -1128,5 +1183,5 @@ text_stop(void)
 void
 text_free(void)
 {
-    free_mesh(&mesh_text);
+    mesh_free(&mesh_text);
 }

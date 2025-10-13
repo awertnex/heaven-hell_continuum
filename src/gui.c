@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <engine/h/logger.h>
 #include <engine/h/memory.h>
 #include "h/main.h"
 #include "h/gui.h"
@@ -51,10 +52,13 @@ print_menu_layers()
     putchar('\n');
 }
 
+Texture texture_cursor = {0};
+Texture texture_stone = {0};
+
 b8
-init_gui(void)
+gui_init(void)
 {
-    str *font_path[4] =
+    str *font_path[] =
     {
         stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
@@ -72,33 +76,55 @@ init_gui(void)
     normalize_slash(font_path[3]);
 
     if (
-            !init_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !init_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !init_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !init_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
+            !font_init(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
+            !font_init(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
+            !font_init(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
+            !font_init(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
-    //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
+    str *asset_path[] =
+    {
+        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "cursor.png"),
+        stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "stone.png"),
+    };
 
-    menu_index = MENU_TITLE;
-    memset(buttons, 0, BTN_COUNT);
+    if (
+            !texture_init(&texture_cursor, (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST,
+                0, FALSE, asset_path[0]) ||
+
+            !texture_init(&texture_stone, (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST,
+                0, FALSE, asset_path[1]))
+        goto cleanup;
+
+    if (
+            !texture_generate(&texture_cursor) ||
+            !texture_generate(&texture_stone))
+        goto cleanup;
+
+    //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
+    //menu_index = MENU_TITLE;
+    //memset(buttons, 0, BTN_COUNT);
     return 0;
 
 cleanup:
-    free_gui();
-    return 1;
+    gui_free();
+    return -1;
 }
 
 void
-free_gui(void)
+gui_free(void)
 {
-    free_font(&font);
-    free_font(&font_bold);
-    free_font(&font_mono);
-    free_font(&font_mono_bold);
+    font_free(&font);
+    font_free(&font_bold);
+    font_free(&font_mono);
+    font_free(&font_mono_bold);
+    texture_free(&texture_cursor);
+    texture_free(&texture_stone);
 }
 
-#ifdef FUCK // TODO: undef FUCK
+#ifdef FUCK /* TODO: undef FUCK */
 /*jump*/
 /* 
  * scale = (source.scale * scl);
@@ -427,7 +453,7 @@ draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align
 }
 
 /*jump*/
-// TODO: make draw_texture_tiled()
+/* TODO: make draw_texture_tiled() */
 /* 
  * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
  */
@@ -670,4 +696,4 @@ btn_func_back()
     menu_index = menu_layer[state_menu_depth];
     is_menu_ready = 0;
 }
-#endif // TODO: undef FUCK
+#endif /* TODO: undef FUCK */

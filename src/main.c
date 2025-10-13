@@ -32,7 +32,8 @@ u32 flag = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
-Projection projection = {0};
+Projection projection_world = {0};
+Projection projection_hud = {0};
 Uniform uniform = {0};
 
 Player lily =
@@ -70,6 +71,15 @@ static ShaderProgram shader_default =
     .vertex.file_name = "default.vert",
     .vertex.type = GL_VERTEX_SHADER,
     .fragment.file_name = "default.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
+
+static ShaderProgram shader_ui =
+{
+    .name = "ui",
+    .vertex.file_name = "ui.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .fragment.file_name = "ui.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
@@ -143,11 +153,12 @@ FBO fbo_world = {0};
 FBO fbo_world_msaa = {0};
 FBO fbo_hud = {0};
 FBO fbo_hud_msaa = {0};
+FBO fbo_ui = {0};
 FBO fbo_text = {0};
 FBO fbo_text_msaa = {0};
 FBO fbo_post_processing = {0};
 
-Mesh mesh_fbo = {0};
+Mesh mesh_unit = {0};
 Mesh mesh_skybox = {0};
 Mesh mesh_cube_of_happiness = {0};
 Mesh mesh_gizmo = {0};
@@ -161,6 +172,9 @@ static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
 static void callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods);
+
+static void callback_scroll(
+        GLFWwindow *window, double xoffset, double yoffset);
 
 /* ---- signatures ---------------------------------------------------------- */
 void generate_standard_meshes(void);
@@ -177,16 +191,18 @@ callback_framebuffer_size(
 {
     render.size = (v2i32){width, height};
     lily.camera.ratio = (f32)width / (f32)height;
+    lily.camera_hud.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
-    realloc_fbo(&render, &fbo_skybox, FALSE, 4);
-    realloc_fbo(&render, &fbo_world, FALSE, 4);
-    realloc_fbo(&render, &fbo_world_msaa, TRUE, 4);
-    realloc_fbo(&render, &fbo_hud, FALSE, 4);
-    realloc_fbo(&render, &fbo_hud_msaa, TRUE, 4);
-    realloc_fbo(&render, &fbo_text, FALSE, 4);
-    realloc_fbo(&render, &fbo_text_msaa, TRUE, 4);
-    realloc_fbo(&render, &fbo_post_processing, FALSE, 4);
+    fbo_realloc(&render, &fbo_skybox, FALSE, 4);
+    fbo_realloc(&render, &fbo_world, FALSE, 4);
+    fbo_realloc(&render, &fbo_world_msaa, TRUE, 4);
+    fbo_realloc(&render, &fbo_hud, FALSE, 4);
+    fbo_realloc(&render, &fbo_hud_msaa, TRUE, 4);
+    fbo_realloc(&render, &fbo_ui, FALSE, 4);
+    fbo_realloc(&render, &fbo_text, FALSE, 4);
+    fbo_realloc(&render, &fbo_text_msaa, TRUE, 4);
+    fbo_realloc(&render, &fbo_post_processing, FALSE, 4);
 }
 
 static void
@@ -195,6 +211,13 @@ callback_key(
 {
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+static void callback_scroll(
+        GLFWwindow *window, double xoffset, double yoffset)
+{
+    lily.camera.zoom = clamp_f64(lily.camera.zoom + yoffset *
+            CAMERA_ZOOM_SENSITIVITY, 0.0f, CAMERA_ZOOM_MAX);
 }
 
 void
@@ -299,19 +322,19 @@ generate_standard_meshes(void)
         1, 13, 15, 15, 8, 1,
     };
 
-    if (generate_mesh(&mesh_skybox, GL_STATIC_DRAW,
+    if (mesh_generate(&mesh_skybox, GL_STATIC_DRAW,
                 VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
                 vbo_data_skybox, ebo_data_skybox) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Skybox' Mesh Generated");
 
-    if (generate_mesh(&mesh_cube_of_happiness, GL_STATIC_DRAW,
+    if (mesh_generate(&mesh_cube_of_happiness, GL_STATIC_DRAW,
                 VBO_LEN_COH, EBO_LEN_COH,
                 vbo_data_coh, ebo_data_coh) != 0)
         goto cleanup;
     LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
 
-    if (generate_mesh(&mesh_gizmo, GL_STATIC_DRAW,
+    if (mesh_generate(&mesh_gizmo, GL_STATIC_DRAW,
                 VBO_LEN_GIZMO, EBO_LEN_GIZMO,
                 vbo_data_gizmo, ebo_data_gizmo) != 0)
         goto cleanup;
@@ -326,6 +349,24 @@ cleanup:
 void
 bind_shader_uniforms(void)
 {
+    uniform.defaults.mat_perspective =
+        glGetUniformLocation(shader_default.id, "mat_perspective");
+    uniform.defaults.camera_position =
+        glGetUniformLocation(shader_default.id, "camera_position");
+    uniform.defaults.sun_rotation =
+        glGetUniformLocation(shader_default.id, "sun_rotation");
+    uniform.defaults.sky_color =
+        glGetUniformLocation(shader_default.id, "sky_color");
+
+    uniform.ui.position =
+        glGetUniformLocation(shader_ui.id, "position");
+    uniform.ui.size =
+        glGetUniformLocation(shader_ui.id, "size");
+    uniform.ui.render_size =
+        glGetUniformLocation(shader_ui.id, "render_size");
+    uniform.ui.ndc_scale =
+        glGetUniformLocation(shader_ui.id, "ndc_scale");
+
     uniform.font.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
     uniform.font.font_size =
@@ -358,15 +399,6 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_skybox.id, "sun_rotation");
     uniform.skybox.sky_color =
         glGetUniformLocation(shader_skybox.id, "sky_color");
-
-    uniform.defaults.mat_perspective =
-        glGetUniformLocation(shader_default.id, "mat_perspective");
-    uniform.defaults.camera_position =
-        glGetUniformLocation(shader_default.id, "camera_position");
-    uniform.defaults.sun_rotation =
-        glGetUniformLocation(shader_default.id, "sun_rotation");
-    uniform.defaults.sky_color =
-        glGetUniformLocation(shader_default.id, "sky_color");
 
     uniform.gizmo.mat_translation =
         glGetUniformLocation(shader_gizmo.id, "mat_translation");
@@ -420,7 +452,7 @@ void
 update_input(Player *player)
 {
     if (is_key_press(KEY_ENTER))
-        add_block(1281, 8, 8, 8);
+        block_place(1281, 8, 8, 8);
 
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
@@ -501,7 +533,7 @@ update_input(Player *player)
                 && !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
                 && (chunk_tab[chunk_tab_index] != NULL))
         {
-            remove_block(chunk_tab_index,
+            block_remove(chunk_tab_index,
                     lily.delta_target.x,
                     lily.delta_target.y,
                     lily.delta_target.z);
@@ -518,7 +550,7 @@ update_input(Player *player)
                 && !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
                 && (chunk_tab[chunk_tab_index] != NULL))
         {
-            add_block(chunk_tab_index,
+            block_place(chunk_tab_index,
                     lily.delta_target.x,
                     lily.delta_target.y,
                     lily.delta_target.z);
@@ -589,7 +621,7 @@ init_world(str *name)
 
     init_world_directory(name);
 
-    if (init_chunking() != 0)
+    if (chunking_init() != 0)
         return FALSE;
 
     update_player(&render, &lily, CHUNK_DIAMETER,
@@ -604,7 +636,7 @@ init_world(str *name)
             (i64)lily.target.z,
         };
 
-    update_chunking(lily.delta_chunk);
+    chunking_update(lily.delta_chunk);
     flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
     disable_cursor;
     center_cursor;
@@ -626,7 +658,8 @@ update_world(Player *player)
 
     b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     update_camera_movement_player(&render, player, use_mouse);
-    update_camera_perspective(&player->camera, &projection);
+    update_camera_perspective(&player->camera, &projection_world);
+    update_camera_perspective(&player->camera_hud, &projection_hud);
     update_player(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
@@ -641,7 +674,7 @@ update_world(Player *player)
     {
         flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
         shift_chunk_tab(lily.chunk, &lily.delta_chunk);
-        update_chunking(lily.delta_chunk);
+        chunking_update(lily.delta_chunk);
     }
     chunk_queue_update(CHUNK_PARSE_RATE_MAX, BLOCK_PARSE_RATE_MAX);
 
@@ -721,11 +754,11 @@ draw_everything(void)
     glUniform3fv(uniform.skybox.camera_position, 1,
             (GLfloat*)&lily.camera.pos);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection.rotation);
+            (GLfloat*)&projection_world.rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection.orientation);
+            (GLfloat*)&projection_world.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection.projection);
+            (GLfloat*)&projection_world.projection);
     glUniform3fv(uniform.skybox.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.skybox.sky_color, 1,
@@ -740,7 +773,7 @@ draw_everything(void)
 
     glUseProgram(shader_voxel.id);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection.perspective);
+            (GLfloat*)&projection_world.perspective);
     glUniform3fv(uniform.voxel.camera_position, 1,
             (GLfloat*)&lily.camera.pos);
     glUniform3fv(uniform.voxel.sun_rotation, 1,
@@ -779,256 +812,282 @@ draw_everything(void)
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     /* ---- draw hud -------------------------------------------------------- */
-    if (flag & FLAG_MAIN_DEBUG)
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(shader_gizmo.id);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&projection_hud.target);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
+            (GLfloat*)&projection_hud.rotation);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
+            (GLfloat*)&projection_hud.orientation);
+
+    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
+            (GLfloat*)&projection_hud.projection);
+
+    glBindVertexArray(mesh_gizmo.vao);
+    glDrawElements(GL_TRIANGLES, mesh_gizmo.ebo_len, GL_UNSIGNED_INT, 0);
+
+    if (flag & FLAG_MAIN_DEBUG_MORE)
     {
-        /* ---- gizmo ------------------------------------------------------- */
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_hud_msaa.fbo);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glUseProgram(shader_gizmo_chunk.id);
 
-        glUseProgram(shader_gizmo.id);
+        glUniform2iv(uniform.gizmo_chunk.render_size, 1,
+                (GLint*)&render.size);
+        glUniform1i(uniform.gizmo_chunk.render_distance,
+                settings.render_distance);
 
-        glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
-                (GLfloat*)&projection.target);
+        glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation,
+                1, GL_FALSE, (GLfloat*)&projection_hud.target);
 
-        glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
-                (GLfloat*)&projection.rotation);
+        glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation,
+                1, GL_FALSE, (GLfloat*)&projection_hud.rotation);
 
-        glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
-                (GLfloat*)&projection.orientation);
+        glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation,
+                1, GL_FALSE, (GLfloat*)&projection_hud.orientation);
 
-        glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
-                (GLfloat*)&projection.projection);
+        glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection,
+                1, GL_FALSE, (GLfloat*)&projection_hud.projection);
 
-        glBindVertexArray(mesh_gizmo.vao);
-        glDrawElements(GL_TRIANGLES, mesh_gizmo.ebo_len, GL_UNSIGNED_INT, 0);
-
-        /* ---- chunk gizmo ------------------------------------------------- */
-        if (flag & FLAG_MAIN_DEBUG_MORE)
+        v3f32 camera_position =
         {
-            glClear(GL_DEPTH_BUFFER_BIT);
-            glUseProgram(shader_gizmo_chunk.id);
+            -(lily.cos_yaw * lily.cos_pitch),
+            (lily.sin_yaw * lily.cos_pitch),
+            lily.sin_pitch,
+        };
 
-            glUniform2iv(uniform.gizmo_chunk.render_size, 1,
-                    (GLint*)&render.size);
-            glUniform1i(uniform.gizmo_chunk.render_distance,
-                    settings.render_distance);
+        glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
+                (GLfloat*)&camera_position);
 
-            glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation, 1, GL_FALSE,
-                    (GLfloat*)&projection.target);
+        glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
+                (GLfloat*)&skybox_data.color);
 
-            glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation, 1, GL_FALSE,
-                    (GLfloat*)&projection.rotation);
-
-            glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation, 1, GL_FALSE,
-                    (GLfloat*)&projection.orientation);
-
-            glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection, 1, GL_FALSE,
-                    (GLfloat*)&projection.projection);
-
-            v3f32 camera_position =
+        cursor = chunk_order;
+        for (; **cursor && cursor < end; ++cursor)
+        {
+            chunk = **cursor;
+            u32 i = *cursor - chunk_tab;
+            v3f32 pos =
             {
-                -(lily.cos_yaw * lily.cos_pitch),
-                (lily.sin_yaw * lily.cos_pitch),
-                lily.sin_pitch,
+                (f32)(i % CHUNK_BUF_DIAMETER),
+                (f32)((i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER),
+                (f32)i / CHUNK_BUF_LAYER,
             };
+            pos = sub_v3f32(pos, (v3f32){
+                    CHUNK_BUF_RADIUS + 0.5f,
+                    CHUNK_BUF_RADIUS + 0.5f,
+                    CHUNK_BUF_RADIUS + 0.5f});
+            glUniform3fv(uniform.gizmo_chunk.cursor, 1,
+                    (GLfloat*)&pos);
 
-            glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
-                    (GLfloat*)&camera_position);
+            f32 pulse = (sinf((pos.z * 0.3f) -
+                        (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
+            glUniform1f(uniform.gizmo_chunk.size, pulse);
 
-            glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
-                    (GLfloat*)&skybox_data.color);
-
-            cursor = chunk_order;
-            for (; **cursor && cursor < end; ++cursor)
+            v4f32 color =
             {
-                chunk = **cursor;
-                u32 i = *cursor - chunk_tab;
-                v3f32 pos =
-                {
-                    (f32)(i % CHUNK_BUF_DIAMETER),
-                    (f32)((i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER),
-                    (f32)i / CHUNK_BUF_LAYER,
-                };
-                pos = sub_v3f32(pos, (v3f32){
-                        CHUNK_BUF_RADIUS + 0.5f,
-                        CHUNK_BUF_RADIUS + 0.5f,
-                        CHUNK_BUF_RADIUS + 0.5f});
-                glUniform3fv(uniform.gizmo_chunk.cursor, 1,
-                        (GLfloat*)&pos);
-
-                f32 pulse = (sinf((pos.z * 0.3f) -
-                            (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
-                glUniform1f(uniform.gizmo_chunk.size, pulse);
-
-                v4f32 color =
-                {
-                    (f32)((chunk->color >> 24) & 0xff) / 0xff,
-                    (f32)((chunk->color >> 16) & 0xff) / 0xff,
-                    (f32)((chunk->color >> 8) & 0xff) / 0xff,
-                    (f32)((chunk->color & 0xff)) / 0xff,
-                };
-                glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
-                glBindVertexArray(mesh_cube_of_happiness.vao);
-                glDrawElements(GL_TRIANGLES,
-                        mesh_cube_of_happiness.ebo_len, GL_UNSIGNED_INT, 0);
-            }
+                (f32)((chunk->color >> 24) & 0xff) / 0xff,
+                (f32)((chunk->color >> 16) & 0xff) / 0xff,
+                (f32)((chunk->color >> 8) & 0xff) / 0xff,
+                (f32)((chunk->color & 0xff)) / 0xff,
+            };
+            glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
+            glBindVertexArray(mesh_cube_of_happiness.vao);
+            glDrawElements(GL_TRIANGLES,
+                    mesh_cube_of_happiness.ebo_len, GL_UNSIGNED_INT, 0);
         }
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
-        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-        /* ---- draw debug info --------------------------------------------- */
-        text_start(0, FONT_SIZE_DEFAULT,
-                &font_mono_bold, &render, &shader_text, &fbo_text, TRUE);
-        text_push(stringf(
-                    "FPS               [%d]\n"
-                    "FRAME TIME        [%.2lf]\n"
-                    "FRAME DELTA       [%.5lf]\n",
-                    (u32)(1.0f / render.frame_delta),
-                    render.frame_start,
-                    render.frame_delta),
-                (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-        text_render(0x6f9f3fff);
-
-        text_push(stringf(
-                    "PLAYER NAME       [%s]\n"
-                    "PLAYER XYZ        [%.2f %.2f %.2f]\n"
-                    "PLAYER BLOCK      [%d %d %d]\n"
-                    "PLAYER CHUNK      [%d %d %d]\n"
-                    "CURRENT CHUNK     [%d %d %d]\n"
-                    "PLAYER PITCH      [%.2f]\n"
-                    "PLAYER YAW        [%.2f]\n",
-                    lily.name,
-                    lily.pos.x, lily.pos.y, lily.pos.z,
-                    (i32)floorf(lily.pos.x),
-                    (i32)floorf(lily.pos.y),
-                    (i32)floorf(lily.pos.z),
-                    (chunk_tab[CHUNK_TAB_CENTER]) ?
-                    chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
-                    (chunk_tab[CHUNK_TAB_CENTER]) ?
-                    chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
-                    (chunk_tab[CHUNK_TAB_CENTER]) ?
-                    chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
-                    lily.chunk.x, lily.chunk.y, lily.chunk.z,
-                    lily.pitch, lily.yaw),
-                    (v2f32){SET_MARGIN,
-                        SET_MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
-        text_render(0xffffffff);
-
-        text_push(stringf(
-                    "PLAYER OVERFLOW X [%s]\n"
-                    "PLAYER OVERFLOW Y [%s]\n"
-                    "PLAYER OVERFLOW Z [%s]\n",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) ?
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ?
-                    "        " : "        " : "NONE",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) ?
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ?
-                    "        " : "        " : "NONE",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) ?
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
-                    "        " : "        " : "NONE"),
-                (v2f32){SET_MARGIN,
-                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-        text_render(0x995429ff);
-
-        text_push(stringf(
-                    "                   %s\n"
-                    "                   %s\n"
-                    "                   %s\n",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                    !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
-                (v2f32){SET_MARGIN,
-                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-        text_render(0xec6051ff);
-
-        text_push(stringf(
-                    "                   %s\n"
-                    "                   %s\n"
-                    "                   %s\n",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                    (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
-                (v2f32){SET_MARGIN,
-                SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-        text_render(0x79ec50ff);
-
-        text_push(stringf(
-                    "MOUSE XY          [%.2f %.2f]\n"
-                    "DELTA XY          [%.2f %.2f]\n"
-                    "RENDER RATIO      [%.4f]\n"
-                    "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
-                    "SKYBOX TIME       [%.2f]\n"
-                    "SKYBOX RGB        [%.2f %.2f %.2f]\n"
-                    "SUN ANGLE         [%.2f %.2f %.2f]\n",
-                    render.mouse_position.x, render.mouse_position.y,
-                    render.mouse_delta.x, render.mouse_delta.y,
-                    (f32)render.size.x / render.size.y,
-                    game_tick, game_days,
-                    skybox_data.time,
-                    skybox_data.color.x,
-                    skybox_data.color.y,
-                    skybox_data.color.z,
-                    skybox_data.sun_rotation.x,
-                    skybox_data.sun_rotation.y,
-                    skybox_data.sun_rotation.z),
-                (v2f32){SET_MARGIN,
-                SET_MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
-        text_render(0x3f6f9fff);
-
-        text_start(0, FONT_SIZE_DEFAULT,
-                &font_mono, &render, &shader_text, &fbo_text, FALSE);
-        text_push(stringf(
-                    "Game:     %s v%s\n"
-                    "Engine:   %s v%s\n"
-                    "Author:   %s\n"
-                    "OpenGL:   %s\n"
-                    "GLSL:     %s\n"
-                    "Vendor:   %s\n"
-                    "Renderer: %s\n",
-                    GAME_NAME, GAME_VERSION,
-                    ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
-                    glGetString(GL_VERSION),
-                    glGetString(GL_SHADING_LANGUAGE_VERSION),
-                    glGetString(GL_VENDOR),
-                    glGetString(GL_RENDERER)),
-                (v2f32){SET_MARGIN,
-                render.size.y - SET_MARGIN}, 0, TEXT_ALIGN_BOTTOM);
-        text_render(0x3f9f3fff);
-        text_stop();
     }
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_hud_msaa.fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_hud.fbo);
+    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    /* ---- draw ui --------------------------------------------------------- */
+    glDisable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_ui.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shader_ui.id);
+    glBindVertexArray(mesh_unit.vao);
+
+    glUniform2fv(uniform.ui.position, 1,
+            (GLfloat*)(f32[]){
+            ((f32)render.size.x / 2.0f),
+            ((f32)render.size.y / 2.0f),
+            });
+    glUniform2iv(uniform.ui.size, 1, (GLint*)&texture_cursor.size);
+    glUniform2iv(uniform.ui.render_size, 1, (GLint*)&render.size);
+    glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
+
+    glBindTexture(GL_TEXTURE_2D, texture_cursor.id);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glEnable(GL_DEPTH_TEST);
+
+    /* ---- draw debug info ------------------------------------------------- */
+    text_start(0, FONT_SIZE_DEFAULT,
+            &font_mono_bold, &render, &shader_text, &fbo_text, TRUE);
+    text_push(stringf(
+                "FPS               [%d]\n"
+                "FRAME TIME        [%.2lf]\n"
+                "FRAME DELTA       [%.5lf]\n",
+                (u32)(1.0f / render.frame_delta),
+                render.frame_start,
+                render.frame_delta),
+            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(0x6f9f3fff);
+
+    text_push(stringf(
+                "PLAYER NAME       [%s]\n"
+                "PLAYER XYZ        [%.2f %.2f %.2f]\n"
+                "PLAYER BLOCK      [%d %d %d]\n"
+                "PLAYER CHUNK      [%d %d %d]\n"
+                "CURRENT CHUNK     [%d %d %d]\n"
+                "PLAYER PITCH      [%.2f]\n"
+                "PLAYER YAW        [%.2f]\n",
+                lily.name,
+                lily.pos.x, lily.pos.y, lily.pos.z,
+                (i32)floorf(lily.pos.x),
+                (i32)floorf(lily.pos.y),
+                (i32)floorf(lily.pos.z),
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
+                (chunk_tab[CHUNK_TAB_CENTER]) ?
+                chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
+                lily.chunk.x, lily.chunk.y, lily.chunk.z,
+                lily.pitch, lily.yaw),
+                (v2f32){SET_MARGIN,
+                    SET_MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
+    text_render(0xffffffff);
+
+    text_push(stringf(
+                "PLAYER OVERFLOW X [%s]\n"
+                "PLAYER OVERFLOW Y [%s]\n"
+                "PLAYER OVERFLOW Z [%s]\n",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_X) ?
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ?
+                "        " : "        " : "NONE",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) ?
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ?
+                "        " : "        " : "NONE",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) ?
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
+                "        " : "        " : "NONE"),
+            (v2f32){SET_MARGIN,
+            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+    text_render(0x995429ff);
+
+    text_push(stringf(
+                "                   %s\n"
+                "                   %s\n"
+                "                   %s\n",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+            (v2f32){SET_MARGIN,
+            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+    text_render(0xec6051ff);
+
+    text_push(stringf(
+                "                   %s\n"
+                "                   %s\n"
+                "                   %s\n",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
+            (v2f32){SET_MARGIN,
+            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
+    text_render(0x79ec50ff);
+
+    text_push(stringf(
+                "MOUSE XY          [%.2f %.2f]\n"
+                "DELTA XY          [%.2f %.2f]\n"
+                "RENDER RATIO      [%.4f]\n"
+                "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
+                "SKYBOX TIME       [%.2f]\n"
+                "SKYBOX RGB        [%.2f %.2f %.2f]\n"
+                "SUN ANGLE         [%.2f %.2f %.2f]\n",
+                render.mouse_position.x, render.mouse_position.y,
+                render.mouse_delta.x, render.mouse_delta.y,
+                (f32)render.size.x / render.size.y,
+                game_tick, game_days,
+                skybox_data.time,
+                skybox_data.color.x,
+                skybox_data.color.y,
+                skybox_data.color.z,
+                skybox_data.sun_rotation.x,
+                skybox_data.sun_rotation.y,
+                skybox_data.sun_rotation.z),
+            (v2f32){SET_MARGIN,
+            SET_MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
+    text_render(0x3f6f9fff);
+
+    text_start(0, FONT_SIZE_DEFAULT,
+            &font_mono, &render, &shader_text, &fbo_text, FALSE);
+    text_push(stringf(
+                "Game:     %s v%s\n"
+                "Engine:   %s v%s\n"
+                "Author:   %s\n"
+                "OpenGL:   %s\n"
+                "GLSL:     %s\n"
+                "Vendor:   %s\n"
+                "Renderer: %s\n",
+                GAME_NAME, GAME_VERSION,
+                ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
+                glGetString(GL_VERSION),
+                glGetString(GL_SHADING_LANGUAGE_VERSION),
+                glGetString(GL_VENDOR),
+                glGetString(GL_RENDERER)),
+            (v2f32){SET_MARGIN,
+            render.size.y - SET_MARGIN}, 0, TEXT_ALIGN_BOTTOM);
+    text_render(0x3f9f3fff);
+    text_stop();
 
     /* ---- post processing ------------------------------------------------- */
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_post_processing.fbo);
     glUseProgram(shader_fbo.id);
-    glBindVertexArray(mesh_fbo.vao);
+    glBindVertexArray(mesh_unit.vao);
     glBindTexture(GL_TEXTURE_2D, fbo_skybox.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo_world.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    if (flag & FLAG_MAIN_DEBUG)
-    {
-        glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    }
 
     /* ---- everything ------------------------------------------------------ */
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_post_processing.id);
-    glBindVertexArray(mesh_fbo.vao);
+    glBindVertexArray(mesh_unit.vao);
     glBindTexture(GL_TEXTURE_2D, fbo_post_processing.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glUseProgram(shader_fbo.id);
+    if (flag & FLAG_MAIN_DEBUG)
+    {
+        glBindTexture(GL_TEXTURE_2D, fbo_hud.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+    else
+    {
+        glBindTexture(GL_TEXTURE_2D, fbo_ui.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+    if (flag & FLAG_MAIN_DEBUG)
+    {
+        glBindTexture(GL_TEXTURE_2D, fbo_text.color_buf);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1107,36 +1166,42 @@ main(int argc, char **argv)
     glfwSetKeyCallback(render.window, callback_key);
     callback_key(render.window, 0, 0, 0, 0);
 
+    glfwSetScrollCallback(render.window, callback_scroll);
+    callback_scroll(render.window, 0.0f, 0.0f);
+
     /* ---- set graphics ---------------------------------------------------- */
     if (
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_fbo, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_default, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
+                INSTANCE_DIR[DIR_SHADERS], &shader_ui, "r") != 0 ||
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_text, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_gizmo, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_gizmo_chunk, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_skybox, "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_post_processing,
                 "r") != 0 ||
-            init_shader_program(
+            shader_program_init(
                 INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0)
         goto cleanup;
 
     if(
-            init_fbo(&render, &fbo_skybox, &mesh_fbo, FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_hud,         NULL, FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_hud_msaa,    NULL, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_text,        NULL, FALSE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_text_msaa,   NULL, TRUE, 4, FALSE) != 0 ||
-            init_fbo(&render, &fbo_post_processing, NULL, FALSE, 4, FALSE) != 0)
+            fbo_init(&render, &fbo_skybox, &mesh_unit, FALSE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_hud,         NULL, FALSE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_hud_msaa,    NULL, TRUE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_ui,          NULL, FALSE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_text,        NULL, FALSE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_text_msaa,   NULL, TRUE, 4, FALSE) != 0 ||
+            fbo_init(&render, &fbo_post_processing, NULL, FALSE, 4, FALSE) != 0)
         goto cleanup;
 
     glfwSwapInterval(0); /* vsync off */
@@ -1148,7 +1213,7 @@ main(int argc, char **argv)
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
 
-    if (init_gui() != 0 ||
+    if (gui_init() != 0 ||
             text_init() != 0)
         goto cleanup;
 
@@ -1159,6 +1224,16 @@ main(int argc, char **argv)
     lily.camera =
         (Camera){
             .fovy = SET_FOV_DEFAULT,
+            .fovy_raw = SET_FOV_DEFAULT,
+            .ratio = (f32)render.size.x / (f32)render.size.y,
+            .far = GL_CLIP_DISTANCE0,
+            .near = 0.05f,
+        };
+
+    lily.camera_hud =
+        (Camera){
+            .fovy = SET_FOV_DEFAULT,
+            .fovy_raw = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = GL_CLIP_DISTANCE0,
             .near = 0.05f,
@@ -1212,29 +1287,29 @@ section_main:
 
 cleanup: /* ----------------------------------------------------------------- */
 
-    free_gui();
-    free_mesh(&mesh_fbo);
-    free_mesh(&mesh_skybox);
-    free_mesh(&mesh_cube_of_happiness);
-    free_mesh(&mesh_gizmo);
-    free_chunking();
-    free_fbo(&fbo_skybox);
-    free_fbo(&fbo_world);
-    free_fbo(&fbo_world_msaa);
-    free_fbo(&fbo_hud);
-    free_fbo(&fbo_hud_msaa);
-    free_fbo(&fbo_text);
-    free_fbo(&fbo_text_msaa);
-    free_fbo(&fbo_post_processing);
+    gui_free();
+    mesh_free(&mesh_unit);
+    mesh_free(&mesh_skybox);
+    mesh_free(&mesh_cube_of_happiness);
+    mesh_free(&mesh_gizmo);
+    chunking_free();
+    fbo_free(&fbo_skybox);
+    fbo_free(&fbo_world);
+    fbo_free(&fbo_world_msaa);
+    fbo_free(&fbo_hud);
+    fbo_free(&fbo_hud_msaa);
+    fbo_free(&fbo_text);
+    fbo_free(&fbo_text_msaa);
+    fbo_free(&fbo_post_processing);
     text_free();
-    free_shader_program(&shader_fbo);
-    free_shader_program(&shader_default);
-    free_shader_program(&shader_text);
-    free_shader_program(&shader_skybox);
-    free_shader_program(&shader_gizmo);
-    free_shader_program(&shader_gizmo_chunk);
-    free_shader_program(&shader_voxel);
-    free_shader_program(&shader_post_processing);
+    shader_program_free(&shader_fbo);
+    shader_program_free(&shader_default);
+    shader_program_free(&shader_text);
+    shader_program_free(&shader_skybox);
+    shader_program_free(&shader_gizmo);
+    shader_program_free(&shader_gizmo_chunk);
+    shader_program_free(&shader_voxel);
+    shader_program_free(&shader_post_processing);
     glfwDestroyWindow(render.window);
     glfwTerminate();
     return 0;

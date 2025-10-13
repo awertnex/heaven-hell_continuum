@@ -10,10 +10,11 @@
 #define ENGINE_NAME             "Fossil Engine"
 #define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
 
-#include "../include/glad/glad_modified.h"
+#include <engine/include/glad/glad_modified.h>
 #define GLFW_INCLUDE_NONE
-#include "../include/glfw3_modified.h"
-#include "../include/stb_truetype_modified.h"
+#include <engine/include/glfw3_modified.h>
+#include <engine/include/stb_truetype_modified.h>
+#include <engine/include/stb_image_modified.h>
 
 #include "defines.h"
 #include "platform.h"
@@ -21,6 +22,8 @@
 
 #define CAMERA_ANGLE_MAX 90.0f
 #define CAMERA_RANGE_MAX 360.0f
+#define CAMERA_ZOOM_MAX 65.0f
+#define CAMERA_ZOOM_SENSITIVITY 10.0f
 #define KEYBOARD_KEYS_MAX 120
 #define KEYBOARD_DOUBLE_PRESS_TIME 0.5f
 #define FONT_ATLAS_CELL_RESOLUTION 16
@@ -217,6 +220,22 @@ typedef struct FBO
     GLuint rbo;
 } FBO;
 
+typedef struct Texture
+{
+    v2i32 size;
+    u64 data_len;
+    GLuint id;              /* used by opengl's glGenTextures() */
+    GLint format;           /* used by opengl's glTexImage2D() */
+    GLint format_internal;  /* used by opengl's glTexImage2D() */
+    GLint filter;           /* used by opengl's glTexParameteri() */
+
+    /* number of color channels, used by stb_image.h's stbi_load() */
+    int channels;
+
+    b8 grayscale;
+    u8 *buf;
+} Texture;
+
 typedef struct Camera
 {
     v3f32 pos;
@@ -226,9 +245,11 @@ typedef struct Camera
     f32 sin_yaw;
     f32 cos_yaw;
     f32 fovy;
+    f32 fovy_raw;
     f32 ratio;
     f32 far;
     f32 near;
+    f32 zoom;
 } Camera;
 
 typedef struct Projection
@@ -331,37 +352,57 @@ int init_glad(void);
  * (fread() parameter),
  *
  * return non-zero on failure */
-int init_shader(const str *shaders_dir, Shader *shader,
+int shader_init(const str *shaders_dir, Shader *shader,
         const str *read_format);
 
 /* read_format = read files within path in specified format
  * (fread() parameter),
  *
  * return non-zero on failure */
-int init_shader_program(const str *shaders_dir, ShaderProgram *program,
+int shader_program_init(const str *shaders_dir, ShaderProgram *program,
         const str *read_format);
 
-void free_shader_program(ShaderProgram *program);
+void shader_program_free(ShaderProgram *program);
 
 /* return non-zero on failure */
-int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
+int fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples, b8 flip_vertical);
 
 /* return non-zero on failure */
-int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
+int fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
-void free_fbo(FBO *fbo);
+void fbo_free(FBO *fbo);
 
-/* return FALSE (0) on failure */
-b8 generate_texture(GLuint *id, const GLint format,
-        u32 width, u32 height, void *buffer, b8 grayscale);
+/* load image data from disk into texture->buf,
+ * set texture info,
+ *
+ * return FALSE (0) on failure */
+b8 texture_init(Texture *texture, v2i32 size,
+        const GLint format_internal, const GLint format,
+        GLint filter, int channels, b8 grayscale, const str *file_name);
+
+/* generate texture for opengl from image loaded by texture_init(),
+ *
+ * return FALSE (0) on failure */
+b8 texture_generate(Texture *texture);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * generate texture for opengl from *buf.
+ *
+ * return FALSE (0) on failure */
+b8 _texture_generate(
+        GLuint *id, const GLint format_internal,  const GLint format,
+        GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
+
+void texture_free(Texture *texture);
 
 /* usage = GL_<x>_DRAW */
-int generate_mesh(Mesh *mesh, GLenum usage,
+int mesh_generate(Mesh *mesh, GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data);
 
-void free_mesh(Mesh *mesh);
+void mesh_free(Mesh *mesh);
 
 /* apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw)
  * from camera rotation,
@@ -409,9 +450,9 @@ static b8 is_key_release(const u32 key)
  * font_path = font path.
  *
  * return FALSE (0) on failure */
-b8 init_font(Font *font, u32 size, const str *font_path);
+b8 font_init(Font *font, u32 size, const str *font_path);
 
-void free_font(Font *font);
+void font_free(Font *font);
 
 /* init text rendering settings */
 u8 text_init(void);
