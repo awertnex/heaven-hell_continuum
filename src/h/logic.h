@@ -33,13 +33,13 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-void update_player(Render *render, Player *player, u64 chunk_diameter,
+void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
-void update_camera_movement_player(Render *render, Player *player,
+void player_camera_movement_update(Render *render, Player *player,
         b8 use_mouse);
 
-void update_player_target(Player *player);
+void player_target_update(Player *player);
 
 static inline void
 set_player_pos(Player *player, f64 x, f64 y, f64 z)
@@ -58,12 +58,8 @@ set_player_block(Player *player, i32 x, i32 y, i32 z)
 
 void player_kill(Player *player);
 void player_respawn(Player *player);
-b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
-void update_collision_static(Player *player);
-
-void wrap_coordinates(Player *player, u64 chunk_diameter,
-        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
+void player_collision_update(Player *player);
 
 f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);

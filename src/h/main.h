@@ -37,7 +37,7 @@
 #define SET_FOV_DEFAULT                 70.0f
 #define SET_FOV_MIN                     30.0f
 #define SET_FOV_MAX                     150.0f
-#define SET_MOUSE_SENSITIVITY_DEFAULT   110.0f
+#define SET_MOUSE_SENSITIVITY_DEFAULT   100.0f
 #define SET_MOUSE_SENSITIVITY_MIN       10.0f
 #define SET_MOUSE_SENSITIVITY_MAX       200.0f
 #define SET_TARGET_FPS_DEFAULT          60
@@ -181,6 +181,7 @@ typedef struct Uniform
         GLint mat_rotation;
         GLint mat_orientation;
         GLint mat_projection;
+        GLint color;
     } gizmo;
 
     struct /* gizmo_chunk */

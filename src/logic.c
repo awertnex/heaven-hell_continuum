@@ -1,17 +1,89 @@
 #include <time.h>
 #include <sys/time.h>
-#include <inttypes.h>
 
 #include <engine/h/math.h>
 #include "h/main.h"
 #include "h/logic.h"
 
 void
-update_player(Render *render, Player *player, u64 chunk_diameter,
+player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
-    wrap_coordinates(player, chunk_diameter,
-            radius, radius_v, diameter, diameter_v);
+    /* ---- wrap coordinates ------------------------------------------------ */
+    const i64 RADIUS            = radius * chunk_diameter;
+    const i64 RADIUS_V          = radius_v * chunk_diameter;
+    const i64 DIAMETER          = diameter * chunk_diameter;
+    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
+
+    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
+
+    const i64 WORLD_MARGIN =
+        (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+    const i64 WORLD_MARGIN_V =
+        (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+
+    /* ---- overflow edge --------------------------------------------------- */
+    if (player->pos.x > OVERFLOW_EDGE)
+    {
+        player->pos.x -= DIAMETER;
+        player->pos_smooth.x -= DIAMETER;
+    }
+    if (player->pos.x < -OVERFLOW_EDGE)
+    {
+        player->pos.x += DIAMETER;
+        player->pos_smooth.x += DIAMETER;
+    }
+
+    if (player->pos.y > OVERFLOW_EDGE)
+    {
+        player->pos.y -= DIAMETER;
+        player->pos_smooth.y -= DIAMETER;
+    }
+    if (player->pos.y < -OVERFLOW_EDGE)
+    {
+        player->pos.y += DIAMETER;
+        player->pos_smooth.y += DIAMETER;
+    }
+
+    if (player->pos.z > OVERFLOW_EDGE_V)
+    {
+        player->pos.z -= DIAMETER_V;
+        player->pos_smooth.z -= DIAMETER_V;
+    }
+    if (player->pos.z < -OVERFLOW_EDGE_V)
+    {
+        player->pos.z += DIAMETER_V;
+        player->pos_smooth.z += DIAMETER_V;
+    }
+
+    /* ---- world margin ---------------------------------------------------- */
+    if (player->pos.x > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
+    else if (player->pos.x < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_X;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
+
+    if (player->pos.y > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
+    else if (player->pos.y < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
+
+    if (player->pos.z > WORLD_MARGIN_V)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
+    else if (player->pos.z < -WORLD_MARGIN_V)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
 
     player->chunk = (v3i16){
             floorf((f32)player->pos_smooth.x / chunk_diameter),
@@ -99,7 +171,7 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
 }
 
 void
-update_camera_movement_player(Render *render, Player *player,
+player_camera_movement_update(Render *render, Player *player,
         b8 use_mouse)
 {
     static f32 zoom = 0.0f;
@@ -194,7 +266,7 @@ update_camera_movement_player(Render *render, Player *player,
 }
 
 void
-update_player_target(Player *player)
+player_target_update(Player *player)
 {
     const f32 SPCH = player->sin_pitch;
     const f32 CPCH = player->cos_pitch;
@@ -241,15 +313,6 @@ player_respawn(Player *player)
     player->flag = 0;
 }
 
-/* TODO: make is_ray_intersect() */
-b8
-is_ray_intersect(Player *player)
-{
-    //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
-        //return TRUE;
-    return FALSE;
-}
-
 void
 update_gravity(Render *render, Player *player)
 {
@@ -260,7 +323,7 @@ update_gravity(Render *render, Player *player)
 
 /* TODO: make AABB collision work */
 void
-update_collision_static(Player *player)
+player_collision_update(Player *player)
 {
     player->collision_check_start = (v3f32){
             floorf(player->pos.x - (player->scale.x / 2.0f)) - 1.0f,
@@ -304,86 +367,6 @@ update_collision_static(Player *player)
     // TODO: move to new 'void parse_camera_collisions()'
     player->camera_distance = SET_CAMERA_DISTANCE_MAX;
 #endif
-}
-
-void
-wrap_coordinates(Player *player, u64 chunk_diameter,
-        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
-{
-    const i64 RADIUS            = radius * chunk_diameter;
-    const i64 RADIUS_V          = radius_v * chunk_diameter;
-    const i64 DIAMETER          = diameter * chunk_diameter;
-    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
-
-    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
-    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
-
-    const i64 WORLD_MARGIN =
-        (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
-    const i64 WORLD_MARGIN_V =
-        (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
-
-    /* ---- overflow edge --------------------------------------------------- */
-    if (player->pos.x > OVERFLOW_EDGE)
-    {
-        player->pos.x -= DIAMETER;
-        player->pos_smooth.x -= DIAMETER;
-    }
-    if (player->pos.x < -OVERFLOW_EDGE)
-    {
-        player->pos.x += DIAMETER;
-        player->pos_smooth.x += DIAMETER;
-    }
-
-    if (player->pos.y > OVERFLOW_EDGE)
-    {
-        player->pos.y -= DIAMETER;
-        player->pos_smooth.y -= DIAMETER;
-    }
-    if (player->pos.y < -OVERFLOW_EDGE)
-    {
-        player->pos.y += DIAMETER;
-        player->pos_smooth.y += DIAMETER;
-    }
-
-    if (player->pos.z > OVERFLOW_EDGE_V)
-    {
-        player->pos.z -= DIAMETER_V;
-        player->pos_smooth.z -= DIAMETER_V;
-    }
-    if (player->pos.z < -OVERFLOW_EDGE_V)
-    {
-        player->pos.z += DIAMETER_V;
-        player->pos_smooth.z += DIAMETER_V;
-    }
-
-    /* ---- world margin ---------------------------------------------------- */
-    if (player->pos.x > WORLD_MARGIN)
-        player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
-    else if (player->pos.x < -WORLD_MARGIN)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_X;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
-
-    if (player->pos.y > WORLD_MARGIN)
-        player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
-    else if (player->pos.y < -WORLD_MARGIN)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_Y;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
-
-    if (player->pos.z > WORLD_MARGIN_V)
-        player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
-    else if (player->pos.z < -WORLD_MARGIN_V)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_Z;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
 }
 
 f64

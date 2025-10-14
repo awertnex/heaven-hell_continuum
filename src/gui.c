@@ -8,21 +8,13 @@
 #include "h/gui.h"
 #include "h/dir.h"
 
-v2i16 hotbar_pos;
 u8 hotbar_slot_selected = 1;
-v2i16 crosshair_pos;
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
 u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
-
-str str_debug_info[16][64];
-str str_block_count[32];
-str str_quad_count[32];
-str str_tri_count[32];
-str str_vertex_count[32];
 
 void
 print_menu_layers()

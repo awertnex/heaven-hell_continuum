@@ -15,7 +15,7 @@
 Render render =
 {
     .title = GAME_NAME": "GAME_VERSION,
-    .size = {854, 480},
+    .size = {1920, 862},
 };
 
 Settings settings =
@@ -366,19 +366,21 @@ generate_standard_meshes(void)
     {
         0, 2, 6, 6, 4, 0,
         0, 4, 5, 5, 1, 0,
-        0, 1, 8, 8, 7, 0,
+        1, 5, 14, 14, 13, 1,
+        2, 13, 14, 14, 6, 2,
+        4, 6, 14, 14, 5, 4,
+
         0, 7, 9, 9, 3, 0,
+        0, 1, 8, 8, 7, 0,
+        1, 13, 15, 15, 8, 1,
+        3, 9, 15, 15, 13, 3,
+        7, 8, 15, 15, 9, 7,
+
         0, 3, 12, 12, 10, 0,
         0, 10, 11, 11, 2, 0,
-        2, 13, 14, 14, 6, 2,
-        3, 9, 15, 15, 13, 3,
         2, 11, 16, 16, 13, 2,
         13, 16, 12, 12, 3, 13,
-        4, 6, 14, 14, 5, 4,
-        7, 8, 15, 15, 9, 7,
         10, 12, 16, 16, 11, 10,
-        1, 5, 14, 14, 13, 1,
-        1, 13, 15, 15, 8, 1,
     };
 
     if (mesh_generate(&mesh_skybox, GL_STATIC_DRAW,
@@ -505,6 +507,8 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_gizmo.id, "mat_orientation");
     uniform.gizmo.mat_projection =
         glGetUniformLocation(shader_gizmo.id, "mat_projection");
+    uniform.gizmo.color =
+        glGetUniformLocation(shader_gizmo.id, "gizmo_color");
 
     uniform.gizmo_chunk.render_size =
         glGetUniformLocation(shader_gizmo_chunk.id, "render_size");
@@ -636,7 +640,7 @@ update_input(Player *player)
             !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
             chunk_tab[chunk_tab_index])
     {
-        block_remove(chunk_tab_index,
+        block_break(chunk_tab_index,
             lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER),
             lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
@@ -735,7 +739,7 @@ init_world(str *name)
     if (chunking_init() != 0)
         return FALSE;
 
-    update_player(&render, &lily, CHUNK_DIAMETER,
+    player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
     set_player_block(&lily, 0, 0, 0);
@@ -774,14 +778,14 @@ update_world(Player *player)
     else disable_cursor;
 
     b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    update_camera_movement_player(&render, player, use_mouse);
+    player_camera_movement_update(&render, player, use_mouse);
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
-    update_player(&render, &lily, CHUNK_DIAMETER,
+    player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    update_player_target(&lily);
-    update_collision_static(&lily);
+    player_target_update(&lily);
+    player_collision_update(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -790,7 +794,7 @@ update_world(Player *player)
     if (flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
     {
         flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
-        shift_chunk_tab(lily.chunk, &lily.delta_chunk);
+        chunk_tab_shift(lily.chunk, &lily.delta_chunk);
         chunking_update(lily.delta_chunk);
     }
     chunk_queue_update(CHUNK_PARSE_RATE_MAX, BLOCK_PARSE_RATE_MAX);
@@ -1005,18 +1009,23 @@ draw_everything(void)
 
     glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
             (GLfloat*)&projection_hud.target);
-
     glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
             (GLfloat*)&projection_hud.rotation);
-
     glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
             (GLfloat*)&projection_hud.orientation);
-
     glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
             (GLfloat*)&projection_hud.projection);
 
     glBindVertexArray(mesh_gizmo.vao);
-    glDrawElements(GL_TRIANGLES, mesh_gizmo.ebo_len, GL_UNSIGNED_INT, 0);
+    glUniform3f(uniform.gizmo.color, 1.0f, 0.0f, 0.0f);
+    glDrawElements(GL_TRIANGLES, 30,
+            GL_UNSIGNED_INT, (void*)0);
+    glUniform3f(uniform.gizmo.color, 0.0f, 1.0f, 0.0f);
+    glDrawElements(GL_TRIANGLES, 30,
+            GL_UNSIGNED_INT, (void*)(30 * sizeof(GLuint)));
+    glUniform3f(uniform.gizmo.color, 0.0f, 0.0f, 1.0f);
+    glDrawElements(GL_TRIANGLES, 30,
+            GL_UNSIGNED_INT, (void*)(60 * sizeof(GLuint)));
 
     if (flag & FLAG_MAIN_DEBUG_MORE)
     {
@@ -1314,7 +1323,6 @@ main(int argc, char **argv)
     }
 
     glfwSetErrorCallback(callback_error);
-    /*temp*/ render.size = (v2i32){1280, 720};
 
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
@@ -1338,14 +1346,13 @@ main(int argc, char **argv)
         return -1;
     }
 
-    /*temp*/ glfwSetWindowPos(render.window,
-            (1920 / 2) - (render.size.x / 2),
-            (1080 / 2) - (render.size.y / 2));
+    /*temp*/ glfwSetWindowPos(render.window, 0, 25);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
     flag =
         FLAG_MAIN_ACTIVE |
-        FLAG_MAIN_PARSE_CURSOR;
+        FLAG_MAIN_PARSE_CURSOR |
+        FLAG_MAIN_DEBUG;
 
     /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1460,7 +1467,7 @@ section_main:
         render.frame_delta = render.frame_start - render.frame_last;
         render.frame_last = render.frame_start;
 
-        /* for cursor mode change jitter prevention */
+        /* cursor mode change jitter prevention */
         if (!(flag & FLAG_MAIN_PARSE_CURSOR))
         {
             flag |= FLAG_MAIN_PARSE_CURSOR;

@@ -1,8 +1,4 @@
-void update_input(Player *player);
-void draw_gui();
-
-int
-main(void)
+int main(void)
 {
     init_textures();
     init_super_debugger(setting.render_size);
@@ -38,7 +34,59 @@ section_menu_world: /* ------------------------------------------------------ */
 
     while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
     {
-        update_input(&lily);
+//        player->movement_step_length =
+//        sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
+//
+//        if (player->movement_step_length > 0.0f)
+//        {
+//            player->v.x /= player->movement_step_length;
+//            player->v.y /= player->movement_step_length;
+//
+//            player->pos.x += player->v.x * player->movement_speed;
+//            player->pos.y += player->v.y * player->movement_speed;
+//        }
+
+        /* ---- misc -------------------------------------------------------- */
+        if (IsKeyPressed(bind_toggle_fullscreen))
+        {
+            flag ^= FLAG_FULLSCREEN;
+            flag &= ~FLAG_PARSE_CURSOR;
+
+            if (flag & FLAG_FULLSCREEN)
+            {
+                ToggleBorderlessWindowed();
+                SetConfigFlags(FLAG_FULLSCREEN_MODE);
+            }
+            else
+            {
+                SetConfigFlags(~FLAG_FULLSCREEN_MODE);
+                ToggleBorderlessWindowed();
+            }
+        }
+
+        if (IsKeyPressed(bind_pause) && (flag & FLAG_WORLD_LOADED))
+        {
+            if (flag & FLAG_WORLD_LOADED)
+            {
+                if (!state_menu_depth)
+                {
+                    state_menu_depth = 1;
+                    menu_index = MENU_GAME;
+                    flag |= FLAG_PAUSED;
+                    player->container_state = 0;
+                    show_cursor;
+                }
+                else if (state_menu_depth == 1)
+                    btn_func_back_to_game();
+            }
+            else
+            {
+                if (state_menu_depth == 1)
+                    flag &= ~FLAG_ACTIVE;
+                else btn_func_back();
+            }
+        }
+
         setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
         update_render_settings(setting.render_size);
 
@@ -53,64 +101,6 @@ section_menu_world: /* ------------------------------------------------------ */
             break;
     }
     return 0;
-}
-
-void
-update_input(Player *player)
-{
-//    player->movement_step_length =
-//    sqrt(pow(player->v.x, 2) + pow(player->v.y, 2));
-//
-//    if (player->movement_step_length > 0.0f)
-//    {
-//        player->v.x /= player->movement_step_length;
-//        player->v.y /= player->movement_step_length;
-//
-//        player->pos.x += player->v.x * player->movement_speed;
-//        player->pos.y += player->v.y * player->movement_speed;
-//    }
-
-    /* ---- misc ------------------------------------------------------------ */
-
-    if (IsKeyPressed(bind_toggle_fullscreen))
-    {
-        flag ^= FLAG_FULLSCREEN;
-        flag &= ~FLAG_PARSE_CURSOR;
-
-        if (flag & FLAG_FULLSCREEN)
-        {
-            ToggleBorderlessWindowed();
-            SetConfigFlags(FLAG_FULLSCREEN_MODE);
-        }
-        else
-        {
-            SetConfigFlags(~FLAG_FULLSCREEN_MODE);
-            ToggleBorderlessWindowed();
-        }
-    }
-
-    if (IsKeyPressed(bind_pause) && (flag & FLAG_WORLD_LOADED))
-    {
-        if (flag & FLAG_WORLD_LOADED)
-        {
-            if (!state_menu_depth)
-            {
-                state_menu_depth = 1;
-                menu_index = MENU_GAME;
-                flag |= FLAG_PAUSED;
-                player->container_state = 0;
-                show_cursor;
-            }
-            else if (state_menu_depth == 1)
-                btn_func_back_to_game();
-        }
-        else
-        {
-            if (state_menu_depth == 1)
-                flag &= ~FLAG_ACTIVE;
-            else btn_func_back();
-        }
-    }
 }
 
 void
