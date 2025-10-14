@@ -1,5 +1,4 @@
 void update_input(Player *player);
-void draw_world();
 void draw_gui();
 
 int
@@ -53,25 +52,6 @@ section_menu_world: /* ------------------------------------------------------ */
         if (!(flag & FLAG_PAUSED) && (flag & FLAG_WORLD_LOADED))
             break;
     }
-
-section_main: /* ------------------------------------------------------------ */
-    while (!WindowShouldClose() && (flag & FLAG_ACTIVE))
-    {
-        mouse_delta = GetMouseDelta();
-        if (!state_menu_depth && !(flag & FLAG_SUPER_DEBUG))
-        {
-            disable_cursor;
-            center_cursor;
-        }
-    }
-
-    /* ---- section_cleanup ------------------------------------------------- */
-    //pthread_join(thrd_chunk_handler, NULL); /*temp off*/
-    unload_textures();
-    free_chunking();
-    free_gui();
-    free_super_debugger();
-    CloseWindow();
     return 0;
 }
 
@@ -134,79 +114,8 @@ update_input(Player *player)
 }
 
 void
-draw_world()
-{
-    /* ---- player chunk bounding box --------------------------------------- */
-    if (flag & FLAG_DEBUG_MORE)
-        draw_bounding_box(
-                (Vector3){
-                (f32)(lily.chunk.x * CHUNK_DIAMETER) +
-                ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.y * CHUNK_DIAMETER) +
-                ((f32)CHUNK_DIAMETER / 2),
-                (f32)(lily.chunk.z * CHUNK_DIAMETER) +
-                ((f32)CHUNK_DIAMETER / 2)},
-
-                (Vector3){
-                (f32)CHUNK_DIAMETER,
-                (f32)CHUNK_DIAMETER,
-                (f32)CHUNK_DIAMETER},
-
-                ORANGE);
-
-    /* ---- player target bounding box -------------------------------------- */
-    if ((flag & FLAG_PARSE_TARGET)
-            && (flag & FLAG_HUD)
-            && chunk_tab[chunk_tab_index] != NULL)
-    {
-        if (chunk_tab[chunk_tab_index]->block
-                [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
-                    CHUNK_DIAMETER)]
-                [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
-                    CHUNK_DIAMETER)]
-                [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
-                    CHUNK_DIAMETER)] & NOT_EMPTY)
-        {
-            draw_block_wires(lily.delta_target);
-            if (flag & FLAG_DEBUG_MORE)
-                DrawLine3D(Vector3Subtract(lily.camera.position,
-                            (Vector3){0.0f, 0.0f, 0.5f}),
-                        lily.camera.target, RED);
-        }
-        else if (flag & FLAG_DEBUG_MORE)
-            DrawLine3D(Vector3Subtract(lily.camera.position,
-                        (Vector3){0.0f, 0.0f, 0.5f}),
-                    lily.camera.target, GREEN);
-    }
-
-    if (flag & FLAG_DEBUG_MORE)
-    {
-//        draw_block_wires(&target_coordinates_feet);
-//        printf("feet: %d %d %d\n",
-//                target_coordinates_feet.x,
-//                target_coordinates_feet.y,
-//                target_coordinates_feet.z);
-
-        DrawCubeWiresV(lily.camera.target, (Vector3){1.0f, 1.0f, 1.0f}, GREEN);
-        draw_bounding_box(lily.pos, lily.scl, RAYWHITE);
-
-        /*temp AABB collision*/
-        draw_bounding_box_clamped(lily.pos, lily.scl, COL_Z);
-    }
-}
-
-void
 draw_gui()
 {
-    if (flag & FLAG_HUD)
-    {
-        draw_hud();
-        draw_debug_info(&lily.camera_debug_info);
-    }
-
     if (state_menu_depth && lily.container_state)
         draw_containers(&lily, setting.render_size);
-
-    if (flag & FLAG_SUPER_DEBUG)
-        draw_super_debugger(setting.render_size);
 }

@@ -14,9 +14,9 @@ update_player(Render *render, Player *player, u64 chunk_diameter,
             radius, radius_v, diameter, diameter_v);
 
     player->chunk = (v3i16){
-            floorf((f32)player->pos.x / chunk_diameter),
-            floorf((f32)player->pos.y / chunk_diameter),
-            floorf((f32)player->pos.z / chunk_diameter),
+            floorf((f32)player->pos_smooth.x / chunk_diameter),
+            floorf((f32)player->pos_smooth.y / chunk_diameter),
+            floorf((f32)player->pos_smooth.z / chunk_diameter),
         };
 
     if ((player->delta_chunk.x - player->chunk.x)
@@ -194,16 +194,29 @@ update_camera_movement_player(Render *render, Player *player,
 }
 
 void
-update_player_target(v3f64 *player_target, v3i64 *player_delta_target)
+update_player_target(Player *player)
 {
-    if (player_delta_target->x != floorf(player_target->x) ||
-            player_delta_target->y != floorf(player_target->y) ||
-            player_delta_target->z != floorf(player_target->z))
-        *player_delta_target =
-            (v3i64){
-                (i64)floorf(player_target->x),
-                (i64)floorf(player_target->y),
-                (i64)floorf(player_target->z)};
+    const f32 SPCH = player->sin_pitch;
+    const f32 CPCH = player->cos_pitch;
+    const f32 SYAW = player->sin_yaw;
+    const f32 CYAW = player->cos_yaw;
+
+    player->target =
+    (v3f64){
+        player->pos_smooth.x +
+            ((CYAW * CPCH) * player->camera_distance),
+        player->pos_smooth.y -
+            ((SYAW * CPCH) * player->camera_distance),
+        player->pos_smooth.z + player->eye_height -
+            (SPCH * player->camera_distance),
+    };
+
+    player->delta_target =
+        (v3i64){
+            (i64)floorf(player->target.x),
+            (i64)floorf(player->target.y),
+            (i64)floorf(player->target.z),
+        };
 }
 
 void

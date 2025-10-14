@@ -1149,8 +1149,8 @@ text_render(u32 color)
 
     v2f32 font_size =
     {
-        text_info.font_size * text_info.screen_size.x * 0.5f,
-        text_info.font_size * text_info.screen_size.y * 0.5f,
+        text_info.font_size * text_info.screen_size.x,
+        text_info.font_size * text_info.screen_size.y,
     };
 
     v4f32 text_color =

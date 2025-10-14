@@ -18,6 +18,7 @@ layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 in uint vs_data[];
 in vec3 vs_position[];
 out vec3 gs_position;
+out vec2 gs_tex_coords;
 out vec3 gs_normal;
 uniform mat4 mat_perspective;
 
@@ -43,12 +44,23 @@ void main()
                 4, 6, 7, 7, 5, 4,
                 0, 1, 3, 3, 2, 0);
 
+    vec2 tex_coords[4] =
+        vec2[](
+                vec2(0.0, 0.0),
+                vec2(1.0, 0.0),
+                vec2(1.0, 1.0),
+                vec2(0.0, 1.0));
+
+    int ebo_tex_coords[FACE_VERTICES] =
+        int[](0, 1, 2, 2, 3, 0);
+
     if (bool(vs_data[0] & POSITIVE_X))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(1.0, 0.0, 0.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(1.0, 0.0, 0.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();
@@ -58,9 +70,10 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_X))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(-1.0, 0.0, 0.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i + FACE_VERTICES]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(-1.0, 0.0, 0.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();
@@ -70,9 +83,10 @@ void main()
     if (bool(vs_data[0] & POSITIVE_Y))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(0.0, 1.0, 0.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 2)]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(0.0, 1.0, 0.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();
@@ -82,9 +96,10 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_Y))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(0.0, -1.0, 0.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 3)]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(0.0, -1.0, 0.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();
@@ -94,9 +109,10 @@ void main()
     if (bool(vs_data[0] & POSITIVE_Z))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(0.0, 0.0, 1.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 4)]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(0.0, 0.0, 1.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();
@@ -106,9 +122,10 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_Z))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            gs_normal = vec3(0.0, 0.0, -1.0);
             gs_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 5)]];
+            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_normal = vec3(0.0, 0.0, -1.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
             EmitVertex();

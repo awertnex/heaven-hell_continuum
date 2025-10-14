@@ -39,7 +39,7 @@ void update_player(Render *render, Player *player, u64 chunk_diameter,
 void update_camera_movement_player(Render *render, Player *player,
         b8 use_mouse);
 
-void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
+void update_player_target(Player *player);
 
 static inline void
 set_player_pos(Player *player, f64 x, f64 y, f64 z)

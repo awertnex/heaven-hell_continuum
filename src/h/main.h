@@ -143,7 +143,6 @@ typedef struct Uniform
         GLint scale;
         GLint mat_rotation;
         GLint mat_perspective;
-        GLint camera_position;
         GLint sun_rotation;
         GLint sky_color;
     } defaults;
@@ -202,13 +201,21 @@ typedef struct Uniform
     struct /* voxel */
     {
         GLint mat_perspective;
-        GLint camera_position;
+        GLint player_position;
         GLint sun_rotation;
         GLint sky_color;
         GLint chunk_position;
         GLint color;
         GLint opacity;
     } voxel;
+
+    struct /* bounding_box */
+    {
+        GLint mat_perspective;
+        GLint position;
+        GLint size;
+        GLint color;
+    } bounding_box;
 
 } Uniform;
 
@@ -226,6 +233,9 @@ enum TextureIndices
     TEXTURE_CROSSHAIR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
+    TEXTURE_DIRT,
+    TEXTURE_STONE,
+    TEXTURE_SAND,
     TEXTURE_COUNT,
 }; /* TextureIndices */
 
@@ -268,8 +278,10 @@ typedef struct Player
     str name[100];                  /* player in-game name */
     v3f64 pos;                      /* player current coordinates in world */
     v3f64 pos_smooth;               /* player processed pos */
+    v3i64 delta_pos;                /* for collision tunneling prevention */
     v3f32 pos_lerp_speed;
     v3f64 target;                   /* player arm (or whatever) */
+    v3i64 delta_target;             /* player arm floored */
     v3f32 scale;                    /* player size for collision detection */
     v3f32 collision_check_start;
     v3f32 collision_check_end;
@@ -287,15 +299,12 @@ typedef struct Player
     u16 flag;                       /* enum: PlayerFlags */
 
     Camera camera;
-    Camera camera_rigid;
     Camera camera_hud;
     f32 camera_distance;            /* for camera collision detection */
 
     /* player at world edge, enum: PlayerFlags */
     u8 overflow;
 
-    v3i64 delta_pos;                /* for collision tunneling prevention */
-    v3i64 delta_target;             /* player arm snapped to grid */
     v3i16 chunk;                    /* current chunk player is in */
     v3i16 delta_chunk;              /* previous chunk player was in */
 

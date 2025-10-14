@@ -79,31 +79,40 @@ gui_init(void)
                 FONT_RESOLUTION_DEFAULT, font_path[3]))
         goto cleanup;
 
-    str *asset_path[] =
-    {
-        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "crosshair.png"),
-        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_active.png"),
-        stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_inactive.png"),
-    };
 
     if (
             !texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST,
-                0, FALSE, asset_path[0]) ||
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "crosshair.png")) ||
 
             !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST,
-                0, FALSE, asset_path[1]) ||
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_active.png")) ||
 
             !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST,
-                0, FALSE, asset_path[1]))
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_inactive.png")) ||
+
+            !texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "dirt.png")) ||
+
+            !texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "stone.png")) ||
+
+            !texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "sand.png")))
         goto cleanup;
 
     if (
             !texture_generate(&texture[TEXTURE_CROSSHAIR]) ||
             !texture_generate(&texture[TEXTURE_SDB_ACTIVE]) ||
-            !texture_generate(&texture[TEXTURE_SDB_INACTIVE]))
+            !texture_generate(&texture[TEXTURE_SDB_INACTIVE]) ||
+            !texture_generate(&texture[TEXTURE_DIRT]) ||
+            !texture_generate(&texture[TEXTURE_STONE]) ||
+            !texture_generate(&texture[TEXTURE_SAND]))
         goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
@@ -126,6 +135,9 @@ gui_free(void)
     texture_free(&texture[TEXTURE_CROSSHAIR]);
     texture_free(&texture[TEXTURE_SDB_ACTIVE]);
     texture_free(&texture[TEXTURE_SDB_INACTIVE]);
+    texture_free(&texture[TEXTURE_DIRT]);
+    texture_free(&texture[TEXTURE_STONE]);
+    texture_free(&texture[TEXTURE_SAND]);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */
