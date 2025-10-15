@@ -46,14 +46,40 @@ void log_output(const str *file, u64 line, u8 level, const str* format, ...);
     #define LOGDEBUG(format, ...) \
         log_output(__FILE__, __LINE__, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
 #else
-    #define LOGDEBUG()
+    #define LOGDEBUG(file, line, format, ...)
 #endif /* LOGGING_DEBUG */
 
 #if LOGGING_TRACE == 1
     #define LOGTRACE(format, ...) \
         log_output(__FILE__, __LINE__, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
 #else
-    #define LOGTRACE()
+    #define LOGTRACE(format, ...)
+#endif /* LOGGING_TRACE */
+
+#define LOGFATALV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+
+#define LOGERRORV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+
+#define LOGWARNINGV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+
+#define LOGINFOV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_INFO, format, ##__VA_ARGS__)
+
+#if LOGGING_DEBUG == 1
+    #define LOGDEBUGV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
+#else
+    #define LOGDEBUGV(file, line, format, ...)
+#endif /* LOGGING_DEBUG */
+
+#if LOGGING_TRACE == 1
+    #define LOGTRACEV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
+#else
+    #define LOGTRACEV(file, line, format, ...)
 #endif /* LOGGING_TRACE */
 
 #endif /* ENGINE_LOGGER_H */

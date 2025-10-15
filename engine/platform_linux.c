@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 
 #include "h/limits.h"
 #include "h/logger.h"
@@ -88,6 +89,35 @@ exec(buf *cmd, str *cmd_name)
     return TRUE;
 }
 
+b8 _mem_map(void **x, u64 size,
+        const str *name, const str *file, u64 line)
+{
+    if (*x != NULL)
+        return TRUE;
+
+    *x = mmap(NULL, size,
+            PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (*x == NULL)
+    {
+        LOGFATALV(file, line, "%s[%p] Memory Allocation Failed, Process Aborted\n",
+                name, NULL);
+        return FALSE;
+    }
+    LOGTRACEV(file, line, "%s[%p] Memory Allocated[%lldB]\n",
+            name, (void*)(uintptr_t)(*x), size);
+    return TRUE;
+}
+
+void _mem_commit(void** x, u64 offset, u64 size,
+        const str *name, const str *file, u64 line)
+{
+    mprotect(*x + offset, size, PROT_READ | PROT_WRITE);
+}
+
+void _mem_unmap(void** x, u64 size,
+        const str *name, const str *file, u64 line)
+{
+}
 #ifdef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif /* _GNU_SOURCE */

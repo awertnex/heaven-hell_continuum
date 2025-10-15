@@ -30,7 +30,8 @@ b8 is_dir_exists(const str *path, b8 log);
  * read_format = read file at path in specified format (fopen() parameter).
  *
  * return NULL on failure */
-str *get_file_contents(const str *path, u64 *file_len, const str *format);
+str *get_file_contents(const str *path, u64 size, u64 *file_len,
+        const str *format);
 
 /* return directory entries at dir_path.
  *
@@ -64,6 +65,9 @@ u8 copy_file(const str *path, const str *destination,
  * return non-zero on failure */
 u8 copy_dir(const str *path, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format);
+
+b8 write_file(const str *path, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log);
 
 str *get_path_absolute(const str *path);
 

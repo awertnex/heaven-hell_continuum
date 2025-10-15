@@ -80,7 +80,8 @@ is_dir_exists(const str *path, b8 log)
 }
 
 str *
-get_file_contents(const str *path, u64 *file_len, const str *read_format)
+get_file_contents(const str *path, u64 size, u64 *file_len,
+        const str *read_format)
 {
     if (!is_file_exists(path, TRUE))
             return NULL;
@@ -100,7 +101,7 @@ get_file_contents(const str *path, u64 *file_len, const str *read_format)
     if (!mem_alloc((void*)&file_contents, len + 1, "file_contents"))
         goto cleanup;
 
-    u64 cursor = fread(file_contents, 1, len, file);
+    u64 cursor = fread(file_contents, size, len, file);
     fclose(file);
 
     if (file_len) *file_len = cursor;
@@ -222,7 +223,7 @@ copy_file(const str *path, const str *destination,
 
     u64 len = 0;
     str *out_file = NULL;
-    if ((out_file = get_file_contents(path, &len, read_format)) == NULL)
+    if ((out_file = get_file_contents(path, 1, &len, read_format)) == NULL)
     {
         fclose(in_file);
         return -1;
@@ -284,6 +285,22 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
 
     LOGTRACE("Directory Copied '%s' -> '%s'\n", path, destination_string);
     return 0;
+}
+
+b8
+write_file(const str *path, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log)
+{
+    FILE *file = NULL;
+    if ((file = fopen(path, write_format)) == NULL)
+    {
+        if (log) LOGERROR("File Writing '%s' Failed\n", path);
+        return FALSE;
+    }
+
+    fwrite(buf, size, length, file);
+    fclose(file);
+    return TRUE;
 }
 
 str *

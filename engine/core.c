@@ -180,8 +180,7 @@ init_window(Render *render)
 
     if (!render->window)
     {
-        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context,"
-                "Process Aborted");
+        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
         return -1;
     }
 
@@ -200,8 +199,8 @@ init_glad(void)
 
     if (GLVersion.major < 4 || (GLVersion.major == 4 && GLVersion.minor < 3))
     {
-        LOGFATAL("OpenGL 4.3+ Required, Current Version '%d.%d',"
-                "Process Aborted\n", GLVersion.major, GLVersion.minor);
+        LOGFATAL("OpenGL 4.3+ Required, Current Version '%d.%d', Process Aborted\n",
+                GLVersion.major, GLVersion.minor);
         return -1;
     }
 
@@ -224,7 +223,7 @@ shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
 
     u64 cursor = 0;
     shader->source =
-        (GLchar*)get_file_contents(str_reg, &cursor, read_format);
+        (GLchar*)get_file_contents(str_reg, 1, &cursor, read_format);
     if (shader->source == NULL)
         return -1;
     shader->source[cursor] = 0;
@@ -842,7 +841,7 @@ font_init(Font *font, u32 resolution, const str *file_name)
     if (!is_file_exists(file_name, TRUE))
         return FALSE;
 
-    font->buf = (u8*)get_file_contents(file_name, &font->buf_len, "rb");
+    font->buf = (u8*)get_file_contents(file_name, 1, &font->buf_len, "rb");
     if (!font->buf)
         return FALSE;
 

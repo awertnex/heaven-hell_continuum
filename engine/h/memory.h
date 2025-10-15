@@ -30,6 +30,9 @@
 #define mem_zero(x, size, name) \
     _mem_zero(x, size, name, __FILE__, __LINE__)
 
+#define mem_map(x, size, name) \
+    _mem_map(x, size, name, __FILE__, __LINE__)
+
 /* -- INTERNAL USE ONLY --;
  *
  * size = size in bytes,
@@ -98,6 +101,19 @@ extern void _mem_free_buf(buf *x,
 extern void _mem_zero(void **x, u64 size,
         const str *name, const str *file, u64 line);
 
+/* -- INTERNAL USE ONLY --;
+ *
+ * -- IMPLEMENTATION: platform_<PLATFORM>.c --;
+ *
+ * size = size in bytes,
+ * name = pointer name (for logging).
+ *
+ * reserve and protect a block of memory for x.
+ *
+ * return FALSE (0) on failure */
+extern b8 _mem_map(void **x, u64 size,
+        const str *name, const str *file, u64 line);
+
 void print_bits(u64 x, u8 bit_count);
 void swap_bits(char *c1, char *c2);
 void swap_bits_u8(u8 *a, u8 *b);
@@ -110,9 +126,9 @@ void swap_strings(str *s1, str *s2);
  * return string */
 str *swap_string_char(str *string, char c1, char c2);
 
-/* return formatted string.
+/* return static formatted string.
  *
- * inspired by 'github.com/raysan5/raylib':
+ * inspired by Raylib: 'github.com/raysan5/raylib':
  * raylib/src/rtext.c/TextFormat() */
 str *stringf(const str* format, ...);
 
