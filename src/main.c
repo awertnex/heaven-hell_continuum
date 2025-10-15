@@ -758,7 +758,7 @@ init_world(str *name)
 
     chunking_update(lily.delta_chunk);
     flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
-    lily.flag |= FLAG_PLAYER_FALLING | FLAG_PLAYER_ZOOMER;
+    lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
     return TRUE;
@@ -801,18 +801,18 @@ update_world(Player *player)
     chunk_queue_update(&chunk_queue.cursor_1, &chunk_queue.count_1,
             chunk_queue.priority_1, 0, CHUNK_QUEUE_1ST_MAX,
             CHUNK_PARSE_RATE_PRIORITY_HIGH, BLOCK_PARSE_RATE);
-    chunk_queue_update(&chunk_queue.cursor_2, &chunk_queue.count_2,
-            chunk_queue.priority_2,
-            CHUNK_QUEUE_1ST_MAX, CHUNK_QUEUE_2ND_MAX,
-            CHUNK_PARSE_RATE_PRIORITY_MID, BLOCK_PARSE_RATE);
-    chunk_queue_update(&chunk_queue.cursor_3, &chunk_queue.count_3,
-            chunk_queue.priority_3,
-            CHUNK_QUEUE_2ND_MAX, CHUNK_QUEUE_3RD_MAX,
-            CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
     if (!chunk_queue.count_1)
     {
+        chunk_queue_update(&chunk_queue.cursor_2, &chunk_queue.count_2,
+                chunk_queue.priority_2,
+                CHUNK_QUEUE_1ST_MAX, CHUNK_QUEUE_2ND_MAX,
+                CHUNK_PARSE_RATE_PRIORITY_MID, BLOCK_PARSE_RATE);
         if (!chunk_queue.count_2)
         {
+            chunk_queue_update(&chunk_queue.cursor_3, &chunk_queue.count_3,
+                    chunk_queue.priority_3,
+                    CHUNK_QUEUE_2ND_MAX, CHUNK_QUEUE_3RD_MAX,
+                    CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
         }
     }
 
@@ -1014,6 +1014,7 @@ draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
+    /* ---- draw player chunk queue visualizer ------------------------------ */
     glUseProgram(shader_bounding_box.id);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
@@ -1024,6 +1025,7 @@ draw_everything(void)
     u32 i = 0;
     for (; cursor < end; ++i, ++cursor)
     {
+        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
         glUniform3f(uniform.bounding_box.position,
                 (**cursor)->pos.x * CHUNK_DIAMETER,
                 (**cursor)->pos.y * CHUNK_DIAMETER,
@@ -1031,33 +1033,13 @@ draw_everything(void)
 
         u32 index = cursor - chunk_order;
         if (index < CHUNK_QUEUE_1ST_MAX)
-        {
             glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
-            if (chunk_queue.priority_1[i])
-            {
-                glBindVertexArray(mesh_cube_of_happiness.vao);
-                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-            }
-        }
         else if (index < CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX)
-        {
             glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
-            if (chunk_queue.priority_2[i])
-            {
-                glBindVertexArray(mesh_cube_of_happiness.vao);
-                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-            }
-        }
-        else
-        {
-            glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
-            if (chunk_queue.priority_3[i])
-            {
-                glBindVertexArray(mesh_cube_of_happiness.vao);
-                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-            }
-        }
+        else glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
 
+        glBindVertexArray(mesh_cube_of_happiness.vao);
+        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);

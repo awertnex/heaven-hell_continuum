@@ -54,10 +54,6 @@ static void chunk_buf_pop(u32 index);
 u8
 chunking_init(void)
 {
-    if (!mem_alloc_memb((void*)&chunk_buf,
-                CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
-        return -1;
-
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
     v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
     v3i32 pos = {0};
@@ -83,6 +79,10 @@ chunking_init(void)
                 swap_bits_u32((u32*)&distance[i], (u32*)&distance[j]);
                 swap_bits_u64((u64*)&chunk_order[i], (u64*)&chunk_order[j]);
             }
+
+    if (!mem_alloc_memb((void*)&chunk_buf,
+                chunk_count, sizeof(Chunk), "chunk_buf"))
+        return -1;
     return 0;
 }
 
@@ -121,7 +121,7 @@ chunking_free(void)
     for (; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i])
             chunk_buf_pop(i);
-    mem_free((void*)&chunk_buf, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_buf");
+    mem_free((void*)&chunk_buf, chunk_count * sizeof(Chunk), "chunk_buf");
 }
 
 void
@@ -734,6 +734,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         if (!chunk_tab[i]) continue;
+        chunk_tab[i]->flag &= ~FLAG_CHUNK_QUEUED;
 
         v3u32 coordinates =
         {
@@ -887,7 +888,10 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
         chunk_tab[i] = chunk_tab[target_index];
         if (chunk_tab[i] && chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
+        {
+            chunk_tab[target_index]->flag &= ~FLAG_CHUNK_QUEUED;
             chunk_tab[target_index] = NULL;
+        }
     }
 }
 
