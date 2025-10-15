@@ -23,6 +23,7 @@ str GRANDPATH_DIR[][NAME_MAX] =
     "resources/",
     "resources/fonts/",
     "resources/shaders/",
+    "resources/lookups/",
     "instances/",
 };
 

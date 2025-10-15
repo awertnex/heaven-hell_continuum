@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <engine/h/dir.h>
 #include <engine/h/memory.h>
 #include <engine/h/math.h>
 #include <engine/h/logger.h>
 
 #include "h/main.h"
 #include "h/chunking.h"
+#include "h/dir.h"
 
-/* chunk buffer, raw chunk data */
+/* chunk arena, raw chunk data */
+Chunk *chunk_arena = {0};
+
+/* chunk buffer, spacial mapping of chunk_arena entries */
 Chunk *chunk_buf = {0};
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
@@ -54,35 +60,74 @@ static void chunk_buf_pop(u32 index);
 u8
 chunking_init(void)
 {
+    if (!mem_map((void*)&chunk_arena, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_arena"))
+        return -1;
+
+    if (is_file_exists(stringf("%s%s",
+                    GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
+                    "lookup_chunk_order.bin"), FALSE))
+    {
+        u64 i, len = 0;
+        u32 *indices = (u32*)get_file_contents(stringf("%s%s",
+                    GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
+                    "lookup_chunk_order.bin"),
+                sizeof(u32), &len, "rb");
+
+        if (indices[CHUNK_BUF_VOLUME + 1] != SET_RENDER_DISTANCE)
+            goto calculate_distance;
+
+        for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+            chunk_order[i] = &chunk_tab[indices[i]];
+        chunk_count = (u64)indices[CHUNK_BUF_VOLUME];
+
+        if (!mem_commit((void*)&chunk_arena, 0, chunk_count * sizeof(Chunk), "chunk_arena"))
+            return -1;
+        chunk_buf = (Chunk*)chunk_arena;
+        return 0;
+    }
+
+calculate_distance:
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
     v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
-    v3i32 pos = {0};
     u32 distance[CHUNK_BUF_VOLUME] = {0};
+    u32 index[CHUNK_BUF_VOLUME + 2] = {0};
+    v3i32 coordinates = {0};
     u64 i, j;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
-        pos =
+        coordinates =
             (v3i32){
                 i % CHUNK_BUF_DIAMETER,
                 (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
                 i / CHUNK_BUF_LAYER,
             };
-        distance[i] = distance_v3i32(pos, center);
+        distance[i] = distance_v3i32(coordinates, center);
         if (distance[i] < RENDER_DISTANCE)
             ++chunk_count;
-        chunk_order[i] = &chunk_tab[i];
+        index[i] = (u32)i;
     }
+    index[CHUNK_BUF_VOLUME] = chunk_count;
+    index[CHUNK_BUF_VOLUME + 1] = SET_RENDER_DISTANCE;
+
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         for (j = 0; j < CHUNK_BUF_VOLUME; ++j)
             if (distance[j] > distance[i])
             {
                 swap_bits_u32((u32*)&distance[i], (u32*)&distance[j]);
-                swap_bits_u64((u64*)&chunk_order[i], (u64*)&chunk_order[j]);
+                swap_bits_u32((u32*)&index[i], (u32*)&index[j]);
             }
 
-    if (!mem_alloc_memb((void*)&chunk_buf,
-                chunk_count, sizeof(Chunk), "chunk_buf"))
+    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+        chunk_order[i] = &chunk_tab[index[i]];
+
+    write_file(stringf("%s%s",
+                GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
+                "lookup_chunk_order.bin"),
+            sizeof(u32), CHUNK_BUF_VOLUME + 2, &index, "wb", TRUE);
+
+    if (!mem_commit((void*)&chunk_arena, 0, chunk_count * sizeof(Chunk), "chunk_arena"))
         return -1;
+    chunk_buf = (Chunk*)chunk_arena;
     return 0;
 }
 
@@ -121,7 +166,9 @@ chunking_free(void)
     for (; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i])
             chunk_buf_pop(i);
-    mem_free((void*)&chunk_buf, chunk_count * sizeof(Chunk), "chunk_buf");
+    chunk_buf = NULL;
+    mem_unmap((void*)&chunk_arena, CHUNK_BUF_VOLUME * sizeof(Chunk),
+            "chunk_arena");
 }
 
 void

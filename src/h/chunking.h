@@ -5,6 +5,9 @@
 
 #include "main.h"
 
+/* chunk arena, raw chunk data */
+extern Chunk *chunk_arena;
+
 /* chunk buffer, raw chunk data */
 extern Chunk *chunk_buf;
 
