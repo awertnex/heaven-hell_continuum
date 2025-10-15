@@ -114,6 +114,8 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
 
     if (player->flag & FLAG_PLAYER_FLYING)
     {
+        player->flag &= ~(FLAG_PLAYER_CAN_JUMP | FLAG_PLAYER_FALLING);
+
         player->pos_lerp_speed.x =
             SET_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y =
@@ -126,6 +128,7 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
             SET_PLAYER_SPEED_FLY * render->frame_delta;
         player->camera.fovy = 80.0f - zoom;
     }
+    else player->flag |= FLAG_PLAYER_FALLING;
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
             && !(player->flag & FLAG_PLAYER_FLYING))
@@ -336,18 +339,6 @@ player_collision_update(Player *player)
             ceilf(player->scale.y) + 2.0f,
             ceilf(player->scale.z) + 2.0f,
         };
-
-    if (player->pos.z < 0.0f)
-    {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            player->flag &= ~FLAG_PLAYER_FLYING;
-        player->pos.z = 0.0f;
-        player->vel.z = 0.0f;
-        player->flag |= FLAG_PLAYER_CAN_JUMP;
-        player->flag &= ~FLAG_PLAYER_FALLING;
-    }
-    else if (!(player->flag & FLAG_PLAYER_FLYING))
-        player->flag |= FLAG_PLAYER_FALLING;
 
 
 #if 0 /* TODO: remove this parse collision feet stuff */

@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             16
+#define SET_RENDER_DISTANCE             14
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -86,14 +86,18 @@
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
-#define CHUNK_QUEUE_MAX         CHUNK_BUF_LAYER
-#define BLOCK_BUFFERS_MAX       4
+#define CHUNK_QUEUE_1ST_MAX     64
+#define CHUNK_QUEUE_2ND_MAX     (CHUNK_QUEUE_1ST_MAX * CHUNK_QUEUE_1ST_MAX)
+#define CHUNK_QUEUE_3RD_MAX     CHUNK_BUF_LAYER
+#define BLOCK_BUFFERS_MAX       3
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_MAX    128
+#define CHUNK_PARSE_RATE_PRIORITY_LOW   32
+#define CHUNK_PARSE_RATE_PRIORITY_MID   128
+#define CHUNK_PARSE_RATE_PRIORITY_HIGH  2048
 
 /* number of blocks to process per chunk per frame */
-#define BLOCK_PARSE_RATE_MAX    700
+#define BLOCK_PARSE_RATE                350
 
 #define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
@@ -434,10 +438,17 @@ typedef struct Chunk
 
 typedef struct ChunkQueue
 {
-    u32 cursor;                     /* chunk enqueuer current position */
-    u32 count;                      /* number of chunks queued */
-    u32 index[CHUNK_QUEUE_MAX];     /* chunk_tab indices */
-    Chunk *chunk[CHUNK_QUEUE_MAX];  /* chunk_tab addresses */
+    u32 cursor_1;   /* parse position at chunk_1 */
+    u32 cursor_2;   /* parse position at chunk_2 */
+    u32 cursor_3;   /* parse position at chunk_3 */
+    u32 count_1;    /* number of chunks queued at chunk_1 */
+    u32 count_2;    /* number of chunks queued at chunk_2 */
+    u32 count_3;    /* number of chunks queued at chunk_3 */
+
+    /* chunk_tab addresses */
+    Chunk **priority_1[CHUNK_QUEUE_1ST_MAX];
+    Chunk **priority_2[CHUNK_QUEUE_2ND_MAX];
+    Chunk **priority_3[CHUNK_QUEUE_3RD_MAX];
 } ChunkQueue;
 
 extern Render render;

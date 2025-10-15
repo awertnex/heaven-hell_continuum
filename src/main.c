@@ -758,7 +758,7 @@ init_world(str *name)
 
     chunking_update(lily.delta_chunk);
     flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
-    lily.flag |= FLAG_PLAYER_ZOOMER;
+    lily.flag |= FLAG_PLAYER_FALLING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
     return TRUE;
@@ -767,7 +767,7 @@ init_world(str *name)
 void
 update_world(Player *player)
 {
-    game_tick = (u64)(render.frame_start * 2000) -
+    game_tick = 2000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -778,14 +778,14 @@ update_world(Player *player)
     else disable_cursor;
 
     b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    player_camera_movement_update(&render, player, use_mouse);
-    update_camera_perspective(&player->camera, &projection_world);
-    update_camera_perspective(&player->camera_hud, &projection_hud);
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
+    player_camera_movement_update(&render, player, use_mouse);
+    update_camera_perspective(&player->camera, &projection_world);
+    update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
-    player_collision_update(&lily);
+    //player_collision_update(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -797,7 +797,24 @@ update_world(Player *player)
         chunk_tab_shift(lily.chunk, &lily.delta_chunk);
         chunking_update(lily.delta_chunk);
     }
-    chunk_queue_update(CHUNK_PARSE_RATE_MAX, BLOCK_PARSE_RATE_MAX);
+
+    chunk_queue_update(&chunk_queue.cursor_1, &chunk_queue.count_1,
+            chunk_queue.priority_1, 0, CHUNK_QUEUE_1ST_MAX,
+            CHUNK_PARSE_RATE_PRIORITY_HIGH, BLOCK_PARSE_RATE);
+    chunk_queue_update(&chunk_queue.cursor_2, &chunk_queue.count_2,
+            chunk_queue.priority_2,
+            CHUNK_QUEUE_1ST_MAX, CHUNK_QUEUE_2ND_MAX,
+            CHUNK_PARSE_RATE_PRIORITY_MID, BLOCK_PARSE_RATE);
+    chunk_queue_update(&chunk_queue.cursor_3, &chunk_queue.count_3,
+            chunk_queue.priority_3,
+            CHUNK_QUEUE_2ND_MAX, CHUNK_QUEUE_3RD_MAX,
+            CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
+    if (!chunk_queue.count_1)
+    {
+        if (!chunk_queue.count_2)
+        {
+        }
+    }
 
     /* ---- player targeting ------------------------------------------------ */
     if (is_in_volume_i64(
@@ -906,7 +923,7 @@ draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_STONE].id);
 
     Chunk ***cursor = chunk_order;
-    Chunk ***end = cursor + CHUNK_BUF_VOLUME;
+    Chunk ***end = cursor + chunk_count;
     Chunk *chunk = NULL;
     for (; **cursor && cursor < end; ++cursor)
     {
@@ -995,6 +1012,52 @@ draw_everything(void)
 
         glBindVertexArray(mesh_cube_of_happiness.vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+    }
+
+    glUseProgram(shader_bounding_box.id);
+    glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&projection_world.perspective);
+    glUniform3f(uniform.bounding_box.size,
+            CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
+
+    cursor = chunk_order;
+    u32 i = 0;
+    for (; cursor < end; ++i, ++cursor)
+    {
+        glUniform3f(uniform.bounding_box.position,
+                (**cursor)->pos.x * CHUNK_DIAMETER,
+                (**cursor)->pos.y * CHUNK_DIAMETER,
+                (**cursor)->pos.z * CHUNK_DIAMETER);
+
+        u32 index = cursor - chunk_order;
+        if (index < CHUNK_QUEUE_1ST_MAX)
+        {
+            glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
+            if (chunk_queue.priority_1[i])
+            {
+                glBindVertexArray(mesh_cube_of_happiness.vao);
+                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            }
+        }
+        else if (index < CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX)
+        {
+            glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+            if (chunk_queue.priority_2[i])
+            {
+                glBindVertexArray(mesh_cube_of_happiness.vao);
+                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            }
+        }
+        else
+        {
+            glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
+            if (chunk_queue.priority_3[i])
+            {
+                glBindVertexArray(mesh_cube_of_happiness.vao);
+                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            }
+        }
+
     }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
@@ -1250,6 +1313,19 @@ draw_everything(void)
             SET_MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
     text_render(0x3f6f9fff);
 
+    text_push(stringf(
+                "CHUNK QUEUE 1 [%d]\n"
+                "CHUNK QUEUE 2 [%d]\n"
+                "CHUNK QUEUE 3 [%d]\n"
+                "TOTAL CHUNKS [%ld]\n",
+                chunk_queue.count_1,
+                chunk_queue.count_2,
+                chunk_queue.count_3,
+                chunk_count),
+            (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
+            TEXT_ALIGN_RIGHT, 0);
+    text_render(0xffffffff);
+
     text_start(0, FONT_SIZE_DEFAULT,
             &font[FONT_MONO], &render, &shader_text, &fbo_text, FALSE);
     text_push(stringf(
@@ -1420,6 +1496,8 @@ main(int argc, char **argv)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
+
+    update_render_settings();
 
     if (gui_init() != 0 ||
             text_init() != 0)

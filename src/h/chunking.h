@@ -16,6 +16,8 @@ extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
  * order of chunks based on distance away from player */
 extern Chunk **chunk_order[CHUNK_BUF_VOLUME];
 
+extern u64 chunk_count;
+
 /* queue of chunks to be processed */
 extern ChunkQueue chunk_queue;
 
@@ -32,9 +34,12 @@ void block_place(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index); */
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
-/* rate_chunk = number of chunks to process per frame,
+/* queue_stride = first chunk_order index to start parsing,
+ * queue_size = number of indices to process in queue,
+ * rate_chunk = number of chunks to process per frame,
  * rate_block = number of blocks to process per chunk per frame */
-void chunk_queue_update(u32 rate_chunk, u32 rate_block);
+void chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
+        u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block);
 
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);

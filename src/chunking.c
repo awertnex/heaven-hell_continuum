@@ -19,6 +19,8 @@ Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
  * order of chunks based on distance away from player */
 Chunk **chunk_order[CHUNK_BUF_VOLUME] = {0};
 
+u64 chunk_count = 0;
+
 /* queue of chunks to be processed */
 ChunkQueue chunk_queue = {0};
 
@@ -32,7 +34,7 @@ static void _block_break(Chunk **chunk, v3u32 coordinates,
 
 /* index = (chunk_tab index);
  * rate = number of blocks to process per chunk per frame */
-static void chunk_generate(u32 index, u32 rate);
+static void chunk_generate(Chunk **chunk, u32 rate);
 
 static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
 static void chunk_mesh(Chunk *chunk);
@@ -56,6 +58,7 @@ chunking_init(void)
                 CHUNK_BUF_VOLUME, sizeof(Chunk), "chunk_buf"))
         return -1;
 
+    const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
     v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
     v3i32 pos = {0};
     u32 distance[CHUNK_BUF_VOLUME] = {0};
@@ -69,6 +72,8 @@ chunking_init(void)
                 i / CHUNK_BUF_LAYER,
             };
         distance[i] = distance_v3i32(pos, center);
+        if (distance[i] < RENDER_DISTANCE)
+            ++chunk_count;
         chunk_order[i] = &chunk_tab[i];
     }
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
@@ -397,10 +402,10 @@ terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
 }
 
 static void
-chunk_generate(u32 index, u32 rate)
+chunk_generate(Chunk **chunk, u32 rate)
 {
-    Chunk **chunk = &chunk_tab[index];
     if (!*chunk) return;
+    u32 index = chunk - chunk_tab;
     v3u32 chunk_tab_coordinates =
     {
         index % CHUNK_BUF_DIAMETER,
@@ -614,45 +619,45 @@ chunk_buf_pop(u32 index)
 
 /* TODO: grab chunks from disk if previously generated */
 void
-chunk_queue_update(u32 rate_chunk, u32 rate_block)
+chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
+        u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block)
 {
     /* ---- push chunk queue ------------------------------------------------ */
-    u32 i, *j = &chunk_queue.cursor;
-    if (chunk_queue.count == CHUNK_QUEUE_MAX) goto generate;
-    for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        Chunk *chunk = **(chunk_order + i);
-        if (chunk && (chunk->flag & FLAG_CHUNK_DIRTY))
-        {
-            if (!(chunk->flag & FLAG_CHUNK_QUEUED) &&
-                    !(chunk_queue.chunk[*j]))
-            {
-                chunk->flag |= FLAG_CHUNK_QUEUED;
-                chunk_queue.chunk[*j] = chunk;
-                chunk_queue.index[*j] = chunk_order[i] - chunk_tab;
-                (chunk_queue.count < CHUNK_QUEUE_MAX) ?
-                    ++chunk_queue.count : 0;
-                *j = ++*j % CHUNK_QUEUE_MAX;
-            }
-        }
-    }
+    if (count && *count == queue_size)
+        goto generate;
 
-    if (!chunk_queue.count) return;
+    u32 i;
+    Chunk ***chunk = chunk_order + queue_stride;
+    Chunk ***end = chunk_order + chunk_count;
+    for (; chunk < end; ++chunk)
+        if (**chunk && ((**chunk)->flag & FLAG_CHUNK_DIRTY) &&
+                !((**chunk)->flag & FLAG_CHUNK_QUEUED) && !(queue[*cursor]))
+        {
+            queue[*cursor] = *chunk;
+            (**chunk)->flag |= FLAG_CHUNK_QUEUED;
+            (*count < queue_size) ? ++*count : 0;
+            *cursor = ++*cursor % queue_size;
+        }
+
+    if (!*count) return;
 
 generate:
-    rate_chunk = clamp_u32(rate_chunk, 1, CHUNK_QUEUE_MAX - 1);
-    rate_block = clamp_u32(rate_block, 1, BLOCK_PARSE_RATE_MAX - 1);
+    rate_chunk = clamp_u32(rate_chunk, 1, queue_size - 1);
+    rate_block = clamp_u32(rate_block, 1, CHUNK_VOLUME - 1);
 
     /* ---- generate enqueued chunks ---------------------------------------- */
-    for (i = 0; i < CHUNK_QUEUE_MAX && rate_chunk; ++i)
-        if (chunk_queue.chunk[i])
+    for (i = 0; i < queue_size && rate_chunk; ++i)
+        if (queue[i])
         {
-            if (chunk_queue.chunk[i]->flag & FLAG_CHUNK_GENERATED)
-                chunk_mesh(chunk_queue.chunk[i]);
-            else chunk_generate(chunk_queue.index[i], rate_block);
-            chunk_queue.chunk[i]->flag &= ~FLAG_CHUNK_QUEUED;
-            chunk_queue.chunk[i] = NULL;
-            (chunk_queue.count > 0) ? --chunk_queue.count : 0;
+            if ((*queue[i])->flag & FLAG_CHUNK_GENERATED)
+                chunk_mesh(*queue[i]);
+            else chunk_generate(queue[i], rate_block);
+            if (!((*queue[i])->flag & FLAG_CHUNK_DIRTY))
+            {
+                (*queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
+                queue[i] = NULL;
+                (*count > 0) ? --*count : 0;
+            }
             --rate_chunk;
         }
 }
