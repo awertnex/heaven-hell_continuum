@@ -1091,11 +1091,11 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
             i64 j = 0;
             if (align_x == TEXT_ALIGN_CENTER)
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_info.cursor - j] -=
+                    mesh_text.vbo_data[text_info.cursor - (j * 4)] -=
                         advance / 2.0f;
             else if (align_x == TEXT_ALIGN_RIGHT)
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_info.cursor - j] -=
+                    mesh_text.vbo_data[text_info.cursor - (j * 4)] -=
                         advance;
 
             advance = 0.0f;
