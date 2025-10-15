@@ -23,13 +23,13 @@ _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
         return FALSE;
     }
     LOGTRACEV(file, line, "%s[%p] Memory Allocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
+            name, *x, size);
     return TRUE;
 }
 
 b8
-_mem_alloc_memb(void **x, u64 memb, u64 size, const str *name,
-        const str *file, u64 line)
+_mem_alloc_memb(void **x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
         return TRUE;
@@ -42,24 +42,24 @@ _mem_alloc_memb(void **x, u64 memb, u64 size, const str *name,
         return FALSE;
     }
     LOGTRACEV(file, line, "%s[%p] Memory Allocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), memb * size);
+            name, *x, memb * size);
     return TRUE;
 }
 
 b8
-_mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name,
-        const str *file, u64 line)
+_mem_alloc_buf(buf *x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
     snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (!mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i))
+    if (!_mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i, file, line))
         return FALSE;
-    if (!mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
+    if (!_mem_alloc_memb((void*)&x->buf, memb, size, name_buf, file, line))
     {
-        mem_free((void*)&x->i, memb * sizeof(str*), name_i);
+        _mem_free((void*)&x->i, memb * sizeof(str*), name_i, file, line);
         return FALSE;
     }
 
@@ -85,18 +85,18 @@ _mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
     if (temp == NULL)
     {
         LOGFATALV(file, line, "%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
+                name, *x);
         return FALSE;
     }
     *x = temp;
     LOGTRACEV(file, line, "%s[%p] Memory Reallocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
+            name, *x, size);
     return TRUE;
 }
 
 b8
-_mem_realloc_memb(void **x, u64 memb, u64 size, const str *name,
-        const str *file, u64 line)
+_mem_realloc_memb(void **x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
@@ -108,12 +108,12 @@ _mem_realloc_memb(void **x, u64 memb, u64 size, const str *name,
     if (temp == NULL)
     {
         LOGFATALV(file, line, "%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
+                name, *x);
         return FALSE;
     }
     *x = temp;
     LOGTRACEV(file, line, "%s[%p] Memory Reallocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), memb * size);
+            name, *x, memb * size);
     return TRUE;
 }
 
@@ -128,7 +128,7 @@ _mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
     free(*x);
     *x = NULL;
     LOGTRACEV(file, line, "%s[%p] Memory Unloaded[%lldB]\n",
-            name, (void*)(uintptr_t)(temp), size);
+            name, temp, size);
 }
 
 void
@@ -141,7 +141,7 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
         LOGTRACEV(file, line, "%s.i[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(temp), x->memb * sizeof(str*));
+                name, temp, x->memb * sizeof(str*));
     }
     if (x->buf != NULL)
     {
@@ -149,7 +149,7 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
         memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
         LOGTRACEV(file, line, "%s.buf[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(temp), x->memb * x->size);
+                name, temp, x->memb * x->size);
     }
     *x = (buf){NULL};
 }
@@ -162,7 +162,7 @@ _mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
 
     memset(*x, 0, size);
     LOGTRACEV(file, line, "%s[%p] Memory Cleared[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
+            name, *x, size);
 }
 
 void

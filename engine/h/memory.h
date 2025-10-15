@@ -33,14 +33,20 @@
 #define mem_map(x, size, name) \
     _mem_map(x, size, name, __FILE__, __LINE__)
 
+#define mem_commit(x, offset, size, name) \
+    _mem_commit(x, offset, size, name, __FILE__, __LINE__)
+
+#define mem_unmap(x, size, name) \
+    _mem_unmap(x, size, name, __FILE__, __LINE__)
+
 /* -- INTERNAL USE ONLY --;
  *
  * size = size in bytes,
  * name = pointer name (for logging).
  *
  * return FALSE (0) on failure */
-extern b8 _mem_alloc(void **x, u64 size, const str *name,
-        const str *file, u64 line);
+extern b8 _mem_alloc(void **x, u64 size,
+        const str *name, const str *file, u64 line);
 
 /* -- INTERNAL USE ONLY --;
  *
@@ -108,10 +114,36 @@ extern void _mem_zero(void **x, u64 size,
  * size = size in bytes,
  * name = pointer name (for logging).
  *
- * reserve and protect a block of memory for x.
+ * reserve a block of memory for x.
  *
  * return FALSE (0) on failure */
 extern b8 _mem_map(void **x, u64 size,
+        const str *name, const str *file, u64 line);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * -- IMPLEMENTATION: platform_<PLATFORM>.c --;
+ *
+ * size = size in bytes,
+ * name = pointer name (for logging).
+ *
+ * commit a block of mapped memory for x.
+ *
+ * return FALSE (0) on failure */
+b8 _mem_commit(void **x, u64 offset, u64 size,
+        const str *name, const str *file, u64 line);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * -- IMPLEMENTATION: platform_<PLATFORM>.c --;
+ *
+ * size = size in bytes,
+ * name = pointer name (for logging).
+ *
+ * unmap a block of memory x.
+ *
+ * return FALSE (0) on failure */
+extern void _mem_unmap(void **x, u64 size,
         const str *name, const str *file, u64 line);
 
 void print_bits(u64 x, u8 bit_count);
