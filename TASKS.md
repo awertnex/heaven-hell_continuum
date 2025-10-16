@@ -35,5 +35,9 @@ quirks:
 - [ ] limit framerate
 - [ ] add camera look-at
 - [ ] fix double press for windows
-- [ ] fix chunk queue sort
+- [x] fix chunk queue sort (13 Oct 2025)
 - [x] make the chunk generation count per frame (09 Oct 2025)
+- [ ] make platform_init() for windows
+- [ ] make mem_map() for windows
+- [ ] make mem_commit() for windows
+- [ ] make mem_unmap() for windows
