@@ -228,9 +228,12 @@ callback_key(
 static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset)
 {
-    lily.camera.zoom =
-        clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
-                0.0f, CAMERA_ZOOM_MAX);
+    if (lily.perspective == MODE_CAMERA_3RD_PERSON)
+        lily.camera_distance -= yoffset * CAMERA_ZOOM_SPEED;
+    else
+        lily.camera.zoom =
+            clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
+                    0.0f, CAMERA_ZOOM_MAX);
 }
 
 void
@@ -824,9 +827,13 @@ update_world(Player *player)
     if (is_in_volume_i64(
                 lily.delta_target,
                 (v3i64){
-                -WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL},
+                -(WORLD_DIAMETER * CHUNK_DIAMETER),
+                -(WORLD_DIAMETER * CHUNK_DIAMETER),
+                -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER},
                 (v3i64){
-                WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL}))
+                WORLD_DIAMETER * CHUNK_DIAMETER,
+                WORLD_DIAMETER * CHUNK_DIAMETER,
+                WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER}))
         flag |= FLAG_MAIN_PARSE_TARGET;
     else flag &= ~FLAG_MAIN_PARSE_TARGET;
 
@@ -1020,6 +1027,9 @@ draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
+    if (!(flag & FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER))
+        goto framebuffer_blit;
+
     /* ---- draw player chunk queue visualizer ------------------------------ */
     glUseProgram(shader_bounding_box.id);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
@@ -1028,6 +1038,7 @@ draw_everything(void)
             CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
 
     cursor = chunk_order;
+    end = chunk_order + CHUNK_QUEUE_1ST_MAX;
     u32 i = 0;
     for (; cursor < end; ++i, ++cursor)
     {
@@ -1037,17 +1048,40 @@ draw_everything(void)
                 (**cursor)->pos.y * CHUNK_DIAMETER,
                 (**cursor)->pos.z * CHUNK_DIAMETER);
 
-        u32 index = cursor - chunk_order;
-        if (index < CHUNK_QUEUE_1ST_MAX)
-            glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
-        else if (index < CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX)
-            glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
-        else glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
-
+        glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
         glBindVertexArray(mesh_cube_of_happiness.vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
+    end += CHUNK_QUEUE_2ND_MAX;
+    for (i = 0; cursor < end; ++i, ++cursor)
+    {
+        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+        glUniform3f(uniform.bounding_box.position,
+                (**cursor)->pos.x * CHUNK_DIAMETER,
+                (**cursor)->pos.y * CHUNK_DIAMETER,
+                (**cursor)->pos.z * CHUNK_DIAMETER);
+
+        glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+        glBindVertexArray(mesh_cube_of_happiness.vao);
+        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+    }
+
+    end = chunk_order + CHUNKS_MAX;
+    for (i = 0; cursor < end; ++i, ++cursor)
+    {
+        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+        glUniform3f(uniform.bounding_box.position,
+                (**cursor)->pos.x * CHUNK_DIAMETER,
+                (**cursor)->pos.y * CHUNK_DIAMETER,
+                (**cursor)->pos.z * CHUNK_DIAMETER);
+
+        glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
+        glBindVertexArray(mesh_cube_of_happiness.vao);
+        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+    }
+
+framebuffer_blit:
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,

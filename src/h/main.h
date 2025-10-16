@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             18
+#define SET_RENDER_DISTANCE             32
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -101,7 +101,7 @@
 #define BLOCK_BUFFERS_MAX       3
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_PRIORITY_LOW       32
+#define CHUNK_PARSE_RATE_PRIORITY_LOW       64
 #define CHUNK_PARSE_RATE_PRIORITY_MID       128
 #define CHUNK_PARSE_RATE_PRIORITY_HIGH      2048
 

@@ -747,10 +747,10 @@ generate:
             else chunk_generate(queue[i], rate_block);
             if (!((*queue[i])->flag & FLAG_CHUNK_DIRTY))
             {
+                (*queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
+                queue[i] = NULL;
+                (*count > 0) ? --*count : 0;
             }
-            (*queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
-            queue[i] = NULL;
-            (*count > 0) ? --*count : 0;
             --rate_chunk;
         }
 }

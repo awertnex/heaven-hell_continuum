@@ -98,7 +98,7 @@ _mem_map(void **x, u64 size,
 
     *x = mmap(NULL, size,
             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-    if (*x == NULL)
+    if (*x == MAP_FAILED)
     {
         LOGFATALV(file, line, "%s[%p] Memory Map Failed, Process Aborted\n",
                 name, NULL);
