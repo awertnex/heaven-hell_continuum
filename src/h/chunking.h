@@ -5,7 +5,7 @@
 
 #include "main.h"
 
-extern u64 chunks_max;
+extern u64 CHUNKS_MAX;
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
  * mapping of table entries to chunk positions in 3d space */

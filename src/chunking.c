@@ -14,7 +14,7 @@
 
 /* chunk buffer, raw chunk data */
 static Chunk *chunk_buf = {0};
-u64 chunks_max = 0;
+u64 CHUNKS_MAX = 0;
 static u64 chunk_buf_cursor = 0;
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
@@ -68,13 +68,16 @@ chunking_init(void)
                 CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab"))
         goto cleanup;
 
+    if (!mem_map((void*)&chunk_order,
+                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order"))
+        goto cleanup;
+
     const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
     v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
     u32 distance[CHUNK_BUF_VOLUME] = {0};
     u32 index[CHUNK_ORDER_LOOKUP_OFFSET + CHUNK_BUF_VOLUME] = {0};
     v3i32 coordinates = {0};
     u32 i, j;
-
     if (is_file_exists(stringf("%s%s",
                     GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
                     "lookup_chunk_order.bin"), FALSE))
@@ -88,20 +91,15 @@ chunking_init(void)
         if (indices[CHUNK_ORDER_LOOKUP_RENDER_DISTANCE] != SET_RENDER_DISTANCE)
             goto calculate_distance;
 
-        chunks_max = (u64)indices[CHUNK_ORDER_LOOKUP_COUNT];
-        if (!mem_map((void*)&chunk_order,
-                    CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order"))
-            goto cleanup;
-
         for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-            chunk_order[i] =
-                &chunk_tab[indices[i + CHUNK_ORDER_LOOKUP_OFFSET]];
-        return 0;
+            chunk_order[i] = &chunk_tab[indices[i + CHUNK_ORDER_LOOKUP_OFFSET]];
+
+        CHUNKS_MAX = (u64)indices[CHUNK_ORDER_LOOKUP_COUNT];
+        goto allocate_resources;
     }
 
 calculate_distance:
-
-    chunks_max = 0;
+    CHUNKS_MAX = 0;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         coordinates =
@@ -112,11 +110,11 @@ calculate_distance:
             };
         distance[i] = distance_v3i32(coordinates, center);
         if (distance[i] < RENDER_DISTANCE)
-            ++chunks_max;
+            ++CHUNKS_MAX;
         index[i + CHUNK_ORDER_LOOKUP_OFFSET] = (u32)i;
     }
     index[CHUNK_ORDER_LOOKUP_RENDER_DISTANCE] = SET_RENDER_DISTANCE;
-    index[CHUNK_ORDER_LOOKUP_COUNT] = chunks_max;
+    index[CHUNK_ORDER_LOOKUP_COUNT] = CHUNKS_MAX;
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         for (j = 0; j < CHUNK_BUF_VOLUME; ++j)
@@ -128,17 +126,31 @@ calculate_distance:
                         &index[j + CHUNK_ORDER_LOOKUP_OFFSET]);
             }
 
-    if (!mem_map((void*)&chunk_order,
-                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order"))
-        goto cleanup;
+    write_file(stringf("%s%s",
+                GRANDPATH_DIR[DIR_ROOT_LOOKUPS], "lookup_chunk_order.bin"),
+            sizeof(u32), CHUNK_ORDER_LOOKUP_OFFSET + CHUNKS_MAX,
+            &index, "wb", TRUE);
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         chunk_order[i] = &chunk_tab[index[i + CHUNK_ORDER_LOOKUP_OFFSET]];
 
-    write_file(stringf("%s%s",
-                GRANDPATH_DIR[DIR_ROOT_LOOKUPS], "lookup_chunk_order.bin"),
-            sizeof(u32), CHUNK_ORDER_LOOKUP_OFFSET + chunks_max,
-            &index, "wb", TRUE);
+allocate_resources:
+    if (!mem_map((void*)&chunk_queue.priority_1,
+                CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
+                "chunk_queue.priority_1"))
+        goto cleanup;
+
+    if (!mem_map((void*)&chunk_queue.priority_2,
+                CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
+                "chunk_queue.priority_2"))
+        goto cleanup;
+
+    if (!mem_map((void*)&chunk_queue.priority_3,
+                (CHUNKS_MAX - CHUNK_QUEUE_1ST_MAX - CHUNK_QUEUE_2ND_MAX) *
+                sizeof(Chunk**),
+                "chunk_queue.priority_3"))
+        goto cleanup;
+
     return 0;
 
 cleanup:
@@ -146,6 +158,16 @@ cleanup:
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
     mem_unmap((void*)&chunk_tab,
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
+    mem_unmap((void*)&chunk_order,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order");
+    mem_unmap((void*)&chunk_queue.priority_1,
+            CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**), "chunk_queue.priority_1");
+    mem_unmap((void*)&chunk_queue.priority_2,
+            CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**), "chunk_queue.priority_2");
+    mem_unmap((void*)&chunk_queue.priority_3,
+            (CHUNKS_MAX - CHUNK_QUEUE_1ST_MAX - CHUNK_QUEUE_2ND_MAX) *
+            sizeof(Chunk**),
+            "chunk_queue.priority_3");
     return -1;
 }
 
@@ -153,7 +175,7 @@ void
 chunking_update(v3i16 player_delta_chunk)
 {
     u32 i = 0;
-    for (; i < chunks_max; ++i)
+    for (; i < CHUNKS_MAX; ++i)
     {
         Chunk **p = chunk_order[i];
         u32 index = p - chunk_tab;
@@ -174,6 +196,14 @@ chunking_free(void)
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
     mem_unmap((void*)&chunk_order,
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order");
+    mem_unmap((void*)&chunk_queue.priority_1,
+            CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**), "chunk_queue.priority_1");
+    mem_unmap((void*)&chunk_queue.priority_2,
+            CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**), "chunk_queue.priority_2");
+    mem_unmap((void*)&chunk_queue.priority_3,
+            (CHUNKS_MAX - CHUNK_QUEUE_1ST_MAX - CHUNK_QUEUE_2ND_MAX) *
+            sizeof(Chunk**),
+            "chunk_queue.priority_3");
 }
 
 void
@@ -317,9 +347,11 @@ _block_break(Chunk **chunk, v3u32 coordinates, u32 x, u32 y, u32 z)
     Chunk *NY = *(chunk - CHUNK_BUF_DIAMETER);
     Chunk *PZ = *(chunk + CHUNK_BUF_LAYER);
     Chunk *NZ = *(chunk - CHUNK_BUF_LAYER);
+
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
     z %= CHUNK_DIAMETER;
+
     if (x == CHUNK_DIAMETER - 1)
     {
         is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) || !PX;
@@ -374,7 +406,7 @@ _block_break(Chunk **chunk, v3u32 coordinates, u32 x, u32 y, u32 z)
         if (!is_on_edge && PZ->block[0][y][x])
         {
             PZ->block[0][y][x] |= FLAG_BLOCK_FACE_NZ;
-            NZ->flag |= FLAG_CHUNK_DIRTY;
+            PZ->flag |= FLAG_CHUNK_DIRTY;
         }
     }
     else if (CHUNK->block[z + 1][y][x])
@@ -639,7 +671,7 @@ _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
     };
 
     Chunk *i = &chunk_buf[chunk_buf_cursor];
-    Chunk *end = chunk_buf + chunks_max;
+    Chunk *end = chunk_buf + CHUNKS_MAX;
     for (; i < end; ++i)
         if (!(i->flag & FLAG_CHUNK_LOADED))
         {
@@ -680,13 +712,16 @@ void
 chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
         u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block)
 {
+    if (!queue_size)
+        queue_size = CHUNKS_MAX - queue_stride;
+
     /* ---- push chunk queue ------------------------------------------------ */
     if (count && *count == queue_size)
         goto generate;
 
     u32 i;
     Chunk ***chunk = chunk_order + queue_stride;
-    Chunk ***end = chunk + queue_size;
+    Chunk ***end = chunk_order + queue_size;
     for (; chunk < end; ++chunk)
         if (**chunk && ((**chunk)->flag & FLAG_CHUNK_DIRTY) &&
                 !((**chunk)->flag & FLAG_CHUNK_QUEUED) && !(queue[*cursor]))
@@ -712,10 +747,10 @@ generate:
             else chunk_generate(queue[i], rate_block);
             if (!((*queue[i])->flag & FLAG_CHUNK_DIRTY))
             {
-                (*queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
-                queue[i] = NULL;
-                (*count > 0) ? --*count : 0;
             }
+            (*queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
+            queue[i] = NULL;
+            (*count > 0) ? --*count : 0;
             --rate_chunk;
         }
 }
@@ -756,7 +791,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
                 player_delta_chunk->y,
                 player_delta_chunk->z}) > RENDER_DISTANCE)
     {
-        for (i = 0; i < chunks_max; ++i)
+        for (i = 0; i < CHUNKS_MAX; ++i)
             if (*chunk_order[i])
                 chunk_buf_pop(chunk_order[i] - chunk_tab);
 

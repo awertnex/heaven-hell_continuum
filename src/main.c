@@ -634,7 +634,6 @@ update_input(Player *player)
 
     player->pos_smooth.z = player->pos.z;
 
-    printf("Chunk[%p]\n", chunk_tab[chunk_tab_index]);
     /* ---- gameplay -------------------------------------------------------- */
     if (glfwGetMouseButton(render.window,
                 bind_attack_or_destroy) == GLFW_PRESS &&
@@ -816,7 +815,7 @@ update_world(Player *player)
         {
             chunk_queue_update(&chunk_queue.cursor_3, &chunk_queue.count_3,
                     chunk_queue.priority_3,
-                    CHUNK_QUEUE_2ND_MAX, CHUNK_QUEUE_3RD_MAX,
+                    CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX, 0,
                     CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
         }
     }
@@ -931,7 +930,7 @@ draw_everything(void)
     static Chunk ***end = NULL;
     static Chunk *chunk = NULL;
     cursor = chunk_order;
-    end = cursor + chunks_max;
+    end = cursor + CHUNKS_MAX;
     for (; **cursor && cursor < end; ++cursor)
     {
         chunk = **cursor;
@@ -1310,7 +1309,7 @@ draw_everything(void)
                 chunk_queue.count_1,
                 chunk_queue.count_2,
                 chunk_queue.count_3,
-                chunks_max),
+                CHUNKS_MAX),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
     text_render(0xffffffff);
