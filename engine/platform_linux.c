@@ -11,13 +11,6 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-u64 platform_page_size = 0;
-
-void platform_init(void)
-{
-    platform_page_size = sysconf(_SC_PAGESIZE);
-}
-
 int
 make_dir(const str *path)
 {
@@ -135,9 +128,11 @@ void
 _mem_unmap(void *x, u64 size,
         const str *name, const str *file, u64 line)
 {
+    if (!x) return;
     munmap(x, size);
     LOGTRACEV(file, line, "%s[%p] Memory Unmapped [%lldB]\n",
             name, x, size);
+    x = NULL;
 }
 
 #ifdef _GNU_SOURCE

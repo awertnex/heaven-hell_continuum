@@ -23,9 +23,6 @@
 
 #endif /* PLATFORM */
 
-extern u64 platform_page_size;
-
-void platform_init(void);
 int make_dir(const str *path);
 
 /* -- INTERNAL USE ONLY --;

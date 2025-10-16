@@ -277,14 +277,14 @@ player_target_update(Player *player)
     const f32 CYAW = player->cos_yaw;
 
     player->target =
-    (v3f64){
-        player->pos_smooth.x +
-            ((CYAW * CPCH) * player->camera_distance),
-        player->pos_smooth.y -
-            ((SYAW * CPCH) * player->camera_distance),
-        player->pos_smooth.z + player->eye_height -
-            (SPCH * player->camera_distance),
-    };
+        (v3f64){
+            player->pos_smooth.x +
+                ((CYAW * CPCH) * player->camera_distance),
+            player->pos_smooth.y -
+                ((SYAW * CPCH) * player->camera_distance),
+            player->pos_smooth.z + player->eye_height -
+                (SPCH * player->camera_distance),
+        };
 
     player->delta_target =
         (v3i64){

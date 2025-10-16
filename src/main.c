@@ -228,8 +228,9 @@ callback_key(
 static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset)
 {
-    lily.camera.zoom = clamp_f64(lily.camera.zoom + yoffset *
-            CAMERA_ZOOM_SPEED, 0.0f, CAMERA_ZOOM_MAX);
+    lily.camera.zoom =
+        clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
+                0.0f, CAMERA_ZOOM_MAX);
 }
 
 void
@@ -633,6 +634,7 @@ update_input(Player *player)
 
     player->pos_smooth.z = player->pos.z;
 
+    printf("Chunk[%p]\n", chunk_tab[chunk_tab_index]);
     /* ---- gameplay -------------------------------------------------------- */
     if (glfwGetMouseButton(render.window,
                 bind_attack_or_destroy) == GLFW_PRESS &&
@@ -777,11 +779,14 @@ update_world(Player *player)
         show_cursor;
     else disable_cursor;
 
-    b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
+
+    static b8 use_mouse = TRUE;
+    use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     player_camera_movement_update(&render, player, use_mouse);
+
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
@@ -922,9 +927,11 @@ draw_everything(void)
     glUniform1f(uniform.voxel.opacity, opacity);
     glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_STONE].id);
 
-    Chunk ***cursor = chunk_order;
-    Chunk ***end = cursor + chunk_count;
-    Chunk *chunk = NULL;
+    static Chunk ***cursor = NULL;
+    static Chunk ***end = NULL;
+    static Chunk *chunk = NULL;
+    cursor = chunk_order;
+    end = cursor + chunks_max;
     for (; **cursor && cursor < end; ++cursor)
     {
         chunk = **cursor;
@@ -1303,7 +1310,7 @@ draw_everything(void)
                 chunk_queue.count_1,
                 chunk_queue.count_2,
                 chunk_queue.count_3,
-                chunk_count),
+                chunks_max),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
     text_render(0xffffffff);

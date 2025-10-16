@@ -48,7 +48,7 @@ is_file_exists(const str *path, b8 log)
             return FALSE;
         }
     }
-    LOGERROR("File '%s' Not Found\n", path);
+    if (log) LOGERROR("File '%s' Not Found\n", path);
     return FALSE;
 }
 

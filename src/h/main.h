@@ -30,7 +30,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             5
+#define SET_RENDER_DISTANCE             28
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -56,7 +56,7 @@
 #define SET_PLAYER_JUMP_HEIGHT          8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       300.0f
+#define SET_PLAYER_SPEED_FLY_FAST       40.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
@@ -81,23 +81,38 @@
 #define CHUNK_BUF_VOLUME \
     (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 
+#define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
+#define CHUNK_BUF_DIAMETER_MAX  ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
+#define CHUNK_BUF_VOLUME_MAX \
+    (CHUNK_BUF_DIAMETER_MAX * \
+    CHUNK_BUF_DIAMETER_MAX * \
+    CHUNK_BUF_DIAMETER_MAX)
+
 #define CHUNK_TAB_CENTER \
     (CHUNK_BUF_RADIUS + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
-#define CHUNK_QUEUE_1ST_MAX     64
-#define CHUNK_QUEUE_2ND_MAX     (CHUNK_QUEUE_1ST_MAX * CHUNK_QUEUE_1ST_MAX)
-#define CHUNK_QUEUE_3RD_MAX     CHUNK_BUF_LAYER
+#define CHUNK_QUEUE_1ST_MAX     256
+#define CHUNK_QUEUE_2ND_MAX     4096
+#define CHUNK_QUEUE_3RD_MAX     16384
+
+/* 'chunk_mesh()' temp static buffer count */
 #define BLOCK_BUFFERS_MAX       3
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_PRIORITY_LOW   32
-#define CHUNK_PARSE_RATE_PRIORITY_MID   128
-#define CHUNK_PARSE_RATE_PRIORITY_HIGH  2048
+#define CHUNK_PARSE_RATE_PRIORITY_LOW       32
+#define CHUNK_PARSE_RATE_PRIORITY_MID       128
+#define CHUNK_PARSE_RATE_PRIORITY_HIGH      2048
 
 /* number of blocks to process per chunk per frame */
-#define BLOCK_PARSE_RATE                512
+#define BLOCK_PARSE_RATE                    512
+
+/* start of chunk_order index table in lookup file */
+#define CHUNK_ORDER_LOOKUP_OFFSET           2
+
+#define CHUNK_ORDER_LOOKUP_RENDER_DISTANCE  0
+#define CHUNK_ORDER_LOOKUP_COUNT            1
 
 #define COLOR_CHUNK_LOADED      0x4c260715
 #define COLOR_CHUNK_RENDER      0x5e7a0aff
@@ -427,7 +442,6 @@ typedef struct Chunk
     v3i16 pos;      /* (world XYZ) / CHUNK_DIAMETER */
     u64 id;         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
     u32 color;      /* debug color: 0xrrggbbaa */
-    u32 distance;   /* chunk's distance away from player */
     GLuint vao;
     GLuint vbo;
     u64 vbo_len;

@@ -307,6 +307,7 @@ build_main(void)
     /* ---- cflags ---------------------------------------------------------- */
     push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
     push_cmd("-std=c99");
+    push_cmd("-ggdb");
     push_cmd("-Wall");
     push_cmd("-Wextra");
     push_cmd("-fno-builtin");

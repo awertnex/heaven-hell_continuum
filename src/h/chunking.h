@@ -5,21 +5,15 @@
 
 #include "main.h"
 
-/* chunk arena, raw chunk data */
-extern Chunk *chunk_arena;
-
-/* chunk buffer, raw chunk data */
-extern Chunk *chunk_buf;
+extern u64 chunks_max;
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
  * mapping of table entries to chunk positions in 3d space */
-extern Chunk *chunk_tab[CHUNK_BUF_VOLUME];
+extern Chunk **chunk_tab;
 
 /* chunk pointer pointer look-up table that points to chunk_tab addresses.
  * order of chunks based on distance away from player */
-extern Chunk **chunk_order[CHUNK_BUF_VOLUME];
-
-extern u64 chunk_count;
+extern Chunk ***chunk_order;
 
 /* queue of chunks to be processed */
 extern ChunkQueue chunk_queue;
@@ -27,14 +21,16 @@ extern ChunkQueue chunk_queue;
 /* player relative chunk tab access */
 static u16 chunk_tab_index;
 
+/* return FALSE (0) on failure */
 u8 chunking_init(void);
+
 void chunking_update(v3i16 player_delta_chunk);
 void chunking_free(void);
 
-/* index = (chunk_tab index); */
+/* index = (chunk_tab index) */
 void block_place(u32 index, u32 x, u32 y, u32 z);
 
-/* index = (chunk_tab index); */
+/* index = (chunk_tab index) */
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
 /* queue_stride = first chunk_order index to start parsing,

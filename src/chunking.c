@@ -6,26 +6,24 @@
 #include <engine/h/memory.h>
 #include <engine/h/math.h>
 #include <engine/h/logger.h>
+#include <engine/h/platform.h>
 
 #include "h/main.h"
 #include "h/chunking.h"
 #include "h/dir.h"
 
-/* chunk arena, raw chunk data */
-Chunk *chunk_arena = {0};
-
-/* chunk buffer, spacial mapping of chunk_arena entries */
-Chunk *chunk_buf = {0};
+/* chunk buffer, raw chunk data */
+static Chunk *chunk_buf = {0};
+u64 chunks_max = 0;
+static u64 chunk_buf_cursor = 0;
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
  * mapping of table entries to chunk positions in 3d space */
-Chunk *chunk_tab[CHUNK_BUF_VOLUME] = {0};
+Chunk **chunk_tab = NULL;
 
 /* chunk pointer pointer look-up table that points to chunk_tab addresses.
  * order of chunks based on distance away from player */
-Chunk **chunk_order[CHUNK_BUF_VOLUME] = {0};
-
-u64 chunk_count = 0;
+Chunk ***chunk_order = NULL;
 
 /* queue of chunks to be processed */
 ChunkQueue chunk_queue = {0};
@@ -38,7 +36,7 @@ static void _block_place(Chunk **chunk, v3u32 coordinates,
 static void _block_break(Chunk **chunk, v3u32 coordinates,
         u32 x, u32 y, u32 z);
 
-/* index = (chunk_tab index);
+/* index = (chunk_tab index),
  * rate = number of blocks to process per chunk per frame */
 static void chunk_generate(Chunk **chunk, u32 rate);
 
@@ -51,17 +49,31 @@ static void _chunk_mesh(Chunk *chunk);
 static void chunk_serialize(Chunk *chunk, str *world_name);
 static void chunk_deserialize(Chunk *chunk, str *world_name);
 
-/* index = (chunk_tab index); */
-static void chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance);
+/* -- INTERNAL USE ONLY --;
+ *
+ * index = (chunk_tab index) */
+static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
 
-/* index = (chunk_tab index); */
+/* index = (chunk_tab index) */
 static void chunk_buf_pop(u32 index);
 
 u8
 chunking_init(void)
 {
-    if (!mem_map((void*)&chunk_arena, CHUNK_BUF_VOLUME * sizeof(Chunk), "chunk_arena"))
+    if (!mem_map((void*)&chunk_buf,
+                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf"))
         return -1;
+
+    if (!mem_map((void*)&chunk_tab,
+                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab"))
+        goto cleanup;
+
+    const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
+    v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
+    u32 distance[CHUNK_BUF_VOLUME] = {0};
+    u32 index[CHUNK_ORDER_LOOKUP_OFFSET + CHUNK_BUF_VOLUME] = {0};
+    v3i32 coordinates = {0};
+    u32 i, j;
 
     if (is_file_exists(stringf("%s%s",
                     GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
@@ -73,26 +85,23 @@ chunking_init(void)
                     "lookup_chunk_order.bin"),
                 sizeof(u32), &len, "rb");
 
-        if (indices[CHUNK_BUF_VOLUME + 1] != SET_RENDER_DISTANCE)
+        if (indices[CHUNK_ORDER_LOOKUP_RENDER_DISTANCE] != SET_RENDER_DISTANCE)
             goto calculate_distance;
 
-        for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-            chunk_order[i] = &chunk_tab[indices[i]];
-        chunk_count = (u64)indices[CHUNK_BUF_VOLUME];
+        chunks_max = (u64)indices[CHUNK_ORDER_LOOKUP_COUNT];
+        if (!mem_map((void*)&chunk_order,
+                    CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order"))
+            goto cleanup;
 
-        if (!mem_commit((void*)&chunk_arena, 0, chunk_count * sizeof(Chunk), "chunk_arena"))
-            return -1;
-        chunk_buf = (Chunk*)chunk_arena;
+        for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
+            chunk_order[i] =
+                &chunk_tab[indices[i + CHUNK_ORDER_LOOKUP_OFFSET]];
         return 0;
     }
 
 calculate_distance:
-    const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
-    v3i32 center = {CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS};
-    u32 distance[CHUNK_BUF_VOLUME] = {0};
-    u32 index[CHUNK_BUF_VOLUME + 2] = {0};
-    v3i32 coordinates = {0};
-    u64 i, j;
+
+    chunks_max = 0;
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
     {
         coordinates =
@@ -103,59 +112,52 @@ calculate_distance:
             };
         distance[i] = distance_v3i32(coordinates, center);
         if (distance[i] < RENDER_DISTANCE)
-            ++chunk_count;
-        index[i] = (u32)i;
+            ++chunks_max;
+        index[i + CHUNK_ORDER_LOOKUP_OFFSET] = (u32)i;
     }
-    index[CHUNK_BUF_VOLUME] = chunk_count;
-    index[CHUNK_BUF_VOLUME + 1] = SET_RENDER_DISTANCE;
+    index[CHUNK_ORDER_LOOKUP_RENDER_DISTANCE] = SET_RENDER_DISTANCE;
+    index[CHUNK_ORDER_LOOKUP_COUNT] = chunks_max;
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         for (j = 0; j < CHUNK_BUF_VOLUME; ++j)
-            if (distance[j] > distance[i])
+            if (distance[i] < distance[j])
             {
-                swap_bits_u32((u32*)&distance[i], (u32*)&distance[j]);
-                swap_bits_u32((u32*)&index[i], (u32*)&index[j]);
+                swap_bits_u32(&distance[i], &distance[j]);
+                swap_bits_u32(
+                        &index[i + CHUNK_ORDER_LOOKUP_OFFSET],
+                        &index[j + CHUNK_ORDER_LOOKUP_OFFSET]);
             }
 
+    if (!mem_map((void*)&chunk_order,
+                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order"))
+        goto cleanup;
+
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-        chunk_order[i] = &chunk_tab[index[i]];
+        chunk_order[i] = &chunk_tab[index[i + CHUNK_ORDER_LOOKUP_OFFSET]];
 
     write_file(stringf("%s%s",
-                GRANDPATH_DIR[DIR_ROOT_LOOKUPS],
-                "lookup_chunk_order.bin"),
-            sizeof(u32), CHUNK_BUF_VOLUME + 2, &index, "wb", TRUE);
-
-    if (!mem_commit((void*)&chunk_arena, 0, chunk_count * sizeof(Chunk), "chunk_arena"))
-        return -1;
-    chunk_buf = (Chunk*)chunk_arena;
+                GRANDPATH_DIR[DIR_ROOT_LOOKUPS], "lookup_chunk_order.bin"),
+            sizeof(u32), CHUNK_ORDER_LOOKUP_OFFSET + chunks_max,
+            &index, "wb", TRUE);
     return 0;
+
+cleanup:
+    mem_unmap((void*)&chunk_buf,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
+    mem_unmap((void*)&chunk_tab,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
+    return -1;
 }
 
 void
 chunking_update(v3i16 player_delta_chunk)
 {
-    const u32 RENDER_DISTANCE = (u32)powf(settings.render_distance, 2.0f) + 2;
-
     u32 i = 0;
-    for (; i < CHUNK_BUF_VOLUME; ++i)
+    for (; i < chunks_max; ++i)
     {
-        Chunk *p = chunk_tab[i];
-        v3u32 coordinates =
-        {
-            i % CHUNK_BUF_DIAMETER,
-            (i / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-            i / CHUNK_BUF_LAYER,
-        };
-        u32 distance = distance_v3i32(
-                (v3i32){CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS, CHUNK_BUF_RADIUS},
-                (v3i32){coordinates.x, coordinates.y, coordinates.z});
-
-        if (distance < RENDER_DISTANCE)
-        {
-            if (!p) chunk_buf_push(i, player_delta_chunk, distance);
-        }
-        else if (p && p->flag & FLAG_CHUNK_LOADED)
-            chunk_buf_pop(i);
+        Chunk **p = chunk_order[i];
+        u32 index = p - chunk_tab;
+        if (!*p) _chunk_buf_push(index, player_delta_chunk);
     }
 }
 
@@ -166,9 +168,12 @@ chunking_free(void)
     for (; i < CHUNK_BUF_VOLUME; ++i)
         if (chunk_tab[i])
             chunk_buf_pop(i);
-    chunk_buf = NULL;
-    mem_unmap((void*)&chunk_arena, CHUNK_BUF_VOLUME * sizeof(Chunk),
-            "chunk_arena");
+    mem_unmap((void*)&chunk_buf,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
+    mem_unmap((void*)&chunk_tab,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
+    mem_unmap((void*)&chunk_order,
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "chunk_order");
 }
 
 void
@@ -195,9 +200,11 @@ _block_place(Chunk **chunk, v3u32 coordinates, u32 x, u32 y, u32 z)
     Chunk *NY = *(chunk - CHUNK_BUF_DIAMETER);
     Chunk *PZ = *(chunk + CHUNK_BUF_LAYER);
     Chunk *NZ = *(chunk - CHUNK_BUF_LAYER);
+
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
     z %= CHUNK_DIAMETER;
+
     if (x == CHUNK_DIAMETER - 1)
     {
         is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) || !PX;
@@ -539,6 +546,7 @@ chunk_mesh(Chunk *chunk)
         chunk->color = COLOR_CHUNK_LOADED;
     }
 }
+
 static void
 _chunk_mesh(Chunk *chunk)
 {
@@ -621,7 +629,7 @@ chunk_deserialize(Chunk *chunk, str *world_name)
 }
 
 static void
-chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance)
+_chunk_buf_push(u32 index, v3i16 player_delta_chunk)
 {
     v3u32 coordinates =
     {
@@ -630,37 +638,40 @@ chunk_buf_push(u32 index, v3i16 player_delta_chunk, u32 distance)
         index / CHUNK_BUF_LAYER,
     };
 
-    for (u16 i = 0; i < CHUNK_BUF_VOLUME; ++i)
-    {
-        if (chunk_buf[i].flag & FLAG_CHUNK_LOADED) continue;
-
-        chunk_buf[i] = (Chunk){0};
-        chunk_buf[i].pos =
-            (v3i16){
-                player_delta_chunk.x + (coordinates.x - CHUNK_BUF_RADIUS),
-                player_delta_chunk.y + (coordinates.y - CHUNK_BUF_RADIUS),
-                player_delta_chunk.z + (coordinates.z - CHUNK_BUF_RADIUS),
-            };
-        chunk_buf[i].id =
-            ((u64)(chunk_buf[i].pos.x & 0xffff) << 32) |
-            ((u64)(chunk_buf[i].pos.y & 0xffff) << 16) |
-            ((u64)(chunk_buf[i].pos.z & 0xffff));
-        chunk_buf[i].distance = distance;
-
-        chunk_buf[i].flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
-        chunk_buf[i].color = COLOR_CHUNK_LOADED;
-        chunk_tab[index] = &chunk_buf[i];
-        return;
-    }
+    Chunk *i = &chunk_buf[chunk_buf_cursor];
+    Chunk *end = chunk_buf + chunks_max;
+    for (; i < end; ++i)
+        if (!(i->flag & FLAG_CHUNK_LOADED))
+        {
+            *i = (Chunk){0};
+            i->pos =
+                (v3i16){
+                    player_delta_chunk.x + (coordinates.x - CHUNK_BUF_RADIUS),
+                    player_delta_chunk.y + (coordinates.y - CHUNK_BUF_RADIUS),
+                    player_delta_chunk.z + (coordinates.z - CHUNK_BUF_RADIUS),
+                };
+            i->id =
+                ((u64)(i->pos.x & 0xffff) << 32) |
+                ((u64)(i->pos.y & 0xffff) << 16) |
+                ((u64)(i->pos.z & 0xffff));
+            i->color = COLOR_CHUNK_LOADED;
+            i->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
+            chunk_tab[index] = i;
+            ++chunk_buf_cursor;
+            return;
+        }
     LOGERROR("%s\n", "chunk_buf Full");
 }
 
 static void
 chunk_buf_pop(u32 index)
 {
+    u32 index_popped = chunk_tab[index] - chunk_buf;
     chunk_tab[index]->vbo ? glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
     chunk_tab[index]->vao ? glDeleteVertexArrays(1, &chunk_tab[index]->vao) : 0;
-    *chunk_tab[index] = (Chunk){0};
+    chunk_tab[index]->flag = 0;
+    if (chunk_buf_cursor > index_popped)
+        chunk_buf_cursor = index_popped;
     chunk_tab[index] = NULL;
 }
 
@@ -675,7 +686,7 @@ chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
 
     u32 i;
     Chunk ***chunk = chunk_order + queue_stride;
-    Chunk ***end = chunk_order + chunk_count;
+    Chunk ***end = chunk + queue_size;
     for (; chunk < end; ++chunk)
         if (**chunk && ((**chunk)->flag & FLAG_CHUNK_DIRTY) &&
                 !((**chunk)->flag & FLAG_CHUNK_QUEUED) && !(queue[*cursor]))
@@ -712,6 +723,7 @@ generate:
 void
 chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
+    /* TODO: bake 'mirror_index' and 'target_index' into a lookup on startup */
     v3u32 coordinates = {0};
     u32 mirror_index = 0;
     v3u32 _mirror_index = {0};
@@ -744,13 +756,15 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
                 player_delta_chunk->y,
                 player_delta_chunk->z}) > RENDER_DISTANCE)
     {
-        for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
-            if (chunk_tab[i])
-                chunk_buf_pop(i);
+        for (i = 0; i < chunks_max; ++i)
+            if (*chunk_order[i])
+                chunk_buf_pop(chunk_order[i] - chunk_tab);
 
         *player_delta_chunk = player_chunk;
         return;
     }
+
+    chunk_buf_cursor = 0;
 
     switch (AXIS)
     {
