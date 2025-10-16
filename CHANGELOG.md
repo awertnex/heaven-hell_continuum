@@ -1,10 +1,21 @@
 # changelog
 
-## v0.2.3-beta (DD MMM YYYY)
+## v0.2.4-beta (DD MMM YYYY)
+
+#### changes
+
+- - -
+## v0.2.3-beta (16 Oct 2025)
 
 #### changes
 - added image loading with stb_image.h
 - added UI parsing shaders
+- fixed patchy chunk generation
+- fixed player place block and break block
+- switched from malloc to mmap for faster and more efficient memory management
+- switched tables from stack to heap (beyond a certain render distance,
+  nothing allocated, and just froze there)
+- baked chunk order indices to a table on disk to avoid runtime re-calculation
 
 - - -
 ## v0.2.2-beta (12 Oct 2025)
