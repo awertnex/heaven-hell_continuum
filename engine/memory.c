@@ -22,7 +22,7 @@ _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
                 name, NULL);
         return FALSE;
     }
-    LOGTRACEV(file, line, "%s[%p] Memory Allocated[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Allocated [%lldB]\n",
             name, *x, size);
     return TRUE;
 }
@@ -41,7 +41,7 @@ _mem_alloc_memb(void **x, u64 memb, u64 size,
                 name, NULL);
         return FALSE;
     }
-    LOGTRACEV(file, line, "%s[%p] Memory Allocated[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Allocated [%lldB]\n",
             name, *x, memb * size);
     return TRUE;
 }
@@ -89,7 +89,7 @@ _mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
         return FALSE;
     }
     *x = temp;
-    LOGTRACEV(file, line, "%s[%p] Memory Reallocated[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Reallocated [%lldB]\n",
             name, *x, size);
     return TRUE;
 }
@@ -112,7 +112,7 @@ _mem_realloc_memb(void **x, u64 memb, u64 size,
         return FALSE;
     }
     *x = temp;
-    LOGTRACEV(file, line, "%s[%p] Memory Reallocated[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Reallocated [%lldB]\n",
             name, *x, memb * size);
     return TRUE;
 }
@@ -127,7 +127,7 @@ _mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
     memset(*x, 0, size);
     free(*x);
     *x = NULL;
-    LOGTRACEV(file, line, "%s[%p] Memory Unloaded[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Unloaded [%lldB]\n",
             name, temp, size);
 }
 
@@ -140,7 +140,7 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
         temp = x->i;
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
-        LOGTRACEV(file, line, "%s.i[%p] Memory Unloaded[%lldB]\n",
+        LOGTRACEV(file, line, "%s.i[%p] Memory Unloaded [%lldB]\n",
                 name, temp, x->memb * sizeof(str*));
     }
     if (x->buf != NULL)
@@ -148,7 +148,7 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
         temp = x->buf;
         memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
-        LOGTRACEV(file, line, "%s.buf[%p] Memory Unloaded[%lldB]\n",
+        LOGTRACEV(file, line, "%s.buf[%p] Memory Unloaded [%lldB]\n",
                 name, temp, x->memb * x->size);
     }
     *x = (buf){NULL};
@@ -161,7 +161,7 @@ _mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
         return;
 
     memset(*x, 0, size);
-    LOGTRACEV(file, line, "%s[%p] Memory Cleared[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Cleared [%lldB]\n",
             name, *x, size);
 }
 

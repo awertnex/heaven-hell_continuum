@@ -11,6 +11,13 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
+u64 platform_page_size = 0;
+
+void platform_init(void)
+{
+    platform_page_size = sysconf(_SC_PAGESIZE);
+}
+
 int
 make_dir(const str *path)
 {
@@ -97,37 +104,40 @@ _mem_map(void **x, u64 size,
         return TRUE;
 
     *x = mmap(NULL, size,
-            PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
     if (*x == NULL)
     {
-        LOGFATALV(file, line, "%s[%p] Memory Mapping Failed, Process Aborted\n",
+        LOGFATALV(file, line, "%s[%p] Memory Map Failed, Process Aborted\n",
                 name, NULL);
         return FALSE;
     }
-    LOGTRACEV(file, line, "%s[%p] Memory Mapped[%lldB]\n",
+    LOGTRACEV(file, line, "%s[%p] Memory Mapped [%lldB]\n",
             name, *x, size);
     return TRUE;
 }
 
 b8
-_mem_commit(void **x, u64 offset, u64 size,
+_mem_commit(void *x, void *offset, u64 size,
         const str *name, const str *file, u64 line)
 {
-    if (!mprotect(*x + offset, size, PROT_READ | PROT_WRITE))
-        LOGFATALV(file, line, "%s[%p] Memory Committing[%lldB] offset [%p] Failed, Process Aborted\n",
-                name, NULL, size, *(x + offset));
-    LOGTRACEV(file, line, "%s[%p] Memory Committed[%lldB] offset [%p]\n",
-            name, *x, size, *(x + offset));
+    if (mprotect(offset, size, PROT_READ | PROT_WRITE) != 0)
+    {
+        LOGFATALV(file, line, "%s[%p][%p] Memory Commit [%lldB] Failed, Process Aborted\n",
+                name, x, offset, size);
+        return FALSE;
+    }
+    LOGTRACEV(file, line, "%s[%p][%p] Memory Committed [%lldB]\n",
+            name, x, offset, size);
     return TRUE;
 }
 
 void
-_mem_unmap(void **x, u64 size,
+_mem_unmap(void *x, u64 size,
         const str *name, const str *file, u64 line)
 {
-    munmap(*x, size);
-    LOGTRACEV(file, line, "%s[%p] Memory Unmapped[%lldB]\n",
-            name, *x, size);
+    munmap(x, size);
+    LOGTRACEV(file, line, "%s[%p] Memory Unmapped [%lldB]\n",
+            name, x, size);
 }
 
 #ifdef _GNU_SOURCE

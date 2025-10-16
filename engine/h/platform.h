@@ -23,12 +23,12 @@
 
 #endif /* PLATFORM */
 
-/* -- IMPLEMENTATION: platform_<PLATFORM>.c --; */
+extern u64 platform_page_size;
+
+void platform_init(void);
 int make_dir(const str *path);
 
 /* -- INTERNAL USE ONLY --;
- *
- * -- IMPLEMENTATION: platform_<PLATFORM>.c --;
  *
  * get real path.
  * 
@@ -40,17 +40,13 @@ b8 _get_path_absolute(const str *path, str *path_real);
 
 /* -- INTERNAL USE ONLY --;
  *
- * -- IMPLEMENTATION: platform_<PLATFORM>.c --;
- *
  * get current path of binary/executable,
  * assign allocated path string to path.
  *
  * return FALSE (0) on failure */
 b8 _get_path_bin_root(str *path);
 
-/* -- IMPLEMENTATION: platform_<PLATFORM>.c --;
- *
- * fork child process and execute command,
+/* fork child process and execute command,
  * based on execvp().
  * 
  * cmd = command and args,
