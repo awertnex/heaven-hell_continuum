@@ -1,7 +1,7 @@
 #include <dirent.h>
 
 #include "launcher.h"
-#include "../engine/h/logger.h"
+#include <engine/h/logger.h>
 #include "../h/dir.h"
 
 u8 state = 0;

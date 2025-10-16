@@ -1,5 +1,37 @@
 # changelog
 
+## v0.2.3-beta (DD MMM YYYY)
+
+#### changes
+- added image loading with stb_image.h
+- added UI parsing shaders
+
+- - -
+## v0.2.2-beta (12 Oct 2025)
+
+#### changes
+- optimized chunk rendering:
+    - added a queue for qirty chunks to process at a reasonable rate per frame
+    - changed block data from 'u64' -> 'u32' to save memory, and sacrifice
+      some performance by calculating position data at meshing time
+    - removed render flags from invisible inside chunks
+    - meshed each chunk and loaded only the blocks with faces into an array
+      to send to the gpu
+    - added 'vbo_len' member to struct 'Chunk' to determine draw-call length
+      (major performance gain)
+    - changed some loop iteration to linear pointer iteration
+- added silly fog
+- better chunk rendering:
+    - added buffer that sorts chunks based on distance from player:
+        - helped push dirty chunks to meshing queue based on distance
+        - leveraged buffer advantage for depth sorting as well
+        - leveraged buffer for breaking the draw loop short
+- better chunk generation performance:
+    - added chunk queue buffer to process dirty chunks:
+        - added 'rate_chunk' to limit number of chunks processed per frame
+        - added 'rate_block' to limit number of blocks processed per chunk
+
+- - -
 ## v0.2.0-beta (05 Oct 2025)
 
 #### changes

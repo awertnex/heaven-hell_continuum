@@ -1,88 +1,8 @@
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
 
-#include "../engine/h/core.h"
-
-/* ---- section: player defaults -------------------------------------------- */
-
-typedef struct Player
-{
-    str name[100];                  /* player in-game name */
-    v3f64 pos;                      /* player processed raw_pos */
-    v3f64 raw_pos;                  /* player current coordinates in world */
-    v3f32 pos_lerp_speed;
-    v3f64 target;                   /* player arm (or whatever) */
-    v3f32 scl;                      /* player size for collision detection */
-    v3f32 collision_check_start;
-    v3f32 collision_check_end;
-    f32 pitch, yaw;                 /* for player camera direction and target */
-    f32 sin_pitch;                  /* processed player pitch sine angle */
-    f32 cos_pitch;                  /* processed player pitch cosine angle */
-    f32 sin_yaw;                    /* processed player yaw sine angle */
-    f32 cos_yaw;                    /* processed player yaw cosine angle */
-    f32 eye_height;                 /* height of player camera, usually */
-    v3f32 vel;                      /* velocity */
-    f32 mass;                       /* for gravity influence */
-    f32 movement_speed;             /* depends on enum: PlayerFlags */
-    u64 container_state;            /* enum: ContainerFlags */
-    u8 perspective;                 /* camera perspective mode */
-    u16 state;                      /* enum: PlayerFlags */
-
-    Camera camera;
-    f32 camera_distance;            /* for camera collision detection */
-
-    /* player at world edge, enum: PlayerFlags */
-    u8 overflow;
-
-    v3i64 delta_pos;                /* for collision tunneling prevention */
-    v3i64 delta_target;             /* player arm snapped to grid */
-    v3i16 chunk;                    /* current chunk player is in */
-    v3i16 delta_chunk;              /* previous chunk player was in */
-
-    v3i64 spawn_point;
-} Player;
-
-/* ---- section: flags ------------------------------------------------------ */
-
-enum StateFlags
-{
-    FLAG_ACTIVE =                   0x0001,
-    FLAG_PAUSED =                   0x0002,
-    FLAG_PARSE_CURSOR =             0x0004,
-    FLAG_HUD =                      0x0008,
-    FLAG_DEBUG =                    0x0010,
-    FLAG_DEBUG_MORE =               0x0020,
-    FLAG_SUPER_DEBUG =              0x0040,
-    FLAG_FULLSCREEN =               0x0080,
-    FLAG_MENU_OPEN =                0x0100,
-    FLAG_DOUBLE_PRESS =             0x0200,
-    FLAG_PARSE_TARGET =             0x0400,
-    FLAG_WORLD_LOADED =             0x0800,
-    FLAG_CHUNK_BUF_DIRTY =          0x1000,
-}; /* StateFlags */
-
-enum PlayerFlags
-{
-    FLAG_CAN_JUMP =                 0x0001,
-    FLAG_SNEAKING =                 0x0002,
-    FLAG_SPRINTING =                0x0004,
-    FLAG_FLYING =                   0x0008,
-    FLAG_SWIMMING =                 0x0010,
-    FLAG_FALLING =                  0x0020,
-    FLAG_VELOCITY_DIRTY =           0x0040,
-    FLAG_HUNGRY =                   0x0080,
-    FLAG_DEAD =                     0x0100,
-
-    FLAG_OVERFLOW_X =               0x0001,
-    FLAG_OVERFLOW_Y =               0x0002,
-    FLAG_OVERFLOW_Z =               0x0004,
-
-    /* positive overflow direction flags,
-     * negative is the default (0) */
-    FLAG_OVERFLOW_PX =              0x0008,
-    FLAG_OVERFLOW_PY =              0x0010,
-    FLAG_OVERFLOW_PZ =              0x0020,
-}; /* PlayerFlags */
+#include <engine/h/core.h>
+#include "main.h"
 
 enum ContainerStates
 {
@@ -113,37 +33,34 @@ enum ContainerStates
     STATE_CONTR_TAB_ITEMS_SEARCH,
 }; /* ContainerStates */
 
-/* ---- section: declarations ----------------------------------------------- */
+void player_state_update(Render *render, Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
-extern Player lily;
+void player_camera_movement_update(Render *render, Player *player,
+        b8 use_mouse);
 
-/* ---- section: signatures ------------------------------------------------- */
-
-void update_player(Render *render, Player *player);
-void update_camera_movement_player(Render *render, Player *player);
-void update_player_target(v3f64 *player_target, v3i64 *player_delta_target);
+void player_target_update(Player *player);
 
 static inline void
 set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
-    player->raw_pos = (v3f64){x, y, z};
-    player->pos = player->raw_pos;
+    player->pos = (v3f64){x, y, z};
+    player->pos_smooth = player->pos;
 }
 
 static inline void
 set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
-    player->raw_pos =
+    player->pos =
         (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
-    player->pos = player->raw_pos;
+    player->pos_smooth = player->pos;
 }
 
 void player_kill(Player *player);
 void player_respawn(Player *player);
-b8 is_ray_intersect(Player *player);
 void update_gravity(Render *render, Player *player);
-void update_collision_static(Player *player);
-void wrap_coordinates(Player *player);
+void player_collision_update(Player *player);
+
 f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);
 

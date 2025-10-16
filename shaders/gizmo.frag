@@ -1,9 +1,9 @@
 #version 430 core
 
-in vec4 vertex_color;
+uniform vec3 gizmo_color;
 out vec4 color;
 
 void main()
 {
-    color = floor(vertex_color);
+    color = vec4(gizmo_color, 1.0);
 }

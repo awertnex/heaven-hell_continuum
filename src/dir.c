@@ -3,11 +3,11 @@
 #include <string.h>
 #include <dirent.h>
 
-#include "engine/h/core.h"
-#include "engine/h/platform.h"
-#include "engine/h/dir.h"
-#include "engine/h/logger.h"
-#include "engine/h/memory.h"
+#include <engine/h/core.h>
+#include <engine/h/platform.h>
+#include <engine/h/dir.h>
+#include <engine/h/logger.h>
+#include <engine/h/memory.h>
 #include "h/main.h"
 #include "h/dir.h"
 
@@ -19,9 +19,11 @@ str path_worldpath[PATH_MAX] = {0};
 str GRANDPATH_DIR[][NAME_MAX] =
 {
     "lib/",
-    "lib/"PLATFORM"/",
+    ("lib/"PLATFORM"/"),
     "resources/",
+    "resources/fonts/",
     "resources/shaders/",
+    "resources/lookups/",
     "instances/",
 };
 
@@ -52,8 +54,6 @@ str WORLD_DIR[][NAME_MAX] =
     "player_data/",
 };
 
-/* ---- section: functions -------------------------------------------------- */
-
 int
 init_paths(void)
 {
@@ -73,7 +73,7 @@ init_paths(void)
         normalize_slash(string);
         snprintf(GRANDPATH_DIR[i], PATH_MAX, "%s", string);
 
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, FALSE))
             make_dir(string);
     }
 
@@ -96,7 +96,7 @@ create_instance(const str *instance_name)
 int
 init_instance_directory(const str *instance_name)
 {
-    if (!is_dir_exists(path_grandpath))
+    if (!is_dir_exists(path_grandpath, FALSE))
     {
         LOGFATAL("Main Directory '%s' Not Found, Instance Creation Failed,"
                 "Process Aborted\n", path_grandpath);
@@ -132,13 +132,13 @@ init_instance_directory(const str *instance_name)
         snprintf(INSTANCE_DIR[i], PATH_MAX, "%s", string);
         if (!make_dirs)
         {
-            if (!is_dir_exists(string))
+            if (!is_dir_exists(string, TRUE))
                 return -1;
             continue;
         }
 
         make_dir(string);
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, FALSE))
         {
             LOGFATAL("Directory Creation Failed '%s',"
                     "Process Aborted\n", string);
@@ -150,15 +150,15 @@ init_instance_directory(const str *instance_name)
 }
 
 int
-init_instance_files()
+init_instance_files(void)
 {
-    if (is_dir_exists(path_subpath))
+    if (is_dir_exists(path_subpath, FALSE))
     {
         copy_dir(GRANDPATH_DIR[DIR_ROOT_RESOURCES],
-                INSTANCE_DIR[DIR_RESOURCES], 1);
+                INSTANCE_DIR[DIR_RESOURCES], 1, "r", "w");
 
         copy_dir(GRANDPATH_DIR[DIR_ROOT_SHADERS],
-                INSTANCE_DIR[DIR_SHADERS], 1);
+                INSTANCE_DIR[DIR_SHADERS], 1, "r", "w");
         return 0;
     }
     LOGFATAL("Instance Directory '%s' Not Found,"
@@ -192,7 +192,7 @@ init_world_directory(const str *world_name)
         normalize_slash(string);
         make_dir(string);
 
-        if (!is_dir_exists(string))
+        if (!is_dir_exists(string, TRUE))
             LOGERROR("Directory Creation Failed '%s'\n", WORLD_DIR[i]);
 
         snprintf(WORLD_DIR[i], PATH_MAX, "%s", string);

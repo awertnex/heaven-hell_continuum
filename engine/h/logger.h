@@ -1,0 +1,85 @@
+#ifndef ENGINE_LOGGER_H
+#define ENGINE_LOGGER_H
+
+#include "defines.h"
+#include "memory.h"
+
+#define RELEASE_BUILD 0
+
+#if RELEASE_BUILD
+    #define LOGGING_DEBUG 0
+    #define LOGGING_TRACE 0
+#else
+    #define LOGGING_DEBUG 1
+    #define LOGGING_TRACE 1
+#endif /* RELEASE_BUILD */
+
+enum LogLevel
+{
+    LOGLEVEL_FATAL = 0,
+    LOGLEVEL_ERROR,
+    LOGLEVEL_WARNING,
+    LOGLEVEL_INFO,
+    LOGLEVEL_DEBUG,
+    LOGLEVEL_TRACE,
+}; /* LogLevel */
+
+extern u32 log_level;
+
+b8 init_logger();
+void close_logger();
+void log_output(const str *file, u64 line, u8 level, const str* format, ...);
+
+#define LOGFATAL(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+
+#define LOGERROR(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+
+#define LOGWARNING(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+
+#define LOGINFO(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_INFO, format, ##__VA_ARGS__)
+
+#if LOGGING_DEBUG == 1
+    #define LOGDEBUG(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
+#else
+    #define LOGDEBUG(file, line, format, ...)
+#endif /* LOGGING_DEBUG */
+
+#if LOGGING_TRACE == 1
+    #define LOGTRACE(format, ...) \
+        log_output(__FILE__, __LINE__, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
+#else
+    #define LOGTRACE(format, ...)
+#endif /* LOGGING_TRACE */
+
+#define LOGFATALV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+
+#define LOGERRORV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+
+#define LOGWARNINGV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+
+#define LOGINFOV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_INFO, format, ##__VA_ARGS__)
+
+#if LOGGING_DEBUG == 1
+    #define LOGDEBUGV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
+#else
+    #define LOGDEBUGV(file, line, format, ...)
+#endif /* LOGGING_DEBUG */
+
+#if LOGGING_TRACE == 1
+    #define LOGTRACEV(file, line, format, ...) \
+        log_output(file, line, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
+#else
+    #define LOGTRACEV(file, line, format, ...)
+#endif /* LOGGING_TRACE */
+
+#endif /* ENGINE_LOGGER_H */
