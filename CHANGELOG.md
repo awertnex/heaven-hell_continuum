@@ -1,6 +1,10 @@
 # changelog
 
 ## v0.2.4-beta (DD MMM YYYY)
+- changed directory structure completely
+- removed instance directories, now the main directory is the only instance
+- added baking for lookup tables for faster runtime fetching
+- fixed many chunk priority queue bugs
 
 #### changes
 
