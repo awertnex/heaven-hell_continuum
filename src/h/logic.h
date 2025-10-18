@@ -59,7 +59,7 @@ set_player_block(Player *player, i32 x, i32 y, i32 z)
 void player_kill(Player *player);
 void player_respawn(Player *player);
 void update_gravity(Render *render, Player *player);
-void player_collision_update(Player *player);
+void player_collision_update(Player *player, Chunk **chunk);
 
 f64 get_time_ms(void);
 b8 get_timer(f64 *time_start, f32 interval);

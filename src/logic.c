@@ -104,10 +104,8 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
     if (!(player->flag & FLAG_PLAYER_CAN_JUMP) &&
             !(player->flag & FLAG_PLAYER_FLYING))
     {
-        player->pos_lerp_speed.x =
-            SET_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.y =
-            SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
 
         update_gravity(render, player);
     }
@@ -116,55 +114,46 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
     {
         player->flag &= ~(FLAG_PLAYER_CAN_JUMP | FLAG_PLAYER_FALLING);
 
-        player->pos_lerp_speed.x =
-            SET_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.y =
-            SET_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.z =
-            SET_LERP_SPEED_DEFAULT;
+        player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.z = SET_LERP_SPEED_DEFAULT;
 
         player->vel = v3fzero;
-        player->movement_speed =
-            SET_PLAYER_SPEED_FLY * render->frame_delta;
-        player->camera.fovy = 80.0f - zoom;
+        player->movement_speed = SET_PLAYER_SPEED_FLY;
+        player->camera.fovy = 80.0f;
     }
     else player->flag |= FLAG_PLAYER_FALLING;
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
             && !(player->flag & FLAG_PLAYER_FLYING))
-        player->movement_speed =
-            SET_PLAYER_SPEED_SNEAK * render->frame_delta;
+        player->movement_speed = SET_PLAYER_SPEED_SNEAK;
     else if (player->flag & FLAG_PLAYER_SPRINTING)
     {
         if (!(player->flag & FLAG_PLAYER_FLYING))
         {
-            player->movement_speed =
-                SET_PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy = 75.0f - zoom;
+            player->movement_speed = SET_PLAYER_SPEED_SPRINT;
+            player->camera.fovy = 75.0f;
         }
         else
         {
-            player->movement_speed =
-                SET_PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy = 90.0f - zoom;
+            player->movement_speed = SET_PLAYER_SPEED_FLY_FAST;
+            player->camera.fovy = 90.0f;
         }
     }
     else if (!(player->flag & FLAG_PLAYER_SNEAKING)
             && !(player->flag & FLAG_PLAYER_SPRINTING)
             && !(player->flag & FLAG_PLAYER_FLYING))
     {
-        player->pos_lerp_speed.x =
-            SET_LERP_SPEED_DEFAULT;
-        player->pos_lerp_speed.y =
-            SET_LERP_SPEED_DEFAULT;
-        player->pos_lerp_speed.z =
-            SET_LERP_SPEED_RIGID;
+        player->pos_lerp_speed.x = SET_LERP_SPEED_DEFAULT;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_DEFAULT;
+        player->pos_lerp_speed.z = SET_LERP_SPEED_RIGID;
 
-        player->movement_speed =
-            SET_PLAYER_SPEED_WALK * render->frame_delta;
-        player->camera.fovy = 70.0f - zoom;
+        player->movement_speed = SET_PLAYER_SPEED_WALK;
+        player->camera.fovy = 70.0f;
     }
 
+    player->movement_speed *= render->frame_delta;
+    player->camera.fovy -= zoom;
     player->camera.fovy =
         clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
@@ -324,22 +313,104 @@ update_gravity(Render *render, Player *player)
     player->pos.z += player->vel.z * render->frame_delta;
 }
 
-/* TODO: make AABB collision work */
 void
-player_collision_update(Player *player)
+player_collision_update(Player *player, Chunk **chunk)
 {
-    player->collision_check_start = (v3f32){
-            floorf(player->pos.x - (player->scale.x / 2.0f)) - 1.0f,
-            floorf(player->pos.y - (player->scale.y / 2.0f)) - 1.0f,
-            floorf(player->pos.z) - 1.0f,
+    v3f64 pos = player->pos_smooth;
+    v3f64 pos_last = player->pos_last;
+    v3f64 pos_delta =
+    {
+        pos.x - pos_last.x,
+        pos.y - pos_last.y,
+        pos.z - pos_last.z,
+    };
+    v3f64 check_pos = {0};
+    v3f64 check_size = {0};
+    v3f64 check_delta = {0};
+
+    if (pos_last.x > pos.x)
+    {
+        check_pos.x = pos.x + pos_delta.x - (player->size.x / 2.0f) - 1.0f;
+        check_delta.x = check_pos.x - ceil(check_pos.x);
+        check_size.x = player->size.x - pos_delta.x + 3.0f + check_delta.x;
+    }
+    else
+    {
+        check_pos.x = pos_last.x + pos_delta.x - (player->size.x / 2.0) - 1.0f;
+        check_delta.x = check_pos.x - ceil(check_pos.x);
+        check_size.x = player->size.x + pos_delta.x + 3.0f + check_delta.x;
+    }
+
+    if (pos_last.y > pos.y)
+    {
+        check_pos.y = pos.y + pos_delta.y - (player->size.y / 2.0f) - 1.0f;
+        check_delta.y = check_pos.y - ceil(check_pos.y);
+        check_size.y = player->size.y - pos_delta.y + 3.0f + check_delta.y;
+    }
+    else
+    {
+        check_pos.y = pos_last.y + pos_delta.y - (player->size.y / 2.0f) - 1.0f;
+        check_delta.y = check_pos.y - ceil(check_pos.y);
+        check_size.y = player->size.y + pos_delta.y + 3.0f + check_delta.y;
+    }
+
+    if (pos_last.z > pos.z)
+    {
+        check_pos.z = pos.z + pos_delta.z - 1.0f;
+        check_delta.z = check_pos.z - ceil(check_pos.z);
+        check_size.z = player->size.z - pos_delta.z + 3.0f + check_delta.z;
+    }
+    else
+    {
+        check_pos.z = pos_last.z + pos_delta.z - 1.0f;
+        check_delta.z = check_pos.z - ceil(check_pos.z);
+        check_size.z = player->size.z + pos_delta.z + 3.0f + check_delta.z;
+    }
+
+    player->collision_check_pos =
+        (v3f64){
+            floor(check_pos.x),
+            floor(check_pos.y),
+            floor(check_pos.z),
         };
 
-    player->collision_check_end = (v3f32){
-            ceilf(player->scale.x) + 2.0f,
-            ceilf(player->scale.y) + 2.0f,
-            ceilf(player->scale.z) + 2.0f,
+    player->collision_check_size =
+        (v3f64){
+            ceil(check_size.x),
+            ceil(check_size.y),
+            ceil(check_size.z),
         };
 
+    pos =
+    (v3f64){
+        player->collision_check_pos.x,
+        player->collision_check_pos.y,
+        player->collision_check_pos.z,
+    };
+
+    pos.x = floor(pos.x) - ((i64)floor(pos.x / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+    pos.y = floor(pos.y) - ((i64)floor(pos.y / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+    pos.z = floor(pos.z) - ((i64)floor(pos.z / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+
+    v3u32 diameter =
+    {
+        (u32)player->collision_check_size.x,
+        (u32)player->collision_check_size.y,
+        (u32)player->collision_check_size.z,
+    };
+
+    u32 x, y, z, index, *block;
+    if (*chunk)
+    {
+        for (z = 0; z < diameter.z; ++z)
+            for (y = 0; y < diameter.y; ++y)
+                for (x = 0; x < diameter.x; ++x)
+                {
+                }
+    }
 
 #if 0 /* TODO: remove this parse collision feet stuff */
     Chunk *target_chunk = get_chunk(&player->lastPos, &player->flag, FLAG_PARSE_COLLISION_FEET);

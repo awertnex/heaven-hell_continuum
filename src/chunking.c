@@ -91,7 +91,7 @@ chunking_init(void)
     /* ---- build distance lookup ------------------------------------------- */
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
     {
-        LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%03x/0x%03x]..\n",
+        LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx]..\n",
                 i, SET_RENDER_DISTANCE_MAX);
 
         chunk_buf_diameter = (i * 2) + 1;
@@ -101,14 +101,14 @@ chunking_init(void)
         center = (v3i32){i, i, i};
 
         snprintf(CHUNK_ORDER_lookup_file_name, PATH_MAX,
-                "%slookup_chunk_order_0x%03x.bin",
+                "%slookup_chunk_order_0x%02lx.bin",
                 DIR_ROOT[DIR_LOOKUPS], i);
 
         if (!is_file_exists(CHUNK_ORDER_lookup_file_name, FALSE))
         {
             for (j = 0; j < chunk_buf_volume; ++j)
             {
-                LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%03x/0x%03x] Progress [%d/%d]..\n",
+                LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] Progress [%d/%d]..\n",
                         i, SET_RENDER_DISTANCE_MAX, j, chunk_buf_volume);
 
                 coordinates =
@@ -121,7 +121,7 @@ chunking_init(void)
                 index[j] = j;
             }
 
-            LOGTRACE("Sorting CHUNK_ORDER Distance Lookup [0x%03x/0x%03x]..\n",
+            LOGTRACE("Sorting CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx]..\n",
                     i, SET_RENDER_DISTANCE_MAX);
 
             for (j = 0; j < chunk_buf_volume; ++j)
@@ -132,19 +132,19 @@ chunking_init(void)
                         swap_bits_u32(&index[j], &index[k]);
                     }
 
-            LOGTRACE("Writing CHUNK_ORDER Distance Lookup [0x%03x/0x%03x] To File..\n",
+            LOGTRACE("Writing CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] To File..\n",
                     i, SET_RENDER_DISTANCE_MAX);
 
             write_file(CHUNK_ORDER_lookup_file_name,
                     sizeof(u32), chunk_buf_volume, &index, "wb", TRUE);
 
-            LOGTRACE("CHUNK_ORDER Distance Lookup [0x%03x/0x%03x] Written To File\n",
+            LOGTRACE("CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] Written To File\n",
                     i, SET_RENDER_DISTANCE_MAX);
         }
     }
 
     snprintf(CHUNK_ORDER_lookup_file_name, PATH_MAX,
-            "%slookup_chunk_order_0x%03x.bin",
+            "%slookup_chunk_order_0x%02lx.bin",
             DIR_ROOT[DIR_LOOKUPS], SET_RENDER_DISTANCE);
 
     CHUNK_ORDER_lookup_file_contents =

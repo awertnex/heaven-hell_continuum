@@ -42,9 +42,9 @@ Player lily =
 {
     .name = "Lily",
     .pos = {0.0f},
-    .scale = {0.6f, 0.6f, 1.8f},
-    .collision_check_start = {0.0f},
-    .collision_check_end = {0.0f},
+    .size = {0.6f, 0.6f, 1.8f},
+    .collision_check_pos = {0.0f},
+    .collision_check_size = {0.0f},
     .pitch = 0.0f,
     .yaw = 0.0f,
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
@@ -228,12 +228,9 @@ callback_key(
 static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset)
 {
-    if (lily.perspective == MODE_CAMERA_3RD_PERSON)
-        lily.camera_distance -= yoffset * CAMERA_ZOOM_SPEED;
-    else
-        lily.camera.zoom =
-            clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
-                    0.0f, CAMERA_ZOOM_MAX);
+    lily.camera.zoom =
+        clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
+                0.0f, CAMERA_ZOOM_MAX);
 }
 
 void
@@ -569,13 +566,7 @@ update_input(Player *player)
     if (is_key_hold(bind_jump))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
-        {
             player->pos.z += player->movement_speed;
-            player->pos_smooth.z =
-                lerp_f32(player->pos_smooth.z,
-                        player->pos.z,
-                        player->pos_lerp_speed.z, render.frame_delta);
-        }
 
         if (player->flag & FLAG_PLAYER_CAN_JUMP)
         {
@@ -629,13 +620,19 @@ update_input(Player *player)
     if (is_key_press_double(bind_walk_forwards))
         player->flag |= FLAG_PLAYER_SPRINTING;
 
+    player->pos_last.x = player->pos_smooth.x;
+    player->pos_last.y = player->pos_smooth.y;
+    player->pos_last.z = player->pos_smooth.z;
+
     player->pos_smooth.x = lerp_f32(player->pos_smooth.x, player->pos.x,
                 player->pos_lerp_speed.x, render.frame_delta);
 
     player->pos_smooth.y = lerp_f32(player->pos_smooth.y, player->pos.y,
             player->pos_lerp_speed.y, render.frame_delta);
 
-    player->pos_smooth.z = player->pos.z;
+    player->pos_smooth.z =
+        lerp_f32(player->pos_smooth.z, player->pos.z,
+                player->pos_lerp_speed.z, render.frame_delta);
 
     /* ---- gameplay -------------------------------------------------------- */
     if (glfwGetMouseButton(render.window,
@@ -799,7 +796,7 @@ update_world(Player *player)
     player_target_update(&lily);
 
 #if MODE_INTERNAL_COLLIDE
-        player_collision_update(&lily);
+        player_collision_update(&lily, &chunk_tab[chunk_tab_index]);
 #endif /* MODE_INTERNAL_COLLIDE */
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
@@ -974,7 +971,7 @@ draw_everything(void)
     {
 
         glUseProgram(shader_default.id);
-        glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.scale);
+        glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.size);
         glUniform3f(uniform.defaults.offset,
                 lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z);
         glUniformMatrix4fv(uniform.defaults.mat_rotation, 1, GL_FALSE,
@@ -1033,6 +1030,26 @@ draw_everything(void)
         glUniform3f(uniform.bounding_box.size,
                 CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
         glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+
+        glBindVertexArray(mesh_cube_of_happiness.vao);
+        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+    }
+
+    /* ---- draw player collision check bounding box ------------------------ */
+    if (flag & FLAG_MAIN_DEBUG_MORE)
+    {
+        glUseProgram(shader_bounding_box.id);
+        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
+                (GLfloat*)&projection_world.perspective);
+        glUniform3f(uniform.bounding_box.position,
+                lily.collision_check_pos.x,
+                lily.collision_check_pos.y,
+                lily.collision_check_pos.z);
+        glUniform3f(uniform.bounding_box.size,
+                lily.collision_check_size.x,
+                lily.collision_check_size.y,
+                lily.collision_check_size.z);
+        glUniform4f(uniform.bounding_box.color, 0.3f, 0.6f, 0.9f, 1.0f);
 
         glBindVertexArray(mesh_cube_of_happiness.vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);

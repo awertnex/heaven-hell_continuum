@@ -14,7 +14,7 @@
 #include <engine/h/defines.h>
 
 #define MODE_INTERNAL_DEBUG                     1
-#define MODE_INTERNAL_COLLIDE                   0
+#define MODE_INTERNAL_COLLIDE                   1
 #define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    1
 
 #define show_cursor \
@@ -31,7 +31,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             25
+#define SET_RENDER_DISTANCE             20
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -297,13 +297,13 @@ typedef struct Player
     str name[100];                  /* player in-game name */
     v3f64 pos;                      /* player current coordinates in world */
     v3f64 pos_smooth;               /* player processed pos */
-    v3i64 delta_pos;                /* for collision tunneling prevention */
+    v3f64 pos_last;                 /* for collision tunneling prevention */
     v3f32 pos_lerp_speed;
     v3f64 target;                   /* player arm (or whatever) */
     v3i64 delta_target;             /* player arm floored */
-    v3f32 scale;                    /* player size for collision detection */
-    v3f32 collision_check_start;
-    v3f32 collision_check_end;
+    v3f32 size;                     /* player size for collision detection */
+    v3f64 collision_check_pos;
+    v3f64 collision_check_size;
     f32 pitch, yaw;                 /* for player camera direction and target */
     f32 sin_pitch;                  /* processed player pitch sine angle */
     f32 cos_pitch;                  /* processed player pitch cosine angle */
