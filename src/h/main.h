@@ -31,7 +31,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             20
+#define SET_RENDER_DISTANCE             10
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -173,6 +173,10 @@ typedef struct Uniform
         GLint ndc_scale;
         GLint alignment;
         GLint tint;
+        GLint slice;
+        GLint slice_size;
+        GLint texture_size;
+        GLint sprite_size;
     } ui;
 
     struct /* font */

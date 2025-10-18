@@ -81,6 +81,8 @@ static ShaderProgram shader_ui =
     .name = "ui",
     .vertex.file_name = "ui.vert",
     .vertex.type = GL_VERTEX_SHADER,
+    .geometry.file_name = "ui.geom",
+    .geometry.type = GL_GEOMETRY_SHADER,
     .fragment.file_name = "ui.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
@@ -466,6 +468,14 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_ui.id, "alignment");
     uniform.ui.tint =
         glGetUniformLocation(shader_ui.id, "tint");
+    uniform.ui.slice =
+        glGetUniformLocation(shader_ui.id, "slice");
+    uniform.ui.slice_size =
+        glGetUniformLocation(shader_ui.id, "slice_size");
+    uniform.ui.texture_size =
+        glGetUniformLocation(shader_ui.id, "texture_size");
+    uniform.ui.sprite_size =
+        glGetUniformLocation(shader_ui.id, "sprite_size");
 
     uniform.font.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
@@ -992,6 +1002,10 @@ draw_everything(void)
     }
 
     /* ---- draw player target bounding box --------------------------------- */
+    glUseProgram(shader_bounding_box.id);
+    glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&projection_world.perspective);
+
     if ((flag & FLAG_MAIN_PARSE_TARGET) &&
             (flag & FLAG_MAIN_HUD) &&
             chunk_tab[chunk_tab_index] &&
@@ -1003,9 +1017,6 @@ draw_everything(void)
             [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER)] & FLAG_BLOCK_NOT_EMPTY)
     {
-        glUseProgram(shader_bounding_box.id);
-        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection_world.perspective);
         glUniform3f(uniform.bounding_box.position,
                 lily.delta_target.x,
                 lily.delta_target.y,
@@ -1020,9 +1031,6 @@ draw_everything(void)
     /* ---- draw player chunk bounding box ---------------------------------- */
     if (flag & FLAG_MAIN_DEBUG_MORE)
     {
-        glUseProgram(shader_bounding_box.id);
-        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection_world.perspective);
         glUniform3f(uniform.bounding_box.position,
                 lily.chunk.x * CHUNK_DIAMETER,
                 lily.chunk.y * CHUNK_DIAMETER,
@@ -1038,9 +1046,6 @@ draw_everything(void)
     /* ---- draw player collision check bounding box ------------------------ */
     if (flag & FLAG_MAIN_DEBUG_MORE)
     {
-        glUseProgram(shader_bounding_box.id);
-        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection_world.perspective);
         glUniform3f(uniform.bounding_box.position,
                 lily.collision_check_pos.x,
                 lily.collision_check_pos.y,
@@ -1224,7 +1229,7 @@ framebuffer_blit_chunk_queue_visualizer:
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    /* ---- draw ui --------------------------------------------------------- */
+    /* ---- draw overlays --------------------------------------------------- */
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_ui.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1242,20 +1247,33 @@ framebuffer_blit_chunk_queue_visualizer:
                 (GLint*)&texture[TEXTURE_CROSSHAIR].size);
         glUniform2i(uniform.ui.alignment, 0, 0);
         glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
+        glUniform1i(uniform.ui.slice, FALSE);
+        glUniform2iv(uniform.ui.texture_size, 1,
+                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
+        glUniform2iv(uniform.ui.sprite_size, 1,
+                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
 
         glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
+    /* ---- draw super debug ------------------------------------------------ */
     if (flag & FLAG_MAIN_SUPER_DEBUG)
     {
         glUniform2i(uniform.ui.position, SET_MARGIN, SET_MARGIN);
         glUniform2i(uniform.ui.size, 400, render.size.y - (SET_MARGIN * 2));
-        glUniform2i(uniform.ui.alignment, 1, 1);
+        glUniform2i(uniform.ui.alignment, -1, -1);
         glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 0.7f);
+        glUniform1i(uniform.ui.slice, TRUE);
+        glUniform1f(uniform.ui.slice_size, 8.0f);
+        glUniform2iv(uniform.ui.texture_size, 1,
+                (GLint*)&texture[TEXTURE_SDB_ACTIVE].size);
+        glUniform2i(uniform.ui.sprite_size,
+                texture[TEXTURE_SDB_ACTIVE].size.x / 2,
+                texture[TEXTURE_SDB_ACTIVE].size.y / 2);
 
         glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SDB_ACTIVE].id);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArrays(GL_POINTS, 0, 1);
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -1462,11 +1480,11 @@ main(int argc, char **argv)
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
 
-    if (MODE_INTERNAL_DEBUG)
+    if (!MODE_INTERNAL_DEBUG)
         LOGWARNING("%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
     else LOGDEBUG("%s\n", "Debugging Enabled");
 
-    if (MODE_INTERNAL_COLLIDE)
+    if (!MODE_INTERNAL_COLLIDE)
         LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
 
     if (grandpath_dir_init() != 0)

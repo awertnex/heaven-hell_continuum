@@ -77,11 +77,11 @@ gui_init(void)
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI], "crosshair.png")) ||
 
-            !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){16, 16},
+            !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_active.png")) ||
 
-            !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){16, 16},
+            !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_inactive.png")) ||
 
