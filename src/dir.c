@@ -11,192 +11,117 @@
 #include "h/main.h"
 #include "h/dir.h"
 
-str path_grandpath[PATH_MAX] = {0};
-str path_subpath[PATH_MAX] = {0};
-str path_launcherpath[PATH_MAX] = {0};
-str path_worldpath[PATH_MAX] = {0};
+str PATH_ROOT[PATH_MAX] = {0};
+str PATH_WORLD[PATH_MAX] = {0};
+str DIR_ROOT[DIR_ROOT_LAST][NAME_MAX] = {0};
+str DIR_WORLD[DIR_WORLD_LAST][NAME_MAX] = {0};
 
-str GRANDPATH_DIR[][NAME_MAX] =
+i32
+grandpath_dir_init(void)
 {
-    "lib/",
-    ("lib/"PLATFORM"/"),
-    "resources/",
-    "resources/fonts/",
-    "resources/shaders/",
-    "resources/lookups/",
-    "instances/",
-};
+    snprintf(DIR_ROOT[DIR_LIB],             NAME_MAX, "%s", "lib/");
+    snprintf(DIR_ROOT[DIR_LIB_PLATFORM],    NAME_MAX, "%s%s", "lib/", PLATFORM);
+    snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
+    snprintf(DIR_ROOT[DIR_RESOURCES],       NAME_MAX, "%s", "resources/");
+    snprintf(DIR_ROOT[DIR_AUDIO],           NAME_MAX, "%s", "resources/audio/");
+    snprintf(DIR_ROOT[DIR_FONTS],           NAME_MAX, "%s", "resources/fonts/");
+    snprintf(DIR_ROOT[DIR_LOOKUPS],         NAME_MAX, "%s", "resources/lookups/");
+    snprintf(DIR_ROOT[DIR_MODELS],          NAME_MAX, "%s", "resources/models/");
+    snprintf(DIR_ROOT[DIR_SHADERS],         NAME_MAX, "%s", "resources/shaders/");
+    snprintf(DIR_ROOT[DIR_TEXTURES],        NAME_MAX, "%s", "resources/textures/");
+    snprintf(DIR_ROOT[DIR_BLOCKS],          NAME_MAX, "%s", "resources/textures/blocks/");
+    snprintf(DIR_ROOT[DIR_ENTITIES],        NAME_MAX, "%s", "resources/textures/entities/");
+    snprintf(DIR_ROOT[DIR_GUI],             NAME_MAX, "%s", "resources/textures/gui/");
+    snprintf(DIR_ROOT[DIR_ITEMS],           NAME_MAX, "%s", "resources/textures/items/");
+    snprintf(DIR_ROOT[DIR_LOGO],            NAME_MAX, "%s", "resources/textures/logo/");
+    snprintf(DIR_ROOT[DIR_SKYBOXES],        NAME_MAX, "%s", "resources/textures/skyboxes/");
+    snprintf(DIR_ROOT[DIR_SCREENSHOTS],     NAME_MAX, "%s", "screenshots/");
+    snprintf(DIR_ROOT[DIR_TEXT],            NAME_MAX, "%s", "text/");
+    snprintf(DIR_ROOT[DIR_WORLDS],          NAME_MAX, "%s", "worlds/");
 
-str INSTANCE_DIR[][NAME_MAX] = 
-{
-    "models/",
-    "resources/",
-    "resources/fonts/",
-    "resources/logo/",
-    "resources/textures/",
-    "resources/textures/blocks/",
-    "resources/textures/skyboxes/",
-    "resources/textures/entities/",
-    "resources/textures/gui/",
-    "resources/textures/items/",
-    "resources/shaders/",
-    "resources/audio/",
-    "worlds/",
-    "screenshots/",
-    "text/",
-};
+    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS],   NAME_MAX, "%s", "chunks/");
+    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], NAME_MAX, "%s", "entities/");
+    snprintf(DIR_WORLD[DIR_WORLD_LOGS],     NAME_MAX, "%s", "logs/");
+    snprintf(DIR_WORLD[DIR_WORLD_PLAYER],   NAME_MAX, "%s", "player/");
 
-str WORLD_DIR[][NAME_MAX] = 
-{
-    "chunks/",
-    "entities/",
-    "log/",
-    "player_data/",
-};
-
-int
-init_paths(void)
-{
     str *path_bin_root = NULL;
+    str string[PATH_MAX] = {0};
+    u32 i = 0;
 
     path_bin_root = get_path_bin_root();
-    snprintf(path_grandpath, PATH_MAX, "%s", path_bin_root);
+    snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
+    mem_free((void*)&path_bin_root, strlen(path_bin_root), "path_bin_root");
 
-    LOGINFO("Main Directory Path '%s'\n", path_grandpath);
+    LOGINFO("%s\n", "Creating Directories..");
 
-    str string[PATH_MAX] = {0};
-    u64 len = arr_len(GRANDPATH_DIR);
-    for (u8 i = 0; i < 255 && i < len; ++i)
+    for (i = 0; i < DIR_ROOT_LAST; ++i)
     {
-        snprintf(string, PATH_MAX, "%s%s", path_grandpath, GRANDPATH_DIR[i]);
+        snprintf(string, PATH_MAX, "%s%s", PATH_ROOT, DIR_ROOT[i]);
         check_slash(string);
         normalize_slash(string);
-        snprintf(GRANDPATH_DIR[i], PATH_MAX, "%s", string);
+        snprintf(DIR_ROOT[i], PATH_MAX, "%s", string);
 
         if (!is_dir_exists(string, FALSE))
             make_dir(string);
     }
 
-    mem_free((void*)&path_bin_root, strlen(path_bin_root), "path_bin_root");
-    return 0;
-}
+    LOGINFO("%s\n", "Checking Directories..");
 
-int
-create_instance(const str *instance_name)
-{
-    if (init_instance_directory(instance_name) != 0)
-        return -1;
-    if (init_instance_files() != 0)
-        return -1;
-    LOGINFO("Instance Created '%s'\n", instance_name);
-    return 0;
-}
-
-/* TODO: make editable instance name for init_instance_directory() */
-int
-init_instance_directory(const str *instance_name)
-{
-    if (!is_dir_exists(path_grandpath, FALSE))
-    {
-        LOGFATAL("Main Directory '%s' Not Found, Instance Creation Failed,"
-                "Process Aborted\n", path_grandpath);
-        return -1;
-    }
-
-    b8 make_dirs = TRUE;
-    snprintf(path_subpath, PATH_MAX, "%s%s",
-            GRANDPATH_DIR[DIR_ROOT_INSTANCES], instance_name);
-
-    check_slash(path_subpath);
-    normalize_slash(path_subpath);
-
-    if (make_dir(path_subpath) != 0)
-    {
-        /* do instance-opening stuff */
-        LOGINFO("Instance Opened '%s'\n", instance_name);
-        make_dirs = FALSE;
-    }
-    else
-        LOGINFO("Instance Directory Created '%s'\n", path_subpath);
-
-    if (make_dirs)
-        LOGINFO("%s\n", "Building Instance Directory Structure..");
-
-    str string[PATH_MAX] = {0};
-    u64 len = arr_len(INSTANCE_DIR);
-    for (u8 i = 0; (i < 255) && (i < len); ++i)
-    {
-        snprintf(string, PATH_MAX, "%s%s", path_subpath, INSTANCE_DIR[i]);
-        check_slash(string);
-        normalize_slash(string);
-        snprintf(INSTANCE_DIR[i], PATH_MAX, "%s", string);
-        if (!make_dirs)
-        {
-            if (!is_dir_exists(string, TRUE))
-                return -1;
-            continue;
-        }
-
-        make_dir(string);
-        if (!is_dir_exists(string, FALSE))
-        {
-            LOGFATAL("Directory Creation Failed '%s',"
-                    "Process Aborted\n", string);
+    for (i = 0; i < DIR_ROOT_LAST; ++i)
+        if (!is_dir_exists(DIR_ROOT[i], TRUE))
             return -1;
-        }
-    }
 
+    LOGINFO("Main Directory Created '%s'\n", PATH_ROOT);
     return 0;
 }
 
-int
-init_instance_files(void)
+i32
+world_dir_init(const str *world_name)
 {
-    if (is_dir_exists(path_subpath, FALSE))
+    str string[PATH_MAX] = {0};
+    u32 i = 0;
+
+    if (!is_dir_exists(PATH_ROOT, TRUE))
     {
-        copy_dir(GRANDPATH_DIR[DIR_ROOT_RESOURCES],
-                INSTANCE_DIR[DIR_RESOURCES], 1, "r", "w");
-
-        copy_dir(GRANDPATH_DIR[DIR_ROOT_SHADERS],
-                INSTANCE_DIR[DIR_SHADERS], 1, "r", "w");
-        return 0;
+        LOGERROR("World Creation '%s' Failed\n", world_name);
+        return -1;
     }
-    LOGFATAL("Instance Directory '%s' Not Found,"
-            "Instance File Creation Failed, Process Aborted\n", path_subpath);
-    return -1;
-}
 
-void
-init_world_directory(const str *world_name)
-{
-    snprintf(path_worldpath, PATH_MAX, "%s%s",
-            INSTANCE_DIR[DIR_WORLDS], world_name);
+    if (!is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE))
+    {
+        LOGERROR("World Creation '%s' Failed\n", world_name);
+        return -1;
+    }
 
-    check_slash(path_worldpath);
-    normalize_slash(path_worldpath);
+    snprintf(PATH_WORLD, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
+    check_slash(PATH_WORLD);
+    normalize_slash(PATH_WORLD);
 
-    if (make_dir(path_worldpath) != 0)
+    if (is_dir_exists(PATH_WORLD, FALSE))
     {
         LOGERROR("World Already Exists '%s'\n", world_name);
-        return;
+        return 0;
     }
 
-    LOGINFO("World Directory Created '%s'\n", world_name);
-    LOGINFO("%s\n", "Building World Directory Structure..");
-    str string[PATH_MAX] = {0};
-    u64 len = arr_len(WORLD_DIR);
-    for (u8 i = 0; i < 255 && i < len; ++i)
+    make_dir(PATH_WORLD);
+
+    LOGINFO("%s\n", "Creating World Directories..");
+
+    for (i = 0; i < DIR_WORLD_LAST; ++i)
     {
-        snprintf(string, PATH_MAX, "%s%s", path_worldpath, WORLD_DIR[i]);
+        snprintf(string, PATH_MAX, "%s%s", PATH_WORLD, DIR_WORLD[i]);
         check_slash(string);
         normalize_slash(string);
+        snprintf(DIR_WORLD[i], PATH_MAX, "%s", string);
+
         make_dir(string);
-
-        if (!is_dir_exists(string, TRUE))
-            LOGERROR("Directory Creation Failed '%s'\n", WORLD_DIR[i]);
-
-        snprintf(WORLD_DIR[i], PATH_MAX, "%s", string);
     }
+
+    LOGINFO("%s\n", "Checking Directories..");
+
+    for (i = 0; i < DIR_WORLD_LAST; ++i)
+        if (!is_dir_exists(DIR_WORLD[i], TRUE))
+            return -1;
 
     LOGINFO("World Created '%s'\n", world_name);
 }

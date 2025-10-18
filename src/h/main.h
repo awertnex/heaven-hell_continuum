@@ -13,8 +13,9 @@
 #include <engine/h/core.h>
 #include <engine/h/defines.h>
 
-#define MODE_INTERNAL_DEBUG     1
-#define MODE_INTERNAL_COLLIDE   0
+#define MODE_INTERNAL_DEBUG                     1
+#define MODE_INTERNAL_COLLIDE                   0
+#define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    1
 
 #define show_cursor \
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
@@ -30,7 +31,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             32
+#define SET_RENDER_DISTANCE             25
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -82,17 +83,20 @@
     (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
 
 #define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
-#define CHUNK_BUF_DIAMETER_MAX  ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
+#define CHUNK_BUF_DIAMETER_MAX ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
+#define CHUNK_BUF_LAYER_MAX \
+    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 #define CHUNK_BUF_VOLUME_MAX \
-    (CHUNK_BUF_DIAMETER_MAX * \
-    CHUNK_BUF_DIAMETER_MAX * \
-    CHUNK_BUF_DIAMETER_MAX)
+    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 
 #define CHUNK_TAB_CENTER \
     (CHUNK_BUF_RADIUS + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
      (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
+#define CHUNK_QUEUE_1ST_ID      0
+#define CHUNK_QUEUE_2ND_ID      1
+#define CHUNK_QUEUE_3RD_ID      2
 #define CHUNK_QUEUE_1ST_MAX     256
 #define CHUNK_QUEUE_2ND_MAX     4096
 #define CHUNK_QUEUE_3RD_MAX     16384
@@ -108,30 +112,25 @@
 /* number of blocks to process per chunk per frame */
 #define BLOCK_PARSE_RATE                    512
 
-/* start of chunk_order index table in lookup file */
-#define CHUNK_ORDER_LOOKUP_OFFSET           2
-
-#define CHUNK_ORDER_LOOKUP_RENDER_DISTANCE  0
-#define CHUNK_ORDER_LOOKUP_COUNT            1
-
-#define COLOR_CHUNK_LOADED      0x4c260715
-#define COLOR_CHUNK_RENDER      0x5e7a0aff
+#define COLOR_CHUNK_LOADED                  0x4c260715
+#define COLOR_CHUNK_RENDER                  0x5e7a0aff
 
 enum MainFlags
 {
-    FLAG_MAIN_ACTIVE            = 0x00000001,
-    FLAG_MAIN_PAUSED            = 0x00000002,
-    FLAG_MAIN_PARSE_CURSOR      = 0x00000004,
-    FLAG_MAIN_HUD               = 0x00000008,
-    FLAG_MAIN_DEBUG             = 0x00000010,
-    FLAG_MAIN_DEBUG_MORE        = 0x00000020,
-    FLAG_MAIN_SUPER_DEBUG       = 0x00000040,
-    FLAG_MAIN_FULLSCREEN        = 0x00000080,
-    FLAG_MAIN_MENU_OPEN         = 0x00000100,
-    FLAG_MAIN_DOUBLE_PRESS      = 0x00000200,
-    FLAG_MAIN_PARSE_TARGET      = 0x00000400,
-    FLAG_MAIN_WORLD_LOADED      = 0x00000800,
-    FLAG_MAIN_CHUNK_BUF_DIRTY   = 0x00001000,
+    FLAG_MAIN_ACTIVE                        = 0x00000001,
+    FLAG_MAIN_PAUSED                        = 0x00000002,
+    FLAG_MAIN_PARSE_CURSOR                  = 0x00000004,
+    FLAG_MAIN_HUD                           = 0x00000008,
+    FLAG_MAIN_DEBUG                         = 0x00000010,
+    FLAG_MAIN_DEBUG_MORE                    = 0x00000020,
+    FLAG_MAIN_SUPER_DEBUG                   = 0x00000040,
+    FLAG_MAIN_FULLSCREEN                    = 0x00000080,
+    FLAG_MAIN_MENU_OPEN                     = 0x00000100,
+    FLAG_MAIN_DOUBLE_PRESS                  = 0x00000200,
+    FLAG_MAIN_PARSE_TARGET                  = 0x00000400,
+    FLAG_MAIN_WORLD_LOADED                  = 0x00000800,
+    FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00001000,
+    FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER   = 0x00002000,
 }; /* MainFlags */
 
 typedef struct Settings
@@ -452,17 +451,25 @@ typedef struct Chunk
 
 typedef struct ChunkQueue
 {
-    u32 cursor_1;   /* parse position at chunk_1 */
-    u32 cursor_2;   /* parse position at chunk_2 */
-    u32 cursor_3;   /* parse position at chunk_3 */
-    u32 count_1;    /* number of chunks queued at chunk_1 */
-    u32 count_2;    /* number of chunks queued at chunk_2 */
-    u32 count_3;    /* number of chunks queued at chunk_3 */
-
-    /* chunk_tab addresses */
+    /* queues */
     Chunk ***priority_1;
     Chunk ***priority_2;
     Chunk ***priority_3;
+
+    /* size of queues */
+    u64 size_1;
+    u64 size_2;
+    u64 size_3;
+
+    /* number of chunks queued at queues */
+    u32 count_1;
+    u32 count_2;
+    u32 count_3;
+
+    /* parse position at queues */
+    u32 cursor_1;
+    u32 cursor_2;
+    u32 cursor_3;
 } ChunkQueue;
 
 extern Render render;

@@ -9,11 +9,10 @@
 #define DIR_ROOT        "Heaven-Hell Continuum/"
 #define DIR_ROOT_TESTS  "tests/"
 #define DIR_SRC         "src/"
-#define DIR_LAUNCHER    DIR_SRC"launcher/"
 #define DIR_TESTS       DIR_SRC"tests/"
 #define CMD_MEMB        64
 #define CMD_SIZE        512
-#define ASSET_COUNT     4
+#define ASSET_COUNT     3
 
 #if defined(__STDC_VERSION__)
     #define STD __STDC_VERSION__
@@ -54,7 +53,6 @@ str str_libs[][24] =
 enum Flags
 {
     STATE_TEST = 1,
-    STATE_LAUNCHER,
 
     FLAG_SHOW_CMD = 1,
     FLAG_RAW_CMD,
@@ -340,18 +338,7 @@ build_cmd(int argc, char **argv)
     str temp[CMD_SIZE] = {0};
 
     push_cmd(COMPILER);
-    switch (state)
-    {
-        case STATE_LAUNCHER:
-            snprintf(str_main, CMD_SIZE, "%slauncher.c", DIR_LAUNCHER);
-            push_cmd(str_main);
-            snprintf(str_out, CMD_SIZE, "./%slauncher%s", DIR_ROOT, EXE);
-            break;
-
-        default:
-            push_cmd(str_main);
-            break;
-    }
+    push_cmd(str_main);
 
     /* ---- children -------------------------------------------------------- */
     push_cmd("engine/core.c");
@@ -568,13 +555,11 @@ main(int argc, char **argv)
     if (compare_argv("help", argc, argv))       help();
     if (compare_argv("list", argc, argv))       list();
     if (compare_argv("test", argc, argv))       state = STATE_TEST;
-    if (compare_argv("launcher", argc, argv))   state = STATE_LAUNCHER;
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
     if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
     if (!is_dir_exists(DIR_SRC, TRUE) ||
-            !is_dir_exists(DIR_TESTS, TRUE) ||
-            !is_dir_exists(DIR_LAUNCHER, TRUE))
+            !is_dir_exists(DIR_TESTS, TRUE))
         return -1;
 
     if (!state)
@@ -600,18 +585,15 @@ main(int argc, char **argv)
     snprintf(str_from[0], CMD_SIZE, "%sLICENSE", str_bin_root);
     snprintf(str_from[1], CMD_SIZE, "%slib/"PLATFORM, str_bin_root);
     snprintf(str_from[2], CMD_SIZE, "%sresources/", str_bin_root);
-    snprintf(str_from[3], CMD_SIZE, "%sshaders/", str_bin_root);
     snprintf(str_to[0], CMD_SIZE, "%sLICENSE", str_dir_root);
     snprintf(str_to[1], CMD_SIZE,
             "%slib/"PLATFORM, str_dir_root);
     snprintf(str_to[2], CMD_SIZE,
             "%sresources/", str_dir_root);
-    snprintf(str_to[3], CMD_SIZE,
-            "%sresources/shaders/", str_dir_root);
     snprintf(str_mkdir[0], CMD_SIZE, "%slib/", str_dir_root);
 
     u32 i = 0;
-    for (; i < 4; ++i)
+    for (; i < ASSET_COUNT; ++i)
     {
         normalize_slash(str_from[i]);
         normalize_slash(str_to[i]);

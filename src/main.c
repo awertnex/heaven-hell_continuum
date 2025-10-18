@@ -193,7 +193,7 @@ void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_render_settings(void);
 void update_input(Player *player);
-b8 init_world(str *name);
+i32 world_init(str *name);
 void update_world(Player *player);
 void draw_everything(void);
 
@@ -732,16 +732,21 @@ update_input(Player *player)
 #endif /* RELEASE_BUILD */
 }
 
-b8
-init_world(str *name)
+i32
+world_init(str *name)
 {
+    i32 success = 0;
+
     if (!strlen(name))
-        return FALSE;
+        return -1;
 
-    init_world_directory(name);
+    success = world_dir_init(name);
+    if (success != 0)
+        return success;
 
-    if (chunking_init() != 0)
-        return FALSE;
+    success = chunking_init();
+    if (success != 0)
+        return success;
 
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
@@ -765,7 +770,7 @@ init_world(str *name)
     lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
-    return TRUE;
+    return 0;
 }
 
 void
@@ -792,7 +797,10 @@ update_world(Player *player)
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
-    //player_collision_update(&lily);
+
+#if MODE_INTERNAL_COLLIDE
+        player_collision_update(&lily);
+#endif /* MODE_INTERNAL_COLLIDE */
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -805,20 +813,23 @@ update_world(Player *player)
         chunking_update(lily.delta_chunk);
     }
 
-    chunk_queue_update(&chunk_queue.cursor_1, &chunk_queue.count_1,
-            chunk_queue.priority_1, 0, CHUNK_QUEUE_1ST_MAX,
+    chunk_queue_update(&CHUNK_QUEUE.cursor_1, &CHUNK_QUEUE.count_1,
+            CHUNK_QUEUE.priority_1, CHUNK_QUEUE_1ST_ID, 0,
+            CHUNK_QUEUE.size_1,
             CHUNK_PARSE_RATE_PRIORITY_HIGH, BLOCK_PARSE_RATE);
-    if (!chunk_queue.count_1)
+    if (!CHUNK_QUEUE.count_1 && CHUNK_QUEUE.size_2)
     {
-        chunk_queue_update(&chunk_queue.cursor_2, &chunk_queue.count_2,
-                chunk_queue.priority_2,
-                CHUNK_QUEUE_1ST_MAX, CHUNK_QUEUE_2ND_MAX,
+        chunk_queue_update(&CHUNK_QUEUE.cursor_2, &CHUNK_QUEUE.count_2,
+                CHUNK_QUEUE.priority_2, CHUNK_QUEUE_2ND_ID,
+                CHUNK_QUEUE.size_1,
+                CHUNK_QUEUE.size_2,
                 CHUNK_PARSE_RATE_PRIORITY_MID, BLOCK_PARSE_RATE);
-        if (!chunk_queue.count_2)
+        if (!CHUNK_QUEUE.count_2 && CHUNK_QUEUE.size_3)
         {
-            chunk_queue_update(&chunk_queue.cursor_3, &chunk_queue.count_3,
-                    chunk_queue.priority_3,
-                    CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX, 0,
+            chunk_queue_update(&CHUNK_QUEUE.cursor_3, &CHUNK_QUEUE.count_3,
+                    CHUNK_QUEUE.priority_3, CHUNK_QUEUE_3RD_ID,
+                    CHUNK_QUEUE.size_1 + CHUNK_QUEUE.size_2,
+                    CHUNK_QUEUE.size_3,
                     CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
         }
     }
@@ -936,8 +947,8 @@ draw_everything(void)
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;
     static Chunk *chunk = NULL;
-    cursor = chunk_order;
-    end = cursor + CHUNKS_MAX;
+    cursor = CHUNK_ORDER;
+    end = cursor + CHUNKS_MAX[SET_RENDER_DISTANCE];
     for (; **cursor && cursor < end; ++cursor)
     {
         chunk = **cursor;
@@ -1027,8 +1038,9 @@ draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
+#if MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER
     if (!(flag & FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER))
-        goto framebuffer_blit;
+        goto framebuffer_blit_chunk_queue_visualizer;
 
     /* ---- draw player chunk queue visualizer ------------------------------ */
     glUseProgram(shader_bounding_box.id);
@@ -1037,8 +1049,8 @@ draw_everything(void)
     glUniform3f(uniform.bounding_box.size,
             CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
 
-    cursor = chunk_order;
-    end = chunk_order + CHUNK_QUEUE_1ST_MAX;
+    cursor = CHUNK_ORDER;
+    end = CHUNK_ORDER + CHUNK_QUEUE.size_1;
     u32 i = 0;
     for (; cursor < end; ++i, ++cursor)
     {
@@ -1053,35 +1065,42 @@ draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    end += CHUNK_QUEUE_2ND_MAX;
-    for (i = 0; cursor < end; ++i, ++cursor)
+    if (CHUNK_QUEUE.size_2)
     {
-        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
-        glUniform3f(uniform.bounding_box.position,
-                (**cursor)->pos.x * CHUNK_DIAMETER,
-                (**cursor)->pos.y * CHUNK_DIAMETER,
-                (**cursor)->pos.z * CHUNK_DIAMETER);
+        end += CHUNK_QUEUE.size_2;
+        for (i = 0; cursor < end; ++i, ++cursor)
+        {
+            if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+            glUniform3f(uniform.bounding_box.position,
+                    (**cursor)->pos.x * CHUNK_DIAMETER,
+                    (**cursor)->pos.y * CHUNK_DIAMETER,
+                    (**cursor)->pos.z * CHUNK_DIAMETER);
 
-        glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
-        glBindVertexArray(mesh_cube_of_happiness.vao);
-        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+            glBindVertexArray(mesh_cube_of_happiness.vao);
+            glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+        }
     }
 
-    end = chunk_order + CHUNKS_MAX;
-    for (i = 0; cursor < end; ++i, ++cursor)
+    if (CHUNK_QUEUE.size_3)
     {
-        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
-        glUniform3f(uniform.bounding_box.position,
-                (**cursor)->pos.x * CHUNK_DIAMETER,
-                (**cursor)->pos.y * CHUNK_DIAMETER,
-                (**cursor)->pos.z * CHUNK_DIAMETER);
+        end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
+        for (i = 0; cursor < end; ++i, ++cursor)
+        {
+            if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+            glUniform3f(uniform.bounding_box.position,
+                    (**cursor)->pos.x * CHUNK_DIAMETER,
+                    (**cursor)->pos.y * CHUNK_DIAMETER,
+                    (**cursor)->pos.z * CHUNK_DIAMETER);
 
-        glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
-        glBindVertexArray(mesh_cube_of_happiness.vao);
-        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
+            glBindVertexArray(mesh_cube_of_happiness.vao);
+            glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+        }
     }
 
-framebuffer_blit:
+framebuffer_blit_chunk_queue_visualizer:
+#endif /* MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER */
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_world_msaa.fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_world.fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
@@ -1147,7 +1166,7 @@ framebuffer_blit:
         glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
                 (GLfloat*)&skybox_data.color);
 
-        cursor = chunk_order;
+        cursor = CHUNK_ORDER;
         for (; **cursor && cursor < end; ++cursor)
         {
             chunk = **cursor;
@@ -1336,14 +1355,14 @@ framebuffer_blit:
     text_render(0x3f6f9fff);
 
     text_push(stringf(
-                "CHUNK QUEUE 1 [%d]\n"
-                "CHUNK QUEUE 2 [%d]\n"
-                "CHUNK QUEUE 3 [%d]\n"
+                "CHUNK QUEUE 1 [%d] SIZE [%ld]\n"
+                "CHUNK QUEUE 2 [%d] SIZE [%ld]\n"
+                "CHUNK QUEUE 3 [%d] SIZE [%ld]\n"
                 "TOTAL CHUNKS [%ld]\n",
-                chunk_queue.count_1,
-                chunk_queue.count_2,
-                chunk_queue.count_3,
-                CHUNKS_MAX),
+                CHUNK_QUEUE.count_1, CHUNK_QUEUE.size_1,
+                CHUNK_QUEUE.count_2, CHUNK_QUEUE.size_2,
+                CHUNK_QUEUE.count_3, CHUNK_QUEUE.size_3,
+                CHUNKS_MAX[SET_RENDER_DISTANCE]),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
     text_render(0xffffffff);
@@ -1404,7 +1423,7 @@ framebuffer_blit:
 int
 main(int argc, char **argv)
 {
-    if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
+    if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))
             log_level = LOGLEVEL_FATAL;
@@ -1418,6 +1437,7 @@ main(int argc, char **argv)
             log_level = LOGLEVEL_DEBUG;
         else if (!strncmp(argv[2], "TRACE", 5))
             log_level = LOGLEVEL_TRACE;
+
     }
 
     glfwSetErrorCallback(callback_error);
@@ -1432,8 +1452,7 @@ main(int argc, char **argv)
     if (MODE_INTERNAL_COLLIDE)
         LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
 
-    if (init_paths() != 0 ||
-            create_instance("new_instance") != 0)
+    if (grandpath_dir_init() != 0)
         return -1;
 
     if (init_glfw(FALSE) != 0 ||
@@ -1450,7 +1469,8 @@ main(int argc, char **argv)
     flag =
         FLAG_MAIN_ACTIVE |
         FLAG_MAIN_PARSE_CURSOR |
-        FLAG_MAIN_DEBUG;
+        FLAG_MAIN_DEBUG |
+        FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER;
 
     /* ---- set mouse input ------------------------------------------------- */
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -1477,25 +1497,25 @@ main(int argc, char **argv)
     /* ---- set graphics ---------------------------------------------------- */
     if (
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_fbo, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_fbo, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_default, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_default, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_ui, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_ui, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_text, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_text, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_gizmo, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_gizmo, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_gizmo_chunk, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_gizmo_chunk, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_skybox, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_skybox, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_post_processing, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_post_processing, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_voxel, "r") != 0 ||
+                DIR_ROOT[DIR_SHADERS], &shader_voxel, "r") != 0 ||
             shader_program_init(
-                INSTANCE_DIR[DIR_SHADERS], &shader_bounding_box, "r") != 0)
+                DIR_ROOT[DIR_SHADERS], &shader_bounding_box, "r") != 0)
         goto cleanup;
 
     if(
@@ -1556,7 +1576,8 @@ section_menu_pause:
 
 section_main:
 
-    if (!(flag & FLAG_MAIN_WORLD_LOADED) && !init_world("Poop Consistency Tester"))
+    if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
+            world_init("Poop Consistency Tester") != 0)
             goto cleanup;
 
     generate_standard_meshes();

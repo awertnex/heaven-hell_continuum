@@ -5,24 +5,26 @@
 
 #include "main.h"
 
-extern u64 CHUNKS_MAX;
+extern u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1];
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
- * mapping of table entries to chunk positions in 3d space */
+ * mapping of chunk_buf entries to chunk positions in 3d space */
 extern Chunk **chunk_tab;
 
 /* chunk pointer pointer look-up table that points to chunk_tab addresses.
- * order of chunks based on distance away from player */
-extern Chunk ***chunk_order;
+ * order of chunk_tab based on distance away from player */
+extern Chunk ***CHUNK_ORDER;
 
 /* queue of chunks to be processed */
-extern ChunkQueue chunk_queue;
+extern ChunkQueue CHUNK_QUEUE;
 
 /* player relative chunk tab access */
-static u16 chunk_tab_index;
+static u32 chunk_tab_index;
 
-/* return FALSE (0) on failure */
-u8 chunking_init(void);
+/* bake_all = bake all chunk lookups if not already present.
+ *
+ * return non-zero on failure */
+i32 chunking_init(void);
 
 void chunking_update(v3i16 player_delta_chunk);
 void chunking_free(void);
@@ -33,15 +35,15 @@ void block_place(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index) */
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
-/* queue_stride = first chunk_order index to start parsing,
+/* queue_stride = first CHUNK_ORDER index to start parsing,
  * queue_size = number of indices to process in queue,
  * rate_chunk = number of chunks to process per frame,
  * rate_block = number of blocks to process per chunk per frame */
-void chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
+void chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
         u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block);
 
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
-u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
+u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 #ifdef FUCK // TODO: undef FUCK
 void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
 void draw_block_wires(v3i32 pos);

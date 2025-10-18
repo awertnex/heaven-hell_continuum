@@ -45,13 +45,13 @@ gui_init(void)
 {
     str *font_path[] =
     {
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
     };
 
@@ -75,27 +75,27 @@ gui_init(void)
     if (
             !texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "crosshair.png")) ||
+                stringf("%s%s", DIR_ROOT[DIR_GUI], "crosshair.png")) ||
 
             !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_active.png")) ||
+                stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_active.png")) ||
 
             !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_inactive.png")) ||
+                stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_inactive.png")) ||
 
             !texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "dirt.png")) ||
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "dirt.png")) ||
 
             !texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "stone.png")) ||
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "stone.png")) ||
 
             !texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "sand.png")))
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "sand.png")))
         goto cleanup;
 
     if (
