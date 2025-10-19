@@ -42,3 +42,5 @@ quirks:
 - [ ] make mem_unmap() for windows
 - [ ] fix overhead from function 'chunk_tab_shift()'
 - [ ] possibly fix overhead from bubble-sorting in function 'chunking_init()'
+- [ ] put blocks in a contiguous array and bind it all to an SSBO, and bind
+      chunk pointers to their addresses

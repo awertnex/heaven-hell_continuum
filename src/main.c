@@ -81,9 +81,18 @@ static ShaderProgram shader_ui =
     .name = "ui",
     .vertex.file_name = "ui.vert",
     .vertex.type = GL_VERTEX_SHADER,
-    .geometry.file_name = "ui.geom",
-    .geometry.type = GL_GEOMETRY_SHADER,
     .fragment.file_name = "ui.frag",
+    .fragment.type = GL_FRAGMENT_SHADER,
+};
+
+static ShaderProgram shader_ui_9_slice =
+{
+    .name = "ui_9_slice",
+    .vertex.file_name = "ui_9_slice.vert",
+    .vertex.type = GL_VERTEX_SHADER,
+    .geometry.file_name = "ui_9_slice.geom",
+    .geometry.type = GL_GEOMETRY_SHADER,
+    .fragment.file_name = "ui_9_slice.frag",
     .fragment.type = GL_FRAGMENT_SHADER,
 };
 
@@ -194,9 +203,9 @@ static void callback_scroll(
 void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_render_settings(void);
-void update_input(Player *player);
+void input_update(Player *player);
 i32 world_init(str *name);
-void update_world(Player *player);
+void world_update(Player *player);
 void draw_everything(void);
 
 static void
@@ -456,26 +465,35 @@ bind_shader_uniforms(void)
     uniform.defaults.sky_color =
         glGetUniformLocation(shader_default.id, "sky_color");
 
+    uniform.ui.ndc_scale =
+        glGetUniformLocation(shader_ui.id, "ndc_scale");
     uniform.ui.position =
         glGetUniformLocation(shader_ui.id, "position");
     uniform.ui.size =
         glGetUniformLocation(shader_ui.id, "size");
-    uniform.ui.render_size =
-        glGetUniformLocation(shader_ui.id, "render_size");
-    uniform.ui.ndc_scale =
-        glGetUniformLocation(shader_ui.id, "ndc_scale");
     uniform.ui.alignment =
         glGetUniformLocation(shader_ui.id, "alignment");
     uniform.ui.tint =
         glGetUniformLocation(shader_ui.id, "tint");
-    uniform.ui.slice =
-        glGetUniformLocation(shader_ui.id, "slice");
-    uniform.ui.slice_size =
-        glGetUniformLocation(shader_ui.id, "slice_size");
-    uniform.ui.texture_size =
-        glGetUniformLocation(shader_ui.id, "texture_size");
-    uniform.ui.sprite_size =
-        glGetUniformLocation(shader_ui.id, "sprite_size");
+
+    uniform.ui_9_slice.ndc_scale =
+        glGetUniformLocation(shader_ui_9_slice.id, "ndc_scale");
+    uniform.ui_9_slice.position =
+        glGetUniformLocation(shader_ui_9_slice.id, "position");
+    uniform.ui_9_slice.size =
+        glGetUniformLocation(shader_ui_9_slice.id, "size");
+    uniform.ui_9_slice.alignment =
+        glGetUniformLocation(shader_ui_9_slice.id, "alignment");
+    uniform.ui_9_slice.tint =
+        glGetUniformLocation(shader_ui_9_slice.id, "tint");
+    uniform.ui_9_slice.slice =
+        glGetUniformLocation(shader_ui_9_slice.id, "slice");
+    uniform.ui_9_slice.slice_size =
+        glGetUniformLocation(shader_ui_9_slice.id, "slice_size");
+    uniform.ui_9_slice.texture_size =
+        glGetUniformLocation(shader_ui_9_slice.id, "texture_size");
+    uniform.ui_9_slice.sprite_size =
+        glGetUniformLocation(shader_ui_9_slice.id, "sprite_size");
 
     uniform.font.char_size =
         glGetUniformLocation(shader_text.id, "char_size");
@@ -570,7 +588,7 @@ bind_shader_uniforms(void)
 }
 
 void
-update_input(Player *player)
+input_update(Player *player)
 {
     /* ---- jumping --------------------------------------------------------- */
     if (is_key_hold(bind_jump))
@@ -781,7 +799,7 @@ world_init(str *name)
 }
 
 void
-update_world(Player *player)
+world_update(Player *player)
 {
     game_tick = 2000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
@@ -1234,41 +1252,54 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_ui.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(shader_ui.id);
-    glBindVertexArray(mesh_unit.vao);
-
-    glUniform2iv(uniform.ui.render_size, 1, (GLint*)&render.size);
-    glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
-
-    if (!(flag & FLAG_MAIN_DEBUG) && flag & FLAG_MAIN_HUD)
+    if (flag & FLAG_MAIN_HUD)
     {
-        glUniform2i(uniform.ui.position, render.size.x / 2, render.size.y / 2);
-        glUniform2iv(uniform.ui.size, 1,
-                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
-        glUniform2i(uniform.ui.alignment, 0, 0);
-        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform1i(uniform.ui.slice, FALSE);
-        glUniform2iv(uniform.ui.texture_size, 1,
-                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
-        glUniform2iv(uniform.ui.sprite_size, 1,
-                (GLint*)&texture[TEXTURE_CROSSHAIR].size);
+        glUseProgram(shader_ui.id);
+        glBindVertexArray(mesh_unit.vao);
+        glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
 
-        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
+        if (!(flag & FLAG_MAIN_DEBUG))
+        {
+            glUniform2i(uniform.ui.position,
+                    render.size.x / 2, render.size.y / 2);
+            glUniform2iv(uniform.ui.size, 1,
+                    (GLint*)&texture[TEXTURE_CROSSHAIR].size);
+            glUniform2i(uniform.ui.alignment, 0, 0);
+            glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
+
+            glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+
+        glUniform2i(uniform.ui.position,
+                (render.size.x / 2) + 87, render.size.y - 36);
+        glUniform2i(uniform.ui.size, 256, 256);
+        glUniform2i(uniform.ui.alignment, 0, 1);
+        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
+
+        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_ITEM_BAR].id);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
     /* ---- draw super debug ------------------------------------------------ */
     if (flag & FLAG_MAIN_SUPER_DEBUG)
     {
-        glUniform2i(uniform.ui.position, SET_MARGIN, SET_MARGIN);
-        glUniform2i(uniform.ui.size, 400, render.size.y - (SET_MARGIN * 2));
-        glUniform2i(uniform.ui.alignment, -1, -1);
-        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 0.7f);
-        glUniform1i(uniform.ui.slice, TRUE);
-        glUniform1f(uniform.ui.slice_size, 8.0f);
-        glUniform2iv(uniform.ui.texture_size, 1,
+        glUseProgram(shader_ui_9_slice.id);
+        glBindVertexArray(mesh_unit.vao);
+
+        glUniform2fv(uniform.ui_9_slice.ndc_scale, 1,
+                (GLfloat*)&settings.ndc_scale);
+
+        glUniform2i(uniform.ui_9_slice.position, SET_MARGIN, SET_MARGIN);
+        glUniform2i(uniform.ui_9_slice.size,
+                400, render.size.y - (SET_MARGIN * 2));
+        glUniform2i(uniform.ui_9_slice.alignment, -1, -1);
+        glUniform4f(uniform.ui_9_slice.tint, 1.0f, 1.0f, 1.0f, 0.7f);
+        glUniform1i(uniform.ui_9_slice.slice, TRUE);
+        glUniform1f(uniform.ui_9_slice.slice_size, 8.0f);
+        glUniform2iv(uniform.ui_9_slice.texture_size, 1,
                 (GLint*)&texture[TEXTURE_SDB_ACTIVE].size);
-        glUniform2i(uniform.ui.sprite_size,
+        glUniform2i(uniform.ui_9_slice.sprite_size,
                 texture[TEXTURE_SDB_ACTIVE].size.x / 2,
                 texture[TEXTURE_SDB_ACTIVE].size.y / 2);
 
@@ -1284,19 +1315,17 @@ framebuffer_blit_chunk_queue_visualizer:
     u32 fps = (u32)(1.0f / render.frame_delta);
     text_push(stringf("FPS               [%d]\n", fps),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render((fps > 60) ? 0x6f9f3fff : 0xec6051ff);
+    text_render((fps > 60) ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
 
-    text_push(stringf(
-                "\n"
+    text_push(stringf("\n"
                 "FRAME TIME        [%.2lf]\n"
                 "FRAME DELTA       [%.5lf]\n",
-                (u32)(1.0f / render.frame_delta),
                 render.frame_start,
                 render.frame_delta),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(0x6f9f3fff);
+    text_render(COLOR_TEXT_MOSS);
 
-    text_push(stringf(
+    text_push(stringf("\n\n\n"
                 "PLAYER NAME       [%s]\n"
                 "PLAYER XYZ        [%.2f %.2f %.2f]\n"
                 "PLAYER BLOCK      [%d %d %d]\n"
@@ -1305,10 +1334,10 @@ framebuffer_blit_chunk_queue_visualizer:
                 "PLAYER PITCH      [%.2f]\n"
                 "PLAYER YAW        [%.2f]\n",
                 lily.name,
-                lily.pos.x, lily.pos.y, lily.pos.z,
-                (i32)floorf(lily.pos.x),
-                (i32)floorf(lily.pos.y),
-                (i32)floorf(lily.pos.z),
+                lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z,
+                (i32)floorf(lily.pos_smooth.x),
+                (i32)floorf(lily.pos_smooth.y),
+                (i32)floorf(lily.pos_smooth.z),
                 (chunk_tab[CHUNK_TAB_CENTER]) ?
                 chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
                 (chunk_tab[CHUNK_TAB_CENTER]) ?
@@ -1317,11 +1346,10 @@ framebuffer_blit_chunk_queue_visualizer:
                 chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw),
-                (v2f32){SET_MARGIN,
-                    SET_MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
-    text_render(0xffffffff);
+                (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(COLOR_TEXT_DEFAULT);
 
-    text_push(stringf(
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "PLAYER OVERFLOW X [%s]\n"
                 "PLAYER OVERFLOW Y [%s]\n"
                 "PLAYER OVERFLOW Z [%s]\n",
@@ -1334,25 +1362,10 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) ?
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
                 "        " : "        " : "NONE"),
-            (v2f32){SET_MARGIN,
-            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    text_render(0x995429ff);
+            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(COLOR_DIAGNOSTIC_NONE);
 
-    text_push(stringf(
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
-            (v2f32){SET_MARGIN,
-            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    text_render(0xec6051ff);
-
-    text_push(stringf(
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1362,11 +1375,23 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
-            (v2f32){SET_MARGIN,
-            SET_MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    text_render(0x79ec50ff);
+            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(COLOR_DIAGNOSTIC_SUCCESS);
 
-    text_push(stringf(
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
+                "                   %s\n"
+                "                   %s\n"
+                "                   %s\n",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(COLOR_DIAGNOSTIC_ERROR);
+
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "MOUSE XY          [%.2f %.2f]\n"
                 "DELTA XY          [%.2f %.2f]\n"
                 "RENDER RATIO      [%.4f]\n"
@@ -1385,9 +1410,8 @@ framebuffer_blit_chunk_queue_visualizer:
                 skybox_data.sun_rotation.x,
                 skybox_data.sun_rotation.y,
                 skybox_data.sun_rotation.z),
-            (v2f32){SET_MARGIN,
-            SET_MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
-    text_render(0x3f6f9fff);
+            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
+    text_render(COLOR_DIAGNOSTIC_INFO);
 
     text_push(stringf(
                 "CHUNK QUEUE 1 [%d] SIZE [%ld]\n"
@@ -1400,7 +1424,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 CHUNKS_MAX[SET_RENDER_DISTANCE]),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
-    text_render(0xffffffff);
+    text_render(COLOR_TEXT_DEFAULT);
 
     text_start(0, FONT_SIZE_DEFAULT,
             &font[FONT_MONO], &render, &shader_text, &fbo_text, FALSE);
@@ -1418,9 +1442,9 @@ framebuffer_blit_chunk_queue_visualizer:
                 glGetString(GL_SHADING_LANGUAGE_VERSION),
                 glGetString(GL_VENDOR),
                 glGetString(GL_RENDERER)),
-            (v2f32){SET_MARGIN,
-            render.size.y - SET_MARGIN}, 0, TEXT_ALIGN_BOTTOM);
-    text_render(0x3f9f3fff);
+            (v2f32){SET_MARGIN, render.size.y - SET_MARGIN},
+            0, TEXT_ALIGN_BOTTOM);
+    text_render(COLOR_TEXT_RADIOACTIVE);
     text_stop();
 
     /* ---- post processing ------------------------------------------------- */
@@ -1536,6 +1560,8 @@ main(int argc, char **argv)
             shader_program_init(
                 DIR_ROOT[DIR_SHADERS], &shader_default, "r") != 0 ||
             shader_program_init(
+                DIR_ROOT[DIR_SHADERS], &shader_ui_9_slice, "r") != 0 ||
+            shader_program_init(
                 DIR_ROOT[DIR_SHADERS], &shader_ui, "r") != 0 ||
             shader_program_init(
                 DIR_ROOT[DIR_SHADERS], &shader_text, "r") != 0 ||
@@ -1632,11 +1658,11 @@ section_main:
 
         glfwPollEvents();
         update_key_states(&render);
-        update_input(&lily);
+        input_update(&lily);
 
         update_mouse_movement(&render);
         update_render_settings();
-        update_world(&lily);
+        world_update(&lily);
         draw_everything();
 
         glfwSwapBuffers(render.window);

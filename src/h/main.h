@@ -31,7 +31,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             10
+#define SET_RENDER_DISTANCE             20
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -57,7 +57,7 @@
 #define SET_PLAYER_JUMP_HEIGHT          8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       40.0f
+#define SET_PLAYER_SPEED_FLY_FAST       4000.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
@@ -112,6 +112,14 @@
 /* number of blocks to process per chunk per frame */
 #define BLOCK_PARSE_RATE                    512
 
+#define COLOR_TEXT_DEFAULT                  0xbcbcbcff
+#define COLOR_TEXT_BRIGHT                   0xffffffff
+#define COLOR_TEXT_MOSS                     0x6f9f3fff
+#define COLOR_TEXT_RADIOACTIVE              0x3f9f3fff
+#define COLOR_DIAGNOSTIC_NONE               0x995429ff
+#define COLOR_DIAGNOSTIC_ERROR              0xec6051ff
+#define COLOR_DIAGNOSTIC_SUCCESS            0x79ec50ff
+#define COLOR_DIAGNOSTIC_INFO               0x3f6f9fff
 #define COLOR_CHUNK_LOADED                  0x4c260715
 #define COLOR_CHUNK_RENDER                  0x5e7a0aff
 
@@ -167,17 +175,25 @@ typedef struct Uniform
 
     struct /* ui */
     {
+        GLint ndc_scale;
         GLint position;
         GLint size;
-        GLint render_size;
+        GLint alignment;
+        GLint tint;
+    } ui;
+
+    struct /* ui_9_slice */
+    {
         GLint ndc_scale;
+        GLint position;
+        GLint size;
         GLint alignment;
         GLint tint;
         GLint slice;
         GLint slice_size;
         GLint texture_size;
         GLint sprite_size;
-    } ui;
+    } ui_9_slice;
 
     struct /* font */
     {
@@ -254,6 +270,7 @@ enum FontIndices
 enum TextureIndices
 {
     TEXTURE_CROSSHAIR,
+    TEXTURE_ITEM_BAR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
     TEXTURE_DIRT,

@@ -29,20 +29,20 @@ enum Directories
     DIR_SCREENSHOTS,
     DIR_TEXT,
     DIR_WORLDS,
-    DIR_ROOT_LAST,
+    DIR_ROOT_COUNT,
 
     /* ---- world directories ----------------------------------------------- */
     DIR_WORLD_CHUNKS =      0,
     DIR_WORLD_ENTITIES,
     DIR_WORLD_LOGS,
     DIR_WORLD_PLAYER,
-    DIR_WORLD_LAST,
+    DIR_WORLD_COUNT,
 }; /* Directories */
 
 extern str PATH_ROOT[PATH_MAX];
 extern str PATH_WORLD[PATH_MAX];
-extern str DIR_ROOT[DIR_ROOT_LAST][NAME_MAX];
-extern str DIR_WORLD[DIR_WORLD_LAST][NAME_MAX];
+extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
+extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
 
 i32 grandpath_dir_init(void);
 i32 world_dir_init(const str *world_name);

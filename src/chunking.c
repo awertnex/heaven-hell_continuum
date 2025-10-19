@@ -91,9 +91,6 @@ chunking_init(void)
     /* ---- build distance lookup ------------------------------------------- */
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
     {
-        LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx]..\n",
-                i, SET_RENDER_DISTANCE_MAX);
-
         chunk_buf_diameter = (i * 2) + 1;
         chunk_buf_volume =
             chunk_buf_diameter * chunk_buf_diameter * chunk_buf_diameter;
@@ -108,7 +105,7 @@ chunking_init(void)
         {
             for (j = 0; j < chunk_buf_volume; ++j)
             {
-                LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] Progress [%d/%d]..\n",
+                LOGTRACE("Building CHUNK_ORDER Distance Lookup [0x%02lx/0x%02x] Progress [%ld/%ld]..\n",
                         i, SET_RENDER_DISTANCE_MAX, j, chunk_buf_volume);
 
                 coordinates =
@@ -121,7 +118,7 @@ chunking_init(void)
                 index[j] = j;
             }
 
-            LOGTRACE("Sorting CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx]..\n",
+            LOGTRACE("Sorting CHUNK_ORDER Distance Lookup [0x%02lx/0x%02x]..\n",
                     i, SET_RENDER_DISTANCE_MAX);
 
             for (j = 0; j < chunk_buf_volume; ++j)
@@ -132,19 +129,19 @@ chunking_init(void)
                         swap_bits_u32(&index[j], &index[k]);
                     }
 
-            LOGTRACE("Writing CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] To File..\n",
+            LOGTRACE("Writing CHUNK_ORDER Distance Lookup [0x%02lx/0x%02x] To File..\n",
                     i, SET_RENDER_DISTANCE_MAX);
 
             write_file(CHUNK_ORDER_lookup_file_name,
                     sizeof(u32), chunk_buf_volume, &index, "wb", TRUE);
 
-            LOGTRACE("CHUNK_ORDER Distance Lookup [0x%02lx/0x%02lx] Written To File\n",
+            LOGTRACE("CHUNK_ORDER Distance Lookup [0x%02x/0x%02x] Written To File\n",
                     i, SET_RENDER_DISTANCE_MAX);
         }
     }
 
     snprintf(CHUNK_ORDER_lookup_file_name, PATH_MAX,
-            "%slookup_chunk_order_0x%02lx.bin",
+            "%slookup_chunk_order_0x%02x.bin",
             DIR_ROOT[DIR_LOOKUPS], SET_RENDER_DISTANCE);
 
     CHUNK_ORDER_lookup_file_contents =
@@ -163,7 +160,7 @@ chunking_init(void)
     {
         for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         {
-            LOGTRACE("Building CHUNKS_MAX Lookup, Progress [%d/%d]..\n",
+            LOGTRACE("Building CHUNKS_MAX Lookup, Progress [%ld/%d]..\n",
                     i, SET_RENDER_DISTANCE_MAX);
             chunk_buf_diameter = (i * 2) + 1;
             chunk_buf_volume =

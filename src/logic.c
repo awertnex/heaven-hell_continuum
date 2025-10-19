@@ -15,75 +15,75 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
     const i64 DIAMETER          = diameter * chunk_diameter;
     const i64 DIAMETER_V        = diameter_v * chunk_diameter;
 
-    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
-    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
-
     const i64 WORLD_MARGIN =
         (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
     const i64 WORLD_MARGIN_V =
         (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
 
-    /* ---- overflow edge --------------------------------------------------- */
-    if (player->pos.x > OVERFLOW_EDGE)
-    {
-        player->pos.x -= DIAMETER;
-        player->pos_smooth.x -= DIAMETER;
-    }
-    if (player->pos.x < -OVERFLOW_EDGE)
-    {
-        player->pos.x += DIAMETER;
-        player->pos_smooth.x += DIAMETER;
-    }
+    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
 
-    if (player->pos.y > OVERFLOW_EDGE)
-    {
-        player->pos.y -= DIAMETER;
-        player->pos_smooth.y -= DIAMETER;
-    }
-    if (player->pos.y < -OVERFLOW_EDGE)
-    {
-        player->pos.y += DIAMETER;
-        player->pos_smooth.y += DIAMETER;
-    }
-
-    if (player->pos.z > OVERFLOW_EDGE_V)
-    {
-        player->pos.z -= DIAMETER_V;
-        player->pos_smooth.z -= DIAMETER_V;
-    }
-    if (player->pos.z < -OVERFLOW_EDGE_V)
-    {
-        player->pos.z += DIAMETER_V;
-        player->pos_smooth.z += DIAMETER_V;
-    }
-
-    /* ---- world margin ---------------------------------------------------- */
-    if (player->pos.x > WORLD_MARGIN)
+    /* ---- wrap coordinates: world margin ---------------------------------- */
+    if (player->pos_smooth.x > WORLD_MARGIN)
         player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
-    else if (player->pos.x < -WORLD_MARGIN)
+    else if (player->pos_smooth.x < -WORLD_MARGIN)
     {
         player->flag |= FLAG_PLAYER_OVERFLOW_X;
         player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
     }
     else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
 
-    if (player->pos.y > WORLD_MARGIN)
+    if (player->pos_smooth.y > WORLD_MARGIN)
         player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
-    else if (player->pos.y < -WORLD_MARGIN)
+    else if (player->pos_smooth.y < -WORLD_MARGIN)
     {
         player->flag |= FLAG_PLAYER_OVERFLOW_Y;
         player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
     }
     else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
 
-    if (player->pos.z > WORLD_MARGIN_V)
+    if (player->pos_smooth.z > WORLD_MARGIN_V)
         player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
-    else if (player->pos.z < -WORLD_MARGIN_V)
+    else if (player->pos_smooth.z < -WORLD_MARGIN_V)
     {
         player->flag |= FLAG_PLAYER_OVERFLOW_Z;
         player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
     }
     else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
+
+    /* ---- wrap coordinates: overflow edge --------------------------------- */
+    if (player->pos_smooth.x > OVERFLOW_EDGE)
+    {
+        player->pos.x -= DIAMETER;
+        player->pos_smooth.x -= DIAMETER;
+    }
+    if (player->pos_smooth.x < -OVERFLOW_EDGE)
+    {
+        player->pos.x += DIAMETER;
+        player->pos_smooth.x += DIAMETER;
+    }
+
+    if (player->pos_smooth.y > OVERFLOW_EDGE)
+    {
+        player->pos.y -= DIAMETER;
+        player->pos_smooth.y -= DIAMETER;
+    }
+    if (player->pos_smooth.y < -OVERFLOW_EDGE)
+    {
+        player->pos.y += DIAMETER;
+        player->pos_smooth.y += DIAMETER;
+    }
+
+    if (player->pos_smooth.z > OVERFLOW_EDGE_V)
+    {
+        player->pos.z -= DIAMETER_V;
+        player->pos_smooth.z -= DIAMETER_V;
+    }
+    if (player->pos_smooth.z < -OVERFLOW_EDGE_V)
+    {
+        player->pos.z += DIAMETER_V;
+        player->pos_smooth.z += DIAMETER_V;
+    }
 
     player->chunk = (v3i16){
             floorf((f32)player->pos_smooth.x / chunk_diameter),

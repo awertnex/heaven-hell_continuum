@@ -16,8 +16,6 @@ out vec2 gs_tex_coords;
 
 void main()
 {
-    vec2 tex_size = vec2(1.0 / texture_size);
-
     vec2 vbo_quad[VERTICES_PER_QUAD] =
         vec2[](
                 /* position */
@@ -26,8 +24,7 @@ void main()
                 vec2(1.0, 0.0),
                 vec2(1.0, 0.0),
                 vec2(1.0, -1.0),
-                vec2(0.0, -1.0)
-              );
+                vec2(0.0, -1.0));
 
     vec2 vbo_slices[MAX_SLICES * 2] =
         vec2[](
@@ -51,13 +48,23 @@ void main()
                 vec2(slice_size.x, size.y - (slice_size * 2.0)),
                 vec2(slice_size),
                 vec2(size.x - (slice_size * 2.0), slice_size),
-                vec2(slice_size)
-                    );
+                vec2(slice_size));
 
+        vec2 tex_size = vec2(1.0 / texture_size);
         vec2 tex_0 = vec2(0.0, 1.0);
-        vec2 tex_1 = vec2(tex_size.x * slice_size, 1.0 - (tex_size.y * slice_size));
-        vec2 tex_2 = vec2(tex_size.x * (slice_size + 1.0), 1.0 - (tex_size.y * (slice_size + 1.0)));
-        vec2 tex_3 = vec2(tex_size.x * (sprite_size.x + 1.0), 1.0 - (tex_size.y * (sprite_size.y + 1.0)));
+        vec2 tex_1 =
+            vec2(
+                    tex_size.x * slice_size,
+                    1.0 - (tex_size.y * slice_size));
+        vec2 tex_2 =
+            vec2(
+                    tex_size.x * (slice_size + 1.0),
+                    1.0 - (tex_size.y * (slice_size + 1.0)));
+        vec2 tex_3 =
+            vec2(
+                    tex_size.x * (sprite_size.x + 1.0),
+                    1.0 - (tex_size.y * (sprite_size.y + 1.0)));
+
         vec2 vbo_tex_coords[MAX_SLICES * VERTICES_PER_QUAD] =
             vec2[](
                     vec2(tex_0.x, tex_1.y),
@@ -121,8 +128,7 @@ void main()
                     vec2(tex_3.x, tex_2.y),
                     vec2(tex_3.x, tex_2.y),
                     vec2(tex_3.x, tex_3.y),
-                    vec2(tex_2.x, tex_3.y)
-                        );
+                    vec2(tex_2.x, tex_3.y));
 
             for (int i = 0; i < MAX_SLICES; ++i)
             {

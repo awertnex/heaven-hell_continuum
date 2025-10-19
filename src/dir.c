@@ -13,8 +13,8 @@
 
 str PATH_ROOT[PATH_MAX] = {0};
 str PATH_WORLD[PATH_MAX] = {0};
-str DIR_ROOT[DIR_ROOT_LAST][NAME_MAX] = {0};
-str DIR_WORLD[DIR_WORLD_LAST][NAME_MAX] = {0};
+str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
+str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 
 i32
 grandpath_dir_init(void)
@@ -54,7 +54,7 @@ grandpath_dir_init(void)
 
     LOGINFO("%s\n", "Creating Directories..");
 
-    for (i = 0; i < DIR_ROOT_LAST; ++i)
+    for (i = 0; i < DIR_ROOT_COUNT; ++i)
     {
         snprintf(string, PATH_MAX, "%s%s", PATH_ROOT, DIR_ROOT[i]);
         check_slash(string);
@@ -67,7 +67,7 @@ grandpath_dir_init(void)
 
     LOGINFO("%s\n", "Checking Directories..");
 
-    for (i = 0; i < DIR_ROOT_LAST; ++i)
+    for (i = 0; i < DIR_ROOT_COUNT; ++i)
         if (!is_dir_exists(DIR_ROOT[i], TRUE))
             return -1;
 
@@ -107,7 +107,7 @@ world_dir_init(const str *world_name)
 
     LOGINFO("%s\n", "Creating World Directories..");
 
-    for (i = 0; i < DIR_WORLD_LAST; ++i)
+    for (i = 0; i < DIR_WORLD_COUNT; ++i)
     {
         snprintf(string, PATH_MAX, "%s%s", PATH_WORLD, DIR_WORLD[i]);
         check_slash(string);
@@ -119,7 +119,7 @@ world_dir_init(const str *world_name)
 
     LOGINFO("%s\n", "Checking Directories..");
 
-    for (i = 0; i < DIR_WORLD_LAST; ++i)
+    for (i = 0; i < DIR_WORLD_COUNT; ++i)
         if (!is_dir_exists(DIR_WORLD[i], TRUE))
             return -1;
 

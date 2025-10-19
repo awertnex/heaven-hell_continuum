@@ -77,6 +77,10 @@ gui_init(void)
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI], "crosshair.png")) ||
 
+            !texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI], "item_bar.png")) ||
+
             !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_active.png")) ||
@@ -100,6 +104,7 @@ gui_init(void)
 
     if (
             !texture_generate(&texture[TEXTURE_CROSSHAIR]) ||
+            !texture_generate(&texture[TEXTURE_ITEM_BAR]) ||
             !texture_generate(&texture[TEXTURE_SDB_ACTIVE]) ||
             !texture_generate(&texture[TEXTURE_SDB_INACTIVE]) ||
             !texture_generate(&texture[TEXTURE_DIRT]) ||
