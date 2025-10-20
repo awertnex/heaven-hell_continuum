@@ -30,6 +30,7 @@ extern u32 bind_inventory;
 // extern u32 bind_take_screenshot;
 extern u32 bind_toggle_hud;
 extern u32 bind_toggle_debug;
+extern u32 bind_toggle_super_debug;
 // extern u32 bind_toggle_cinematic_camera;
 // extern u32 bind_toggle_fullscreen;
 extern u32 bind_toggle_perspective;

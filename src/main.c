@@ -403,19 +403,28 @@ generate_standard_meshes(void)
     if (mesh_generate(&mesh_skybox, GL_STATIC_DRAW,
                 VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
                 vbo_data_skybox, ebo_data_skybox) != ERR_SUCCESS)
+    {
+        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Skybox");
         goto cleanup;
-    LOGINFO("%s\n", "'Skybox' Mesh Generated");
+    }
+    LOG_MESH_GENERATE(ERR_SUCCESS, "Skybox");
 
     if (mesh_generate(&mesh_cube_of_happiness, GL_STATIC_DRAW,
                 VBO_LEN_COH, EBO_LEN_COH,
                 vbo_data_coh, ebo_data_coh) != ERR_SUCCESS)
+    {
+        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Cube of Happiness");
         goto cleanup;
-    LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
+    }
+    LOG_MESH_GENERATE(ERR_SUCCESS, "Cube of Happiness");
 
     if (mem_alloc((void*)&mesh_player.vbo_data,
                 sizeof(GLfloat) * VBO_LEN_PLAYER,
                 "mesh_player.vbo_data") != ERR_SUCCESS)
+    {
+        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Player");
         goto cleanup;
+    }
 
     memcpy(mesh_player.vbo_data, vbo_data_player,
             sizeof(GLfloat) * VBO_LEN_PLAYER);
@@ -440,21 +449,22 @@ generate_standard_meshes(void)
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    LOGINFO("%s\n", "'Player' Mesh Generated");
+    LOG_MESH_GENERATE(ERR_SUCCESS, "Player");
 
     if (mesh_generate(&mesh_gizmo, GL_STATIC_DRAW,
                 VBO_LEN_GIZMO, EBO_LEN_GIZMO,
                 vbo_data_gizmo, ebo_data_gizmo) != ERR_SUCCESS)
+    {
+        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Gizmo");
         goto cleanup;
-    LOGINFO("%s\n", "'Gizmo' Mesh Generated");
+    }
+    LOG_MESH_GENERATE(ERR_SUCCESS, "Gizmo");
 
     *GAME_ERR = ERR_SUCCESS;
     return;
 
 cleanup:
     mesh_free(&mesh_player);
-    LOGERROR(ERR_MESH_GENERATION_FAIL,
-            "%s\n", "Mesh Generation Failed");
 }
 
 void
@@ -764,7 +774,7 @@ input_update(Player *player)
 
     /* ---- debug ----------------------------------------------------------- */
 #if !RELEASE_BUILD
-    if (is_key_press(KEY_TAB))
+    if (is_key_press(bind_toggle_super_debug))
         flag ^= FLAG_MAIN_SUPER_DEBUG;
 #endif /* RELEASE_BUILD */
 }
@@ -1567,11 +1577,7 @@ main(int argc, char **argv)
         glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
         LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
     }
-    else
-    {
-        LOGERROR(ERR_GLFW_RAW_MOUSE_MOTION_NOT_SUPPORT,
-                "%s\n", "GLFW: Raw Mouse Motion Not Supported");
-    }
+    else LOGERROR(ERR_GLFW, "%s\n", "GLFW: Raw Mouse Motion Not Supported");
     glfwGetCursorPos(render.window,
             &render.mouse_position.x,
             &render.mouse_position.y);

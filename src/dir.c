@@ -105,9 +105,9 @@ world_dir_init(const str *world_name)
     check_slash(PATH_WORLD);
     normalize_slash(PATH_WORLD);
 
-    if (is_dir_exists(PATH_WORLD, FALSE) != ERR_SUCCESS)
+    if (is_dir_exists(PATH_WORLD, FALSE) == ERR_SUCCESS)
     {
-        LOGERROR(ERR_DIR_EXISTS,
+        LOGERROR(ERR_WORLD_EXISTS,
                 "World Already Exists '%s'\n", world_name);
         return *GAME_DIR_ERR;
     }

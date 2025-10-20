@@ -63,7 +63,7 @@ logger_close(void)
 }
 
 void
-log_output(const str *file, u64 line,
+_log_output(const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...)
 {
     if (level > log_level_max) return;
@@ -73,7 +73,7 @@ log_output(const str *file, u64 line,
     vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);
 
-    if (level >= LOGLEVEL_WARNING)
+    if (level <= LOGLEVEL_WARNING)
         snprintf(out_message, OUT_STRING_MAX,
                 "%s%s%s:%s%"PRId64"%s:%s%s[%"PRId32"]: %s%s",
                 esc_code_color[level], file, esc_code_nocolor,

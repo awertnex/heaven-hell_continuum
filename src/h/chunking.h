@@ -34,12 +34,12 @@ void block_place(u32 index, u32 x, u32 y, u32 z);
 /* index = (chunk_tab index) */
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
-/* queue_stride = first CHUNK_ORDER index to start parsing,
+/* queue_offset = first CHUNK_ORDER index to start parsing,
  * queue_size = number of indices to process in queue,
  * rate_chunk = number of chunks to process per frame,
  * rate_block = number of blocks to process per chunk per frame */
 void chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
-        u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block);
+        u64 queue_offset, u64 queue_size, u32 rate_chunk, u32 rate_block);
 
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);

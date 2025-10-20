@@ -37,6 +37,7 @@ u32 bind_swap_item_with_offhand     = KEY_F;
 u32 bind_take_screenshot            = KEY_F2;
 u32 bind_toggle_hud                 = KEY_F1;
 u32 bind_toggle_debug               = KEY_F3;
+u32 bind_toggle_super_debug         = KEY_GRAVE_ACCENT;
 u32 bind_toggle_cinematic_camera    = KEY_F6;
 u32 bind_toggle_fullscreen          = KEY_F11;
 u32 bind_toggle_perspective         = KEY_F5;

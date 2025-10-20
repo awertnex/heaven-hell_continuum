@@ -49,7 +49,6 @@ enum EngineErrorCodes
     ERR_LOGGER_INIT_FAIL,
     ERR_GLFW,
     ERR_GLFW_INIT_FAIL,
-    ERR_GLFW_RAW_MOUSE_MOTION_NOT_SUPPORT,
     ERR_WINDOW_INIT_FAIL,
     ERR_GLAD_INIT_FAIL,
     ERR_GL_VERSION_NOT_SUPPORT,
@@ -62,7 +61,6 @@ enum EngineErrorCodes
     ERR_FONT_INIT_FAIL,
     ERR_TEXT_INIT_FAIL,
     ERR_MESH_GENERATION_FAIL,
-    ERR_COUNT,
 }; /* EngineErrorCodes */
 
 /* declared by the user */

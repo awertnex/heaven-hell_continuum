@@ -651,6 +651,7 @@ mesh_generate(Mesh *mesh, GLenum usage,
 
 cleanup:
     mesh_free(mesh);
+    engine_err = ERR_MESH_GENERATION_FAIL;
     return engine_err;
 }
 

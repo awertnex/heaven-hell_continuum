@@ -815,14 +815,14 @@ chunk_buf_pop(u32 index)
 /* TODO: grab chunks from disk if previously generated */
 void
 chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
-        u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block)
+        u64 queue_offset, u64 queue_size, u32 rate_chunk, u32 rate_block)
 {
     if (count && *count == queue_size)
         goto generate_and_mesh;
 
     /* ---- push chunk queue ------------------------------------------------ */
     u32 i;
-    Chunk ***chunk = CHUNK_ORDER + queue_stride;
+    Chunk ***chunk = CHUNK_ORDER + queue_offset;
     Chunk ***end = NULL;
     if (queue_id == CHUNK_QUEUE_LAST_ID)
         end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
