@@ -4,30 +4,37 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "h/diagnostics.h"
 #include "h/platform.h"
 #include "h/memory.h"
 #include "h/limits.h"
 #include "h/logger.h"
 
-b8
+u32
 _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
-        return TRUE;
+    {
+        engine_err = ERR_POINTER_NOT_NULL;
+        return engine_err;
+    }
 
     *x = calloc(1, size);
     if (*x == NULL)
     {
-        LOGFATALV(file, line, "%s[%p] Memory Allocation Failed, Process Aborted\n",
+        LOGFATALV(file, line, ERR_MEM_ALLOC_FAIL,
+                "%s[%p] Memory Allocation Failed, Process Aborted\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
     LOGTRACEV(file, line, "%s[%p] Memory Allocated [%lldB]\n",
             name, *x, size);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 _mem_alloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
@@ -37,30 +44,44 @@ _mem_alloc_memb(void **x, u64 memb, u64 size,
     *x = calloc(memb, size);
     if (*x == NULL)
     {
-        LOGFATALV(file, line, "%s[%p] Memory Allocation Failed, Process Aborted\n",
+        LOGFATALV(file, line, ERR_MEM_ALLOC_FAIL,
+                "%s[%p] Memory Allocation Failed, Process Aborted\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
     LOGTRACEV(file, line, "%s[%p] Memory Allocated [%lldB]\n",
             name, *x, memb * size);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 _mem_alloc_buf(buf *x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
+    if (x == NULL)
+    {
+        LOGERRORV(file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Allocation Failed, Pointer NULL\n",
+                name, NULL);
+        return engine_err;
+    }
+
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
     snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (!_mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i, file, line))
-        return FALSE;
-    if (!_mem_alloc_memb((void*)&x->buf, memb, size, name_buf, file, line))
+    if (_mem_alloc_memb((void*)&x->i,
+                memb, sizeof(str*), name_i, file, line) != ERR_SUCCESS)
+        return engine_err;
+
+    if (_mem_alloc_memb((void*)&x->buf,
+                memb, size, name_buf, file, line) != ERR_SUCCESS)
     {
         _mem_free((void*)&x->i, memb * sizeof(str*), name_i, file, line);
-        return FALSE;
+        return engine_err;
     }
 
     u64 i = 0;
@@ -69,52 +90,63 @@ _mem_alloc_buf(buf *x, u64 memb, u64 size,
     x->memb = memb;
     x->size = size;
     x->loaded = TRUE;
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 _mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
-        LOGERRORV(file, line, "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+        LOGERRORV(file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
+
     void *temp = realloc(*x, size);
     if (temp == NULL)
     {
-        LOGFATALV(file, line, "%s[%p] Memory Reallocation Failed, Process Aborted\n",
+        LOGFATALV(file, line, ERR_MEM_REALLOC_FAIL,
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
                 name, *x);
-        return FALSE;
+        return engine_err;
     }
     *x = temp;
     LOGTRACEV(file, line, "%s[%p] Memory Reallocated [%lldB]\n",
             name, *x, size);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 _mem_realloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
-        LOGERRORV(file, line, "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+        LOGERRORV(file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
     void *temp = realloc(*x, memb * size);
     if (temp == NULL)
     {
-        LOGFATALV(file, line, "%s[%p] Memory Reallocation Failed, Process Aborted\n",
+        LOGFATALV(file, line, ERR_MEM_REALLOC_FAIL,
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
                 name, *x);
-        return FALSE;
+        return engine_err;
     }
     *x = temp;
     LOGTRACEV(file, line, "%s[%p] Memory Reallocated [%lldB]\n",
             name, *x, memb * size);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
@@ -154,15 +186,21 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
     *x = (buf){NULL};
 }
 
-void
+u32
 _mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
-        return;
+    {
+        engine_err = ERR_POINTER_NULL;
+        return engine_err;
+    }
 
     memset(*x, 0, size);
     LOGTRACEV(file, line, "%s[%p] Memory Cleared [%lldB]\n",
             name, *x, size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void

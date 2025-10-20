@@ -2,15 +2,20 @@
 #include <inttypes.h>
 
 #include <engine/h/core.h>
+#include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/math.h>
 
 #include "h/main.h"
 #include "h/chunking.h"
+#include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/input.h"
 #include "h/logic.h"
+
+u32 engine_err = ERR_SUCCESS;
+u32 *const GAME_ERR = (u32*)&engine_err;
 
 Render render =
 {
@@ -28,7 +33,7 @@ Settings settings =
     .gui_scale            = SET_GUI_SCALE_DEFAULT,
 };
 
-u32 flag = 0;
+u64 flag = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
@@ -189,7 +194,7 @@ Mesh mesh_gizmo = {0};
 /* ---- callbacks ----------------------------------------------------------- */
 static void callback_error(int error, const char* message)
 {
-    LOGERROR("GLFW: %s\n", message);
+    LOGERROR(ERR_GLFW, "GLFW: %s\n", message);
 }
 static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
@@ -204,7 +209,7 @@ void generate_standard_meshes(void);
 void bind_shader_uniforms(void);
 void update_render_settings(void);
 void input_update(Player *player);
-i32 world_init(str *name);
+u32 world_init(str *name);
 void world_update(Player *player);
 void draw_everything(void);
 
@@ -397,18 +402,19 @@ generate_standard_meshes(void)
 
     if (mesh_generate(&mesh_skybox, GL_STATIC_DRAW,
                 VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
-                vbo_data_skybox, ebo_data_skybox) != 0)
+                vbo_data_skybox, ebo_data_skybox) != ERR_SUCCESS)
         goto cleanup;
     LOGINFO("%s\n", "'Skybox' Mesh Generated");
 
     if (mesh_generate(&mesh_cube_of_happiness, GL_STATIC_DRAW,
                 VBO_LEN_COH, EBO_LEN_COH,
-                vbo_data_coh, ebo_data_coh) != 0)
+                vbo_data_coh, ebo_data_coh) != ERR_SUCCESS)
         goto cleanup;
     LOGINFO("%s\n", "'Cube of Happiness' Mesh Generated");
 
-    if (!mem_alloc((void*)&mesh_player.vbo_data,
-                sizeof(GLfloat) * VBO_LEN_PLAYER, "mesh_player.vbo_data"))
+    if (mem_alloc((void*)&mesh_player.vbo_data,
+                sizeof(GLfloat) * VBO_LEN_PLAYER,
+                "mesh_player.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     memcpy(mesh_player.vbo_data, vbo_data_player,
@@ -438,15 +444,17 @@ generate_standard_meshes(void)
 
     if (mesh_generate(&mesh_gizmo, GL_STATIC_DRAW,
                 VBO_LEN_GIZMO, EBO_LEN_GIZMO,
-                vbo_data_gizmo, ebo_data_gizmo) != 0)
+                vbo_data_gizmo, ebo_data_gizmo) != ERR_SUCCESS)
         goto cleanup;
     LOGINFO("%s\n", "'Gizmo' Mesh Generated");
 
+    *GAME_ERR = ERR_SUCCESS;
     return;
 
 cleanup:
     mesh_free(&mesh_player);
-    LOGERROR("%s\n", "Mesh Generation Failed");
+    LOGERROR(ERR_MESH_GENERATION_FAIL,
+            "%s\n", "Mesh Generation Failed");
 }
 
 void
@@ -469,6 +477,10 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader_ui.id, "ndc_scale");
     uniform.ui.position =
         glGetUniformLocation(shader_ui.id, "position");
+    uniform.ui.offset =
+        glGetUniformLocation(shader_ui.id, "offset");
+    uniform.ui.texture_size =
+        glGetUniformLocation(shader_ui.id, "texture_size");
     uniform.ui.size =
         glGetUniformLocation(shader_ui.id, "size");
     uniform.ui.alignment =
@@ -757,21 +769,22 @@ input_update(Player *player)
 #endif /* RELEASE_BUILD */
 }
 
-i32
+u32
 world_init(str *name)
 {
-    i32 success = 0;
-
     if (!strlen(name))
-        return -1;
+    {
+        *GAME_ERR = ERR_POINTER_NULL;
+        return *GAME_ERR;
+    }
 
-    success = world_dir_init(name);
-    if (success != 0)
-        return success;
+    world_dir_init(name);
+    if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
+        return *GAME_ERR;
 
-    success = chunking_init();
-    if (success != 0)
-        return success;
+    chunking_init();
+    if (*GAME_ERR != ERR_SUCCESS)
+        return *GAME_ERR;
 
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
@@ -795,7 +808,9 @@ world_init(str *name)
     lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
-    return 0;
+
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
 }
 
 void
@@ -1258,12 +1273,15 @@ framebuffer_blit_chunk_queue_visualizer:
         glBindVertexArray(mesh_unit.vao);
         glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
 
+        /* ---- crosshair --------------------------------------------------- */
         if (!(flag & FLAG_MAIN_DEBUG))
         {
             glUniform2i(uniform.ui.position,
                     render.size.x / 2, render.size.y / 2);
-            glUniform2iv(uniform.ui.size, 1,
+            glUniform2f(uniform.ui.offset, 0.0f, 0.0f);
+            glUniform2iv(uniform.ui.texture_size, 1,
                     (GLint*)&texture[TEXTURE_CROSSHAIR].size);
+            glUniform2i(uniform.ui.size, 8, 8);
             glUniform2i(uniform.ui.alignment, 0, 0);
             glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -1271,10 +1289,14 @@ framebuffer_blit_chunk_queue_visualizer:
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
 
-        glUniform2i(uniform.ui.position,
-                (render.size.x / 2) + 87, render.size.y - 36);
-        glUniform2i(uniform.ui.size, 256, 256);
-        glUniform2i(uniform.ui.alignment, 0, 1);
+        /* ---- item bar ---------------------------------------------------- */
+        glUniform2i(uniform.ui.position, render.size.x / 2, render.size.y);
+        glUniform2f(uniform.ui.offset, 84.5f, 18.0f);
+        glUniform2iv(uniform.ui.texture_size, 1,
+                (GLint*)&texture[TEXTURE_ITEM_BAR].size);
+        glUniform2iv(uniform.ui.size, 1,
+                (GLint*)&texture[TEXTURE_ITEM_BAR].size);
+        glUniform2i(uniform.ui.alignment, 1, 1);
         glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
 
         glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_ITEM_BAR].id);
@@ -1376,7 +1398,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_SUCCESS);
+    text_render(DIAGNOSTIC_COLOR_SUCCESS);
 
     text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
@@ -1444,7 +1466,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 glGetString(GL_RENDERER)),
             (v2f32){SET_MARGIN, render.size.y - SET_MARGIN},
             0, TEXT_ALIGN_BOTTOM);
-    text_render(COLOR_TEXT_RADIOACTIVE);
+    text_render(DIAGNOSTIC_COLOR_TRACE);
     text_stop();
 
     /* ---- post processing ------------------------------------------------- */
@@ -1482,20 +1504,23 @@ framebuffer_blit_chunk_queue_visualizer:
 int
 main(int argc, char **argv)
 {
+    if (logger_init() != ERR_SUCCESS)
+        return *GAME_ERR;
+
     if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
     {
         if (!strncmp(argv[2], "FATAL", 5))
-            log_level = LOGLEVEL_FATAL;
+            log_level_max = LOGLEVEL_FATAL;
         else if (!strncmp(argv[2], "ERROR", 5))
-            log_level = LOGLEVEL_ERROR;
+            log_level_max = LOGLEVEL_ERROR;
         else if (!strncmp(argv[2], "WARN", 4))
-            log_level = LOGLEVEL_WARNING;
+            log_level_max = LOGLEVEL_WARNING;
         else if (!strncmp(argv[2], "INFO", 4))
-            log_level = LOGLEVEL_INFO;
+            log_level_max = LOGLEVEL_INFO;
         else if (!strncmp(argv[2], "DEBUG", 5))
-            log_level = LOGLEVEL_DEBUG;
+            log_level_max = LOGLEVEL_DEBUG;
         else if (!strncmp(argv[2], "TRACE", 5))
-            log_level = LOGLEVEL_TRACE;
+            log_level_max = LOGLEVEL_TRACE;
 
     }
 
@@ -1505,24 +1530,28 @@ main(int argc, char **argv)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
 
     if (!MODE_INTERNAL_DEBUG)
-        LOGWARNING("%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
+    {
+        LOGWARNING(ERR_MODE_INTERNAL_DEBUG_DISABLE,
+                "%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
+    }
     else LOGDEBUG("%s\n", "Debugging Enabled");
 
     if (!MODE_INTERNAL_COLLIDE)
-        LOGWARNING("%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
-
-    if (grandpath_dir_init() != 0)
-        return -1;
-
-    if (init_glfw(FALSE) != 0 ||
-            init_window(&render) != 0 ||
-            init_glad() != 0)
     {
-        glfwTerminate();
-        return -1;
+        LOGWARNING(ERR_MODE_INTERNAL_COLLIDE_DISABLE,
+                "%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
     }
 
-    /*temp*/ glfwSetWindowPos(render.window, 0, 25);
+    if (grandpath_dir_init() != ERR_SUCCESS)
+        return *GAME_ERR;
+
+    if (
+            glfw_init(FALSE) != ERR_SUCCESS ||
+            window_init(&render) != ERR_SUCCESS ||
+            glad_init() != ERR_SUCCESS)
+        goto cleanup;
+
+    /*temp*/ glfwSetWindowPos(render.window, 0, 24);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
     flag =
@@ -1538,7 +1567,11 @@ main(int argc, char **argv)
         glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
         LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
     }
-    else LOGERROR("%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    else
+    {
+        LOGERROR(ERR_GLFW_RAW_MOUSE_MOTION_NOT_SUPPORT,
+                "%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    }
     glfwGetCursorPos(render.window,
             &render.mouse_position.x,
             &render.mouse_position.y);
@@ -1555,43 +1588,70 @@ main(int argc, char **argv)
 
     /* ---- set graphics ---------------------------------------------------- */
     if (
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_fbo, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_default, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_ui_9_slice, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_ui, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_text, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_gizmo, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_gizmo_chunk, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_skybox, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_post_processing, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_voxel, "r") != 0 ||
-            shader_program_init(
-                DIR_ROOT[DIR_SHADERS], &shader_bounding_box, "r") != 0)
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_fbo, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_default, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_ui, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_ui_9_slice, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_text, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_gizmo, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_gizmo_chunk, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_skybox, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_post_processing, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                &shader_voxel, "r") != ERR_SUCCESS ||
+
+            shader_program_init(DIR_ROOT[DIR_SHADERS],
+                    &shader_bounding_box, "r") != ERR_SUCCESS)
         goto cleanup;
 
     if(
-            fbo_init(&render, &fbo_skybox, &mesh_unit, FALSE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_world,       NULL, FALSE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_world_msaa,  NULL, TRUE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_hud,         NULL, FALSE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_hud_msaa,    NULL, TRUE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_ui,          NULL, FALSE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_text,        NULL, FALSE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_text_msaa,   NULL, TRUE, 4, FALSE) != 0 ||
-            fbo_init(&render, &fbo_post_processing, NULL, FALSE, 4, FALSE) != 0)
+            fbo_init(&render,
+                &fbo_skybox, &mesh_unit, FALSE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_world,       NULL, FALSE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_world_msaa,  NULL, TRUE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_hud,         NULL, FALSE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_hud_msaa,    NULL, TRUE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_ui,          NULL, FALSE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_text,        NULL, FALSE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_text_msaa,   NULL, TRUE, 4) != ERR_SUCCESS ||
+
+            fbo_init(&render,
+                &fbo_post_processing, NULL, FALSE, 4) != ERR_SUCCESS)
         goto cleanup;
 
-    glfwSwapInterval(0); /* vsync off */
+    glfwSwapInterval(MODE_INTERNAL_VSYNC);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
@@ -1602,8 +1662,9 @@ main(int argc, char **argv)
 
     update_render_settings();
 
-    if (gui_init() != 0 ||
-            text_init() != 0)
+    if (
+            gui_init() != ERR_SUCCESS ||
+            text_init() != ERR_SUCCESS)
         goto cleanup;
 
     /*temp off
@@ -1638,7 +1699,7 @@ section_menu_pause:
 section_main:
 
     if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
-            world_init("Poop Consistency Tester") != 0)
+            world_init("Poop Consistency Tester") != ERR_SUCCESS)
             goto cleanup;
 
     generate_standard_meshes();
@@ -1699,7 +1760,8 @@ cleanup: /* ----------------------------------------------------------------- */
     shader_program_free(&shader_gizmo_chunk);
     shader_program_free(&shader_voxel);
     shader_program_free(&shader_post_processing);
+    logger_close();
     glfwDestroyWindow(render.window);
     glfwTerminate();
-    return 0;
+    return *GAME_ERR;
 }

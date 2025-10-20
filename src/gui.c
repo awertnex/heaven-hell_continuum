@@ -2,11 +2,14 @@
 #include <string.h>
 #include <math.h>
 
+#include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/memory.h>
 #include "h/main.h"
 #include "h/gui.h"
 #include "h/dir.h"
+
+u32 *const GAME_GUI_ERR = (u32*)&engine_err;
 
 u8 hotbar_slot_selected = 1;
 
@@ -40,10 +43,10 @@ print_menu_layers()
     putchar('\n');
 }
 
-b8
+u32
 gui_init(void)
 {
-    str *font_path[] =
+    str *font_path[FONT_COUNT] =
     {
         stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
@@ -55,86 +58,74 @@ gui_init(void)
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
     };
 
-    normalize_slash(font_path[0]);
-    normalize_slash(font_path[1]);
-    normalize_slash(font_path[2]);
-    normalize_slash(font_path[3]);
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+    {
+        normalize_slash(font_path[i]);
+        if (font_init(&font[i], FONT_RESOLUTION_DEFAULT,
+                    font_path[i]) != ERR_SUCCESS)
+            goto cleanup;
+    }
 
     if (
-            !font_init(&font[FONT_REG],
-                FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !font_init(&font[FONT_REG_BOLD],
-                FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !font_init(&font[FONT_MONO],
-                FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !font_init(&font[FONT_MONO_BOLD],
-                FONT_RESOLUTION_DEFAULT, font_path[3]))
+            texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "crosshair.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "item_bar.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_active.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_inactive.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
+                    "dirt.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
+                    "stone.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
+                    "sand.png")) != ERR_SUCCESS)
         goto cleanup;
 
-
-    if (
-            !texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI], "crosshair.png")) ||
-
-            !texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI], "item_bar.png")) ||
-
-            !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_active.png")) ||
-
-            !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI], "sdb_inactive.png")) ||
-
-            !texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "dirt.png")) ||
-
-            !texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "stone.png")) ||
-
-            !texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], "sand.png")))
-        goto cleanup;
-
-    if (
-            !texture_generate(&texture[TEXTURE_CROSSHAIR]) ||
-            !texture_generate(&texture[TEXTURE_ITEM_BAR]) ||
-            !texture_generate(&texture[TEXTURE_SDB_ACTIVE]) ||
-            !texture_generate(&texture[TEXTURE_SDB_INACTIVE]) ||
-            !texture_generate(&texture[TEXTURE_DIRT]) ||
-            !texture_generate(&texture[TEXTURE_STONE]) ||
-            !texture_generate(&texture[TEXTURE_SAND]))
-        goto cleanup;
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        if (texture_generate(&texture[i]) != ERR_SUCCESS)
+            goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
     //menu_index = MENU_TITLE;
     //memset(buttons, 0, BTN_COUNT);
-    return 0;
+    return *GAME_GUI_ERR;
 
 cleanup:
     gui_free();
-    return -1;
+    return *GAME_GUI_ERR;
 }
 
 void
 gui_free(void)
 {
-    font_free(&font[FONT_REG]);
-    font_free(&font[FONT_REG]);
-    font_free(&font[FONT_MONO]);
-    font_free(&font[FONT_MONO_BOLD]);
-    texture_free(&texture[TEXTURE_CROSSHAIR]);
-    texture_free(&texture[TEXTURE_SDB_ACTIVE]);
-    texture_free(&texture[TEXTURE_SDB_INACTIVE]);
-    texture_free(&texture[TEXTURE_DIRT]);
-    texture_free(&texture[TEXTURE_STONE]);
-    texture_free(&texture[TEXTURE_SAND]);
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+    font_free(&font[i]);
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+    texture_free(&texture[i]);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */

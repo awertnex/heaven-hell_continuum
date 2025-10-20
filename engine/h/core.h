@@ -339,68 +339,69 @@ extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
 
 /* multisample = turn on multisampling;
  *
- * return non-zero on failure */
-int init_glfw(b8 multisample);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 glfw_init(b8 multisample);
 
-/* return non-zero on failure */
-int init_window(Render *render);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 window_init(Render *render);
 
-/* return non-zero on failure */
-int init_glad(void);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 glad_init(void);
 
 /* read_format = read files within path in specified format
  * (fread() parameter),
  *
- * return non-zero on failure */
-int shader_init(const str *shaders_dir, Shader *shader,
+ * return non-zero on failure and engine_err is set accordingly */
+u32 shader_init(const str *shaders_dir, Shader *shader,
         const str *read_format);
 
 /* read_format = read files within path in specified format
  * (fread() parameter),
  *
- * return non-zero on failure */
-int shader_program_init(const str *shaders_dir, ShaderProgram *program,
+ * return non-zero on failure and engine_err is set accordingly */
+u32 shader_program_init(const str *shaders_dir, ShaderProgram *program,
         const str *read_format);
 
 void shader_program_free(ShaderProgram *program);
 
-/* return non-zero on failure */
-int fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
-        b8 multisample, u32 samples, b8 flip_vertical);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
+        b8 multisample, u32 samples);
 
-/* return non-zero on failure */
-int fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
 void fbo_free(FBO *fbo);
 
 /* load image data from disk into texture->buf,
  * set texture info,
  *
- * return FALSE (0) on failure */
-b8 texture_init(Texture *texture, v2i32 size,
+ * return non-zero on failure and engine_err is set accordingly */
+u32 texture_init(Texture *texture, v2i32 size,
         const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name);
 
 /* generate texture for opengl from image loaded by texture_init(),
  *
- * return FALSE (0) on failure */
-b8 texture_generate(Texture *texture);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 texture_generate(Texture *texture);
 
 /* -- INTERNAL USE ONLY --;
  *
  * generate texture for opengl from *buf.
  *
- * return FALSE (0) on failure */
-b8 _texture_generate(
+ * return non-zero on failure and engine_err is set accordingly */
+u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
 
 void texture_free(Texture *texture);
 
-/* usage = GL_<x>_DRAW */
-int mesh_generate(Mesh *mesh, GLenum usage,
-        GLuint vbo_len, GLuint ebo_len,
-        GLfloat *vbo_data, GLuint *ebo_data);
+/* usage = GL_<x>_DRAW.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 mesh_generate(Mesh *mesh, GLenum usage,
+        GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
 
 void mesh_free(Mesh *mesh);
 
@@ -449,13 +450,15 @@ static b8 is_key_release(const u32 key)
  * size = font size & character bitmap diameter,
  * font_path = font path.
  *
- * return FALSE (0) on failure */
-b8 font_init(Font *font, u32 size, const str *font_path);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 font_init(Font *font, u32 size, const str *font_path);
 
 void font_free(Font *font);
 
-/* init text rendering settings */
-u8 text_init(void);
+/* init text rendering settings.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 text_init(void);
 
 /* start text rendering batch.
  *

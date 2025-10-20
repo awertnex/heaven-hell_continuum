@@ -2,6 +2,7 @@
 
 #include "engine/h/platform.h"
 #include "engine/h/defines.h"
+#include "engine/h/diagnostics.h"
 #include "engine/memory.c"
 #include "engine/dir.c"
 #include "engine/logger.c"
@@ -60,6 +61,7 @@ enum Flags
 
 /* ---- section: declarations ----------------------------------------------- */
 
+u32 engine_err = ERR_SUCCESS;
 u8 state = 0;
 u16 flags = 0;
 str *str_bin_root = NULL;
@@ -88,7 +90,7 @@ str str_out[CMD_SIZE] = STR_OUT;
 /* ---- section: signatures ------------------------------------------------- */
 
 void init_build(void);
-b8 is_source_changed(void);
+u32 is_source_changed(void);
 void rebuild_self(char **argv);
 u64 compare_argv(str *arg, int argc, str **argv);
 b8 evaluate_extension(const str *file_name);
@@ -110,7 +112,7 @@ void
 init_build(void)
 {
     str_bin_root = get_path_bin_root();
-    if (str_bin_root == NULL)
+    if (engine_err != ERR_SUCCESS)
         fail_cmd();
 
     check_slash(str_bin_root);
@@ -121,7 +123,7 @@ init_build(void)
     snprintf(str_bin_old, CMD_SIZE, "%sbuild_old%s", str_bin_root, EXE);
 }
 
-b8
+u32
 is_source_changed(void)
 {
     unsigned long mtime_src = 0;
@@ -132,23 +134,30 @@ is_source_changed(void)
     if (stat(str_src, &stats) == 0)
         mtime_src = stats.st_mtime;
     else
-        LOGERROR("%s\n", "File 'build.c' Not Found");
+    {
+        LOGERROR(ERR_FILE_NOT_FOUND, "%s\n", "File 'build.c' Not Found");
+        return engine_err;
+    }
 
     if (stat(str_bin, &stats) == 0)
         mtime_bin = stats.st_mtime;
     else
-        LOGERROR("File 'build%s' Not Found\n", EXE);
+    {
+        LOGERROR(ERR_FILE_NOT_FOUND, "File 'build%s' Not Found\n", EXE);
+        return engine_err;
+    }
 
     if (mtime_src && mtime_bin && mtime_src > mtime_bin)
-        return TRUE;
+        return ERR_SUCCESS;
 
-    return FALSE;
+    engine_err = ERR_SOURCE_NOT_CHANGE;
+    return engine_err;
 }
 
 void
 rebuild_self(char **argv)
 {
-    if (!mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd"))
+    if (mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
     LOGINFO("%s\n", "Rebuilding Self..");
@@ -172,7 +181,7 @@ rebuild_self(char **argv)
     cmd.i[10] = NULL;
 #endif
 
-    if (exec(&cmd, "cmd"))
+    if (exec(&cmd, "cmd") == ERR_SUCCESS)
     {
         LOGINFO("%s\n", "Self Rebuild Success");
         rename(str_bin, str_bin_old);
@@ -180,11 +189,11 @@ rebuild_self(char **argv)
         remove(str_bin_old);
 
         execvp(argv[0], (str *const *)argv);
-        LOGFATAL("'build%s' Failed, Process Aborted\n", EXE);
+        LOGFATAL(engine_err, "'build%s' Failed, Process Aborted\n", EXE);
         fail_cmd();
     }
 
-    LOGFATAL("%s\n", "Self-Rebuild Failed, Process Aborted");
+    LOGFATAL(engine_err, "%s\n", "Self-Rebuild Failed, Process Aborted");
     fail_cmd();
 }
 
@@ -256,13 +265,13 @@ push_cmd(const str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
     {
-        LOGERROR("%s\n", "cmd Full");
+        LOGERROR(ERR_BUFFER_FULL, "%s\n", "cmd Full");
         return;
     }
 
     if (strlen(string) >= CMD_SIZE - 1)
     {
-        LOGERROR("string '%s' Too Long\n", string);
+        LOGERROR(ERR_STRING_TOO_LONG, "string '%s' Too Long\n", string);
         return;
     }
 
@@ -275,7 +284,7 @@ build_main(void)
 {
     snprintf(str_dir_root, CMD_SIZE, "%s%s", str_bin_root, DIR_ROOT);
 
-    if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
     str temp[CMD_SIZE] = {0};
@@ -331,7 +340,7 @@ build_main(void)
 void
 build_cmd(int argc, char **argv)
 {
-    if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
     u32 i = 0;
@@ -397,23 +406,25 @@ build_test(char **argv)
 {
     if (!argv[2])
     {
-        LOGERROR("Usage: ./build%s test [n]\n", EXE);
+        LOGERROR(ERR_POINTER_NULL, "Usage: ./build%s test [n]\n", EXE);
         fail_cmd();
     }
     u32 i = 0;
     str temp[CMD_SIZE] = {0};
     u64 test_index = atoi(argv[2]);
     str_tests.memb = get_dir_entry_count(DIR_TESTS);
+    if (engine_err != ERR_SUCCESS)
+        fail_cmd();
     if (test_index >= str_tests.memb)
     {
-        LOGERROR("'%s' Invalid, Try './build%s list'"
+        LOGERROR(ERR_BUFFER_OVERFLOW, "'%s' Invalid, Try './build%s list'"
                 "to List Available Options..\n", argv[2], EXE);
         fail_cmd();
     }
     str_tests = get_dir_contents(DIR_TESTS);
-    if (!str_tests.loaded)
+    if (engine_err != ERR_SUCCESS)
         fail_cmd();
-    if (!mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd"))
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
     for (i = 0; i < str_tests.memb; ++i)
@@ -475,7 +486,7 @@ void
 fail_cmd(void)
 {
     free_cmd();
-    _exit(EXIT_FAILURE);
+    _exit(engine_err);
 }
 
 void
@@ -502,16 +513,17 @@ list(void)
             "Tests:\n");
 
     str_tests = get_dir_contents(DIR_TESTS);
-    if (!str_tests.loaded)
+    if (engine_err != ERR_SUCCESS)
     {
-        LOGERROR("%s\n", "Fetching Tests Failed");
+        LOGERROR(engine_err, "%s\n", "Fetching Tests Failed");
         fail_cmd();
     }
 
     str *str_tests_temp = NULL;
-    if (!mem_alloc((void*)&str_tests_temp, NAME_MAX, "str_tests_temp"))
+    if (mem_alloc((void*)&str_tests_temp, NAME_MAX,
+                "str_tests_temp") != ERR_SUCCESS)
     {
-        LOGERROR("%s\n", "Fetching Tests Failed");
+        LOGERROR(engine_err, "%s\n", "Fetching Tests Failed");
         fail_cmd();
     }
 
@@ -527,19 +539,20 @@ list(void)
 
     mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
     mem_free_buf(&str_tests, "str_tests");
-    exit(EXIT_SUCCESS);
+    engine_err = ERR_SUCCESS;
+    exit(engine_err);
 }
 
 int
 main(int argc, char **argv)
 {
-    log_level = LOGLEVEL_INFO;
-    if (compare_argv("LOGFATAL", argc, argv)) log_level = LOGLEVEL_FATAL;
-    if (compare_argv("LOGERROR", argc, argv)) log_level = LOGLEVEL_ERROR;
-    if (compare_argv("LOGWARN", argc, argv)) log_level = LOGLEVEL_WARNING;
-    if (compare_argv("LOGINFO", argc, argv)) log_level = LOGLEVEL_INFO;
-    if (compare_argv("LOGDEBUG", argc, argv)) log_level = LOGLEVEL_DEBUG;
-    if (compare_argv("LOGTRACE", argc, argv)) log_level = LOGLEVEL_TRACE;
+    log_level_max = LOGLEVEL_INFO;
+    if (compare_argv("LOGFATAL", argc, argv)) log_level_max = LOGLEVEL_FATAL;
+    if (compare_argv("LOGERROR", argc, argv)) log_level_max = LOGLEVEL_ERROR;
+    if (compare_argv("LOGWARN", argc, argv)) log_level_max = LOGLEVEL_WARNING;
+    if (compare_argv("LOGINFO", argc, argv)) log_level_max = LOGLEVEL_INFO;
+    if (compare_argv("LOGDEBUG", argc, argv)) log_level_max = LOGLEVEL_DEBUG;
+    if (compare_argv("LOGTRACE", argc, argv)) log_level_max = LOGLEVEL_TRACE;
 
     init_build();
 
@@ -549,7 +562,7 @@ main(int argc, char **argv)
         rebuild_self(argv);
     }
 
-    if (is_source_changed())
+    if (is_source_changed() == ERR_SUCCESS)
         rebuild_self(argv);
 
     if (compare_argv("help", argc, argv))       help();
@@ -558,9 +571,10 @@ main(int argc, char **argv)
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
     if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
-    if (!is_dir_exists(DIR_SRC, TRUE) ||
-            !is_dir_exists(DIR_TESTS, TRUE))
-        return -1;
+    if (
+            is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS ||
+            is_dir_exists(DIR_TESTS, TRUE) != ERR_SUCCESS)
+        return engine_err;
 
     if (!state)
         build_main();
@@ -572,10 +586,11 @@ main(int argc, char **argv)
     if (flags & FLAG_SHOW_CMD)                  show_cmd();
     if (flags & FLAG_RAW_CMD)                   raw_cmd();
 
-    if (!is_dir_exists(str_dir_root, FALSE))
+    if (is_dir_exists(str_dir_root, FALSE) != ERR_SUCCESS)
         make_dir(str_dir_root);
 
-    if (state == STATE_TEST && !is_dir_exists(DIR_ROOT_TESTS, FALSE))
+    if (state == STATE_TEST &&
+            is_dir_exists(DIR_ROOT_TESTS, FALSE) != ERR_SUCCESS)
         make_dir(DIR_ROOT_TESTS);
 
     str str_from[ASSET_COUNT][CMD_SIZE] = {0};
@@ -603,22 +618,25 @@ main(int argc, char **argv)
 
     for (i = 0; i < ASSET_COUNT; ++i)
     {
-        if (is_file(str_from[i]))
+        if (is_file(str_from[i]) == ERR_SUCCESS)
         {
-            if (copy_file(str_from[i], str_to[i], "r", "w") != 0)
+            if (copy_file(str_from[i], str_to[i],
+                        "r", "w") != ERR_SUCCESS)
                 goto cleanup;
         }
-        else if (copy_dir(str_from[i], str_to[i], TRUE, "r", "w") != 0)
+        else if (copy_dir(str_from[i], str_to[i],
+                    TRUE, "r", "w") != ERR_SUCCESS)
             goto cleanup;
     }
 
-    if (!exec(&cmd, "build"))
+    if (exec(&cmd, "build") != ERR_SUCCESS)
         goto cleanup;
 
     free_cmd();
-    return 0;
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     fail_cmd();
-    return -1;
+    return engine_err;
 }

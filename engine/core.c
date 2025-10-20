@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 
 #include "h/core.h"
+#include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/logger.h"
 #include "h/math.h"
@@ -155,13 +156,14 @@ static struct TextInfo
 
 /* ---- section: windowing -------------------------------------------------- */
 
-int
-init_glfw(b8 multisample)
+u32
+glfw_init(b8 multisample)
 {
     if (!glfwInit())
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLFW, Process Aborted");
-        return -1;
+        LOGFATAL(ERR_GLFW_INIT_FAIL,
+                "%s\n", "Failed to Initialize GLFW, Process Aborted");
+        return engine_err;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -169,63 +171,77 @@ init_glfw(b8 multisample)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     if (multisample)
         glfwWindowHint(GLFW_SAMPLES, 4);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-int
-init_window(Render *render)
+u32
+window_init(Render *render)
 {
     render->window = glfwCreateWindow(render->size.x, render->size.y,
             render->title, NULL, NULL);
 
     if (!render->window)
     {
-        LOGFATAL("%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
-        return -1;
+        LOGFATAL(ERR_WINDOW_INIT_FAIL,
+                "%s\n", "Failed to Initialize Window or OpenGL Context, Process Aborted");
+        return engine_err;
     }
 
     glfwMakeContextCurrent(render->window);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-int
-init_glad(void)
+u32
+glad_init(void)
 {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        LOGFATAL("%s\n", "Failed to Initialize GLAD, Process Aborted");
-        return -1;
+        LOGFATAL(ERR_GLAD_INIT_FAIL,
+                "%s\n", "Failed to Initialize GLAD, Process Aborted");
+        return engine_err;
     }
 
     if (GLVersion.major < 4 || (GLVersion.major == 4 && GLVersion.minor < 3))
     {
-        LOGFATAL("OpenGL 4.3+ Required, Current Version '%d.%d', Process Aborted\n",
+        LOGFATAL(ERR_GL_VERSION_NOT_SUPPORT,
+                "OpenGL 4.3+ Required, Current Version '%d.%d', Process Aborted\n",
                 GLVersion.major, GLVersion.minor);
-        return -1;
+        return engine_err;
     }
 
     LOGINFO("OpenGL:    %s\n", glGetString(GL_VERSION));
     LOGINFO("GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
     LOGINFO("Vendor:    %s\n", glGetString(GL_VENDOR));
     LOGINFO("Renderer:  %s\n", glGetString(GL_RENDERER));
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 /* ---- section: shaders ---------------------------------------------------- */
 
-int
+u32
 shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
 {
     if (!shader->type)
-        return 0;
+        return ERR_SUCCESS;
+
     str str_reg[PATH_MAX] = {0};
     snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
 
     u64 cursor = 0;
     shader->source =
         (GLchar*)get_file_contents(str_reg, 1, &cursor, read_format);
-    if (shader->source == NULL)
-        return -1;
+    if (!shader->source)
+    {
+        LOGERROR(engine_err,
+                "Shader Source '%s' NULL\n", shader->file_name);
+        return engine_err;
+    }
     shader->source[cursor] = 0;
     (shader->id) ? glDeleteShader(shader->id) : 0;
 
@@ -240,23 +256,26 @@ shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
     {
         char log[STRING_MAX];
         glGetShaderInfoLog(shader->id, STRING_MAX, NULL, log);
-        LOGERROR("Shader '%s':\n%s\n", shader->file_name, log);
-        return -1;
+        LOGERROR(ERR_SHADER_COMPILE_FAIL,
+                "Shader '%s':\n%s\n", shader->file_name, log);
+        return engine_err;
     }
     else LOGINFO("Shader %d '%s' Loaded\n", shader->id, shader->file_name);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-int
+u32
 shader_program_init(const str *shaders_dir, ShaderProgram *program,
         const str *read_format)
 {
     if (shader_init(shaders_dir, &program->vertex, read_format) != 0)
-        return -1;
+        return engine_err;
     if (shader_init(shaders_dir, &program->geometry, read_format) != 0)
-        return -1;
+        return engine_err;
     if (shader_init(shaders_dir, &program->fragment, read_format) != 0)
-        return -1;
+        return engine_err;
     (program->id) ? glDeleteProgram(program->id) : 0;
 
     program->id = glCreateProgram();
@@ -273,8 +292,9 @@ shader_program_init(const str *shaders_dir, ShaderProgram *program,
     {
         char log[STRING_MAX];
         glGetProgramInfoLog(program->id, STRING_MAX, NULL, log);
-        LOGERROR("Shader Program '%s':\n%s\n", program->name, log);
-        return -1;
+        LOGERROR(ERR_SHADER_PROGRAM_LINK_FAIL,
+                "Shader Program '%s':\n%s\n", program->name, log);
+        return engine_err;
     }
     else LOGINFO("Shader Program %d '%s' Loaded\n",
             program->id, program->name);
@@ -285,13 +305,15 @@ shader_program_init(const str *shaders_dir, ShaderProgram *program,
         glDeleteShader(program->geometry.id);
     if (program->fragment.loaded)
         glDeleteShader(program->fragment.id);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
 shader_program_free(ShaderProgram *program)
 {
-    if (!program->id) return;
+    if (program == NULL || !program->id) return;
     glDeleteProgram(program->id);
 
     if (program->vertex.source)
@@ -309,9 +331,9 @@ shader_program_free(ShaderProgram *program)
 
 /* ---- section: meat ------------------------------------------------------- */
 
-int
+u32
 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
-        b8 multisample, u32 samples, b8 flip_vertical)
+        b8 multisample, u32 samples)
 {
     fbo_free(fbo);
 
@@ -376,9 +398,10 @@ fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+        LOGFATAL(ERR_FBO_INIT_FAIL,
+                "FBO '%d': Status '%d' Not Complete, Process Aborted\n",
                 fbo->fbo, status);
-        return -1;
+        return engine_err;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -395,16 +418,9 @@ fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         1.0f, -1.0f, 1.0f, 0.0f,
     };
 
-    if (flip_vertical)
-    {
-        vbo_data[3] = 1.0f;
-        vbo_data[7] = 0.0f;
-        vbo_data[11] = 0.0f;
-        vbo_data[15] = 1.0f;
-    }
-
-    if (!mem_alloc((void*)&mesh_fbo->vbo_data,
-                sizeof(GLfloat) * mesh_fbo->vbo_len, "mesh_fbo.vbo_data"))
+    if (mem_alloc((void*)&mesh_fbo->vbo_data,
+                sizeof(GLfloat) * mesh_fbo->vbo_len,
+                "mesh_fbo.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
@@ -429,15 +445,17 @@ fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     fbo_free(fbo);
     mesh_free(mesh_fbo);
-    return -1;
+    return engine_err;
 }
 
-int
+u32
 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
@@ -473,79 +491,93 @@ fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL("FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+        LOGFATAL(ERR_FBO_REALLOC_FAIL,
+                "FBO '%d': Status '%d' Not Complete, Process Aborted\n",
                 &fbo->fbo, status);
 
         fbo_free(fbo);
-        return -1;
+        return engine_err;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
 fbo_free(FBO *fbo)
 {
+    if (fbo == NULL) return;
     fbo->rbo ? glDeleteFramebuffers(1, &fbo->rbo) : 0;
     fbo->color_buf ? glDeleteTextures(1, &fbo->color_buf) : 0;
     fbo->fbo ? glDeleteFramebuffers(1, &fbo->fbo) : 0;
 };
 
-b8
+u32
 texture_init(Texture *texture, v2i32 size,
         const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name)
 {
     if (!size.x || !size.y)
     {
-        LOGERROR("Texture Initialization '%s' Failed, Image Size Too Small\n",
+        LOGERROR(ERR_IMAGE_SIZE_TOO_SMALL,
+                "Texture Initialization '%s' Failed, Image Size Too Small\n",
                 file_name);
-        return FALSE;
+        return engine_err;
     }
 
     if (strlen(file_name) >= PATH_MAX)
     {
-        LOGERROR("Texture Initialization '%s' Failed, File Path Too Long\n",
+        LOGERROR(ERR_PATH_TOO_LONG,
+                "Texture Initialization '%s' Failed, File Path Too Long\n",
                 file_name);
-        return FALSE;
+        return engine_err;
     }
 
-    if (!is_file_exists(file_name, TRUE))
-        return FALSE;
+    if (is_file_exists(file_name, TRUE) != ERR_SUCCESS)
+        return engine_err;
 
     texture->buf = (u8*)stbi_load(file_name,
             &texture->size.x, &texture->size.y, &texture->channels, 4);
     if (!texture->buf)
-        return FALSE;
+    {
+        LOGERROR(ERR_IMAGE_LOAD_FAIL,
+                "Texture Initialization '%s' Failed, 'stbi_load()' Failed\n",
+                file_name);
+        return engine_err;
+    }
 
     texture->format = format;
     texture->format_internal = format_internal;
     texture->filter = filter;
     texture->grayscale = grayscale;
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 texture_generate(Texture *texture)
 {
-    b8 success = _texture_generate(
+    _texture_generate(
             &texture->id, texture->format_internal, texture->format,
             texture->filter, texture->size.x, texture->size.y,
             texture->buf, texture->grayscale);
     (texture->buf) ? stbi_image_free(texture->buf) : 0;
-    return success;
+    return engine_err;
 }
 
-b8
+u32
 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale)
 {
     if (!width || !height)
     {
-        LOGERROR("Texture Generation '%d' Failed, Size Too Small\n", *id);
-        return FALSE;
+        LOGERROR(ERR_IMAGE_SIZE_TOO_SMALL,
+                "Texture Generation '%d' Failed, Size Too Small\n", *id);
+        return engine_err;
     }
 
     glGenTextures(1, id);
@@ -560,27 +592,30 @@ _texture_generate(
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
 texture_free(Texture *texture)
 {
+    if (texture == NULL) return;
     (texture->id) ? glDeleteTextures(1, &texture->id) : 0;
     *texture = (Texture){0};
 }
 
-int
+u32
 mesh_generate(Mesh *mesh, GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data)
 {
-    if (!mem_alloc((void*)&mesh->vbo_data,
-                sizeof(GLfloat) * vbo_len, "mesh.vbo_data"))
+    if (mem_alloc((void*)&mesh->vbo_data, sizeof(GLfloat) * vbo_len,
+                "mesh.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
-    if (!mem_alloc((void*)&mesh->ebo_data,
-                sizeof(GLuint) * ebo_len, "mesh.vbo_data"))
+    if (mem_alloc((void*)&mesh->ebo_data, sizeof(GLuint) * ebo_len,
+                "mesh.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     mesh->vbo_len = vbo_len;
@@ -610,16 +645,19 @@ mesh_generate(Mesh *mesh, GLenum usage,
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     mesh_free(mesh);
-    return -1;
+    return engine_err;
 }
 
 void
 mesh_free(Mesh *mesh)
 {
+    if (mesh == NULL) return;
     mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
     mesh->vbo ? glDeleteBuffers(1, &mesh->vbo) : 0;
     mesh->vao ? glDeleteVertexArrays(1, &mesh->vao) : 0;
@@ -821,44 +859,47 @@ update_key_states(Render *render)
 
 /* ---- section: font ------------------------------------------------------- */
 
-b8
+u32
 font_init(Font *font, u32 resolution, const str *file_name)
 {
     if (resolution <= 2)
     {
-        LOGERROR("Font Initialization '%s' Failed, Font Size Too Small\n",
+        LOGERROR(ERR_IMAGE_SIZE_TOO_SMALL,
+                "Font Initialization '%s' Failed, Font Size Too Small\n",
                 file_name);
-        return FALSE;
+        return engine_err;
     }
 
     if (strlen(file_name) >= PATH_MAX)
     {
-        LOGERROR("Font Initialization '%s' Failed, File Path Too Long\n",
+        LOGERROR(ERR_PATH_TOO_LONG,
+                "Font Initialization '%s' Failed, File Path Too Long\n",
                 file_name);
-        return FALSE;
+        return engine_err;
     }
 
-    if (!is_file_exists(file_name, TRUE))
-        return FALSE;
+    if (is_file_exists(file_name, TRUE) != ERR_SUCCESS)
+        return engine_err;
 
     font->buf = (u8*)get_file_contents(file_name, 1, &font->buf_len, "rb");
     if (!font->buf)
-        return FALSE;
+        return engine_err;
 
     if (!stbtt_InitFont(&font->info, (const unsigned char*)font->buf, 0))
     {
-        LOGERROR("Font Initializing '%s' Failed, 'stbtt_InitFont' Failed\n",
+        LOGERROR(ERR_FONT_INIT_FAIL,
+                "Font Initialization '%s' Failed, 'stbtt_InitFont()' Failed\n",
                 file_name);
         goto cleanup;
     }
 
-    if (!mem_alloc((void*)&font->bitmap,
-                GLYPH_MAX * resolution * resolution, file_name))
+    if (mem_alloc((void*)&font->bitmap, GLYPH_MAX * resolution * resolution,
+                file_name) != ERR_SUCCESS)
         goto cleanup;
 
     u8 *canvas = {NULL};
-    if (!mem_alloc((void*)&canvas,
-                resolution * resolution, "font_glyph_canvas"))
+    if (mem_alloc((void*)&canvas, resolution * resolution,
+                "font_glyph_canvas") != ERR_SUCCESS)
         goto cleanup;
 
     snprintf(font->path, PATH_MAX, "%s", file_name);
@@ -922,37 +963,41 @@ font_init(Font *font, u32 resolution, const str *file_name)
         font->glyph[i].loaded = TRUE;
     }
 
-    if (!_texture_generate(&font->id, GL_RED, GL_RED, GL_LINEAR,
+    if (_texture_generate(&font->id, GL_RED, GL_RED, GL_LINEAR,
                 FONT_ATLAS_CELL_RESOLUTION * resolution,
-                FONT_ATLAS_CELL_RESOLUTION * resolution, font->bitmap, TRUE))
+                FONT_ATLAS_CELL_RESOLUTION * resolution,
+                font->bitmap, TRUE) != ERR_SUCCESS)
         goto cleanup;
 
     mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
     font_free(font);
-    return FALSE;
+    return engine_err;
 }
 
 void
 font_free(Font *font)
 {
+    if (font == NULL) return;
     mem_free((void*)&font->buf, font->buf_len, "file_contents");
     mem_free((void*)&font->bitmap,
             GLYPH_MAX * font->resolution * font->resolution, font->path);
-
     *font = (Font){0};
 }
 
 /* ---- section: text ------------------------------------------------------- */
 
-u8
+u32
 text_init(void)
 {
-    if (!mem_alloc((void*)&mesh_text.vbo_data,
-                STRING_MAX * sizeof(GLfloat) * 4, "mesh_text.vbo_data"))
+    if (mem_alloc((void*)&mesh_text.vbo_data,
+                STRING_MAX * sizeof(GLfloat) * 4,
+                "mesh_text.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     mesh_text.vbo_len = STRING_MAX * 4;
@@ -977,12 +1022,15 @@ text_init(void)
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    return 0;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     mesh_free(&mesh_text);
-    LOGFATAL("%s\n", "Failed to Initialize Text, Process Aborted");
-    return -1;
+    LOGFATAL(ERR_TEXT_INIT_FAIL,
+            "%s\n", "Failed to Initialize Text, Process Aborted");
+    return engine_err;
 }
 
 void
@@ -993,9 +1041,9 @@ text_start(u64 length, f32 size, Font *font,
         length = STRING_MAX;
     else if (length > mesh_text.ebo_len)
     {
-        if (!mem_realloc((void*)&mesh_text.vbo_data,
+        if (mem_realloc((void*)&mesh_text.vbo_data,
                     length * sizeof(GLfloat) * 4,
-                    "mesh_text.vbo_data"))
+                    "mesh_text.vbo_data") != ERR_SUCCESS)
             goto cleanup;
         mesh_text.vbo_len = length * 4;
         mesh_text.ebo_len = length;
@@ -1018,7 +1066,7 @@ text_start(u64 length, f32 size, Font *font,
 
 cleanup:
     mesh_free(&mesh_text);
-    LOGERROR("%s\n", "Failed to Start Text");
+    LOGERROR(engine_err, "%s\n", "Failed to Start Text");
 }
 
 void
@@ -1026,25 +1074,29 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 {
     if (!mesh_text.vbo_data)
     {
-        LOGERROR("%s\n", "Failed to Push Text, 'mesh_text.vbo_data' Null");
+        LOGERROR(ERR_BUFFER_EMPTY,
+                "%s\n", "Failed to Push Text, 'mesh_text.vbo_data' Null");
         return;
     }
 
     u64 len = strlen(text);
     if (len >= STRING_MAX)
     {
-        LOGERROR("%s\n", "Failed to Push Text, Text Too Long");
+        LOGERROR(ERR_STRING_TOO_LONG,
+                "%s\n", "Failed to Push Text, Text Too Long");
         return;
     }
 
     if (text_info.cursor + len >= mesh_text.ebo_len)
     {
-        if (!mem_realloc((void*)&mesh_text.vbo_data,
-                    (mesh_text.vbo_len + STRING_MAX) *
-                    sizeof(GLfloat) * 4, "mesh_text.vbo_data"))
+        if (mem_realloc((void*)&mesh_text.vbo_data,
+                    (mesh_text.vbo_len + STRING_MAX) * sizeof(GLfloat) * 4,
+                    "mesh_text.vbo_data") != ERR_SUCCESS)
         {
             mesh_free(&mesh_text);
-            LOGERROR("%s\n", "Failed to Push Text");
+            LOGERROR(engine_err,
+                    "%s\n", "Failed to Push Text");
+            return;
         }
         mesh_text.vbo_len += STRING_MAX * 4;
         mesh_text.ebo_len += STRING_MAX;
@@ -1136,7 +1188,8 @@ text_render(u32 color)
 {
     if (!mesh_text.vbo_data)
     {
-        LOGERROR("%s\n", "Failed to Render Text, 'mesh_text.vbo_data' Null");
+        LOGERROR(ERR_BUFFER_EMPTY,
+                "%s\n", "Failed to Render Text, 'mesh_text.vbo_data' Null");
         return;
     }
 

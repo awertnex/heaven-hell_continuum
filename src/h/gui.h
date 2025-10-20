@@ -12,6 +12,7 @@
 #define COL_Y               0x32ff32ff
 #define COL_Z               0x3232ffff
 
+extern u32 *const GAME_GUI_ERR;
 extern u8 hotbar_slot_selected;
 
 extern u16 menu_index;
@@ -82,7 +83,9 @@ enum ButtonNames
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-b8 gui_init(void);
+/* return non-zero on failure and game_err is set accordingly */
+u32 gui_init(void);
+
 void gui_free(void);
 
 #if 0 /* TODO: undef */
@@ -108,5 +111,7 @@ void btn_func_back();
 void btn_func_unpause();
 void btn_func_quit_game();
 void btn_func_quit_world();
+
+extern u32 *game_gui_err;
 
 #endif /* GAME_GUI_H */

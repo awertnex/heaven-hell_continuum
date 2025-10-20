@@ -12,7 +12,9 @@
 
 #include <engine/h/core.h>
 #include <engine/h/defines.h>
+#include <engine/h/diagnostics.h>
 
+#define MODE_INTERNAL_VSYNC                     0
 #define MODE_INTERNAL_DEBUG                     1
 #define MODE_INTERNAL_COLLIDE                   1
 #define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    1
@@ -57,7 +59,7 @@
 #define SET_PLAYER_JUMP_HEIGHT          8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       4000.0f
+#define SET_PLAYER_SPEED_FLY_FAST       50.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
@@ -97,6 +99,7 @@
 #define CHUNK_QUEUE_1ST_ID      0
 #define CHUNK_QUEUE_2ND_ID      1
 #define CHUNK_QUEUE_3RD_ID      2
+#define CHUNK_QUEUE_LAST_ID     CHUNK_QUEUE_3RD_ID
 #define CHUNK_QUEUE_1ST_MAX     256
 #define CHUNK_QUEUE_2ND_MAX     4096
 #define CHUNK_QUEUE_3RD_MAX     16384
@@ -112,13 +115,12 @@
 /* number of blocks to process per chunk per frame */
 #define BLOCK_PARSE_RATE                    512
 
-#define COLOR_TEXT_DEFAULT                  0xbcbcbcff
-#define COLOR_TEXT_BRIGHT                   0xffffffff
+#define COLOR_TEXT_DEFAULT                  DIAGNOSTIC_COLOR_DEBUG
+#define COLOR_TEXT_BRIGHT                   DIAGNOSTIC_COLOR_DEFAULT
 #define COLOR_TEXT_MOSS                     0x6f9f3fff
 #define COLOR_TEXT_RADIOACTIVE              0x3f9f3fff
 #define COLOR_DIAGNOSTIC_NONE               0x995429ff
 #define COLOR_DIAGNOSTIC_ERROR              0xec6051ff
-#define COLOR_DIAGNOSTIC_SUCCESS            0x79ec50ff
 #define COLOR_DIAGNOSTIC_INFO               0x3f6f9fff
 #define COLOR_CHUNK_LOADED                  0x4c260715
 #define COLOR_CHUNK_RENDER                  0x5e7a0aff
@@ -177,6 +179,8 @@ typedef struct Uniform
     {
         GLint ndc_scale;
         GLint position;
+        GLint offset;
+        GLint texture_size;
         GLint size;
         GLint alignment;
         GLint tint;
@@ -336,7 +340,7 @@ typedef struct Player
     f32 movement_speed;             /* depends on enum: PlayerFlags */
     u64 container_state;            /* enum: ContainerFlags */
     u8 perspective;                 /* camera perspective mode */
-    u16 flag;                       /* enum: PlayerFlags */
+    u64 flag;                       /* enum: PlayerFlags */
 
     Camera camera;
     Camera camera_hud;
@@ -493,6 +497,7 @@ typedef struct ChunkQueue
     u32 cursor_3;
 } ChunkQueue;
 
+extern u32 *game_err;
 extern Render render;
 extern Projection projection;
 extern Settings settings;
@@ -500,7 +505,7 @@ extern Uniform uniform;
 extern Font font[FONT_COUNT];
 extern Texture texture[TEXTURE_COUNT];
 extern Player lily;
-extern u32 flag;
+extern u64 flag;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;

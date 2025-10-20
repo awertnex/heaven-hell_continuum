@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <engine/h/diagnostics.h>
 #include <engine/h/dir.h>
 #include <engine/h/memory.h>
 #include <engine/h/math.h>
@@ -12,9 +13,11 @@
 #include "h/chunking.h"
 #include "h/dir.h"
 
+u32 *const GAME_CHUNKING_ERR = (u32*)&engine_err;
+u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
+
 /* chunk buffer, raw chunk data */
 static Chunk *chunk_buf = NULL;
-u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
 static u64 chunk_buf_cursor = 0;
 
 /* chunk pointer look-up table that points to chunk_buf addresses.
@@ -57,19 +60,19 @@ static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
 /* index = (chunk_tab index) */
 static void chunk_buf_pop(u32 index);
 
-i32
+u32
 chunking_init(void)
 {
-    if (!mem_map((void*)&chunk_buf,
-                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf"))
-        return -1;
+    if (mem_map((void*)&chunk_buf, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk),
+                "chunk_buf") != ERR_SUCCESS)
+        return *GAME_CHUNKING_ERR;
 
-    if (!mem_map((void*)&chunk_tab,
-                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab"))
+    if (mem_map((void*)&chunk_tab, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
+                "chunk_tab") != ERR_SUCCESS)
         goto cleanup;
 
-    if (!mem_map((void*)&CHUNK_ORDER,
-                CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "CHUNK_ORDER"))
+    if (mem_map((void*)&CHUNK_ORDER, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
+                "CHUNK_ORDER") != ERR_SUCCESS)
         goto cleanup;
 
     str CHUNK_ORDER_lookup_file_name[PATH_MAX] = {0};
@@ -101,7 +104,7 @@ chunking_init(void)
                 "%slookup_chunk_order_0x%02lx.bin",
                 DIR_ROOT[DIR_LOOKUPS], i);
 
-        if (!is_file_exists(CHUNK_ORDER_lookup_file_name, FALSE))
+        if (is_file_exists(CHUNK_ORDER_lookup_file_name, FALSE) != ERR_SUCCESS)
         {
             for (j = 0; j < chunk_buf_volume; ++j)
             {
@@ -132,8 +135,9 @@ chunking_init(void)
             LOGTRACE("Writing CHUNK_ORDER Distance Lookup [0x%02lx/0x%02x] To File..\n",
                     i, SET_RENDER_DISTANCE_MAX);
 
-            write_file(CHUNK_ORDER_lookup_file_name,
-                    sizeof(u32), chunk_buf_volume, &index, "wb", TRUE);
+            if (write_file(CHUNK_ORDER_lookup_file_name, sizeof(u32),
+                        chunk_buf_volume, &index, "wb", TRUE) != ERR_SUCCESS)
+                return *GAME_CHUNKING_ERR;
 
             LOGTRACE("CHUNK_ORDER Distance Lookup [0x%02x/0x%02x] Written To File\n",
                     i, SET_RENDER_DISTANCE_MAX);
@@ -156,7 +160,7 @@ chunking_init(void)
     snprintf(CHUNKS_MAX_lookup_file_name, PATH_MAX,
             "%slookup_chunks_max.bin", DIR_ROOT[DIR_LOOKUPS]);
 
-    if (!is_file_exists(CHUNKS_MAX_lookup_file_name, FALSE))
+    if (is_file_exists(CHUNKS_MAX_lookup_file_name, FALSE) != ERR_SUCCESS)
     {
         for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         {
@@ -186,9 +190,10 @@ chunking_init(void)
 
         LOGTRACE("%s\n", "Writing CHUNKS_MAX Lookup To File..\n");
 
-        write_file(CHUNKS_MAX_lookup_file_name,
+        if (write_file(CHUNKS_MAX_lookup_file_name,
                 sizeof(u64), SET_RENDER_DISTANCE_MAX + 1,
-                &CHUNKS_MAX, "wb", TRUE);
+                &CHUNKS_MAX, "wb", TRUE) != ERR_SUCCESS)
+            return *GAME_CHUNKING_ERR;
 
         LOGTRACE("%s\n", "CHUNKS_MAX Lookup Written To File\n");
     }
@@ -230,22 +235,23 @@ allocate_resources:
         CHUNK_QUEUE.size_3 = CHUNK_QUEUE_3RD_MAX;
     }
 
-    if (!mem_map((void*)&CHUNK_QUEUE.priority_1,
+    if (mem_map((void*)&CHUNK_QUEUE.priority_1,
                 CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_1"))
+                "CHUNK_QUEUE.priority_1") != ERR_SUCCESS)
         goto cleanup;
 
-    if (!mem_map((void*)&CHUNK_QUEUE.priority_2,
+    if (mem_map((void*)&CHUNK_QUEUE.priority_2,
                 CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_2"))
+                "CHUNK_QUEUE.priority_2") != ERR_SUCCESS)
         goto cleanup;
 
-    if (!mem_map((void*)&CHUNK_QUEUE.priority_3,
+    if (mem_map((void*)&CHUNK_QUEUE.priority_3,
                 CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_3"))
+                "CHUNK_QUEUE.priority_3") != ERR_SUCCESS)
         goto cleanup;
 
-    return 0;
+    *GAME_CHUNKING_ERR = ERR_SUCCESS;
+    return *GAME_CHUNKING_ERR;
 
 cleanup:
     mem_unmap((void*)&chunk_buf,
@@ -261,7 +267,7 @@ cleanup:
     mem_unmap((void*)&CHUNK_QUEUE.priority_3,
             CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
             "CHUNK_QUEUE.priority_3");
-    return -1;
+    return *GAME_CHUNKING_ERR;
 }
 
 void
@@ -279,10 +285,13 @@ chunking_update(v3i16 player_delta_chunk)
 void
 chunking_free(void)
 {
-    u32 i = 0;
-    for (; i < CHUNK_BUF_VOLUME; ++i)
-        if (chunk_tab[i])
-            chunk_buf_pop(i);
+    if (chunk_tab)
+    {
+        u32 i = 0;
+        for (; i < CHUNK_BUF_VOLUME; ++i)
+            if (chunk_tab[i])
+                chunk_buf_pop(i);
+    }
     mem_unmap((void*)&chunk_buf,
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
     mem_unmap((void*)&chunk_tab,
@@ -784,15 +793,19 @@ _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
             ++chunk_buf_cursor;
             return;
         }
-    LOGERROR("%s\n", "chunk_buf Full");
+    LOGERROR(ERR_BUFFER_FULL, "'%s'\n", "chunk_buf Full");
 }
 
 static void
 chunk_buf_pop(u32 index)
 {
     u32 index_popped = chunk_tab[index] - chunk_buf;
-    chunk_tab[index]->vbo ? glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
-    chunk_tab[index]->vao ? glDeleteVertexArrays(1, &chunk_tab[index]->vao) : 0;
+
+    chunk_tab[index]->vbo ?
+        glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
+    chunk_tab[index]->vao ?
+        glDeleteVertexArrays(1, &chunk_tab[index]->vao) : 0;
+
     chunk_tab[index]->flag = 0;
     if (chunk_buf_cursor > index_popped)
         chunk_buf_cursor = index_popped;
@@ -811,7 +824,7 @@ chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
     u32 i;
     Chunk ***chunk = CHUNK_ORDER + queue_stride;
     Chunk ***end = NULL;
-    if (queue_id == CHUNK_QUEUE_3RD_ID)
+    if (queue_id == CHUNK_QUEUE_LAST_ID)
         end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
     else end = CHUNK_ORDER + queue_size;
     for (; chunk < end && *count < queue_size; ++chunk)
@@ -827,8 +840,8 @@ chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
     if (!*count) return;
 
 generate_and_mesh:
-    rate_chunk = clamp_u32(rate_chunk, 1, queue_size - 1);
-    rate_block = clamp_u32(rate_block, 1, CHUNK_VOLUME - 1);
+    rate_chunk = clamp_u32(rate_chunk, 1, queue_size);
+    rate_block = clamp_u32(rate_block, 1, CHUNK_VOLUME);
 
     for (i = 0; i < queue_size && rate_chunk; ++i)
         if (queue[i])
@@ -855,7 +868,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     v3u32 _mirror_index = {0};
     u32 target_index = 0;
     u8 is_on_edge = 0;
-    u32 i = 0;
+    i64 i = 0;
     const v3i16 DELTA =
     {
         player_chunk.x - player_delta_chunk->x,
@@ -890,6 +903,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
         return;
     }
 
+    /* this keeps chunk_buf from exploding on a chunk_tab shift */
     chunk_buf_cursor = 0;
 
     switch (AXIS)
@@ -1006,7 +1020,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
 
     /* ---- shift chunk_tab ------------------------------------------------- */
     for (i = (INCREMENT == 1) ? 0 : CHUNK_BUF_VOLUME - 1;
-            i < CHUNK_BUF_VOLUME; i += INCREMENT)
+            i < CHUNK_BUF_VOLUME && i >= 0; i += INCREMENT)
     {
         if (!chunk_tab[i]) continue;
 

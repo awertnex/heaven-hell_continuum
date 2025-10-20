@@ -26,6 +26,7 @@
 #define I64_MAX 9223372036854775807
 #define I64_MIN (-I64_MAX - 1)
 
+#define LOGGER_LINES_MAX    8192
 #define STRING_MAX          2048
 #define STRINGF_BUFFERS_MAX 4
 #define IN_STRING_MAX       STRING_MAX

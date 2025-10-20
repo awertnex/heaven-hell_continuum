@@ -3,11 +3,12 @@
 #include <string.h>
 #include <windows.h>
 
-#include "h/platform.h"
+#include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/limits.h"
 #include "h/logger.h"
 #include "h/memory.h"
+#include "h/platform.h"
 
 int
 make_dir(const str *path)
@@ -18,21 +19,27 @@ make_dir(const str *path)
     return exit_code;
 }
 
-b8
+u32
 _get_path_absolute(const str *path, str *path_real)
 {
     if (!GetFullPathNameA(path, PATH_MAX, path_real, NULL))
-        return FALSE;
-    return TRUE;
+    {
+        engine_err = ERR_GET_PATH_ABSOLUTE_FAIL;
+        return engine_err;
+    }
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 #include <stdio.h>
-b8
+u32
 _get_path_bin_root(str *path)
 {
     if (strlen(_pgmptr) + 1 >= STRING_MAX)
     {
-        LOGFATAL("%s\n", "'get_path_bin_root()' Failed, Process Aborted");
+        LOGFATAL(ERR_GET_PATH_BIN_ROOT_FAIL,
+                "%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;
     }
     str temp[STRING_MAX] = {0};
@@ -48,10 +55,12 @@ _get_path_bin_root(str *path)
     strncpy(path, temp, cursor);
     strncat(path, "\\", STRING_MAX - cursor);
     strncat(path, temp + cursor, STRING_MAX - cursor);
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
+u32
 exec(buf *cmd, str *cmd_name)
 {
     str *cmd_cat = NULL;
@@ -63,8 +72,9 @@ exec(buf *cmd, str *cmd_name)
 
     if (!cmd->loaded || !cmd->buf)
     {
-        LOGERROR("exec '%s' Failed, cmd Empty\n", cmd_name);
-        return FALSE;
+        LOGERROR(ERR_BUFFER_EMPTY,
+                "exec '%s' Failed, cmd Empty\n", cmd_name);
+        return engine_err;
     }
 
     mem_alloc((void*)&cmd_cat, cmd->size * cmd->memb, cmd_name);
@@ -74,7 +84,8 @@ exec(buf *cmd, str *cmd_name)
     if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL,
                 &startup_info, &process_info))
     {
-        LOGFATAL("'%s' Fork Failed, Process Aborted\n", cmd_name);
+        LOGFATAL(ERR_EXEC_FAIL,
+                "'%s' Fork Failed, Process Aborted\n", cmd_name);
         goto cleanup;
     }
 
@@ -90,14 +101,16 @@ exec(buf *cmd, str *cmd_name)
         LOGINFO("'%s' Success, Exit Code: %d\n", cmd_name, exit_code);
     else
     {
+        engine_err = ERR_EXEC_PROCESS_NON_ZERO;
         LOGINFO("'%s' Exit Code: %d\n", cmd_name, exit_code);
         goto cleanup;
     }
 
     mem_free((void*)&cmd_cat, cmd->memb * cmd->size, cmd_name);
-    return TRUE;
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     mem_free((void*)&cmd_cat, cmd->memb * cmd->size, cmd_name);
-    return FALSE;
+    return engine_err;
 }

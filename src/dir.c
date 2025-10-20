@@ -9,14 +9,16 @@
 #include <engine/h/logger.h>
 #include <engine/h/memory.h>
 #include "h/main.h"
+#include "h/diagnostics.h"
 #include "h/dir.h"
 
+u32 *const GAME_DIR_ERR = (u32*)&engine_err;
 str PATH_ROOT[PATH_MAX] = {0};
 str PATH_WORLD[PATH_MAX] = {0};
 str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
 str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 
-i32
+u32
 grandpath_dir_init(void)
 {
     snprintf(DIR_ROOT[DIR_LIB],             NAME_MAX, "%s", "lib/");
@@ -49,10 +51,13 @@ grandpath_dir_init(void)
     u32 i = 0;
 
     path_bin_root = get_path_bin_root();
+    if (*GAME_DIR_ERR != ERR_SUCCESS)
+        return *GAME_DIR_ERR;
+
     snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
     mem_free((void*)&path_bin_root, strlen(path_bin_root), "path_bin_root");
 
-    LOGINFO("%s\n", "Creating Directories..");
+    LOGINFO("Creating Main Directories '%s'..\n", PATH_ROOT);
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
     {
@@ -61,51 +66,55 @@ grandpath_dir_init(void)
         normalize_slash(string);
         snprintf(DIR_ROOT[i], PATH_MAX, "%s", string);
 
-        if (!is_dir_exists(string, FALSE))
+        if (is_dir_exists(string, FALSE) != ERR_SUCCESS)
             make_dir(string);
     }
 
-    LOGINFO("%s\n", "Checking Directories..");
+    LOGINFO("Checking Main Directories '%s'..\n", PATH_ROOT);
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
-        if (!is_dir_exists(DIR_ROOT[i], TRUE))
-            return -1;
+        if (!is_dir_exists(DIR_ROOT[i], TRUE) != ERR_SUCCESS)
+            return *GAME_DIR_ERR;
 
     LOGINFO("Main Directory Created '%s'\n", PATH_ROOT);
-    return 0;
+    *GAME_DIR_ERR = ERR_SUCCESS;
+    return *GAME_DIR_ERR;
 }
 
-i32
+u32
 world_dir_init(const str *world_name)
 {
     str string[PATH_MAX] = {0};
     u32 i = 0;
 
-    if (!is_dir_exists(PATH_ROOT, TRUE))
+    if (is_dir_exists(PATH_ROOT, TRUE) != ERR_SUCCESS)
     {
-        LOGERROR("World Creation '%s' Failed\n", world_name);
-        return -1;
+        LOGERROR(ERR_WORLD_CREATION_FAIL,
+                "World Creation '%s' Failed\n", world_name);
+        return *GAME_DIR_ERR;
     }
 
-    if (!is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE))
+    if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
     {
-        LOGERROR("World Creation '%s' Failed\n", world_name);
-        return -1;
+        LOGERROR(ERR_WORLD_CREATION_FAIL,
+                "World Creation '%s' Failed\n", world_name);
+        return *GAME_DIR_ERR;
     }
 
     snprintf(PATH_WORLD, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
     check_slash(PATH_WORLD);
     normalize_slash(PATH_WORLD);
 
-    if (is_dir_exists(PATH_WORLD, FALSE))
+    if (is_dir_exists(PATH_WORLD, FALSE) != ERR_SUCCESS)
     {
-        LOGERROR("World Already Exists '%s'\n", world_name);
-        return 0;
+        LOGERROR(ERR_DIR_EXISTS,
+                "World Already Exists '%s'\n", world_name);
+        return *GAME_DIR_ERR;
     }
 
     make_dir(PATH_WORLD);
 
-    LOGINFO("%s\n", "Creating World Directories..");
+    LOGINFO("Creating World Directories '%s'..\n", PATH_WORLD);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
     {
@@ -117,11 +126,13 @@ world_dir_init(const str *world_name)
         make_dir(string);
     }
 
-    LOGINFO("%s\n", "Checking Directories..");
+    LOGINFO("Checking World Directories '%s'..\n", PATH_WORLD);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
-        if (!is_dir_exists(DIR_WORLD[i], TRUE))
-            return -1;
+        if (is_dir_exists(DIR_WORLD[i], TRUE) != ERR_SUCCESS)
+            return *GAME_DIR_ERR;
 
     LOGINFO("World Created '%s'\n", world_name);
+    *GAME_DIR_ERR = ERR_SUCCESS;
+    return *GAME_DIR_ERR;
 }
