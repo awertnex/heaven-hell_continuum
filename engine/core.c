@@ -9,7 +9,7 @@
 #include "h/math.h"
 #include "h/memory.h"
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "include/stb_truetype_modified.h"
+#include <engine/include/stb_truetype_modified.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <engine/include/stb_image_modified.h>
 

@@ -7,6 +7,7 @@
 #define PLATFORM_LINUX 1
 #define PLATFORM "linux"
 #define _PLATFORM "linux"
+#define ENGINE_NAME_LIB "libfossil.so"
 #define EXE ""
 
 #define SLASH_NATIVE '/'
@@ -16,6 +17,7 @@
 #define PLATFORM_WIN 1
 #define PLATFORM "win"
 #define _PLATFORM "windows"
+#define ENGINE_NAME_LIB "fossil.dll"
 #define EXE ".exe"
 
 #define SLASH_NATIVE '\\'

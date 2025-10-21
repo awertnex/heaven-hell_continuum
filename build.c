@@ -29,10 +29,11 @@
 #define COMPILER        "gcc"EXE
 #define STR_OUT         DIR_ROOT"hhc"
 
-str str_libs[][24] =
+str str_libs[][CMD_SIZE] =
 {
     "-lm",
     "-lglfw",
+    "-lfossil",
 };
 
 #elif PLATFORM_WIN
@@ -41,12 +42,13 @@ str str_libs[][24] =
 #define COMPILER        "gcc"EXE
 #define STR_OUT         "\""DIR_ROOT"hhc"EXE"\""
 
-str str_libs[][24] =
+str str_libs[][CMD_SIZE] =
 {
-    "-lm",
-    "-lglfw3",
     "-lgdi32",
     "-lwinmm",
+    "-lm",
+    "-lglfw3",
+    "-lfossil",
 };
 
 #endif /* PLATFORM */
@@ -54,6 +56,7 @@ str str_libs[][24] =
 enum Flags
 {
     STATE_TEST = 1,
+    STATE_ENGINE,
 
     FLAG_SHOW_CMD = 1,
     FLAG_RAW_CMD,
@@ -98,8 +101,8 @@ void strip_extension(const str *file_name, str *dest);
 void show_cmd(void);
 void raw_cmd(void);
 void push_cmd(const str *string);
-void build_main(void);
-void build_cmd(int argc, char **argv);
+void build_game(void);
+void build_engine(void);
 void build_test(char **argv);
 void free_cmd(void);
 void fail_cmd(void);
@@ -275,60 +278,38 @@ push_cmd(const str *string)
         return;
     }
 
+    LOGTRACE("Pushing String '%s' to cmd.i[%"PRId64"]..\n", string, cmd_pos);
     strncpy(cmd.i[cmd_pos], string, CMD_SIZE);
     ++cmd_pos;
 }
 
 void
-build_main(void)
+build_game(void)
 {
     snprintf(str_dir_root, CMD_SIZE, "%s%s", str_bin_root, DIR_ROOT);
-
     if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
-    str temp[CMD_SIZE] = {0};
-
+    u32 i = 0;
     push_cmd(COMPILER);
     push_cmd(DIR_SRC"main.c");
-
-    /* ---- children -------------------------------------------------------- */
     push_cmd(DIR_SRC"chunking.c");
     push_cmd(DIR_SRC"dir.c");
     push_cmd(DIR_SRC"gui.c");
     push_cmd(DIR_SRC"input.c");
     push_cmd(DIR_SRC"logic.c");
-    push_cmd("engine/core.c");
-    push_cmd("engine/dir.c");
-    push_cmd("engine/logger.c");
-    push_cmd("engine/math.c");
-    push_cmd("engine/memory.c");
-    push_cmd("engine/platform_"_PLATFORM".c");
-
-    /* ---- includes -------------------------------------------------------- */
-    push_cmd(stringf("-I%s", str_bin_root));
-    snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
-    normalize_slash(temp);
-    push_cmd(temp);
-
-    /* ---- cflags ---------------------------------------------------------- */
-    push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
+    push_cmd("-I.");
+    push_cmd("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
     push_cmd("-std=c99");
     push_cmd("-ggdb");
     push_cmd("-Wall");
     push_cmd("-Wextra");
     push_cmd("-fno-builtin");
     push_cmd("-Wno-implicit-function-declaration");
-
-    /* ---- libs ------------------------------------------------------------ */
-    snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
-    posix_slash(temp);
-    push_cmd(temp);
-    u32 i = 0;
+    push_cmd("-Llib/"PLATFORM);
     for (; i < arr_len(str_libs); ++i)
         push_cmd(str_libs[i]);
 
-    /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
     push_cmd(STR_OUT);
 
@@ -338,63 +319,32 @@ build_main(void)
 }
 
 void
-build_cmd(int argc, char **argv)
+build_engine(void)
 {
+    snprintf(str_dir_root, CMD_SIZE, "%s%s", str_bin_root, DIR_ROOT);
     if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
         fail_cmd();
 
-    u32 i = 0;
-    str temp[CMD_SIZE] = {0};
-
     push_cmd(COMPILER);
-    push_cmd(str_main);
-
-    /* ---- children -------------------------------------------------------- */
     push_cmd("engine/core.c");
     push_cmd("engine/dir.c");
     push_cmd("engine/logger.c");
     push_cmd("engine/math.c");
     push_cmd("engine/memory.c");
     push_cmd("engine/platform_"_PLATFORM".c");
+    push_cmd("engine/include/glad/glad.c");
+    push_cmd("-I.");
+    push_cmd("-shared");
+    push_cmd("-fPIC");
+    push_cmd("-std=c99");
+    push_cmd("-ggdb");
+    push_cmd("-Wall");
+    push_cmd("-Wextra");
+    push_cmd("-fno-builtin");
+    push_cmd("-Wno-implicit-function-declaration");
 
-    /* ---- includes -------------------------------------------------------- */
-    push_cmd(stringf("-I%s", str_bin_root));
-    snprintf(temp, CMD_SIZE - 1, "%sengine/include/glad/glad.c", str_bin_root);
-    normalize_slash(temp);
-    push_cmd(temp);
-
-    /* ---- cflags ---------------------------------------------------------- */
-    if (compare_argv("raylib", argc, argv))
-        push_cmd(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
-    else
-    {
-        posix_slash(str_cflags[0]);
-        push_cmd(str_cflags[0]);
-    }
-    for (i = 1; i < arr_len(str_cflags); ++i)
-    {
-        normalize_slash(str_cflags[i]);
-        push_cmd(str_cflags[i]);
-    }
-
-    /* ---- libs ------------------------------------------------------------ */
-    snprintf(temp, CMD_SIZE - 1, "-L%slib/"PLATFORM, str_bin_root);
-    posix_slash(temp);
-    push_cmd(temp);
-    if (compare_argv("raylib", argc, argv))
-    {
-        push_cmd("-lm");
-        push_cmd("-lraylib");
-    }
-    else
-    {
-        for (i = 0; i < arr_len(str_libs); ++i)
-            push_cmd(str_libs[i]);
-    }
-
-    /* ---- out ------------------------------------------------------------- */
     push_cmd("-o");
-    push_cmd(str_out);
+    push_cmd("lib/"_PLATFORM"/"ENGINE_NAME_LIB);
 
 #if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
@@ -568,6 +518,7 @@ main(int argc, char **argv)
     if (compare_argv("help", argc, argv))       help();
     if (compare_argv("list", argc, argv))       list();
     if (compare_argv("test", argc, argv))       state = STATE_TEST;
+    if (compare_argv("engine", argc, argv))     state = STATE_ENGINE;
     if (compare_argv("show", argc, argv))       flags |= FLAG_SHOW_CMD;
     if (compare_argv("raw", argc, argv))        flags |= FLAG_RAW_CMD;
 
@@ -576,56 +527,45 @@ main(int argc, char **argv)
             is_dir_exists(DIR_TESTS, TRUE) != ERR_SUCCESS)
         return engine_err;
 
-    if (!state)
-        build_main();
-    else if (state == STATE_TEST)
-        build_test(argv);
-    else
-        build_cmd(argc, argv);
+    if (!state)                     build_game();
+    else if (state == STATE_TEST)   build_test(argv);
+    else if (state == STATE_ENGINE) build_engine();
 
-    if (flags & FLAG_SHOW_CMD)                  show_cmd();
-    if (flags & FLAG_RAW_CMD)                   raw_cmd();
-
-    if (is_dir_exists(str_dir_root, FALSE) != ERR_SUCCESS)
-        make_dir(str_dir_root);
-
-    if (state == STATE_TEST &&
-            is_dir_exists(DIR_ROOT_TESTS, FALSE) != ERR_SUCCESS)
-        make_dir(DIR_ROOT_TESTS);
+    if (flags & FLAG_SHOW_CMD) show_cmd();
+    if (flags & FLAG_RAW_CMD) raw_cmd();
 
     str str_from[ASSET_COUNT][CMD_SIZE] = {0};
     str str_to[ASSET_COUNT][CMD_SIZE] = {0};
     str str_mkdir[ASSET_COUNT][CMD_SIZE] = {0};
-
-    snprintf(str_from[0], CMD_SIZE, "%sLICENSE", str_bin_root);
-    snprintf(str_from[1], CMD_SIZE, "%slib/"PLATFORM, str_bin_root);
-    snprintf(str_from[2], CMD_SIZE, "%sresources/", str_bin_root);
-    snprintf(str_to[0], CMD_SIZE, "%sLICENSE", str_dir_root);
-    snprintf(str_to[1], CMD_SIZE,
-            "%slib/"PLATFORM, str_dir_root);
-    snprintf(str_to[2], CMD_SIZE,
-            "%sresources/", str_dir_root);
-    snprintf(str_mkdir[0], CMD_SIZE, "%slib/", str_dir_root);
+    snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_bin_root);
+    snprintf(str_from[1],   CMD_SIZE, "%slib/"PLATFORM, str_bin_root);
+    snprintf(str_from[2],   CMD_SIZE, "%sresources/", str_bin_root);
+    snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_dir_root);
+    snprintf(str_to[1],     CMD_SIZE, "%slib/"PLATFORM, str_dir_root);
+    snprintf(str_to[2],     CMD_SIZE, "%sresources/", str_dir_root);
+    snprintf(str_mkdir[0],  CMD_SIZE, "%s", str_dir_root);
+    snprintf(str_mkdir[1],  CMD_SIZE, "%slib/", str_dir_root);
+    snprintf(str_mkdir[2],  CMD_SIZE, "%s", DIR_ROOT_TESTS);
 
     u32 i = 0;
     for (; i < ASSET_COUNT; ++i)
     {
         normalize_slash(str_from[i]);
         normalize_slash(str_to[i]);
+        normalize_slash(str_mkdir[i]);
+        make_dir(str_mkdir[i]);
     }
-    normalize_slash(str_mkdir[0]);
-    make_dir(str_mkdir[0]);
 
     for (i = 0; i < ASSET_COUNT; ++i)
     {
         if (is_file(str_from[i]) == ERR_SUCCESS)
         {
             if (copy_file(str_from[i], str_to[i],
-                        "r", "w") != ERR_SUCCESS)
+                        "rb", "wb") != ERR_SUCCESS)
                 goto cleanup;
         }
         else if (copy_dir(str_from[i], str_to[i],
-                    TRUE, "r", "w") != ERR_SUCCESS)
+                    TRUE, "rb", "wb") != ERR_SUCCESS)
             goto cleanup;
     }
 

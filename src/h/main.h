@@ -469,7 +469,7 @@ typedef struct Chunk
     GLuint vao;
     GLuint vbo;
     u64 vbo_len;
-    u32 cursor;     /* block iterator for generation */
+    u32 cursor;     /* block iterator for per-chunk generation progress */
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
