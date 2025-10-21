@@ -31,6 +31,8 @@
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
 #define TEXT_TAB_SIZE 4
+#define TEXT_COLOR_SHADOW 0x4a4a4aff
+#define TEXT_OFFSET_SHADOW 2.0f
 
 enum KeyboardKeyState
 {
@@ -458,7 +460,7 @@ void font_free(Font *font);
 /* init text rendering settings.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 text_init(void);
+u32 text_init(ShaderProgram *program);
 
 /* start text rendering batch.
  *
@@ -485,7 +487,7 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);
  *
  * can be called multiple times within a text rendering
  * batch, chained with 'text_push()' */
-void text_render(u32 color);
+void text_render(u32 color, b8 shadow);
 
 /* cleanup for text rendering.
  * unbind text framebuffer, enable depth test */

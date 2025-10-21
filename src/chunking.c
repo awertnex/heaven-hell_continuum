@@ -541,11 +541,11 @@ v3f32 random(f32 x0, f32 y0)
  
     a ^= b << s | b >> w - s;
     a *= 2048419325;
-    f32 random = a * (PI / ~(~0u >> 1));
+    f32 final = a * (PI / ~(~0u >> 1));
     
     return (v3f32){
-        sin(random),
-            cos(random),
+        sin(final),
+            cos(final),
             1.0f,
     };
 }
@@ -566,7 +566,6 @@ f32 interp(f32 a, f32 b, f32 scale)
 static f32
 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
 {
-    f32 root = 0;
     f32 x = (f32)coordinates.x / frequency;
     f32 y = (f32)coordinates.y / frequency;
     i32 x0 = (i32)floorf(x);
@@ -616,7 +615,7 @@ chunk_generate(Chunk **chunk, u32 rate)
             pos.z + ((*chunk)->pos.z * CHUNK_DIAMETER),
         };
 
-        if (terrain_noise(coordinates, 200.0f, 256.0f) > coordinates.z)
+        if (terrain_noise(coordinates, 250.0f, 256.0f) > coordinates.z)
             _block_place(chunk, chunk_tab_coordinates, pos.x, pos.y, pos.z);
         --rate;
     }

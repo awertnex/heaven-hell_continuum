@@ -1347,7 +1347,7 @@ framebuffer_blit_chunk_queue_visualizer:
     u32 fps = (u32)(1.0f / render.frame_delta);
     text_push(stringf("FPS               [%d]\n", fps),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render((fps > 60) ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+    text_render((fps > 60) ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
 
     text_push(stringf("\n"
                 "FRAME TIME        [%.2lf]\n"
@@ -1355,7 +1355,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 render.frame_start,
                 render.frame_delta),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_TEXT_MOSS);
+    text_render(COLOR_TEXT_MOSS, TRUE);
 
     text_push(stringf("\n\n\n"
                 "PLAYER NAME       [%s]\n"
@@ -1379,7 +1379,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_TEXT_DEFAULT);
+    text_render(COLOR_TEXT_DEFAULT, TRUE);
 
     text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "PLAYER OVERFLOW X [%s]\n"
@@ -1395,7 +1395,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
                 "        " : "        " : "NONE"),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_NONE);
+    text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
 
     text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
@@ -1408,7 +1408,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(DIAGNOSTIC_COLOR_SUCCESS);
+    text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
 
     text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
@@ -1421,7 +1421,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
                 !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_ERROR);
+    text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
 
     text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "MOUSE XY          [%.2f %.2f]\n"
@@ -1443,7 +1443,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 skybox_data.sun_rotation.y,
                 skybox_data.sun_rotation.z),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_INFO);
+    text_render(COLOR_DIAGNOSTIC_INFO, TRUE);
 
     text_push(stringf(
                 "CHUNK QUEUE 1 [%d] SIZE [%ld]\n"
@@ -1456,7 +1456,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 CHUNKS_MAX[SET_RENDER_DISTANCE]),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
-    text_render(COLOR_TEXT_DEFAULT);
+    text_render(COLOR_TEXT_DEFAULT, TRUE);
 
     text_start(0, FONT_SIZE_DEFAULT,
             &font[FONT_MONO], &render, &shader_text, &fbo_text, FALSE);
@@ -1476,7 +1476,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 glGetString(GL_RENDERER)),
             (v2f32){SET_MARGIN, render.size.y - SET_MARGIN},
             0, TEXT_ALIGN_BOTTOM);
-    text_render(DIAGNOSTIC_COLOR_TRACE);
+    text_render(DIAGNOSTIC_COLOR_TRACE, TRUE);
     text_stop();
 
     /* ---- post processing ------------------------------------------------- */
@@ -1670,7 +1670,7 @@ main(int argc, char **argv)
 
     if (
             gui_init() != ERR_SUCCESS ||
-            text_init() != ERR_SUCCESS)
+            text_init(&shader_text) != ERR_SUCCESS)
         goto cleanup;
 
     /*temp off

@@ -150,8 +150,14 @@ static struct TextInfo
     Glyphf glyph[GLYPH_MAX];
     f32 font_size;
     f32 line;
-    v2f32 screen_size;
+    v2f32 ndc_scale;
     GLuint cursor;
+
+    struct /* uniform */
+    {
+        GLint offset;
+        GLint ndc_scale;
+    } uniform;
 } text_info;
 
 /* ---- section: windowing -------------------------------------------------- */
@@ -994,7 +1000,7 @@ font_free(Font *font)
 /* ---- section: text ------------------------------------------------------- */
 
 u32
-text_init(void)
+text_init(ShaderProgram *program)
 {
     if (mem_alloc((void*)&mesh_text.vbo_data,
                 STRING_MAX * sizeof(GLfloat) * 4,
@@ -1023,6 +1029,11 @@ text_init(void)
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+
+    text_info.uniform.offset =
+        glGetUniformLocation(program->id, "offset");
+    text_info.uniform.ndc_scale =
+        glGetUniformLocation(program->id, "ndc_scale");
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -1053,8 +1064,8 @@ text_start(u64 length, f32 size, Font *font,
     text_info.font = font;
     text_info.font_size = size;
     text_info.line = 0.0f;
-    text_info.screen_size.x = 2.0f / render->size.x;
-    text_info.screen_size.y = 2.0f / render->size.y;
+    text_info.ndc_scale.x = 2.0f / render->size.x;
+    text_info.ndc_scale.y = 2.0f / render->size.y;
     text_info.cursor = 0;
 
     glUseProgram(program->id);
@@ -1108,11 +1119,11 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 
     v2f32 ndc_size =
     {
-        scale * text_info.screen_size.x,
-        scale * text_info.screen_size.y,
+        scale * text_info.ndc_scale.x,
+        scale * text_info.ndc_scale.y,
     };
-    pos.x *= text_info.screen_size.x;
-    pos.y *= text_info.screen_size.y;
+    pos.x *= text_info.ndc_scale.x;
+    pos.y *= text_info.ndc_scale.y;
     pos.y += text_info.font->scale.y * ndc_size.y;
 
 
@@ -1185,7 +1196,7 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 }
 
 void
-text_render(u32 color)
+text_render(u32 color, b8 shadow)
 {
     if (!mesh_text.vbo_data)
     {
@@ -1200,27 +1211,32 @@ text_render(u32 color)
             mesh_text.vbo_len * sizeof(GLfloat),
             mesh_text.vbo_data, GL_DYNAMIC_DRAW);
 
-    v2f32 font_size =
-    {
-        text_info.font_size * text_info.screen_size.x,
-        text_info.font_size * text_info.screen_size.y,
-    };
-
-    v4f32 text_color =
-    {
-        (f32)((color >> 0x18) & 0xff) / 0xff,
-        (f32)((color >> 0x10) & 0xff) / 0xff,
-        (f32)((color >> 0x08) & 0xff) / 0xff,
-        (f32)((color >> 0x00) & 0xff) / 0xff,
-    };
-
     glUniform1f(text_info.font->uniform.char_size, text_info.font->char_size);
-    glUniform2fv(text_info.font->uniform.font_size, 1, (GLfloat*)&font_size);
-    glUniform4fv(text_info.font->uniform.text_color, 1, (GLfloat*)&text_color);
+    glUniform2f(text_info.font->uniform.font_size,
+            text_info.font_size * text_info.ndc_scale.x,
+            text_info.font_size * text_info.ndc_scale.y);
+    glUniform2fv(text_info.uniform.ndc_scale, 1,
+            (GLfloat*)&text_info.ndc_scale);
+
+    if (shadow)
+    {
+        glUniform4f(text_info.font->uniform.text_color,
+                (f32)((TEXT_COLOR_SHADOW >> 0x18) & 0xff) / 0xff,
+                (f32)((TEXT_COLOR_SHADOW >> 0x10) & 0xff) / 0xff,
+                (f32)((TEXT_COLOR_SHADOW >> 0x08) & 0xff) / 0xff,
+                (f32)((TEXT_COLOR_SHADOW >> 0x00) & 0xff) / 0xff);
+        glUniform2f(text_info.uniform.offset,
+                TEXT_OFFSET_SHADOW, TEXT_OFFSET_SHADOW);
+        glDrawArrays(GL_POINTS, 0, (text_info.cursor / 4));
+    }
+    glUniform4f(text_info.font->uniform.text_color,
+            (f32)((color >> 0x18) & 0xff) / 0xff,
+            (f32)((color >> 0x10) & 0xff) / 0xff,
+            (f32)((color >> 0x08) & 0xff) / 0xff,
+            (f32)((color >> 0x00) & 0xff) / 0xff);
+    glUniform2f(text_info.uniform.offset, 0.0f, 0.0f);
 
     glDrawArrays(GL_POINTS, 0, (text_info.cursor / 4));
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     text_info.cursor = 0;
     text_info.line = 0;
 }
@@ -1228,6 +1244,8 @@ text_render(u32 color)
 void
 text_stop(void)
 {
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
