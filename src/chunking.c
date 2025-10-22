@@ -529,11 +529,11 @@ _block_break(Chunk **chunk, v3u32 coordinates, u32 x, u32 y, u32 z)
     CHUNK->flag |= FLAG_CHUNK_DIRTY;
 }
 
-v3f32 random(f32 x0, f32 y0)
+static v3f32 random(f32 x0, f32 y0, u32 seed)
 {
     const u32 w = 8 * sizeof(u64);
     const u32 s = w / 2; 
-    u32 a = (i32)x0, b = (i32)y0;
+    u32 a = (i32)x0 + seed, b = (i32)y0 - seed;
     a *= 3284157443;
  
     b ^= a << s | a >> w - s;
@@ -550,15 +550,15 @@ v3f32 random(f32 x0, f32 y0)
     };
 }
 
-f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
+static f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
 {
-    v3f32 grad = random(x0, y0);
+    v3f32 grad = random(x0, y0, SET_TERRAIN_SEED_DEFAULT);
     f32 dx = x0 - x;
     f32 dy = y0 - y;
     return ((dx * grad.x) + (dy * grad.y));
 }
 
-f32 interp(f32 a, f32 b, f32 scale)
+static f32 interp(f32 a, f32 b, f32 scale)
 {
     return (b - a) * (3.0f - scale * 2.0f) * scale * scale + a;
 }
@@ -615,7 +615,13 @@ chunk_generate(Chunk **chunk, u32 rate)
             pos.z + ((*chunk)->pos.z * CHUNK_DIAMETER),
         };
 
-        if (terrain_noise(coordinates, 250.0f, 256.0f) > coordinates.z)
+        f32 terrain = 0.0f;
+        f32 influence = terrain_noise(coordinates, 2.0, 50.0f);
+        terrain = terrain_noise(coordinates, 250.0f, 256.0f);
+        terrain += terrain_noise(coordinates, 30.0f, 40.0f);
+        terrain += (terrain_noise(coordinates, 10.0f, 5.0f) * influence);
+        terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
+        if (terrain > coordinates.z)
             _block_place(chunk, chunk_tab_coordinates, pos.x, pos.y, pos.z);
         --rate;
     }

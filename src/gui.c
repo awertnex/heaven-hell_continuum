@@ -88,6 +88,11 @@ gui_init(void)
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "sdb_inactive.png")) != ERR_SUCCESS ||
 
+            texture_init(&texture[TEXTURE_GRASS], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
+                    "grass.png")) != ERR_SUCCESS ||
+
             texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],

@@ -17,7 +17,7 @@
 #define MODE_INTERNAL_VSYNC                     0
 #define MODE_INTERNAL_DEBUG                     1
 #define MODE_INTERNAL_COLLIDE                   1
-#define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    1
+#define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    0
 
 #define show_cursor \
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
@@ -33,7 +33,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             20
+#define SET_RENDER_DISTANCE             16
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -64,6 +64,7 @@
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
+#define SET_TERRAIN_SEED_DEFAULT        0
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
@@ -241,6 +242,11 @@ typedef struct Uniform
         GLint color;
     } gizmo_chunk;
 
+    struct /* post_processing */
+    {
+        GLint time;
+    } post_processing;
+
     struct /* voxel */
     {
         GLint mat_perspective;
@@ -277,6 +283,7 @@ enum TextureIndices
     TEXTURE_ITEM_BAR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
+    TEXTURE_GRASS,
     TEXTURE_DIRT,
     TEXTURE_STONE,
     TEXTURE_SAND,

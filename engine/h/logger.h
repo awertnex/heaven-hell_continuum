@@ -21,7 +21,7 @@ extern u32 log_level_max;
 extern str *logger_buf;
 
 /* return non-zero on failure and engine_err is set accordingly */
-u32 logger_init(void);
+u32 logger_init(int argc, char **argv);
 
 void logger_close(void);
 

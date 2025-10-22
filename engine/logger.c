@@ -41,7 +41,7 @@ static str in_message[IN_STRING_MAX] = {0};
 static str out_message[OUT_STRING_MAX] = {0};
 
 u32
-logger_init(void)
+logger_init(int argc, char **argv)
 {
     if (mem_map((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX,
                 "logger_buf") != ERR_SUCCESS)
@@ -49,6 +49,22 @@ logger_init(void)
         LOGFATAL(ERR_LOGGER_INIT_FAIL,
                 "%s\n", "Failed to Initialize Logger, Process Aborted");
         return engine_err;
+    }
+
+    if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
+    {
+        if (!strncmp(argv[2], "FATAL", 5))
+            log_level_max = LOGLEVEL_FATAL;
+        else if (!strncmp(argv[2], "ERROR", 5))
+            log_level_max = LOGLEVEL_ERROR;
+        else if (!strncmp(argv[2], "WARN", 4))
+            log_level_max = LOGLEVEL_WARNING;
+        else if (!strncmp(argv[2], "INFO", 4))
+            log_level_max = LOGLEVEL_INFO;
+        else if (!strncmp(argv[2], "DEBUG", 5))
+            log_level_max = LOGLEVEL_DEBUG;
+        else if (!strncmp(argv[2], "TRACE", 5))
+            log_level_max = LOGLEVEL_TRACE;
     }
 
     engine_err = ERR_SUCCESS;

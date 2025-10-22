@@ -584,6 +584,9 @@ bind_shader_uniforms(void)
     uniform.gizmo_chunk.color =
         glGetUniformLocation(shader_gizmo_chunk.id, "chunk_color");
 
+    uniform.post_processing.time =
+        glGetUniformLocation(shader_post_processing.id, "time");
+
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader_voxel.id, "mat_perspective");
     uniform.voxel.player_position =
@@ -826,7 +829,7 @@ world_init(str *name)
 void
 world_update(Player *player)
 {
-    game_tick = 2000 + (u64)(render.frame_start * 20) -
+    game_tick = (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -992,7 +995,7 @@ draw_everything(void)
         opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_STONE].id);
+    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_DIRT].id);
 
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;
@@ -1446,10 +1449,10 @@ framebuffer_blit_chunk_queue_visualizer:
     text_render(COLOR_DIAGNOSTIC_INFO, TRUE);
 
     text_push(stringf(
-                "CHUNK QUEUE 1 [%d] SIZE [%ld]\n"
-                "CHUNK QUEUE 2 [%d] SIZE [%ld]\n"
-                "CHUNK QUEUE 3 [%d] SIZE [%ld]\n"
-                "TOTAL CHUNKS [%ld]\n",
+                "CHUNK QUEUE 1 [%d/%"PRId64"]\n"
+                "CHUNK QUEUE 2 [%d/%"PRId64"]\n"
+                "CHUNK QUEUE 3 [%d/%"PRId64"]\n"
+                "TOTAL CHUNKS [%"PRId64"]\n",
                 CHUNK_QUEUE.count_1, CHUNK_QUEUE.size_1,
                 CHUNK_QUEUE.count_2, CHUNK_QUEUE.size_2,
                 CHUNK_QUEUE.count_3, CHUNK_QUEUE.size_3,
@@ -1493,6 +1496,7 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_post_processing.id);
     glBindVertexArray(mesh_unit.vao);
+    glUniform1f(uniform.post_processing.time, render.frame_start);
     glBindTexture(GL_TEXTURE_2D, fbo_post_processing.color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -1514,27 +1518,9 @@ framebuffer_blit_chunk_queue_visualizer:
 int
 main(int argc, char **argv)
 {
-    if (logger_init() != ERR_SUCCESS)
-        return *GAME_ERR;
-
-    if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
-    {
-        if (!strncmp(argv[2], "FATAL", 5))
-            log_level_max = LOGLEVEL_FATAL;
-        else if (!strncmp(argv[2], "ERROR", 5))
-            log_level_max = LOGLEVEL_ERROR;
-        else if (!strncmp(argv[2], "WARN", 4))
-            log_level_max = LOGLEVEL_WARNING;
-        else if (!strncmp(argv[2], "INFO", 4))
-            log_level_max = LOGLEVEL_INFO;
-        else if (!strncmp(argv[2], "DEBUG", 5))
-            log_level_max = LOGLEVEL_DEBUG;
-        else if (!strncmp(argv[2], "TRACE", 5))
-            log_level_max = LOGLEVEL_TRACE;
-
-    }
-
     glfwSetErrorCallback(callback_error);
+    if (logger_init(argc, argv) != ERR_SUCCESS)
+        return *GAME_ERR;
 
     if (!RELEASE_BUILD)
         LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
