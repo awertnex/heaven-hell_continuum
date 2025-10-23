@@ -20,7 +20,7 @@ get_file_type(const str *path)
     if (stat(path, &stats) == 0)
         return (S_ISREG(stats.st_mode) | (S_ISDIR(stats.st_mode) * 2));
 
-    LOGERROR(ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
+    LOGERROR(TRUE, ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
     return 0;
 }
 
@@ -56,7 +56,7 @@ is_file_exists(const str *path, b8 log)
         {
             if (log)
             {
-                LOGERROR(ERR_IS_NOT_FILE,
+                LOGERROR(TRUE, ERR_IS_NOT_FILE,
                         "'%s' is Not a Regular File\n", path);
             }
             else engine_err = ERR_IS_NOT_FILE;
@@ -66,7 +66,7 @@ is_file_exists(const str *path, b8 log)
 
     if (log)
     {
-        LOGERROR(ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
+        LOGERROR(TRUE, ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
     }
     else engine_err = ERR_FILE_NOT_FOUND;
     return engine_err;
@@ -104,7 +104,8 @@ is_dir_exists(const str *path, b8 log)
         {
             if (log)
             {
-                LOGERROR(ERR_IS_NOT_DIR, "'%s' is Not a Directory\n", path);
+                LOGERROR(TRUE, ERR_IS_NOT_DIR,
+                        "'%s' is Not a Directory\n", path);
             }
             else engine_err = ERR_IS_NOT_DIR;
             return engine_err;
@@ -113,7 +114,8 @@ is_dir_exists(const str *path, b8 log)
 
     if (log)
     {
-        LOGERROR(ERR_DIR_NOT_FOUND, "Directory '%s' Not Found\n", path);
+        LOGERROR(TRUE, ERR_DIR_NOT_FOUND,
+                "Directory '%s' Not Found\n", path);
     }
     else engine_err = ERR_DIR_NOT_FOUND;
     return engine_err;
@@ -129,7 +131,7 @@ get_file_contents(const str *path, u64 size, u64 *file_len,
     FILE *file = NULL;
     if ((file = fopen(path, read_format)) == NULL)
     {
-        LOGERROR(ERR_FILE_OPEN_FAIL,
+        LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
                 "File Opening '%s' Failed\n", path);
         return NULL;
     }
@@ -278,7 +280,7 @@ copy_file(const str *path, const str *destination,
     FILE *in_file = NULL;
     if ((in_file = fopen(destination_string, write_format)) == NULL)
     {
-        LOGERROR(ERR_FILE_OPEN_FAIL,
+        LOGERROR(FALSE, ERR_FILE_OPEN_FAIL,
                 "File Copying '%s' -> '%s' Failed\n",
                 path, destination_string);
         return engine_err;
@@ -293,8 +295,7 @@ copy_file(const str *path, const str *destination,
     }
 
     fwrite(out_file, 1, len, in_file);
-    LOGTRACE("File Copied '%s' -> '%s'\n", path, destination_string);
-
+    LOGTRACE(FALSE, "File Copied '%s' -> '%s'\n", path, destination_string);
     engine_err = ERR_SUCCESS;
     fclose(in_file);
     return engine_err;
@@ -347,8 +348,9 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
         copy_file(in_dir, out_dir, read_format, write_format);
     }
 
+    LOGTRACE(FALSE,
+            "Directory Copied '%s' -> '%s'\n", path, destination_string);
     engine_err = ERR_SUCCESS;
-    LOGTRACE("Directory Copied '%s' -> '%s'\n", path, destination_string);
     return engine_err;
 }
 
@@ -361,15 +363,17 @@ write_file(const str *path, u64 size, u64 length, void *buf,
     {
         if (log)
         {
-            LOGERROR(ERR_FILE_OPEN_FAIL, "File Writing '%s' Failed\n", path);
+            LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
+                    "File Opening '%s' Failed\n", path);
         }
         else engine_err = ERR_FILE_OPEN_FAIL;
         return engine_err;
     }
 
-    engine_err = ERR_SUCCESS;
     fwrite(buf, size, length, file);
     fclose(file);
+    LOGTRACE(FALSE, "File Written '%s'\n", path);
+    engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
@@ -378,7 +382,7 @@ get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
     {
-        LOGERROR(ERR_GET_PATH_ABSOLUTE_FAIL, "%s\n", "Path Too Long");
+        LOGERROR(TRUE, ERR_GET_PATH_ABSOLUTE_FAIL, "%s\n", "Path Too Long");
         return NULL;
     }
 
@@ -411,7 +415,7 @@ get_path_bin_root(void)
     u64 len = strlen(path_bin_root);
     if (len >= PATH_MAX - 1)
     {
-        LOGFATAL(ERR_PATH_TOO_LONG,
+        LOGFATAL(TRUE, ERR_PATH_TOO_LONG,
                 "Path Too Long '%s', Process Aborted\n", path_bin_root);
         return NULL;
     }

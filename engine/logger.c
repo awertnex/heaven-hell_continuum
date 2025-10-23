@@ -7,12 +7,7 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-#if RELEASE_BUILD
-u32 log_level_max = LOGLEVEL_INFO;
-#else
 u32 log_level_max = LOGLEVEL_TRACE;
-#endif /* RELEASE_BUILD */
-
 str *logger_buf = NULL;
 
 static str log_tag[][16] =
@@ -41,15 +36,18 @@ static str in_message[IN_STRING_MAX] = {0};
 static str out_message[OUT_STRING_MAX] = {0};
 
 u32
-logger_init(int argc, char **argv)
+logger_init(b8 release_build, int argc, char **argv)
 {
     if (mem_map((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX,
                 "logger_buf") != ERR_SUCCESS)
     {
-        LOGFATAL(ERR_LOGGER_INIT_FAIL,
+        LOGFATAL(FALSE, ERR_LOGGER_INIT_FAIL,
                 "%s\n", "Failed to Initialize Logger, Process Aborted");
         return engine_err;
     }
+
+    if (release_build)
+        log_level_max = LOGLEVEL_INFO;
 
     if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
     {
@@ -79,7 +77,7 @@ logger_close(void)
 }
 
 void
-_log_output(const str *file, u64 line,
+_log_output(b8 verbose, const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...)
 {
     if (level > log_level_max) return;
@@ -90,19 +88,33 @@ _log_output(const str *file, u64 line,
     va_end(args);
 
     if (level <= LOGLEVEL_WARNING)
-        snprintf(out_message, OUT_STRING_MAX,
-                "%s%s%s:%s%"PRId64"%s:%s%s[%"PRId32"]: %s%s",
-                esc_code_color[level], file, esc_code_nocolor,
-                esc_code_color[level], line, esc_code_nocolor,
-                esc_code_color[level],
-                log_tag[level], error_code, in_message, esc_code_nocolor);
+    {
+        if (verbose)
+            snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s%s:%s%"PRId64"%s:%s%s[%"PRId32"]: %s%s",
+                    esc_code_color[level], file, esc_code_nocolor,
+                    esc_code_color[level], line, esc_code_nocolor,
+                    esc_code_color[level],
+                    log_tag[level], error_code, in_message, esc_code_nocolor);
+        else snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s[%"PRId32"]: %s%s",
+                    esc_code_color[level],
+                    log_tag[level], error_code, in_message, esc_code_nocolor);
+    }
     else
-        snprintf(out_message, OUT_STRING_MAX,
-                "%s%s%s:%s%"PRId64"%s:%s%s: %s%s",
-                esc_code_color[level], file, esc_code_nocolor,
-                esc_code_color[level], line, esc_code_nocolor,
-                esc_code_color[level],
-                log_tag[level], in_message, esc_code_nocolor);
+    {
+        if (verbose)
+            snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s%s:%s%"PRId64"%s:%s%s: %s%s",
+                    esc_code_color[level], file, esc_code_nocolor,
+                    esc_code_color[level], line, esc_code_nocolor,
+                    esc_code_color[level],
+                    log_tag[level], in_message, esc_code_nocolor);
+        else snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s: %s%s",
+                    esc_code_color[level],
+                    log_tag[level], in_message, esc_code_nocolor);
+    }
 
     fprintf(stderr, "%s", out_message);
 }

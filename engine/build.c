@@ -46,7 +46,8 @@ build_init(int argc, char **argv,
     if (argv_compare("show", argc, argv))       flag |= FLAG_CMD_SHOW;
     if (argv_compare("raw", argc, argv))        flag |= FLAG_CMD_RAW;
 
-    log_level_max = LOGLEVEL_INFO;
+    logger_init(TRUE, argc, argv);
+
     if (argv_compare("LOGFATAL", argc, argv)) log_level_max = LOGLEVEL_FATAL;
     if (argv_compare("LOGERROR", argc, argv)) log_level_max = LOGLEVEL_ERROR;
     if (argv_compare("LOGWARN", argc, argv)) log_level_max = LOGLEVEL_WARNING;
@@ -73,13 +74,13 @@ build_init(int argc, char **argv,
 
     if (STD != STD_C99)
     {
-        LOGINFO("%s\n", "Rebuilding Self With -std=c99..");
+        LOGINFO(FALSE, "%s\n", "Rebuilding Self With -std=c99..");
         self_rebuild(argv);
     }
 
     if (is_build_source_changed() == ERR_SUCCESS)
     {
-        LOGINFO("%s\n", "Rebuilding Self..");
+        LOGINFO(FALSE, "%s\n", "Rebuilding Self..");
         self_rebuild(argv);
     }
 
@@ -99,7 +100,8 @@ is_build_source_changed(void)
         mtime_src = stats.st_mtime;
     else
     {
-        LOGERROR(ERR_FILE_NOT_FOUND, "%s\n", "Build Source File Not Found");
+        LOGERROR(FALSE, ERR_FILE_NOT_FOUND,
+                "%s\n", "Build Source File Not Found");
         return engine_err;
     }
 
@@ -107,7 +109,8 @@ is_build_source_changed(void)
         mtime_bin = stats.st_mtime;
     else
     {
-        LOGERROR(ERR_FILE_NOT_FOUND, "File 'build%s' Not Found\n", EXE);
+        LOGERROR(FALSE, ERR_FILE_NOT_FOUND,
+                "%s\n", "File 'build"EXE"' Not Found\n");
         return engine_err;
     }
 
@@ -124,7 +127,6 @@ self_rebuild(char **argv)
     if (mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd") != ERR_SUCCESS)
         cmd_fail();
 
-    u32 i = 0;
     cmd_push(COMPILER);
     cmd_push(stringf("%s", str_build_src));
     cmd_push("-ggdb");
@@ -142,17 +144,19 @@ self_rebuild(char **argv)
 
     if (exec(&cmd, "cmd") == ERR_SUCCESS)
     {
-        LOGINFO("%s\n", "Self Rebuild Success");
+        LOGINFO(FALSE, "%s\n", "Self Rebuild Success");
         rename(str_build_bin, str_build_bin_old);
         rename(str_build_bin_new, str_build_bin);
         remove(str_build_bin_old);
 
         execvp(argv[0], (str *const *)argv);
-        LOGFATAL(engine_err, "'build%s' Failed, Process Aborted\n", EXE);
+        LOGFATAL(FALSE, engine_err,
+                "'build%s' Failed, Process Aborted\n", EXE);
         cmd_fail();
     }
 
-    LOGFATAL(engine_err, "%s\n", "Self-Rebuild Failed, Process Aborted");
+    LOGFATAL(FALSE, engine_err,
+            "%s\n", "Self-Rebuild Failed, Process Aborted");
     cmd_fail();
 }
 
@@ -250,17 +254,19 @@ cmd_push(const str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
     {
-        LOGERROR(ERR_BUFFER_FULL, "%s\n", "cmd Full");
+        LOGERROR(FALSE, ERR_BUFFER_FULL, "%s\n", "cmd Full");
         return;
     }
 
     if (strlen(string) >= CMD_SIZE - 1)
     {
-        LOGERROR(ERR_STRING_TOO_LONG, "string '%s' Too Long\n", string);
+        LOGERROR(FALSE, ERR_STRING_TOO_LONG,
+                "string '%s' Too Long\n", string);
         return;
     }
 
-    LOGTRACE("Pushing String '%s' to cmd.i[%"PRId64"]..\n", string, cmd_pos);
+    LOGTRACE(FALSE,
+            "Pushing String '%s' to cmd.i[%"PRId64"]..\n", string, cmd_pos);
     strncpy(cmd.i[cmd_pos++], string, CMD_SIZE);
 }
 

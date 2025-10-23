@@ -6,7 +6,6 @@
 #include <engine/h/math.h>
 #include <engine/h/memory.h>
 #include "../h/main.h"
-#include "../h/settings.h"
 #include "../h/chunking.h"
 #include "../h/dir.h"
 #include "../h/gui.h"

@@ -57,7 +57,7 @@ grandpath_dir_init(void)
     snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
     mem_free((void*)&path_bin_root, strlen(path_bin_root), "path_bin_root");
 
-    LOGINFO("Creating Main Directories '%s'..\n", PATH_ROOT);
+    LOGINFO(TRUE, "Creating Main Directories '%s'..\n", PATH_ROOT);
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
     {
@@ -70,13 +70,13 @@ grandpath_dir_init(void)
             make_dir(string);
     }
 
-    LOGINFO("Checking Main Directories '%s'..\n", PATH_ROOT);
+    LOGINFO(TRUE, "Checking Main Directories '%s'..\n", PATH_ROOT);
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
         if (!is_dir_exists(DIR_ROOT[i], TRUE) != ERR_SUCCESS)
             return *GAME_DIR_ERR;
 
-    LOGINFO("Main Directory Created '%s'\n", PATH_ROOT);
+    LOGINFO(TRUE, "Main Directory Created '%s'\n", PATH_ROOT);
     *GAME_DIR_ERR = ERR_SUCCESS;
     return *GAME_DIR_ERR;
 }
@@ -89,14 +89,14 @@ world_dir_init(const str *world_name)
 
     if (is_dir_exists(PATH_ROOT, TRUE) != ERR_SUCCESS)
     {
-        LOGERROR(ERR_WORLD_CREATION_FAIL,
+        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
                 "World Creation '%s' Failed\n", world_name);
         return *GAME_DIR_ERR;
     }
 
     if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
     {
-        LOGERROR(ERR_WORLD_CREATION_FAIL,
+        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
                 "World Creation '%s' Failed\n", world_name);
         return *GAME_DIR_ERR;
     }
@@ -107,14 +107,14 @@ world_dir_init(const str *world_name)
 
     if (is_dir_exists(PATH_WORLD, FALSE) == ERR_SUCCESS)
     {
-        LOGERROR(ERR_WORLD_EXISTS,
+        LOGERROR(FALSE, ERR_WORLD_EXISTS,
                 "World Already Exists '%s'\n", world_name);
         return *GAME_DIR_ERR;
     }
 
     make_dir(PATH_WORLD);
 
-    LOGINFO("Creating World Directories '%s'..\n", PATH_WORLD);
+    LOGINFO(FALSE, "Creating World Directories '%s'..\n", PATH_WORLD);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
     {
@@ -126,13 +126,13 @@ world_dir_init(const str *world_name)
         make_dir(string);
     }
 
-    LOGINFO("Checking World Directories '%s'..\n", PATH_WORLD);
+    LOGINFO(FALSE, "Checking World Directories '%s'..\n", PATH_WORLD);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
         if (is_dir_exists(DIR_WORLD[i], TRUE) != ERR_SUCCESS)
             return *GAME_DIR_ERR;
 
-    LOGINFO("World Created '%s'\n", world_name);
+    LOGINFO(FALSE, "World Created '%s'\n", world_name);
     *GAME_DIR_ERR = ERR_SUCCESS;
     return *GAME_DIR_ERR;
 }

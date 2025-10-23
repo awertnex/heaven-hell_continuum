@@ -108,22 +108,23 @@ list(void)
 void
 build_test(char **argv)
 {
-    if (!argv[2])
+    if (!argv[1])
     {
         LOGERROR(ERR_POINTER_NULL, "Usage: ./build%s test [n]\n", EXE);
         cmd_fail();
+        _exit(0);
     }
 
     u32 i = 0;
     str temp[CMD_SIZE] = {0};
-    u64 test_index = atoi(argv[2]);
+    u64 test_index = atoi(argv[1]);
     str_tests.memb = get_dir_entry_count(DIR_SRC);
     if (*BUILD_ERR != ERR_SUCCESS)
         cmd_fail();
     if (test_index >= str_tests.memb)
     {
         LOGERROR(ERR_BUFFER_OVERFLOW, "'%s' Invalid, Try './build%s list'"
-                "to List Available Options..\n", argv[2], EXE);
+                "to List Available Options..\n", argv[1], EXE);
         cmd_fail();
     }
     str_tests = get_dir_contents(DIR_SRC);

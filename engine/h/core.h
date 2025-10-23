@@ -336,9 +336,6 @@ enum TextAlignment
     TEXT_ALIGN_BOTTOM = 2,
 }; /* TextAlignment */
 
-extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
-extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
-
 /* multisample = turn on multisampling;
  *
  * return non-zero on failure and engine_err is set accordingly */
@@ -418,31 +415,13 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 
 void update_mouse_movement(Render *render);
 
+b8 is_key_press(const u32 key);
+b8 is_key_press_double(const u32 key);
+b8 is_key_hold(const u32 key);
+b8 is_key_release(const u32 key);
+
 /* update internal key states: press, double-press, hold, release */
 void update_key_states(Render *render);
-
-static b8 is_key_press(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS ||
-            keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static b8 is_key_press_double(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static b8 is_key_hold(const u32 key)
-{
-    return (keyboard_key[key] == KEY_HOLD ||
-            keyboard_key[key] == KEY_HOLD_DOUBLE);
-}
-
-static b8 is_key_release(const u32 key)
-{
-    return (keyboard_key[key] == KEY_RELEASE ||
-            keyboard_key[key] == KEY_RELEASE_DOUBLE);
-}
 
 /* load font from file at font_path,
  * allocate memory for font.buf and load file contents into it in binary format,

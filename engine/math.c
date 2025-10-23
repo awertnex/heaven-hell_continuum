@@ -101,6 +101,12 @@ is_in_range_i64(i64 pos, i64 start, i64 end)
 }
 
 b8
+is_in_range_f64(f64 pos, f64 start, f64 end)
+{
+    return ((pos - start) >= 0.0f) & ((end - pos) >= 0.0f);
+}
+
+b8
 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end)
 {
     return
@@ -264,12 +270,6 @@ f32
 easein_f32(f32 start, f32 end, f32 scale)
 {
     return start + (end - start) * (scale * scale);
-}
-
-f32
-easeout_f32(f32 start, f32 end, f32 scale) /* TODO: write this function */
-{
-    return 0.0f;
 }
 
 f32 smoothstep(f32 a, f32 b, f32 i)

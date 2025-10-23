@@ -19,8 +19,9 @@ extern Chunk ***CHUNK_ORDER;
 /* queue of chunks to be processed */
 extern ChunkQueue CHUNK_QUEUE;
 
-/* player relative chunk tab access */
-static u32 chunk_tab_index;
+/* player relative chunk tab access,
+ * declared by the user*/
+extern u32 chunk_tab_index;
 
 /* return non-zero on failure and game_err is set accordingly */
 u32 chunking_init(void);

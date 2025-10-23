@@ -15,7 +15,7 @@ make_dir(const str *path)
 {
     int exit_code = mkdir(path);
     if (exit_code == 0)
-        LOGINFO("Directory Created '%s'\n", path);
+        LOGINFO(FALSE, "Directory Created '%s'\n", path);
     return exit_code;
 }
 
@@ -38,7 +38,7 @@ _get_path_bin_root(str *path)
 {
     if (strlen(_pgmptr) + 1 >= STRING_MAX)
     {
-        LOGFATAL(ERR_GET_PATH_BIN_ROOT_FAIL,
+        LOGFATAL(FALSE, ERR_GET_PATH_BIN_ROOT_FAIL,
                 "%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return FALSE;
     }
@@ -72,7 +72,7 @@ exec(buf *cmd, str *cmd_name)
 
     if (!cmd->loaded || !cmd->buf)
     {
-        LOGERROR(ERR_BUFFER_EMPTY,
+        LOGERROR(TRUE, ERR_BUFFER_EMPTY,
                 "exec '%s' Failed, cmd Empty\n", cmd_name);
         return engine_err;
     }
@@ -84,7 +84,7 @@ exec(buf *cmd, str *cmd_name)
     if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL,
                 &startup_info, &process_info))
     {
-        LOGFATAL(ERR_EXEC_FAIL,
+        LOGFATAL(TRUE, ERR_EXEC_FAIL,
                 "'%s' Fork Failed, Process Aborted\n", cmd_name);
         goto cleanup;
     }
@@ -102,7 +102,7 @@ exec(buf *cmd, str *cmd_name)
     else
     {
         engine_err = ERR_EXEC_PROCESS_NON_ZERO;
-        LOGINFO("'%s' Exit Code: %d\n", cmd_name, exit_code);
+        LOGINFO(TRUE, "'%s' Exit Code: %d\n", cmd_name, exit_code);
         goto cleanup;
     }
 

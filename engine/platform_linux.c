@@ -17,9 +17,7 @@ make_dir(const str *path)
 {
     int exit_code = mkdir(path, 0755);
     if (exit_code == 0)
-    {
-        LOGTRACE("Directory Created '%s'\n", path);
-    }
+        LOGTRACE(FALSE, "Directory Created '%s'\n", path);
     return exit_code;
 }
 
@@ -41,7 +39,7 @@ _get_path_bin_root(str *path)
 {
     if (!readlink("/proc/self/exe", path, PATH_MAX))
     {
-        LOGFATAL(ERR_GET_PATH_BIN_ROOT_FAIL,
+        LOGFATAL(FALSE, ERR_GET_PATH_BIN_ROOT_FAIL,
                 "%s\n", "'get_path_bin_root()' Failed, Process Aborted");
         return engine_err;
     }
@@ -56,21 +54,21 @@ exec(buf *cmd, str *cmd_name)
     pid_t pid = fork();
     if (pid < 0)
     {
-        LOGERROR(ERR_PROCESS_FORK_FAIL,
+        LOGERROR(TRUE, ERR_PROCESS_FORK_FAIL,
                 "'%s' Fork Failed\n", cmd_name);
         return engine_err;
     }
     else if (pid == 0)
     {
         execvp((const str*)cmd->i[0], (str *const *)cmd->i);
-        LOGERROR(ERR_EXEC_FAIL, "'%s' Failed\n", cmd_name);
+        LOGERROR(TRUE, ERR_EXEC_FAIL, "'%s' Failed\n", cmd_name);
         return engine_err;
     }
 
     int status;
     if (waitpid(pid, &status, 0) == -1)
     {
-        LOGERROR(ERR_WAITPID_FAIL, "'%s' Waitpid Failed\n", cmd_name);
+        LOGERROR(TRUE, ERR_WAITPID_FAIL, "'%s' Waitpid Failed\n", cmd_name);
         return engine_err;
     }
 
@@ -79,26 +77,27 @@ exec(buf *cmd, str *cmd_name)
         int exit_code = WEXITSTATUS(status);
         if (exit_code == 0)
         {
-            LOGINFO("'%s' Success, Exit Code: %d\n", cmd_name, exit_code);
+            LOGINFO(FALSE,
+                    "'%s' Success, Exit Code: %d\n", cmd_name, exit_code);
         }
         else
         {
             engine_err = ERR_EXEC_PROCESS_NON_ZERO;
-            LOGINFO("'%s' Exit Code: %d\n", cmd_name, exit_code);
+            LOGINFO(TRUE, "'%s' Exit Code: %d\n", cmd_name, exit_code);
             return engine_err;
         }
     }
     else if (WIFSIGNALED(status))
     {
         int sig = WTERMSIG(status);
-        LOGFATAL(ERR_EXEC_TERMINATE_BY_SIGNAL,
+        LOGFATAL(TRUE, ERR_EXEC_TERMINATE_BY_SIGNAL,
                 "'%s' Terminated by Signal: %d, Process Aborted\n",
                 cmd_name, sig);
         return engine_err;
     }
     else
     {
-        LOGERROR(ERR_EXEC_ABNORMAL_EXIT,
+        LOGERROR(TRUE, ERR_EXEC_ABNORMAL_EXIT,
                 "'%s' Exited Abnormally\n", cmd_name);
         return engine_err;
     }
@@ -121,11 +120,12 @@ _mem_map(void **x, u64 size,
             PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
     if (*x == MAP_FAILED)
     {
-        LOGFATALV(file, line, ERR_MEM_MAP_FAIL,
+        LOGFATALEX(TRUE, file, line, ERR_MEM_MAP_FAIL,
                 "%s[%p] Memory Map Failed, Process Aborted\n", name, NULL);
         return engine_err;
     }
-    LOGTRACEV(file, line, "%s[%p] Memory Mapped [%lldB]\n", name, *x, size);
+    LOGTRACEEX(TRUE, file, line,
+            "%s[%p] Memory Mapped [%lldB]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -137,12 +137,12 @@ _mem_commit(void *x, void *offset, u64 size,
 {
     if (mprotect(offset, size, PROT_READ | PROT_WRITE) != 0)
     {
-        LOGFATALV(file, line, ERR_MEM_COMMIT_FAIL,
+        LOGFATALEX(TRUE, file, line, ERR_MEM_COMMIT_FAIL,
                 "%s[%p][%p] Memory Commit [%lldB] Failed, Process Aborted\n",
                 name, x, offset, size);
         return engine_err;
     }
-    LOGTRACEV(file, line, "%s[%p][%p] Memory Committed [%lldB]\n",
+    LOGTRACEEX(TRUE, file, line, "%s[%p][%p] Memory Committed [%lldB]\n",
             name, x, offset, size);
 
     engine_err = ERR_SUCCESS;
@@ -155,7 +155,7 @@ _mem_unmap(void *x, u64 size,
 {
     if (!x) return;
     munmap(x, size);
-    LOGTRACEV(file, line, "%s[%p] Memory Unmapped [%lldB]\n",
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%lldB]\n",
             name, x, size);
     x = NULL;
 }

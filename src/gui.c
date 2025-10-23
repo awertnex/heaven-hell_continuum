@@ -69,42 +69,42 @@ gui_init(void)
 
     if (
             texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "crosshair.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "item_bar.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "sdb_active.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "sdb_inactive.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_GRASS], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
                     "grass.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
                     "dirt.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
                     "stone.png")) != ERR_SUCCESS ||
 
             texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
                     "sand.png")) != ERR_SUCCESS)
         goto cleanup;

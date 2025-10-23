@@ -61,6 +61,4 @@
 /* declared by the user */
 extern u32 engine_err;
 
-extern str *logger_buf;
-
 #endif /* ENGING_DIAGNOSTICS_H */

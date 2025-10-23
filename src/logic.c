@@ -10,8 +10,6 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
     /* ---- wrap coordinates ------------------------------------------------ */
-    const i64 RADIUS            = radius * chunk_diameter;
-    const i64 RADIUS_V          = radius_v * chunk_diameter;
     const i64 DIAMETER          = diameter * chunk_diameter;
     const i64 DIAMETER_V        = diameter_v * chunk_diameter;
 
@@ -284,6 +282,21 @@ player_target_update(Player *player)
 }
 
 void
+set_player_pos(Player *player, f64 x, f64 y, f64 z)
+{
+    player->pos = (v3f64){x, y, z};
+    player->pos_smooth = player->pos;
+}
+
+void
+set_player_block(Player *player, i32 x, i32 y, i32 z)
+{
+    player->pos =
+        (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
+    player->pos_smooth = player->pos;
+}
+
+void
 player_kill(Player *player)
 {
     player->vel = v3fzero;
@@ -449,34 +462,3 @@ get_timer(f64 *time_start, f32 interval)
     }
     return FALSE;
 }
-
-#if 0 // TODO: undef
-void
-draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
-{
-    v4u8 color = {0xff, 0xff, 0xff, 0xff};
-
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, color);
-    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, color);
-    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, color);
-    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, color);
-    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, color);
-    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, color);
-    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, color);
-    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, color);
-    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, color);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, color);
-    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, color);
-    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, color);
-    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, color);
-    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, color);
-    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, color);
-    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, color);
-    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, color);
-    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, color);
-
-    draw_line_3d(v3izero, (v3i32){2, 0, 0}, x);
-    draw_line_3d(v3izero, (v3i32){0, 2, 0}, y);
-    draw_line_3d(v3izero, (v3i32){0, 0, 2}, z);
-}
-#endif // TODO: undef

@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#define GAME_RELEASE_BUILD  0
+
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"
 #define GAME_VERSION_ALPHA  "-alpha"

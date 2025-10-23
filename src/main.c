@@ -16,6 +16,7 @@
 
 u32 engine_err = ERR_SUCCESS;
 u32 *const GAME_ERR = (u32*)&engine_err;
+u32 chunk_tab_index = 0;
 
 Render render =
 {
@@ -194,10 +195,13 @@ Mesh mesh_gizmo = {0};
 /* ---- callbacks ----------------------------------------------------------- */
 static void callback_error(int error, const char* message)
 {
-    LOGERROR(ERR_GLFW, "GLFW: %s\n", message);
+    (void)error;
+    LOGERROR(TRUE, ERR_GLFW, "GLFW: %s\n", message);
 }
+
 static void callback_framebuffer_size(
         GLFWwindow* window, int width, int height);
+
 static void callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods);
 
@@ -217,6 +221,8 @@ static void
 callback_framebuffer_size(
         GLFWwindow* window, int width, int height)
 {
+    (void)window;
+
     render.size = (v2i32){width, height};
     lily.camera.ratio = (f32)width / (f32)height;
     lily.camera_hud.ratio = (f32)width / (f32)height;
@@ -237,6 +243,9 @@ static void
 callback_key(
         GLFWwindow *window, int key, int scancode, int action, int mods)
 {
+    (void)scancode;
+    (void)mods;
+
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
@@ -244,6 +253,9 @@ callback_key(
 static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset)
 {
+    (void)window;
+    (void)xoffset;
+
     lily.camera.zoom =
         clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
                 0.0f, CAMERA_ZOOM_MAX);
@@ -731,20 +743,20 @@ input_update(Player *player)
 
     if (is_key_press(bind_inventory))
     {
-        if ((player->container_state & STATE_CONTR_INVENTORY) &&
+        if ((player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
                 state_menu_depth)
         {
             state_menu_depth = 0;
-            player->container_state &= ~STATE_CONTR_INVENTORY;
+            player->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
         }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY) &&
+        else if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
                 !state_menu_depth)
         {
             state_menu_depth = 1;
-            player->container_state |= STATE_CONTR_INVENTORY;
+            player->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
         }
 
-        if (!(player->container_state & STATE_CONTR_INVENTORY) &&
+        if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
                 state_menu_depth)
             --state_menu_depth;
     }
@@ -766,20 +778,16 @@ input_update(Player *player)
     }
 
     if (is_key_press(bind_toggle_perspective))
-    {
-        if (player->perspective < 4)
-            ++player->perspective;
-        else player->perspective = 0;
-    }
+        player->perspective = ++player->perspective % MODE_CAMERA_COUNT;
 
     if (is_key_press(bind_toggle_zoom))
         player->flag ^= FLAG_PLAYER_ZOOMER;
 
     /* ---- debug ----------------------------------------------------------- */
-#if !RELEASE_BUILD
+#if !GAME_RELEASE_BUILD
     if (is_key_press(bind_toggle_super_debug))
         flag ^= FLAG_MAIN_SUPER_DEBUG;
-#endif /* RELEASE_BUILD */
+#endif /* GAME_RELEASE_BUILD */
 }
 
 u32
@@ -802,7 +810,7 @@ world_init(str *name)
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_block(&lily, 0, 0, 0);
+    set_player_pos(&lily, 0.5f, 0.5f, 1.0f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1519,22 +1527,22 @@ int
 main(int argc, char **argv)
 {
     glfwSetErrorCallback(callback_error);
-    if (logger_init(argc, argv) != ERR_SUCCESS)
+    if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)
         return *GAME_ERR;
 
-    if (!RELEASE_BUILD)
-        LOGDEBUG("%s\n", "DEVELOPMENT BUILD");
+    if (!GAME_RELEASE_BUILD)
+        LOGDEBUG(FALSE, "%s\n", "DEVELOPMENT BUILD");
 
     if (!MODE_INTERNAL_DEBUG)
     {
-        LOGWARNING(ERR_MODE_INTERNAL_DEBUG_DISABLE,
+        LOGWARNING(FALSE, ERR_MODE_INTERNAL_DEBUG_DISABLE,
                 "%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
     }
-    else LOGDEBUG("%s\n", "Debugging Enabled");
+    else LOGDEBUG(FALSE, "%s\n", "Debugging Enabled");
 
     if (!MODE_INTERNAL_COLLIDE)
     {
-        LOGWARNING(ERR_MODE_INTERNAL_COLLIDE_DISABLE,
+        LOGWARNING(FALSE, ERR_MODE_INTERNAL_COLLIDE_DISABLE,
                 "%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
     }
 
@@ -1561,9 +1569,10 @@ main(int argc, char **argv)
     if (glfwRawMouseMotionSupported())
     {
         glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        LOGINFO("%s\n", "GLFW: Raw Mouse Motion Enabled");
+        LOGINFO(FALSE, "%s\n", "GLFW: Raw Mouse Motion Enabled");
     }
-    else LOGERROR(ERR_GLFW, "%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    else LOGERROR(FALSE, ERR_GLFW,
+            "%s\n", "GLFW: Raw Mouse Motion Not Supported");
     glfwGetCursorPos(render.window,
             &render.mouse_position.x,
             &render.mouse_position.y);
@@ -1688,7 +1697,7 @@ section_menu_title:
 
 section_menu_pause:
 
-section_main:
+section_world_loaded:
 
     if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
             world_init("Poop Consistency Tester") != ERR_SUCCESS)
