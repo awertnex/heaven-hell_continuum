@@ -47,13 +47,16 @@ void main()
 
     vec2 tex_coords[4] =
         vec2[](
+                vec2(0.0, 1.0),
                 vec2(0.0, 0.0),
                 vec2(1.0, 0.0),
-                vec2(1.0, 1.0),
-                vec2(0.0, 1.0));
+                vec2(1.0, 1.0));
 
     int ebo_tex_coords[FACE_VERTICES] =
         int[](0, 1, 2, 2, 3, 0);
+
+    int ebo_tex_coords_top[FACE_VERTICES] =
+        int[](3, 0, 1, 1, 2, 3);
 
     if (bool(vs_data[0] & POSITIVE_X))
         for (int i = 0; i < FACE_VERTICES; ++i)
@@ -112,7 +115,7 @@ void main()
         {
             gs_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 4)]];
-            gs_tex_coords = tex_coords[ebo_tex_coords[i]];
+            gs_tex_coords = tex_coords[ebo_tex_coords_top[i]];
             gs_normal = vec3(0.0, 0.0, 1.0);
 
             gl_Position = mat_perspective * vec4(gs_position, 1.0);
