@@ -182,6 +182,7 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%smath.c", engine_dir_processed));
     cmd_push(stringf("%smemory.c", engine_dir_processed));
     cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
+    cmd_push(stringf("%stext.c", engine_dir_processed));
     cmd_push(stringf("%sinclude/glad/glad.c", engine_dir_processed));
     cmd_push("-I.");
     cmd_push("-shared");

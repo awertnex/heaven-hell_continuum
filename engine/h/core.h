@@ -31,7 +31,7 @@
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
 #define TEXT_TAB_SIZE 4
-#define TEXT_COLOR_SHADOW 0x4a4a4aff
+#define TEXT_COLOR_SHADOW 0x00000080
 #define TEXT_OFFSET_SHADOW 2.0f
 
 enum KeyboardKeyState
@@ -436,12 +436,16 @@ u32 font_init(Font *font, u32 size, const str *font_path);
 
 void font_free(Font *font);
 
-/* init text rendering settings.
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * init text rendering settings.
  *
  * return non-zero on failure and engine_err is set accordingly */
 u32 text_init(ShaderProgram *program);
 
-/* start text rendering batch.
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * start text rendering batch.
  *
  * length = pre-allocate buffer for string (if 0, STRING_MAX is allocated),
  * size = font height in pixels,
@@ -450,7 +454,9 @@ u32 text_init(ShaderProgram *program);
 void text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
-/* push string's glyph metrics, position
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * push string's glyph metrics, position
  * and alignment to render buffer.
  *
  * align_x = TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT,
@@ -462,16 +468,20 @@ void text_start(u64 length, f32 size, Font *font,
  * batch, chained with 'text_render()' */
 void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
-/* render text to framebuffer.
+/* -- IMPLEMENTATION: text.c --;
+ * render text to framebuffer.
  *
  * can be called multiple times within a text rendering
  * batch, chained with 'text_push()' */
 void text_render(u32 color, b8 shadow);
 
-/* cleanup for text rendering.
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * cleanup for text rendering.
  * unbind text framebuffer, enable depth test */
 void text_stop(void);
 
+/* -- IMPLEMENTATION: text.c --; */
 void text_free(void);
 
 #endif /* ENGINE_CORE_H */
