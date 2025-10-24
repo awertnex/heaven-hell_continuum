@@ -77,16 +77,15 @@ logger_close(void)
 }
 
 void
-_log_output(b8 log, b8 verbose, const str *file, u64 line,
+_log_output(b8 verbose, const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...)
 {
-    if (!log) return;
     if (level > log_level_max) return;
 
     __builtin_va_list args;
-    __builtin_va_start(args, format);
+    va_start(args, format);
     vsnprintf(in_message, IN_STRING_MAX, format, args);
-    __builtin_va_end(args);
+    va_end(args);
 
     if (level <= LOGLEVEL_WARNING)
     {

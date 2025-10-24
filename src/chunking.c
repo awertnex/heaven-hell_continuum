@@ -331,7 +331,7 @@ block_place(u32 index, u32 x, u32 y, u32 z)
     Chunk *ny = *(chunk - CHUNK_BUF_DIAMETER);
     Chunk *pz = *(chunk + CHUNK_BUF_LAYER);
     Chunk *nz = *(chunk - CHUNK_BUF_LAYER);
-    _block_place(*chunk, px, nx, py, ny, pz, nz, coordinates, x, y , z);
+    _block_place(*chunk, px, nx, py, ny, pz, nz, coordinates, x, y, z);
 }
 
 static void
@@ -642,10 +642,8 @@ chunk_generate(Chunk **chunk, u32 rate)
         terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
 
         if (terrain > coordinates.z)
-            _block_place(*chunk,
-                    px, nx, py, ny, pz, nz,
-                    chunk_tab_coordinates,
-                    pos.x, pos.y, pos.z);
+            _block_place(*chunk, px, nx, py, ny, pz, nz,
+                    chunk_tab_coordinates, pos.x, pos.y, pos.z);
         --rate;
     }
 

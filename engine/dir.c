@@ -141,7 +141,7 @@ get_file_contents(const str *path, u64 size, u64 *file_len,
     fseek(file, 0, SEEK_SET);
 
     str *file_contents = NULL;
-    if (mem_alloc((void*)&file_contents, len + 1,
+    if (mem_alloc((void*)&file_contents, len,
                 "file_contents") != ERR_SUCCESS)
         goto cleanup;
 

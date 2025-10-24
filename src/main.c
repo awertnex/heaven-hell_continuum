@@ -830,7 +830,7 @@ world_init(str *name)
 static void
 world_update(Player *player)
 {
-    game_tick = 3000 + (u64)(render.frame_start * 20) -
+    game_tick = (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
