@@ -5,7 +5,6 @@
 
 #include "main.h"
 
-extern u32 *const GAME_CHUNKING_ERR;
 extern u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1];
 
 /* chunk pointer look-up table that points to chunk_buf addresses.

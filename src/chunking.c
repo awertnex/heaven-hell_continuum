@@ -13,7 +13,6 @@
 #include "h/chunking.h"
 #include "h/dir.h"
 
-u32 *const GAME_CHUNKING_ERR = (u32*)&engine_err;
 u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
 
 /* chunk buffer, raw chunk data */
@@ -65,7 +64,7 @@ chunking_init(void)
 {
     if (mem_map((void*)&chunk_buf, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk),
                 "chunk_buf") != ERR_SUCCESS)
-        return *GAME_CHUNKING_ERR;
+        return *GAME_ERR;
 
     if (mem_map((void*)&chunk_tab, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
                 "chunk_tab") != ERR_SUCCESS)
@@ -140,7 +139,7 @@ chunking_init(void)
 
             if (write_file(CHUNK_ORDER_lookup_file_name, sizeof(u32),
                         chunk_buf_volume, &index, "wb", TRUE) != ERR_SUCCESS)
-                return *GAME_CHUNKING_ERR;
+                return *GAME_ERR;
 
             LOGTRACE(FALSE,
                     "CHUNK_ORDER Distance Lookup [0x%02x/0x%02x] Written To File\n",
@@ -199,7 +198,7 @@ chunking_init(void)
         if (write_file(CHUNKS_MAX_lookup_file_name,
                 sizeof(u64), SET_RENDER_DISTANCE_MAX + 1,
                 &CHUNKS_MAX, "wb", TRUE) != ERR_SUCCESS)
-            return *GAME_CHUNKING_ERR;
+            return *GAME_ERR;
 
         LOGTRACE(FALSE,
                 "%s\n", "CHUNKS_MAX Lookup Written To File\n");
@@ -256,8 +255,8 @@ chunking_init(void)
                 "CHUNK_QUEUE.priority_3") != ERR_SUCCESS)
         goto cleanup;
 
-    *GAME_CHUNKING_ERR = ERR_SUCCESS;
-    return *GAME_CHUNKING_ERR;
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
 
 cleanup:
     mem_unmap((void*)&chunk_buf,
@@ -273,7 +272,7 @@ cleanup:
     mem_unmap((void*)&CHUNK_QUEUE.priority_3,
             CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
             "CHUNK_QUEUE.priority_3");
-    return *GAME_CHUNKING_ERR;
+    return *GAME_ERR;
 }
 
 void
@@ -539,7 +538,7 @@ static v3f32 random(f32 x0, f32 y0, u32 seed)
 {
     const u32 w = 8 * sizeof(u64);
     const u32 s = w / 2; 
-    u32 a = (i32)x0 + seed, b = (i32)y0 - seed;
+    u32 a = (i32)x0 + seed + 5000, b = (i32)y0 - seed - 5000;
     a *= 3284157443;
  
     b ^= a << s | a >> (w - s);
@@ -621,12 +620,17 @@ chunk_generate(Chunk **chunk, u32 rate)
             pos.z + ((*chunk)->pos.z * CHUNK_DIAMETER),
         };
 
+        f32 elevation = clamp_f32(
+            terrain_noise(coordinates, 1.0f, 329.0f) + 0.5f, 0.0f, 1.0f);
+
+        f32 influence = terrain_noise(coordinates, 1.0, 50.0f);
+
         f32 terrain = 0.0f;
-        f32 influence = terrain_noise(coordinates, 2.0, 50.0f);
-        terrain = terrain_noise(coordinates, 250.0f, 256.0f);
-        terrain += terrain_noise(coordinates, 30.0f, 40.0f);
+        terrain = terrain_noise(coordinates, 250.0f, 256.0f) * elevation;
+        terrain += terrain_noise(coordinates, 30.0f, 40.0f) * elevation;
         terrain += (terrain_noise(coordinates, 10.0f, 5.0f) * influence);
         terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
+
         if (terrain > coordinates.z)
             _block_place(chunk, chunk_tab_coordinates, pos.x, pos.y, pos.z);
         --rate;

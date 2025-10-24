@@ -95,7 +95,7 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
     static f32 zoom = 0.0f;
-    if (lily.flag & FLAG_PLAYER_ZOOMER)
+    if (player->flag & FLAG_PLAYER_ZOOMER)
         zoom = player->camera.zoom;
     else zoom = 0.0f;
 

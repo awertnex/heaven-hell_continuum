@@ -12,7 +12,6 @@
 #define COL_Y               0x32ff32ff
 #define COL_Z               0x3232ffff
 
-extern u32 *const GAME_GUI_ERR;
 extern u8 hotbar_slot_selected;
 
 extern u16 menu_index;

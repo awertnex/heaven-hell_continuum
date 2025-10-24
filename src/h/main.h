@@ -270,14 +270,45 @@ typedef struct Uniform
 
 } Uniform;
 
-enum FontIndices
+enum ShaderIndices
 {
-    FONT_REG,
-    FONT_REG_BOLD,
-    FONT_MONO,
-    FONT_MONO_BOLD,
-    FONT_COUNT,
-}; /* FontIndices */
+    SHADER_FBO,
+    SHADER_DEFAULT,
+    SHADER_UI,
+    SHADER_UI_9_SLICE,
+    SHADER_TEXT,
+    SHADER_SKYBOX,
+    SHADER_GIZMO,
+    SHADER_GIZMO_CHUNK,
+    SHADER_POST_PROCESSING,
+    SHADER_VOXEL,
+    SHADER_BOUNDING_BOX,
+    SHADER_COUNT,
+}; /* ShaderIndices */
+
+enum MeshIndices
+{
+    MESH_UNIT,
+    MESH_SKYBOX,
+    MESH_CUBE_OF_HAPPINESS,
+    MESH_PLAYER,
+    MESH_GIZMO,
+    MESH_COUNT,
+}; /* MeshIndices */
+
+enum FBOIndices
+{
+    FBO_SKYBOX,
+    FBO_WORLD,
+    FBO_WORLD_MSAA,
+    FBO_HUD,
+    FBO_HUD_MSAA,
+    FBO_UI,
+    FBO_TEXT,
+    FBO_TEXT_MSAA,
+    FBO_POST_PROCESSING,
+    FBO_COUNT,
+}; /* FBOIndices */
 
 enum TextureIndices
 {
@@ -291,6 +322,15 @@ enum TextureIndices
     TEXTURE_SAND,
     TEXTURE_COUNT,
 }; /* TextureIndices */
+
+enum FontIndices
+{
+    FONT_REG,
+    FONT_REG_BOLD,
+    FONT_MONO,
+    FONT_MONO_BOLD,
+    FONT_COUNT,
+}; /* FontIndices */
 
 enum PlayerFlags
 {
@@ -506,14 +546,10 @@ typedef struct ChunkQueue
     u32 cursor_3;
 } ChunkQueue;
 
-extern u32 *game_err;
-extern Render render;
-extern Projection projection;
+extern u32 *const GAME_ERR;
 extern Settings settings;
-extern Uniform uniform;
-extern Font font[FONT_COUNT];
 extern Texture texture[TEXTURE_COUNT];
-extern Player lily;
+extern Font font[FONT_COUNT];
 extern u64 flag;
 extern f64 game_start_time;
 extern u64 game_tick;

@@ -9,8 +9,6 @@
 #include "h/gui.h"
 #include "h/dir.h"
 
-u32 *const GAME_GUI_ERR = (u32*)&engine_err;
-
 u8 hotbar_slot_selected = 1;
 
 u16 menu_index;
@@ -116,11 +114,11 @@ gui_init(void)
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
     //menu_index = MENU_TITLE;
     //memset(buttons, 0, BTN_COUNT);
-    return *GAME_GUI_ERR;
+    return *GAME_ERR;
 
 cleanup:
     gui_free();
-    return *GAME_GUI_ERR;
+    return *GAME_ERR;
 }
 
 void
