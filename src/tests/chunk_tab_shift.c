@@ -24,9 +24,9 @@ str GRANDPATH_DIR[][NAME_MAX] =
 {
     "lib/",
     "lib/"PLATFORM"/",
-    "resources/",
-    "resources/fonts/",
-    "resources/shaders/",
+    "assets/",
+    "assets/fonts/",
+    "assets/shaders/",
 };
 
 Font font_mono;

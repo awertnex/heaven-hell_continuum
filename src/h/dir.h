@@ -13,7 +13,7 @@ enum Directories
     DIR_LIB =               0,
     DIR_LIB_PLATFORM,
     DIR_LOGS,
-    DIR_RESOURCES,
+    DIR_ASSETS,
     DIR_AUDIO,
     DIR_FONTS,
     DIR_LOOKUPS,

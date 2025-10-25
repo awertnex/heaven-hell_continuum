@@ -2,8 +2,8 @@ TODO: complete gui.txt
 
 --image_paths
 {
-    resources/gui/;
-    resources/gui/title/;
+    assets/gui/;
+    assets/gui/title/;
 }
 
 --screen[title]

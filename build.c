@@ -75,10 +75,10 @@ main(int argc, char **argv)
     snprintf(str_mkdir[1],  CMD_SIZE, "%slib/", str_out_dir);
     snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_build_root);
     snprintf(str_from[1],   CMD_SIZE, "%slib/"PLATFORM, str_build_root);
-    snprintf(str_from[2],   CMD_SIZE, "%sresources/", str_build_root);
+    snprintf(str_from[2],   CMD_SIZE, "%sassets/", str_build_root);
     snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_out_dir);
     snprintf(str_to[1],     CMD_SIZE, "%slib/"PLATFORM, str_out_dir);
-    snprintf(str_to[2],     CMD_SIZE, "%sresources/", str_out_dir);
+    snprintf(str_to[2],     CMD_SIZE, "%sassets/", str_out_dir);
 
     for (i = 0; i < NEW_DIR_COUNT; ++i)
     {
