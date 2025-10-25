@@ -17,30 +17,6 @@ u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
-void
-print_menu_layers()
-{
-    str menu_names[10][24] =
-    {
-        "",
-        "MENU_TITLE",
-        "MENU_SINGLEPLAYER",
-        "MENU_MULTIPLAYER",
-        "MENU_SETTINGS",
-        "MENU_SETTINGS_AUDIO",
-        "MENU_SETTINGS_VIDEO",
-        "MENU_GAME_PAUSE",
-        "MENU_DEATH",
-    };
-
-    printf("menu layers:\n");
-    u8 i = 0;
-    for (; i < 9; ++i)
-        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
-
-    putchar('\n');
-}
-
 u32
 gui_init(void)
 {

@@ -771,7 +771,7 @@ input_update(Player *player)
     }
 
     if (is_key_press(bind_toggle_perspective))
-        player->perspective = ++player->perspective % MODE_CAMERA_COUNT;
+        player->perspective = (player->perspective + 1) % MODE_CAMERA_COUNT;
 
     if (is_key_press(bind_toggle_zoom))
         player->flag ^= FLAG_PLAYER_ZOOMER;

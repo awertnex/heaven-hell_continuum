@@ -642,7 +642,7 @@ chunk_generate(Chunk **chunk, u32 rate)
         f32 terrain = 0.0f;
         terrain = terrain_noise(coordinates, 250.0f, 256.0f) * elevation;
         terrain += terrain_noise(coordinates, 30.0f, 40.0f) * elevation;
-        terrain += (terrain_noise(coordinates, 10.0f, 9.0f) * influence);
+        terrain += (terrain_noise(coordinates, 10.0f, 10.0f) * influence);
         terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
 
         if (terrain > coordinates.z)
@@ -685,7 +685,7 @@ chunk_mesh(Chunk *chunk)
                 (((u64)pos.y & 0xf) << 36) |
                 (((u64)pos.z & 0xf) << 40);
         }
-    cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
+    cur_buf = (cur_buf + 1) % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
     chunk->vbo_len = len;
 
@@ -740,7 +740,7 @@ _chunk_mesh(Chunk *chunk)
                 (((u64)pos.y & 0xf) << 36) |
                 (((u64)pos.z & 0xf) << 40);
         }
-    cur_buf = ++cur_buf % BLOCK_BUFFERS_MAX;
+    cur_buf = (cur_buf + 1) % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
     chunk->vbo_len = len;
 
@@ -865,7 +865,7 @@ chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue, u32 queue_id,
             queue[*cursor] = *chunk;
             (**chunk)->flag |= FLAG_CHUNK_QUEUED;
             ++*count;
-            *cursor = ++*cursor % queue_size;
+            *cursor = (*cursor + 1) % queue_size;
         }
 
     if (!*count) return;
