@@ -74,7 +74,9 @@ u32 copy_dir(const str *path, const str *destination, b8 overwrite,
 u32 write_file(const str *path, u64 size, u64 length, void *buf,
         const str *write_format, b8 log);
 
-/* return NULL on failure and engine_err is set accordingly */
+/* return calloc'd string of resolved 'path'.
+ *
+ * return NULL on failure and engine_err is set accordingly */
 str *get_path_absolute(const str *path);
 
 /* return calloc'd string of executable's path, slash and null terminated.

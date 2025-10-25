@@ -332,11 +332,10 @@ _shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
     u64 buf_resolved_len = 0;
     if (engine_err != ERR_SUCCESS)
         return NULL;
-    buf[buf_len] = 0;
 
     if (mem_alloc((void*)&buf_resolved, buf_len + 1,
-                "buf_resolved") != ERR_SUCCESS)
-        return NULL;
+                "_shader_pre_process().buf_resolved") != ERR_SUCCESS)
+        goto cleanup;
     buf_resolved_len = buf_len + 1;
     snprintf(buf_resolved, buf_resolved_len, "%s", buf);
     for (; i < buf_len; ++i)
@@ -362,23 +361,15 @@ _shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
             {
                 LOGFATAL(FALSE, ERR_SELF_INCLUDE,
                         "Self Include Detected '%s', Process Aborted\n", path);
-                return NULL;
+                goto cleanup;
             }
             buf_include = _shader_pre_process(string,
-                    &buf_include_len, --recursion_limit);
-            if (engine_err != ERR_SUCCESS)
-                return NULL;
-
-            if (mem_realloc((void*)&buf_resolved,
+                    &buf_include_len, recursion_limit - 1);
+            if (engine_err != ERR_SUCCESS ||
+                    mem_realloc((void*)&buf_resolved,
                         buf_resolved_len + buf_include_len + 1,
-                        "buf_resolved") != ERR_SUCCESS)
-            {
-                mem_free((void*)&buf_include, buf_include_len,
-                        "buf_include");
-                mem_free((void*)&buf_resolved, buf_resolved_len,
-                        "buf_resolved");
-                return NULL;
-            }
+                        "_shader_pre_process().buf_resolved") != ERR_SUCCESS)
+                goto cleanup;
             buf_resolved_len += buf_include_len;
 
             cursor += snprintf(buf_resolved + cursor,
@@ -388,17 +379,28 @@ _shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
                     buf_resolved_len - cursor, "%s", buf_include);
 
             k = i + j;
-            snprintf(buf_resolved + cursor,
-                    buf_resolved_len - cursor, "%s", buf + k);
-
-            mem_free((void*)&buf_include, buf_include_len, "buf_include");
+            mem_free((void*)&buf_include, buf_include_len,
+                    "_shader_pre_process().buf_include");
         }
     }
 
-    mem_free((void*)&buf, buf_len, "buf");
+    if (k < buf_len)
+        snprintf(buf_resolved + cursor,
+                buf_resolved_len - cursor, "%s", buf + k);
+
+    mem_free((void*)&buf, buf_len, "_shader_pre_process().buf");
     if (file_len) *file_len = buf_resolved_len;
     engine_err = ERR_SUCCESS;
     return buf_resolved;
+
+cleanup:
+    mem_free((void*)&buf_include, buf_include_len,
+            "_shader_pre_process().buf_include");
+    mem_free((void*)&buf_resolved, buf_resolved_len,
+            "_shader_pre_process().buf_resolved");
+    mem_free((void*)&buf, buf_len,
+            "_shader_pre_process().buf");
+    return NULL;
 }
 
 u32
