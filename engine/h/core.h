@@ -347,19 +347,15 @@ u32 window_init(Render *render);
 /* return non-zero on failure and engine_err is set accordingly */
 u32 glad_init(void);
 
-/* read_format = read files within path in specified format
- * (fread() parameter),
+/* calls 'shader_pre_process()' on 'shader->file_name' before compiling shader.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 shader_init(const str *shaders_dir, Shader *shader,
-        const str *read_format);
+u32 shader_init(const str *shaders_dir, Shader *shader);
 
-/* read_format = read files within path in specified format
- * (fread() parameter),
+/* calls 'shader_init()' on all shaders in 'program' if 'shader->type' is set.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 shader_program_init(const str *shaders_dir, ShaderProgram *program,
-        const str *read_format);
+u32 shader_program_init(const str *shaders_dir, ShaderProgram *program);
 
 void shader_program_free(ShaderProgram *program);
 
@@ -384,15 +380,6 @@ u32 texture_init(Texture *texture, v2i32 size,
  *
  * return non-zero on failure and engine_err is set accordingly */
 u32 texture_generate(Texture *texture);
-
-/* -- INTERNAL USE ONLY --;
- *
- * generate texture for opengl from *buf.
- *
- * return non-zero on failure and engine_err is set accordingly */
-u32 _texture_generate(
-        GLuint *id, const GLint format_internal,  const GLint format,
-        GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
 
 void texture_free(Texture *texture);
 

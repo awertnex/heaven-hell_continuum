@@ -24,14 +24,15 @@ u32 is_dir(const str *path);
  * return non-zero on failure and engine_err is set accordingly */
 u32 is_dir_exists(const str *path, b8 log);
 
-/* return calloc'd buf of file contents, not NULL terminated,
- * return file size in bytes to file_len.
+/* destination = pointer to NULL buffer to store file contents,
+ * 'destination' is allocated file size, + 1 if 'terminate',
+ * read_format = read file at 'path' using 'format' (fopen() parameter),
+ * terminate = TRUE will NULL terminate buffer.
  *
- * read_format = read file at path in specified format (fopen() parameter).
- *
- * return NULL on failure and engine_err is set accordingly */
-str *get_file_contents(const str *path, u64 size, u64 *file_len,
-        const str *format);
+ * return file size in bytes,
+ * engine_err is set accordingly on failure */
+u64 get_file_contents(const str *path, void **destination,
+        u64 size, const str *format, b8 terminate);
 
 /* return directory entries at dir_path.
  *

@@ -153,9 +153,11 @@ chunking_init(void)
             "%slookup_chunk_order_0x%02x.bin",
             DIR_ROOT[DIR_LOOKUPS], SET_RENDER_DISTANCE);
 
-    CHUNK_ORDER_lookup_file_contents =
-        (u32*)get_file_contents(CHUNK_ORDER_lookup_file_name,
-                sizeof(u32), &file_length, "rb");
+        file_length = get_file_contents(CHUNK_ORDER_lookup_file_name,
+                (void*)&CHUNK_ORDER_lookup_file_contents,
+                sizeof(u32), "rb", FALSE);
+        if (CHUNK_ORDER_lookup_file_contents == NULL)
+            return engine_err;
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         CHUNK_ORDER[i] = &chunk_tab[CHUNK_ORDER_lookup_file_contents[i]];
@@ -206,9 +208,11 @@ chunking_init(void)
                 "%s\n", "CHUNKS_MAX Lookup Written To File\n");
     }
 
-    CHUNKS_MAX_lookup_file_contents =
-        (u64*)get_file_contents(CHUNKS_MAX_lookup_file_name,
-            sizeof(u64), &file_length, "rb");
+        file_length = get_file_contents(CHUNKS_MAX_lookup_file_name,
+                (void*)&CHUNKS_MAX_lookup_file_contents,
+                sizeof(u64), "rb", FALSE);
+        if (CHUNKS_MAX_lookup_file_contents == NULL)
+            return engine_err;
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         CHUNKS_MAX[i] = CHUNKS_MAX_lookup_file_contents[i];

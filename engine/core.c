@@ -141,12 +141,48 @@ static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 
 /* ---- section: signatures ------------------------------------------------- */
 
+/* -- INTERNAL USE ONLY --;
+ *
+ * process shader before compilation:
+ * parse includes recursively.
+ *
+ * return NULL on failure and engine_err is set accordingly */
+static str *shader_pre_process(const str *path, u64 *file_len);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * process shader before compilation:
+ * parse includes recursively.
+ *
+ * return NULL on failure and engine_err is set accordingly */
+static str *_shader_pre_process(const str *path, u64 *file_len,
+        u64 recursion_limit);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * generate texture for opengl from *buf.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+static u32 _texture_generate(
+        GLuint *id, const GLint format_internal,  const GLint format,
+        GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
+
 /* -- INTERNAL USE ONLY --; */
 static b8 _is_key_press(const u32 key);
+
+/* -- INTERNAL USE ONLY --; */
 static b8 _is_key_listen_double(const u32 key);
+
+/* -- INTERNAL USE ONLY --; */
 static b8 _is_key_hold(const u32 key);
+
+/* -- INTERNAL USE ONLY --; */
 static b8 _is_key_hold_double(const u32 key);
+
+/* -- INTERNAL USE ONLY --; */
 static b8 _is_key_release(const u32 key);
+
+/* -- INTERNAL USE ONLY --; */
 static b8 _is_key_release_double(const u32 key);
 
 /* ---- section: windowing -------------------------------------------------- */
@@ -224,7 +260,7 @@ glad_init(void)
 /* ---- section: shaders ---------------------------------------------------- */
 
 u32
-shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
+shader_init(const str *shaders_dir, Shader *shader)
 {
     if (!shader->type)
         return ERR_SUCCESS;
@@ -232,22 +268,20 @@ shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
     str str_reg[PATH_MAX] = {0};
     snprintf(str_reg, PATH_MAX, "%s%s", shaders_dir, shader->file_name);
 
-    u64 cursor = 0;
-    shader->source =
-        (GLchar*)get_file_contents(str_reg, 1, &cursor, read_format);
+    shader->source = shader_pre_process(str_reg, NULL);
     if (!shader->source)
     {
-        LOGERROR(FALSE, engine_err,
+        LOGERROR(FALSE, ERR_POINTER_NULL,
                 "Shader Source '%s' NULL\n", shader->file_name);
         return engine_err;
     }
-    shader->source[cursor] = 0;
     (shader->id) ? glDeleteShader(shader->id) : 0;
 
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
-    mem_free((void*)&shader->source, strlen(shader->source), "shader.source");
+    mem_free((void*)&shader->source, strlen(shader->source),
+            "shader_init().shader.source");
     shader->source = NULL;
 
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
@@ -266,15 +300,115 @@ shader_init(const str *shaders_dir, Shader *shader, const str *read_format)
     return engine_err;
 }
 
-u32
-shader_program_init(const str *shaders_dir, ShaderProgram *program,
-        const str *read_format)
+static str *
+shader_pre_process(const str *path, u64 *file_len)
 {
-    if (shader_init(shaders_dir, &program->vertex, read_format) != 0)
+    return _shader_pre_process(path, file_len, INCLUDE_RECURSION_LIMIT_MAX);
+}
+
+static str *
+_shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
+{
+    if (!recursion_limit)
+    {
+        LOGFATAL(FALSE, ERR_INCLUDE_RECURSION_LIMIT,
+                "Include Recursion Limit Exceeded '%s', Process Aborted\n",
+                path);
+        return NULL;
+    }
+
+    static str token[2][256] =
+    {
+        "#include \"",
+        "\"\n",
+    };
+
+    u64 i = 0, j = 0, k = 0, cursor = 0;
+    str *buf = NULL;
+    str *buf_include = NULL;
+    str *buf_resolved = NULL;
+    u64 buf_len = get_file_contents(path, (void*)&buf, 1, "rb", TRUE);
+    u64 buf_include_len = 0;
+    u64 buf_resolved_len = 0;
+    if (engine_err != ERR_SUCCESS)
+        return NULL;
+    buf[buf_len] = 0;
+
+    if (mem_alloc((void*)&buf_resolved, buf_len + 1,
+                "buf_resolved") != ERR_SUCCESS)
+        return NULL;
+    buf_resolved_len = buf_len + 1;
+    snprintf(buf_resolved, buf_resolved_len, "%s", buf);
+    for (; i < buf_len; ++i)
+    {
+        if ((i == 0 || (buf[i - 1] == '\n')) &&
+                (buf[i] == '#') &&
+                !strncmp(buf + i, token[0], strlen(token[0])))
+        {
+            u64 string_len = 0;
+            for (j = strlen(token[0]); i + j < buf_len &&
+                    strncmp(buf + i + j, token[1], strlen(token[1]));
+                    ++string_len, ++j)
+            {}
+            j += strlen(token[1]);
+
+            str string[PATH_MAX] = {0};
+            snprintf(string, PATH_MAX, "%s", path);
+            retract_path(string);
+            snprintf(string + strlen(string), PATH_MAX - strlen(string),
+                    "%.*s", (int)string_len, buf + i + strlen(token[0]));
+
+            if (!strncmp(string, path, strlen(string)))
+            {
+                LOGFATAL(FALSE, ERR_SELF_INCLUDE,
+                        "Self Include Detected '%s', Process Aborted\n", path);
+                return NULL;
+            }
+            buf_include = _shader_pre_process(string,
+                    &buf_include_len, --recursion_limit);
+            if (engine_err != ERR_SUCCESS)
+                return NULL;
+
+            if (mem_realloc((void*)&buf_resolved,
+                        buf_resolved_len + buf_include_len + 1,
+                        "buf_resolved") != ERR_SUCCESS)
+            {
+                mem_free((void*)&buf_include, buf_include_len,
+                        "buf_include");
+                mem_free((void*)&buf_resolved, buf_resolved_len,
+                        "buf_resolved");
+                return NULL;
+            }
+            buf_resolved_len += buf_include_len;
+
+            cursor += snprintf(buf_resolved + cursor,
+                    buf_resolved_len - cursor, "%.*s", (int)(i - k), buf + k);
+
+            cursor += snprintf(buf_resolved + cursor,
+                    buf_resolved_len - cursor, "%s", buf_include);
+
+            k = i + j;
+            snprintf(buf_resolved + cursor,
+                    buf_resolved_len - cursor, "%s", buf + k);
+
+            mem_free((void*)&buf_include, buf_include_len, "buf_include");
+        }
+    }
+
+    mem_free((void*)&buf, buf_len, "buf");
+    if (file_len) *file_len = buf_resolved_len;
+    engine_err = ERR_SUCCESS;
+    return buf_resolved;
+}
+
+u32
+shader_program_init(const str *shaders_dir, ShaderProgram *program)
+{
+    if (shader_init(shaders_dir, &program->vertex) != 0)
         return engine_err;
-    if (shader_init(shaders_dir, &program->geometry, read_format) != 0)
+    if (shader_init(shaders_dir, &program->geometry) != 0)
         return engine_err;
-    if (shader_init(shaders_dir, &program->fragment, read_format) != 0)
+    if (shader_init(shaders_dir, &program->fragment) != 0)
         return engine_err;
     (program->id) ? glDeleteProgram(program->id) : 0;
 
@@ -568,7 +702,7 @@ texture_generate(Texture *texture)
     return engine_err;
 }
 
-u32
+static u32
 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale)
@@ -905,7 +1039,8 @@ font_init(Font *font, u32 resolution, const str *file_name)
     if (is_file_exists(file_name, TRUE) != ERR_SUCCESS)
         return engine_err;
 
-    font->buf = (u8*)get_file_contents(file_name, 1, &font->buf_len, "rb");
+    font->buf_len = get_file_contents(file_name, (void*)&font->buf,
+            1, "rb", TRUE);
     if (!font->buf)
         return engine_err;
 

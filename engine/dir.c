@@ -121,40 +121,39 @@ is_dir_exists(const str *path, b8 log)
     return engine_err;
 }
 
-str *
-get_file_contents(const str *path, u64 size, u64 *file_len,
-        const str *read_format)
+u64
+get_file_contents(const str *path, void **destination,
+        u64 size, const str *read_format, b8 terminate)
 {
     if (is_file_exists(path, TRUE) != ERR_SUCCESS)
-            return NULL;
+            return engine_err;
 
     FILE *file = NULL;
     if ((file = fopen(path, read_format)) == NULL)
     {
         LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
                 "File Opening '%s' Failed\n", path);
-        return NULL;
+        return engine_err;
     }
 
     fseek(file, 0, SEEK_END);
     u64 len = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    str *file_contents = NULL;
-    if (mem_alloc((void*)&file_contents, len,
-                "file_contents") != ERR_SUCCESS)
+    if (mem_alloc(destination, len + ((terminate) ? 1 : 0),
+                "get_file_contents().destination") != ERR_SUCCESS)
         goto cleanup;
 
-    u64 cursor = fread(file_contents, size, len, file);
-    fclose(file);
+    u64 cursor = fread(*destination, size, len, file);
 
+    fclose(file);
+    if (terminate) ((u8*)(*destination))[len] = 0;
     engine_err = ERR_SUCCESS;
-    if (file_len) *file_len = cursor;
-    return file_contents;
+    return cursor;
 
 cleanup:
-    (file) ? fclose(file) : 0;
-    return NULL;
+    if (file) fclose(file);
+    return 0;
 }
 
 buf
@@ -286,9 +285,9 @@ copy_file(const str *path, const str *destination,
         return engine_err;
     }
 
-    u64 len = 0;
     str *out_file = NULL;
-    if ((out_file = get_file_contents(path, 1, &len, read_format)) == NULL)
+    u64 len = get_file_contents(path, (void*)&out_file, 1, read_format, FALSE);
+    if (out_file == NULL)
     {
         fclose(in_file);
         return engine_err;

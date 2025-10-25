@@ -803,7 +803,7 @@ world_init(str *name)
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, 0.0f, 0.0f, 1.0f);
+    set_player_pos(&lily, -1.4f, 5.0f, 1.0f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1585,37 +1585,37 @@ main(int argc, char **argv)
 
     if (
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_FBO], "r") != ERR_SUCCESS ||
+                &shader[SHADER_FBO]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_DEFAULT], "r") != ERR_SUCCESS ||
+                &shader[SHADER_DEFAULT]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI], "r") != ERR_SUCCESS ||
+                &shader[SHADER_UI]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI_9_SLICE], "r") != ERR_SUCCESS ||
+                &shader[SHADER_UI_9_SLICE]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_TEXT], "r") != ERR_SUCCESS ||
+                &shader[SHADER_TEXT]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO], "r") != ERR_SUCCESS ||
+                &shader[SHADER_GIZMO]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO_CHUNK], "r") != ERR_SUCCESS ||
+                &shader[SHADER_GIZMO_CHUNK]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_SKYBOX], "r") != ERR_SUCCESS ||
+                &shader[SHADER_SKYBOX]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_POST_PROCESSING], "r") != ERR_SUCCESS ||
+                &shader[SHADER_POST_PROCESSING]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_VOXEL], "r") != ERR_SUCCESS ||
+                &shader[SHADER_VOXEL]) != ERR_SUCCESS ||
 
             shader_program_init(DIR_ROOT[DIR_SHADERS],
-                    &shader[SHADER_BOUNDING_BOX], "r") != ERR_SUCCESS)
+                    &shader[SHADER_BOUNDING_BOX]) != ERR_SUCCESS)
         goto cleanup;
 
     if(

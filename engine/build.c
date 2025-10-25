@@ -150,7 +150,7 @@ self_rebuild(char **argv)
         remove(str_build_bin_old);
 
         execvp(argv[0], (str *const *)argv);
-        LOGFATAL(FALSE, engine_err,
+        LOGFATAL(FALSE, ERR_EXECVP_FAIL,
                 "'build%s' Failed, Process Aborted\n", EXE);
         cmd_fail();
     }
