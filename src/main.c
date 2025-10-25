@@ -830,7 +830,7 @@ world_init(str *name)
 static void
 world_update(Player *player)
 {
-    game_tick = (u64)(render.frame_start * 20) -
+    game_tick = 8000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
 
     if (game_tick >= SET_DAY_TICKS_MAX)
@@ -1506,9 +1506,10 @@ framebuffer_blit_chunk_queue_visualizer:
     /* ---- everything ------------------------------------------------------ */
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader[SHADER_POST_PROCESSING].id);
+    glClear(GL_COLOR_BUFFER_BIT);
     glBindVertexArray(mesh[MESH_UNIT].vao);
     glUniform1ui(uniform.post_processing.time,
-            (u32)(render.frame_start * 100.0f));
+            ((u32)(render.frame_start * 100.0f) % 500) + 1);
     glBindTexture(GL_TEXTURE_2D, fbo[FBO_POST_PROCESSING].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 

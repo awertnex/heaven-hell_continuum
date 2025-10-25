@@ -642,7 +642,7 @@ chunk_generate(Chunk **chunk, u32 rate)
         f32 terrain = 0.0f;
         terrain = terrain_noise(coordinates, 250.0f, 256.0f) * elevation;
         terrain += terrain_noise(coordinates, 30.0f, 40.0f) * elevation;
-        terrain += (terrain_noise(coordinates, 10.0f, 5.0f) * influence);
+        terrain += (terrain_noise(coordinates, 10.0f, 9.0f) * influence);
         terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
 
         if (terrain > coordinates.z)
