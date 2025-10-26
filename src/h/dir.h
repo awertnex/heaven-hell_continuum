@@ -46,7 +46,7 @@ extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
 extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
 
 /* return non-zero on failure and game_err is set accordingly */
-u32 grandpath_dir_init(void);
+u32 paths_init(void);
 
 /* return non-zero on failure and game_err is set accordingly */
 u32 world_dir_init(const str *world_name);

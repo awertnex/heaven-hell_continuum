@@ -167,22 +167,22 @@ static u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_press(const u32 key);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_listen_double(const u32 key);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_hold(const u32 key);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_hold_double(const u32 key);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_release(const u32 key);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static b8 _is_key_release_double(const u32 key);
 
 /* ---- section: windowing -------------------------------------------------- */
@@ -454,15 +454,18 @@ shader_program_free(ShaderProgram *program)
 
     if (program->vertex.source)
         mem_free((void*)&program->vertex.source,
-                strlen(program->vertex.source), "vertex.source");
+                strlen(program->vertex.source),
+                "shader_program_free().vertex.source");
 
     if (program->fragment.source)
         mem_free((void*)&program->fragment.source,
-                strlen(program->fragment.source), "fragment.source");
+                strlen(program->fragment.source),
+                "shader_program_free().fragment.source");
 
     if (program->geometry.source)
         mem_free((void*)&program->geometry.source,
-                strlen(program->geometry.source), "geometry.source");
+                strlen(program->geometry.source),
+                "shader_program_free().geometry.source");
 }
 
 /* ---- section: meat ------------------------------------------------------- */
@@ -556,7 +559,7 @@ fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
 
     if (mem_alloc((void*)&mesh_fbo->vbo_data,
                 sizeof(GLfloat) * mesh_fbo->vbo_len,
-                "mesh_fbo.vbo_data") != ERR_SUCCESS)
+                "fbo_init().mesh_fbo.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
@@ -747,11 +750,11 @@ mesh_generate(Mesh *mesh, GLenum usage,
         GLfloat *vbo_data, GLuint *ebo_data)
 {
     if (mem_alloc((void*)&mesh->vbo_data, sizeof(GLfloat) * vbo_len,
-                "mesh.vbo_data") != ERR_SUCCESS)
+                "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     if (mem_alloc((void*)&mesh->ebo_data, sizeof(GLuint) * ebo_len,
-                "mesh.vbo_data") != ERR_SUCCESS)
+                "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     mesh->vbo_len = vbo_len;
@@ -800,10 +803,10 @@ mesh_free(Mesh *mesh)
     mesh->vao ? glDeleteVertexArrays(1, &mesh->vao) : 0;
 
     mem_free((void*)&mesh->vbo_data,
-            sizeof(GLfloat) * mesh->vbo_len, "mesh.vbo_data");
+            sizeof(GLfloat) * mesh->vbo_len, "mesh_free().mesh.vbo_data");
 
     mem_free((void*)&mesh->ebo_data,
-            sizeof(GLuint) * mesh->ebo_len, "mesh.vbo_data");
+            sizeof(GLuint) * mesh->ebo_len, "mesh_free().mesh.vbo_data");
 
     *mesh = (Mesh){0};
 }
@@ -1055,12 +1058,12 @@ font_init(Font *font, u32 resolution, const str *file_name)
     }
 
     if (mem_alloc((void*)&font->bitmap, GLYPH_MAX * resolution * resolution,
-                file_name) != ERR_SUCCESS)
+                stringf("font_init().%s", file_name)) != ERR_SUCCESS)
         goto cleanup;
 
     u8 *canvas = {NULL};
     if (mem_alloc((void*)&canvas, resolution * resolution,
-                "font_glyph_canvas") != ERR_SUCCESS)
+                "font_init().font_glyph_canvas") != ERR_SUCCESS)
         goto cleanup;
 
     snprintf(font->path, PATH_MAX, "%s", file_name);
@@ -1117,7 +1120,7 @@ font_init(Font *font, u32 resolution, const str *file_name)
                             (canvas + x + (y * resolution)), 1);
             }
             mem_zero((void*)&canvas,
-                    resolution * resolution, "font_glyph_canvas");
+                    resolution * resolution, "font_init().font_glyph_canvas");
         }
         g->texture_sample.x = col * font->char_size;
         g->texture_sample.y = row * font->char_size;
@@ -1130,13 +1133,15 @@ font_init(Font *font, u32 resolution, const str *file_name)
                 font->bitmap, TRUE) != ERR_SUCCESS)
         goto cleanup;
 
-    mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
+    mem_free((void*)&canvas, resolution * resolution,
+            "font_init().font_glyph_canvas");
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 
 cleanup:
-    mem_free((void*)&canvas, resolution * resolution, "font_glyph_canvas");
+    mem_free((void*)&canvas, resolution * resolution,
+            "font_init().font_glyph_canvas");
     font_free(font);
     return engine_err;
 }
@@ -1145,7 +1150,8 @@ void
 font_free(Font *font)
 {
     if (font == NULL) return;
-    mem_free((void*)&font->buf, font->buf_len, "file_contents");
+    mem_free((void*)&font->buf, font->buf_len,
+            "font_free().file_contents");
     mem_free((void*)&font->bitmap,
             GLYPH_MAX * font->resolution * font->resolution, font->path);
     *font = (Font){0};

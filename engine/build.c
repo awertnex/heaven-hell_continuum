@@ -7,8 +7,24 @@
 
 #if PLATFORM_LINUX
     #include "platform_linux.c"
+
+    static str str_libs[][CMD_SIZE] =
+    {
+        "-lm",
+        "-lglfw",
+        "-lfossil",
+    };
 #elif PLATFORM_WIN
     #include "platform_windows.c"
+
+    static str str_libs[][CMD_SIZE] =
+    {
+        "-lgdi32",
+        "-lwinmm",
+        "-lm",
+        "-lglfw3",
+        "-lfossil",
+    };
 #endif /* PLATFORM */
 
 #if defined(__STDC_VERSION__)
@@ -16,8 +32,6 @@
 #elif defined(__STDC__)
     #define STD 89
 #endif /* STD */
-
-#define STD_C99 199901L
 
 u32 engine_err = ERR_SUCCESS;
 static u32 flag = 0;
@@ -72,9 +86,9 @@ build_init(int argc, char **argv,
     snprintf(str_build_bin_old, CMD_SIZE, "%s%s_old",
             str_build_root, build_bin_name);
 
-    if (STD != STD_C99)
+    if (STD != 89)
     {
-        LOGINFO(FALSE, "%s\n", "Rebuilding Self With -std=c99..");
+        LOGINFO(FALSE, "%s\n", "Rebuilding Self With -std=c89..");
         self_rebuild(argv);
     }
 
@@ -84,7 +98,8 @@ build_init(int argc, char **argv,
         self_rebuild(argv);
     }
 
-    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE,
+                "build_init().cmd") != ERR_SUCCESS)
         cmd_fail();
 }
 
@@ -110,7 +125,7 @@ is_build_source_changed(void)
     else
     {
         LOGERROR(FALSE, ERR_FILE_NOT_FOUND,
-                "%s\n", "File 'build"EXE"' Not Found\n");
+                "%s\n", "File 'build"EXE"' Not Found");
         return engine_err;
     }
 
@@ -124,13 +139,14 @@ is_build_source_changed(void)
 static void
 self_rebuild(char **argv)
 {
-    if (mem_alloc_buf(&cmd, 16, CMD_SIZE, "cmd") != ERR_SUCCESS)
+    if (mem_alloc_buf(&cmd, 16, CMD_SIZE,
+                "self_rebuild().cmd") != ERR_SUCCESS)
         cmd_fail();
 
     cmd_push(COMPILER);
-    cmd_push(stringf("%s", str_build_src));
+    cmd_push(str_build_src);
     cmd_push("-ggdb");
-    cmd_push("-std=c99");
+    cmd_push("-std=c89");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
@@ -142,7 +158,7 @@ self_rebuild(char **argv)
     if (flag & FLAG_CMD_SHOW) cmd_show();
     if (flag & FLAG_CMD_RAW) cmd_raw();
 
-    if (exec(&cmd, "cmd") == ERR_SUCCESS)
+    if (exec(&cmd, "self_rebuild()") == ERR_SUCCESS)
     {
         LOGINFO(FALSE, "%s\n", "Self Rebuild Success");
         rename(str_build_bin, str_build_bin_old);
@@ -151,7 +167,7 @@ self_rebuild(char **argv)
 
         execvp(argv[0], (str *const *)argv);
         LOGFATAL(FALSE, ERR_EXECVP_FAIL,
-                "'build%s' Failed, Process Aborted\n", EXE);
+                "%s\n", "'build" EXE "' Failed, Process Aborted");
         cmd_fail();
     }
 
@@ -181,10 +197,10 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%slogger.c", engine_dir_processed));
     cmd_push(stringf("%smath.c", engine_dir_processed));
     cmd_push(stringf("%smemory.c", engine_dir_processed));
-    cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
+    cmd_push(stringf("%splatform_" _PLATFORM ".c", engine_dir_processed));
     cmd_push(stringf("%stext.c", engine_dir_processed));
     cmd_push(stringf("%sinclude/glad/glad.c", engine_dir_processed));
-    cmd_push("-I.");
+    cmd_push(stringf("-I%s..", engine_dir_processed));
     cmd_push("-shared");
     cmd_push("-fPIC");
     cmd_push("-std=c99");
@@ -193,19 +209,28 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push("-fno-builtin");
     cmd_push("-Wno-implicit-function-declaration");
     cmd_push("-o");
-    cmd_push(stringf("%s"ENGINE_NAME_LIB, out_dir_processed));
+    cmd_push(stringf("%s" ENGINE_NAME_LIB, out_dir_processed));
     cmd_ready();
 
     if (flag & FLAG_CMD_SHOW) cmd_show();
     if (flag & FLAG_CMD_RAW) cmd_raw();
 
-    if (exec(&cmd, "build") != ERR_SUCCESS)
+    if (exec(&cmd, "engine_build()") != ERR_SUCCESS)
         cmd_fail();
 
     cmd_free();
     engine_err = ERR_SUCCESS;
     _exit(engine_err);
     return engine_err;
+}
+
+void
+engine_link_libs(void)
+{
+    u32 i = 0;
+    cmd_push(stringf("-L%sengine/lib/" PLATFORM, str_build_root));
+    for (;i < arr_len(str_libs); ++i)
+        cmd_push(str_libs[i]);
 }
 
 u64
@@ -267,7 +292,7 @@ cmd_push(const str *string)
     }
 
     LOGTRACE(FALSE,
-            "Pushing String '%s' to cmd.i[%"PRId64"]..\n", string, cmd_pos);
+            "Pushing String '%s' to cmd.i[%" PRId64 "]..\n", string, cmd_pos);
     strncpy(cmd.i[cmd_pos++], string, CMD_SIZE);
 }
 
@@ -282,8 +307,8 @@ cmd_ready(void)
 void
 cmd_free(void)
 {
-    mem_free((void*)&str_build_root, CMD_SIZE, "str_build_root");
-    mem_free_buf(&cmd, "cmd");
+    mem_free((void*)&str_build_root, CMD_SIZE, "cmd_free().str_build_root");
+    mem_free_buf(&cmd, "cmd_free().cmd");
     cmd_pos = 0;
 }
 
@@ -303,5 +328,5 @@ help(void)
             "    help       print this help\n"
             "    show       show build command\n"
             "    raw        show build command, raw\n");
-    exit(ERR_SUCCESS);
+    _exit(ERR_SUCCESS);
 }

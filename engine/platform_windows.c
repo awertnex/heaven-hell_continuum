@@ -63,6 +63,7 @@ _get_path_bin_root(str *path)
 u32
 exec(buf *cmd, str *cmd_name)
 {
+    u32 i = 0;
     str *cmd_cat = NULL;
     STARTUPINFOA        startup_info = {0};
     PROCESS_INFORMATION process_info = {0};
@@ -77,8 +78,11 @@ exec(buf *cmd, str *cmd_name)
         return engine_err;
     }
 
-    mem_alloc((void*)&cmd_cat, cmd->size * cmd->memb, cmd_name);
-    for (u64 i = 0; i < cmd->memb; ++i)
+    if (mem_alloc((void*)&cmd_cat, cmd->size * cmd->memb,
+            stringf("exec().%s", cmd_name)) != ERR_SUCCESS)
+        return engine_err;
+
+    for (i = 0; i < cmd->memb; ++i)
         strncat(cmd_cat, stringf("%s ", cmd->i[i]), cmd->size);
 
     if(!CreateProcessA(NULL, cmd_cat, NULL, NULL, FALSE, 0, NULL, NULL,
@@ -106,11 +110,13 @@ exec(buf *cmd, str *cmd_name)
         goto cleanup;
     }
 
-    mem_free((void*)&cmd_cat, cmd->memb * cmd->size, cmd_name);
+    mem_free((void*)&cmd_cat, cmd->memb * cmd->size,
+            stringf("exec().%s", cmd_name));
     engine_err = ERR_SUCCESS;
     return engine_err;
 
 cleanup:
-    mem_free((void*)&cmd_cat, cmd->memb * cmd->size, cmd_name);
+    mem_free((void*)&cmd_cat, cmd->memb * cmd->size,
+            stringf("exec().%s", cmd_name));
     return engine_err;
 }

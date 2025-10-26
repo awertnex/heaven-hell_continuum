@@ -32,6 +32,9 @@ void build_init(int argc, char **argv,
  * return non-zero on failure and engine_err is set accordingly */
 u32 engine_build(const str *engine_dir, const str *out_dir);
 
+/* link engine's dependencies with software */
+void engine_link_libs(void);
+
 u64 argv_compare(str *arg, int argc, str **argv);
 b8 extension_evaluate(const str *file_name);
 void extension_strip(const str *file_name, str *dest);

@@ -75,6 +75,7 @@ static struct /* skybox_data */
 } skybox_data;
 
 /* ---- callbacks ----------------------------------------------------------- */
+
 static void callback_error(int error, const char* message)
 {
     (void)error;
@@ -91,6 +92,7 @@ static void callback_scroll(
         GLFWwindow *window, double xoffset, double yoffset);
 
 /* ---- signatures ---------------------------------------------------------- */
+
 static void shaders_init(void);
 static void bind_shader_uniforms(void);
 static void generate_standard_meshes(void);
@@ -148,6 +150,7 @@ void
 update_render_settings(void)
 {
     settings.ndc_scale = (v2f32){2.0f / render.size.x, 2.0f / render.size.y};
+    settings.fps = 1 / render.frame_delta;
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 }
 
@@ -570,7 +573,8 @@ generate_standard_meshes(void)
 
     if (mem_alloc((void*)&mesh[MESH_PLAYER].vbo_data,
                 sizeof(GLfloat) * VBO_LEN_PLAYER,
-                "mesh[MESH_PLAYER].vbo_data") != ERR_SUCCESS)
+                "generate_standard_meshes().mesh[MESH_PLAYER].vbo_data") !=
+            ERR_SUCCESS)
     {
         LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Player");
         goto cleanup;
@@ -621,6 +625,7 @@ static void
 input_update(Player *player)
 {
     /* ---- jumping --------------------------------------------------------- */
+
     if (is_key_hold(bind_jump))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
@@ -637,6 +642,7 @@ input_update(Player *player)
         player->flag ^= FLAG_PLAYER_FLYING;
 
     /* ---- sneaking -------------------------------------------------------- */
+
     if (is_key_hold(bind_sneak))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
@@ -646,12 +652,14 @@ input_update(Player *player)
     else player->flag &= ~FLAG_PLAYER_SNEAKING;
 
     /* ---- sprinting ------------------------------------------------------- */
+
     if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forwards))
         player->flag |= FLAG_PLAYER_SPRINTING;
     else if (is_key_release(bind_walk_forwards))
         player->flag &= ~FLAG_PLAYER_SPRINTING;
 
     /* ---- movement -------------------------------------------------------- */
+
     if (is_key_hold(bind_strafe_left))
     {
         player->pos.x += (player->movement_speed * player->sin_yaw);
@@ -693,6 +701,7 @@ input_update(Player *player)
                 player->pos_lerp_speed.z, render.frame_delta);
 
     /* ---- gameplay -------------------------------------------------------- */
+
     if (glfwGetMouseButton(render.window,
                 bind_attack_or_destroy) == GLFW_PRESS &&
             (flag & FLAG_MAIN_PARSE_TARGET) &&
@@ -728,6 +737,7 @@ input_update(Player *player)
     }
 
     /* ---- inventory ------------------------------------------------------- */
+
     u32 i = 0;
     for (; i < 10; ++i)
         if (is_key_press(bind_hotbar_slot[i]) ||
@@ -755,6 +765,7 @@ input_update(Player *player)
     }
 
     /* ---- miscellaneous --------------------------------------------------- */
+
     if (is_key_press(bind_toggle_hud))
         flag ^= FLAG_MAIN_HUD;
 
@@ -777,6 +788,7 @@ input_update(Player *player)
         player->flag ^= FLAG_PLAYER_ZOOMER;
 
     /* ---- debug ----------------------------------------------------------- */
+
 #if !GAME_RELEASE_BUILD
     if (is_key_press(bind_toggle_super_debug))
         flag ^= FLAG_MAIN_SUPER_DEBUG;
@@ -803,7 +815,7 @@ world_init(str *name)
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, -1.4f, 5.0f, 1.0f);
+    set_player_pos(&lily, 248.5f, 282.5f, 3.0f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -889,6 +901,7 @@ world_update(Player *player)
     }
 
     /* ---- player targeting ------------------------------------------------ */
+
     if (is_in_volume_i64(
                 lily.delta_target,
                 (v3i64){
@@ -913,6 +926,7 @@ static void
 draw_everything(void)
 {
     /* ---- draw skybox ----------------------------------------------------- */
+
     glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_SKYBOX].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -977,6 +991,7 @@ draw_everything(void)
     glDrawElements(GL_TRIANGLES, mesh[MESH_SKYBOX].ebo_len, GL_UNSIGNED_INT, 0);
 
     /* ---- draw world ------------------------------------------------------ */
+
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -996,7 +1011,7 @@ draw_everything(void)
         opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_DIRT].id);
+    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_GRASS].id);
 
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;
@@ -1024,6 +1039,7 @@ draw_everything(void)
     }
 
     /* ---- draw player ----------------------------------------------------- */
+
     if (lily.perspective != MODE_CAMERA_1ST_PERSON)
     {
 
@@ -1049,6 +1065,7 @@ draw_everything(void)
     }
 
     /* ---- draw player target bounding box --------------------------------- */
+
     glUseProgram(shader[SHADER_BOUNDING_BOX].id);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
@@ -1076,6 +1093,7 @@ draw_everything(void)
     }
 
     /* ---- draw player chunk bounding box ---------------------------------- */
+
     if (flag & FLAG_MAIN_DEBUG_MORE)
     {
         glUniform3f(uniform.bounding_box.position,
@@ -1091,6 +1109,7 @@ draw_everything(void)
     }
 
     /* ---- draw player collision check bounding box ------------------------ */
+
     if (flag & FLAG_MAIN_DEBUG_MORE)
     {
         glUniform3f(uniform.bounding_box.position,
@@ -1112,6 +1131,7 @@ draw_everything(void)
         goto framebuffer_blit_chunk_queue_visualizer;
 
     /* ---- draw player chunk queue visualizer ------------------------------ */
+
     glUseProgram(shader[SHADER_BOUNDING_BOX].id);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
@@ -1176,6 +1196,7 @@ framebuffer_blit_chunk_queue_visualizer:
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     /* ---- draw hud -------------------------------------------------------- */
+
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader[SHADER_GIZMO].id);
@@ -1277,6 +1298,7 @@ framebuffer_blit_chunk_queue_visualizer:
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     /* ---- draw overlays --------------------------------------------------- */
+
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_UI].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1288,6 +1310,7 @@ framebuffer_blit_chunk_queue_visualizer:
         glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
 
         /* ---- crosshair --------------------------------------------------- */
+
         if (!(flag & FLAG_MAIN_DEBUG))
         {
             glUniform2i(uniform.ui.position,
@@ -1304,6 +1327,7 @@ framebuffer_blit_chunk_queue_visualizer:
         }
 
         /* ---- item bar ---------------------------------------------------- */
+
         glUniform2i(uniform.ui.position, render.size.x / 2, render.size.y);
         glUniform2f(uniform.ui.offset, 84.5f, 18.0f);
         glUniform2iv(uniform.ui.texture_size, 1,
@@ -1318,6 +1342,7 @@ framebuffer_blit_chunk_queue_visualizer:
     }
 
     /* ---- draw super debug ------------------------------------------------ */
+
     if (flag & FLAG_MAIN_SUPER_DEBUG)
     {
         glUseProgram(shader[SHADER_UI_9_SLICE].id);
@@ -1346,12 +1371,13 @@ framebuffer_blit_chunk_queue_visualizer:
     glEnable(GL_DEPTH_TEST);
 
     /* ---- draw debug info ------------------------------------------------- */
+
     text_start(0, FONT_SIZE_DEFAULT,
             &font[FONT_MONO_BOLD], &render, &shader[SHADER_TEXT], &fbo[FBO_TEXT], TRUE);
-    u32 fps = (u32)(1.0f / render.frame_delta);
-    text_push(stringf("FPS               [%d]\n", fps),
+    text_push(stringf("FPS               [%d]\n", settings.fps),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render((fps > 60) ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
+    text_render((settings.fps > 60) ?
+            COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
 
     text_push(stringf("\n"
                 "FRAME TIME        [%.2lf]\n"
@@ -1484,6 +1510,7 @@ framebuffer_blit_chunk_queue_visualizer:
     text_stop();
 
     /* ---- post processing ------------------------------------------------- */
+
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_POST_PROCESSING].fbo);
     glUseProgram(shader[SHADER_FBO].id);
@@ -1504,12 +1531,13 @@ framebuffer_blit_chunk_queue_visualizer:
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     /* ---- everything ------------------------------------------------------ */
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader[SHADER_POST_PROCESSING].id);
     glClear(GL_COLOR_BUFFER_BIT);
     glBindVertexArray(mesh[MESH_UNIT].vao);
     glUniform1ui(uniform.post_processing.time,
-            ((u32)(render.frame_start * 100.0f) % 500) + 1);
+            ((u32)(render.frame_start * settings.target_fps) & 511) + 1);
     glBindTexture(GL_TEXTURE_2D, fbo[FBO_POST_PROCESSING].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -1540,7 +1568,7 @@ main(int argc, char **argv)
                 "%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
     }
 
-    if (grandpath_dir_init() != ERR_SUCCESS)
+    if (paths_init() != ERR_SUCCESS)
         return *GAME_ERR;
 
     if (
@@ -1559,6 +1587,7 @@ main(int argc, char **argv)
         FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER;
 
     /* ---- set mouse input ------------------------------------------------- */
+
     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     if (glfwRawMouseMotionSupported())
     {
@@ -1572,6 +1601,7 @@ main(int argc, char **argv)
             &render.mouse_position.y);
 
     /* ---- set callbacks --------------------------------------------------- */
+
     glfwSetFramebufferSizeCallback(render.window, callback_framebuffer_size);
     callback_framebuffer_size(render.window, render.size.x, render.size.y);
 
@@ -1582,6 +1612,7 @@ main(int argc, char **argv)
     callback_scroll(render.window, 0.0f, 0.0f);
 
     /* ---- set graphics ---------------------------------------------------- */
+
     shaders_init();
 
     if (

@@ -191,7 +191,7 @@ get_dir_contents(const str *path)
     contents.memb -= 2;
 
     if (!contents.memb || mem_alloc_buf(&contents, contents.memb,
-                NAME_MAX, "dir_contents") != ERR_SUCCESS)
+                NAME_MAX, "get_dir_contents().dir_contents") != ERR_SUCCESS)
         goto cleanup;
 
     rewinddir(dir);
@@ -214,8 +214,8 @@ get_dir_contents(const str *path)
     }
 
     closedir(dir);
-    mem_free((void*)&dir_path_absolute,
-            strlen(dir_path_absolute), "dir_path_absolute");
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute),
+            "get_dir_contents().dir_path_absolute");
 
     engine_err = ERR_SUCCESS;
     return contents;
@@ -223,9 +223,10 @@ get_dir_contents(const str *path)
 cleanup:
     if (dir != NULL)
         closedir(dir);
-    mem_free((void*)&dir_path_absolute,
-            strlen(dir_path_absolute), "dir_path_absolute");
-    mem_free_buf((void*)&contents, "dir_contents");
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute),
+            "get_dir_contents().dir_path_absolute");
+    mem_free_buf((void*)&contents,
+            "get_dir_contents().dir_contents");
     return (buf){NULL};
 }
 
@@ -395,7 +396,7 @@ get_path_absolute(const str *path)
     u64 len = strlen(path_absolute);
     str *result = NULL;
     if (mem_alloc((void*)&result, sizeof(str*) * (len + 1),
-                "path_absolute") != ERR_SUCCESS)
+                "get_path_absolute().path_absolute") != ERR_SUCCESS)
         return NULL;
 
     engine_err = ERR_SUCCESS;
@@ -421,7 +422,8 @@ get_path_bin_root(void)
 
     path_bin_root[len] = 0;
     str *result = NULL;
-    if (mem_alloc((void*)&result, PATH_MAX, "path_bin_root") != ERR_SUCCESS)
+    if (mem_alloc((void*)&result, PATH_MAX,
+                "get_path_bin_root().path_bin_root") != ERR_SUCCESS)
         return NULL;
 
     strncpy(result, path_bin_root, len);

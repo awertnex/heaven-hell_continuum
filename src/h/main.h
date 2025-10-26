@@ -31,6 +31,7 @@
     glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
 
 /* ---- internal ------------------------------------------------------------ */
+
 #define SET_MARGIN                      10
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
@@ -149,18 +150,22 @@ enum MainFlags
 typedef struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
+
     /* conversion from world-space to screen-space */
     v2f32 ndc_scale;
+
+    u32 fps;
+    f32 lerp_speed;
 
     /* for player reach (arm length basically) */
     u8 reach_distance;
 
-    f32 lerp_speed;
-
     /* ---- options --------------------------------------------------------- */
+
     f64 mouse_sensitivity;
 
     /* ---- video ----------------------------------------------------------- */
+
     u8 render_distance;
     u32 target_fps;
     f32 gui_scale;

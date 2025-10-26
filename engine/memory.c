@@ -274,8 +274,8 @@ swap_string_char(str *string, char c1, char c2)
     return string;
 }
 
-/* inspired by 'github.com/raysan5/raylib':
- * raylib/src/rtext.c/TextFormat() */
+/* inspired by 'raylib':
+ * github.com/raysan5/raylib/src/rtext.c/TextFormat() */
 str *
 stringf(const str* format, ...)
 {
@@ -284,9 +284,9 @@ stringf(const str* format, ...)
     str *string = str_buf[index];
 
     __builtin_va_list args;
-    va_start(args, format);
+    __builtin_va_start(args, format);
     u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
-    va_end(args);
+    __builtin_va_end(args);
 
     if (required_bytes >= OUT_STRING_MAX - 1)
     {

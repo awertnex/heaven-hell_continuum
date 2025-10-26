@@ -91,7 +91,7 @@ u32 logger_init(b8 release_build, int argc, char **argv);
 
 void logger_close(void);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 void _log_output(b8 verbose, const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...);
 

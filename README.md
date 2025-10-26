@@ -38,7 +38,7 @@ zip | [v0.2.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_con
 >**NOTES:**
 >- for development build, turn off `GAME_RELEASE_BUILD` in `src/h/main.h` (set as `0`), enables TRACE and DEBUG logging.
 >- if build successful, you can place the built directory 'Heaven-Hell Continuum' anywhere you wish, that's the entire bundle.
->- the build tool will rebuild itself before building the project if you either have modified its source or didn't build it in C99.
+>- the build tool will rebuild itself before building the project if you either have modified its source or didn't build it in C89.
 
 
 - - -

@@ -9,37 +9,13 @@ u32 *const BUILD_ERR = &engine_err;
 
 #if PLATFORM_LINUX
     #define STR_OUT         DIR_ROOT"hhc"
-    str str_libs[][CMD_SIZE] =
-    {
-        "-lm",
-        "-lglfw",
-        "-lfossil",
-    };
 #elif PLATFORM_WIN
     #define STR_OUT         "\""DIR_ROOT"hhc"EXE"\""
-    str str_libs[][CMD_SIZE] =
-    {
-        "-lgdi32",
-        "-lwinmm",
-        "-lm",
-        "-lglfw3",
-        "-lfossil",
-    };
 #endif /* PLATFORM */
 
 str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
 buf str_tests = {NULL};
 str str_main[CMD_SIZE] = {0};
-
-str str_cflags[][48] =
-{
-    ("-Wl,-rpath=$ORIGIN/lib/"PLATFORM),
-    "-std=c99",
-    "-Wall",
-    "-Wextra",
-    "-fno-builtin",
-};
-
 str str_out[CMD_SIZE] = STR_OUT;
 
 void build_test(char **argv);
@@ -83,7 +59,7 @@ list(void)
 
     str *str_tests_temp = NULL;
     if (mem_alloc((void*)&str_tests_temp, NAME_MAX,
-                "str_tests_temp") != ERR_SUCCESS)
+                "list().str_tests_temp") != ERR_SUCCESS)
     {
         LOGERROR(*BUILD_ERR, "%s\n", "Fetching Tests Failed");
         cmd_fail();
@@ -99,8 +75,8 @@ list(void)
         printf("    %03d: %s\n", i, str_tests_temp);
     }
 
-    mem_free((void*)&str_tests_temp, NAME_MAX, "str_tests_temp");
-    mem_free_buf(&str_tests, "str_tests");
+    mem_free((void*)&str_tests_temp, NAME_MAX, "list().str_tests_temp");
+    mem_free_buf(&str_tests, "list().str_tests");
     *BUILD_ERR = ERR_SUCCESS;
     exit(*BUILD_ERR);
 }
@@ -123,14 +99,16 @@ build_test(char **argv)
         cmd_fail();
     if (test_index >= str_tests.memb)
     {
-        LOGERROR(ERR_BUFFER_OVERFLOW, "'%s' Invalid, Try './build%s list'"
-                "to List Available Options..\n", argv[1], EXE);
+        LOGERROR(FALSE, ERR_BUFFER_OVERFLOW,
+                "'%s' Invalid, Try './build%s list' to List Available Options..\n",
+                argv[1], EXE);
         cmd_fail();
     }
     str_tests = get_dir_contents(DIR_SRC);
     if (*BUILD_ERR != ERR_SUCCESS)
         cmd_fail();
-    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "cmd") != ERR_SUCCESS)
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE,
+                "build_test().cmd") != ERR_SUCCESS)
         cmd_fail();
 
     for (i = 0; i < str_tests.memb; ++i)
@@ -140,18 +118,16 @@ build_test(char **argv)
             str_build_root, DIR_ROOT, (str*)str_tests.i[test_index]);
 
     cmd_push(COMPILER);
-    cmd_push(stringf("%s%s.c", DIR_SRC, str_tests.i[test_index]));
+    cmd_push(stringf(DIR_SRC"%s.c", str_tests.i[test_index]));
     cmd_push(stringf("-I%s", str_build_root));
-    cmd_push(("-Wl,-rpath=$ORIGIN/lib/"PLATFORM));
     cmd_push("-std=c99");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
-    cmd_push("-Llib/"PLATFORM);
-    for (i = 0; i < arr_len(str_libs); ++i)
-        cmd_push(str_libs[i]);
+    cmd_push("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    engine_link_libs();
     cmd_push("-o");
-    cmd_push(stringf("%s%s/%s"EXE, DIR_ROOT,
+    cmd_push(stringf(DIR_ROOT"%s/%s"EXE,
                 str_tests.i[test_index], str_tests.i[test_index]));
     cmd_ready();
 
@@ -176,7 +152,7 @@ main(int argc, char **argv)
     snprintf(str_mkdir[1],  CMD_SIZE, "%s", str_out_dir);
     snprintf(str_mkdir[2],  CMD_SIZE, "%slib/", str_out_dir);
     snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_build_root);
-    snprintf(str_from[1],   CMD_SIZE, "%slib/"PLATFORM, str_build_root);
+    snprintf(str_from[1],   CMD_SIZE, "%sengine/lib/"PLATFORM, str_build_root);
     snprintf(str_from[2],   CMD_SIZE, "%sresources/", str_build_root);
     snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_out_dir);
     snprintf(str_to[1],     CMD_SIZE, "%slib/"PLATFORM, str_out_dir);

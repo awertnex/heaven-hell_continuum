@@ -5,27 +5,12 @@
 #define ASSET_COUNT     3
 #define NEW_DIR_COUNT   2
 
-u32 *const BUILD_ERR = &engine_err;
 str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
 
 #if PLATFORM_LINUX
-    #define STR_OUT     DIR_ROOT"hhc"
-    str str_libs[][CMD_SIZE] =
-    {
-        "-lm",
-        "-lglfw",
-        "-lfossil",
-    };
+    #define STR_OUT     DIR_ROOT "hhc"
 #elif PLATFORM_WIN
     #define STR_OUT     "\""DIR_ROOT"hhc"EXE"\""
-    str str_libs[][CMD_SIZE] =
-    {
-        "-lgdi32",
-        "-lwinmm",
-        "-lm",
-        "-lglfw3",
-        "-lfossil",
-    };
 #endif /* PLATFORM */
 
 int
@@ -35,13 +20,13 @@ main(int argc, char **argv)
     if (argv_compare("engine", argc, argv))
         engine_build(
                 stringf("%sengine/", str_build_root),
-                stringf("%slib/"_PLATFORM, str_build_root)
+                stringf("%sengine/lib/"_PLATFORM, str_build_root)
                 );
 
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
-        return *BUILD_ERR;
+        return engine_err;
 
-    snprintf(str_out_dir, CMD_SIZE, "%s%s", str_build_root, DIR_ROOT);
+    snprintf(str_out_dir, CMD_SIZE, "%s"DIR_ROOT, str_build_root);
 
     u32 i = 0;
     cmd_push(COMPILER);
@@ -51,16 +36,14 @@ main(int argc, char **argv)
     cmd_push(DIR_SRC"gui.c");
     cmd_push(DIR_SRC"input.c");
     cmd_push(DIR_SRC"logic.c");
-    cmd_push("-I.");
-    cmd_push("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    cmd_push(stringf("-I%s", str_build_root));
     cmd_push("-std=c99");
     cmd_push("-ggdb");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
-    cmd_push("-Llib/"PLATFORM);
-    for (i = 0; i < arr_len(str_libs); ++i)
-        cmd_push(str_libs[i]);
+    cmd_push("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    engine_link_libs();
     cmd_push("-o");
     cmd_push(STR_OUT);
     cmd_ready();
@@ -74,7 +57,7 @@ main(int argc, char **argv)
     snprintf(str_mkdir[0],  CMD_SIZE, "%s", str_out_dir);
     snprintf(str_mkdir[1],  CMD_SIZE, "%slib/", str_out_dir);
     snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_build_root);
-    snprintf(str_from[1],   CMD_SIZE, "%slib/"PLATFORM, str_build_root);
+    snprintf(str_from[1],   CMD_SIZE, "%sengine/lib/"PLATFORM, str_build_root);
     snprintf(str_from[2],   CMD_SIZE, "%sassets/", str_build_root);
     snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_out_dir);
     snprintf(str_to[1],     CMD_SIZE, "%slib/"PLATFORM, str_out_dir);
@@ -94,7 +77,7 @@ main(int argc, char **argv)
             copy_file(str_from[i], str_to[i], "rb", "wb");
         else copy_dir(str_from[i], str_to[i], TRUE, "rb", "wb");
 
-        if (*BUILD_ERR != ERR_SUCCESS)
+        if (engine_err != ERR_SUCCESS)
             goto cleanup;
     }
 
@@ -102,10 +85,10 @@ main(int argc, char **argv)
         goto cleanup;
 
     cmd_free();
-    *BUILD_ERR = ERR_SUCCESS;
-    return *BUILD_ERR;
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 
 cleanup:
     cmd_fail();
-    return *BUILD_ERR;
+    return engine_err;
 }

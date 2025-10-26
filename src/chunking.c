@@ -30,12 +30,12 @@ Chunk ***CHUNK_ORDER = NULL;
 /* queue of chunks to be processed */
 ChunkQueue CHUNK_QUEUE = {0};
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static void _block_place(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static void _block_break(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z);
@@ -47,7 +47,7 @@ static void chunk_generate(Chunk **chunk, u32 rate);
 static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
 static void chunk_mesh(Chunk *chunk);
 
-/* -- INTERNAL USE ONLY --; */
+/* -- INTERNAL USE ONLY -- */
 static void _chunk_mesh(Chunk *chunk);
 
 static void chunk_serialize(Chunk *chunk, str *world_name);
@@ -65,15 +65,15 @@ u32
 chunking_init(void)
 {
     if (mem_map((void*)&chunk_buf, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk),
-                "chunk_buf") != ERR_SUCCESS)
+                "chunking_init().chunk_buf") != ERR_SUCCESS)
         return *GAME_ERR;
 
     if (mem_map((void*)&chunk_tab, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
-                "chunk_tab") != ERR_SUCCESS)
+                "chunking_init().chunk_tab") != ERR_SUCCESS)
         goto cleanup;
 
     if (mem_map((void*)&CHUNK_ORDER, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
-                "CHUNK_ORDER") != ERR_SUCCESS)
+                "chunking_init().CHUNK_ORDER") != ERR_SUCCESS)
         goto cleanup;
 
     str CHUNK_ORDER_lookup_file_name[PATH_MAX] = {0};
@@ -161,7 +161,8 @@ chunking_init(void)
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         CHUNK_ORDER[i] = &chunk_tab[CHUNK_ORDER_lookup_file_contents[i]];
-    mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_length, "entries");
+    mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_length,
+            "chunking_init().entries");
 
     /* ---- build CHUNKS_MAX lookup ----------------------------------------- */
     snprintf(CHUNKS_MAX_lookup_file_name, PATH_MAX,
@@ -216,7 +217,8 @@ chunking_init(void)
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         CHUNKS_MAX[i] = CHUNKS_MAX_lookup_file_contents[i];
-    mem_free((void*)&CHUNKS_MAX_lookup_file_contents, file_length, "entries");
+    mem_free((void*)&CHUNKS_MAX_lookup_file_contents, file_length,
+            "chunking_init().entries");
 
     /* ---- init chunk parsing priority queues ------------------------------ */
     if (CHUNKS_MAX[SET_RENDER_DISTANCE] < CHUNK_QUEUE_1ST_MAX)
@@ -248,36 +250,24 @@ chunking_init(void)
 
     if (mem_map((void*)&CHUNK_QUEUE.priority_1,
                 CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_1") != ERR_SUCCESS)
+                "chunking_init().CHUNK_QUEUE.priority_1") != ERR_SUCCESS)
         goto cleanup;
 
     if (mem_map((void*)&CHUNK_QUEUE.priority_2,
                 CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_2") != ERR_SUCCESS)
+                "chunking_init().CHUNK_QUEUE.priority_2") != ERR_SUCCESS)
         goto cleanup;
 
     if (mem_map((void*)&CHUNK_QUEUE.priority_3,
                 CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-                "CHUNK_QUEUE.priority_3") != ERR_SUCCESS)
+                "chunking_init().CHUNK_QUEUE.priority_3") != ERR_SUCCESS)
         goto cleanup;
 
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
-    mem_unmap((void*)&chunk_buf,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
-    mem_unmap((void*)&chunk_tab,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
-    mem_unmap((void*)&CHUNK_ORDER,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "CHUNK_ORDER");
-    mem_unmap((void*)&CHUNK_QUEUE.priority_1,
-            CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**), "CHUNK_QUEUE.priority_1");
-    mem_unmap((void*)&CHUNK_QUEUE.priority_2,
-            CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**), "CHUNK_QUEUE.priority_2");
-    mem_unmap((void*)&CHUNK_QUEUE.priority_3,
-            CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-            "CHUNK_QUEUE.priority_3");
+    chunking_free();
     return *GAME_ERR;
 }
 
@@ -303,19 +293,30 @@ chunking_free(void)
             if (chunk_tab[i])
                 chunk_buf_pop(i);
     }
+
     mem_unmap((void*)&chunk_buf,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk), "chunk_buf");
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk),
+            "chunking_free().chunk_buf");
+
     mem_unmap((void*)&chunk_tab,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*), "chunk_tab");
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
+            "chunking_free().chunk_tab");
+
     mem_unmap((void*)&CHUNK_ORDER,
-            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**), "CHUNK_ORDER");
+            CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
+            "chunking_free().CHUNK_ORDER");
+
     mem_unmap((void*)&CHUNK_QUEUE.priority_1,
-            CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**), "CHUNK_QUEUE.priority_1");
+            CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
+            "chunking_free().CHUNK_QUEUE.priority_1");
+
     mem_unmap((void*)&CHUNK_QUEUE.priority_2,
-            CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**), "CHUNK_QUEUE.priority_2");
+            CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
+            "chunking_free().CHUNK_QUEUE.priority_2");
+
     mem_unmap((void*)&CHUNK_QUEUE.priority_3,
             CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-            "CHUNK_QUEUE.priority_3");
+            "chunking_free().CHUNK_QUEUE.priority_3");
 }
 
 void

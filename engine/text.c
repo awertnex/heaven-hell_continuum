@@ -27,7 +27,7 @@ text_init(ShaderProgram *program)
 {
     if (mem_alloc((void*)&mesh_text.vbo_data,
                 STRING_MAX * sizeof(GLfloat) * 4,
-                "mesh_text.vbo_data") != ERR_SUCCESS)
+                "text_init().mesh_text.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
     mesh_text.vbo_len = STRING_MAX * 4;
@@ -78,7 +78,7 @@ text_start(u64 length, f32 size, Font *font,
     {
         if (mem_realloc((void*)&mesh_text.vbo_data,
                     length * sizeof(GLfloat) * 4,
-                    "mesh_text.vbo_data") != ERR_SUCCESS)
+                    "text_start().mesh_text.vbo_data") != ERR_SUCCESS)
             goto cleanup;
         mesh_text.vbo_len = length * 4;
         mesh_text.ebo_len = length;
@@ -126,7 +126,7 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
     {
         if (mem_realloc((void*)&mesh_text.vbo_data,
                     (mesh_text.vbo_len + STRING_MAX) * sizeof(GLfloat) * 4,
-                    "mesh_text.vbo_data") != ERR_SUCCESS)
+                    "text_push().mesh_text.vbo_data") != ERR_SUCCESS)
         {
             mesh_free(&mesh_text);
             LOGERROR(FALSE, engine_err, "%s\n", "Failed to Push Text");

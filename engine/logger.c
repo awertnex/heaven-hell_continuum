@@ -39,7 +39,7 @@ u32
 logger_init(b8 release_build, int argc, char **argv)
 {
     if (mem_map((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX,
-                "logger_buf") != ERR_SUCCESS)
+                "logger_init().logger_buf") != ERR_SUCCESS)
     {
         LOGFATAL(FALSE, ERR_LOGGER_INIT_FAIL,
                 "%s\n", "Failed to Initialize Logger, Process Aborted");
@@ -73,7 +73,7 @@ void
 logger_close(void)
 {
     mem_unmap((void*)&logger_buf,
-            LOGGER_LINES_MAX * STRING_MAX, "logger_buf");
+            LOGGER_LINES_MAX * STRING_MAX, "logger_close().logger_buf");
 }
 
 void

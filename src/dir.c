@@ -19,7 +19,7 @@ str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
 str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 
 u32
-grandpath_dir_init(void)
+paths_init(void)
 {
     snprintf(DIR_ROOT[DIR_LIB],             NAME_MAX, "%s", "lib/");
     snprintf(DIR_ROOT[DIR_LIB_PLATFORM],    NAME_MAX, "%s%s", "lib/", PLATFORM);
@@ -55,7 +55,8 @@ grandpath_dir_init(void)
         return *GAME_DIR_ERR;
 
     snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
-    mem_free((void*)&path_bin_root, strlen(path_bin_root), "path_bin_root");
+    mem_free((void*)&path_bin_root, strlen(path_bin_root),
+            "paths_init().path_bin_root");
 
     LOGINFO(TRUE, "Creating Main Directories '%s'..\n", PATH_ROOT);
 
