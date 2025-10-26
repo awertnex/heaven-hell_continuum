@@ -1,14 +1,6 @@
 #version 430 core
 
-#define ABERRATION_NARROWNESS 0.003
-#define ABERRATION_INTENSITY 0.2
-#define VIGNETTE_NARROWNESS 0.6
-#define VIGNETTE_INTENSITY 0.1
-#define GRAIN_SAMPLE_SIZE 0.1
-#define GRAIN_INTENSITY 0.07
-#define GRAIN_SEED_R 300
-#define GRAIN_SEED_G 600
-#define GRAIN_SEED_B 900
+#include "h/post_processing.frag.h"
 
 uniform sampler2D texture_screen;
 uniform uint time;
@@ -48,12 +40,12 @@ void main()
             sin(grain.r) * 43758.5453,
             cos(grain.g) * 43758.5453,
             -sin(grain.b) * 43758.5453);
-    grain = 1.0 - (((fract(grain) * 2.0) - 1.0) * GRAIN_INTENSITY);
+    grain = ((fract(grain) * 2.0) - 1.0) * GRAIN_INTENSITY;
 
     /* ---- final ----------------------------------------------------------- */
 
     color.rgb = aberration_color;
-    color.rgb *= grain;
+    color.rgb *= (1.0 - grain);
     color.rgb -= vignette;
-    color.rgb = mix(color.rgb, color.rgb * 2.0, vignette);
+    color.rgb = mix(color.rgb, color.rgb * VIGNETTE_COLOR_RICHNESS, vignette);
 }
