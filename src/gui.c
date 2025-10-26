@@ -72,6 +72,11 @@ gui_init(void)
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
                     "dirt.png")) != ERR_SUCCESS ||
 
+            texture_init(&texture[TEXTURE_DIRTUP], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
+                    "dirtup.png")) != ERR_SUCCESS ||
+
             texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
