@@ -380,10 +380,12 @@ u32 texture_init(Texture *texture, v2i32 size,
         const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name);
 
-/* generate texture for opengl from image loaded by texture_init(),
+/* generate texture for opengl from image loaded by texture_init().
+ *
+ * bindless = use opengl extension: GL_ARB_bindless_texture.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 texture_generate(Texture *texture);
+u32 texture_generate(Texture *texture, b8 bindless);
 
 void texture_free(Texture *texture);
 

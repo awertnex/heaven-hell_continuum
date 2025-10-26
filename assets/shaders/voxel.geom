@@ -7,6 +7,7 @@ layout(points) in;
 layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 
 /* from src/h/main.h */
+#define ID              0x000003ff
 #define ACTIVE          0x00000400
 #define POSITIVE_X      0x00010000
 #define NEGATIVE_X      0x00020000
@@ -21,10 +22,13 @@ in vec3 vs_position[];
 out vec3 position;
 out vec2 tex_coords;
 out vec3 normal;
+out flat uint block_id;
 uniform mat4 mat_perspective;
 
 void main()
 {
+    block_id = vs_data[0] & ID;
+
     vec3 vbo[8] =
         vec3[](
                 vec3(0.0, 0.0, 0.0),

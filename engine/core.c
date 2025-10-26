@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #include "h/core.h"
 #include "h/diagnostics.h"
@@ -697,12 +698,21 @@ texture_init(Texture *texture, v2i32 size,
 }
 
 u32
-texture_generate(Texture *texture)
+texture_generate(Texture *texture, b8 bindless)
 {
     _texture_generate(
             &texture->id, texture->format_internal, texture->format,
             texture->filter, texture->size.x, texture->size.y,
             texture->buf, texture->grayscale);
+
+    if (engine_err == ERR_SUCCESS && bindless)
+    {
+        texture->handle = glGetTextureHandleARB(texture->id);
+        glMakeTextureHandleResidentARB(texture->handle);
+        LOGTRACE(FALSE, "Handle[%"PRId64"] for Texture[%d] Created\n",
+                texture->handle, texture->id);
+    }
+
     (texture->buf) ? stbi_image_free(texture->buf) : 0;
     return engine_err;
 }
@@ -715,7 +725,7 @@ _texture_generate(
     if (!width || !height)
     {
         LOGERROR(FALSE, ERR_IMAGE_SIZE_TOO_SMALL,
-                "Failed to Generate Texture '%d', Size Too Small\n", *id);
+                "Failed to Generate Texture [%d], Size Too Small\n", *id);
         return engine_err;
     }
 
@@ -740,7 +750,20 @@ void
 texture_free(Texture *texture)
 {
     if (texture == NULL) return;
-    (texture->id) ? glDeleteTextures(1, &texture->id) : 0;
+
+    if (texture->handle)
+    {
+        glMakeTextureHandleNonResidentARB(texture->handle);
+        LOGTRACE(FALSE, "Handle[%"PRId64"] for Texture[%d] Destroyed\n",
+                texture->handle, texture->id);
+    }
+
+    if (texture->id)
+    {
+        glDeleteTextures(1, &texture->id);
+        LOGTRACE(FALSE, "Texture[%d] Unloaded\n", texture->id);
+    }
+
     *texture = (Texture){0};
 }
 

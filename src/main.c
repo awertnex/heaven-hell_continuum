@@ -1012,7 +1012,6 @@ draw_everything(void)
         opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
-    glBindTexture(GL_TEXTURE_2D, blocks[BLOCK_DIRT].texture.id);
 
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;

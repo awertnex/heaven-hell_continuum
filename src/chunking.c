@@ -10,6 +10,7 @@
 #include <engine/h/platform.h>
 
 #include "h/main.h"
+#include "h/assets.h"
 #include "h/chunking.h"
 #include "h/dir.h"
 
@@ -349,6 +350,8 @@ _block_place(Chunk *chunk,
     y %= CHUNK_DIAMETER;
     z %= CHUNK_DIAMETER;
 
+    chunk->block[z][y][x] |= BLOCK_GRASS;
+
     if (x == CHUNK_DIAMETER - 1)
     {
         is_on_edge = (coordinates.x == CHUNK_BUF_DIAMETER - 1) || !px;
@@ -412,11 +415,17 @@ _block_place(Chunk *chunk,
         {
             pz->block[0][y][x] &= ~FLAG_BLOCK_FACE_NZ;
             pz->flag |= FLAG_CHUNK_DIRTY;
+            chunk->block[z][y][x] &= ~MASK_BLOCK_ID;
+            chunk->block[z][y][x] |= BLOCK_DIRT;
         }
         else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_PZ;
     }
     else if (chunk->block[z + 1][y][x])
+    {
         chunk->block[z + 1][y][x] &= ~FLAG_BLOCK_FACE_NZ;
+        chunk->block[z][y][x] &= ~MASK_BLOCK_ID;
+        chunk->block[z][y][x] |= BLOCK_DIRT;
+    }
     else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_PZ;
     
     if (z == 0)
@@ -426,11 +435,17 @@ _block_place(Chunk *chunk,
         {
             nz->block[CHUNK_DIAMETER - 1][y][x] &= ~FLAG_BLOCK_FACE_PZ;
             nz->flag |= FLAG_CHUNK_DIRTY;
+            nz->block[CHUNK_DIAMETER - 1][y][x] &= ~MASK_BLOCK_ID;
+            nz->block[CHUNK_DIAMETER - 1][y][x] |= BLOCK_DIRT;
         }
         else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_NZ;
     }
     else if (chunk->block[z - 1][y][x])
+    {
         chunk->block[z - 1][y][x] &= ~FLAG_BLOCK_FACE_PZ;
+        chunk->block[z - 1][y][x] &= ~MASK_BLOCK_ID;
+        chunk->block[z - 1][y][x] |= BLOCK_DIRT;
+    }
     else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_NZ;
 
     chunk->block[z][y][x] |= FLAG_BLOCK_NOT_EMPTY;

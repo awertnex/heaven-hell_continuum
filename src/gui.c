@@ -64,7 +64,7 @@ gui_init(void)
         goto cleanup;
 
     for (i = 0; i < TEXTURE_COUNT; ++i)
-        if (texture_generate(&texture[i]) != ERR_SUCCESS)
+        if (texture_generate(&texture[i], FALSE) != ERR_SUCCESS)
             goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
