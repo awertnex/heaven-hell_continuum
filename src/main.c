@@ -7,6 +7,7 @@
 #include <engine/h/math.h>
 
 #include "h/main.h"
+#include "h/assets.h"
 #include "h/chunking.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
@@ -1011,7 +1012,7 @@ draw_everything(void)
         opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_DIRT].id);
+    glBindTexture(GL_TEXTURE_2D, blocks[BLOCK_DIRT].texture.id);
 
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;
@@ -1692,6 +1693,7 @@ main(int argc, char **argv)
 
     if (
             gui_init() != ERR_SUCCESS ||
+            assets_init() != ERR_SUCCESS ||
             text_init(&shader[SHADER_TEXT]) != ERR_SUCCESS)
         goto cleanup;
 
@@ -1766,6 +1768,7 @@ section_world_loaded:
 cleanup: /* ----------------------------------------------------------------- */
 
     u32 i = 0;
+    assets_free();
     gui_free();
     chunking_free();
     for (i = 0; i < MESH_COUNT; ++i)

@@ -227,6 +227,10 @@ typedef struct Texture
     v2i32 size;
     u64 data_len;
     GLuint id;              /* used by opengl's glGenTextures() */
+
+    /* used by opengl extension: GL_ARB_bindless_texture */
+    u64 handle;
+
     GLint format;           /* used by opengl's glTexImage2D() */
     GLint format_internal;  /* used by opengl's glTexImage2D() */
     GLint filter;           /* used by opengl's glTexParameteri() */

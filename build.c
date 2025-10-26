@@ -31,6 +31,7 @@ main(int argc, char **argv)
     u32 i = 0;
     cmd_push(COMPILER);
     cmd_push(DIR_SRC"main.c");
+    cmd_push(DIR_SRC"assets.c");
     cmd_push(DIR_SRC"chunking.c");
     cmd_push(DIR_SRC"dir.c");
     cmd_push(DIR_SRC"gui.c");

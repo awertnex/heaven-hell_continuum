@@ -60,32 +60,7 @@ gui_init(void)
             texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
-                    "sdb_inactive.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_GRASS], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    "grass.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    "dirt.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_DIRTUP], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    "dirtup.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    "stone.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    "sand.png")) != ERR_SUCCESS)
+                    "sdb_inactive.png")) != ERR_SUCCESS)
         goto cleanup;
 
     for (i = 0; i < TEXTURE_COUNT; ++i)
@@ -107,9 +82,9 @@ gui_free(void)
 {
     u32 i = 0;
     for (i = 0; i < FONT_COUNT; ++i)
-    font_free(&font[i]);
+        font_free(&font[i]);
     for (i = 0; i < TEXTURE_COUNT; ++i)
-    texture_free(&texture[i]);
+        texture_free(&texture[i]);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */

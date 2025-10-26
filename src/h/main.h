@@ -321,11 +321,6 @@ enum TextureIndices
     TEXTURE_ITEM_BAR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
-    TEXTURE_GRASS,
-    TEXTURE_DIRT,
-    TEXTURE_DIRTUP,
-    TEXTURE_STONE,
-    TEXTURE_SAND,
     TEXTURE_COUNT,
 }; /* TextureIndices */
 
@@ -409,6 +404,11 @@ typedef struct Player
 
     v3i64 spawn_point;
 } Player;
+
+enum BlockStates
+{
+    BLOCK_STATE_SOLID,
+}; /* BlockStates */
 
 enum BlockFlags
 {

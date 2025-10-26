@@ -6,17 +6,19 @@
 
 enum BlockID
 {
-    grass,
-    dirt,
-    stone,
-    sand,
-    glass,
+    BLOCK_GRASS,
+    BLOCK_DIRT,
+    BLOCK_DIRTUP,
+    BLOCK_STONE,
+    BLOCK_SAND,
+    BLOCK_GLASS,
+    BLOCK_COUNT,
 }; /* BlockID */
 
 typedef struct Block
 {
     str *name;
-    u16 block_state;
+    u16 state;
     void *texture_layout;
     Texture texture;
 } Block;
@@ -27,15 +29,16 @@ typedef struct TextureLayout
     u8 nx, ny, nz;
 } TextureLayout;
 
-extern u16 base_texture_size;
+extern u32 base_texture_size;
 extern TextureLayout one_side;
 extern TextureLayout two_side;
 extern TextureLayout three_side;
 extern TextureLayout three_side_alt;
 extern TextureLayout four_side;
-extern Block block[1023];               /* standard block array */
+extern Block blocks[BLOCK_COUNT];
 
-void init_textures();
-void unload_textures();
+u32 assets_init(void);
+void assets_free(void);
+u32 block_init(Block *block);
 
 #endif /* GAME_ASSETS_H */
