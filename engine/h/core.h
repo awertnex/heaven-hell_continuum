@@ -10,11 +10,11 @@
 #define ENGINE_NAME             "Fossil Engine"
 #define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
 
-#include <engine/include/glad/glad_modified.h>
+#include <engine/include/glad/glad.h>
 #define GLFW_INCLUDE_NONE
-#include <engine/include/glfw3_modified.h>
-#include <engine/include/stb_truetype_modified.h>
-#include <engine/include/stb_image_modified.h>
+#include <engine/include/glfw3.h>
+#include <engine/include/stb_truetype.h>
+#include <engine/include/stb_image.h>
 
 #include "defines.h"
 #include "platform.h"

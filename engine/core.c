@@ -9,9 +9,9 @@
 #include "h/math.h"
 #include "h/memory.h"
 #define STB_TRUETYPE_IMPLEMENTATION
-#include <engine/include/stb_truetype_modified.h>
+#include <engine/include/stb_truetype.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <engine/include/stb_image_modified.h>
+#include <engine/include/stb_image.h>
 
 static u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
@@ -1077,7 +1077,7 @@ font_init(Font *font, u32 resolution, const str *file_name)
     font->size = resolution;
 
     f32 scale = stbtt_ScaleForPixelHeight(&font->info, resolution);
-    i32 i = 0;
+    u32 i = 0;
     for (; i < GLYPH_MAX; ++i)
     {
         int glyph_index = stbtt_FindGlyphIndex(&font->info, i);
@@ -1109,12 +1109,13 @@ font_init(Font *font, u32 resolution, const str *file_name)
             void *bitmap_offset =
                 font->bitmap +
                 (col * resolution) +
-                (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION);
+                (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION) +
+                1 + (resolution * FONT_ATLAS_CELL_RESOLUTION);
 
             u32 y = 0, x = 0;
-            for (; y < resolution; ++y)
+            for (; y < resolution - 1; ++y)
             {
-                for (x = 0; x < resolution; ++x)
+                for (x = 0; x < resolution - 1; ++x)
                     memcpy((bitmap_offset + x +
                                 (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
                             (canvas + x + (y * resolution)), 1);

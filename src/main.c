@@ -21,7 +21,7 @@ u32 chunk_tab_index = 0;
 Render render =
 {
     .title = GAME_NAME": "GAME_VERSION,
-    .size = {1920, 862},
+    .size = {1280, 720},
 };
 
 Settings settings =
@@ -815,7 +815,7 @@ world_init(str *name)
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, 248.5f, 282.5f, 3.0f);
+    set_player_pos(&lily, 346.5f, 203.5f, -43.0f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1070,8 +1070,7 @@ draw_everything(void)
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
 
-    if ((flag & FLAG_MAIN_PARSE_TARGET) &&
-            (flag & FLAG_MAIN_HUD) &&
+    if ((flag & FLAG_MAIN_PARSE_TARGET) && (flag & FLAG_MAIN_HUD) &&
             chunk_tab[chunk_tab_index] &&
             chunk_tab[chunk_tab_index]->block
             [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
@@ -1372,8 +1371,8 @@ framebuffer_blit_chunk_queue_visualizer:
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    text_start(0, FONT_SIZE_DEFAULT,
-            &font[FONT_MONO_BOLD], &render, &shader[SHADER_TEXT], &fbo[FBO_TEXT], TRUE);
+    text_start(0, FONT_SIZE_DEFAULT, &font[FONT_MONO_BOLD], &render,
+            &shader[SHADER_TEXT], &fbo[FBO_TEXT], TRUE);
     text_push(stringf("FPS               [%d]\n", settings.fps),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render((settings.fps > 60) ?
@@ -1381,13 +1380,16 @@ framebuffer_blit_chunk_queue_visualizer:
 
     text_push(stringf("\n"
                 "FRAME TIME        [%.2lf]\n"
-                "FRAME DELTA       [%.5lf]\n",
+                "FRAME DELTA       [%.5lf]\n"
+                "    TICKS         [%"PRId64"]\n"
+                "    DAYS          [%"PRId64"]\n",
                 render.frame_start,
-                render.frame_delta),
+                render.frame_delta,
+                game_tick, game_days),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_MOSS, TRUE);
 
-    text_push(stringf("\n\n\n"
+    text_push(stringf("\n\n\n\n\n"
                 "PLAYER NAME       [%s]\n"
                 "PLAYER XYZ        [%.2f %.2f %.2f]\n"
                 "PLAYER BLOCK      [%d %d %d]\n"
@@ -1411,7 +1413,7 @@ framebuffer_blit_chunk_queue_visualizer:
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
                 "PLAYER OVERFLOW X [%s]\n"
                 "PLAYER OVERFLOW Y [%s]\n"
                 "PLAYER OVERFLOW Z [%s]\n",
@@ -1427,7 +1429,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1440,7 +1442,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1453,18 +1455,16 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "MOUSE XY          [%.2f %.2f]\n"
                 "DELTA XY          [%.2f %.2f]\n"
                 "RENDER RATIO      [%.4f]\n"
-                "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
                 "SKYBOX TIME       [%.2f]\n"
                 "SKYBOX RGB        [%.2f %.2f %.2f]\n"
                 "SUN ANGLE         [%.2f %.2f %.2f]\n",
                 render.mouse_position.x, render.mouse_position.y,
                 render.mouse_delta.x, render.mouse_delta.y,
                 (f32)render.size.x / render.size.y,
-                game_tick, game_days,
                 skybox_data.time,
                 skybox_data.color.x,
                 skybox_data.color.y,
