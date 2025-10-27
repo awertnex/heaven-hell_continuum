@@ -5,6 +5,8 @@
 
 #include "main.h"
 
+#define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
+
 extern u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1];
 
 /* chunk pointer look-up table that points to chunk_buf addresses.

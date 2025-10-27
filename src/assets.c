@@ -58,6 +58,9 @@ assets_free(void)
     u32 i = 0;
     for (i = 0; i < BLOCK_COUNT; ++i)
         texture_free(&blocks[i].texture);
+
+    if (ssbo_texture_handles_id)
+        glDeleteBuffers(1, &ssbo_texture_handles_id);
 }
 
 u32

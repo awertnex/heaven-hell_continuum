@@ -346,11 +346,11 @@ _block_place(Chunk *chunk,
         v3u32 coordinates, u32 x, u32 y, u32 z)
 {
     u8 is_on_edge = 0;
+
     x %= CHUNK_DIAMETER;
     y %= CHUNK_DIAMETER;
     z %= CHUNK_DIAMETER;
-
-    chunk->block[z][y][x] |= BLOCK_GRASS;
+    SET_BLOCK_ID(chunk->block[z][y][x], BLOCK_GRASS);
 
     if (x == CHUNK_DIAMETER - 1)
     {
@@ -415,16 +415,14 @@ _block_place(Chunk *chunk,
         {
             pz->block[0][y][x] &= ~FLAG_BLOCK_FACE_NZ;
             pz->flag |= FLAG_CHUNK_DIRTY;
-            chunk->block[z][y][x] &= ~MASK_BLOCK_ID;
-            chunk->block[z][y][x] |= BLOCK_DIRT;
+            SET_BLOCK_ID(chunk->block[z][y][x], BLOCK_DIRT);
         }
         else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_PZ;
     }
     else if (chunk->block[z + 1][y][x])
     {
         chunk->block[z + 1][y][x] &= ~FLAG_BLOCK_FACE_NZ;
-        chunk->block[z][y][x] &= ~MASK_BLOCK_ID;
-        chunk->block[z][y][x] |= BLOCK_DIRT;
+        SET_BLOCK_ID(chunk->block[z][y][x], BLOCK_DIRT);
     }
     else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_PZ;
     
@@ -435,16 +433,14 @@ _block_place(Chunk *chunk,
         {
             nz->block[CHUNK_DIAMETER - 1][y][x] &= ~FLAG_BLOCK_FACE_PZ;
             nz->flag |= FLAG_CHUNK_DIRTY;
-            nz->block[CHUNK_DIAMETER - 1][y][x] &= ~MASK_BLOCK_ID;
-            nz->block[CHUNK_DIAMETER - 1][y][x] |= BLOCK_DIRT;
+            SET_BLOCK_ID(chunk->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
         }
         else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_NZ;
     }
     else if (chunk->block[z - 1][y][x])
     {
         chunk->block[z - 1][y][x] &= ~FLAG_BLOCK_FACE_PZ;
-        chunk->block[z - 1][y][x] &= ~MASK_BLOCK_ID;
-        chunk->block[z - 1][y][x] |= BLOCK_DIRT;
+        SET_BLOCK_ID(chunk->block[z - 1][y][x], BLOCK_DIRT);
     }
     else chunk->block[z][y][x] |= FLAG_BLOCK_FACE_NZ;
 

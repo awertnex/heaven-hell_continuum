@@ -2,7 +2,7 @@
 
 #extension GL_ARB_bindless_texture: require
 
-layout(binding = 0, std430) buffer ssbo
+layout(binding = 0, std430) readonly buffer ssbo
 {
     sampler2D textures[];
 };
