@@ -24,6 +24,7 @@ u64 clamp_u64(u64 val, u64 min, u64 max);
 f64 clamp_f64(f64 val, f64 min, f64 max);
 f32 len_v3f32(v3f32 v);
 v3f32 normalize_v3f32(v3f32 v);
+f32 q_rsqrt(f32 n);
 u32 distance_v3i32(v3i32 a, v3i32 b);
 f32 distance_v3f32(v3f32 a, v3f32 b);
 b8 is_in_range_i32(i32 pos, i32 start, i32 end);

@@ -64,6 +64,24 @@ normalize_v3f32(v3f32 v)
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
+f32
+q_rsqrt(f32 n)
+{
+    i64 i;
+    f32 x2, y;
+    const f32 threehalfs = 1.5f;
+
+    x2 = n * 0.5f;
+    y = n;
+    i = *(i64*)&y;                          /* evil floating point bit hack */
+    i = 0x5f3759df - (i >> 1);              /* what the fuck? */
+    y = *(f32*)&i;
+    y = (y * (threehalfs - (x2 * y * y)));  /* 1st iteration */
+    y = (y * (threehalfs - (x2 * y * y)));  /* 2nd iteration, can be removed */
+
+    return y;
+}
+
 u32
 distance_v3i32(v3i32 a, v3i32 b)
 {

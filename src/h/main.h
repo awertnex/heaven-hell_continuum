@@ -535,25 +535,14 @@ typedef struct Chunk
 
 typedef struct ChunkQueue
 {
-    /* queues */
-    Chunk ***priority_1;
-    Chunk ***priority_2;
-    Chunk ***priority_3;
-
-    /* size of queues */
-    u64 size_1;
-    u64 size_2;
-    u64 size_3;
-
-    /* number of chunks queued at queues */
-    u32 count_1;
-    u32 count_2;
-    u32 count_3;
-
-    /* parse position at queues */
-    u32 cursor_1;
-    u32 cursor_2;
-    u32 cursor_3;
+    u32 id;
+    u64 size;
+    u32 count;          /* number of chunks queued */
+    u32 offset;         /* first CHUNK_ORDER index to queue */
+    u32 cursor;         /* parse position */
+    u32 rate_chunk;     /* number of chunks to process per frame */
+    u32 rate_block;     /* number of blocks to process per chunk per frame */
+    Chunk ***queue;
 } ChunkQueue;
 
 extern u32 *const GAME_ERR;

@@ -4,7 +4,7 @@
 #include <engine/h/defines.h>
 #include "dir.h"
 
-enum BlockID
+typedef enum BlockID
 {
     BLOCK_GRASS,
     BLOCK_DIRT,
@@ -13,7 +13,7 @@ enum BlockID
     BLOCK_SAND,
     BLOCK_GLASS,
     BLOCK_COUNT,
-}; /* BlockID */
+} BlockID;
 
 typedef struct Block
 {

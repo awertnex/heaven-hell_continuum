@@ -22,7 +22,7 @@ u32 chunk_tab_index = 0;
 Render render =
 {
     .title = GAME_NAME": "GAME_VERSION,
-    .size = {1280, 720},
+    .size = {1380, 1080 - 24},
 };
 
 Settings settings =
@@ -734,7 +734,7 @@ input_update(Player *player)
             lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER),
             lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
-                CHUNK_DIAMETER));
+                CHUNK_DIAMETER), BLOCK_STONE);
     }
 
     /* ---- inventory ------------------------------------------------------- */
@@ -880,26 +880,16 @@ world_update(Player *player)
         chunking_update(lily.delta_chunk);
     }
 
-    chunk_queue_update(&CHUNK_QUEUE.cursor_1, &CHUNK_QUEUE.count_1,
-            CHUNK_QUEUE.priority_1, CHUNK_QUEUE_1ST_ID, 0,
-            CHUNK_QUEUE.size_1,
-            CHUNK_PARSE_RATE_PRIORITY_HIGH, BLOCK_PARSE_RATE);
-    if (!CHUNK_QUEUE.count_1 && CHUNK_QUEUE.size_2)
+    chunk_queue_update(&CHUNK_QUEUE_1);
+    if (!CHUNK_QUEUE_1.count && CHUNK_QUEUE_2.size)
     {
-        chunk_queue_update(&CHUNK_QUEUE.cursor_2, &CHUNK_QUEUE.count_2,
-                CHUNK_QUEUE.priority_2, CHUNK_QUEUE_2ND_ID,
-                CHUNK_QUEUE.size_1,
-                CHUNK_QUEUE.size_2,
-                CHUNK_PARSE_RATE_PRIORITY_MID, BLOCK_PARSE_RATE);
-        if (!CHUNK_QUEUE.count_2 && CHUNK_QUEUE.size_3)
-        {
-            chunk_queue_update(&CHUNK_QUEUE.cursor_3, &CHUNK_QUEUE.count_3,
-                    CHUNK_QUEUE.priority_3, CHUNK_QUEUE_3RD_ID,
-                    CHUNK_QUEUE.size_1 + CHUNK_QUEUE.size_2,
-                    CHUNK_QUEUE.size_3,
-                    CHUNK_PARSE_RATE_PRIORITY_LOW, BLOCK_PARSE_RATE);
-        }
+        chunk_queue_update(&CHUNK_QUEUE_2);
+        if (!CHUNK_QUEUE_2.count && CHUNK_QUEUE_3.size)
+            chunk_queue_update(&CHUNK_QUEUE_3);
     }
+    printf("cursor_1[%6ld] ", CHUNK_QUEUE_1.cursor);
+    printf("cursor_2[%6ld] ", CHUNK_QUEUE_2.cursor);
+    printf("cursor_3[%6ld]\n", CHUNK_QUEUE_3.cursor);
 
     /* ---- player targeting ------------------------------------------------ */
 
@@ -1138,7 +1128,7 @@ draw_everything(void)
             CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
 
     cursor = CHUNK_ORDER;
-    end = CHUNK_ORDER + CHUNK_QUEUE.size_1;
+    end = CHUNK_ORDER + CHUNK_QUEUE_1.size;
     u32 i = 0;
     for (; cursor < end; ++i, ++cursor)
     {
@@ -1153,9 +1143,9 @@ draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    if (CHUNK_QUEUE.size_2)
+    if (CHUNK_QUEUE_2.size)
     {
-        end += CHUNK_QUEUE.size_2;
+        end += CHUNK_QUEUE_2.size;
         for (i = 0; cursor < end; ++i, ++cursor)
         {
             if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
@@ -1170,7 +1160,7 @@ draw_everything(void)
         }
     }
 
-    if (CHUNK_QUEUE.size_3)
+    if (CHUNK_QUEUE_3.size)
     {
         end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
         for (i = 0; cursor < end; ++i, ++cursor)
@@ -1480,9 +1470,9 @@ framebuffer_blit_chunk_queue_visualizer:
                 "CHUNK QUEUE 2 [%d/%"PRId64"]\n"
                 "CHUNK QUEUE 3 [%d/%"PRId64"]\n"
                 "TOTAL CHUNKS [%"PRId64"]\n",
-                CHUNK_QUEUE.count_1, CHUNK_QUEUE.size_1,
-                CHUNK_QUEUE.count_2, CHUNK_QUEUE.size_2,
-                CHUNK_QUEUE.count_3, CHUNK_QUEUE.size_3,
+                CHUNK_QUEUE_1.count, CHUNK_QUEUE_1.size,
+                CHUNK_QUEUE_2.count, CHUNK_QUEUE_2.size,
+                CHUNK_QUEUE_3.count, CHUNK_QUEUE_3.size,
                 CHUNKS_MAX[SET_RENDER_DISTANCE]),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
@@ -1545,6 +1535,7 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#include <stdio.h>
 int
 main(int argc, char **argv)
 {
@@ -1577,7 +1568,7 @@ main(int argc, char **argv)
             glad_init() != ERR_SUCCESS)
         goto cleanup;
 
-    /*temp*/ glfwSetWindowPos(render.window, 0, 24);
+    /*temp*/ glfwSetWindowPos(render.window, 1920 - render.size.x, 24);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 100, 70, 1920, 1080);
 
     flag =
