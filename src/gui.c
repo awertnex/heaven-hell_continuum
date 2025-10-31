@@ -1,22 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <inttypes.h>
 
+#include <engine/h/diagnostics.h>
+#include <engine/h/logger.h>
 #include <engine/h/memory.h>
+#include "h/main.h"
 #include "h/gui.h"
-#include "h/chunking.h"
-#include "h/logic.h"
 #include "h/dir.h"
 
-Font font = {0};
-Font font_bold = {0};
-Font font_mono = {0};
-Font font_mono_bold = {0};
-
-v2i16 hotbar_pos;
 u8 hotbar_slot_selected = 1;
-v2i16 crosshair_pos;
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
@@ -24,209 +17,77 @@ u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
-str str_debug_info[16][64];
-str str_block_count[32];
-str str_quad_count[32];
-str str_tri_count[32];
-str str_vertex_count[32];
-
-void
-print_menu_layers()
+u32
+gui_init(void)
 {
-    str menu_names[10][24] =
+    str *font_path[FONT_COUNT] =
     {
-        "",
-        "MENU_TITLE",
-        "MENU_SINGLEPLAYER",
-        "MENU_MULTIPLAYER",
-        "MENU_SETTINGS",
-        "MENU_SETTINGS_AUDIO",
-        "MENU_SETTINGS_VIDEO",
-        "MENU_GAME_PAUSE",
-        "MENU_DEATH",
-    };
-
-    printf("menu layers:\n");
-    for (u8 i = 0; i < 9; ++i)
-        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
-
-    putchar('\n');
-}
-
-b8
-init_gui(void)
-{
-    str *font_path[4] =
-    {
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
     };
 
-    normalize_slash(font_path[0]);
-    normalize_slash(font_path[1]);
-    normalize_slash(font_path[2]);
-    normalize_slash(font_path[3]);
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+    {
+        normalize_slash(font_path[i]);
+        if (font_init(&font[i], FONT_RESOLUTION_DEFAULT,
+                    font_path[i]) != ERR_SUCCESS)
+            goto cleanup;
+    }
 
     if (
-            !init_font(&font, FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !init_font(&font_bold, FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !init_font(&font_mono, FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !init_font(&font_mono_bold, FONT_RESOLUTION_DEFAULT, font_path[3]))
+            texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "crosshair.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "item_bar.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_active.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_inactive.png")) != ERR_SUCCESS)
         goto cleanup;
 
-    //game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        if (texture_generate(&texture[i], FALSE) != ERR_SUCCESS)
+            goto cleanup;
 
-    menu_index = MENU_TITLE;
-    memset(buttons, 0, BTN_COUNT);
-    return 0;
+    //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
+    //menu_index = MENU_TITLE;
+    //memset(buttons, 0, BTN_COUNT);
+    return *GAME_ERR;
 
 cleanup:
-    free_gui();
-    return 1;
+    gui_free();
+    return *GAME_ERR;
 }
 
 void
-update_render_settings(Render *render)
+gui_free(void)
 {
-    settings.lerp_speed = SETTING_LERP_SPEED_DEFAULT;
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+        font_free(&font[i]);
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        texture_free(&texture[i]);
 }
 
-void
-free_gui(void)
-{
-    free_font(&font);
-    free_font(&font_bold);
-    free_font(&font_mono);
-    free_font(&font_mono_bold);
-}
-
-void
-draw_debug_info(Player *player,
-        f32 skybox_time, v3f32 skybox_color, v3f32 sun_rotation,
-        Render *render, ShaderProgram *program, FBO *fbo)
-{
-    start_text(0, FONT_SIZE_DEFAULT,
-            &font_mono_bold, render, program, fbo, TRUE);
-    push_text(stringf(
-                "FPS               [%d]\n"
-                "FRAME TIME        [%.2lf]\n"
-                "FRAME DELTA       [%.5lf]\n",
-                (u32)(1.0f / render->frame_delta),
-                render->frame_start,
-                render->frame_delta), (v2f32){MARGIN, MARGIN}, 0, 0);
-    render_text(0x6f9f3fff);
-
-    push_text(stringf(
-                "PLAYER NAME       [%s]\n"
-                "PLAYER XYZ        [%.2f %.2f %.2f]\n"
-                "PLAYER BLOCK      [%d %d %d]\n"
-                "PLAYER CHUNK      [%d %d %d]\n"
-                "CURRENT CHUNK     [%d %d %d]\n"
-                "PLAYER PITCH      [%.2f]\n"
-                "PLAYER YAW        [%.2f]\n",
-                player->name,
-                player->pos.x, player->pos.y, player->pos.z,
-                (i32)floorf(player->pos.x),
-                (i32)floorf(player->pos.y),
-                (i32)floorf(player->pos.z),
-                (chunk_tab[CHUNK_TAB_CENTER]) ?
-                chunk_tab[CHUNK_TAB_CENTER]->pos.x : 0,
-                (chunk_tab[CHUNK_TAB_CENTER]) ?
-                chunk_tab[CHUNK_TAB_CENTER]->pos.y : 0,
-                (chunk_tab[CHUNK_TAB_CENTER]) ?
-                chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
-                player->chunk.x, player->chunk.y, player->chunk.z,
-                player->pitch, player->yaw),
-                (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 3.0f)}, 0, 0);
-    render_text(0xffffffff);
-
-    push_text(stringf(
-                "PLAYER OVERFLOW X [%s]\n"
-                "PLAYER OVERFLOW Y [%s]\n"
-                "PLAYER OVERFLOW Z [%s]\n",
-                (player->state & FLAG_OVERFLOW_X) ?
-                (player->state & FLAG_OVERFLOW_PX) ?
-                "        " : "        " : "NONE",
-                (player->state & FLAG_OVERFLOW_Y) ?
-                (player->state & FLAG_OVERFLOW_PY) ?
-                "        " : "        " : "NONE",
-                (player->state & FLAG_OVERFLOW_Z) ?
-                (player->state & FLAG_OVERFLOW_PZ) ?
-                "        " : "        " : "NONE"),
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    render_text(0x995429ff);
-
-    push_text(stringf(
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
-                (player->state & FLAG_OVERFLOW_X) &&
-                !(player->state & FLAG_OVERFLOW_PX) ? "NEGATIVE" : "",
-                (player->state & FLAG_OVERFLOW_Y) &&
-                !(player->state & FLAG_OVERFLOW_PY) ? "NEGATIVE" : "",
-                (player->state & FLAG_OVERFLOW_Z) &&
-                !(player->state & FLAG_OVERFLOW_PZ) ? "NEGATIVE" : ""),
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    render_text(0xec6051ff);
-
-    push_text(stringf(
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
-                (player->state & FLAG_OVERFLOW_X) &&
-                (player->state & FLAG_OVERFLOW_PX) ? "POSITIVE" : "",
-                (player->state & FLAG_OVERFLOW_Y) &&
-                (player->state & FLAG_OVERFLOW_PY) ? "POSITIVE" : "",
-                (player->state & FLAG_OVERFLOW_Z) &&
-                (player->state & FLAG_OVERFLOW_PZ) ? "POSITIVE" : ""),
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 10.0f)}, 0, 0);
-    render_text(0x79ec50ff);
-
-    push_text(stringf(
-                "MOUSE XY          [%.2f %.2f]\n"
-                "DELTA XY          [%.2f %.2f]\n"
-                "RENDER RATIO      [%.4f]\n"
-                "TICKS             [%"PRId64"]  DAYS [%"PRId64"]\n"
-                "SKYBOX TIME       [%.2f]\n"
-                "SKYBOX RGB        [%.2f %.2f %.2f]\n"
-                "SUN ANGLE         [%.2f %.2f %.2f]\n",
-                render->mouse_position.x, render->mouse_position.y,
-                render->mouse_delta.x, render->mouse_delta.y,
-                (f32)render->size.x / render->size.y,
-                game_tick, game_days,
-                skybox_time,
-                skybox_color.x, skybox_color.y, skybox_color.z,
-                sun_rotation.x, sun_rotation.y, sun_rotation.z),
-            (v2f32){MARGIN, MARGIN + (FONT_SIZE_DEFAULT * 13.0f)}, 0, 0);
-    render_text(0x3f6f9fff);
-
-    start_text(0, FONT_SIZE_DEFAULT, &font_mono, render, program, fbo, FALSE);
-    push_text(stringf(
-                "Game:     %s v%s\n"
-                "Engine:   %s v%s\n"
-                "Author:   %s\n"
-                "OpenGL:   %s\n"
-                "GLSL:     %s\n"
-                "Vendor:   %s\n"
-                "Renderer: %s\n",
-                GAME_NAME, GAME_VERSION,
-                ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
-                glGetString(GL_VERSION),
-                glGetString(GL_SHADING_LANGUAGE_VERSION),
-                glGetString(GL_VENDOR),
-                glGetString(GL_RENDERER)),
-            (v2f32){MARGIN, render->size.y - MARGIN}, 0, TEXT_ALIGN_BOTTOM);
-    render_text(0x3f9f3fff);
-    stop_text();
-}
-
-#ifdef FUCK // TODO: undef FUCK
+#ifdef FUCK /* TODO: undef FUCK */
 /*jump*/
 /* 
  * scale = (source.scale * scl);
@@ -453,7 +314,7 @@ draw_hud()
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
-    if (!(state & FLAG_DEBUG))
+    if (!(flag & FLAG_DEBUG))
         draw_texture(texture_hud_widgets, crosshair,
                 crosshair_pos, 
                 (v2i16){setting.gui_scale, setting.gui_scale},
@@ -555,7 +416,7 @@ draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align
 }
 
 /*jump*/
-// TODO: make draw_texture_tiled()
+/* TODO: make draw_texture_tiled() */
 /* 
  * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
  */
@@ -742,7 +603,7 @@ btn_func_singleplayer()
     menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
     is_menu_ready = 0;
-    state &= ~FLAG_PAUSED; /*temp*/
+    flag &= ~FLAG_PAUSED; /*temp*/
 
     init_world("Poop Consistency Tester"); /*temp*/
 }
@@ -766,7 +627,7 @@ btn_func_settings()
 void
 btn_func_quit_game()
 {
-    state &= ~FLAG_ACTIVE;
+    flag &= ~FLAG_ACTIVE;
 }
 
 void
@@ -775,8 +636,8 @@ btn_func_unpause()
     menu_index = 0;
     state_menu_depth = 0;
     is_menu_ready = 0;
-    state &= ~FLAG_PAUSED;
-    lily.state &= ~FLAG_MENU_OPEN;
+    flag &= ~FLAG_PAUSED;
+    lily.flag &= ~FLAG_MENU_OPEN;
     lily.container_state = 0;
 }
 
@@ -787,7 +648,7 @@ btn_func_quit_world()
     state_menu_depth = 1;
     is_menu_ready = 0;
     /* TODO: save and unload world */
-    state &= ~FLAG_WORLD_LOADED;
+    flag &= ~FLAG_WORLD_LOADED;
 }
 
 void
@@ -798,4 +659,4 @@ btn_func_back()
     menu_index = menu_layer[state_menu_depth];
     is_menu_ready = 0;
 }
-#endif // TODO: undef FUCK
+#endif /* TODO: undef FUCK */

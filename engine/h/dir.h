@@ -3,36 +3,45 @@
 
 #include "defines.h"
 
-/* return file type.
+/* return file type to file_type.
  *
- * return 0 on failure */
-u64 get_file_type(const str *path);
+ * return 0 on failure and engine_err is set accordingly */
+u64 get_file_type(const str *path_type);
 
-/* return FALSE (0) on failure */
-b8 is_file(const str *path);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 is_file(const str *path);
 
-/* return FALSE (0) on failure */
-b8 is_file_exists(const str *path);
-
-/* return FALSE (0) on failure */
-b8 is_dir(const str *path);
-
-/* return FALSE (0) on failure */
-b8 is_dir_exists(const str *path);
-
-/* return calloc'd buf of file contents, not NULL terminated,
- * return file size in bytes to file_len.
+/* log = enable/disable logging.
  *
- * read_format = read file at path in specified format (fopen() parameter).
+ * return non-zero on failure and engine_err is set accordingly */
+u32 is_file_exists(const str *path, b8 log);
+
+/* return non-zero on failure and engine_err is set accordingly */
+u32 is_dir(const str *path);
+
+/* log = enable/disable logging.
  *
- * return NULL on failure */
-str *get_file_contents(const str *path, u64 *file_len, const str *format);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 is_dir_exists(const str *path, b8 log);
+
+/* destination = pointer to NULL buffer to store file contents,
+ * 'destination' is allocated file size, + 1 if 'terminate',
+ * read_format = read file at 'path' using 'format' (fopen() parameter),
+ * terminate = TRUE will NULL terminate buffer.
+ *
+ * return file size in bytes,
+ * engine_err is set accordingly on failure */
+u64 get_file_contents(const str *path, void **destination,
+        u64 size, const str *format, b8 terminate);
 
 /* return directory entries at dir_path.
  *
- * return (buf){NULL} on failure */
+ * return (buf){NULL} on failure and engine_err is set accordingly */
 buf get_dir_contents(const str *path);
 
+/* return dir entry count at path.
+ *
+ * engine_err is set accordingly on failure */
 u64 get_dir_entry_count(const str *path);
 
 /* copy file at path into file/directory at destination.
@@ -41,8 +50,8 @@ u64 get_dir_entry_count(const str *path);
  * write_format = write new file at destination in specified format
  * (fopen() parameter).
  *
- * return non-zero on failure */
-u8 copy_file(const str *path, const str *destination,
+ * return non-zero on failure and engine_err is set accordingly */
+u32 copy_file(const str *path, const str *destination,
         const str *read_format, const str *write_format);
 
 /* copy directory at path into directory at destination.
@@ -57,28 +66,42 @@ u8 copy_file(const str *path, const str *destination,
  * write_format = write new files at destination in specified format
  * (fopen() parameter).
  *
- * return non-zero on failure */
-u8 copy_dir(const str *path, const str *destination, b8 overwrite,
+ * return non-zero on failure and engine_err is set accordingly */
+u32 copy_dir(const str *path, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format);
 
+/* return non-zero on failure and engine_err is set accordingly */
+u32 write_file(const str *path, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log);
+
+/* return calloc'd string of resolved 'path'.
+ *
+ * return NULL on failure and engine_err is set accordingly */
 str *get_path_absolute(const str *path);
 
 /* return calloc'd string of executable's path, slash and null terminated.
- * return NULL on failure */
+ *
+ * return NULL on failure and engine_err is set accordingly */
 str *get_path_bin_root(void);
 
-/* append '/' onto path if path not ending in '/', null terminated */
+/* append '/' onto path if path not ending in '/', null terminated.
+ *
+ * on failure, engine_err is set accordingly */
 void check_slash(str *path);
 
-/* normalize all slashes to '/' or '\' based on operating system */
+/* normalize all slashes to '/' or '\' based on operating system.
+ *
+ * on failure, engine_err is set accordingly */
 void normalize_slash(str *path);
 
-/* change all '\\' to '\' */
+/* change all '\\' to '\'.
+ *
+ * on failure, engine_err is set accordingly */
 void posix_slash(str *path);
 
-/* retract path to its parent directory.
+/* return path retracted to its parent directory.
  *
- * return path */
+ * on failure, engine_err is set accordingly */
 str *retract_path(str *path);
 
 #endif /* ENGINE_DIR_H */

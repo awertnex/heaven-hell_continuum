@@ -10,10 +10,11 @@
 #define ENGINE_NAME             "Fossil Engine"
 #define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
 
-#include "../include/glad/glad_modified.h"
+#include <engine/include/glad/glad.h>
 #define GLFW_INCLUDE_NONE
-#include "../include/glfw3_modified.h"
-#include "../include/stb_truetype_modified.h"
+#include <engine/include/glfw3.h>
+#include <engine/include/stb_truetype.h>
+#include <engine/include/stb_image.h>
 
 #include "defines.h"
 #include "platform.h"
@@ -21,12 +22,17 @@
 
 #define CAMERA_ANGLE_MAX 90.0f
 #define CAMERA_RANGE_MAX 360.0f
+#define CAMERA_ZOOM_MAX 69.0f
+#define CAMERA_ZOOM_SPEED 10.0f
+#define CAMERA_ZOOM_SENSITIVITY 6.0f
 #define KEYBOARD_KEYS_MAX 120
 #define KEYBOARD_DOUBLE_PRESS_TIME 0.5f
 #define FONT_ATLAS_CELL_RESOLUTION 16
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
 #define TEXT_TAB_SIZE 4
+#define TEXT_COLOR_SHADOW 0x00000060
+#define TEXT_OFFSET_SHADOW 2.0f
 
 enum KeyboardKeyState
 {
@@ -177,7 +183,6 @@ typedef struct Render
     f64 frame_start;
     f64 frame_last;
     f64 frame_delta;
-    f64 frame_delta_square;
 } Render;
 
 typedef struct Mesh
@@ -217,6 +222,26 @@ typedef struct FBO
     GLuint rbo;
 } FBO;
 
+typedef struct Texture
+{
+    v2i32 size;
+    u64 data_len;
+    GLuint id;              /* used by opengl's glGenTextures() */
+
+    /* used by opengl extension: GL_ARB_bindless_texture */
+    u64 handle;
+
+    GLint format;           /* used by opengl's glTexImage2D() */
+    GLint format_internal;  /* used by opengl's glTexImage2D() */
+    GLint filter;           /* used by opengl's glTexParameteri() */
+
+    /* number of color channels, used by stb_image.h's stbi_load() */
+    int channels;
+
+    b8 grayscale;
+    u8 *buf;
+} Texture;
+
 typedef struct Camera
 {
     v3f32 pos;
@@ -226,9 +251,11 @@ typedef struct Camera
     f32 sin_yaw;
     f32 cos_yaw;
     f32 fovy;
+    f32 fovy_smooth;
     f32 ratio;
     f32 far;
     f32 near;
+    f32 zoom;
 } Camera;
 
 typedef struct Projection
@@ -313,57 +340,62 @@ enum TextAlignment
     TEXT_ALIGN_BOTTOM = 2,
 }; /* TextAlignment */
 
-extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
-extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
-
 /* multisample = turn on multisampling;
  *
- * return non-zero on failure */
-int init_glfw(b8 multisample);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 glfw_init(b8 multisample);
 
-/* return non-zero on failure */
-int init_window(Render *render);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 window_init(Render *render);
 
-/* return non-zero on failure */
-int init_glad(void);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 glad_init(void);
 
-/* read_format = read files within path in specified format
- * (fread() parameter),
+/* calls 'shader_pre_process()' on 'shader->file_name' before compiling shader.
  *
- * return non-zero on failure */
-int init_shader(const str *shaders_dir, Shader *shader,
-        const str *read_format);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 shader_init(const str *shaders_dir, Shader *shader);
 
-/* read_format = read files within path in specified format
- * (fread() parameter),
+/* calls 'shader_init()' on all shaders in 'program' if 'shader->type' is set.
  *
- * return non-zero on failure */
-int init_shader_program(const str *shaders_dir, ShaderProgram *program,
-        const str *read_format);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 shader_program_init(const str *shaders_dir, ShaderProgram *program);
 
-void free_shader_program(ShaderProgram *program);
+void shader_program_free(ShaderProgram *program);
 
-/* return non-zero on failure */
-int init_fbo(Render *render, FBO *fbo, Mesh *mesh_fbo,
-        b8 multisample, u32 samples, b8 flip_vertical);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
+        b8 multisample, u32 samples);
 
-/* return non-zero on failure */
-int realloc_fbo(Render *render, FBO *fbo, b8 multisample, u32 samples);
+/* return non-zero on failure and engine_err is set accordingly */
+u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
-void free_fbo(FBO *fbo);
+void fbo_free(FBO *fbo);
 
-/* return FALSE (0) on failure */
-b8 generate_texture(GLuint *id, const GLint format,
-        u32 width, u32 height, void *buffer, b8 grayscale);
+/* load image data from disk into texture->buf,
+ * set texture info,
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 texture_init(Texture *texture, v2i32 size,
+        const GLint format_internal, const GLint format,
+        GLint filter, int channels, b8 grayscale, const str *file_name);
 
-/* usage = GL_<x>_DRAW */
-int generate_mesh(Mesh *mesh, GLenum usage,
-        GLuint vbo_len, GLuint ebo_len,
-        GLfloat *vbo_data, GLuint *ebo_data);
+/* generate texture for opengl from image loaded by texture_init().
+ *
+ * bindless = use opengl extension: GL_ARB_bindless_texture.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 texture_generate(Texture *texture, b8 bindless);
 
-void draw_mesh(Mesh *mesh);
+void texture_free(Texture *texture);
 
-void free_mesh(Mesh *mesh);
+/* usage = GL_<x>_DRAW.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 mesh_generate(Mesh *mesh, GLenum usage,
+        GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
+
+void mesh_free(Mesh *mesh);
 
 /* apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw)
  * from camera rotation,
@@ -376,31 +408,13 @@ void update_camera_perspective(Camera *camera, Projection *projection);
 
 void update_mouse_movement(Render *render);
 
+b8 is_key_press(const u32 key);
+b8 is_key_press_double(const u32 key);
+b8 is_key_hold(const u32 key);
+b8 is_key_release(const u32 key);
+
 /* update internal key states: press, double-press, hold, release */
 void update_key_states(Render *render);
-
-static inline b8 is_key_press(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS ||
-            keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static inline b8 is_key_press_double(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static inline b8 is_key_hold(const u32 key)
-{
-    return (keyboard_key[key] == KEY_HOLD ||
-            keyboard_key[key] == KEY_HOLD_DOUBLE);
-}
-
-static inline b8 is_key_release(const u32 key)
-{
-    return (keyboard_key[key] == KEY_RELEASE ||
-            keyboard_key[key] == KEY_RELEASE_DOUBLE);
-}
 
 /* load font from file at font_path,
  * allocate memory for font.buf and load file contents into it in binary format,
@@ -410,24 +424,32 @@ static inline b8 is_key_release(const u32 key)
  * size = font size & character bitmap diameter,
  * font_path = font path.
  *
- * return FALSE (0) on failure */
-b8 init_font(Font *font, u32 size, const str *font_path);
+ * return non-zero on failure and engine_err is set accordingly */
+u32 font_init(Font *font, u32 size, const str *font_path);
 
-void free_font(Font *font);
+void font_free(Font *font);
 
-/* init text rendering settings */
-u8 init_text(void);
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * init text rendering settings.
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 text_init(ShaderProgram *program);
 
-/* start text rendering batch.
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * start text rendering batch.
  *
  * length = pre-allocate buffer for string (if 0, STRING_MAX is allocated),
  * size = font height in pixels,
  * color = hex format: 0xrrggbbaa,
  * clear = clear the framebuffer before rendering */
-void start_text(u64 length, f32 size, Font *font,
+void text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
-/* push string's glyph metrics, position
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * push string's glyph metrics, position
  * and alignment to render buffer.
  *
  * align_x = TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT,
@@ -436,19 +458,23 @@ void start_text(u64 length, f32 size, Font *font,
  * enum: TextAlignment.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'render_text()' */
-void push_text(const str *text, v2f32 pos, i8 align_x, i8 align_y);
+ * batch, chained with 'text_render()' */
+void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
-/* render text to framebuffer.
+/* -- IMPLEMENTATION: text.c --;
+ * render text to framebuffer.
  *
  * can be called multiple times within a text rendering
- * batch, chained with 'push_text()' */
-void render_text(u32 color);
+ * batch, chained with 'text_push()' */
+void text_render(u32 color, b8 shadow);
 
-/* cleanup for text rendering.
+/* -- IMPLEMENTATION: text.c --;
+ *
+ * cleanup for text rendering.
  * unbind text framebuffer, enable depth test */
-void stop_text(void);
+void text_stop(void);
 
-void free_text(void);
+/* -- IMPLEMENTATION: text.c --; */
+void text_free(void);
 
 #endif /* ENGINE_CORE_H */

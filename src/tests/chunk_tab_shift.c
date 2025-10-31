@@ -6,7 +6,6 @@
 #include <engine/h/math.h>
 #include <engine/h/memory.h>
 #include "../h/main.h"
-#include "../h/settings.h"
 #include "../h/chunking.h"
 #include "../h/dir.h"
 #include "../h/gui.h"
@@ -25,9 +24,9 @@ str GRANDPATH_DIR[][NAME_MAX] =
 {
     "lib/",
     "lib/"PLATFORM"/",
-    "resources/",
-    "resources/fonts/",
-    "resources/shaders/",
+    "assets/",
+    "assets/fonts/",
+    "assets/shaders/",
 };
 
 Font font_mono;

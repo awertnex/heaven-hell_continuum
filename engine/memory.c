@@ -4,31 +4,39 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "h/diagnostics.h"
 #include "h/platform.h"
 #include "h/memory.h"
 #include "h/limits.h"
 #include "h/logger.h"
 
-b8
-mem_alloc(void **x, u64 size, const str *name)
+u32
+_mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
-        return TRUE;
+    {
+        engine_err = ERR_POINTER_NOT_NULL;
+        return engine_err;
+    }
 
     *x = calloc(1, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
+        LOGFATALEX(TRUE, file, line, ERR_MEM_ALLOC_FAIL,
+                "%s[%p] Memory Allocation Failed, Process Aborted\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
-    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
-    return TRUE;
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n",
+            name, *x, size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
-mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
+u32
+_mem_alloc_memb(void **x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
         return TRUE;
@@ -36,85 +44,113 @@ mem_alloc_memb(void **x, u64 memb, u64 size, const str *name)
     *x = calloc(memb, size);
     if (*x == NULL)
     {
-        LOGFATAL("%s[%p] Memory Allocation Failed, Process Aborted\n",
+        LOGFATALEX(TRUE, file, line, ERR_MEM_ALLOC_FAIL,
+                "%s[%p] Memory Allocation Failed, Process Aborted\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
-    LOGTRACE("%s[%p] Memory Allocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), memb * size);
-    return TRUE;
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n",
+            name, *x, memb * size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
-mem_alloc_buf(buf *x, u64 memb, u64 size, const str *name)
+u32
+_mem_alloc_buf(buf *x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
+    if (x == NULL)
+    {
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Allocation Failed, Pointer NULL\n",
+                name, NULL);
+        return engine_err;
+    }
+
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
     snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (!mem_alloc_memb((void*)&x->i, memb, sizeof(str*), name_i))
-        return FALSE;
-    if (!mem_alloc_memb((void*)&x->buf, memb, size, name_buf))
+    if (_mem_alloc_memb((void*)&x->i,
+                memb, sizeof(str*), name_i, file, line) != ERR_SUCCESS)
+        return engine_err;
+
+    if (_mem_alloc_memb((void*)&x->buf,
+                memb, size, name_buf, file, line) != ERR_SUCCESS)
     {
-        mem_free((void*)&x->i, memb * sizeof(str*), name_i);
-        return FALSE;
+        _mem_free((void*)&x->i, memb * sizeof(str*), name_i, file, line);
+        return engine_err;
     }
 
-    for (u64 i = 0; i < memb; ++i)
+    u64 i = 0;
+    for (; i < memb; ++i)
         x->i[i] = x->buf + (i * size);
     x->memb = memb;
     x->size = size;
     x->loaded = TRUE;
-    return TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
-mem_realloc(void **x, u64 size, const str *name)
+u32
+_mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
+
     void *temp = realloc(*x, size);
     if (temp == NULL)
     {
-        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
-        return FALSE;
+        LOGFATALEX(TRUE, file, line, ERR_MEM_REALLOC_FAIL,
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
+                name, *x);
+        return engine_err;
     }
     *x = temp;
-    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
-    return TRUE;
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n",
+            name, *x, size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-b8
-mem_realloc_memb(void **x, u64 memb, u64 size, const str *name)
+u32
+_mem_realloc_memb(void **x, u64 memb, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
-        LOGERROR("%s[%p] Memory Reallocation Failed, Pointer NULL\n",
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
                 name, NULL);
-        return FALSE;
+        return engine_err;
     }
     void *temp = realloc(*x, memb * size);
     if (temp == NULL)
     {
-        LOGFATAL("%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, (void*)(uintptr_t)(*x));
-        return FALSE;
+        LOGFATALEX(TRUE, file, line, ERR_MEM_REALLOC_FAIL,
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
+                name, *x);
+        return engine_err;
     }
     *x = temp;
-    LOGTRACE("%s[%p] Memory Reallocated[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), memb * size);
-    return TRUE;
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n",
+            name, *x, memb * size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
-mem_free(void **x, u64 size, const str *name)
+_mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
         return;
@@ -123,12 +159,12 @@ mem_free(void **x, u64 size, const str *name)
     memset(*x, 0, size);
     free(*x);
     *x = NULL;
-    LOGTRACE("%s[%p] Memory Unloaded[%lldB]\n",
-            name, (void*)(uintptr_t)(temp), size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded [%lldB]\n",
+            name, temp, size);
 }
 
 void
-mem_free_buf(buf *x, const str *name)
+_mem_free_buf(buf *x, const str *name, const str *file, u64 line)
 {
     void *temp = NULL;
     if (x->i != NULL)
@@ -136,29 +172,35 @@ mem_free_buf(buf *x, const str *name)
         temp = x->i;
         memset(x->i, 0, x->memb * sizeof(str*));
         free(x->i);
-        LOGTRACE("%s.i[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(temp), x->memb * sizeof(str*));
+        LOGTRACEEX(TRUE, file, line, "%s.i[%p] Memory Unloaded [%lldB]\n",
+                name, temp, x->memb * sizeof(str*));
     }
     if (x->buf != NULL)
     {
         temp = x->buf;
         memset(x->buf, 0, x->memb * x->size);
         free(x->buf);
-        LOGTRACE("%s.buf[%p] Memory Unloaded[%lldB]\n",
-                name, (void*)(uintptr_t)(temp), x->memb * x->size);
+        LOGTRACEEX(TRUE, file, line, "%s.buf[%p] Memory Unloaded [%lldB]\n",
+                name, temp, x->memb * x->size);
     }
     *x = (buf){NULL};
 }
 
-void
-mem_zero(void **x, u64 size, const str *name)
+u32
+_mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
-        return;
+    {
+        engine_err = ERR_POINTER_NULL;
+        return engine_err;
+    }
 
     memset(*x, 0, size);
-    LOGTRACE("%s[%p] Memory Cleared[%lldB]\n",
-            name, (void*)(uintptr_t)(*x), size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Cleared [%lldB]\n",
+            name, *x, size);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 void
@@ -170,9 +212,10 @@ print_bits(u64 x, u8 bit_count)
 }
 
 void
-swap_bits(char *c1, char *c2, u8 bit_count)
+swap_bits(char *c1, char *c2)
 {
-    for (u8 i = 0; i < bit_count; ++i)
+    u8 i = 0;
+    for (; i < 8; ++i)
     {
         if (((*c1 >> i) & 1) == ((*c2 >> i) & 1))
             continue;
@@ -183,11 +226,36 @@ swap_bits(char *c1, char *c2, u8 bit_count)
 }
 
 void
+swap_bits_u8(u8 *a, u8 *b)
+{
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
+}
+
+void
+swap_bits_u32(u32 *a, u32 *b)
+{
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
+}
+
+void
+swap_bits_u64(u64 *a, u64 *b)
+{
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
+}
+
+void
 swap_strings(str *s1, str *s2)
 {
     u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
-    for (u16 i = 0; i <= len; ++i)
-        swap_bits(&s1[i], &s2[i], 8);
+    u16 i = 0;
+    for (; i <= len; ++i)
+        swap_bits(&s1[i], &s2[i]);
 }
 
 str *
@@ -196,7 +264,8 @@ swap_string_char(str *string, char c1, char c2)
     u64 len = strlen(string);
     if (!len) return string;
 
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (string[i] == c1)
             string[i] = c2;
@@ -205,21 +274,19 @@ swap_string_char(str *string, char c1, char c2)
     return string;
 }
 
-/* inspired by 'github.com/raysan5/raylib':
- * raylib/src/rtext.c/TextFormat() */
+/* inspired by 'raylib':
+ * github.com/raysan5/raylib/src/rtext.c/TextFormat() */
 str *
 stringf(const str* format, ...)
 {
     static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
     static u64 index = 0;
-
     str *string = str_buf[index];
-    mem_zero((void*)&string, OUT_STRING_MAX, "stringf_current_buf");
 
     __builtin_va_list args;
-    va_start(args, format);
+    __builtin_va_start(args, format);
     u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
-    va_end(args);
+    __builtin_va_end(args);
 
     if (required_bytes >= OUT_STRING_MAX - 1)
     {
@@ -231,10 +298,10 @@ stringf(const str* format, ...)
     return string;
 }
 
+#if 0
 void
 sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
-#if 0
     for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
     {
         smallest = i;
@@ -258,5 +325,5 @@ sort_buf(buf *buffer) /* TODO: fucking fix this */
 
         swap_strings(buffer->i[i], buffer->i[smallest]);
     }
-#endif
 }
+#endif

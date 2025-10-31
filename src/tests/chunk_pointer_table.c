@@ -50,13 +50,13 @@
         }, \
         0.3f, 1, col)
 
-enum ChunkStates
+enum ChunkState
 {
     STATE_ACTIVE =          0x1,
 
     STATE_CHUNK_LOADED =    0x1,
     STATE_CHUNK_DIRTY =     0x2,
-}; /* Chunk States */
+}; /* Chunk State */
 
 typedef struct Chunk
 {

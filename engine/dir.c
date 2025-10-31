@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#include "h/diagnostics.h"
 #include "h/platform.h"
 #include "h/dir.h"
 #include "h/limits.h"
@@ -17,104 +18,154 @@ get_file_type(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
-    {
         return (S_ISREG(stats.st_mode) | (S_ISDIR(stats.st_mode) * 2));
-    }
 
-    LOGERROR("File '%s' Not Found\n", path);
+    LOGERROR(TRUE, ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
     return 0;
 }
 
-b8
+u32
 is_file(const str *path)
 {
+    if (is_file_exists(path, FALSE) != ERR_SUCCESS)
+        return engine_err;
+
     struct stat stats;
     if (stat(path, &stats) == 0 && S_ISREG(stats.st_mode))
-        return TRUE;
-    return FALSE;
+    {
+        engine_err = ERR_SUCCESS;
+        return engine_err;
+    }
+
+    engine_err = ERR_IS_NOT_FILE;
+    return engine_err;
 }
 
-b8
-is_file_exists(const str *path)
+u32
+is_file_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
     {
         if (S_ISREG(stats.st_mode))
-            return TRUE;
+        {
+            engine_err = ERR_SUCCESS;
+            return engine_err;
+        }
         else
         {
-            LOGERROR("'%s' is Not a Regular File\n", path);
-            return FALSE;
+            if (log)
+            {
+                LOGERROR(TRUE, ERR_IS_NOT_FILE,
+                        "'%s' is Not a Regular File\n", path);
+            }
+            else engine_err = ERR_IS_NOT_FILE;
+            return engine_err;
         }
     }
-    LOGERROR("File '%s' Not Found\n", path);
-    return FALSE;
+
+    if (log)
+    {
+        LOGERROR(TRUE, ERR_FILE_NOT_FOUND, "File '%s' Not Found\n", path);
+    }
+    else engine_err = ERR_FILE_NOT_FOUND;
+    return engine_err;
 }
 
-b8
+u32
 is_dir(const str *path)
 {
+    if (is_dir_exists(path, FALSE) != ERR_SUCCESS)
+        return engine_err;
+
     struct stat stats;
     if (stat(path, &stats) == 0 && S_ISDIR(stats.st_mode))
-        return TRUE;
-    return FALSE;
+    {
+        engine_err = ERR_SUCCESS;
+        return engine_err;
+    }
+
+    engine_err = ERR_IS_NOT_DIR;
+    return engine_err;
 }
 
-b8
-is_dir_exists(const str *path)
+u32
+is_dir_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
     {
         if (S_ISDIR(stats.st_mode))
-            return TRUE;
+        {
+            engine_err = ERR_SUCCESS;
+            return engine_err;
+        }
         else
         {
-            LOGERROR("'%s' is Not a Directory\n", path);
-            return FALSE;
+            if (log)
+            {
+                LOGERROR(TRUE, ERR_IS_NOT_DIR,
+                        "'%s' is Not a Directory\n", path);
+            }
+            else engine_err = ERR_IS_NOT_DIR;
+            return engine_err;
         }
     }
-    LOGERROR("Directory '%s' Not Found\n", path);
-    return FALSE;
+
+    if (log)
+    {
+        LOGERROR(TRUE, ERR_DIR_NOT_FOUND,
+                "Directory '%s' Not Found\n", path);
+    }
+    else engine_err = ERR_DIR_NOT_FOUND;
+    return engine_err;
 }
 
-str *
-get_file_contents(const str *path, u64 *file_len, const str *read_format)
+u64
+get_file_contents(const str *path, void **destination,
+        u64 size, const str *read_format, b8 terminate)
 {
-    if (!is_file_exists(path))
-            return NULL;
+    if (is_file_exists(path, TRUE) != ERR_SUCCESS)
+            return engine_err;
 
     FILE *file = NULL;
     if ((file = fopen(path, read_format)) == NULL)
     {
-        LOGERROR("File Opening '%s' Failed\n", path);
-        return NULL;
+        LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
+                "File Opening '%s' Failed\n", path);
+        return engine_err;
     }
 
     fseek(file, 0, SEEK_END);
     u64 len = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    str *file_contents = NULL;
-    if (!mem_alloc((void*)&file_contents, len + 1, "file_contents"))
+    if (mem_alloc(destination, len + ((terminate) ? 1 : 0),
+                "get_file_contents().destination") != ERR_SUCCESS)
         goto cleanup;
 
-    u64 cursor = fread(file_contents, 1, len, file);
-    fclose(file);
+    u64 cursor = fread(*destination, size, len, file);
 
-    if (file_len) *file_len = cursor;
-    return file_contents;
+    fclose(file);
+    if (terminate) ((u8*)(*destination))[len] = 0;
+    engine_err = ERR_SUCCESS;
+    return cursor;
 
 cleanup:
-    (file) ? fclose(file) : 0;
-    return NULL;
+    if (file) fclose(file);
+    return 0;
 }
 
 buf
 get_dir_contents(const str *path)
 {
-    if (!path || !is_dir_exists(path))
+    if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
+        return (buf){NULL};
+    }
+
+    if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
         return (buf){NULL};
 
     str *dir_path_absolute = get_path_absolute(path);
@@ -129,13 +180,18 @@ get_dir_contents(const str *path)
     buf contents = {NULL};
 
     dir = opendir(dir_path_absolute);
+    if (dir == NULL)
+    {
+        engine_err = ERR_DIR_OPEN_FAIL;
+        goto cleanup;
+    }
+
     while ((entry = readdir(dir)) != NULL)
         ++contents.memb;
     contents.memb -= 2;
 
-    if (!contents.memb
-            || !mem_alloc_buf(&contents, contents.memb,
-                NAME_MAX, "dir_contents"))
+    if (!contents.memb || mem_alloc_buf(&contents, contents.memb,
+                NAME_MAX, "get_dir_contents().dir_contents") != ERR_SUCCESS)
         goto cleanup;
 
     rewinddir(dir);
@@ -152,31 +208,38 @@ get_dir_contents(const str *path)
         snprintf(path_full, PATH_MAX, "%s%s",
                 dir_path_absolute_usable, entry->d_name);
 
-        if (is_dir(path_full))
+        if (is_dir(path_full) == ERR_SUCCESS)
             check_slash(contents.i[i]);
         ++i;
     }
 
     closedir(dir);
-    mem_free((void*)&dir_path_absolute,
-            strlen(dir_path_absolute), "dir_path_absolute");
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute),
+            "get_dir_contents().dir_path_absolute");
 
+    engine_err = ERR_SUCCESS;
     return contents;
 
 cleanup:
     if (dir != NULL)
         closedir(dir);
-    mem_free((void*)&dir_path_absolute,
-            strlen(dir_path_absolute), "dir_path_absolute");
-
-    mem_free_buf((void*)&contents, "dir_contents");
+    mem_free((void*)&dir_path_absolute, strlen(dir_path_absolute),
+            "get_dir_contents().dir_path_absolute");
+    mem_free_buf((void*)&contents,
+            "get_dir_contents().dir_contents");
     return (buf){NULL};
 }
 
 u64
 get_dir_entry_count(const str *path)
 {
-    if (!path || !is_dir_exists(path))
+    if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
+        return 0;
+    }
+
+    if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
         return 0;
 
     DIR *dir = NULL;
@@ -195,57 +258,60 @@ get_dir_entry_count(const str *path)
     }
 
     closedir(dir);
+
+    engine_err = ERR_SUCCESS;
     return count;
 }
 
-u8
+u32
 copy_file(const str *path, const str *destination,
         const str *read_format, const str *write_format)
 {
-    if (!is_file_exists(path))
-            return -1;
+    if (is_file_exists(path, TRUE) != ERR_SUCCESS)
+            return engine_err;
 
     str destination_string[PATH_MAX] = {0};
     snprintf(destination_string, PATH_MAX, "%s", destination);
 
-    if (is_dir(destination))
+    if (is_dir(destination) == ERR_SUCCESS)
         strncat(destination_string,
                 strrchr(path, SLASH_NATIVE), PATH_MAX - 1);
 
     FILE *in_file = NULL;
     if ((in_file = fopen(destination_string, write_format)) == NULL)
     {
-        LOGERROR("File Copying '%s' -> '%s' Failed\n",
+        LOGERROR(FALSE, ERR_FILE_OPEN_FAIL,
+                "File Copying '%s' -> '%s' Failed\n",
                 path, destination_string);
-        return -1;
+        return engine_err;
     }
 
-    u64 len = 0;
     str *out_file = NULL;
-    if ((out_file = get_file_contents(path, &len, read_format)) == NULL)
+    u64 len = get_file_contents(path, (void*)&out_file, 1, read_format, FALSE);
+    if (out_file == NULL)
     {
         fclose(in_file);
-        return -1;
+        return engine_err;
     }
 
     fwrite(out_file, 1, len, in_file);
-    LOGTRACE("File Copied '%s' -> '%s'\n", path, destination_string);
-
+    LOGTRACE(FALSE, "File Copied '%s' -> '%s'\n", path, destination_string);
+    engine_err = ERR_SUCCESS;
     fclose(in_file);
-    return 0;
+    return engine_err;
 }
 
-u8
+u32
 copy_dir(const str *path, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format)
 {
-    if (!is_dir_exists(path))
-        return -1;
+    if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
+        return engine_err;
 
     buf dir_contents = {0};
     dir_contents = get_dir_contents(path);
     if (!dir_contents.loaded)
-        return -1;
+        return engine_err;
 
     str path_string[PATH_MAX] = {0};
     snprintf(path_string, PATH_MAX, "%s", path);
@@ -255,7 +321,7 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
     snprintf(destination_string, PATH_MAX, "%s", destination);
     check_slash(destination_string);
 
-    if (is_dir_exists(destination_string) && !overwrite)
+    if (is_dir_exists(destination_string, FALSE) == ERR_SUCCESS && !overwrite)
     {
         strncat(destination_string,
                 strrchr(path_string, SLASH_NATIVE), PATH_MAX - 1);
@@ -265,7 +331,8 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
 
     str in_dir[PATH_MAX] = {0};
     str out_dir[PATH_MAX] = {0};
-    for (u64 i = 0; i < dir_contents.memb; ++i)
+    u64 i = 0;
+    for (; i < dir_contents.memb; ++i)
     {
         snprintf(in_dir, PATH_MAX - 1, "%s%s",
                 path_string, (str*)dir_contents.i[i]);
@@ -273,7 +340,7 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
         snprintf(out_dir, PATH_MAX - 1, "%s%s",
                 destination_string, (str*)dir_contents.i[i]);
 
-        if (is_dir(in_dir))
+        if (is_dir(in_dir) == ERR_SUCCESS)
         {
             copy_dir(in_dir, out_dir, 1, read_format, write_format);
             continue;
@@ -281,8 +348,33 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
         copy_file(in_dir, out_dir, read_format, write_format);
     }
 
-    LOGTRACE("Directory Copied '%s' -> '%s'\n", path, destination_string);
-    return 0;
+    LOGTRACE(FALSE,
+            "Directory Copied '%s' -> '%s'\n", path, destination_string);
+    engine_err = ERR_SUCCESS;
+    return engine_err;
+}
+
+u32
+write_file(const str *path, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log)
+{
+    FILE *file = NULL;
+    if ((file = fopen(path, write_format)) == NULL)
+    {
+        if (log)
+        {
+            LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
+                    "File Opening '%s' Failed\n", path);
+        }
+        else engine_err = ERR_FILE_OPEN_FAIL;
+        return engine_err;
+    }
+
+    fwrite(buf, size, length, file);
+    fclose(file);
+    LOGTRACE(FALSE, "File Written '%s'\n", path);
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
 str *
@@ -290,25 +382,26 @@ get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
     {
-        LOGERROR("%s\n", "Path Too Long");
+        LOGERROR(TRUE, ERR_GET_PATH_ABSOLUTE_FAIL, "%s\n", "Path Too Long");
         return NULL;
     }
 
-    if (!is_dir_exists(path))
+    if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
         return NULL;
 
     str path_absolute[PATH_MAX] = {0};
-    if (!_get_path_absolute(path, path_absolute))
+    if (_get_path_absolute(path, path_absolute) != ERR_SUCCESS)
         return NULL;
 
     u64 len = strlen(path_absolute);
     str *result = NULL;
-    if (!mem_alloc((void*)&result, sizeof(str*) * (len + 1), "path_absolute"))
+    if (mem_alloc((void*)&result, sizeof(str*) * (len + 1),
+                "get_path_absolute().path_absolute") != ERR_SUCCESS)
         return NULL;
 
+    engine_err = ERR_SUCCESS;
     strncpy(result, path_absolute, len);
     check_slash(result);
-
     return result;
 }
 
@@ -316,19 +409,21 @@ str *
 get_path_bin_root(void)
 {
     str path_bin_root[PATH_MAX] = {0};
-    if (!_get_path_bin_root(path_bin_root))
+    if (_get_path_bin_root(path_bin_root) != ERR_SUCCESS)
         return NULL;
 
     u64 len = strlen(path_bin_root);
     if (len >= PATH_MAX - 1)
     {
-        LOGFATAL("Path Too Long '%s', Process Aborted\n", path_bin_root);
+        LOGFATAL(TRUE, ERR_PATH_TOO_LONG,
+                "Path Too Long '%s', Process Aborted\n", path_bin_root);
         return NULL;
     }
 
     path_bin_root[len] = 0;
     str *result = NULL;
-    if (!mem_alloc((void*)&result, PATH_MAX, "path_bin_root"))
+    if (mem_alloc((void*)&result, PATH_MAX,
+                "get_path_bin_root().path_bin_root") != ERR_SUCCESS)
         return NULL;
 
     strncpy(result, path_bin_root, len);
@@ -338,6 +433,7 @@ get_path_bin_root(void)
         *last_slash = 0;
     check_slash(result);
 
+    engine_err = ERR_SUCCESS;
     return result;
 }
 
@@ -345,57 +441,86 @@ void
 check_slash(str *path)
 {
     if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
         return;
+    }
 
     u64 len = strlen(path);
     if (len >= PATH_MAX - 1)
+    {
+        engine_err = ERR_PATH_TOO_LONG;
         return;
+    }
 
     if (path[len - 1] == SLASH_NATIVE)
+    {
+        engine_err = ERR_SUCCESS;
         return;
+    }
 
     if (path[len - 1] == SLASH_NON_NATIVE)
     {
         path[len - 1] = SLASH_NATIVE;
         path[len] = 0;
+        engine_err = ERR_SUCCESS;
         return;
     }
 
     path[len] = SLASH_NATIVE;
     path[len + 1] = 0;
+    engine_err = ERR_SUCCESS;
 }
 
 void
 normalize_slash(str *path)
 {
     if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
         return;
+    }
 
     u64 len = strlen(path);
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (path[i] == SLASH_NON_NATIVE)
             path[i] = SLASH_NATIVE;
     }
+
+    engine_err = ERR_SUCCESS;
 }
 
 void
 posix_slash(str *path)
 {
     if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
         return;
+    }
 
     u64 len = strlen(path);
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (path[i] == '\\')
             path[i] = '/';
     }
+
+    engine_err = ERR_SUCCESS;
 }
 
 str *
 retract_path(str *path)
 {
+    if (path == NULL)
+    {
+        engine_err = ERR_POINTER_NULL;
+        return NULL;
+    }
+
     u64 len = strlen(path);
     if (len <= 1) return path;
 
@@ -403,7 +528,8 @@ retract_path(str *path)
     normalize_slash(path);
 
     u8 stage = 0;
-    for (u64 i = 0; i < len; ++i)
+    u64 i = 0;
+    for (; i < len; ++i)
     {
         if (stage == 1 && path[len - i - 1] == SLASH_NATIVE)
             break;
@@ -414,5 +540,6 @@ retract_path(str *path)
         }
     }
 
+    engine_err = ERR_SUCCESS;
     return path;
 }

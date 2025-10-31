@@ -1,111 +1,183 @@
 #include <time.h>
 #include <sys/time.h>
-#include <inttypes.h>
 
 #include <engine/h/math.h>
 #include "h/main.h"
 #include "h/logic.h"
-#include "h/settings.h"
 
 void
-update_player(Render *render, Player *player, u64 chunk_diameter,
+player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
-    wrap_coordinates(player, chunk_diameter,
-            radius, radius_v, diameter, diameter_v);
+    /* ---- wrap coordinates ------------------------------------------------ */
+    const i64 DIAMETER          = diameter * chunk_diameter;
+    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
+
+    const i64 WORLD_MARGIN =
+        (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+    const i64 WORLD_MARGIN_V =
+        (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+
+    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
+
+    /* ---- wrap coordinates: world margin ---------------------------------- */
+    if (player->pos_smooth.x > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
+    else if (player->pos_smooth.x < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_X;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
+
+    if (player->pos_smooth.y > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
+    else if (player->pos_smooth.y < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
+
+    if (player->pos_smooth.z > WORLD_MARGIN_V)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
+    else if (player->pos_smooth.z < -WORLD_MARGIN_V)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
+
+    /* ---- wrap coordinates: overflow edge --------------------------------- */
+    if (player->pos_smooth.x > OVERFLOW_EDGE)
+    {
+        player->pos.x -= DIAMETER;
+        player->pos_smooth.x -= DIAMETER;
+    }
+    if (player->pos_smooth.x < -OVERFLOW_EDGE)
+    {
+        player->pos.x += DIAMETER;
+        player->pos_smooth.x += DIAMETER;
+    }
+
+    if (player->pos_smooth.y > OVERFLOW_EDGE)
+    {
+        player->pos.y -= DIAMETER;
+        player->pos_smooth.y -= DIAMETER;
+    }
+    if (player->pos_smooth.y < -OVERFLOW_EDGE)
+    {
+        player->pos.y += DIAMETER;
+        player->pos_smooth.y += DIAMETER;
+    }
+
+    if (player->pos_smooth.z > OVERFLOW_EDGE_V)
+    {
+        player->pos.z -= DIAMETER_V;
+        player->pos_smooth.z -= DIAMETER_V;
+    }
+    if (player->pos_smooth.z < -OVERFLOW_EDGE_V)
+    {
+        player->pos.z += DIAMETER_V;
+        player->pos_smooth.z += DIAMETER_V;
+    }
 
     player->chunk = (v3i16){
-            floorf((f32)player->pos.x / chunk_diameter),
-            floorf((f32)player->pos.y / chunk_diameter),
-            floorf((f32)player->pos.z / chunk_diameter),
+            floorf((f32)player->pos_smooth.x / chunk_diameter),
+            floorf((f32)player->pos_smooth.y / chunk_diameter),
+            floorf((f32)player->pos_smooth.z / chunk_diameter),
         };
 
     if ((player->delta_chunk.x - player->chunk.x)
             || (player->delta_chunk.y - player->chunk.y)
             || (player->delta_chunk.z - player->chunk.z))
-        state |= FLAG_CHUNK_BUF_DIRTY;
+        flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
-    if (!(player->state & FLAG_CAN_JUMP) &&
-            !(player->state & FLAG_FLYING))
+    static f32 zoom = 0.0f;
+    if (player->flag & FLAG_PLAYER_ZOOMER)
+        zoom = player->camera.zoom;
+    else zoom = 0.0f;
+
+    if (!(player->flag & FLAG_PLAYER_CAN_JUMP) &&
+            !(player->flag & FLAG_PLAYER_FLYING))
     {
-        player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
 
         update_gravity(render, player);
     }
 
-    if (player->state & FLAG_FLYING)
+    if (player->flag & FLAG_PLAYER_FLYING)
     {
-        player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_DEFAULT;
+        player->flag &= ~(FLAG_PLAYER_CAN_JUMP | FLAG_PLAYER_FALLING);
+
+        player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
+        player->pos_lerp_speed.z = SET_LERP_SPEED_DEFAULT;
 
         player->vel = v3fzero;
-        player->movement_speed =
-            SETTING_PLAYER_SPEED_FLY * render->frame_delta;
-
-        player->camera.fovy =
-            lerp_f32(player->camera.fovy,
-                    80.0f,
-                    settings.lerp_speed, render->frame_delta);
+        player->movement_speed = SET_PLAYER_SPEED_FLY;
+        player->camera.fovy = 80.0f;
     }
+    else player->flag |= FLAG_PLAYER_FALLING;
 
-    if ((player->state & FLAG_SNEAKING)
-            && !(player->state & FLAG_FLYING))
-        player->movement_speed =
-            SETTING_PLAYER_SPEED_SNEAK * render->frame_delta;
-    else if (player->state & FLAG_SPRINTING)
+    if ((player->flag & FLAG_PLAYER_SNEAKING)
+            && !(player->flag & FLAG_PLAYER_FLYING))
+        player->movement_speed = SET_PLAYER_SPEED_SNEAK;
+    else if (player->flag & FLAG_PLAYER_SPRINTING)
     {
-        if (!(player->state & FLAG_FLYING))
+        if (!(player->flag & FLAG_PLAYER_FLYING))
         {
-            player->movement_speed =
-                SETTING_PLAYER_SPEED_SPRINT * render->frame_delta;
-            player->camera.fovy =
-                lerp_f32(player->camera.fovy,
-                        75.0f,
-                        settings.lerp_speed, render->frame_delta);
+            player->movement_speed = SET_PLAYER_SPEED_SPRINT;
+            player->camera.fovy = 75.0f;
         }
         else
         {
-            player->movement_speed =
-                SETTING_PLAYER_SPEED_FLY_FAST * render->frame_delta;
-            player->camera.fovy =
-                lerp_f32(player->camera.fovy,
-                        90.0f,
-                        settings.lerp_speed, render->frame_delta);
+            player->movement_speed = SET_PLAYER_SPEED_FLY_FAST;
+            player->camera.fovy = 90.0f;
         }
     }
-    else if (!(player->state & FLAG_SNEAKING)
-            && !(player->state & FLAG_SPRINTING)
-            && !(player->state & FLAG_FLYING))
+    else if (!(player->flag & FLAG_PLAYER_SNEAKING)
+            && !(player->flag & FLAG_PLAYER_SPRINTING)
+            && !(player->flag & FLAG_PLAYER_FLYING))
     {
-        player->pos_lerp_speed.x =
-            SETTING_LERP_SPEED_DEFAULT;
-        player->pos_lerp_speed.y =
-            SETTING_LERP_SPEED_DEFAULT;
-        player->pos_lerp_speed.z =
-            SETTING_LERP_SPEED_RIGID;
+        player->pos_lerp_speed.x = SET_LERP_SPEED_DEFAULT;
+        player->pos_lerp_speed.y = SET_LERP_SPEED_DEFAULT;
+        player->pos_lerp_speed.z = SET_LERP_SPEED_RIGID;
 
-        player->movement_speed =
-            SETTING_PLAYER_SPEED_WALK * render->frame_delta;
-
-        player->camera.fovy =
-            lerp_f32(player->camera.fovy,
-                    70.0f,
-                        settings.lerp_speed, render->frame_delta);
+        player->movement_speed = SET_PLAYER_SPEED_WALK;
+        player->camera.fovy = 70.0f;
     }
+
+    player->movement_speed *= render->frame_delta;
+    player->camera.fovy -= zoom;
+    player->camera.fovy =
+        clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
+    player->camera.fovy_smooth =
+        lerp_f32(player->camera.fovy_smooth,
+                player->camera.fovy,
+                settings.lerp_speed, render->frame_delta);
 }
 
 void
-update_camera_movement_player(Render *render, Player *player)
+player_camera_movement_update(Render *render, Player *player,
+        b8 use_mouse)
 {
-    player->yaw += render->mouse_delta.x * settings.mouse_sensitivity;
-    player->pitch += render->mouse_delta.y * settings.mouse_sensitivity;
+    static f32 zoom = 0.0f;
+
+    if (use_mouse)
+    {
+        if (player->flag & FLAG_PLAYER_ZOOMER)
+            zoom = player->camera.zoom;
+        else zoom = 0.0f;
+
+        f32 sensitivity = settings.mouse_sensitivity /
+            ((zoom / CAMERA_ZOOM_SENSITIVITY) + 1.0f);
+
+        player->yaw += render->mouse_delta.x * sensitivity;
+        player->pitch += render->mouse_delta.y * sensitivity;
+    }
 
     player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
     if (player->yaw < 0.0f)
@@ -129,31 +201,36 @@ update_camera_movement_player(Render *render, Player *player)
 
     switch (player->perspective)
     {
-        case CAMERA_MODE_1ST_PERSON:
+        case MODE_CAMERA_1ST_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x, player->pos.y, player->pos.z +
-                        player->eye_height
+                    player->pos_smooth.x,
+                    player->pos_smooth.y,
+                    player->pos_smooth.z + player->eye_height
                 };
             break;
 
-        case CAMERA_MODE_3RD_PERSON:
+        case MODE_CAMERA_3RD_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x - ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y + ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z +
-                        player->eye_height + (SPCH * player->camera_distance),
+                    player->pos_smooth.x -
+                        ((CYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.y +
+                        ((SYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.z + player->eye_height +
+                        (SPCH * player->camera_distance),
                 };
             break;
 
-        case CAMERA_MODE_3RD_PERSON_FRONT:
+        case MODE_CAMERA_3RD_PERSON_FRONT:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x + ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y - ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z +
-                        player->eye_height - (SPCH * player->camera_distance),
+                    player->pos_smooth.x +
+                        ((CYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.y -
+                        ((SYAW * CPCH) * player->camera_distance),
+                    player->pos_smooth.z + player->eye_height -
+                        (SPCH * player->camera_distance),
                 };
             player->camera.sin_pitch = -SPCH;
             player->camera.sin_yaw =
@@ -163,26 +240,60 @@ update_camera_movement_player(Render *render, Player *player)
             break;
 
             /* TODO: make the stalker camera mode */
-        case CAMERA_MODE_STALKER:
+        case MODE_CAMERA_STALKER:
             break;
 
             /* TODO: make the spectator camera mode */
-        case CAMERA_MODE_SPECTATOR:
+        case MODE_CAMERA_SPECTATOR:
             break;
     }
+
+    player->camera_hud.pos =        player->camera.pos;
+    player->camera_hud.sin_pitch =  player->camera.sin_pitch;
+    player->camera_hud.cos_pitch =  player->camera.cos_pitch;
+    player->camera_hud.sin_yaw =    player->camera.sin_yaw;
+    player->camera_hud.cos_yaw =    player->camera.cos_yaw;
 }
 
 void
-update_player_target(v3f64 *player_target, v3i64 *player_delta_target)
+player_target_update(Player *player)
 {
-    if (player_delta_target->x != floorf(player_target->x) ||
-            player_delta_target->y != floorf(player_target->y) ||
-            player_delta_target->z != floorf(player_target->z))
-        *player_delta_target =
-            (v3i64){
-                (i64)floorf(player_target->x),
-                (i64)floorf(player_target->y),
-                (i64)floorf(player_target->z)};
+    const f32 SPCH = player->sin_pitch;
+    const f32 CPCH = player->cos_pitch;
+    const f32 SYAW = player->sin_yaw;
+    const f32 CYAW = player->cos_yaw;
+
+    player->target =
+        (v3f64){
+            player->pos_smooth.x +
+                ((CYAW * CPCH) * player->camera_distance),
+            player->pos_smooth.y -
+                ((SYAW * CPCH) * player->camera_distance),
+            player->pos_smooth.z + player->eye_height -
+                (SPCH * player->camera_distance),
+        };
+
+    player->delta_target =
+        (v3i64){
+            (i64)floorf(player->target.x),
+            (i64)floorf(player->target.y),
+            (i64)floorf(player->target.z),
+        };
+}
+
+void
+set_player_pos(Player *player, f64 x, f64 y, f64 z)
+{
+    player->pos = (v3f64){x, y, z};
+    player->pos_smooth = player->pos;
+}
+
+void
+set_player_block(Player *player, i32 x, i32 y, i32 z)
+{
+    player->pos =
+        (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
+    player->pos_smooth = player->pos;
 }
 
 void
@@ -192,7 +303,7 @@ player_kill(Player *player)
     player->mass = 0.0f;
     player->movement_speed = 0.0f;
     player->container_state = 0;
-    player->state = FLAG_DEAD;
+    player->flag = FLAG_PLAYER_DEAD;
 }
 
 void
@@ -204,57 +315,118 @@ player_respawn(Player *player)
             player->spawn_point.y,
             player->spawn_point.z
         };
-    player->state = 0;
-}
-
-/* TODO: make is_ray_intersect() */
-b8
-is_ray_intersect(Player *player)
-{
-    //if (target_chunk->i[player->delta_target.z][player->delta_target.y][player->delta_target.x])
-        //return TRUE;
-    return FALSE;
+    player->flag = 0;
 }
 
 void
 update_gravity(Render *render, Player *player)
 {
-    if (player->state & FLAG_FALLING)
+    if (player->flag & FLAG_PLAYER_FALLING)
         player->vel.z += (GRAVITY * player->mass * render->frame_delta);
-    player->raw_pos.z += player->vel.z * render->frame_delta;
+    player->pos.z += player->vel.z * render->frame_delta;
 }
 
-/* TODO: make AABB collision work */
 void
-update_collision_static(Player *player)
+player_collision_update(Player *player, Chunk **chunk)
 {
-    player->collision_check_start = (v3f32){
-            floorf(player->pos.x - (player->scl.x / 2.0f)) - 1.0f,
-            floorf(player->pos.y - (player->scl.y / 2.0f)) - 1.0f,
-            floorf(player->pos.z) - 1.0f,
-        };
-
-    player->collision_check_end = (v3f32){
-            ceilf(player->scl.x) + 2.0f,
-            ceilf(player->scl.y) + 2.0f,
-            ceilf(player->scl.z) + 2.0f,
-        };
-
-    if (player->raw_pos.z < 0.0f)
+    v3f64 pos = player->pos_smooth;
+    v3f64 pos_last = player->pos_last;
+    v3f64 pos_delta =
     {
-        if (player->state & FLAG_FLYING)
-            player->state &= ~FLAG_FLYING;
-        player->raw_pos.z = 0.0f;
-        player->vel.z = 0.0f;
-        player->state |= FLAG_CAN_JUMP;
-        player->state &= ~FLAG_FALLING;
-    }
-    else if (!(player->state & FLAG_FLYING))
-        player->state |= FLAG_FALLING;
+        pos.x - pos_last.x,
+        pos.y - pos_last.y,
+        pos.z - pos_last.z,
+    };
+    v3f64 check_pos = {0};
+    v3f64 check_size = {0};
+    v3f64 check_delta = {0};
 
+    if (pos_last.x > pos.x)
+    {
+        check_pos.x = pos.x + pos_delta.x - (player->size.x / 2.0f) - 1.0f;
+        check_delta.x = check_pos.x - ceil(check_pos.x);
+        check_size.x = player->size.x - pos_delta.x + 3.0f + check_delta.x;
+    }
+    else
+    {
+        check_pos.x = pos_last.x + pos_delta.x - (player->size.x / 2.0) - 1.0f;
+        check_delta.x = check_pos.x - ceil(check_pos.x);
+        check_size.x = player->size.x + pos_delta.x + 3.0f + check_delta.x;
+    }
+
+    if (pos_last.y > pos.y)
+    {
+        check_pos.y = pos.y + pos_delta.y - (player->size.y / 2.0f) - 1.0f;
+        check_delta.y = check_pos.y - ceil(check_pos.y);
+        check_size.y = player->size.y - pos_delta.y + 3.0f + check_delta.y;
+    }
+    else
+    {
+        check_pos.y = pos_last.y + pos_delta.y - (player->size.y / 2.0f) - 1.0f;
+        check_delta.y = check_pos.y - ceil(check_pos.y);
+        check_size.y = player->size.y + pos_delta.y + 3.0f + check_delta.y;
+    }
+
+    if (pos_last.z > pos.z)
+    {
+        check_pos.z = pos.z + pos_delta.z - 1.0f;
+        check_delta.z = check_pos.z - ceil(check_pos.z);
+        check_size.z = player->size.z - pos_delta.z + 3.0f + check_delta.z;
+    }
+    else
+    {
+        check_pos.z = pos_last.z + pos_delta.z - 1.0f;
+        check_delta.z = check_pos.z - ceil(check_pos.z);
+        check_size.z = player->size.z + pos_delta.z + 3.0f + check_delta.z;
+    }
+
+    player->collision_check_pos =
+        (v3f64){
+            floor(check_pos.x),
+            floor(check_pos.y),
+            floor(check_pos.z),
+        };
+
+    player->collision_check_size =
+        (v3f64){
+            ceil(check_size.x),
+            ceil(check_size.y),
+            ceil(check_size.z),
+        };
+
+    pos =
+    (v3f64){
+        player->collision_check_pos.x,
+        player->collision_check_pos.y,
+        player->collision_check_pos.z,
+    };
+
+    pos.x = floor(pos.x) - ((i64)floor(pos.x / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+    pos.y = floor(pos.y) - ((i64)floor(pos.y / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+    pos.z = floor(pos.z) - ((i64)floor(pos.z / CHUNK_DIAMETER) *
+            CHUNK_DIAMETER);
+
+    v3u32 diameter =
+    {
+        (u32)player->collision_check_size.x,
+        (u32)player->collision_check_size.y,
+        (u32)player->collision_check_size.z,
+    };
+
+    u32 x, y, z, index, *block;
+    if (*chunk)
+    {
+        for (z = 0; z < diameter.z; ++z)
+            for (y = 0; y < diameter.y; ++y)
+                for (x = 0; x < diameter.x; ++x)
+                {
+                }
+    }
 
 #if 0 /* TODO: remove this parse collision feet stuff */
-    Chunk *target_chunk = get_chunk(&player->lastPos, &player->state, FLAG_PARSE_COLLISION_FEET);
+    Chunk *target_chunk = get_chunk(&player->lastPos, &player->flag, FLAG_PARSE_COLLISION_FEET);
     if (target_chunk->i
             [z - 1 - WORLD_BOTTOM]
             [y - (target_chunk->pos.y * CHUNK_SIZE)]
@@ -262,94 +434,14 @@ update_collision_static(Player *player)
     {
         player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
         player->vel.z = 0;
-        if (player->state & FLAG_FLYING) player->state &= ~FLAG_FLYING;
-        player->state |= FLAG_CAN_JUMP;
-        player->state &= ~FLAG_FALLING;
-    } else player->state |= FLAG_FALLING;
+        if (player->flag & FLAG_PLAYER_FLYING) player->flag &= ~FLAG_PLAYER_FLYING;
+        player->flag |= FLAG_PLAYER_CAN_JUMP;
+        player->flag &= ~FLAG_PLAYER_FALLING;
+    } else player->flag |= FLAG_PLAYER_FALLING;
 
     // TODO: move to new 'void parse_camera_collisions()'
-    player->camera_distance = SETTING_CAMERA_DISTANCE_MAX;
+    player->camera_distance = SET_CAMERA_DISTANCE_MAX;
 #endif
-}
-
-void
-wrap_coordinates(Player *player, u64 chunk_diameter,
-        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
-{
-    const i64 RADIUS            = radius * chunk_diameter;
-    const i64 RADIUS_V          = radius_v * chunk_diameter;
-    const i64 DIAMETER          = diameter * chunk_diameter;
-    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
-
-    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
-    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
-
-    const i64 WORLD_MARGIN =
-        (radius - SETTING_RENDER_DISTANCE_MAX) * chunk_diameter;
-    const i64 WORLD_MARGIN_V =
-        (radius_v - SETTING_RENDER_DISTANCE_MAX) * chunk_diameter;
-
-    /* ---- overflow edge --------------------------------------------------- */
-    if (player->raw_pos.x > OVERFLOW_EDGE)
-    {
-        player->raw_pos.x -= DIAMETER;
-        player->pos.x -= DIAMETER;
-    }
-    if (player->raw_pos.x < -OVERFLOW_EDGE)
-    {
-        player->raw_pos.x += DIAMETER;
-        player->pos.x += DIAMETER;
-    }
-
-    if (player->raw_pos.y > OVERFLOW_EDGE)
-    {
-        player->raw_pos.y -= DIAMETER;
-        player->pos.y -= DIAMETER;
-    }
-    if (player->raw_pos.y < -OVERFLOW_EDGE)
-    {
-        player->raw_pos.y += DIAMETER;
-        player->pos.y += DIAMETER;
-    }
-
-    if (player->raw_pos.z > OVERFLOW_EDGE_V)
-    {
-        player->raw_pos.z -= DIAMETER_V;
-        player->pos.z -= DIAMETER_V;
-    }
-    if (player->raw_pos.z < -OVERFLOW_EDGE_V)
-    {
-        player->raw_pos.z += DIAMETER_V;
-        player->pos.z += DIAMETER_V;
-    }
-
-    /* ---- world margin ---------------------------------------------------- */
-    if (player->pos.x > WORLD_MARGIN)
-        player->state |= FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX;
-    else if (player->pos.x < -WORLD_MARGIN)
-    {
-        player->state |= FLAG_OVERFLOW_X;
-        player->state &= ~FLAG_OVERFLOW_PX;
-    }
-    else player->state &= ~(FLAG_OVERFLOW_X | FLAG_OVERFLOW_PX);
-
-    if (player->pos.y > WORLD_MARGIN)
-        player->state |= FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY;
-    else if (player->pos.y < -WORLD_MARGIN)
-    {
-        player->state |= FLAG_OVERFLOW_Y;
-        player->state &= ~FLAG_OVERFLOW_PY;
-    }
-    else player->state &= ~(FLAG_OVERFLOW_Y | FLAG_OVERFLOW_PY);
-
-    if (player->pos.z > WORLD_MARGIN_V)
-        player->state |= FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ;
-    else if (player->pos.z < -WORLD_MARGIN_V)
-    {
-        player->state |= FLAG_OVERFLOW_Z;
-        player->state &= ~FLAG_OVERFLOW_PZ;
-    }
-    else player->state &= ~(FLAG_OVERFLOW_Z | FLAG_OVERFLOW_PZ);
 }
 
 f64
@@ -370,34 +462,3 @@ get_timer(f64 *time_start, f32 interval)
     }
     return FALSE;
 }
-
-#if 0 // TODO: undef
-void
-draw_default_grid(v4u8 x, v4u8 y, v4u8 z)
-{
-    v4u8 color = {0xff, 0xff, 0xff, 0xff};
-
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){4, -4, 0}, color);
-    draw_line_3d((v3i32){-4, -3, 0}, (v3i32){4, -3, 0}, color);
-    draw_line_3d((v3i32){-4, -2, 0}, (v3i32){4, -2, 0}, color);
-    draw_line_3d((v3i32){-4, -1, 0}, (v3i32){4, -1, 0}, color);
-    draw_line_3d((v3i32){-4, 0, 0}, (v3i32){4, 0, 0}, color);
-    draw_line_3d((v3i32){-4, 1, 0}, (v3i32){4, 1, 0}, color);
-    draw_line_3d((v3i32){-4, 2, 0}, (v3i32){4, 2, 0}, color);
-    draw_line_3d((v3i32){-4, 3, 0}, (v3i32){4, 3, 0}, color);
-    draw_line_3d((v3i32){-4, 4, 0}, (v3i32){4, 4, 0}, color);
-    draw_line_3d((v3i32){-4, -4, 0}, (v3i32){-4, 4, 0}, color);
-    draw_line_3d((v3i32){-3, -4, 0}, (v3i32){-3, 4, 0}, color);
-    draw_line_3d((v3i32){-2, -4, 0}, (v3i32){-2, 4, 0}, color);
-    draw_line_3d((v3i32){-1, -4, 0}, (v3i32){-1, 4, 0}, color);
-    draw_line_3d((v3i32){0, -4, 0}, (v3i32){0, 4, 0}, color);
-    draw_line_3d((v3i32){1, -4, 0}, (v3i32){1, 4, 0}, color);
-    draw_line_3d((v3i32){2, -4, 0}, (v3i32){2, 4, 0}, color);
-    draw_line_3d((v3i32){3, -4, 0}, (v3i32){3, 4, 0}, color);
-    draw_line_3d((v3i32){4, -4, 0}, (v3i32){4, 4, 0}, color);
-
-    draw_line_3d(v3izero, (v3i32){2, 0, 0}, x);
-    draw_line_3d(v3izero, (v3i32){0, 2, 0}, y);
-    draw_line_3d(v3izero, (v3i32){0, 0, 2}, z);
-}
-#endif // TODO: undef

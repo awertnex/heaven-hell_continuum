@@ -1,5 +1,5 @@
-#ifndef ENGINE_DEFINES_H
-#define ENGINE_DEFINES_H
+#ifndef ENGINE_TYPES_H
+#define ENGINE_TYPES_H
 
 #include <stdint.h>
 
@@ -214,4 +214,4 @@ typedef struct m4f32
         a41, a42, a43, a44;
 } m4f32;
 
-#endif /* ENGINE_DEFINES_H */
+#endif /* ENGINE_TYPES_H */
