@@ -29,6 +29,7 @@ _get_path_absolute(const str *path, str *path_real)
         return engine_err;
     }
 
+    posix_slash(path_real);
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
@@ -37,25 +38,15 @@ _get_path_absolute(const str *path, str *path_real)
 u32
 _get_path_bin_root(str *path)
 {
-    if (strlen(_pgmptr) + 1 >= STRING_MAX)
+    if (strlen(_pgmptr) + 1 >= PATH_MAX)
     {
         LOGFATAL(FALSE, ERR_GET_PATH_BIN_ROOT_FAIL,
                 "%s\n", "'get_path_bin_root()' Failed, Process Aborted");
-        return FALSE;
+        return engine_err;
     }
-    str temp[STRING_MAX] = {0};
-    u64 cursor = 0;
-    strncpy(temp, _pgmptr, STRING_MAX);
-    retract_path(temp);
-    while (temp[cursor] != '\0' &&
-            temp[cursor] != '\\' &&
-            cursor < STRING_MAX)
-        ++cursor;
-    if (cursor + 1 >= STRING_MAX)
-        return FALSE;
-    strncpy(path, temp, cursor);
-    strncat(path, "\\", STRING_MAX - cursor);
-    strncat(path, temp + cursor, STRING_MAX - cursor);
+    strncpy(path, _pgmptr, PATH_MAX);
+    retract_path(path);
+    posix_slash(path);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -159,8 +150,8 @@ _mem_commit(void **x, void *offset, u64 size,
         return engine_err;
     }
 
-    VirtualAlloc(*(u8*)x + (u8*)offset, size, MEM_COMMIT, PAGE_READWRITE);
-    if (!*(u8*)x + (u8*)offset)
+    if (!VirtualAlloc((*(u8*)x + (u8*)offset), size,
+                MEM_COMMIT, PAGE_READWRITE))
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_COMMIT_FAIL,
                 "%s[%p][%p] Memory Commit [%"PRId64"B] Failed, Process Aborted\n",

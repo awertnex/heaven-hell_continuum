@@ -432,6 +432,7 @@ get_path_bin_root(void)
     if (last_slash)
         *last_slash = 0;
     check_slash(result);
+    normalize_slash(result);
 
     engine_err = ERR_SUCCESS;
     return result;
@@ -453,16 +454,8 @@ check_slash(str *path)
         return;
     }
 
-    if (path[len - 1] == SLASH_NATIVE)
+    if (path[len - 1] == SLASH_NATIVE || path[len - 1] == SLASH_NON_NATIVE)
     {
-        engine_err = ERR_SUCCESS;
-        return;
-    }
-
-    if (path[len - 1] == SLASH_NON_NATIVE)
-    {
-        path[len - 1] = SLASH_NATIVE;
-        path[len] = 0;
         engine_err = ERR_SUCCESS;
         return;
     }
@@ -524,14 +517,13 @@ retract_path(str *path)
     u64 len = strlen(path);
     if (len <= 1) return path;
 
-    check_slash(path);
-    normalize_slash(path);
-
     u8 stage = 0;
     u64 i = 0;
     for (; i < len; ++i)
     {
-        if (stage == 1 && path[len - i - 1] == SLASH_NATIVE)
+        if (stage == 1 &&
+                (path[len - i - 1] == SLASH_NATIVE ||
+                 path[len - i - 1] == SLASH_NON_NATIVE))
             break;
         if (path[len - i - 1])
         {

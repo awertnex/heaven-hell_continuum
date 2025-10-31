@@ -5,6 +5,7 @@
 #include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/math.h>
+#include <engine/h/platform.h>
 
 #include "h/main.h"
 #include "h/assets.h"
@@ -1532,7 +1533,6 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#include <stdio.h>
 int
 main(int argc, char **argv)
 {

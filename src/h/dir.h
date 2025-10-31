@@ -10,8 +10,7 @@
 enum Directories
 {
     /* ---- grandpath directories ------------------------------------------- */
-    DIR_LIB =               0,
-    DIR_LIB_PLATFORM,
+
     DIR_LOGS,
     DIR_ASSETS,
     DIR_AUDIO,
@@ -32,7 +31,8 @@ enum Directories
     DIR_ROOT_COUNT,
 
     /* ---- world directories ----------------------------------------------- */
-    DIR_WORLD_CHUNKS =      0,
+
+    DIR_WORLD_CHUNKS = 0,
     DIR_WORLD_ENTITIES,
     DIR_WORLD_LOGS,
     DIR_WORLD_PLAYER,

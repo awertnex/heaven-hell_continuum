@@ -4,25 +4,25 @@
 #include "defines.h"
 
 #if defined(__linux__) || defined(__linux)
-#define PLATFORM_LINUX 1
-#define PLATFORM "linux"
-#define _PLATFORM "linux"
-#define ENGINE_NAME_LIB "libfossil.so"
-#define EXE ""
+    #define PLATFORM_LINUX 1
+    #define PLATFORM "linux"
+    #define _PLATFORM "linux"
+    #define ENGINE_NAME_LIB "libfossil.so"
+    #define EXE ""
+    #define RUNTIME_PATH "$ORIGIN"
 
-#define SLASH_NATIVE '/'
-#define SLASH_NON_NATIVE '\\'
-
+    #define SLASH_NATIVE '/'
+    #define SLASH_NON_NATIVE '\\'
 #elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#define PLATFORM_WIN 1
-#define PLATFORM "win"
-#define _PLATFORM "windows"
-#define ENGINE_NAME_LIB "fossil.dll"
-#define EXE ".exe"
+    #define PLATFORM_WIN 1
+    #define PLATFORM "win"
+    #define _PLATFORM "windows"
+    #define ENGINE_NAME_LIB "fossil.dll"
+    #define EXE ".exe"
+    #define RUNTIME_PATH "%CD%"
 
-#define SLASH_NATIVE '\\'
-#define SLASH_NON_NATIVE '/'
-
+    #define SLASH_NATIVE '\\'
+    #define SLASH_NON_NATIVE '/'
 #endif /* PLATFORM */
 
 int make_dir(const str *path);

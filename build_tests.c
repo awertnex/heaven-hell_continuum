@@ -124,7 +124,7 @@ build_test(char **argv)
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
-    cmd_push("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    cmd_push("-Wl,-rpath="RUNTIME_PATH"/lib/"PLATFORM);
     engine_link_libs();
     cmd_push("-o");
     cmd_push(stringf(DIR_ROOT"%s/%s"EXE,

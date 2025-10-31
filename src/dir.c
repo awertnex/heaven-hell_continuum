@@ -21,8 +21,6 @@ str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 u32
 paths_init(void)
 {
-    snprintf(DIR_ROOT[DIR_LIB],             NAME_MAX, "%s", "lib/");
-    snprintf(DIR_ROOT[DIR_LIB_PLATFORM],    NAME_MAX, "%s%s", "lib/", PLATFORM);
     snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
     snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
     snprintf(DIR_ROOT[DIR_AUDIO],           NAME_MAX, "%s", "assets/audio/");

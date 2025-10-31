@@ -14,6 +14,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <engine/include/stb_image.h>
 
+u32 engine_err = ERR_SUCCESS;
 static u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 {
