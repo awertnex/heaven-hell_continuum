@@ -64,6 +64,8 @@ normalize_v3f32(v3f32 v)
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
 f32
 q_rsqrt(f32 n)
 {
@@ -81,6 +83,7 @@ q_rsqrt(f32 n)
 
     return y;
 }
+#pragma GCC diagnostic pop
 
 u32
 distance_v3i32(v3i32 a, v3i32 b)

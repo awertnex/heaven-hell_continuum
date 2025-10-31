@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
@@ -125,39 +126,47 @@ _mem_map(void **x, u64 size,
         return engine_err;
     }
     LOGTRACEEX(TRUE, file, line,
-            "%s[%p] Memory Mapped [%lldB]\n", name, *x, size);
+            "%s[%p] Memory Mapped [%"PRId64"B]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
 u32
-_mem_commit(void *x, void *offset, u64 size,
+_mem_commit(void **x, void *offset, u64 size,
         const str *name, const str *file, u64 line)
 {
-    if (mprotect(offset, size, PROT_READ | PROT_WRITE) != 0)
+    if (!x)
     {
-        LOGFATALEX(TRUE, file, line, ERR_MEM_COMMIT_FAIL,
-                "%s[%p][%p] Memory Commit [%lldB] Failed, Process Aborted\n",
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p][%p] Memory Commit [%"PRId64"B] Failed, Pointer NULL\n",
                 name, x, offset, size);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line, "%s[%p][%p] Memory Committed [%lldB]\n",
-            name, x, offset, size);
+
+    if (mprotect(offset, size, PROT_READ | PROT_WRITE) != 0)
+    {
+        LOGFATALEX(TRUE, file, line, ERR_MEM_COMMIT_FAIL,
+                "%s[%p][%p] Memory Commit [%"PRId64"B] Failed, Process Aborted\n",
+                name, *x, offset, size);
+        return engine_err;
+    }
+    LOGTRACEEX(TRUE, file, line, "%s[%p][%p] Memory Committed [%"PRId64"B]\n",
+            name, *x, offset, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
 void
-_mem_unmap(void *x, u64 size,
+_mem_unmap(void **x, u64 size,
         const str *name, const str *file, u64 line)
 {
-    if (!x) return;
-    munmap(x, size);
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%lldB]\n",
-            name, x, size);
-    x = NULL;
+    if (!*x) return;
+    munmap(*x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%"PRId64"B]\n",
+            name, *x, size);
+    *x = NULL;
 }
 
 #ifdef _GNU_SOURCE

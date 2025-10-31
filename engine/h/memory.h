@@ -132,7 +132,7 @@ u32 _mem_map(void **x, u64 size,
  * commit a block of mapped memory for x.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 _mem_commit(void *x, void *offset, u64 size,
+u32 _mem_commit(void **x, void *offset, u64 size,
         const str *name, const str *file, u64 line);
 
 /* -- INTERNAL USE ONLY --;
@@ -143,7 +143,7 @@ u32 _mem_commit(void *x, void *offset, u64 size,
  * name = pointer name (for logging).
  *
  * unmap a block of memory x */
-void _mem_unmap(void *x, u64 size,
+void _mem_unmap(void **x, u64 size,
         const str *name, const str *file, u64 line);
 
 void print_bits(u64 x, u8 bit_count);

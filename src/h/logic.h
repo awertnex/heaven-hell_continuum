@@ -4,7 +4,7 @@
 #include <engine/h/core.h>
 #include "main.h"
 
-enum ContainerStates
+enum ContainerState
 {
     STATE_CONTR_CHEST,
     STATE_CONTR_CRAFTING_TABLE,
@@ -12,7 +12,7 @@ enum ContainerStates
     STATE_CONTR_INVENTORY_SURVIVAL,
     STATE_CONTR_INVENTORY_SANDBOX,
     STATE_CONTR_COUNT,
-}; /* ContainerStates */
+}; /* ContainerState */
 
 void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);

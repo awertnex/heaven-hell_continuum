@@ -20,7 +20,7 @@ main(int argc, char **argv)
     if (argv_compare("engine", argc, argv))
         engine_build(
                 stringf("%sengine/", str_build_root),
-                stringf("%sengine/lib/"_PLATFORM, str_build_root)
+                stringf("%sengine/lib/"PLATFORM, str_build_root)
                 );
 
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
@@ -48,9 +48,6 @@ main(int argc, char **argv)
     cmd_push("-o");
     cmd_push(STR_OUT);
     cmd_ready();
-
-    if (flag & FLAG_CMD_SHOW) cmd_show();
-    if (flag & FLAG_CMD_RAW) cmd_raw();
 
     str str_mkdir[NEW_DIR_COUNT][CMD_SIZE] = {0};
     str str_from[ASSET_COUNT][CMD_SIZE] = {0};

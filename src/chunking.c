@@ -53,16 +53,21 @@ static void chunk_mesh(Chunk *chunk);
 /* -- INTERNAL USE ONLY -- */
 static void _chunk_mesh(Chunk *chunk);
 
-static void chunk_serialize(Chunk *chunk, str *world_name);
-static void chunk_deserialize(Chunk *chunk, str *world_name);
+/* -- INTERNAL USE ONLY -- */
+static void _chunk_serialize(Chunk *chunk, str *world_name);
+
+/* -- INTERNAL USE ONLY -- */
+static void _chunk_deserialize(Chunk *chunk, str *world_name);
 
 /* -- INTERNAL USE ONLY --;
  *
  * index = (chunk_tab index) */
 static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
 
-/* index = (chunk_tab index) */
-static void chunk_buf_pop(u32 index);
+/* -- INTERNAL USE ONLY --;
+ *
+ * index = (chunk_tab index) */
+static void _chunk_buf_pop(u32 index);
 
 u32
 chunking_init(void)
@@ -225,45 +230,27 @@ chunking_init(void)
             "chunking_init().entries");
 
     /* ---- init chunk parsing priority queues ------------------------------ */
-    if (CHUNKS_MAX[SET_RENDER_DISTANCE] < CHUNK_QUEUE_1ST_MAX)
-    {
-        CHUNK_QUEUE_1.size = CHUNKS_MAX[SET_RENDER_DISTANCE];
-    }
-    else if (CHUNKS_MAX[SET_RENDER_DISTANCE] <
-            CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX)
-    {
-        CHUNK_QUEUE_1.size = CHUNK_QUEUE_1ST_MAX;
-        CHUNK_QUEUE_2.size =
-            CHUNKS_MAX[SET_RENDER_DISTANCE] - CHUNK_QUEUE_1ST_MAX;
-    }
-    else if (CHUNKS_MAX[SET_RENDER_DISTANCE] <
-            CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX + CHUNK_QUEUE_3RD_MAX)
-    {
-        CHUNK_QUEUE_1.size = CHUNK_QUEUE_1ST_MAX;
-        CHUNK_QUEUE_2.size = CHUNK_QUEUE_2ND_MAX;
-        CHUNK_QUEUE_3.size =
-            CHUNKS_MAX[SET_RENDER_DISTANCE] -
-            CHUNK_QUEUE_1ST_MAX - CHUNK_QUEUE_2ND_MAX;
-    }
-    else
-    {
-        CHUNK_QUEUE_1.size = CHUNK_QUEUE_1ST_MAX;
-        CHUNK_QUEUE_2.size = CHUNK_QUEUE_2ND_MAX;
-        CHUNK_QUEUE_3.size = CHUNK_QUEUE_3RD_MAX;
-    }
-
     CHUNK_QUEUE_1.id = CHUNK_QUEUE_1ST_ID;
     CHUNK_QUEUE_1.offset = 0;
+    CHUNK_QUEUE_1.size =
+        (u64)clamp_i64(CHUNKS_MAX[SET_RENDER_DISTANCE],
+                0, CHUNK_QUEUE_1ST_MAX);
     CHUNK_QUEUE_1.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_HIGH;
     CHUNK_QUEUE_1.rate_block = BLOCK_PARSE_RATE;
 
     CHUNK_QUEUE_2.id = CHUNK_QUEUE_2ND_ID;
-    CHUNK_QUEUE_2.offset = CHUNK_QUEUE_1.size;
+    CHUNK_QUEUE_2.offset = CHUNK_QUEUE_1ST_MAX;
+    CHUNK_QUEUE_2.size =
+        (u64)clamp_i64(CHUNKS_MAX[SET_RENDER_DISTANCE] -
+                CHUNK_QUEUE_2.offset, 0, CHUNK_QUEUE_2ND_MAX);
     CHUNK_QUEUE_2.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_MID;
     CHUNK_QUEUE_2.rate_block = BLOCK_PARSE_RATE;
 
     CHUNK_QUEUE_3.id = CHUNK_QUEUE_3RD_ID;
-    CHUNK_QUEUE_3.offset = CHUNK_QUEUE_1.size + CHUNK_QUEUE_2.size;
+    CHUNK_QUEUE_3.offset = CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX;
+    CHUNK_QUEUE_3.size =
+        (u64)clamp_i64(CHUNKS_MAX[SET_RENDER_DISTANCE] -
+            CHUNK_QUEUE_3.offset, 0, CHUNK_QUEUE_3RD_MAX);
     CHUNK_QUEUE_3.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_LOW;
     CHUNK_QUEUE_3.rate_block = BLOCK_PARSE_RATE;
 
@@ -322,7 +309,7 @@ chunking_free(void)
         u32 i = 0;
         for (; i < CHUNK_BUF_VOLUME; ++i)
             if (chunk_tab[i])
-                chunk_buf_pop(i);
+                _chunk_buf_pop(i);
     }
 
     mem_unmap((void*)&chunk_buf,
@@ -864,7 +851,7 @@ _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
 }
 
 static void
-chunk_buf_pop(u32 index)
+_chunk_buf_pop(u32 index)
 {
     u32 index_popped = chunk_tab[index] - chunk_buf;
 
@@ -897,7 +884,7 @@ chunk_queue_update(ChunkQueue *q)
     /* ---- push chunk queue ------------------------------------------------ */
     if (q->id == CHUNK_QUEUE_LAST_ID)
         end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
-    else end = CHUNK_ORDER + size;
+    else end = CHUNK_ORDER + q->offset + size;
     for (; chunk < end && q->count < size; ++chunk)
         if (**chunk && ((**chunk)->flag & FLAG_CHUNK_DIRTY) &&
                 !((**chunk)->flag & FLAG_CHUNK_QUEUED) &&
@@ -955,7 +942,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
     const i32 RENDER_DISTANCE = (i32)powf(settings.render_distance, 2.0f) + 2;
 
-    if (distance_v3i32(
+    if ((i32)distance_v3i32(
                 (v3i32){
                 player_chunk.x,
                 player_chunk.y,
@@ -967,7 +954,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     {
         for (i = 0; i < (i64)CHUNKS_MAX[SET_RENDER_DISTANCE]; ++i)
             if (*CHUNK_ORDER[i])
-                chunk_buf_pop(CHUNK_ORDER[i] - chunk_tab);
+                _chunk_buf_pop(CHUNK_ORDER[i] - chunk_tab);
 
         *player_delta_chunk = player_chunk;
         return;

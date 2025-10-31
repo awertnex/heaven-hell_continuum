@@ -167,7 +167,7 @@ self_rebuild(char **argv)
 
         execvp(argv[0], (str *const *)argv);
         LOGFATAL(FALSE, ERR_EXECVP_FAIL,
-                "%s\n", "'build" EXE "' Failed, Process Aborted");
+                "%s\n", "'build"EXE"' Failed, Process Aborted");
         cmd_fail();
     }
 
@@ -197,7 +197,7 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%slogger.c", engine_dir_processed));
     cmd_push(stringf("%smath.c", engine_dir_processed));
     cmd_push(stringf("%smemory.c", engine_dir_processed));
-    cmd_push(stringf("%splatform_" _PLATFORM ".c", engine_dir_processed));
+    cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
     cmd_push(stringf("%stext.c", engine_dir_processed));
     cmd_push(stringf("%sinclude/glad/glad.c", engine_dir_processed));
     cmd_push(stringf("-I%s..", engine_dir_processed));
@@ -209,7 +209,7 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push("-fno-builtin");
     cmd_push("-Wno-implicit-function-declaration");
     cmd_push("-o");
-    cmd_push(stringf("%s" ENGINE_NAME_LIB, out_dir_processed));
+    cmd_push(stringf("%s"ENGINE_NAME_LIB, out_dir_processed));
     cmd_ready();
 
     if (flag & FLAG_CMD_SHOW) cmd_show();
@@ -228,7 +228,13 @@ void
 engine_link_libs(void)
 {
     u32 i = 0;
-    cmd_push(stringf("-L%sengine/lib/" PLATFORM, str_build_root));
+#if 0
+    str temp[CMD_SIZE] = {0};
+    snprintf(temp, CMD_SIZE, "-L%sengine/lib/"PLATFORM, str_build_root);
+    normalize_slash(temp);
+    cmd_push(temp);
+#endif
+    cmd_push("-Lengine/lib/"PLATFORM);
     for (;i < arr_len(str_libs); ++i)
         cmd_push(str_libs[i]);
 }
@@ -292,7 +298,8 @@ cmd_push(const str *string)
     }
 
     LOGTRACE(FALSE,
-            "Pushing String '%s' to cmd.i[%" PRId64 "]..\n", string, cmd_pos);
+            "Pushing String '%s' to cmd.i[%"PRId64"]..\n",
+            string, cmd_pos);
     strncpy(cmd.i[cmd_pos++], string, CMD_SIZE);
 }
 
@@ -302,6 +309,9 @@ cmd_ready(void)
 #if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
 #endif
+
+    if (flag & FLAG_CMD_SHOW) cmd_show();
+    if (flag & FLAG_CMD_RAW) cmd_raw();
 }
 
 void

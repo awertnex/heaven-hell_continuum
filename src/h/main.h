@@ -109,7 +109,7 @@
 #define CHUNK_QUEUE_3RD_MAX     16384
 
 /* 'chunk_mesh()' temp static buffer count */
-#define BLOCK_BUFFERS_MAX       3
+#define BLOCK_BUFFERS_MAX       2
 
 /* number of chunks to process per frame */
 #define CHUNK_PARSE_RATE_PRIORITY_LOW       64
@@ -129,7 +129,7 @@
 #define COLOR_CHUNK_LOADED                  0x4c260715
 #define COLOR_CHUNK_RENDER                  0x5e7a0aff
 
-enum MainFlags
+enum MainFlag
 {
     FLAG_MAIN_ACTIVE                        = 0x00000001,
     FLAG_MAIN_PAUSED                        = 0x00000002,
@@ -145,7 +145,7 @@ enum MainFlags
     FLAG_MAIN_WORLD_LOADED                  = 0x00000800,
     FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00001000,
     FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER   = 0x00002000,
-}; /* MainFlags */
+}; /* MainFlag */
 
 typedef struct Settings
 {
@@ -333,7 +333,7 @@ enum FontIndices
     FONT_COUNT,
 }; /* FontIndices */
 
-enum PlayerFlags
+enum PlayerFlag
 {
     FLAG_PLAYER_CAN_JUMP        = 0x00000001,
     FLAG_PLAYER_SNEAKING        = 0x00000002,
@@ -355,7 +355,7 @@ enum PlayerFlags
     FLAG_PLAYER_OVERFLOW_PX     = 0x00008000,
     FLAG_PLAYER_OVERFLOW_PY     = 0x00010000,
     FLAG_PLAYER_OVERFLOW_PZ     = 0x00020000,
-}; /* PlayerFlags */
+}; /* PlayerFlag */
 
 enum CameraModes
 {
@@ -369,7 +369,7 @@ enum CameraModes
 
 typedef struct Player
 {
-    str name[100];                  /* player in-game name */
+    str name[64];                   /* player in-game name */
     v3f64 pos;                      /* player current coordinates in world */
     v3f64 pos_smooth;               /* player processed pos */
     v3f64 pos_last;                 /* for collision tunneling prevention */
@@ -387,16 +387,16 @@ typedef struct Player
     f32 eye_height;                 /* height of player camera, usually */
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
-    f32 movement_speed;             /* depends on enum: PlayerFlags */
-    u64 container_state;            /* enum: ContainerFlags */
+    f32 movement_speed;             /* depends on enum: PlayerFlag */
+    u64 container_state;            /* enum: ContainerFlag */
     u8 perspective;                 /* camera perspective mode */
-    u64 flag;                       /* enum: PlayerFlags */
+    u64 flag;                       /* enum: PlayerFlag */
 
     Camera camera;
     Camera camera_hud;
     f32 camera_distance;            /* for camera collision detection */
 
-    /* player at world edge, enum: PlayerFlags */
+    /* player at world edge, enum: PlayerFlag */
     u8 overflow;
 
     v3i16 chunk;                    /* current chunk player is in */
@@ -405,12 +405,12 @@ typedef struct Player
     v3i64 spawn_point;
 } Player;
 
-enum BlockStates
+typedef enum BlockState
 {
     BLOCK_STATE_SOLID = 1,
-}; /* BlockStates */
+} BlockState;
 
-enum BlockFlags
+enum BlockFlag
 {
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00000001 00000000 00000000] 00; */
@@ -444,9 +444,9 @@ enum BlockFlags
      * 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 10000000 00000000 00000000] 00; */
     FLAG_BLOCK_RLE =        0x0000000000800000,
-}; /* BlockFlags */
+}; /* BlockFlag */
 
-enum BlockMasks
+enum BlockMask
 {
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00000000 00111111 11111111] 00; */
@@ -483,9 +483,9 @@ enum BlockMasks
     /* 63 [00000000 00000000 00001111 00000000] 32;
      * 31 [00000000 00000000 00000000 00000000] 00; */
     MASK_BLOCK_Z =              0x00000f0000000000,
-}; /* BlockMasks */
+}; /* BlockMask */
 
-enum BlockShifts
+enum BlockShift
 {
     SHIFT_BLOCK_DATA =          0,
     SHIFT_BLOCK_ID =            0,
@@ -496,9 +496,9 @@ enum BlockShifts
     SHIFT_BLOCK_X =             32,
     SHIFT_BLOCK_Y =             36,
     SHIFT_BLOCK_Z =             40,
-}; /* BlockShifts */
+}; /* BlockShift */
 
-enum ChunkFlags
+enum ChunkFlag
 {
     FLAG_CHUNK_LOADED =     0x01,
     FLAG_CHUNK_DIRTY =      0x02,
@@ -508,9 +508,9 @@ enum ChunkFlags
 
     /* chunk marking for chunk_tab shifting logic */
     FLAG_CHUNK_EDGE =       0x20,
-}; /* ChunkFlags */
+}; /* ChunkFlag */
 
-enum ChunkShiftStates
+enum ChunkShiftState
 {
     STATE_CHUNK_SHIFT_PX = 1,
     STATE_CHUNK_SHIFT_NX = 2,
@@ -518,7 +518,7 @@ enum ChunkShiftStates
     STATE_CHUNK_SHIFT_NY = 4,
     STATE_CHUNK_SHIFT_PZ = 5,
     STATE_CHUNK_SHIFT_NZ = 6,
-}; /* ChunkShiftStates */
+}; /* ChunkShiftState */
 
 typedef struct Chunk
 {
@@ -536,9 +536,9 @@ typedef struct Chunk
 typedef struct ChunkQueue
 {
     u32 id;
-    u64 size;
     u32 count;          /* number of chunks queued */
     u32 offset;         /* first CHUNK_ORDER index to queue */
+    u64 size;
     u32 cursor;         /* parse position */
     u32 rate_chunk;     /* number of chunks to process per frame */
     u32 rate_block;     /* number of blocks to process per chunk per frame */

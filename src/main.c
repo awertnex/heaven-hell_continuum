@@ -887,9 +887,6 @@ world_update(Player *player)
         if (!CHUNK_QUEUE_2.count && CHUNK_QUEUE_3.size)
             chunk_queue_update(&CHUNK_QUEUE_3);
     }
-    printf("cursor_1[%6ld] ", CHUNK_QUEUE_1.cursor);
-    printf("cursor_2[%6ld] ", CHUNK_QUEUE_2.cursor);
-    printf("cursor_3[%6ld]\n", CHUNK_QUEUE_3.cursor);
 
     /* ---- player targeting ------------------------------------------------ */
 
@@ -1162,7 +1159,7 @@ draw_everything(void)
 
     if (CHUNK_QUEUE_3.size)
     {
-        end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
+        end += CHUNK_QUEUE_3.size;
         for (i = 0; cursor < end; ++i, ++cursor)
         {
             if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;

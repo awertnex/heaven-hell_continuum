@@ -50,6 +50,9 @@ assets_init(void)
                 &ssbo_texture_handles, GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_texture_handles_id);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
 }
 
 void

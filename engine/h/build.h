@@ -9,11 +9,11 @@
 #define CMD_MEMB        64
 #define CMD_SIZE        512
 
-enum BuildFlags
+enum BuildFlag
 {
     FLAG_CMD_SHOW = 0x0001,
     FLAG_CMD_RAW =  0x0002,
-}; /* BuildFlags */
+}; /* BuildFlag */
 
 /* can force-terminate process.
  *
@@ -52,4 +52,3 @@ extern str *str_build_root;
 extern buf cmd;
 
 #endif /* ENGINE_BUILD_H */
-

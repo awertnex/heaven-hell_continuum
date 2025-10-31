@@ -130,9 +130,6 @@ build_test(char **argv)
     cmd_push(stringf(DIR_ROOT"%s/%s"EXE,
                 str_tests.i[test_index], str_tests.i[test_index]));
     cmd_ready();
-
-    if (flag & FLAG_CMD_SHOW) cmd_show();
-    if (flag & FLAG_CMD_RAW) cmd_raw();
 }
 
 int
