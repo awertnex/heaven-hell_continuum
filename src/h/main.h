@@ -36,7 +36,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             16
+#define SET_RENDER_DISTANCE             8
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -523,7 +523,13 @@ enum ChunkShiftState
 typedef struct Chunk
 {
     v3i16 pos;      /* (world XYZ) / CHUNK_DIAMETER */
-    u64 id;         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
+
+    /* format:
+     * ((pos.x & 0xffff) << 0x00) |
+     * ((pos.y & 0xffff) << 0x10) |
+     * ((pos.z & 0xffff) << 0x20) */
+    u64 id;
+
     u32 color;      /* debug color: 0xrrggbbaa */
     GLuint vao;
     GLuint vbo;

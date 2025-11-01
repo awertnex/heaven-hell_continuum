@@ -175,7 +175,7 @@ chunking_init(void)
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         CHUNK_ORDER[i] = &chunk_tab[CHUNK_ORDER_lookup_file_contents[i]];
     mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_length,
-            "chunking_init().entries");
+            "chunking_init().CHUNK_ORDER_lookup_file_contents");
 
     /* ---- build CHUNKS_MAX lookup ----------------------------------------- */
     snprintf(CHUNKS_MAX_lookup_file_name, PATH_MAX,
@@ -186,7 +186,7 @@ chunking_init(void)
         for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         {
             LOGTRACE(FALSE,
-                    "Building CHUNKS_MAX Lookup, Progress [%ld/%d]..\n",
+                    "Building CHUNKS_MAX Lookup, Progress [%"PRId64"/%d]..\n",
                     i, SET_RENDER_DISTANCE_MAX);
             chunk_buf_diameter = (i * 2) + 1;
             chunk_buf_volume =
@@ -228,7 +228,7 @@ chunking_init(void)
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         CHUNKS_MAX[i] = CHUNKS_MAX_lookup_file_contents[i];
     mem_free((void*)&CHUNKS_MAX_lookup_file_contents, file_length,
-            "chunking_init().entries");
+            "chunking_init().CHUNKS_MAX_lookup_file_contents");
 
     /* ---- init chunk parsing priority queues ------------------------------ */
     CHUNK_QUEUE_1.id = CHUNK_QUEUE_1ST_ID;
@@ -635,12 +635,12 @@ chunk_generate(Chunk **chunk, u32 rate)
 
     index = chunk - chunk_tab;
     chunk_tab_coordinates =
-    (v3u32){
-        index % CHUNK_BUF_DIAMETER,
-        (index / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
-        index / CHUNK_BUF_LAYER,
-    };
-# if PLATFORM_WIN
+        (v3u32){
+            index % CHUNK_BUF_DIAMETER,
+            (index / CHUNK_BUF_DIAMETER) % CHUNK_BUF_DIAMETER,
+            index / CHUNK_BUF_LAYER,
+        };
+
     if (chunk_tab_coordinates.x < CHUNK_BUF_DIAMETER - 1)
         px = *(chunk + 1);
     if (chunk_tab_coordinates.x > 0)
@@ -653,14 +653,6 @@ chunk_generate(Chunk **chunk, u32 rate)
         pz = *(chunk + CHUNK_BUF_LAYER);
     if (chunk_tab_coordinates.z > 0)
         nz = *(chunk - CHUNK_BUF_LAYER);
-#else
-    px = *(chunk + 1);
-    nx = *(chunk - 1);
-    py = *(chunk + CHUNK_BUF_DIAMETER);
-    ny = *(chunk - CHUNK_BUF_DIAMETER);
-    pz = *(chunk + CHUNK_BUF_LAYER);
-    nz = *(chunk - CHUNK_BUF_LAYER);
-#endif /* PLATFORM_WIN */
     i = (*chunk)->cursor;
 
     for (; i < CHUNK_VOLUME && rate; ++i)
@@ -847,25 +839,25 @@ _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
         index / CHUNK_BUF_LAYER,
     };
 
-    Chunk *i = &chunk_buf[chunk_buf_cursor];
+    Chunk *chunk = &chunk_buf[chunk_buf_cursor];
     Chunk *end = chunk_buf + CHUNKS_MAX[SET_RENDER_DISTANCE];
-    for (; i < end; ++i)
-        if (!(i->flag & FLAG_CHUNK_LOADED))
+    for (; chunk < end; ++chunk)
+        if (!(chunk->flag & FLAG_CHUNK_LOADED))
         {
-            *i = (Chunk){0};
-            i->pos =
+            *chunk = (Chunk){0};
+            chunk->pos =
                 (v3i16){
                     player_delta_chunk.x + (coordinates.x - CHUNK_BUF_RADIUS),
                     player_delta_chunk.y + (coordinates.y - CHUNK_BUF_RADIUS),
                     player_delta_chunk.z + (coordinates.z - CHUNK_BUF_RADIUS),
                 };
-            i->id =
-                ((u64)(i->pos.x & 0xffff) << 32) |
-                ((u64)(i->pos.y & 0xffff) << 16) |
-                ((u64)(i->pos.z & 0xffff));
-            i->color = COLOR_CHUNK_LOADED;
-            i->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
-            chunk_tab[index] = i;
+            chunk->id =
+                ((u64)(chunk->pos.x & 0xffff) << 0x00) |
+                ((u64)(chunk->pos.y & 0xffff) << 0x10) |
+                ((u64)(chunk->pos.z & 0xffff) << 0x20);
+            chunk->color = COLOR_CHUNK_LOADED;
+            chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
+            chunk_tab[index] = chunk;
             ++chunk_buf_cursor;
             return;
         }
@@ -909,6 +901,7 @@ chunk_queue_update(ChunkQueue *q)
         end = CHUNK_ORDER + CHUNKS_MAX[SET_RENDER_DISTANCE];
     else end = CHUNK_ORDER + q->offset + size;
     for (; chunk < end && q->count < size; ++chunk)
+    {
         if (**chunk && ((**chunk)->flag & FLAG_CHUNK_DIRTY) &&
                 !((**chunk)->flag & FLAG_CHUNK_QUEUED) &&
                 !(q->queue[cursor]))
@@ -918,6 +911,7 @@ chunk_queue_update(ChunkQueue *q)
             ++q->count;
             cursor = (cursor + 1) % size;
         }
+    }
 
     q->cursor = cursor;
     if (!q->count) return;
