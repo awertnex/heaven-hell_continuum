@@ -147,7 +147,7 @@ enum MainFlag
     FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER   = 0x00002000,
 }; /* MainFlag */
 
-typedef struct Settings
+struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
 
@@ -169,9 +169,9 @@ typedef struct Settings
     u8 render_distance;
     u32 target_fps;
     f32 gui_scale;
-} Settings;
+}; /* Settings */
 
-typedef struct Uniform
+struct Uniform
 {
     struct /* defaults */
     {
@@ -273,7 +273,7 @@ typedef struct Uniform
         GLint color;
     } bounding_box;
 
-} Uniform;
+}; /* Uniform */
 
 enum ShaderIndices
 {
@@ -552,7 +552,7 @@ typedef struct ChunkQueue
 } ChunkQueue;
 
 extern u32 *const GAME_ERR;
-extern Settings settings;
+extern struct Settings settings;
 extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];
 extern u64 flag;

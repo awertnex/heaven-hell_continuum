@@ -20,6 +20,8 @@
 #include "platform.h"
 #include "limits.h"
 
+#define CAMERA_CLIP_FAR_DEFAULT GL_CLIP_DISTANCE0
+#define CAMERA_CLIP_NEAR_DEFAULT 0.03f
 #define CAMERA_ANGLE_MAX 90.0f
 #define CAMERA_RANGE_MAX 360.0f
 #define CAMERA_ZOOM_MAX 69.0f

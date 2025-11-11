@@ -77,7 +77,7 @@ chunking_init(void)
     str CHUNKS_MAX_lookup_file_name[PATH_MAX] = {0};
     u32 *CHUNK_ORDER_lookup_file_contents = NULL;
     u64 *CHUNKS_MAX_lookup_file_contents = NULL;
-    u64 file_length = 0;
+    u64 file_len = 0;
 
     u32 render_distance = 0;
     v3i32 center = {0};
@@ -166,7 +166,7 @@ chunking_init(void)
             "%slookup_chunk_order_0x%02x.bin",
             DIR_ROOT[DIR_LOOKUPS], SET_RENDER_DISTANCE);
 
-        file_length = get_file_contents(CHUNK_ORDER_lookup_file_name,
+        file_len = get_file_contents(CHUNK_ORDER_lookup_file_name,
                 (void*)&CHUNK_ORDER_lookup_file_contents,
                 sizeof(u32), "rb", FALSE);
         if (CHUNK_ORDER_lookup_file_contents == NULL)
@@ -174,7 +174,7 @@ chunking_init(void)
 
     for (i = 0; i < CHUNK_BUF_VOLUME; ++i)
         CHUNK_ORDER[i] = &chunk_tab[CHUNK_ORDER_lookup_file_contents[i]];
-    mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_length,
+    mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_len,
             "chunking_init().CHUNK_ORDER_lookup_file_contents");
 
     /* ---- build CHUNKS_MAX lookup ----------------------------------------- */
@@ -219,7 +219,7 @@ chunking_init(void)
             goto cleanup;
     }
 
-        file_length = get_file_contents(CHUNKS_MAX_lookup_file_name,
+        file_len = get_file_contents(CHUNKS_MAX_lookup_file_name,
                 (void*)&CHUNKS_MAX_lookup_file_contents,
                 sizeof(u64), "rb", FALSE);
         if (CHUNKS_MAX_lookup_file_contents == NULL)
@@ -227,7 +227,7 @@ chunking_init(void)
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         CHUNKS_MAX[i] = CHUNKS_MAX_lookup_file_contents[i];
-    mem_free((void*)&CHUNKS_MAX_lookup_file_contents, file_length,
+    mem_free((void*)&CHUNKS_MAX_lookup_file_contents, file_len,
             "chunking_init().CHUNKS_MAX_lookup_file_contents");
 
     /* ---- init chunk parsing priority queues ------------------------------ */
