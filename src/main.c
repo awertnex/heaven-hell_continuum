@@ -5,6 +5,7 @@
 #include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/math.h>
+#include <engine/h/platform.h>
 
 #include "h/main.h"
 #include "h/assets.h"
@@ -25,8 +26,8 @@ Render render =
     .size = {1380, 1080 - 24},
 };
 
-Settings settings =
-(Settings){
+struct Settings settings =
+{
     .reach_distance       = SET_REACH_DISTANCE_MAX,
     .lerp_speed           = SET_LERP_SPEED_DEFAULT,
     .mouse_sensitivity    = SET_MOUSE_SENSITIVITY_DEFAULT / 400.0f,
@@ -44,7 +45,7 @@ Texture texture[TEXTURE_COUNT] = {0};
 Font font[FONT_COUNT];
 static Projection projection_world = {0};
 static Projection projection_hud = {0};
-static Uniform uniform = {0};
+static struct Uniform uniform = {0};
 static Mesh mesh[MESH_COUNT] = {0};
 static FBO fbo[FBO_COUNT] = {0};
 
@@ -1532,7 +1533,6 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#include <stdio.h>
 int
 main(int argc, char **argv)
 {
@@ -1693,8 +1693,8 @@ main(int argc, char **argv)
             .fovy = SET_FOV_DEFAULT,
             .fovy_smooth = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = GL_CLIP_DISTANCE0,
-            .near = 0.03f,
+            .far = CAMERA_CLIP_FAR_DEFAULT,
+            .near = CAMERA_CLIP_NEAR_DEFAULT,
         };
 
     lily.camera_hud =
@@ -1702,8 +1702,8 @@ main(int argc, char **argv)
             .fovy = SET_FOV_DEFAULT,
             .fovy_smooth = SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = GL_CLIP_DISTANCE0,
-            .near = 0.03f,
+            .far = CAMERA_CLIP_FAR_DEFAULT,
+            .near = CAMERA_CLIP_NEAR_DEFAULT,
         };
 
     bind_shader_uniforms();

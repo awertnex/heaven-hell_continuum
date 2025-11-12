@@ -14,6 +14,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <engine/include/stb_image.h>
 
+u32 engine_err = ERR_SUCCESS;
 static u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 {
@@ -915,8 +916,8 @@ update_camera_perspective(Camera *camera, Projection *projection)
     /* ---- view ------------------------------------------------------------ */
     projection->view =
         matrix_multiply(projection->translation,
-                matrix_multiply(
-                    projection->rotation, projection->orientation));
+                matrix_multiply(projection->rotation,
+                    projection->orientation));
 
     /* ---- projection ------------------------------------------------------ */
     projection->projection =
@@ -1143,8 +1144,8 @@ font_init(Font *font, u32 resolution, const str *file_name)
                                 (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
                             (canvas + x + (y * resolution)), 1);
             }
-            mem_zero((void*)&canvas,
-                    resolution * resolution, "font_init().font_glyph_canvas");
+            mem_zero((void*)&canvas, resolution * resolution,
+                    "font_init().font_glyph_canvas");
         }
         g->texture_sample.x = col * font->char_size;
         g->texture_sample.y = row * font->char_size;

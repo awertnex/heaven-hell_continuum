@@ -3,12 +3,12 @@
 #define DIR_ROOT        "Heaven-Hell Continuum/"
 #define DIR_SRC         "src/"
 #define ASSET_COUNT     3
-#define NEW_DIR_COUNT   2
+#define NEW_DIR_COUNT   1
 
 str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
 
 #if PLATFORM_LINUX
-    #define STR_OUT     DIR_ROOT "hhc"
+    #define STR_OUT     DIR_ROOT"hhc"
 #elif PLATFORM_WIN
     #define STR_OUT     "\""DIR_ROOT"hhc"EXE"\""
 #endif /* PLATFORM */
@@ -20,8 +20,7 @@ main(int argc, char **argv)
     if (argv_compare("engine", argc, argv))
         engine_build(
                 stringf("%sengine/", str_build_root),
-                stringf("%sengine/lib/"PLATFORM, str_build_root)
-                );
+                stringf("%sengine/lib/"PLATFORM, str_build_root));
 
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
         return engine_err;
@@ -29,6 +28,7 @@ main(int argc, char **argv)
     snprintf(str_out_dir, CMD_SIZE, "%s"DIR_ROOT, str_build_root);
 
     u32 i = 0;
+    str temp[CMD_SIZE] = {0};
     cmd_push(COMPILER);
     cmd_push(DIR_SRC"main.c");
     cmd_push(DIR_SRC"assets.c");
@@ -43,7 +43,10 @@ main(int argc, char **argv)
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
-    cmd_push("-Wl,-rpath=$ORIGIN/lib/"PLATFORM);
+    snprintf(temp, CMD_SIZE, "%s",
+            "-Wl,-rpath="RUNTIME_PATH);
+    normalize_slash(temp);
+    cmd_push(temp);
     engine_link_libs();
     cmd_push("-o");
     cmd_push(STR_OUT);
@@ -53,12 +56,11 @@ main(int argc, char **argv)
     str str_from[ASSET_COUNT][CMD_SIZE] = {0};
     str str_to[ASSET_COUNT][CMD_SIZE] = {0};
     snprintf(str_mkdir[0],  CMD_SIZE, "%s", str_out_dir);
-    snprintf(str_mkdir[1],  CMD_SIZE, "%slib/", str_out_dir);
     snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_build_root);
     snprintf(str_from[1],   CMD_SIZE, "%sengine/lib/"PLATFORM, str_build_root);
     snprintf(str_from[2],   CMD_SIZE, "%sassets/", str_build_root);
     snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_out_dir);
-    snprintf(str_to[1],     CMD_SIZE, "%slib/"PLATFORM, str_out_dir);
+    snprintf(str_to[1],     CMD_SIZE, "%s", str_out_dir);
     snprintf(str_to[2],     CMD_SIZE, "%sassets/", str_out_dir);
 
     for (i = 0; i < NEW_DIR_COUNT; ++i)

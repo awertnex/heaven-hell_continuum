@@ -36,7 +36,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             16
+#define SET_RENDER_DISTANCE             8
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -147,7 +147,7 @@ enum MainFlag
     FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER   = 0x00002000,
 }; /* MainFlag */
 
-typedef struct Settings
+struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
 
@@ -169,9 +169,9 @@ typedef struct Settings
     u8 render_distance;
     u32 target_fps;
     f32 gui_scale;
-} Settings;
+}; /* Settings */
 
-typedef struct Uniform
+struct Uniform
 {
     struct /* defaults */
     {
@@ -273,7 +273,7 @@ typedef struct Uniform
         GLint color;
     } bounding_box;
 
-} Uniform;
+}; /* Uniform */
 
 enum ShaderIndices
 {
@@ -523,7 +523,13 @@ enum ChunkShiftState
 typedef struct Chunk
 {
     v3i16 pos;      /* (world XYZ) / CHUNK_DIAMETER */
-    u64 id;         /* hash: (pos.x << 32) + (pos.y << 16) + pos.z */
+
+    /* format:
+     * ((pos.x & 0xffff) << 0x00) |
+     * ((pos.y & 0xffff) << 0x10) |
+     * ((pos.z & 0xffff) << 0x20) */
+    u64 id;
+
     u32 color;      /* debug color: 0xrrggbbaa */
     GLuint vao;
     GLuint vbo;
@@ -546,7 +552,7 @@ typedef struct ChunkQueue
 } ChunkQueue;
 
 extern u32 *const GAME_ERR;
-extern Settings settings;
+extern struct Settings settings;
 extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];
 extern u64 flag;

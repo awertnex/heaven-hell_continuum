@@ -12,7 +12,6 @@
     {
         "-lm",
         "-lglfw",
-        "-lfossil",
     };
 #elif PLATFORM_WIN
     #include "platform_windows.c"
@@ -23,7 +22,6 @@
         "-lwinmm",
         "-lm",
         "-lglfw3",
-        "-lfossil",
     };
 #endif /* PLATFORM */
 
@@ -47,6 +45,9 @@ static u32 is_build_source_changed(void);
 
 /* can force-terminate process */
 static void self_rebuild(char **argv);
+
+/* -- INTERNAL USE ONLY -- */
+static void _engine_link_libs(void);
 
 static void cmd_show(void);
 static void cmd_raw(void);
@@ -179,18 +180,23 @@ self_rebuild(char **argv)
 u32
 engine_build(const str *engine_dir, const str *out_dir)
 {
+    str engine_dir_processed[CMD_SIZE] = {0};
+    str out_dir_processed[CMD_SIZE] = {0};
+    str temp[CMD_SIZE] = {0};
+
     if (
             is_dir_exists(engine_dir, TRUE) != ERR_SUCCESS ||
             is_dir_exists(out_dir, TRUE) != ERR_SUCCESS)
         return engine_err;
 
-    str engine_dir_processed[CMD_SIZE] = {0};
-    str out_dir_processed[CMD_SIZE] = {0};
     memcpy(engine_dir_processed, engine_dir, CMD_SIZE);
-    memcpy(out_dir_processed, out_dir, CMD_SIZE);
-
     check_slash(engine_dir_processed);
+    normalize_slash(engine_dir_processed);
+
+    memcpy(out_dir_processed, out_dir, CMD_SIZE);
     check_slash(out_dir_processed);
+    normalize_slash(out_dir_processed);
+
     cmd_push(COMPILER);
     cmd_push(stringf("%score.c", engine_dir_processed));
     cmd_push(stringf("%sdir.c", engine_dir_processed));
@@ -199,7 +205,9 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%smemory.c", engine_dir_processed));
     cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
     cmd_push(stringf("%stext.c", engine_dir_processed));
-    cmd_push(stringf("%sinclude/glad/glad.c", engine_dir_processed));
+    snprintf(temp, CMD_SIZE, "%sinclude/glad/glad.c", engine_dir_processed);
+    normalize_slash(temp);
+    cmd_push(temp);
     cmd_push(stringf("-I%s..", engine_dir_processed));
     cmd_push("-shared");
     cmd_push("-fPIC");
@@ -208,6 +216,7 @@ engine_build(const str *engine_dir, const str *out_dir)
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
     cmd_push("-Wno-implicit-function-declaration");
+    _engine_link_libs();
     cmd_push("-o");
     cmd_push(stringf("%s"ENGINE_NAME_LIB, out_dir_processed));
     cmd_ready();
@@ -227,18 +236,21 @@ engine_build(const str *engine_dir, const str *out_dir)
 void
 engine_link_libs(void)
 {
+    _engine_link_libs();
+    cmd_push("-lfossil");
+}
+
+static void
+_engine_link_libs(void)
+{
     u32 i = 0;
-#if 0
     str temp[CMD_SIZE] = {0};
     snprintf(temp, CMD_SIZE, "-L%sengine/lib/"PLATFORM, str_build_root);
     normalize_slash(temp);
     cmd_push(temp);
-#endif
-    cmd_push("-Lengine/lib/"PLATFORM);
     for (;i < arr_len(str_libs); ++i)
         cmd_push(str_libs[i]);
 }
-
 u64
 argv_compare(str *arg, int argc, char **argv)
 {

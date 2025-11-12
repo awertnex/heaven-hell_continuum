@@ -60,8 +60,9 @@
 #define ERR_MESH_GENERATION_FAIL        4139
 #define ERR_INCLUDE_RECURSION_LIMIT     4140
 #define ERR_SELF_INCLUDE                4141
+#define ERR_DLL_LOAD_FAIL               4142
 
-/* declared by the user */
+/* can be declared by the user if 'engine/core.c' not included */
 extern u32 engine_err;
 
 #endif /* ENGING_DIAGNOSTICS_H */
