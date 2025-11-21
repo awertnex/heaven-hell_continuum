@@ -14,6 +14,7 @@
 - fixed chunk queue offset miscalculation
 - fixed windows support
 - fixed z-fighting between overlapped quads and lines
+- added basic AABB collision
 
 #### changes
 

@@ -653,9 +653,8 @@ chunk_generate(Chunk **chunk, u32 rate)
         pz = *(chunk + CHUNK_BUF_LAYER);
     if (chunk_tab_coordinates.z > 0)
         nz = *(chunk - CHUNK_BUF_LAYER);
-    i = (*chunk)->cursor;
 
-    for (; i < CHUNK_VOLUME && rate; ++i)
+    for (i = (*chunk)->cursor; i < CHUNK_VOLUME && rate; ++i)
     {
         v3u32 pos =
         {
@@ -1168,6 +1167,12 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
             chunk_tab[target_index] = NULL;
         }
     }
+}
+
+u32 *
+get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z)
+{
+    return NULL;
 }
 
 u32

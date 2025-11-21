@@ -41,6 +41,14 @@ void block_break(u32 index, u32 x, u32 y, u32 z);
 void chunk_queue_update(ChunkQueue *q);
 
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
+
+/* translate block world position to chunk_buf index relative to 'chunk'.
+ *
+ * (x, y, z) = coordinates of block relative to 'chunk'.
+ *
+ * return pointer to block in 'chunk_buf' */
+u32 *get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z);
+
 u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
 
 #ifdef FUCK // TODO: undef FUCK

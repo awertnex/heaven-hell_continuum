@@ -832,7 +832,7 @@ world_init(str *name)
         };
 
     chunking_update(lily.delta_chunk);
-    flag |= (FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED);
+    flag |= FLAG_MAIN_DEBUG_MORE | FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
     lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
@@ -854,6 +854,10 @@ world_update(Player *player)
         show_cursor;
     else disable_cursor;
 
+#if MODE_INTERNAL_COLLIDE
+    player_collision_update(&lily);
+#endif /* MODE_INTERNAL_COLLIDE */
+
     player_state_update(&render, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
@@ -865,10 +869,6 @@ world_update(Player *player)
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
-
-#if MODE_INTERNAL_COLLIDE
-        player_collision_update(&lily, &chunk_tab[chunk_tab_index]);
-#endif /* MODE_INTERNAL_COLLIDE */
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
     (chunk_tab_index >= CHUNK_BUF_VOLUME)
@@ -903,12 +903,6 @@ world_update(Player *player)
                 WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER}))
         flag |= FLAG_MAIN_PARSE_TARGET;
     else flag &= ~FLAG_MAIN_PARSE_TARGET;
-
-    /* TODO: make a function 'index_to_bounding_box()' */
-    //if (GetRayCollisionBox(GetScreenToWorldRay(cursor, lily.camera),
-    //(BoundingBox){&lily.previous_target}).hit)
-    //{
-    //}
 }
 
 static void
@@ -1384,7 +1378,8 @@ framebuffer_blit_chunk_queue_visualizer:
                 "PLAYER CHUNK      [%d %d %d]\n"
                 "CURRENT CHUNK     [%d %d %d]\n"
                 "PLAYER PITCH      [%.2f]\n"
-                "PLAYER YAW        [%.2f]\n",
+                "PLAYER YAW        [%.2f]\n"
+                "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n",
                 lily.name,
                 lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z,
                 (i32)floorf(lily.pos_smooth.x),
@@ -1397,11 +1392,12 @@ framebuffer_blit_chunk_queue_visualizer:
                 (chunk_tab[CHUNK_TAB_CENTER]) ?
                 chunk_tab[CHUNK_TAB_CENTER]->pos.z : 0,
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
-                lily.pitch, lily.yaw),
+                lily.pitch, lily.yaw,
+                lily.vel.x, lily.vel.y, lily.vel.z),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "PLAYER OVERFLOW X [%s]\n"
                 "PLAYER OVERFLOW Y [%s]\n"
                 "PLAYER OVERFLOW Z [%s]\n",
@@ -1417,7 +1413,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1430,7 +1426,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1443,7 +1439,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "MOUSE XY          [%.2f %.2f]\n"
                 "DELTA XY          [%.2f %.2f]\n"
                 "RENDER RATIO      [%.4f]\n"

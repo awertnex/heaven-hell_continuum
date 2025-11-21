@@ -2,6 +2,8 @@
 #include <sys/time.h>
 
 #include <engine/h/math.h>
+#include "h/assets.h"
+#include "h/chunking.h"
 #include "h/main.h"
 #include "h/logic.h"
 
@@ -99,18 +101,9 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         zoom = player->camera.zoom;
     else zoom = 0.0f;
 
-    if (!(player->flag & FLAG_PLAYER_CAN_JUMP) &&
-            !(player->flag & FLAG_PLAYER_FLYING))
-    {
-        player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
-        player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
-
-        update_gravity(render, player);
-    }
-
     if (player->flag & FLAG_PLAYER_FLYING)
     {
-        player->flag &= ~(FLAG_PLAYER_CAN_JUMP | FLAG_PLAYER_FALLING);
+        player->flag &= ~FLAG_PLAYER_CAN_JUMP;
 
         player->pos_lerp_speed.x = SET_LERP_SPEED_GLIDE;
         player->pos_lerp_speed.y = SET_LERP_SPEED_GLIDE;
@@ -120,7 +113,7 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         player->movement_speed = SET_PLAYER_SPEED_FLY;
         player->camera.fovy = 80.0f;
     }
-    else player->flag |= FLAG_PLAYER_FALLING;
+    else update_gravity(render, player);
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
             && !(player->flag & FLAG_PLAYER_FLYING))
@@ -286,6 +279,7 @@ set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
     player->pos = (v3f64){x, y, z};
     player->pos_smooth = player->pos;
+    player->pos_last = player->pos;
 }
 
 void
@@ -294,6 +288,7 @@ set_player_block(Player *player, i32 x, i32 y, i32 z)
     player->pos =
         (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
     player->pos_smooth = player->pos;
+    player->pos_last = player->pos;
 }
 
 void
@@ -321,13 +316,12 @@ player_respawn(Player *player)
 void
 update_gravity(Render *render, Player *player)
 {
-    if (player->flag & FLAG_PLAYER_FALLING)
-        player->vel.z += (GRAVITY * player->mass * render->frame_delta);
+    player->vel.z += (GRAVITY * player->mass * render->frame_delta);
     player->pos.z += player->vel.z * render->frame_delta;
 }
 
 void
-player_collision_update(Player *player, Chunk **chunk)
+player_collision_update(Player *player)
 {
     v3f64 pos = player->pos_smooth;
     v3f64 pos_last = player->pos_last;
@@ -394,54 +388,96 @@ player_collision_update(Player *player, Chunk **chunk)
             ceil(check_size.z),
         };
 
-    pos =
-    (v3f64){
-        player->collision_check_pos.x,
-        player->collision_check_pos.y,
-        player->collision_check_pos.z,
+    v3i32 aabb_pos =
+    {
+        (i32)player->collision_check_pos.x -
+            (i32)(player->chunk.x * CHUNK_DIAMETER),
+        (i32)player->collision_check_pos.y -
+            (i32)(player->chunk.y * CHUNK_DIAMETER),
+        (i32)player->collision_check_pos.z -
+            (i32)(player->chunk.z * CHUNK_DIAMETER),
     };
 
-    pos.x = floor(pos.x) - ((i64)floor(pos.x / CHUNK_DIAMETER) *
-            CHUNK_DIAMETER);
-    pos.y = floor(pos.y) - ((i64)floor(pos.y / CHUNK_DIAMETER) *
-            CHUNK_DIAMETER);
-    pos.z = floor(pos.z) - ((i64)floor(pos.z / CHUNK_DIAMETER) *
-            CHUNK_DIAMETER);
-
-    v3u32 diameter =
+    v3i32 aabb_size =
     {
-        (u32)player->collision_check_size.x,
-        (u32)player->collision_check_size.y,
-        (u32)player->collision_check_size.z,
+        (i32)player->collision_check_size.x,
+        (i32)player->collision_check_size.y,
+        (i32)player->collision_check_size.z,
     };
 
-    u32 x, y, z, index, *block;
-    if (*chunk)
+    v3f64 p1[2] =
     {
-        for (z = 0; z < diameter.z; ++z)
-            for (y = 0; y < diameter.y; ++y)
-                for (x = 0; x < diameter.x; ++x)
+        {
+            player->pos_smooth.x - (player->size.x / 2.0f),
+            player->pos_smooth.y - (player->size.y / 2.0f),
+            player->pos_smooth.z,
+        },
+        {
+            player->pos_smooth.x + (player->size.x / 2.0f),
+            player->pos_smooth.y + (player->size.y / 2.0f),
+            player->pos_smooth.z + player->size.z,
+        },
+    };
+
+    v3f64 p2[2] = {0};
+    Chunk *chunk = NULL;
+    u32 *block = NULL;
+    i32 x, y, z, dx, dy, dz, dcx, dcy, dcz;
+    putchar('\n');
+    for (z = aabb_pos.z; z < aabb_pos.z + aabb_size.z; ++z)
+    {
+        dz = mod(z, CHUNK_DIAMETER);
+        dcz = (i32)floorf((f32)z / CHUNK_DIAMETER);
+        for (y = aabb_pos.y; y < aabb_pos.y + aabb_size.y; ++y)
+        {
+            dy = mod(y, CHUNK_DIAMETER);
+            dcy = (i32)floorf((f32)y / CHUNK_DIAMETER);
+            for (x = aabb_pos.x; x < aabb_pos.x + aabb_size.x; ++x)
+            {
+                dx = mod(x, CHUNK_DIAMETER);
+                dcx = (i32)floorf((f32)x / CHUNK_DIAMETER);
+
+                u64 index = CHUNK_TAB_CENTER + dcx +
+                    (dcy * CHUNK_BUF_DIAMETER) +
+                    (dcz * CHUNK_BUF_LAYER);
+                chunk = chunk_tab[index];
+                if (!chunk) continue;
+                block = get_block_chunk_buf_index_relative(chunk, x, y, z);
+                block = &chunk->block[dz][dy][dx];
+                if (!block || !*block) continue;
+
+                p2[0] =
+                    (v3f64){
+                        (f64)(((i64)chunk->pos.x * CHUNK_DIAMETER) + dx),
+                        (f64)(((i64)chunk->pos.y * CHUNK_DIAMETER) + dy),
+                        (f64)(((i64)chunk->pos.z * CHUNK_DIAMETER) + dz),
+                    };
+                p2[1] =
+                    (v3f64){
+                        p2[0].x + 1.0f,
+                        p2[0].y + 1.0f,
+                        p2[0].z + 1.0f,
+                    };
+
+                if (
+                        (p1[0].x < p2[1].x) &&
+                        (p1[1].x > p2[0].x) &&
+                        (p1[0].y < p2[1].y) &&
+                        (p1[1].y > p2[0].y) &&
+                        (p1[0].z < p2[1].z) &&
+                        (p1[1].z > p2[0].z))
                 {
+                    player->vel.z = 0.0f;
+                    player->pos.z = p2[1].z;
+                    player->pos_smooth.z = player->pos.z;
+                    player->flag |= FLAG_PLAYER_CAN_JUMP;
+                    player->flag &= ~FLAG_PLAYER_FLYING;
                 }
+                SET_BLOCK_ID(*block, BLOCK_DIRT);
+                chunk->flag |= FLAG_CHUNK_DIRTY;
+            }
+        }
     }
-
-#if 0 /* TODO: remove this parse collision feet stuff */
-    Chunk *target_chunk = get_chunk(&player->lastPos, &player->flag, FLAG_PARSE_COLLISION_FEET);
-    if (target_chunk->i
-            [z - 1 - WORLD_BOTTOM]
-            [y - (target_chunk->pos.y * CHUNK_SIZE)]
-            [x - (target_chunk->pos.x * CHUNK_SIZE)] & NOT_EMPTY)
-    {
-        player->pos.z = ceilf(targetCoordinatesFeet->z) + WORLD_BOTTOM + 1;
-        player->vel.z = 0;
-        if (player->flag & FLAG_PLAYER_FLYING) player->flag &= ~FLAG_PLAYER_FLYING;
-        player->flag |= FLAG_PLAYER_CAN_JUMP;
-        player->flag &= ~FLAG_PLAYER_FALLING;
-    } else player->flag |= FLAG_PLAYER_FALLING;
-
-    // TODO: move to new 'void parse_camera_collisions()'
-    player->camera_distance = SET_CAMERA_DISTANCE_MAX;
-#endif
 }
 
 f64
@@ -449,7 +485,7 @@ get_time_ms(void)
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
-    return tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
+    return (f64)tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
 }
 
 b8

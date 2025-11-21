@@ -13,6 +13,7 @@
 
 #define v3izero     (v3i32){0, 0, 0}
 #define v3fzero     (v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f}
+#define mod(x, m)   ((((x) % (m)) + (m)) % (m))
 
 v3f32 add_v3f32(v3f32 a, v3f32 b);
 v3f32 sub_v3f32(v3f32 a, v3f32 b);
