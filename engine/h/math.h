@@ -12,40 +12,41 @@
 #define GRAVITY     -9.7803267715f
 
 #define v3izero     (v3i32){0, 0, 0}
-#define v3fzero     (v3f32){0.0e-5f, 0.0e-5f, 0.0e-5f}
-#define mod(x, m)   ((((x) % (m)) + (m)) % (m))
+#define v3fzero     (v3f32){0.0f, 0.0f, 0.0f}
+#define mod(n, max) ((((n) % (max)) + (max)) % (max))
 
 v3f32 add_v3f32(v3f32 a, v3f32 b);
 v3f32 sub_v3f32(v3f32 a, v3f32 b);
-i32 clamp_i32(i32 val, i32 min, i32 max);
-u32 clamp_u32(u32 val, u32 min, u32 max);
-f32 clamp_f32(f32 val, f32 min, f32 max);
-i64 clamp_i64(i64 val, i64 min, i64 max);
-u64 clamp_u64(u64 val, u64 min, u64 max);
-f64 clamp_f64(f64 val, f64 min, f64 max);
+i32 clamp_i32(i32 n, i32 min, i32 max);
+u32 clamp_u32(u32 n, u32 min, u32 max);
+f32 clamp_f32(f32 n, f32 min, f32 max);
+i64 clamp_i64(i64 n, i64 min, i64 max);
+u64 clamp_u64(u64 n, u64 min, u64 max);
+f64 clamp_f64(f64 n, f64 min, f64 max);
 f32 len_v3f32(v3f32 v);
 v3f32 normalize_v3f32(v3f32 v);
 f32 q_rsqrt(f32 n);
 u32 distance_v3i32(v3i32 a, v3i32 b);
 f32 distance_v3f32(v3f32 a, v3f32 b);
-b8 is_in_range_i32(i32 pos, i32 start, i32 end);
-b8 is_in_range_f32(f32 pos, f32 start, f32 end);
-b8 is_in_range_i64(i64 pos, i64 start, i64 end);
-b8 is_in_range_f64(f64 pos, f64 start, f64 end);
-b8 is_in_area_i32(v2i32 pos, v2i32 start, v2i32 end);
-b8 is_in_area_f32(v2f32 pos, v2f32 start, v2f32 end);
-b8 is_in_volume_i32(v3i32 pos, v3i32 start, v3i32 end);
-b8 is_in_volume_f32(v3f32 pos, v3f32 start, v3f32 end);
-b8 is_in_volume_i64(v3i64 pos, v3i64 start, v3i64 end);
+b8 is_in_range_i32(i32 n, i32 min, i32 max);
+b8 is_in_range_f32(f32 n, f32 min, f32 max);
+b8 is_in_range_i64(i64 n, i64 min, i64 max);
+b8 is_in_range_f64(f64 n, f64 min, f64 max);
+b8 is_in_area_i32(v2i32 v, v2i32 min, v2i32 max);
+b8 is_in_area_f32(v2f32 v, v2f32 min, v2f32 max);
+b8 is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max);
+b8 is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max);
+b8 is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max);
 
 m4f32 matrix_add(m4f32 a, m4f32 b);
 m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
 
-f32 lerp_f32(f32 start, f32 end, f32 speed, f64 frame_delta);
-f32 easein_f32(f32 start, f32 end, f32 scale);
-f32 easeout_f32(f32 start, f32 end, f32 scale);
-f32 smoothstep_f32(f32 start, f32 end, f32 scale);
+f32 lerp_f32(f32 start, f32 end, f32 speed, f64 t);
+v3f64 lerp_v3f64(v3f64 start, v3f64 end, f32 t);
+f32 easein_f32(f32 start, f32 end, f32 t);
+f32 easeout_f32(f32 start, f32 end, f32 t);
+f32 smoothstep_f32(f32 start, f32 end, f32 t);
 
 #endif /* ENGINE_MATH_H */
