@@ -365,6 +365,12 @@ u32 shader_program_init(const str *shaders_dir, ShaderProgram *program);
 
 void shader_program_free(ShaderProgram *program);
 
+/* set a vec3 attribute array for a vao */
+void attrib_vec3(void);
+
+/* set a vec3 and a vec2 attribute arrays for a vao */
+void attrib_vec3_vec2(void);
+
 /* return non-zero on failure and engine_err is set accordingly */
 u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples);
@@ -391,10 +397,12 @@ u32 texture_generate(Texture *texture, b8 bindless);
 
 void texture_free(Texture *texture);
 
-/* usage = GL_<x>_DRAW.
+/* attrib = pointer to a function to set attribute arrays for 'mesh.vao'
+ * (e.g. &attrib_vec3, set a single vec3 attribute array),
+ * usage = GL_<x>_DRAW.
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 mesh_generate(Mesh *mesh, GLenum usage,
+u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
         GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
 
 void mesh_free(Mesh *mesh);

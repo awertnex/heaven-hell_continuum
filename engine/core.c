@@ -472,6 +472,28 @@ shader_program_free(ShaderProgram *program)
 
 /* ---- section: meat ------------------------------------------------------- */
 
+void attrib_vec3(void)
+{
+    glVertexAttribPointer(0, 3, GL_FLOAT,
+            GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
+}
+
+void attrib_vec3_vec2(void)
+{
+    glVertexAttribPointer(0, 3, GL_FLOAT,
+            GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT,
+            GL_FALSE, 5 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+}
+
 u32
 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples)
@@ -769,7 +791,7 @@ texture_free(Texture *texture)
 }
 
 u32
-mesh_generate(Mesh *mesh, GLenum usage,
+mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data)
 {
@@ -801,11 +823,8 @@ mesh_generate(Mesh *mesh, GLenum usage,
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
             mesh->ebo_len * sizeof(GLuint), mesh->ebo_data, usage);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT,
-            GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-    glEnableVertexAttribArray(0);
+    if (attrib) attrib();
 
-    glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
