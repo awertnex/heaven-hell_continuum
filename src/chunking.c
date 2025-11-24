@@ -49,10 +49,10 @@ static void _block_break(Chunk *chunk,
 static void chunk_generate(Chunk **chunk, u32 rate);
 
 static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
-static void chunk_mesh(Chunk *chunk);
+static void chunk_mesh_update(Chunk *chunk);
 
 /* -- INTERNAL USE ONLY -- */
-static void _chunk_mesh(Chunk *chunk);
+static void chunk_mesh_init(Chunk *chunk);
 
 /* -- INTERNAL USE ONLY -- */
 static void _chunk_serialize(Chunk *chunk, str *world_name);
@@ -690,11 +690,11 @@ chunk_generate(Chunk **chunk, u32 rate)
 
     if ((*chunk)->cursor == CHUNK_VOLUME &&
             !((*chunk)->flag & FLAG_CHUNK_GENERATED))
-        _chunk_mesh(*chunk);
+        chunk_mesh_init(*chunk);
 }
 
 static void
-chunk_mesh(Chunk *chunk)
+chunk_mesh_update(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
@@ -748,7 +748,7 @@ chunk_mesh(Chunk *chunk)
 }
 
 static void
-_chunk_mesh(Chunk *chunk)
+chunk_mesh_init(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
@@ -922,7 +922,7 @@ generate_and_mesh:
         if (q->queue[i])
         {
             if ((*q->queue[i])->flag & FLAG_CHUNK_GENERATED)
-                chunk_mesh(*q->queue[i]);
+                chunk_mesh_update(*q->queue[i]);
             else chunk_generate(q->queue[i], rate_block);
             if (!((*q->queue[i])->flag & FLAG_CHUNK_DIRTY))
             {
