@@ -477,8 +477,6 @@ void attrib_vec3(void)
     glVertexAttribPointer(0, 3, GL_FLOAT,
             GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glBindVertexArray(0);
 }
 
 void attrib_vec3_vec2(void)
@@ -488,10 +486,19 @@ void attrib_vec3_vec2(void)
     glEnableVertexAttribArray(0);
 
     glVertexAttribPointer(1, 2, GL_FLOAT,
-            GL_FALSE, 5 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+            GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
+}
 
-    glBindVertexArray(0);
+void attrib_vec3_vec3(void)
+{
+    glVertexAttribPointer(0, 3, GL_FLOAT,
+            GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT,
+            GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 }
 
 u32
@@ -799,9 +806,10 @@ mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
                 "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
-    if (mem_alloc((void*)&mesh->ebo_data, sizeof(GLuint) * ebo_len,
-                "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
-        goto cleanup;
+    if (ebo_data)
+        if (mem_alloc((void*)&mesh->ebo_data, sizeof(GLuint) * ebo_len,
+                    "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
+            goto cleanup;
 
     mesh->vbo_len = vbo_len;
     mesh->ebo_len = ebo_len;
@@ -825,6 +833,7 @@ mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
 
     if (attrib) attrib();
 
+    glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -1039,7 +1048,7 @@ update_key_states(Render *render)
         }
         else if (key_press && _is_key_listen_double(i))
         {
-            if ((glfwGetTime() - key_press_start_time[i])
+            if ((render->frame_start - key_press_start_time[i])
                     < KEYBOARD_DOUBLE_PRESS_TIME)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
@@ -1060,6 +1069,7 @@ update_key_states(Render *render)
         if (is_key_press_double(i))     keyboard_key[i] = KEY_HOLD_DOUBLE;
         if (_is_key_release(i))         keyboard_key[i] = KEY_LISTEN_DOUBLE;
         if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
+
     }
 }
 
