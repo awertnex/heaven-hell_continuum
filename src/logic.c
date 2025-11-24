@@ -7,16 +7,14 @@
 #include "h/main.h"
 #include "h/logic.h"
 
-f64
-get_time_ms(void)
+f64 get_time_ms(void)
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
     return (f64)tp.tv_sec + (f64)tp.tv_usec * 1e-6f;
 }
 
-b8
-get_timer(f64 *time_start, f32 interval)
+b8 get_timer(f64 *time_start, f32 interval)
 {
     f64 time_current = get_time_ms();
     if (time_current - *time_start >= interval)
@@ -27,8 +25,7 @@ get_timer(f64 *time_start, f32 interval)
     return FALSE;
 }
 
-void
-player_state_update(Render *render, Player *player, u64 chunk_diameter,
+void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
     /* ---- wrap coordinates ------------------------------------------------ */
@@ -176,8 +173,7 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
     player->camera_skybox.fovy_smooth = player->camera.fovy_smooth;
 }
 
-void
-player_camera_movement_update(Render *render, Player *player,
+void player_camera_movement_update(Render *render, Player *player,
         b8 use_mouse)
 {
     static f32 zoom = 0.0f;
@@ -275,8 +271,7 @@ player_camera_movement_update(Render *render, Player *player,
     player->camera_skybox.cos_yaw =    player->camera.cos_yaw;
 }
 
-void
-player_target_update(Player *player)
+void player_target_update(Player *player)
 {
     const f32 SPCH = player->sin_pitch;
     const f32 CPCH = player->cos_pitch;
@@ -301,16 +296,14 @@ player_target_update(Player *player)
         };
 }
 
-void
-set_player_pos(Player *player, f64 x, f64 y, f64 z)
+void set_player_pos(Player *player, f64 x, f64 y, f64 z)
 {
     player->pos = (v3f64){x, y, z};
     player->pos_smooth = player->pos;
     player->pos_last = player->pos;
 }
 
-void
-set_player_block(Player *player, i32 x, i32 y, i32 z)
+void set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
     player->pos =
         (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
@@ -318,8 +311,7 @@ set_player_block(Player *player, i32 x, i32 y, i32 z)
     player->pos_last = player->pos;
 }
 
-void
-player_kill(Player *player)
+void player_kill(Player *player)
 {
     player->vel = v3fzero;
     player->mass = 0.0f;
@@ -328,8 +320,7 @@ player_kill(Player *player)
     player->flag = FLAG_PLAYER_DEAD;
 }
 
-void
-player_respawn(Player *player)
+void player_respawn(Player *player)
 {
     player->pos =
         (v3f64){
@@ -340,8 +331,7 @@ player_respawn(Player *player)
     player->flag = 0;
 }
 
-void
-player_collision_update(Player *player)
+void player_collision_update(Player *player)
 {
     if (!MODE_INTERNAL_COLLIDE) return;
 
@@ -505,8 +495,7 @@ player_collision_update(Player *player)
     }
 }
 
-b8
-is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
+b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
 {
     return 
         (box_1[0].x <= box_2[1].x) && (box_1[1].x >= box_2[0].x) &&
@@ -514,8 +503,7 @@ is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
         (box_1[0].z <= box_2[1].z) && (box_1[1].z >= box_2[0].z);
 };
 
-void
-gravity_update(Render *render,
+void gravity_update(Render *render,
         v3f64 *position, v3f32 *velocity, f32 mass)
 {
     velocity->z += (GRAVITY * mass * render->frame_delta);

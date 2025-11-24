@@ -5,8 +5,7 @@
 
 #include <engine/h/defines.h>
 
-void
-test_binary_operators()
+void test_binary_operators()
 {
     u8 x = 63;
     printf("before: %d\n", x);
@@ -21,8 +20,7 @@ test_binary_operators()
 }
 
 u8 parse = 1;
-void
-test_gravity_vs_jump_height()
+void test_gravity_vs_jump_height()
 {
     f32 height = 1, pos = 0, fall = height;
     for (u8 i = 0; i < 100 && parse; ++i)
@@ -40,8 +38,7 @@ test_gravity_vs_jump_height()
     }
 }
 
-void
-test_state_checking_speed()
+void test_state_checking_speed()
 {
     u8 arr[400000000] = {0};
     arr[1999] = 49;
@@ -53,8 +50,7 @@ test_state_checking_speed()
     }
 }
 
-void
-test_sin_cosin_rad2deg()
+void test_sin_cosin_rad2deg()
 {
     for (f32 i = 0; i <= 90; ++i)
         //printf("angle: %3.0f\tsin: %6.5f\tcos: %6.5f\n",

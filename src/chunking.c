@@ -70,8 +70,7 @@ static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
  * index = (chunk_tab index) */
 static void _chunk_buf_pop(u32 index);
 
-u32
-chunking_init(void)
+u32 chunking_init(void)
 {
     str CHUNK_ORDER_lookup_file_name[PATH_MAX] = {0};
     str CHUNKS_MAX_lookup_file_name[PATH_MAX] = {0};
@@ -290,8 +289,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-void
-chunking_update(v3i16 player_delta_chunk)
+void chunking_update(v3i16 player_delta_chunk)
 {
     u32 i = 0;
     for (; i < CHUNKS_MAX[settings.render_distance]; ++i)
@@ -302,8 +300,7 @@ chunking_update(v3i16 player_delta_chunk)
     }
 }
 
-void
-chunking_free(void)
+void chunking_free(void)
 {
     if (chunk_tab)
     {
@@ -338,8 +335,7 @@ chunking_free(void)
             "chunking_free().CHUNK_QUEUE_3.queue");
 }
 
-void
-block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
+void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
 {
     if (chunk_tab[index]->block[z][y][x]) return;
     v3u32 coordinates =
@@ -360,8 +356,7 @@ block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
             block_id);
 }
 
-static void
-_block_place(Chunk *chunk,
+static void _block_place(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z, BlockID block_id)
 {
@@ -460,8 +455,7 @@ _block_place(Chunk *chunk,
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-void
-block_break(u32 index, u32 x, u32 y, u32 z)
+void block_break(u32 index, u32 x, u32 y, u32 z)
 {
     v3u32 coordinates =
     {
@@ -599,8 +593,7 @@ static f32 interp(f32 a, f32 b, f32 scale)
     return (b - a) * (3.0f - scale * 2.0f) * scale * scale + a;
 }
 
-static f32
-terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
+static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
 {
     f32 x = (f32)coordinates.x / frequency;
     f32 y = (f32)coordinates.y / frequency;
@@ -623,8 +616,7 @@ terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
     return interp(ix0, ix1, sy) * amplitude;
 }
 
-static void
-chunk_generate(Chunk **chunk, u32 rate)
+static void chunk_generate(Chunk **chunk, u32 rate)
 {
     u32 index = 0;
     v3u32 chunk_tab_coordinates = {0};
@@ -693,8 +685,7 @@ chunk_generate(Chunk **chunk, u32 rate)
         chunk_mesh_init(*chunk);
 }
 
-static void
-chunk_mesh_update(Chunk *chunk)
+static void chunk_mesh_update(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
@@ -747,8 +738,7 @@ chunk_mesh_update(Chunk *chunk)
     }
 }
 
-static void
-chunk_mesh_init(Chunk *chunk)
+static void chunk_mesh_init(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
@@ -817,19 +807,16 @@ chunk_mesh_init(Chunk *chunk)
 
 /* TODO: make chunk_serialize() */
 /* TODO: add 'version' byte for serialization */
-static void
-chunk_serialize(Chunk *chunk, str *world_name)
+static void chunk_serialize(Chunk *chunk, str *world_name)
 {
 }
 
 /* TODO: make chunk_deserialize() */
-static void
-chunk_deserialize(Chunk *chunk, str *world_name)
+static void chunk_deserialize(Chunk *chunk, str *world_name)
 {
 }
 
-static void
-_chunk_buf_push(u32 index, v3i16 player_delta_chunk)
+static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
 {
     v3u32 coordinates =
     {
@@ -864,8 +851,7 @@ _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
             ERR_BUFFER_FULL, "'%s'\n", "chunk_buf Full");
 }
 
-static void
-_chunk_buf_pop(u32 index)
+static void _chunk_buf_pop(u32 index)
 {
     u32 index_popped = chunk_tab[index] - chunk_buf;
 
@@ -881,8 +867,7 @@ _chunk_buf_pop(u32 index)
 }
 
 /* TODO: grab chunks from disk if previously generated */
-void
-chunk_queue_update(ChunkQueue *q)
+void chunk_queue_update(ChunkQueue *q)
 {
     if (!MODE_INTERNAL_LOAD_CHUNKS) return;
 
@@ -934,8 +919,7 @@ generate_and_mesh:
         }
 }
 
-void
-chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
+void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
     /* TODO: bake 'mirror_index' and 'target_index' into a lookup on startup */
     v3u32 _coordinates = {0};
@@ -1171,8 +1155,7 @@ chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     }
 }
 
-u32
-get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
+u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
 {
     v3i16 offset =
     {
@@ -1192,8 +1175,7 @@ get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
 
 #ifdef FUCK // TODO: undef FUCK
 /* raylib/rmodels.c/DrawLine3D refactored; */
-void
-draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color)
+void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color)
 {
     rlColor4ub(color.r, color.g, color.b, color.a);
     rlVertex3f(pos_0.x, pos_0.y, pos_0.z);
@@ -1201,8 +1183,7 @@ draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color)
 }
 
 /* raylib/rmodels.c/DrawCubeWires refactored; */
-void
-draw_block_wires(v3i32 pos)
+void draw_block_wires(v3i32 pos)
 {
     rlPushMatrix();
     rlTranslatef(pos.x, pos.y, pos.z);
@@ -1250,8 +1231,7 @@ draw_block_wires(v3i32 pos)
 }
 
 /* raylib/rmodels.c/DrawCubeWires refactored; */
-void
-draw_bounding_box(Vector3 origin, Vector3 scl, Color col)
+void draw_bounding_box(Vector3 origin, Vector3 scl, Color col)
 {
     rlPushMatrix();
     rlTranslatef(
@@ -1301,8 +1281,7 @@ draw_bounding_box(Vector3 origin, Vector3 scl, Color col)
     rlPopMatrix();
 }
 
-void
-draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col)
+void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col)
 {
     Vector3 start = (Vector3){
             floorf(origin.x - 2.0f),
@@ -1351,5 +1330,4 @@ draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col)
     rlEnd();
     rlPopMatrix();
 }
-
 #endif // TODO: undef FUCK

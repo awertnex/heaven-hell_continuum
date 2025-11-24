@@ -21,8 +21,7 @@ str str_out[CMD_SIZE] = STR_OUT;
 void build_test(char **argv);
 void list(void);
 
-b8
-extension_evaluate(const str *file_name)
+b8 extension_evaluate(const str *file_name)
 {
     u64 len = strlen(file_name);
     if (len > 2 && strncmp(file_name + len - 2, ".c", 2) == 0)
@@ -30,8 +29,7 @@ extension_evaluate(const str *file_name)
     return FALSE;
 }
 
-void
-extension_strip(const str *file_name, str *dest)
+void extension_strip(const str *file_name, str *dest)
 {
     u64 len = strlen(file_name);
     str file_name_buf[NAME_MAX] = {0};
@@ -42,8 +40,7 @@ extension_strip(const str *file_name, str *dest)
     }
 }
 
-void
-list(void)
+void list(void)
 {
     printf("%s",
             "Options:\n"
@@ -81,8 +78,7 @@ list(void)
     exit(*BUILD_ERR);
 }
 
-void
-build_test(char **argv)
+void build_test(char **argv)
 {
     if (!argv[1])
     {
@@ -132,8 +128,7 @@ build_test(char **argv)
     cmd_ready();
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     build_init(argc, argv, "build_tests.c", "build_tests"EXE);
     if (argv_compare("list", argc, argv)) list();

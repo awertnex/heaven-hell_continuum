@@ -96,14 +96,11 @@ static Mesh mesh_fbo = {0};
 static u32 test_tab[CHUNK_BUF_VOLUME] = {0};
 
 /* ---- callbacks ----------------------------------------------------------- */
-static void
-callback_error(int error, const char* message)
+static void callback_error(int error, const char* message)
 {
     LOGERROR("GLFW: %s\n", message);
 }
-static void
-callback_framebuffer_size(
-        GLFWwindow* window, int width, int height)
+static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
 {
     render.size = (v2i32){width, height};
     core.camera.ratio = (f32)width / (f32)height;
@@ -124,8 +121,7 @@ void draw_world(void);
 void draw_text(void);
 void draw_everything(void);
 
-int
-init_paths(void)
+int init_paths(void)
 {
     core.bin_root = get_path_bin_root();
     LOGINFO("Main Directory Path '%s'\n", core.bin_root);
@@ -145,8 +141,7 @@ init_paths(void)
     return 0;
 }
 
-b8
-init_gui(void)
+b8 init_gui(void)
 {
     str font_path[PATH_MAX] = {0};
 
@@ -169,8 +164,7 @@ cleanup:
     return -1;
 }
 
-u8
-init_everything(void)
+u8 init_everything(void)
 {
     glfwSetErrorCallback(callback_error);
 
@@ -251,8 +245,7 @@ init_everything(void)
         glGetUniformLocation(shader_voxel.id, "voxel_color");
 }
 
-void
-update_input(void)
+void update_input(void)
 {
     static u8 direction = 0;
     if (is_key_press(KEY_X))
@@ -291,8 +284,7 @@ update_input(void)
         shift_test_tab(direction);
 }
 
-void
-mark_test_tab(u8 direction)
+void mark_test_tab(u8 direction)
 {
     const u8 AXIS = (direction + 1) / 2;
     const i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
@@ -382,8 +374,7 @@ mark_test_tab(u8 direction)
     }
 }
 
-void
-shift_test_tab(u8 direction)
+void shift_test_tab(u8 direction)
 {
     i8 INCREMENT = (direction % 2 == 1) - (direction % 2 == 0);
     u8 AXIS = (direction + 1) / 2;
@@ -445,8 +436,7 @@ shift_test_tab(u8 direction)
     }
 }
 
-void
-update_camera_movement_test(void)
+void update_camera_movement_test(void)
 {
     if (glfwGetMouseButton(render.window,
                 GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
@@ -483,8 +473,7 @@ update_camera_movement_test(void)
         };
 }
 
-void
-draw_world(void)
+void draw_world(void)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_world_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -536,8 +525,7 @@ draw_world(void)
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void
-draw_text(void)
+void draw_text(void)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_text_msaa.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -605,8 +593,7 @@ draw_text(void)
             render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void
-draw_everything(void)
+void draw_everything(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -627,8 +614,7 @@ draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     if ((argc > 2) && !strncmp(argv[1], "LOGLEVEL", 8))
     {

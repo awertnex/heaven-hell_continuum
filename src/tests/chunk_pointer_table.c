@@ -90,8 +90,7 @@ void free_chunking();
 void parse_input();
 void draw_gui();
 
-Chunk *
-push_chunk_buf(v2i16 *player_chunk, v2i32 pos)
+Chunk *push_chunk_buf(v2i16 *player_chunk, v2i32 pos)
 {
     for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
         if (chunk_buf[i].state ^ STATE_CHUNK_LOADED)
@@ -108,8 +107,7 @@ push_chunk_buf(v2i16 *player_chunk, v2i32 pos)
     return NULL;
 }
 
-void
-update_chunk_buf(v2i16 *player_chunk)
+void update_chunk_buf(v2i16 *player_chunk)
 {
     for (u32 i = 0; i < CHUNK_BUF_ELEMENTS; ++i)
     {
@@ -133,8 +131,7 @@ update_chunk_buf(v2i16 *player_chunk)
     }
 }
 
-void
-draw_chunk_buf(u32 i)
+void draw_chunk_buf(u32 i)
 {
     draw_chunk_buf_index(i, MC_C_OFF);
     draw_chunk_tab_index(i, MC_C_OFF);
@@ -194,8 +191,7 @@ draw_chunk_buf(u32 i)
     }
 }
 
-b8
-is_distance_within(u16 distance, v2i32 start, v2i32 end)
+b8 is_distance_within(u16 distance, v2i32 start, v2i32 end)
 {
     if (powf(start.x - end.x, 2) + powf(start.y - end.y, 2) <
             (distance * distance) + 2)
@@ -203,8 +199,7 @@ is_distance_within(u16 distance, v2i32 start, v2i32 end)
     return FALSE;
 }
 
-int
-main(void)
+int main(void)
 {
     /* ---- main_init ------------------------------------------------------- */
 
@@ -239,8 +234,7 @@ main(void)
     return 0;
 }
 
-void
-init_chunking()
+void init_chunking()
 {
     MC_C_ALLOC(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
     return;
@@ -250,14 +244,12 @@ cleanup:
     exit(-1);
 }
 
-void
-free_chunking()
+void free_chunking()
 {
     MC_C_FREE(chunk_buf, CHUNK_BUF_ELEMENTS * sizeof(Chunk));
 }
 
-void
-parse_input()
+void parse_input()
 {
     if (IsKeyPressed(KEY_ENTER))
         update_chunk_buf(&player_chunk);
@@ -286,8 +278,7 @@ parse_input()
         --player_chunk.y;
 }
 
-void
-draw_gui()
+void draw_gui()
 {
     /* ---- title ----------------------------------------------------------- */
     DrawTextEx(font, "Chunk Buf",

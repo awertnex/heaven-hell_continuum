@@ -18,8 +18,7 @@ str PATH_WORLD[PATH_MAX] = {0};
 str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
 str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 
-u32
-paths_init(void)
+u32 paths_init(void)
 {
     snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
     snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
@@ -80,8 +79,7 @@ paths_init(void)
     return *GAME_DIR_ERR;
 }
 
-u32
-world_dir_init(const str *world_name)
+u32 world_dir_init(const str *world_name)
 {
     str string[PATH_MAX] = {0};
     u32 i = 0;

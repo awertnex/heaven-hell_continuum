@@ -1,6 +1,5 @@
 int main(void)
 {
-    init_textures();
     init_super_debugger(setting.render_size);
 
 section_menu_title: /* ------------------------------------------------------ */
@@ -87,9 +86,6 @@ section_menu_world: /* ------------------------------------------------------ */
             }
         }
 
-        setting.render_size = (v2f32){GetRenderWidth(), GetRenderHeight()};
-        update_render_settings(setting.render_size);
-
         BeginDrawing();
         update_menus(setting.render_size);
         EndDrawing();
@@ -103,8 +99,7 @@ section_menu_world: /* ------------------------------------------------------ */
     return 0;
 }
 
-void
-draw_gui()
+void draw_gui()
 {
     if (state_menu_depth && lily.container_state)
         draw_containers(&lily, setting.render_size);

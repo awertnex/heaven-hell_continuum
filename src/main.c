@@ -97,9 +97,7 @@ u32 world_init(str *name);
 static void world_update(Player *player);
 static void draw_everything(void);
 
-static void
-callback_framebuffer_size(
-        GLFWwindow* window, int width, int height)
+static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
 {
     (void)window;
 
@@ -120,9 +118,8 @@ callback_framebuffer_size(
     fbo_realloc(&render, &fbo[FBO_POST_PROCESSING], FALSE, 4);
 }
 
-static void
-callback_key(
-        GLFWwindow *window, int key, int scancode, int action, int mods)
+static void callback_key( GLFWwindow *window,
+        int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
@@ -131,8 +128,7 @@ callback_key(
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
-static void callback_scroll(
-        GLFWwindow *window, double xoffset, double yoffset)
+static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
 {
     (void)window;
     (void)xoffset;
@@ -142,8 +138,7 @@ static void callback_scroll(
                 0.0f, CAMERA_ZOOM_MAX);
 }
 
-void
-settings_init(void)
+void settings_init(void)
 {
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
@@ -173,15 +168,13 @@ settings_init(void)
     settings_update();
 }
 
-void
-settings_update(void)
+void settings_update(void)
 {
     settings.ndc_scale = (v2f32){2.0f / render.size.x, 2.0f / render.size.y};
     settings.fps = 1 / render.frame_delta;
 }
 
-static void
-shaders_init(void)
+static void shaders_init(void)
 {
     shader[SHADER_FBO] =
         (ShaderProgram){
@@ -290,8 +283,7 @@ shaders_init(void)
 
 }
 
-static void
-bind_shader_uniforms(void)
+static void bind_shader_uniforms(void)
 {
     uniform.defaults.offset =
         glGetUniformLocation(shader[SHADER_DEFAULT].id, "offset");
@@ -439,8 +431,7 @@ bind_shader_uniforms(void)
         glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "box_color");
 }
 
-static void
-generate_standard_meshes(void)
+static void generate_standard_meshes(void)
 {
     const u32 VBO_LEN_SKYBOX    = 120;
     const u32 EBO_LEN_SKYBOX    = 36;
@@ -646,8 +637,7 @@ cleanup:
     mesh_free(&mesh[MESH_PLAYER]);
 }
 
-static void
-input_update(Player *player)
+static void input_update(Player *player)
 {
     /* ---- jumping --------------------------------------------------------- */
 
@@ -820,8 +810,7 @@ input_update(Player *player)
 #endif /* GAME_RELEASE_BUILD */
 }
 
-u32
-world_init(str *name)
+u32 world_init(str *name)
 {
     if (!strlen(name))
     {
@@ -864,8 +853,7 @@ world_init(str *name)
     return *GAME_ERR;
 }
 
-static void
-world_update(Player *player)
+static void world_update(Player *player)
 {
     game_tick = 8000 + (u64)(render.frame_start * 20) -
         (SET_DAY_TICKS_MAX * game_days);
@@ -926,8 +914,7 @@ world_update(Player *player)
     else flag &= ~FLAG_MAIN_PARSE_TARGET;
 }
 
-static void
-draw_everything(void)
+static void draw_everything(void)
 {
     /* ---- draw skybox ----------------------------------------------------- */
 
@@ -1558,8 +1545,7 @@ framebuffer_blit_chunk_queue_visualizer:
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     glfwSetErrorCallback(callback_error);
     if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)

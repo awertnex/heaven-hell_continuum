@@ -13,8 +13,7 @@ str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
     #define STR_OUT     "\""DIR_ROOT"hhc"EXE"\""
 #endif /* PLATFORM */
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     build_init(argc, argv, "build.c", "build"EXE);
     if (argv_compare("engine", argc, argv))

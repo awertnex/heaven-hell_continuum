@@ -17,8 +17,7 @@ static u64 ssbo_texture_handles[BLOCK_COUNT] = {0};
 
 /* ---- functions ----------------------------------------------------------- */
 
-u32
-assets_init(void)
+u32 assets_init(void)
 {
     u32 i = 0;
     base_texture_size = 16;
@@ -55,8 +54,7 @@ assets_init(void)
     return *GAME_ERR;
 }
 
-void
-assets_free(void)
+void assets_free(void)
 {
     u32 i = 0;
     for (i = 0; i < BLOCK_COUNT; ++i)
@@ -66,8 +64,7 @@ assets_free(void)
         glDeleteBuffers(1, &ssbo_texture_handles_id);
 }
 
-u32
-block_init(Block *block)
+u32 block_init(Block *block)
 {
     if (!block->name)
     {

@@ -14,10 +14,10 @@
 #include "../chunking.c"
 #include "../dir.c"
 
-
 u8 active = 1;
 u8 text_vertical_spacing = 25;
 u8 font_size = 18;
+
 enum ChunkTokens
 {
     TOKEN_VERSION =             2,    // bytes for chunk_file format version
@@ -50,14 +50,12 @@ void unload_chunk();
 void input();
 void gui();
 
-void
-serialize_chunk_test(Chunk *chunk, str *world_name)
+void serialize_chunk_test(Chunk *chunk, str *world_name)
 {
 
 }
 
-void
-deserialize_chunk_test(Chunk *chunk, str *world_name)
+void deserialize_chunk_test(Chunk *chunk, str *world_name)
 {
     chunk_file = fopen(files[0], "rb");
     if (chunk_file)
@@ -71,11 +69,9 @@ deserialize_chunk_test(Chunk *chunk, str *world_name)
         LOGINFO("%s", "Chunk Created 'chunk'");
         update_chunk();
     }
-
 }
 
-void
-tokenize_chunk()
+void tokenize_chunk()
 {
     struct stat buf;
     stat(files[0], &buf);
@@ -155,8 +151,7 @@ tokenize_chunk()
     free(save_file_contents);
 }
 
-void
-update_chunk()
+void update_chunk()
 {
     chunk_file = fopen(files[0], "wb");
     fwrite(&chunk, sizeof(chunk), 1, chunk_file);
@@ -169,8 +164,7 @@ update_chunk()
     printf("tokens loaded: %s\n", tokens_loaded[0]);
 }
 
-void
-update_chunk_directory()
+void update_chunk_directory()
 {
     dir = opendir(mc_c_chunkpath);
     if (dir)
@@ -190,13 +184,11 @@ update_chunk_directory()
     }
 }
 
-void
-unload_chunk()
+void unload_chunk()
 {
 }
 
-int
-main(void)
+int main(void)
 {
     mc_c_grandpath = (char*) malloc(PATH_MAX);
     mc_c_subpath = (char*) malloc(PATH_MAX);
@@ -234,8 +226,7 @@ main(void)
     return 0;
 }
 
-void
-input()
+void input()
 {
     if (IsKeyPressed(KEY_Q))
         active = 0;
@@ -253,8 +244,7 @@ input()
         unload_chunk();
 }
 
-void
-gui()
+void gui()
 {
     BeginDrawing();
     ClearBackground(DARKGRAY);
