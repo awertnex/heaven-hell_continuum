@@ -427,7 +427,21 @@ player_collision_update(Player *player)
         (i32)player->collision_check_size.z,
     };
 
-    v3f64 box_1[2], box_2[2];
+    v3f64 box_1[2] =
+    {
+        {
+            player->pos_smooth.x - (player->size.x / 2.0f),
+            player->pos_smooth.y - (player->size.y / 2.0f),
+            player->pos_smooth.z,
+        },
+        {
+            player->pos_smooth.x + (player->size.x / 2.0f),
+            player->pos_smooth.y + (player->size.y / 2.0f),
+            player->pos_smooth.z + player->size.z,
+        },
+    };
+
+    v3f64 box_2[2];
     Chunk *chunk = NULL;
     u32 *block = NULL;
     i32 x, y, z, dx, dy, dz, dcx, dcy, dcz;
@@ -452,18 +466,6 @@ player_collision_update(Player *player)
                 block = &chunk->block[dz][dy][dx];
                 if (!block || !*block) continue;
 
-                box_1[0] =
-                    (v3f64){
-                        player->pos_smooth.x - (player->size.x / 2.0f),
-                        player->pos_smooth.y - (player->size.y / 2.0f),
-                        player->pos_smooth.z,
-                    };
-                box_1[1] =
-                    (v3f64){
-                        box_1[0].x + player->size.x,
-                        box_1[0].y + player->size.y,
-                        player->pos_smooth.z + player->size.z,
-                    };
                 box_2[0] =
                     (v3f64){
                         (f64)(((i64)chunk->pos.x * CHUNK_DIAMETER) + dx),
@@ -484,6 +486,19 @@ player_collision_update(Player *player)
                     player->pos_smooth.z = player->pos.z;
                     player->flag |= FLAG_PLAYER_CAN_JUMP;
                     player->flag &= ~FLAG_PLAYER_FLYING;
+
+                    box_1[0] =
+                        (v3f64){
+                            player->pos_smooth.x - (player->size.x / 2.0f),
+                            player->pos_smooth.y - (player->size.y / 2.0f),
+                            player->pos_smooth.z,
+                        };
+                    box_1[1] =
+                        (v3f64){
+                            player->pos_smooth.x + (player->size.x / 2.0f),
+                            player->pos_smooth.y + (player->size.y / 2.0f),
+                            player->pos_smooth.z + player->size.z,
+                        };
                 }
             }
         }
