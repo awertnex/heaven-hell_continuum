@@ -189,8 +189,7 @@ static b8 _is_key_release_double(const u32 key);
 
 /* ---- section: windowing -------------------------------------------------- */
 
-u32
-glfw_init(b8 multisample)
+u32 glfw_init(b8 multisample)
 {
     if (!glfwInit())
     {
@@ -209,8 +208,7 @@ glfw_init(b8 multisample)
     return engine_err;
 }
 
-u32
-window_init(Render *render)
+u32 window_init(Render *render)
 {
     render->window = glfwCreateWindow(render->size.x, render->size.y,
             render->title, NULL, NULL);
@@ -228,8 +226,7 @@ window_init(Render *render)
     return engine_err;
 }
 
-u32
-glad_init(void)
+u32 glad_init(void)
 {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -261,8 +258,7 @@ glad_init(void)
 
 /* ---- section: shaders ---------------------------------------------------- */
 
-u32
-shader_init(const str *shaders_dir, Shader *shader)
+u32 shader_init(const str *shaders_dir, Shader *shader)
 {
     if (!shader->type)
         return ERR_SUCCESS;
@@ -302,14 +298,13 @@ shader_init(const str *shaders_dir, Shader *shader)
     return engine_err;
 }
 
-static str *
-shader_pre_process(const str *path, u64 *file_len)
+static str *shader_pre_process(const str *path, u64 *file_len)
 {
     return _shader_pre_process(path, file_len, INCLUDE_RECURSION_LIMIT_MAX);
 }
 
-static str *
-_shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
+static str *_shader_pre_process(const str *path, u64 *file_len,
+        u64 recursion_limit)
 {
     if (!recursion_limit)
     {
@@ -405,8 +400,7 @@ cleanup:
     return NULL;
 }
 
-u32
-shader_program_init(const str *shaders_dir, ShaderProgram *program)
+u32 shader_program_init(const str *shaders_dir, ShaderProgram *program)
 {
     if (shader_init(shaders_dir, &program->vertex) != 0)
         return engine_err;
@@ -448,8 +442,7 @@ shader_program_init(const str *shaders_dir, ShaderProgram *program)
     return engine_err;
 }
 
-void
-shader_program_free(ShaderProgram *program)
+void shader_program_free(ShaderProgram *program)
 {
     if (program == NULL || !program->id) return;
     glDeleteProgram(program->id);
@@ -501,8 +494,7 @@ void attrib_vec3_vec3(void)
     glEnableVertexAttribArray(1);
 }
 
-u32
-fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
+u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         b8 multisample, u32 samples)
 {
     fbo_free(fbo);
@@ -625,8 +617,7 @@ cleanup:
     return engine_err;
 }
 
-u32
-fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
+u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo->fbo);
 
@@ -675,8 +666,7 @@ fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
     return engine_err;
 }
 
-void
-fbo_free(FBO *fbo)
+void fbo_free(FBO *fbo)
 {
     if (fbo == NULL) return;
     fbo->rbo ? glDeleteFramebuffers(1, &fbo->rbo) : 0;
@@ -684,8 +674,7 @@ fbo_free(FBO *fbo)
     fbo->fbo ? glDeleteFramebuffers(1, &fbo->fbo) : 0;
 };
 
-u32
-texture_init(Texture *texture, v2i32 size,
+u32 texture_init(Texture *texture, v2i32 size,
         const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name)
 {
@@ -727,8 +716,7 @@ texture_init(Texture *texture, v2i32 size,
     return engine_err;
 }
 
-u32
-texture_generate(Texture *texture, b8 bindless)
+u32 texture_generate(Texture *texture, b8 bindless)
 {
     _texture_generate(
             &texture->id, texture->format_internal, texture->format,
@@ -747,8 +735,7 @@ texture_generate(Texture *texture, b8 bindless)
     return engine_err;
 }
 
-static u32
-_texture_generate(
+static u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale)
 {
@@ -776,8 +763,7 @@ _texture_generate(
     return engine_err;
 }
 
-void
-texture_free(Texture *texture)
+void texture_free(Texture *texture)
 {
     if (texture == NULL) return;
 
@@ -797,8 +783,7 @@ texture_free(Texture *texture)
     *texture = (Texture){0};
 }
 
-u32
-mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
+u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
         GLuint vbo_len, GLuint ebo_len,
         GLfloat *vbo_data, GLuint *ebo_data)
 {
@@ -846,8 +831,7 @@ cleanup:
     return engine_err;
 }
 
-void
-mesh_free(Mesh *mesh)
+void mesh_free(Mesh *mesh)
 {
     if (mesh == NULL) return;
     mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
@@ -865,8 +849,7 @@ mesh_free(Mesh *mesh)
 
 /* ---- section: camera ----------------------------------------------------- */
 
-void
-update_camera_movement(Camera *camera)
+void update_camera_movement(Camera *camera)
 {
     const f32 ANGLE = 90.0f;
     const f32 RANGE = 360.0f;
@@ -881,8 +864,7 @@ update_camera_movement(Camera *camera)
     camera->cos_yaw =   cosf((camera->rot.z) * DEG2RAD);
 }
 
-void
-update_camera_perspective(Camera *camera, Projection *projection)
+void update_camera_perspective(Camera *camera, Projection *projection)
 {
     const f32 SPCH = camera->sin_pitch;
     const f32 CPCH = camera->cos_pitch;
@@ -962,8 +944,7 @@ update_camera_perspective(Camera *camera, Projection *projection)
 
 /* ---- section: input ------------------------------------------------------ */
 
-void
-update_mouse_movement(Render *render)
+void update_mouse_movement(Render *render)
 {
     glfwGetCursorPos(render->window,
             &render->mouse_position.x, &render->mouse_position.y);
@@ -1028,8 +1009,7 @@ static b8 _is_key_release_double(const u32 key)
     return (keyboard_key[key] == KEY_RELEASE_DOUBLE);
 }
 
-void
-update_key_states(Render *render)
+void update_key_states(Render *render)
 {
     static f64 key_press_start_time[KEYBOARD_KEYS_MAX];
     u32 i = 0;
@@ -1075,8 +1055,7 @@ update_key_states(Render *render)
 
 /* ---- section: font ------------------------------------------------------- */
 
-u32
-font_init(Font *font, u32 resolution, const str *file_name)
+u32 font_init(Font *font, u32 resolution, const str *file_name)
 {
     if (resolution <= 2)
     {
@@ -1200,8 +1179,7 @@ cleanup:
     return engine_err;
 }
 
-void
-font_free(Font *font)
+void font_free(Font *font)
 {
     if (font == NULL) return;
     mem_free((void*)&font->buf, font->buf_len,

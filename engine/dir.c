@@ -13,8 +13,7 @@
 #include "h/logger.h"
 #include "h/memory.h"
 
-u64
-get_file_type(const str *path)
+u64 get_file_type(const str *path)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -24,8 +23,7 @@ get_file_type(const str *path)
     return 0;
 }
 
-u32
-is_file(const str *path)
+u32 is_file(const str *path)
 {
     if (is_file_exists(path, FALSE) != ERR_SUCCESS)
         return engine_err;
@@ -41,8 +39,7 @@ is_file(const str *path)
     return engine_err;
 }
 
-u32
-is_file_exists(const str *path, b8 log)
+u32 is_file_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -72,8 +69,7 @@ is_file_exists(const str *path, b8 log)
     return engine_err;
 }
 
-u32
-is_dir(const str *path)
+u32 is_dir(const str *path)
 {
     if (is_dir_exists(path, FALSE) != ERR_SUCCESS)
         return engine_err;
@@ -89,8 +85,7 @@ is_dir(const str *path)
     return engine_err;
 }
 
-u32
-is_dir_exists(const str *path, b8 log)
+u32 is_dir_exists(const str *path, b8 log)
 {
     struct stat stats;
     if (stat(path, &stats) == 0)
@@ -121,8 +116,7 @@ is_dir_exists(const str *path, b8 log)
     return engine_err;
 }
 
-u64
-get_file_contents(const str *path, void **destination,
+u64 get_file_contents(const str *path, void **destination,
         u64 size, const str *read_format, b8 terminate)
 {
     if (is_file_exists(path, TRUE) != ERR_SUCCESS)
@@ -156,8 +150,7 @@ cleanup:
     return 0;
 }
 
-buf
-get_dir_contents(const str *path)
+buf get_dir_contents(const str *path)
 {
     if (path == NULL)
     {
@@ -230,8 +223,7 @@ cleanup:
     return (buf){NULL};
 }
 
-u64
-get_dir_entry_count(const str *path)
+u64 get_dir_entry_count(const str *path)
 {
     if (path == NULL)
     {
@@ -263,8 +255,7 @@ get_dir_entry_count(const str *path)
     return count;
 }
 
-u32
-copy_file(const str *path, const str *destination,
+u32 copy_file(const str *path, const str *destination,
         const str *read_format, const str *write_format)
 {
     if (is_file_exists(path, TRUE) != ERR_SUCCESS)
@@ -301,8 +292,7 @@ copy_file(const str *path, const str *destination,
     return engine_err;
 }
 
-u32
-copy_dir(const str *path, const str *destination, b8 overwrite,
+u32 copy_dir(const str *path, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format)
 {
     if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
@@ -354,8 +344,7 @@ copy_dir(const str *path, const str *destination, b8 overwrite,
     return engine_err;
 }
 
-u32
-write_file(const str *path, u64 size, u64 length, void *buf,
+u32 write_file(const str *path, u64 size, u64 length, void *buf,
         const str *write_format, b8 log)
 {
     FILE *file = NULL;
@@ -377,8 +366,7 @@ write_file(const str *path, u64 size, u64 length, void *buf,
     return engine_err;
 }
 
-str *
-get_path_absolute(const str *path)
+str *get_path_absolute(const str *path)
 {
     if (strlen(path) >= PATH_MAX - 1)
     {
@@ -405,8 +393,7 @@ get_path_absolute(const str *path)
     return result;
 }
 
-str *
-get_path_bin_root(void)
+str *get_path_bin_root(void)
 {
     str path_bin_root[PATH_MAX] = {0};
     if (_get_path_bin_root(path_bin_root) != ERR_SUCCESS)
@@ -438,8 +425,7 @@ get_path_bin_root(void)
     return result;
 }
 
-void
-check_slash(str *path)
+void check_slash(str *path)
 {
     if (path == NULL)
     {
@@ -465,8 +451,7 @@ check_slash(str *path)
     engine_err = ERR_SUCCESS;
 }
 
-void
-normalize_slash(str *path)
+void normalize_slash(str *path)
 {
     if (path == NULL)
     {
@@ -485,8 +470,7 @@ normalize_slash(str *path)
     engine_err = ERR_SUCCESS;
 }
 
-void
-posix_slash(str *path)
+void posix_slash(str *path)
 {
     if (path == NULL)
     {
@@ -505,8 +489,7 @@ posix_slash(str *path)
     engine_err = ERR_SUCCESS;
 }
 
-str *
-retract_path(str *path)
+str *retract_path(str *path)
 {
     if (path == NULL)
     {

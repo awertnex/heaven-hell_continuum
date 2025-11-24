@@ -35,8 +35,7 @@ str esc_code_nocolor[] = "\033[0m";
 static str in_message[IN_STRING_MAX] = {0};
 static str out_message[OUT_STRING_MAX] = {0};
 
-u32
-logger_init(b8 release_build, int argc, char **argv)
+u32 logger_init(b8 release_build, int argc, char **argv)
 {
     if (mem_map((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX,
                 "logger_init().logger_buf") != ERR_SUCCESS)
@@ -69,15 +68,13 @@ logger_init(b8 release_build, int argc, char **argv)
     return engine_err;
 }
 
-void
-logger_close(void)
+void logger_close(void)
 {
     mem_unmap((void*)&logger_buf,
             LOGGER_LINES_MAX * STRING_MAX, "logger_close().logger_buf");
 }
 
-void
-_log_output(b8 verbose, const str *file, u64 line,
+void _log_output(b8 verbose, const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...)
 {
     if (level > log_level_max) return;

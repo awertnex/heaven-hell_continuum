@@ -53,8 +53,7 @@ static void cmd_show(void);
 static void cmd_raw(void);
 static void help(void);
 
-void
-build_init(int argc, char **argv,
+void build_init(int argc, char **argv,
         const str *build_src_name, const str *build_bin_name)
 {
     if (argv_compare("help", argc, argv))       help();
@@ -104,8 +103,7 @@ build_init(int argc, char **argv,
         cmd_fail();
 }
 
-static u32
-is_build_source_changed(void)
+static u32 is_build_source_changed(void)
 {
     unsigned long mtime_src = 0;
     unsigned long mtime_bin = 0;
@@ -137,8 +135,7 @@ is_build_source_changed(void)
     return engine_err;
 }
 
-static void
-self_rebuild(char **argv)
+static void self_rebuild(char **argv)
 {
     if (mem_alloc_buf(&cmd, 16, CMD_SIZE,
                 "self_rebuild().cmd") != ERR_SUCCESS)
@@ -177,8 +174,7 @@ self_rebuild(char **argv)
     cmd_fail();
 }
 
-u32
-engine_build(const str *engine_dir, const str *out_dir)
+u32 engine_build(const str *engine_dir, const str *out_dir)
 {
     str engine_dir_processed[CMD_SIZE] = {0};
     str out_dir_processed[CMD_SIZE] = {0};
@@ -233,15 +229,13 @@ engine_build(const str *engine_dir, const str *out_dir)
     return engine_err;
 }
 
-void
-engine_link_libs(void)
+void engine_link_libs(void)
 {
     _engine_link_libs();
     cmd_push("-lfossil");
 }
 
-static void
-_engine_link_libs(void)
+static void _engine_link_libs(void)
 {
     u32 i = 0;
     str temp[CMD_SIZE] = {0};
@@ -251,8 +245,8 @@ _engine_link_libs(void)
     for (;i < arr_len(str_libs); ++i)
         cmd_push(str_libs[i]);
 }
-u64
-argv_compare(str *arg, int argc, char **argv)
+
+u64 argv_compare(str *arg, int argc, char **argv)
 {
     if (argc == 1)
         return 0;
@@ -264,8 +258,7 @@ argv_compare(str *arg, int argc, char **argv)
     return 0;
 }
 
-static void
-cmd_show(void)
+static void cmd_show(void)
 {
     printf("\nCMD:\n");
     u32 i = 0;
@@ -279,8 +272,7 @@ cmd_show(void)
         putchar('\n');
 }
 
-static void
-cmd_raw(void)
+static void cmd_raw(void)
 {
     printf("\nRAW:\n");
     u32 i = 0;
@@ -293,8 +285,7 @@ cmd_raw(void)
     printf("%s", "\n\n");
 }
 
-void
-cmd_push(const str *string)
+void cmd_push(const str *string)
 {
     if (cmd_pos >= CMD_MEMB - 1)
     {
@@ -315,8 +306,7 @@ cmd_push(const str *string)
     strncpy(cmd.i[cmd_pos++], string, CMD_SIZE);
 }
 
-void
-cmd_ready(void)
+void cmd_ready(void)
 {
 #if PLATFORM_LINUX
     cmd.i[cmd_pos] = NULL;
@@ -326,23 +316,20 @@ cmd_ready(void)
     if (flag & FLAG_CMD_RAW) cmd_raw();
 }
 
-void
-cmd_free(void)
+void cmd_free(void)
 {
     mem_free((void*)&str_build_root, CMD_SIZE, "cmd_free().str_build_root");
     mem_free_buf(&cmd, "cmd_free().cmd");
     cmd_pos = 0;
 }
 
-void
-cmd_fail(void)
+void cmd_fail(void)
 {
     cmd_free();
     _exit(engine_err);
 }
 
-static void
-help(void)
+static void help(void)
 {
     printf("%s",
             "Usage: ./build [options]...\n"

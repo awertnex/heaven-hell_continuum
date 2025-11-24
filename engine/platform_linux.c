@@ -13,8 +13,7 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-int
-make_dir(const str *path)
+int make_dir(const str *path)
 {
     int exit_code = mkdir(path, 0755);
     if (exit_code == 0)
@@ -22,8 +21,7 @@ make_dir(const str *path)
     return exit_code;
 }
 
-u32
-_get_path_absolute(const str *path, str *path_real)
+u32 _get_path_absolute(const str *path, str *path_real)
 {
     if (!realpath(path, path_real))
     {
@@ -35,8 +33,7 @@ _get_path_absolute(const str *path, str *path_real)
     return engine_err;
 }
 
-u32
-_get_path_bin_root(str *path)
+u32 _get_path_bin_root(str *path)
 {
     if (!readlink("/proc/self/exe", path, PATH_MAX))
     {
@@ -49,8 +46,7 @@ _get_path_bin_root(str *path)
     return engine_err;
 }
 
-u32
-exec(buf *cmd, str *cmd_name)
+u32 exec(buf *cmd, str *cmd_name)
 {
     pid_t pid = fork();
     if (pid < 0)
@@ -107,8 +103,7 @@ exec(buf *cmd, str *cmd_name)
     return engine_err;
 }
 
-u32
-_mem_map(void **x, u64 size,
+u32 _mem_map(void **x, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
@@ -132,8 +127,7 @@ _mem_map(void **x, u64 size,
     return engine_err;
 }
 
-u32
-_mem_commit(void **x, void *offset, u64 size,
+u32 _mem_commit(void **x, void *offset, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (!x)
@@ -158,8 +152,7 @@ _mem_commit(void **x, void *offset, u64 size,
     return engine_err;
 }
 
-void
-_mem_unmap(void **x, u64 size,
+void _mem_unmap(void **x, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (!*x) return;

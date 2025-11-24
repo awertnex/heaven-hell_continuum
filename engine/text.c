@@ -22,8 +22,7 @@ static struct /* text_core */
     } uniform;
 } text_core;
 
-u32
-text_init(ShaderProgram *program)
+u32 text_init(ShaderProgram *program)
 {
     if (mem_alloc((void*)&mesh_text.vbo_data,
                 STRING_MAX * sizeof(GLfloat) * 4,
@@ -68,8 +67,7 @@ cleanup:
     return engine_err;
 }
 
-void
-text_start(u64 length, f32 size, Font *font,
+void text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear)
 {
     if (!length)
@@ -104,8 +102,7 @@ cleanup:
     LOGERROR(FALSE, engine_err, "%s\n", "Failed to Start Text");
 }
 
-void
-text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
+void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 {
     if (!mesh_text.vbo_data)
     {
@@ -217,8 +214,7 @@ text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
             mesh_text.vbo_data[i + 1] += text_core.line;
 }
 
-void
-text_render(u32 color, b8 shadow)
+void text_render(u32 color, b8 shadow)
 {
     if (!mesh_text.vbo_data)
     {
@@ -264,8 +260,7 @@ text_render(u32 color, b8 shadow)
     text_core.line = 0;
 }
 
-void
-text_stop(void)
+void text_stop(void)
 {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -274,8 +269,7 @@ text_stop(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void
-text_free(void)
+void text_free(void)
 {
     mesh_free(&mesh_text);
 }

@@ -1,61 +1,51 @@
 #include "h/math.h"
 
-v3f32
-add_v3f32(v3f32 a, v3f32 b)
+v3f32 add_v3f32(v3f32 a, v3f32 b)
 {
     return (v3f32){a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
-v3f32
-sub_v3f32(v3f32 a, v3f32 b)
+v3f32 sub_v3f32(v3f32 a, v3f32 b)
 {
     return (v3f32){a.x - b.x, a.y - b.y, a.z - b.z};
 }
 
-i32
-clamp_i32(i32 n, i32 min, i32 max)
+i32 clamp_i32(i32 n, i32 min, i32 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-u32
-clamp_u32(u32 n, u32 min, u32 max)
+u32 clamp_u32(u32 n, u32 min, u32 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-f32
-clamp_f32(f32 n, f32 min, f32 max)
+f32 clamp_f32(f32 n, f32 min, f32 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-i64
-clamp_i64(i64 n, i64 min, i64 max)
+i64 clamp_i64(i64 n, i64 min, i64 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-u64
-clamp_u64(u64 n, u64 min, u64 max)
+u64 clamp_u64(u64 n, u64 min, u64 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-f64
-clamp_f64(f64 n, f64 min, f64 max)
+f64 clamp_f64(f64 n, f64 min, f64 max)
 {
     return ((n < min) ? min : ((n > max) ? max : n));
 }
 
-f32
-len_v3f32(v3f32 v)
+f32 len_v3f32(v3f32 v)
 {
     return sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
-v3f32
-normalize_v3f32(v3f32 v)
+v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
     if (len == 0)
@@ -66,8 +56,7 @@ normalize_v3f32(v3f32 v)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
-f32
-q_rsqrt(f32 n)
+f32 q_rsqrt(f32 n)
 {
     i64 i;
     f32 x2, y;
@@ -85,8 +74,7 @@ q_rsqrt(f32 n)
 }
 #pragma GCC diagnostic pop
 
-u32
-distance_v3i32(v3i32 a, v3i32 b)
+u32 distance_v3i32(v3i32 a, v3i32 b)
 {
     return (u32)
         (powf(a.x - b.x, 2.0f) +
@@ -94,8 +82,7 @@ distance_v3i32(v3i32 a, v3i32 b)
          powf(a.z - b.z, 2.0f));
 }
 
-f32
-distance_v3f32(v3f32 a, v3f32 b)
+f32 distance_v3f32(v3f32 a, v3f32 b)
 {
     return
         powf(a.x - b.x, 2.0f) +
@@ -103,48 +90,41 @@ distance_v3f32(v3f32 a, v3f32 b)
         powf(a.z - b.z, 2.0f);
 }
 
-b8
-is_in_range_i32(i32 n, i32 min, i32 max)
+b8 is_in_range_i32(i32 n, i32 min, i32 max)
 {
     return ((n - min) >= 0) & ((max - n) >= 0);
 }
 
-b8
-is_in_range_f32(f32 n, f32 min, f32 max)
+b8 is_in_range_f32(f32 n, f32 min, f32 max)
 {
     return ((n - min) >= 0.0f) & ((max - n) >= 0.0f);
 }
 
-b8
-is_in_range_i64(i64 n, i64 min, i64 max)
+b8 is_in_range_i64(i64 n, i64 min, i64 max)
 {
     return ((n - min) >= 0) & ((max - n) >= 0);
 }
 
-b8
-is_in_range_f64(f64 n, f64 min, f64 max)
+b8 is_in_range_f64(f64 n, f64 min, f64 max)
 {
     return ((n - min) >= 0.0f) & ((max - n) >= 0.0f);
 }
 
-b8
-is_in_area_i32(v2i32 v, v2i32 min, v2i32 max)
+b8 is_in_area_i32(v2i32 v, v2i32 min, v2i32 max)
 {
     return
         ((v.x - min.x) >= 0) & ((max.x - v.x) >= 0) &
         ((v.y - min.y) >= 0) & ((max.y - v.y) >= 0);
 }
 
-b8
-is_in_area_f32(v2f32 v, v2f32 min, v2f32 max)
+b8 is_in_area_f32(v2f32 v, v2f32 min, v2f32 max)
 {
     return
         ((v.x - min.x) >= 0.0f) & ((max.x - v.x) >= 0.0f) &
         ((v.y - min.y) >= 0.0f) & ((max.y - v.y) >= 0.0f);
 }
 
-b8
-is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max)
+b8 is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max)
 {
     return
         ((v.x - min.x) >= 0) & ((max.x - v.x) >= 0) &
@@ -152,8 +132,7 @@ is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max)
         ((v.z - min.z) >= 0) & ((max.z - v.z) >= 0);
 }
 
-b8
-is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max)
+b8 is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max)
 {
     return
         ((v.x - min.x) >= 0.0f) & ((max.x - v.x) >= 0.0f) &
@@ -161,8 +140,7 @@ is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max)
         ((v.z - min.z) >= 0.0f) & ((max.z - v.z) >= 0.0f);
 }
 
-b8
-is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max)
+b8 is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max)
 {
     return
         ((v.x - min.x) >= 0) & ((max.x - v.x) >= 0) &
@@ -170,8 +148,7 @@ is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max)
         ((v.z - min.z) >= 0) & ((max.z - v.z) >= 0);
 }
 
-m4f32
-matrix_add(m4f32 a, m4f32 b)
+m4f32 matrix_add(m4f32 a, m4f32 b)
 {
     return (m4f32){
         ((a.a11) + (b.a11)), ((a.a12) + (b.a12)),
@@ -188,8 +165,7 @@ matrix_add(m4f32 a, m4f32 b)
     };
 }
 
-m4f32
-matrix_subtract(m4f32 a, m4f32 b)
+m4f32 matrix_subtract(m4f32 a, m4f32 b)
 {
     return (m4f32){
         ((a.a11) - (b.a11)), ((a.a12) - (b.a12)),
@@ -206,8 +182,7 @@ matrix_subtract(m4f32 a, m4f32 b)
     };
 }
 
-m4f32
-matrix_multiply(m4f32 a, m4f32 b)
+m4f32 matrix_multiply(m4f32 a, m4f32 b)
 {
     return (m4f32){
         ((a.a11) * (b.a11)) + ((a.a12) * (b.a21)) +
@@ -263,8 +238,7 @@ matrix_multiply(m4f32 a, m4f32 b)
     };
 }
 
-v4f32
-matrix_multiply_vector(m4f32 a, v4f32 b)
+v4f32 matrix_multiply_vector(m4f32 a, v4f32 b)
 {
     return (v4f32){
         ((a.a11) * (b.x)) + ((a.a12) * (b.x)) +
@@ -281,19 +255,16 @@ matrix_multiply_vector(m4f32 a, v4f32 b)
     };
 }
 
-f32
-lerp_f32(f32 start, f32 end, f32 speed, f64 t)
+f32 lerp_f32(f32 start, f32 end, f32 speed, f64 t)
 {
     return start + (end - start) * (1.0f - expf(-speed * t));
 }
 
-v3f64
-lerp_v3f64(v3f64 start, v3f64 end, f32 t)
+v3f64 lerp_v3f64(v3f64 start, v3f64 end, f32 t)
 {
 }
 
-f32
-easein_f32(f32 start, f32 end, f32 t)
+f32 easein_f32(f32 start, f32 end, f32 t)
 {
     return start + (end - start) * (t * t);
 }

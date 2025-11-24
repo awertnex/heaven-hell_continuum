@@ -10,8 +10,7 @@
 #include "h/limits.h"
 #include "h/logger.h"
 
-u32
-_mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
+u32 _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
     {
@@ -34,8 +33,7 @@ _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
     return engine_err;
 }
 
-u32
-_mem_alloc_memb(void **x, u64 memb, u64 size,
+u32 _mem_alloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (*x != NULL)
@@ -56,8 +54,7 @@ _mem_alloc_memb(void **x, u64 memb, u64 size,
     return engine_err;
 }
 
-u32
-_mem_alloc_buf(buf *x, u64 memb, u64 size,
+u32 _mem_alloc_buf(buf *x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (x == NULL)
@@ -95,8 +92,8 @@ _mem_alloc_buf(buf *x, u64 memb, u64 size,
     return engine_err;
 }
 
-u32
-_mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
+u32 _mem_realloc(void **x, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
@@ -122,8 +119,7 @@ _mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
     return engine_err;
 }
 
-u32
-_mem_realloc_memb(void **x, u64 memb, u64 size,
+u32 _mem_realloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
@@ -149,8 +145,8 @@ _mem_realloc_memb(void **x, u64 memb, u64 size,
     return engine_err;
 }
 
-void
-_mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
+void _mem_free(void **x, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
         return;
@@ -163,8 +159,7 @@ _mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
             name, temp, size);
 }
 
-void
-_mem_free_buf(buf *x, const str *name, const str *file, u64 line)
+void _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
 {
     void *temp = NULL;
     if (x->i != NULL)
@@ -186,8 +181,8 @@ _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
     *x = (buf){NULL};
 }
 
-u32
-_mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
+u32 _mem_zero(void **x, u64 size,
+        const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
     {
@@ -203,16 +198,14 @@ _mem_zero(void **x, u64 size, const str *name, const str *file, u64 line)
     return engine_err;
 }
 
-void
-print_bits(u64 x, u8 bit_count)
+void print_bits(u64 x, u8 bit_count)
 {
     while(bit_count--)
         putchar('0' + ((x >> bit_count) & 1));
     putchar('\n');
 }
 
-void
-swap_bits(char *c1, char *c2)
+void swap_bits(char *c1, char *c2)
 {
     u8 i = 0;
     for (; i < 8; ++i)
@@ -225,32 +218,28 @@ swap_bits(char *c1, char *c2)
     }
 }
 
-void
-swap_bits_u8(u8 *a, u8 *b)
+void swap_bits_u8(u8 *a, u8 *b)
 {
     *a ^= *b;
     *b ^= *a;
     *a ^= *b;
 }
 
-void
-swap_bits_u32(u32 *a, u32 *b)
+void swap_bits_u32(u32 *a, u32 *b)
 {
     *a ^= *b;
     *b ^= *a;
     *a ^= *b;
 }
 
-void
-swap_bits_u64(u64 *a, u64 *b)
+void swap_bits_u64(u64 *a, u64 *b)
 {
     *a ^= *b;
     *b ^= *a;
     *a ^= *b;
 }
 
-void
-swap_strings(str *s1, str *s2)
+void swap_strings(str *s1, str *s2)
 {
     u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
     u16 i = 0;
@@ -258,8 +247,7 @@ swap_strings(str *s1, str *s2)
         swap_bits(&s1[i], &s2[i]);
 }
 
-str *
-swap_string_char(str *string, char c1, char c2)
+str *swap_string_char(str *string, char c1, char c2)
 {
     u64 len = strlen(string);
     if (!len) return string;
@@ -276,8 +264,7 @@ swap_string_char(str *string, char c1, char c2)
 
 /* inspired by 'raylib':
  * github.com/raysan5/raylib/src/rtext.c/TextFormat() */
-str *
-stringf(const str* format, ...)
+str *stringf(const str* format, ...)
 {
     static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
     static u64 index = 0;
@@ -299,8 +286,7 @@ stringf(const str* format, ...)
 }
 
 #if 0
-void
-sort_buf(buf *buffer) /* TODO: fucking fix this */
+void sort_buf(buf *buffer) /* TODO: fucking fix this */
 {
     for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
     {
