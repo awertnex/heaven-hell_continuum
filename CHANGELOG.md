@@ -15,6 +15,7 @@
 - fixed windows support
 - fixed z-fighting between overlapped quads and lines
 - added basic AABB collision
+- added proper skybox and stars
 
 #### changes
 

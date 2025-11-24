@@ -7,6 +7,26 @@
 #include "h/main.h"
 #include "h/logic.h"
 
+f64
+get_time_ms(void)
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return (f64)tp.tv_sec + (f64)tp.tv_usec * 1e-6f;
+}
+
+b8
+get_timer(f64 *time_start, f32 interval)
+{
+    f64 time_current = get_time_ms();
+    if (time_current - *time_start >= interval)
+    {
+        *time_start = time_current;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void
 player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
@@ -113,7 +133,7 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         player->movement_speed = SET_PLAYER_SPEED_FLY;
         player->camera.fovy = 80.0f;
     }
-    else update_gravity(render, player);
+    else gravity_update(render, &player->pos, &player->vel, player->mass);
 
     if ((player->flag & FLAG_PLAYER_SNEAKING)
             && !(player->flag & FLAG_PLAYER_FLYING))
@@ -151,6 +171,9 @@ player_state_update(Render *render, Player *player, u64 chunk_diameter,
         lerp_f32(player->camera.fovy_smooth,
                 player->camera.fovy,
                 settings.lerp_speed, render->frame_delta);
+
+    player->camera_skybox.fovy = player->camera.fovy;
+    player->camera_skybox.fovy_smooth = player->camera.fovy_smooth;
 }
 
 void
@@ -241,11 +264,15 @@ player_camera_movement_update(Render *render, Player *player,
             break;
     }
 
-    player->camera_hud.pos =        player->camera.pos;
     player->camera_hud.sin_pitch =  player->camera.sin_pitch;
     player->camera_hud.cos_pitch =  player->camera.cos_pitch;
     player->camera_hud.sin_yaw =    player->camera.sin_yaw;
     player->camera_hud.cos_yaw =    player->camera.cos_yaw;
+
+    player->camera_skybox.sin_pitch =  player->camera.sin_pitch;
+    player->camera_skybox.cos_pitch =  player->camera.cos_pitch;
+    player->camera_skybox.sin_yaw =    player->camera.sin_yaw;
+    player->camera_skybox.cos_yaw =    player->camera.cos_yaw;
 }
 
 void
@@ -314,15 +341,10 @@ player_respawn(Player *player)
 }
 
 void
-update_gravity(Render *render, Player *player)
-{
-    player->vel.z += (GRAVITY * player->mass * render->frame_delta);
-    player->pos.z += player->vel.z * render->frame_delta;
-}
-
-void
 player_collision_update(Player *player)
 {
+    if (!MODE_INTERNAL_COLLIDE) return;
+
     v3f64 pos = player->pos_smooth;
     v3f64 pos_last = player->pos_last;
     v3f64 pos_delta =
@@ -405,25 +427,10 @@ player_collision_update(Player *player)
         (i32)player->collision_check_size.z,
     };
 
-    v3f64 p1[2] =
-    {
-        {
-            player->pos_smooth.x - (player->size.x / 2.0f),
-            player->pos_smooth.y - (player->size.y / 2.0f),
-            player->pos_smooth.z,
-        },
-        {
-            player->pos_smooth.x + (player->size.x / 2.0f),
-            player->pos_smooth.y + (player->size.y / 2.0f),
-            player->pos_smooth.z + player->size.z,
-        },
-    };
-
-    v3f64 p2[2] = {0};
+    v3f64 box_1[2], box_2[2];
     Chunk *chunk = NULL;
     u32 *block = NULL;
     i32 x, y, z, dx, dy, dz, dcx, dcy, dcz;
-    putchar('\n');
     for (z = aabb_pos.z; z < aabb_pos.z + aabb_size.z; ++z)
     {
         dz = mod(z, CHUNK_DIAMETER);
@@ -437,64 +444,65 @@ player_collision_update(Player *player)
                 dx = mod(x, CHUNK_DIAMETER);
                 dcx = (i32)floorf((f32)x / CHUNK_DIAMETER);
 
-                u64 index = CHUNK_TAB_CENTER + dcx +
-                    (dcy * CHUNK_BUF_DIAMETER) +
-                    (dcz * CHUNK_BUF_LAYER);
+                u64 index = settings.chunk_tab_center + dcx +
+                    (dcy * settings.chunk_buf_diameter) +
+                    (dcz * settings.chunk_buf_layer);
                 chunk = chunk_tab[index];
                 if (!chunk) continue;
-                block = get_block_chunk_buf_index_relative(chunk, x, y, z);
                 block = &chunk->block[dz][dy][dx];
                 if (!block || !*block) continue;
 
-                p2[0] =
+                box_1[0] =
+                    (v3f64){
+                        player->pos_smooth.x - (player->size.x / 2.0f),
+                        player->pos_smooth.y - (player->size.y / 2.0f),
+                        player->pos_smooth.z,
+                    };
+                box_1[1] =
+                    (v3f64){
+                        box_1[0].x + player->size.x,
+                        box_1[0].y + player->size.y,
+                        player->pos_smooth.z + player->size.z,
+                    };
+                box_2[0] =
                     (v3f64){
                         (f64)(((i64)chunk->pos.x * CHUNK_DIAMETER) + dx),
                         (f64)(((i64)chunk->pos.y * CHUNK_DIAMETER) + dy),
                         (f64)(((i64)chunk->pos.z * CHUNK_DIAMETER) + dz),
                     };
-                p2[1] =
+                box_2[1] =
                     (v3f64){
-                        p2[0].x + 1.0f,
-                        p2[0].y + 1.0f,
-                        p2[0].z + 1.0f,
+                        box_2[0].x + 1.0f,
+                        box_2[0].y + 1.0f,
+                        box_2[0].z + 1.0f,
                     };
 
-                if (
-                        (p1[0].x < p2[1].x) &&
-                        (p1[1].x > p2[0].x) &&
-                        (p1[0].y < p2[1].y) &&
-                        (p1[1].y > p2[0].y) &&
-                        (p1[0].z < p2[1].z) &&
-                        (p1[1].z > p2[0].z))
+                if (is_intersect_aabb(box_1, box_2))
                 {
                     player->vel.z = 0.0f;
-                    player->pos.z = p2[1].z;
+                    player->pos.z += box_2[1].z - box_1[0].z;
                     player->pos_smooth.z = player->pos.z;
                     player->flag |= FLAG_PLAYER_CAN_JUMP;
                     player->flag &= ~FLAG_PLAYER_FLYING;
                 }
-                SET_BLOCK_ID(*block, BLOCK_DIRT);
-                chunk->flag |= FLAG_CHUNK_DIRTY;
             }
         }
     }
 }
 
-f64
-get_time_ms(void)
-{
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    return (f64)tp.tv_sec + (f64)tp.tv_usec / 1000000.0f;
-}
-
 b8
-get_timer(f64 *time_start, f32 interval)
+is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
 {
-    if (get_time_ms() - *time_start >= interval)
-    {
-        *time_start = get_time_ms();
-        return TRUE;
-    }
-    return FALSE;
+    return 
+        (box_1[0].x <= box_2[1].x) && (box_1[1].x >= box_2[0].x) &&
+        (box_1[0].y <= box_2[1].y) && (box_1[1].y >= box_2[0].y) &&
+        (box_1[0].z <= box_2[1].z) && (box_1[1].z >= box_2[0].z);
+};
+
+void
+gravity_update(Render *render,
+        v3f64 *position, v3f32 *velocity, f32 mass)
+{
+    velocity->z += (GRAVITY * mass * render->frame_delta);
+    position->z += velocity->z * render->frame_delta;
 }

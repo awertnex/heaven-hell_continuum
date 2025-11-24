@@ -16,8 +16,11 @@
 #include <engine/h/defines.h>
 #include <engine/h/diagnostics.h>
 
+/* ---- settings ------------------------------------------------------------ */
+
 #define MODE_INTERNAL_VSYNC                     0
 #define MODE_INTERNAL_DEBUG                     1
+#define MODE_INTERNAL_LOAD_CHUNKS               1
 #define MODE_INTERNAL_COLLIDE                   1
 #define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    0
 
@@ -36,7 +39,6 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_REACH_DISTANCE_MAX          5.0f
 #define SET_DAY_TICKS_MAX               24000
-#define SET_RENDER_DISTANCE             6
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
@@ -48,7 +50,7 @@
 #define SET_MOUSE_SENSITIVITY_MAX       200.0f
 #define SET_TARGET_FPS_DEFAULT          60
 #define SET_TARGET_FPS_MIN              1
-#define SET_TARGET_FPS_MAX              256
+#define SET_TARGET_FPS_MAX              241
 #define SET_GUI_SCALE_DEFAULT           2.0f
 #define SET_GUI_SCALE_0                 0.0f /* TODO: auto gui scale */
 #define SET_GUI_SCALE_1                 1.0f
@@ -82,23 +84,12 @@
 #define WORLD_MAX_CHUNKS \
     (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-#define CHUNK_BUF_RADIUS        SET_RENDER_DISTANCE
-#define CHUNK_BUF_DIAMETER      ((CHUNK_BUF_RADIUS * 2) + 1)
-#define CHUNK_BUF_LAYER         (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-#define CHUNK_BUF_VOLUME \
-    (CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER)
-
 #define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
 #define CHUNK_BUF_DIAMETER_MAX ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
 #define CHUNK_BUF_LAYER_MAX \
     (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 #define CHUNK_BUF_VOLUME_MAX \
     (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
-
-#define CHUNK_TAB_CENTER \
-    (CHUNK_BUF_RADIUS + \
-     (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER) + \
-     (CHUNK_BUF_RADIUS * CHUNK_BUF_DIAMETER * CHUNK_BUF_DIAMETER))
 
 #define CHUNK_QUEUE_1ST_ID      0
 #define CHUNK_QUEUE_2ND_ID      1
@@ -156,11 +147,16 @@ struct Settings
 
     u32 fps;
     f32 lerp_speed;
+    u32 chunk_buf_radius;
+    u32 chunk_buf_diameter;
+    u32 chunk_buf_layer;
+    u32 chunk_buf_volume;
+    u32 chunk_tab_center;
 
-    /* for player reach (arm length basically) */
+    /* for player reach (arm length) */
     u8 reach_distance;
 
-    /* ---- options --------------------------------------------------------- */
+    /* ---- controls -------------------------------------------------------- */
 
     f64 mouse_sensitivity;
 
@@ -216,11 +212,12 @@ struct Uniform
 
     struct /* skybox */
     {
-        GLint camera_position;
         GLint mat_rotation;
         GLint mat_orientation;
         GLint mat_projection;
-        GLint time;
+        GLint texture_sky;
+        GLint texture_horizon;
+        GLint texture_stars;
         GLint sun_rotation;
         GLint sky_color;
     } skybox;
@@ -321,6 +318,9 @@ enum TextureIndices
     TEXTURE_ITEM_BAR,
     TEXTURE_SDB_ACTIVE,
     TEXTURE_SDB_INACTIVE,
+    TEXTURE_SKYBOX_VAL,
+    TEXTURE_SKYBOX_HORIZON,
+    TEXTURE_SKYBOX_STARS,
     TEXTURE_COUNT,
 }; /* TextureIndices */
 
@@ -393,6 +393,7 @@ typedef struct Player
 
     Camera camera;
     Camera camera_hud;
+    Camera camera_skybox;
     f32 camera_distance;            /* for camera collision detection */
 
     /* player at world edge, enum: PlayerFlag */

@@ -14,6 +14,9 @@ enum ContainerState
     STATE_CONTR_COUNT,
 }; /* ContainerState */
 
+f64 get_time_ms(void);
+b8 get_timer(f64 *time_start, f32 interval);
+
 void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
@@ -25,10 +28,10 @@ void set_player_pos(Player *player, f64 x, f64 y, f64 z);
 void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void player_kill(Player *player);
 void player_respawn(Player *player);
-void update_gravity(Render *render, Player *player);
 void player_collision_update(Player *player);
+b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2]);
 
-f64 get_time_ms(void);
-b8 get_timer(f64 *time_start, f32 interval);
+void gravity_update(Render *render,
+        v3f64 *position, v3f32 *velocity, f32 mass);
 
 #endif /* GAME_LOGIC_H */

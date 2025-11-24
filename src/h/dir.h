@@ -24,7 +24,7 @@ enum Directories
     DIR_GUI,
     DIR_ITEMS,
     DIR_LOGO,
-    DIR_SKYBOXES,
+    DIR_ENV,
     DIR_SCREENSHOTS,
     DIR_TEXT,
     DIR_WORLDS,
