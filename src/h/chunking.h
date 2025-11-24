@@ -39,7 +39,6 @@ void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id);
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
 void chunk_queue_update(ChunkQueue *q);
-
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
 
 /* translate block world position to chunk_buf index relative to 'chunk'.
@@ -50,12 +49,4 @@ void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u32 *get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z);
 
 u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
-
-#ifdef FUCK // TODO: undef FUCK
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
-void draw_block_wires(v3i32 pos);
-void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
-void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
-#endif // TODO: undef FUCK
-
 #endif /* GAME_CHUNKING_H */
