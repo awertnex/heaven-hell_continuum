@@ -32,6 +32,6 @@ void player_collision_update(Player *player);
 b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2]);
 
 void gravity_update(Render *render,
-        v3f64 *position, v3f32 *velocity, f32 mass);
+        v3f64 *position, v3f32 *influence, f32 mass);
 
 #endif /* GAME_LOGIC_H */

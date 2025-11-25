@@ -8,11 +8,8 @@
 #define PI          3.14159265358979323846
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
-
 #define GRAVITY     -9.7803267715f
 
-#define v3izero     (v3i32){0, 0, 0}
-#define v3fzero     (v3f32){0.0f, 0.0f, 0.0f}
 #define mod(n, max) ((((n) % (max)) + (max)) % (max))
 
 v3f32 add_v3f32(v3f32 a, v3f32 b);

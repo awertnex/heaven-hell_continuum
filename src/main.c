@@ -56,7 +56,7 @@ static Player lily =
     .mass = 2.0f,
     .movement_speed = SET_PLAYER_SPEED_WALK,
     .container_state = 0,
-    .perspective = 0,
+    .camera_mode = 0,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
     .spawn_point = {0},
 };
@@ -639,17 +639,18 @@ cleanup:
 
 static void input_update(Player *player)
 {
+    player->movement = (v3f32){0};
+
     /* ---- jumping --------------------------------------------------------- */
 
     if (is_key_hold(bind_jump))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
-            player->pos.z += player->movement_speed;
+            player->movement.z += player->movement_speed;
 
         if (player->flag & FLAG_PLAYER_CAN_JUMP)
         {
-            player->vel.z +=
-                SET_PLAYER_JUMP_HEIGHT;
+            player->gravity_influence.z += SET_PLAYER_JUMP_HEIGHT;
             player->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }
@@ -661,7 +662,7 @@ static void input_update(Player *player)
     if (is_key_hold(bind_sneak))
     {
         if (player->flag & FLAG_PLAYER_FLYING)
-            player->pos.z -= player->movement_speed;
+            player->movement.z -= player->movement_speed;
         else player->flag |= FLAG_PLAYER_SNEAKING;
     }
     else player->flag &= ~FLAG_PLAYER_SNEAKING;
@@ -677,46 +678,63 @@ static void input_update(Player *player)
 
     if (is_key_hold(bind_strafe_left))
     {
-        player->pos.x += (player->movement_speed * player->sin_yaw);
-        player->pos.y += (player->movement_speed * player->cos_yaw);
+        player->movement.x += player->sin_yaw * player->movement_speed;
+        player->movement.y += player->cos_yaw * player->movement_speed;
     }
 
     if (is_key_hold(bind_strafe_right))
     {
-        player->pos.x -= (player->movement_speed * player->sin_yaw);
-        player->pos.y -= (player->movement_speed * player->cos_yaw);
+        player->movement.x -= player->sin_yaw * player->movement_speed;
+        player->movement.y -= player->cos_yaw * player->movement_speed;
     }
 
     if (is_key_hold(bind_walk_backwards))
     {
-        player->pos.x -= (player->movement_speed * player->cos_yaw);
-        player->pos.y += (player->movement_speed * player->sin_yaw);
+        player->movement.x -= player->cos_yaw * player->movement_speed;
+        player->movement.y += player->sin_yaw * player->movement_speed;
     }
 
     if (is_key_hold(bind_walk_forwards))
     {
-        player->pos.x += (player->movement_speed * player->cos_yaw);
-        player->pos.y -= (player->movement_speed * player->sin_yaw);
+        player->movement.x += player->cos_yaw * player->movement_speed;
+        player->movement.y -= player->sin_yaw * player->movement_speed;
     }
     if (is_key_press_double(bind_walk_forwards))
         player->flag |= FLAG_PLAYER_SPRINTING;
 
-    player->pos_last.x = player->pos_smooth.x;
-    player->pos_last.y = player->pos_smooth.y;
-    player->pos_last.z = player->pos_smooth.z;
+    player->movement = (v3f32){
+        clamp_f32(player->movement.x,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+        clamp_f32(player->movement.y,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+        clamp_f32(player->movement.z,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+    };
 
-    player->pos_smooth.x = lerp_f32(player->pos_smooth.x, player->pos.x,
-                player->pos_lerp_speed.x, render.frame_delta);
+    player->movement_smooth = (v3f32){
+        lerp_f32(player->movement_smooth.x, player->movement.x,
+                player->movement_lerp_speed.x, render.frame_delta),
 
-    player->pos_smooth.y = lerp_f32(player->pos_smooth.y, player->pos.y,
-            player->pos_lerp_speed.y, render.frame_delta);
+        lerp_f32(player->movement_smooth.y, player->movement.y,
+                player->movement_lerp_speed.y, render.frame_delta),
 
-    player->pos_smooth.z =
-        lerp_f32(player->pos_smooth.z, player->pos.z,
-                player->pos_lerp_speed.z, render.frame_delta);
+        lerp_f32(player->movement_smooth.z, player->movement.z,
+                player->movement_lerp_speed.z, render.frame_delta),
+    };
 
-    player->vel.x = player->pos_smooth.x - player->pos_last.x;
-    player->vel.y = player->pos_smooth.y - player->pos_last.y;
+    player->pos = (v3f64){
+        player->pos.x + player->movement_smooth.x * render.frame_delta,
+        player->pos.y + player->movement_smooth.y * render.frame_delta,
+        player->pos.z + player->movement_smooth.z * render.frame_delta,
+    };
+
+    player->vel = (v3f32){
+        player->pos.x - player->pos_last.x,
+        player->pos.y - player->pos_last.y,
+        player->pos.z - player->pos_last.z,
+    };
+
+    player->pos_last = player->pos;
 
     /* ---- gameplay -------------------------------------------------------- */
 
@@ -727,11 +745,11 @@ static void input_update(Player *player)
             chunk_tab[chunk_tab_index])
     {
         block_break(chunk_tab_index,
-            lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
+            player->target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER),
-            lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
+            player->target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER),
-            lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
+            player->target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER));
     }
 
@@ -746,11 +764,11 @@ static void input_update(Player *player)
             chunk_tab[chunk_tab_index])
     {
         block_place(chunk_tab_index,
-            lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
+            player->target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER),
-            lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
+            player->target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER),
-            lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
+            player->target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER), BLOCK_STONE);
     }
 
@@ -800,7 +818,7 @@ static void input_update(Player *player)
     }
 
     if (is_key_press(bind_toggle_perspective))
-        player->perspective = (player->perspective + 1) % MODE_CAMERA_COUNT;
+        player->camera_mode = (player->camera_mode + 1) % MODE_CAMERA_COUNT;
 
     if (is_key_press(bind_toggle_zoom))
         player->flag ^= FLAG_PLAYER_ZOOMER;
@@ -839,7 +857,7 @@ u32 world_init(str *name)
             (i64)lily.pos.y,
             (i64)lily.pos.z
         };
-    lily.delta_target =
+    lily.target_delta =
         (v3i64){
             (i64)lily.target.x,
             (i64)lily.target.y,
@@ -882,7 +900,7 @@ static void world_update(Player *player)
     update_camera_perspective(&player->camera_skybox, &projection_skybox);
     player_target_update(&lily);
 
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.delta_target);
+    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_delta);
     (chunk_tab_index >= settings.chunk_buf_volume)
         ? chunk_tab_index = settings.chunk_tab_center : 0;
 
@@ -904,7 +922,7 @@ static void world_update(Player *player)
     /* ---- player targeting ------------------------------------------------ */
 
     if (is_in_volume_i64(
-                lily.delta_target,
+                lily.target_delta,
                 (v3i64){
                 -(WORLD_DIAMETER * CHUNK_DIAMETER),
                 -(WORLD_DIAMETER * CHUNK_DIAMETER),
@@ -1001,7 +1019,7 @@ static void draw_everything(void)
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
     glUniform3f(uniform.voxel.player_position,
-            lily.pos_smooth.x, lily.pos_smooth.y,
+            lily.pos.x, lily.pos.y,
             lily.pos.z + lily.eye_height);
     glUniform3fv(uniform.voxel.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
@@ -1041,13 +1059,13 @@ static void draw_everything(void)
 
     /* ---- draw player ----------------------------------------------------- */
 
-    if (lily.perspective != MODE_CAMERA_1ST_PERSON)
+    if (lily.camera_mode != MODE_CAMERA_1ST_PERSON)
     {
 
         glUseProgram(shader[SHADER_DEFAULT].id);
         glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.size);
         glUniform3f(uniform.defaults.offset,
-                lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z);
+                lily.pos.x, lily.pos.y, lily.pos.z);
         glUniformMatrix4fv(uniform.defaults.mat_rotation, 1, GL_FALSE,
                 (GLfloat*)(f32[]){
                 lily.cos_yaw, lily.sin_yaw, 0.0f, 0.0f,
@@ -1074,17 +1092,17 @@ static void draw_everything(void)
     if ((flag & FLAG_MAIN_PARSE_TARGET) && (flag & FLAG_MAIN_HUD) &&
             chunk_tab[chunk_tab_index] &&
             chunk_tab[chunk_tab_index]->block
-            [lily.delta_target.z - (chunk_tab[chunk_tab_index]->pos.z *
+            [lily.target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER)]
-            [lily.delta_target.y - (chunk_tab[chunk_tab_index]->pos.y *
+            [lily.target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER)]
-            [lily.delta_target.x - (chunk_tab[chunk_tab_index]->pos.x *
+            [lily.target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER)] & FLAG_BLOCK_NOT_EMPTY)
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.delta_target.x,
-                lily.delta_target.y,
-                lily.delta_target.z);
+                lily.target_delta.x,
+                lily.target_delta.y,
+                lily.target_delta.z);
         glUniform3f(uniform.bounding_box.size, 1.0f, 1.0f, 1.0f);
         glUniform4f(uniform.bounding_box.color, 0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -1400,10 +1418,10 @@ framebuffer_blit_chunk_queue_visualizer:
                 "PLAYER YAW        [%.2f]\n"
                 "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n",
                 lily.name,
-                lily.pos_smooth.x, lily.pos_smooth.y, lily.pos_smooth.z,
-                (i32)floorf(lily.pos_smooth.x),
-                (i32)floorf(lily.pos_smooth.y),
-                (i32)floorf(lily.pos_smooth.z),
+                lily.pos.x, lily.pos.y, lily.pos.z,
+                (i32)floorf(lily.pos.x),
+                (i32)floorf(lily.pos.y),
+                (i32)floorf(lily.pos.z),
                 (chunk_tab[settings.chunk_tab_center]) ?
                 chunk_tab[settings.chunk_tab_center]->pos.x : 0,
                 (chunk_tab[settings.chunk_tab_center]) ?

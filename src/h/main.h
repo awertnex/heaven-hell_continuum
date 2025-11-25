@@ -50,14 +50,14 @@
 #define SET_MOUSE_SENSITIVITY_MAX       200.0f
 #define SET_TARGET_FPS_DEFAULT          60
 #define SET_TARGET_FPS_MIN              1
-#define SET_TARGET_FPS_MAX              241
+#define SET_TARGET_FPS_MAX              241     /* 240 max, 241 = unlimited */
 #define SET_GUI_SCALE_DEFAULT           2.0f
 #define SET_GUI_SCALE_0                 0.0f /* TODO: auto gui scale */
 #define SET_GUI_SCALE_1                 1.0f
 #define SET_GUI_SCALE_2                 2.0f
 #define SET_GUI_SCALE_3                 3.0f
 #define SET_GUI_SCALE_4                 4.0f
-#define SET_LERP_SPEED_DEFAULT          20.0f
+#define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_GLIDE            2.5f
 #define SET_LERP_SPEED_RIGID            100.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
@@ -370,11 +370,9 @@ typedef struct Player
 {
     str name[64];                   /* player in-game name */
     v3f64 pos;                      /* player current coordinates in world */
-    v3f64 pos_smooth;               /* player processed pos */
-    v3f64 pos_last;                 /* for collision tunneling prevention */
-    v3f32 pos_lerp_speed;
-    v3f64 target;                   /* player arm (or whatever) */
-    v3i64 delta_target;             /* player arm floored */
+    v3f64 pos_last;                 /* player previous coordinates in world */
+    v3f64 target;                   /* player arm */
+    v3i64 target_delta;             /* player arm floored */
     v3f32 size;                     /* player size for collision detection */
     v3f64 collision_check_pos;
     v3f64 collision_check_size;
@@ -386,15 +384,18 @@ typedef struct Player
     f32 eye_height;                 /* height of player camera, usually */
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
-    v3f32 movement;                 /* forwards input from user to 'pos' */
-    f32 movement_speed;             /* depends on enum: PlayerFlag */
+    v3f32 gravity_influence;
+    v3f32 movement;                 /* raw movement from user input */
+    v3f32 movement_smooth;          /* lerped movement */
+    f32 movement_speed;
+    v3f32 movement_lerp_speed;
     u64 container_state;            /* enum: ContainerFlag */
-    u8 perspective;                 /* camera perspective mode */
     u64 flag;                       /* enum: PlayerFlag */
 
     Camera camera;
     Camera camera_hud;
     Camera camera_skybox;
+    u8 camera_mode;                 /* camera perspective mode */
     f32 camera_distance;            /* for camera collision detection */
 
     /* player at world edge, enum: PlayerFlag */
