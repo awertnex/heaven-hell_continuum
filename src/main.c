@@ -650,7 +650,7 @@ static void input_update(Player *player)
 
         if (player->flag & FLAG_PLAYER_CAN_JUMP)
         {
-            player->gravity_influence.z += SET_PLAYER_JUMP_HEIGHT;
+            player->gravity_influence.z += SET_PLAYER_JUMP_STRENGTH;
             player->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }

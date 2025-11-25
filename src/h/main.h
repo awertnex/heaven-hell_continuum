@@ -61,7 +61,7 @@
 #define SET_LERP_SPEED_GLIDE            2.5f
 #define SET_LERP_SPEED_RIGID            100.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
-#define SET_PLAYER_JUMP_HEIGHT          8.0f
+#define SET_PLAYER_JUMP_STRENGTH        8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
 #define SET_PLAYER_SPEED_FLY_FAST       50.0f
