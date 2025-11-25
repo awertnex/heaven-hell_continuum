@@ -24,14 +24,9 @@
 #define MODE_INTERNAL_COLLIDE                   1
 #define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    0
 
-#define show_cursor \
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
-
-#define disable_cursor \
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
-
-#define center_cursor \
-    glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
+#define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+#define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+#define center_cursor   glfwSetCursorPos(render.window, render.size.x / 2.0f, render.size.y / 2.0f)
 
 /* ---- internal ------------------------------------------------------------ */
 
@@ -61,7 +56,7 @@
 #define SET_LERP_SPEED_GLIDE            2.5f
 #define SET_LERP_SPEED_RIGID            100.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
-#define SET_PLAYER_JUMP_STRENGTH        8.0f
+#define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
 #define SET_PLAYER_SPEED_FLY_FAST       50.0f
@@ -81,15 +76,12 @@
 
 #define WORLD_DIAMETER          ((WORLD_RADIUS * 2) + 1)
 #define WORLD_DIAMETER_VERTICAL ((WORLD_RADIUS_VERTICAL * 2) + 1)
-#define WORLD_MAX_CHUNKS \
-    (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
+#define WORLD_MAX_CHUNKS        (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
 #define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
-#define CHUNK_BUF_DIAMETER_MAX ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
-#define CHUNK_BUF_LAYER_MAX \
-    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
-#define CHUNK_BUF_VOLUME_MAX \
-    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
+#define CHUNK_BUF_DIAMETER_MAX  ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
+#define CHUNK_BUF_LAYER_MAX     (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
+#define CHUNK_BUF_VOLUME_MAX    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 
 #define CHUNK_QUEUE_1ST_ID      0
 #define CHUNK_QUEUE_2ND_ID      1
