@@ -49,7 +49,7 @@ v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
     if (len == 0)
-        return v3fzero;
+        return (v3f32){0};
 
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
