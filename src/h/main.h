@@ -386,7 +386,6 @@ typedef struct Player
 
     Camera camera;
     Camera camera_hud;
-    Camera camera_skybox;
     u8 camera_mode;                 /* camera perspective mode */
     f32 camera_distance;            /* for camera collision detection */
 

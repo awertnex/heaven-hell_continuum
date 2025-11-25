@@ -71,7 +71,7 @@ u32 gui_init(void)
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
                     "skybox_horizon.png")) != ERR_SUCCESS ||
 
-            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){4096, 4096},
+            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){2048, 2048},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
                     "skybox_stars.png")) != ERR_SUCCESS)

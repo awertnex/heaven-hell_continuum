@@ -142,9 +142,6 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         lerp_f32(player->camera.fovy_smooth,
                 player->camera.fovy,
                 settings.lerp_speed, render->frame_delta);
-
-    player->camera_skybox.fovy = player->camera.fovy;
-    player->camera_skybox.fovy_smooth = player->camera.fovy_smooth;
 }
 
 void player_camera_movement_update(Render *render, Player *player,
@@ -238,11 +235,6 @@ void player_camera_movement_update(Render *render, Player *player,
     player->camera_hud.cos_pitch =  player->camera.cos_pitch;
     player->camera_hud.sin_yaw =    player->camera.sin_yaw;
     player->camera_hud.cos_yaw =    player->camera.cos_yaw;
-
-    player->camera_skybox.sin_pitch =  player->camera.sin_pitch;
-    player->camera_skybox.cos_pitch =  player->camera.cos_pitch;
-    player->camera_skybox.sin_yaw =    player->camera.sin_yaw;
-    player->camera_skybox.cos_yaw =    player->camera.cos_yaw;
 }
 
 void player_target_update(Player *player)
@@ -434,11 +426,53 @@ void player_collision_update(Player *player)
 
                 if (is_intersect_aabb(box_1, box_2))
                 {
-                    player->movement.z = 0.0f;
-                    player->gravity_influence.z = 0.0f;
-                    player->pos.z += box_2[1].z - box_1[0].z;
-                    player->flag |= FLAG_PLAYER_CAN_JUMP;
-                    player->flag &= ~FLAG_PLAYER_FLYING;
+                    v3f32 diff_negative =
+                    {
+                        box_2[1].x - box_1[0].x,
+                        box_2[1].y - box_1[0].y,
+                        box_2[1].z - box_1[0].z,
+                    };
+                    v3f32 diff_positive =
+                    {
+                        box_2[0].x - box_1[1].x,
+                        box_2[0].y - box_1[1].y,
+                        box_2[0].z - box_1[1].z,
+                    };
+
+                    if (box_1[0].x > box_2[0].x)
+                    {
+                        player->pos.x += diff_negative.x;
+                        player->movement_smooth.x = 0.0f;
+                    }
+                    if (box_1[1].x < box_2[1].x)
+                    {
+                        player->pos.x += diff_positive.x;
+                        player->movement_smooth.x = 0.0f;
+                    }
+                    if (box_1[0].y > box_2[0].y)
+                    {
+                        player->pos.y += diff_negative.y;
+                        player->movement_smooth.y = 0.0f;
+                    }
+                    if (box_1[1].y < box_2[1].y)
+                    {
+                        player->pos.y += diff_positive.y;
+                        player->movement_smooth.y = 0.0f;
+                    }
+                    if (box_1[0].z > box_2[0].z)
+                    {
+                        player->pos.z += diff_negative.z;
+                        player->movement_smooth.z = 0.0f;
+                        player->gravity_influence.z = 0.0f;
+                        player->flag |= FLAG_PLAYER_CAN_JUMP;
+                        player->flag &= ~FLAG_PLAYER_FLYING;
+                    }
+                    if (box_1[1].z < box_2[1].z)
+                    {
+                        player->pos.z += diff_positive.z;
+                        player->movement_smooth.z = 0.0f;
+                        player->gravity_influence.z = 0.0f;
+                    }
 
                     box_1[0] = (v3f64){
                         player->pos.x - (player->size.x / 2.0f),

@@ -36,7 +36,6 @@ Texture texture[TEXTURE_COUNT] = {0};
 Font font[FONT_COUNT];
 static Projection projection_world = {0};
 static Projection projection_hud = {0};
-static Projection projection_skybox = {0};
 static struct Uniform uniform = {0};
 static Mesh mesh[MESH_COUNT] = {0};
 static FBO fbo[FBO_COUNT] = {0};
@@ -104,7 +103,6 @@ static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
     render.size = (v2i32){width, height};
     lily.camera.ratio = (f32)width / (f32)height;
     lily.camera_hud.ratio = (f32)width / (f32)height;
-    lily.camera_skybox.ratio = (f32)width / (f32)height;
     glViewport(0, 0, render.size.x, render.size.y);
 
     fbo_realloc(&render, &fbo[FBO_SKYBOX], FALSE, 4);
@@ -729,9 +727,9 @@ static void input_update(Player *player)
     };
 
     player->vel = (v3f32){
-        player->pos.x - player->pos_last.x,
-        player->pos.y - player->pos_last.y,
-        player->pos.z - player->pos_last.z,
+        (player->pos.x - player->pos_last.x) / render.frame_delta,
+        (player->pos.y - player->pos_last.y) / render.frame_delta,
+        (player->pos.z - player->pos_last.z) / render.frame_delta,
     };
 
     player->pos_last = player->pos;
@@ -897,7 +895,6 @@ static void world_update(Player *player)
 
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
-    update_camera_perspective(&player->camera_skybox, &projection_skybox);
     player_target_update(&lily);
 
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_delta);
@@ -987,11 +984,11 @@ static void draw_everything(void)
 
     glUseProgram(shader[SHADER_SKYBOX].id);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection_skybox.rotation);
+            (GLfloat*)&projection_world.rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection_skybox.orientation);
+            (GLfloat*)&projection_world.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection_skybox.projection);
+            (GLfloat*)&projection_world.projection);
     glUniform3fv(uniform.skybox.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.skybox.sky_color, 1,
@@ -1732,15 +1729,6 @@ int main(int argc, char **argv)
         };
 
     lily.camera_hud =
-        (Camera){
-            .fovy = SET_FOV_DEFAULT,
-            .fovy_smooth = SET_FOV_DEFAULT,
-            .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = CAMERA_CLIP_FAR_DEFAULT,
-            .near = CAMERA_CLIP_NEAR_DEFAULT,
-        };
-
-    lily.camera_skybox =
         (Camera){
             .fovy = SET_FOV_DEFAULT,
             .fovy_smooth = SET_FOV_DEFAULT,
