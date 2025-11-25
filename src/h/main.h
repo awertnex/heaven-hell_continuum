@@ -386,6 +386,7 @@ typedef struct Player
     f32 eye_height;                 /* height of player camera, usually */
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
+    v3f32 movement;                 /* forwards input from user to 'pos' */
     f32 movement_speed;             /* depends on enum: PlayerFlag */
     u64 container_state;            /* enum: ContainerFlag */
     u8 perspective;                 /* camera perspective mode */

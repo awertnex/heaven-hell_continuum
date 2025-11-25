@@ -715,6 +715,9 @@ static void input_update(Player *player)
         lerp_f32(player->pos_smooth.z, player->pos.z,
                 player->pos_lerp_speed.z, render.frame_delta);
 
+    player->vel.x = player->pos_smooth.x - player->pos_last.x;
+    player->vel.y = player->pos_smooth.y - player->pos_last.y;
+
     /* ---- gameplay -------------------------------------------------------- */
 
     if (glfwGetMouseButton(render.window,
@@ -1776,17 +1779,17 @@ section_world_loaded:
 
 cleanup: /* ----------------------------------------------------------------- */
 
-    u32 i = 0;
     assets_free();
     gui_free();
     chunking_free();
+    u32 i = 0;
     for (i = 0; i < MESH_COUNT; ++i)
         mesh_free(&mesh[i]);
     for (i = 0; i < FBO_COUNT; ++i)
         fbo_free(&fbo[i]);
-    text_free();
     for (i = 0; i < SHADER_COUNT; ++i)
         shader_program_free(&shader[i]);
+    text_free();
     logger_close();
     glfwDestroyWindow(render.window);
     glfwTerminate();

@@ -278,22 +278,18 @@ void player_target_update(Player *player)
     const f32 SYAW = player->sin_yaw;
     const f32 CYAW = player->cos_yaw;
 
-    player->target =
-        (v3f64){
-            player->pos_smooth.x +
-                ((CYAW * CPCH) * player->camera_distance),
-            player->pos_smooth.y -
-                ((SYAW * CPCH) * player->camera_distance),
-            player->pos_smooth.z + player->eye_height -
-                (SPCH * player->camera_distance),
-        };
+    player->target = (v3f64){
+        player->pos_smooth.x + CYAW * CPCH * player->camera_distance,
+        player->pos_smooth.y - SYAW * CPCH * player->camera_distance,
+        player->pos_smooth.z +
+            player->eye_height - SPCH * player->camera_distance,
+    };
 
-    player->delta_target =
-        (v3i64){
-            (i64)floorf(player->target.x),
-            (i64)floorf(player->target.y),
-            (i64)floorf(player->target.z),
-        };
+    player->delta_target = (v3i64){
+        (i64)floorf(player->target.x),
+        (i64)floorf(player->target.y),
+        (i64)floorf(player->target.z),
+    };
 }
 
 void set_player_pos(Player *player, f64 x, f64 y, f64 z)
@@ -305,8 +301,7 @@ void set_player_pos(Player *player, f64 x, f64 y, f64 z)
 
 void set_player_block(Player *player, i32 x, i32 y, i32 z)
 {
-    player->pos =
-        (v3f64){(f64)(x) + 0.5f, (f64)(y) + 0.5f, (f64)(z) + 0.5f};
+    player->pos = (v3f64){(f64)x + 0.5f, (f64)y + 0.5f, (f64)z + 0.5f};
     player->pos_smooth = player->pos;
     player->pos_last = player->pos;
 }
@@ -322,12 +317,11 @@ void player_kill(Player *player)
 
 void player_respawn(Player *player)
 {
-    player->pos =
-        (v3f64){
-            player->spawn_point.x,
-            player->spawn_point.y,
-            player->spawn_point.z
-        };
+    player->pos = (v3f64){
+        player->spawn_point.x,
+        player->spawn_point.y,
+        player->spawn_point.z
+    };
     player->flag = 0;
 }
 
@@ -386,28 +380,28 @@ void player_collision_update(Player *player)
         check_size.z = player->size.z + pos_delta.z + 3.0f + check_delta.z;
     }
 
-    player->collision_check_pos =
-        (v3f64){
-            floor(check_pos.x),
-            floor(check_pos.y),
-            floor(check_pos.z),
-        };
+    player->collision_check_pos = (v3f64){
+        floor(check_pos.x),
+        floor(check_pos.y),
+        floor(check_pos.z),
+    };
 
-    player->collision_check_size =
-        (v3f64){
-            ceil(check_size.x),
-            ceil(check_size.y),
-            ceil(check_size.z),
-        };
+    player->collision_check_size = (v3f64){
+        ceil(check_size.x),
+        ceil(check_size.y),
+        ceil(check_size.z),
+    };
 
     v3i32 aabb_pos =
     {
         (i32)player->collision_check_pos.x -
-            (i32)(player->chunk.x * CHUNK_DIAMETER),
+        (i32)player->chunk.x * CHUNK_DIAMETER,
+
         (i32)player->collision_check_pos.y -
-            (i32)(player->chunk.y * CHUNK_DIAMETER),
+        (i32)player->chunk.y * CHUNK_DIAMETER,
+
         (i32)player->collision_check_pos.z -
-            (i32)(player->chunk.z * CHUNK_DIAMETER),
+        (i32)player->chunk.z * CHUNK_DIAMETER,
     };
 
     v3i32 aabb_size =
@@ -420,13 +414,13 @@ void player_collision_update(Player *player)
     v3f64 box_1[2] =
     {
         {
-            player->pos_smooth.x - (player->size.x / 2.0f),
-            player->pos_smooth.y - (player->size.y / 2.0f),
+            player->pos_smooth.x - player->size.x / 2.0f,
+            player->pos_smooth.y - player->size.y / 2.0f,
             player->pos_smooth.z,
         },
         {
-            player->pos_smooth.x + (player->size.x / 2.0f),
-            player->pos_smooth.y + (player->size.y / 2.0f),
+            player->pos_smooth.x + player->size.x / 2.0f,
+            player->pos_smooth.y + player->size.y / 2.0f,
             player->pos_smooth.z + player->size.z,
         },
     };
@@ -449,46 +443,42 @@ void player_collision_update(Player *player)
                 dcx = (i32)floorf((f32)x / CHUNK_DIAMETER);
 
                 u64 index = settings.chunk_tab_center + dcx +
-                    (dcy * settings.chunk_buf_diameter) +
-                    (dcz * settings.chunk_buf_layer);
+                    dcy * settings.chunk_buf_diameter +
+                    dcz * settings.chunk_buf_layer;
                 chunk = chunk_tab[index];
                 if (!chunk) continue;
                 block = &chunk->block[dz][dy][dx];
                 if (!block || !*block) continue;
 
-                box_2[0] =
-                    (v3f64){
-                        (f64)(((i64)chunk->pos.x * CHUNK_DIAMETER) + dx),
-                        (f64)(((i64)chunk->pos.y * CHUNK_DIAMETER) + dy),
-                        (f64)(((i64)chunk->pos.z * CHUNK_DIAMETER) + dz),
-                    };
-                box_2[1] =
-                    (v3f64){
-                        box_2[0].x + 1.0f,
-                        box_2[0].y + 1.0f,
-                        box_2[0].z + 1.0f,
-                    };
+                box_2[0] = (v3f64){
+                    (f64)((i64)chunk->pos.x * CHUNK_DIAMETER + dx),
+                    (f64)((i64)chunk->pos.y * CHUNK_DIAMETER + dy),
+                    (f64)((i64)chunk->pos.z * CHUNK_DIAMETER + dz),
+                };
+                box_2[1] = (v3f64){
+                    box_2[0].x + 1.0f,
+                    box_2[0].y + 1.0f,
+                    box_2[0].z + 1.0f,
+                };
 
                 if (is_intersect_aabb(box_1, box_2))
                 {
-                    player->vel.z = 0.0f;
+                    player->movement.z = 0.0f;
                     player->pos.z += box_2[1].z - box_1[0].z;
                     player->pos_smooth.z = player->pos.z;
                     player->flag |= FLAG_PLAYER_CAN_JUMP;
                     player->flag &= ~FLAG_PLAYER_FLYING;
 
-                    box_1[0] =
-                        (v3f64){
-                            player->pos_smooth.x - (player->size.x / 2.0f),
-                            player->pos_smooth.y - (player->size.y / 2.0f),
-                            player->pos_smooth.z,
-                        };
-                    box_1[1] =
-                        (v3f64){
-                            player->pos_smooth.x + (player->size.x / 2.0f),
-                            player->pos_smooth.y + (player->size.y / 2.0f),
-                            player->pos_smooth.z + player->size.z,
-                        };
+                    box_1[0] = (v3f64){
+                        player->pos_smooth.x - (player->size.x / 2.0f),
+                        player->pos_smooth.y - (player->size.y / 2.0f),
+                        player->pos_smooth.z,
+                    };
+                    box_1[1] = (v3f64){
+                        player->pos_smooth.x + (player->size.x / 2.0f),
+                        player->pos_smooth.y + (player->size.y / 2.0f),
+                        player->pos_smooth.z + player->size.z,
+                    };
                 }
             }
         }
@@ -503,9 +493,8 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
         (box_1[0].z <= box_2[1].z) && (box_1[1].z >= box_2[0].z);
 };
 
-void gravity_update(Render *render,
-        v3f64 *position, v3f32 *velocity, f32 mass)
+void gravity_update(Render *render, v3f64 *position, v3f32 *movement, f32 mass)
 {
-    velocity->z += (GRAVITY * mass * render->frame_delta);
-    position->z += velocity->z * render->frame_delta;
+    movement->z += (GRAVITY * mass * render->frame_delta);
+    position->z += movement->z * render->frame_delta;
 }
