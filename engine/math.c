@@ -76,18 +76,18 @@ f32 q_rsqrt(f32 n)
 
 u32 distance_v3i32(v3i32 a, v3i32 b)
 {
-    return (u32)
-        (powf(a.x - b.x, 2.0f) +
-         powf(a.y - b.y, 2.0f) +
-         powf(a.z - b.z, 2.0f));
+    return
+        (a.x - b.x) * (a.x - b.x) +
+        (a.y - b.y) * (a.y - b.y) +
+        (a.z - b.z) * (a.z - b.z);
 }
 
 f32 distance_v3f32(v3f32 a, v3f32 b)
 {
     return
-        powf(a.x - b.x, 2.0f) +
-        powf(a.y - b.y, 2.0f) +
-        powf(a.z - b.z, 2.0f);
+        (a.x - b.x) * (a.x - b.x) +
+        (a.y - b.y) * (a.y - b.y) +
+        (a.z - b.z) * (a.z - b.z);
 }
 
 b8 is_in_range_i32(i32 n, i32 min, i32 max)

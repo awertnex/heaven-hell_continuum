@@ -159,6 +159,7 @@ void settings_init(void)
 
     settings.reach_distance = SET_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT / 400.0f;
+    settings.fov = SET_FOV_DEFAULT;
     settings.render_distance = SET_RENDER_DISTANCE_DEFAULT;
     settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
@@ -653,7 +654,10 @@ static void input_update(Player *player)
         }
     }
     if (is_key_press_double(bind_jump))
+    {
         player->flag ^= FLAG_PLAYER_FLYING;
+        player->gravity_influence.z = 0.0f;
+    }
 
     /* ---- sneaking -------------------------------------------------------- */
 
@@ -700,40 +704,6 @@ static void input_update(Player *player)
     if (is_key_press_double(bind_walk_forwards))
         player->flag |= FLAG_PLAYER_SPRINTING;
 
-    player->movement = (v3f32){
-        clamp_f32(player->movement.x,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-        clamp_f32(player->movement.y,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-        clamp_f32(player->movement.z,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-    };
-
-    player->movement_smooth = (v3f32){
-        lerp_f32(player->movement_smooth.x, player->movement.x,
-                player->movement_lerp_speed.x, render.frame_delta),
-
-        lerp_f32(player->movement_smooth.y, player->movement.y,
-                player->movement_lerp_speed.y, render.frame_delta),
-
-        lerp_f32(player->movement_smooth.z, player->movement.z,
-                player->movement_lerp_speed.z, render.frame_delta),
-    };
-
-    player->pos = (v3f64){
-        player->pos.x + player->movement_smooth.x * render.frame_delta,
-        player->pos.y + player->movement_smooth.y * render.frame_delta,
-        player->pos.z + player->movement_smooth.z * render.frame_delta,
-    };
-
-    player->vel = (v3f32){
-        (player->pos.x - player->pos_last.x) / render.frame_delta,
-        (player->pos.y - player->pos_last.y) / render.frame_delta,
-        (player->pos.z - player->pos_last.z) / render.frame_delta,
-    };
-
-    player->pos_last = player->pos;
-
     /* ---- gameplay -------------------------------------------------------- */
 
     if (glfwGetMouseButton(render.window,
@@ -743,11 +713,11 @@ static void input_update(Player *player)
             chunk_tab[chunk_tab_index])
     {
         block_break(chunk_tab_index,
-            player->target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
+            player->target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER),
-            player->target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
+            player->target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER),
-            player->target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
+            player->target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER));
     }
 
@@ -762,11 +732,11 @@ static void input_update(Player *player)
             chunk_tab[chunk_tab_index])
     {
         block_place(chunk_tab_index,
-            player->target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
+            player->target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER),
-            player->target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
+            player->target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER),
-            player->target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
+            player->target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER), BLOCK_STONE);
     }
 
@@ -855,7 +825,7 @@ u32 world_init(str *name)
             (i64)lily.pos.y,
             (i64)lily.pos.z
         };
-    lily.target_delta =
+    lily.target_snapped =
         (v3i64){
             (i64)lily.target.x,
             (i64)lily.target.y,
@@ -889,15 +859,14 @@ static void world_update(Player *player)
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
     player_collision_update(&lily);
 
-    static b8 use_mouse = TRUE;
+    b8 use_mouse = TRUE;
     use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     player_camera_movement_update(&render, player, use_mouse);
-
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
 
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_delta);
+    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_snapped);
     (chunk_tab_index >= settings.chunk_buf_volume)
         ? chunk_tab_index = settings.chunk_tab_center : 0;
 
@@ -919,7 +888,7 @@ static void world_update(Player *player)
     /* ---- player targeting ------------------------------------------------ */
 
     if (is_in_volume_i64(
-                lily.target_delta,
+                lily.target_snapped,
                 (v3i64){
                 -(WORLD_DIAMETER * CHUNK_DIAMETER),
                 -(WORLD_DIAMETER * CHUNK_DIAMETER),
@@ -1089,17 +1058,17 @@ static void draw_everything(void)
     if ((flag & FLAG_MAIN_PARSE_TARGET) && (flag & FLAG_MAIN_HUD) &&
             chunk_tab[chunk_tab_index] &&
             chunk_tab[chunk_tab_index]->block
-            [lily.target_delta.z - (chunk_tab[chunk_tab_index]->pos.z *
+            [lily.target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
                 CHUNK_DIAMETER)]
-            [lily.target_delta.y - (chunk_tab[chunk_tab_index]->pos.y *
+            [lily.target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
                 CHUNK_DIAMETER)]
-            [lily.target_delta.x - (chunk_tab[chunk_tab_index]->pos.x *
+            [lily.target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
                 CHUNK_DIAMETER)] & FLAG_BLOCK_NOT_EMPTY)
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.target_delta.x,
-                lily.target_delta.y,
-                lily.target_delta.z);
+                lily.target_snapped.x,
+                lily.target_snapped.y,
+                lily.target_snapped.z);
         glUniform3f(uniform.bounding_box.size, 1.0f, 1.0f, 1.0f);
         glUniform4f(uniform.bounding_box.color, 0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -1413,7 +1382,8 @@ framebuffer_blit_chunk_queue_visualizer:
                 "CURRENT CHUNK     [%d %d %d]\n"
                 "PLAYER PITCH      [%.2f]\n"
                 "PLAYER YAW        [%.2f]\n"
-                "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n",
+                "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n"
+                "PLAYER SPEED      [%5.2f]\n",
                 lily.name,
                 lily.pos.x, lily.pos.y, lily.pos.z,
                 (i32)floorf(lily.pos.x),
@@ -1427,11 +1397,12 @@ framebuffer_blit_chunk_queue_visualizer:
                 chunk_tab[settings.chunk_tab_center]->pos.z : 0,
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw,
-                lily.vel.x, lily.vel.y, lily.vel.z),
+                lily.vel.x, lily.vel.y, lily.vel.z,
+                lily.speed),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "PLAYER OVERFLOW X [%s]\n"
                 "PLAYER OVERFLOW Y [%s]\n"
                 "PLAYER OVERFLOW Z [%s]\n",
@@ -1447,7 +1418,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1460,7 +1431,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "                   %s\n"
                 "                   %s\n"
                 "                   %s\n",
@@ -1473,7 +1444,7 @@ framebuffer_blit_chunk_queue_visualizer:
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                 "MOUSE XY          [%.2f %.2f]\n"
                 "DELTA XY          [%.2f %.2f]\n"
                 "RENDER RATIO      [%.4f]\n"

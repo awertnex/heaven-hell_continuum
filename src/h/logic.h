@@ -29,7 +29,7 @@ void set_player_block(Player *player, i32 x, i32 y, i32 z);
 void player_kill(Player *player);
 void player_respawn(Player *player);
 void player_collision_update(Player *player);
-b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2]);
+b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2]);
 
 void gravity_update(Render *render,
         v3f64 *position, v3f32 *influence, f32 mass);

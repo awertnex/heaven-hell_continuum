@@ -154,6 +154,7 @@ struct Settings
 
     /* ---- video ----------------------------------------------------------- */
 
+    f32 fov;
     u8 render_distance;
     u32 target_fps;
     f32 gui_scale;
@@ -364,7 +365,7 @@ typedef struct Player
     v3f64 pos;                      /* player current coordinates in world */
     v3f64 pos_last;                 /* player previous coordinates in world */
     v3f64 target;                   /* player arm */
-    v3i64 target_delta;             /* player arm floored */
+    v3i64 target_snapped;           /* player arm floored */
     v3f32 size;                     /* player size for collision detection */
     v3f64 collision_check_pos;
     v3f64 collision_check_size;
@@ -377,9 +378,10 @@ typedef struct Player
     v3f32 vel;                      /* velocity */
     f32 mass;                       /* for gravity influence */
     v3f32 gravity_influence;
+    f32 speed;                      /* derived from velocity */
     v3f32 movement;                 /* raw movement from user input */
     v3f32 movement_smooth;          /* lerped movement */
-    f32 movement_speed;
+    f32 movement_speed;             /* scalar for 'movement' */
     v3f32 movement_lerp_speed;
     u64 container_state;            /* enum: ContainerFlag */
     u64 flag;                       /* enum: PlayerFlag */

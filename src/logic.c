@@ -29,6 +29,7 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
     /* ---- wrap coordinates ------------------------------------------------ */
+
     const i64 DIAMETER          = diameter * chunk_diameter;
     const i64 DIAMETER_V        = diameter_v * chunk_diameter;
 
@@ -41,6 +42,7 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
     const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
 
     /* ---- wrap coordinates: world margin ---------------------------------- */
+
     if (player->pos.x > WORLD_MARGIN)
         player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
     else if (player->pos.x < -WORLD_MARGIN)
@@ -69,12 +71,15 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
     else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
 
     /* ---- wrap coordinates: overflow edge --------------------------------- */
+
     if (player->pos.x > OVERFLOW_EDGE)      player->pos.x -= DIAMETER;
     if (player->pos.x < -OVERFLOW_EDGE)     player->pos.x += DIAMETER;
     if (player->pos.y > OVERFLOW_EDGE)      player->pos.y -= DIAMETER;
     if (player->pos.y < -OVERFLOW_EDGE)     player->pos.y += DIAMETER;
     if (player->pos.z > OVERFLOW_EDGE_V)    player->pos.z -= DIAMETER_V;
     if (player->pos.z < -OVERFLOW_EDGE_V)   player->pos.z += DIAMETER_V;
+
+    /* ---- setup parameters ------------------------------------------------ */
 
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / chunk_diameter),
@@ -87,60 +92,90 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
             || (player->delta_chunk.z - player->chunk.z))
         flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
-    static f32 zoom = 0.0f;
-    if (player->flag & FLAG_PLAYER_ZOOMER)
-        zoom = player->camera.zoom;
-    else zoom = 0.0f;
+    player->movement_speed = SET_PLAYER_SPEED_WALK;
+    player->movement_lerp_speed = (v3f32){
+        SET_LERP_SPEED_DEFAULT,
+        SET_LERP_SPEED_DEFAULT,
+        SET_LERP_SPEED_RIGID,
+    };
+    player->camera.fovy = settings.fov;
+
+    /* ---- player flags ---------------------------------------------------- */
 
     if (player->flag & FLAG_PLAYER_FLYING)
     {
         player->flag &= ~FLAG_PLAYER_CAN_JUMP;
-        player->camera.fovy = 80.0f;
+        player->camera.fovy += 10.0f;
 
         player->movement_speed = SET_PLAYER_SPEED_FLY;
         player->movement_lerp_speed.x = SET_LERP_SPEED_GLIDE;
         player->movement_lerp_speed.y = SET_LERP_SPEED_GLIDE;
         player->movement_lerp_speed.z = SET_LERP_SPEED_DEFAULT;
-    }
-    else gravity_update(render,
-            &player->pos, &player->gravity_influence, player->mass);
 
-    if ((player->flag & FLAG_PLAYER_SNEAKING)
-            && !(player->flag & FLAG_PLAYER_FLYING))
-        player->movement_speed = SET_PLAYER_SPEED_SNEAK;
-    else if (player->flag & FLAG_PLAYER_SPRINTING)
-    {
-        if (!(player->flag & FLAG_PLAYER_FLYING))
-        {
-            player->movement_speed = SET_PLAYER_SPEED_SPRINT;
-            player->camera.fovy = 75.0f;
-        }
-        else
+        if (player->flag & FLAG_PLAYER_SNEAKING)
+        {} /* TODO: maybe do something here, idk */
+        else if (player->flag & FLAG_PLAYER_SPRINTING)
         {
             player->movement_speed = SET_PLAYER_SPEED_FLY_FAST;
-            player->camera.fovy = 90.0f;
+            player->camera.fovy += 10.0f;
         }
     }
-    else if (!(player->flag & FLAG_PLAYER_SNEAKING)
-            && !(player->flag & FLAG_PLAYER_SPRINTING)
-            && !(player->flag & FLAG_PLAYER_FLYING))
+    else
     {
-        player->movement_speed = SET_PLAYER_SPEED_WALK;
-        player->movement_lerp_speed = (v3f32){
-            SET_LERP_SPEED_DEFAULT,
-            SET_LERP_SPEED_DEFAULT,
-            SET_LERP_SPEED_RIGID,
-        };
+        gravity_update(render,
+                &player->pos, &player->gravity_influence, player->mass);
 
-        player->camera.fovy = 70.0f;
+        if (player->flag & FLAG_PLAYER_SNEAKING)
+            player->movement_speed = SET_PLAYER_SPEED_SNEAK;
+        else if (player->flag & FLAG_PLAYER_SPRINTING)
+        {
+            player->movement_speed = SET_PLAYER_SPEED_SPRINT;
+            player->camera.fovy += 5.0f;
+        }
     }
 
-    player->camera.fovy -= zoom;
-    player->camera.fovy =
-        clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
+    if (player->flag & FLAG_PLAYER_ZOOMER && player->camera.zoom)
+        player->camera.fovy = settings.fov - player->camera.zoom;
+
+    /* ---- post-process parameters ----------------------------------------- */
+
+    player->movement = (v3f32){
+        clamp_f32(player->movement.x,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+        clamp_f32(player->movement.y,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+        clamp_f32(player->movement.z,
+                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
+    };
+
+    player->movement_smooth = (v3f32){
+        lerp_f32(player->movement_smooth.x, player->movement.x,
+                player->movement_lerp_speed.x, render->frame_delta),
+
+        lerp_f32(player->movement_smooth.y, player->movement.y,
+                player->movement_lerp_speed.y, render->frame_delta),
+
+        lerp_f32(player->movement_smooth.z, player->movement.z,
+                player->movement_lerp_speed.z, render->frame_delta),
+    };
+
+    player->pos = (v3f64){
+        player->pos.x + player->movement_smooth.x * render->frame_delta,
+        player->pos.y + player->movement_smooth.y * render->frame_delta,
+        player->pos.z + player->movement_smooth.z * render->frame_delta,
+    };
+
+    player->vel = (v3f32){
+        (player->pos.x - player->pos_last.x) / render->frame_delta,
+        (player->pos.y - player->pos_last.y) / render->frame_delta,
+        (player->pos.z - player->pos_last.z) / render->frame_delta,
+    };
+
+    player->pos_last = player->pos;
+    player->speed = len_v3f32(player->vel);
+    player->camera.fovy = clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
-        lerp_f32(player->camera.fovy_smooth,
-                player->camera.fovy,
+        lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
                 settings.lerp_speed, render->frame_delta);
 }
 
@@ -250,7 +285,7 @@ void player_target_update(Player *player)
         player->pos.z + player->eye_height - SPCH * settings.reach_distance,
     };
 
-    player->target_delta = (v3i64){
+    player->target_snapped = (v3i64){
         (i64)floorf(player->target.x),
         (i64)floorf(player->target.y),
         (i64)floorf(player->target.z),
@@ -304,7 +339,7 @@ void player_collision_update(Player *player)
     v3f64 check_size = {0};
     v3f64 check_delta = {0};
 
-    if (pos_last.x > pos.x)
+    if (pos.x < pos_last.x)
     {
         check_pos.x = pos.x + pos_delta.x - (player->size.x / 2.0f) - 1.0f;
         check_delta.x = check_pos.x - ceil(check_pos.x);
@@ -317,7 +352,7 @@ void player_collision_update(Player *player)
         check_size.x = player->size.x + pos_delta.x + 3.0f + check_delta.x;
     }
 
-    if (pos_last.y > pos.y)
+    if (pos.y < pos_last.y)
     {
         check_pos.y = pos.y + pos_delta.y - (player->size.y / 2.0f) - 1.0f;
         check_delta.y = check_pos.y - ceil(check_pos.y);
@@ -330,7 +365,7 @@ void player_collision_update(Player *player)
         check_size.y = player->size.y + pos_delta.y + 3.0f + check_delta.y;
     }
 
-    if (pos_last.z > pos.z)
+    if (pos.z < pos_last.z)
     {
         check_pos.z = pos.z + pos_delta.z - 1.0f;
         check_delta.z = check_pos.z - ceil(check_pos.z);
@@ -355,7 +390,7 @@ void player_collision_update(Player *player)
         ceil(check_size.z),
     };
 
-    v3i32 aabb_pos =
+    v3i32 check_pos_snapped =
     {
         (i32)player->collision_check_pos.x -
         (i32)player->chunk.x * CHUNK_DIAMETER,
@@ -367,7 +402,7 @@ void player_collision_update(Player *player)
         (i32)player->chunk.z * CHUNK_DIAMETER,
     };
 
-    v3i32 aabb_size =
+    v3i32 check_size_snapped =
     {
         (i32)player->collision_check_size.x,
         (i32)player->collision_check_size.y,
@@ -388,19 +423,36 @@ void player_collision_update(Player *player)
         },
     };
 
+    v3f64 box_1_last[2] =
+    {
+        {
+            player->pos_last.x - player->size.x / 2.0f,
+            player->pos_last.y - player->size.y / 2.0f,
+            player->pos_last.z,
+        },
+        {
+            player->pos_last.x + player->size.x / 2.0f,
+            player->pos_last.y + player->size.y / 2.0f,
+            player->pos_last.z + player->size.z,
+        },
+    };
+
     v3f64 box_2[2];
     Chunk *chunk = NULL;
     u32 *block = NULL;
     i32 x, y, z, dx, dy, dz, dcx, dcy, dcz;
-    for (z = aabb_pos.z; z < aabb_pos.z + aabb_size.z; ++z)
+    for (z = check_pos_snapped.z;
+            z < check_pos_snapped.z + check_size_snapped.z; ++z)
     {
         dz = mod(z, CHUNK_DIAMETER);
         dcz = (i32)floorf((f32)z / CHUNK_DIAMETER);
-        for (y = aabb_pos.y; y < aabb_pos.y + aabb_size.y; ++y)
+        for (y = check_pos_snapped.y;
+                y < check_pos_snapped.y + check_size_snapped.y; ++y)
         {
             dy = mod(y, CHUNK_DIAMETER);
             dcy = (i32)floorf((f32)y / CHUNK_DIAMETER);
-            for (x = aabb_pos.x; x < aabb_pos.x + aabb_size.x; ++x)
+            for (x = check_pos_snapped.x;
+                    x < check_pos_snapped.x + check_size_snapped.x; ++x)
             {
                 dx = mod(x, CHUNK_DIAMETER);
                 dcx = (i32)floorf((f32)x / CHUNK_DIAMETER);
@@ -424,7 +476,7 @@ void player_collision_update(Player *player)
                     box_2[0].z + 1.0f,
                 };
 
-                if (is_intersect_aabb(box_1, box_2))
+                if (is_intersect_aabb(box_1, box_1_last, box_2))
                 {
                     v3f32 diff_negative =
                     {
@@ -449,6 +501,7 @@ void player_collision_update(Player *player)
                         player->pos.x += diff_positive.x;
                         player->movement_smooth.x = 0.0f;
                     }
+#if 0
                     if (box_1[0].y > box_2[0].y)
                     {
                         player->pos.y += diff_negative.y;
@@ -473,6 +526,7 @@ void player_collision_update(Player *player)
                         player->movement_smooth.z = 0.0f;
                         player->gravity_influence.z = 0.0f;
                     }
+#endif
 
                     box_1[0] = (v3f64){
                         player->pos.x - (player->size.x / 2.0f),
@@ -490,12 +544,18 @@ void player_collision_update(Player *player)
     }
 }
 
-b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_2[2])
+b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
 {
-    return 
-        (box_1[0].x <= box_2[1].x) && (box_1[1].x >= box_2[0].x) &&
-        (box_1[0].y <= box_2[1].y) && (box_1[1].y >= box_2[0].y) &&
-        (box_1[0].z <= box_2[1].z) && (box_1[1].z >= box_2[0].z);
+    v3u8 is_intersect =
+    {
+        (box_1[0].x <= box_2[1].x) && (box_1[1].x >= box_2[0].x),
+
+        (box_1[0].y <= box_2[1].y) && (box_1[1].y >= box_2[0].y),
+
+        (box_1[0].z <= box_2[1].z) && (box_1[1].z >= box_2[0].z),
+    };
+
+    return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
 void gravity_update(Render *render,
