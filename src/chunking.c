@@ -14,6 +14,7 @@
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/dir.h"
+#include "h/terrain.h"
 
 u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
 
@@ -45,10 +46,11 @@ static void _block_break(Chunk *chunk,
         v3u32 coordinates, u32 x, u32 y, u32 z);
 
 /* index = (chunk_tab index),
- * rate = number of blocks to process per chunk per frame */
-static void chunk_generate(Chunk **chunk, u32 rate);
+ * rate = number of blocks to process per chunk per frame,
+ * terrain = the final terrain noise function to execute */
+static void chunk_generate(Chunk **chunk, u32 rate, f32 terrain());
 
-static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
+/* -- INTERNAL USE ONLY -- */
 static void chunk_mesh_update(Chunk *chunk);
 
 /* -- INTERNAL USE ONLY -- */
@@ -559,71 +561,16 @@ static void _block_break(Chunk *chunk,
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-static v3f32 random(f32 x0, f32 y0, u32 seed)
-{
-    const u32 w = 8 * sizeof(u64);
-    const u32 s = w / 2; 
-    u32 a = (i32)x0 + seed + 5000, b = (i32)y0 - seed - 5000;
-    a *= 3284157443;
- 
-    b ^= a << s | a >> (w - s);
-    b *= 1911520717;
- 
-    a ^= b << s | b >> (w - s);
-    a *= 2048419325;
-    f32 final = a * (PI / ~(~0u >> 1));
-    
-    return (v3f32){
-        sin(final),
-            cos(final),
-            1.0f,
-    };
-}
-
-static f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
-{
-    v3f32 grad = random(x0, y0, SET_TERRAIN_SEED_DEFAULT);
-    f32 dx = x0 - x;
-    f32 dy = y0 - y;
-    return ((dx * grad.x) + (dy * grad.y));
-}
-
-static f32 interp(f32 a, f32 b, f32 scale)
-{
-    return (b - a) * (3.0f - scale * 2.0f) * scale * scale + a;
-}
-
-static f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
-{
-    f32 x = (f32)coordinates.x / frequency;
-    f32 y = (f32)coordinates.y / frequency;
-    i32 x0 = (i32)floorf(x);
-    i32 y0 = (i32)floorf(y);
-    i32 x1 = x0 + 1;
-    i32 y1 = y0 + 1;
-
-    f32 sx = x - (f32)x0;
-    f32 sy = y - (f32)y0;
-
-    f32 n0 = gradient(x0, y0, x, y);
-    f32 n1 = gradient(x1, y0, x, y);
-    f32 ix0 = interp(n0, n1, sx);
-
-    n0 = gradient(x0, y1, x, y);
-    n1 = gradient(x1, y1, x, y);
-    f32 ix1 = interp(n0, n1, sx);
-
-    return interp(ix0, ix1, sy) * amplitude;
-}
-
-static void chunk_generate(Chunk **chunk, u32 rate)
+static void chunk_generate(Chunk **chunk, u32 rate, f32 terrain())
 {
     u32 index = 0;
     v3u32 chunk_tab_coordinates = {0};
-    Chunk *px, *nx, *py, *ny, *pz, *nz;
+    Chunk *px = NULL, *nx = NULL,
+          *py = NULL, *ny = NULL,
+          *pz = NULL, *nz = NULL;
     u32 i = 0;
 
-    if (!*chunk) return;
+    if (!chunk || !*chunk || !terrain) return;
 
     index = chunk - chunk_tab;
     chunk_tab_coordinates =
@@ -662,18 +609,7 @@ static void chunk_generate(Chunk **chunk, u32 rate)
             pos.z + ((*chunk)->pos.z * CHUNK_DIAMETER),
         };
 
-        f32 elevation = clamp_f32(
-            terrain_noise(coordinates, 1.0f, 329.0f) + 0.5f, 0.0f, 1.0f);
-
-        f32 influence = terrain_noise(coordinates, 1.0, 50.0f);
-
-        f32 terrain = 0.0f;
-        terrain = terrain_noise(coordinates, 250.0f, 256.0f) * elevation;
-        terrain += terrain_noise(coordinates, 30.0f, 40.0f) * elevation;
-        terrain += (terrain_noise(coordinates, 10.0f, 10.0f) * influence);
-        terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
-
-        if (terrain > coordinates.z)
+        if (terrain(coordinates) > coordinates.z)
             _block_place(*chunk, px, nx, py, ny, pz, nz,
                     chunk_tab_coordinates, pos.x, pos.y, pos.z, BLOCK_GRASS);
         --rate;
@@ -908,7 +844,7 @@ generate_and_mesh:
         {
             if ((*q->queue[i])->flag & FLAG_CHUNK_GENERATED)
                 chunk_mesh_update(*q->queue[i]);
-            else chunk_generate(q->queue[i], rate_block);
+            else chunk_generate(q->queue[i], rate_block, terrain_land);
             if (!((*q->queue[i])->flag & FLAG_CHUNK_DIRTY))
             {
                 (*q->queue[i])->flag &= ~FLAG_CHUNK_QUEUED;
