@@ -59,7 +59,7 @@
 #define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       50.0f
+#define SET_PLAYER_SPEED_FLY_FAST       40.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f

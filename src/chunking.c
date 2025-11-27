@@ -921,7 +921,6 @@ generate_and_mesh:
 
 void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
 {
-    /* TODO: bake 'mirror_index' and 'target_index' into a lookup on startup */
     v3u32 _coordinates = {0};
     u32 mirror_index = 0;
     v3u32 _mirror_index = {0};
@@ -941,18 +940,12 @@ void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
         (DELTA.y < 0) ? STATE_CHUNK_SHIFT_NY :
         (DELTA.z > 0) ? STATE_CHUNK_SHIFT_PZ :
         (DELTA.z < 0) ? STATE_CHUNK_SHIFT_NZ : 0;
+    if (!AXIS) return;
     const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
     const i32 RENDER_DISTANCE = (i32)powf(settings.render_distance, 2.0f) + 2;
 
-    if ((i32)distance_v3i32(
-                (v3i32){
-                player_chunk.x,
-                player_chunk.y,
-                player_chunk.z},
-                (v3i32){
-                player_delta_chunk->x,
-                player_delta_chunk->y,
-                player_delta_chunk->z}) > RENDER_DISTANCE)
+    if ((i32)len_v3f32(
+                (v3f32){DELTA.x, DELTA.y, DELTA.z}) > RENDER_DISTANCE)
     {
         for (i = 0; i < (i64)CHUNKS_MAX[settings.render_distance]; ++i)
             if (*CHUNK_ORDER[i])

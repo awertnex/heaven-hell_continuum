@@ -7,6 +7,15 @@
 #include "h/main.h"
 #include "h/logic.h"
 
+/* -- INTERNAL USE ONLY --;
+ *
+ * radius = world radius,
+ * radius_v = world radius, vertical,
+ * diameter = world diameter,
+ * diameter_v = world diameter, vertical */
+static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
+
 f64 get_time_ms(void)
 {
     struct timeval tp;
@@ -28,58 +37,10 @@ b8 get_timer(f64 *time_start, f32 interval)
 void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
-    /* ---- wrap coordinates ------------------------------------------------ */
-
-    const i64 DIAMETER          = diameter * chunk_diameter;
-    const i64 DIAMETER_V        = diameter_v * chunk_diameter;
-
-    const i64 WORLD_MARGIN =
-        (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
-    const i64 WORLD_MARGIN_V =
-        (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
-
-    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
-    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
-
-    /* ---- wrap coordinates: world margin ---------------------------------- */
-
-    if (player->pos.x > WORLD_MARGIN)
-        player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
-    else if (player->pos.x < -WORLD_MARGIN)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_X;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
-
-    if (player->pos.y > WORLD_MARGIN)
-        player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
-    else if (player->pos.y < -WORLD_MARGIN)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_Y;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
-
-    if (player->pos.z > WORLD_MARGIN_V)
-        player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
-    else if (player->pos.z < -WORLD_MARGIN_V)
-    {
-        player->flag |= FLAG_PLAYER_OVERFLOW_Z;
-        player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
-    }
-    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
-
-    /* ---- wrap coordinates: overflow edge --------------------------------- */
-
-    if (player->pos.x > OVERFLOW_EDGE)      player->pos.x -= DIAMETER;
-    if (player->pos.x < -OVERFLOW_EDGE)     player->pos.x += DIAMETER;
-    if (player->pos.y > OVERFLOW_EDGE)      player->pos.y -= DIAMETER;
-    if (player->pos.y < -OVERFLOW_EDGE)     player->pos.y += DIAMETER;
-    if (player->pos.z > OVERFLOW_EDGE_V)    player->pos.z -= DIAMETER_V;
-    if (player->pos.z < -OVERFLOW_EDGE_V)   player->pos.z += DIAMETER_V;
-
     /* ---- setup parameters ------------------------------------------------ */
+
+    player_wrap_coordinates(player, chunk_diameter,
+            radius, radius_v, diameter, diameter_v);
 
     player->chunk = (v3i16){
             floorf((f32)player->pos.x / chunk_diameter),
@@ -87,9 +48,10 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
             floorf((f32)player->pos.z / chunk_diameter),
         };
 
-    if ((player->delta_chunk.x - player->chunk.x)
-            || (player->delta_chunk.y - player->chunk.y)
-            || (player->delta_chunk.z - player->chunk.z))
+    if (
+            player->delta_chunk.x - player->chunk.x ||
+            player->delta_chunk.y - player->chunk.y ||
+            player->delta_chunk.z - player->chunk.z)
         flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
     player->movement_speed = SET_PLAYER_SPEED_WALK;
@@ -112,9 +74,7 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
         player->movement_lerp_speed.y = SET_LERP_SPEED_GLIDE;
         player->movement_lerp_speed.z = SET_LERP_SPEED_DEFAULT;
 
-        if (player->flag & FLAG_PLAYER_SNEAKING)
-        {} /* TODO: maybe do something here, idk */
-        else if (player->flag & FLAG_PLAYER_SPRINTING)
+        if (player->flag & FLAG_PLAYER_SPRINTING)
         {
             player->movement_speed = SET_PLAYER_SPEED_FLY_FAST;
             player->camera.fovy += 10.0f;
@@ -172,11 +132,66 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
     };
 
     player->pos_last = player->pos;
-    player->speed = len_v3f32(player->vel);
+    player->speed = sqrtf(len_v3f32(player->vel));
     player->camera.fovy = clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
                 settings.lerp_speed, render->frame_delta);
+}
+
+static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
+        u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
+{
+    /* ---- setup parameters ------------------------------------------------ */
+
+    const i64 DIAMETER = diameter * chunk_diameter;
+    const i64 DIAMETER_V = diameter_v * chunk_diameter;
+
+    const i64 WORLD_MARGIN =
+        (radius - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+    const i64 WORLD_MARGIN_V =
+        (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
+
+    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
+
+    /* ---- world margin ---------------------------------------------------- */
+
+    if (player->pos.x > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
+    else if (player->pos.x < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_X;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
+
+    if (player->pos.y > WORLD_MARGIN)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
+    else if (player->pos.y < -WORLD_MARGIN)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Y;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
+
+    if (player->pos.z > WORLD_MARGIN_V)
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
+    else if (player->pos.z < -WORLD_MARGIN_V)
+    {
+        player->flag |= FLAG_PLAYER_OVERFLOW_Z;
+        player->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
+    }
+    else player->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
+
+    /* ---- overflow edge --------------------------------------------------- */
+
+    if (player->pos.x > OVERFLOW_EDGE)      player->pos.x -= DIAMETER;
+    if (player->pos.x < -OVERFLOW_EDGE)     player->pos.x += DIAMETER;
+    if (player->pos.y > OVERFLOW_EDGE)      player->pos.y -= DIAMETER;
+    if (player->pos.y < -OVERFLOW_EDGE)     player->pos.y += DIAMETER;
+    if (player->pos.z > OVERFLOW_EDGE_V)    player->pos.z -= DIAMETER_V;
+    if (player->pos.z < -OVERFLOW_EDGE_V)   player->pos.z += DIAMETER_V;
 }
 
 void player_camera_movement_update(Render *render, Player *player,

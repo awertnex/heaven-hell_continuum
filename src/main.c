@@ -1692,8 +1692,8 @@ int main(int argc, char **argv)
 
     lily.camera =
         (Camera){
-            .fovy = SET_FOV_DEFAULT,
-            .fovy_smooth = SET_FOV_DEFAULT,
+            .fovy = settings.fov,
+            .fovy_smooth = 0.0f,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = CAMERA_CLIP_FAR_DEFAULT,
             .near = CAMERA_CLIP_NEAR_DEFAULT,
