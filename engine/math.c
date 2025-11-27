@@ -42,7 +42,7 @@ f64 clamp_f64(f64 n, f64 min, f64 max)
 
 f32 len_v3f32(v3f32 v)
 {
-    return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
 v3f32 normalize_v3f32(v3f32 v)
