@@ -31,6 +31,7 @@ u64 flag = 0;
 f64 game_start_time = 0;
 u64 game_tick = 0;
 u64 game_days = 0;
+u8 debug_mode[DEBUG_MODE_COUNT] = {0};
 static ShaderProgram shader[SHADER_COUNT] = {0};
 Texture texture[TEXTURE_COUNT] = {0};
 Font font[FONT_COUNT];
@@ -797,6 +798,12 @@ static void input_update(Player *player)
     if (is_key_press(bind_toggle_super_debug))
         flag ^= FLAG_MAIN_SUPER_DEBUG;
 #endif /* GAME_RELEASE_BUILD */
+
+    if (is_key_hold(bind_debug_mod))
+    {
+        if (is_key_press(bind_toggle_chunk_queue_visualizer))
+            debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER] ^= 1;
+    }
 }
 
 u32 world_init(str *name)
@@ -1110,9 +1117,8 @@ static void draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-#if MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER
-    if (!(flag & FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER))
-        goto framebuffer_blit_chunk_queue_visualizer;
+    if (!debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER])
+        goto skip_chunk_queue_visualizer;
 
     /* ---- draw player chunk queue visualizer ------------------------------ */
 
@@ -1172,8 +1178,7 @@ static void draw_everything(void)
         }
     }
 
-framebuffer_blit_chunk_queue_visualizer:
-#endif /* MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER */
+skip_chunk_queue_visualizer:
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
@@ -1573,8 +1578,7 @@ int main(int argc, char **argv)
     flag =
         FLAG_MAIN_ACTIVE |
         FLAG_MAIN_PARSE_CURSOR |
-        FLAG_MAIN_DEBUG |
-        FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER;
+        FLAG_MAIN_DEBUG;
 
     /* ---- set mouse input ------------------------------------------------- */
 

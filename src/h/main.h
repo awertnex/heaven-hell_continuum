@@ -22,7 +22,6 @@
 #define MODE_INTERNAL_DEBUG                     1
 #define MODE_INTERNAL_LOAD_CHUNKS               1
 #define MODE_INTERNAL_COLLIDE                   1
-#define MODE_INTERNAL_CHUNK_QUEUE_VISUALIZER    0
 
 #define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
 #define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
@@ -127,8 +126,13 @@ enum MainFlag
     FLAG_MAIN_PARSE_TARGET                  = 0x00000400,
     FLAG_MAIN_WORLD_LOADED                  = 0x00000800,
     FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00001000,
-    FLAG_MAIN_DRAW_CHUNK_QUEUE_VISUALIZER   = 0x00002000,
 }; /* MainFlag */
+
+enum DebugMode
+{
+    DEBUG_MODE_CHUNK_QUEUE_VISUALIZER,
+    DEBUG_MODE_COUNT,
+}; /* DebugMode */
 
 struct Settings
 {
@@ -554,5 +558,6 @@ extern u64 flag;
 extern f64 game_start_time;
 extern u64 game_tick;
 extern u64 game_days;
+extern u8 debug_mode[DEBUG_MODE_COUNT];
 
 #endif /* GAME_MAIN_H */
