@@ -1,10 +1,11 @@
-#include "h/assets.h"
-#include "h/dir.h"
-
 #include <engine/h/core.h>
 #include <engine/h/math.h>
 #include <engine/h/memory.h>
 #include <engine/h/logger.h>
+#include <engine/h/string.h>
+
+#include "h/assets.h"
+#include "h/dir.h"
 
 u32 base_texture_size;
 TextureLayout one_side;

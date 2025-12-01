@@ -1,7 +1,7 @@
 #ifndef GAME_DIR_H
 #define GAME_DIR_H
 
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 #include <engine/h/dir.h>
 #include "main.h"
 
@@ -25,6 +25,7 @@ enum Directories
     DIR_ITEMS,
     DIR_LOGO,
     DIR_ENV,
+    DIR_CONFIG,
     DIR_SCREENSHOTS,
     DIR_TEXT,
     DIR_WORLDS,

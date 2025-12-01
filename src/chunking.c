@@ -111,6 +111,7 @@ u32 chunking_init(void)
         goto cleanup;
 
     /* ---- build distance lookups ------------------------------------------ */
+
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
     {
         chunk_buf_diameter = (i * 2) + 1;
@@ -170,7 +171,8 @@ u32 chunking_init(void)
         file_len = get_file_contents(CHUNK_ORDER_lookup_file_name,
                 (void*)&CHUNK_ORDER_lookup_file_contents,
                 sizeof(u32), "rb", FALSE);
-        if (CHUNK_ORDER_lookup_file_contents == NULL)
+        if (*GAME_ERR != ERR_SUCCESS ||
+                CHUNK_ORDER_lookup_file_contents == NULL)
             goto cleanup;
 
     for (i = 0; i < settings.chunk_buf_volume; ++i)
@@ -179,6 +181,7 @@ u32 chunking_init(void)
             "chunking_init().CHUNK_ORDER_lookup_file_contents");
 
     /* ---- build CHUNKS_MAX lookup ----------------------------------------- */
+
     snprintf(CHUNKS_MAX_lookup_file_name, PATH_MAX,
             "%slookup_chunks_max.bin", DIR_ROOT[DIR_LOOKUPS]);
 
@@ -223,7 +226,8 @@ u32 chunking_init(void)
         file_len = get_file_contents(CHUNKS_MAX_lookup_file_name,
                 (void*)&CHUNKS_MAX_lookup_file_contents,
                 sizeof(u64), "rb", FALSE);
-        if (CHUNKS_MAX_lookup_file_contents == NULL)
+        if (*GAME_ERR != ERR_SUCCESS ||
+                CHUNKS_MAX_lookup_file_contents == NULL)
             return engine_err;
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
@@ -232,6 +236,7 @@ u32 chunking_init(void)
             "chunking_init().CHUNKS_MAX_lookup_file_contents");
 
     /* ---- init chunk parsing priority queues ------------------------------ */
+
     CHUNK_QUEUE_1.id = CHUNK_QUEUE_1ST_ID;
     CHUNK_QUEUE_1.offset = 0;
     CHUNK_QUEUE_1.size =

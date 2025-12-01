@@ -5,6 +5,8 @@
 #include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/memory.h>
+#include <engine/h/string.h>
+
 #include "h/main.h"
 #include "h/gui.h"
 #include "h/dir.h"
@@ -61,17 +63,17 @@ u32 gui_init(void)
                 stringf("%s%s", DIR_ROOT[DIR_GUI],
                     "sdb_inactive.png")) != ERR_SUCCESS ||
 
-            texture_init(&texture[TEXTURE_SKYBOX_VAL], (v2i32){2048, 2048},
+            texture_init(&texture[TEXTURE_SKYBOX_VAL], (v2i32){512, 512},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
                     "skybox_val.png")) != ERR_SUCCESS ||
 
-            texture_init(&texture[TEXTURE_SKYBOX_HORIZON], (v2i32){2048, 2048},
+            texture_init(&texture[TEXTURE_SKYBOX_HORIZON], (v2i32){512, 512},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
                     "skybox_horizon.png")) != ERR_SUCCESS ||
 
-            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){2048, 2048},
+            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){512, 512},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
                     "skybox_stars.png")) != ERR_SUCCESS)

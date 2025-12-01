@@ -34,7 +34,7 @@ b8 get_timer(f64 *time_start, f32 interval)
     return FALSE;
 }
 
-void player_state_update(Render *render, Player *player, u64 chunk_diameter,
+void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v)
 {
     /* ---- setup parameters ------------------------------------------------ */
@@ -82,7 +82,7 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
     }
     else
     {
-        gravity_update(render,
+        gravity_update(dt,
                 &player->pos, &player->gravity_influence, player->mass);
 
         if (player->flag & FLAG_PLAYER_SNEAKING)
@@ -110,25 +110,25 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
 
     player->movement_smooth = (v3f32){
         lerp_f32(player->movement_smooth.x, player->movement.x,
-                player->movement_lerp_speed.x, render->frame_delta),
+                player->movement_lerp_speed.x, dt),
 
         lerp_f32(player->movement_smooth.y, player->movement.y,
-                player->movement_lerp_speed.y, render->frame_delta),
+                player->movement_lerp_speed.y, dt),
 
         lerp_f32(player->movement_smooth.z, player->movement.z,
-                player->movement_lerp_speed.z, render->frame_delta),
+                player->movement_lerp_speed.z, dt),
     };
 
     player->pos = (v3f64){
-        player->pos.x + player->movement_smooth.x * render->frame_delta,
-        player->pos.y + player->movement_smooth.y * render->frame_delta,
-        player->pos.z + player->movement_smooth.z * render->frame_delta,
+        player->pos.x + player->movement_smooth.x * dt,
+        player->pos.y + player->movement_smooth.y * dt,
+        player->pos.z + player->movement_smooth.z * dt,
     };
 
     player->vel = (v3f32){
-        (player->pos.x - player->pos_last.x) / render->frame_delta,
-        (player->pos.y - player->pos_last.y) / render->frame_delta,
-        (player->pos.z - player->pos_last.z) / render->frame_delta,
+        (player->pos.x - player->pos_last.x) / dt,
+        (player->pos.y - player->pos_last.y) / dt,
+        (player->pos.z - player->pos_last.z) / dt,
     };
 
     player->pos_last = player->pos;
@@ -136,7 +136,7 @@ void player_state_update(Render *render, Player *player, u64 chunk_diameter,
     player->camera.fovy = clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
-                settings.lerp_speed, render->frame_delta);
+                settings.lerp_speed, dt);
 }
 
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
@@ -194,8 +194,8 @@ static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
     if (player->pos.z < -OVERFLOW_EDGE_V)   player->pos.z += DIAMETER_V;
 }
 
-void player_camera_movement_update(Render *render, Player *player,
-        b8 use_mouse)
+void player_camera_movement_update(
+        v2f64 mouse_delta, Player *player, b8 use_mouse)
 {
     static f32 zoom = 0.0f;
 
@@ -208,8 +208,8 @@ void player_camera_movement_update(Render *render, Player *player,
         f32 sensitivity = settings.mouse_sensitivity /
             ((zoom / CAMERA_ZOOM_SENSITIVITY) + 1.0f);
 
-        player->yaw += render->mouse_delta.x * sensitivity;
-        player->pitch += render->mouse_delta.y * sensitivity;
+        player->yaw += mouse_delta.x * sensitivity;
+        player->pitch += mouse_delta.y * sensitivity;
     }
 
     player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
@@ -338,7 +338,7 @@ void player_respawn(Player *player)
     player->flag = 0;
 }
 
-void player_collision_update(Player *player)
+void player_collision_update(f64 dt, Player *player)
 {
     if (!MODE_INTERNAL_COLLIDE) return;
 
@@ -508,28 +508,27 @@ void player_collision_update(Player *player)
 
                     if (box_1[0].x > box_2[0].x)
                     {
-                        player->pos.x += diff_negative.x;
+                        //player->pos.x += diff_negative.x;
                         player->movement_smooth.x = 0.0f;
                     }
                     if (box_1[1].x < box_2[1].x)
                     {
-                        player->pos.x += diff_positive.x;
+                        //player->pos.x += diff_positive.x;
                         player->movement_smooth.x = 0.0f;
                     }
-#if 0
                     if (box_1[0].y > box_2[0].y)
                     {
-                        player->pos.y += diff_negative.y;
+                        //player->pos.y += diff_negative.y;
                         player->movement_smooth.y = 0.0f;
                     }
                     if (box_1[1].y < box_2[1].y)
                     {
-                        player->pos.y += diff_positive.y;
+                        //player->pos.y += diff_positive.y;
                         player->movement_smooth.y = 0.0f;
                     }
                     if (box_1[0].z > box_2[0].z)
                     {
-                        player->pos.z += diff_negative.z;
+                        //player->pos.z += diff_negative.z;
                         player->movement_smooth.z = 0.0f;
                         player->gravity_influence.z = 0.0f;
                         player->flag |= FLAG_PLAYER_CAN_JUMP;
@@ -537,12 +536,14 @@ void player_collision_update(Player *player)
                     }
                     if (box_1[1].z < box_2[1].z)
                     {
-                        player->pos.z += diff_positive.z;
+                        //player->pos.z += diff_positive.z;
                         player->movement_smooth.z = 0.0f;
                         player->gravity_influence.z = 0.0f;
                     }
-#endif
 
+                    player->pos.x -= player->vel.x * dt;
+                    player->pos.y -= player->vel.y * dt;
+                    player->pos.z -= player->vel.z * dt;
                     box_1[0] = (v3f64){
                         player->pos.x - (player->size.x / 2.0f),
                         player->pos.y - (player->size.y / 2.0f),
@@ -573,11 +574,10 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
     return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
-void gravity_update(Render *render,
-        v3f64 *position, v3f32 *influence, f32 mass)
+void gravity_update(f64 dt, v3f64 *position, v3f32 *influence, f32 mass)
 {
-    influence->z += (GRAVITY * mass * render->frame_delta);
-    position->x += influence->x * render->frame_delta;
-    position->y += influence->y * render->frame_delta;
-    position->z += influence->z * render->frame_delta;
+    influence->z += GRAVITY * mass * dt;
+    position->x += influence->x * dt;
+    position->y += influence->y * dt;
+    position->z += influence->z * dt;
 }

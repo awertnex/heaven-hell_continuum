@@ -34,6 +34,7 @@ u32 paths_init(void)
     snprintf(DIR_ROOT[DIR_ITEMS],           NAME_MAX, "%s", "assets/textures/items/");
     snprintf(DIR_ROOT[DIR_LOGO],            NAME_MAX, "%s", "assets/textures/logo/");
     snprintf(DIR_ROOT[DIR_ENV],             NAME_MAX, "%s", "assets/textures/env/");
+    snprintf(DIR_ROOT[DIR_CONFIG],          NAME_MAX, "%s", "config/");
     snprintf(DIR_ROOT[DIR_SCREENSHOTS],     NAME_MAX, "%s", "screenshots/");
     snprintf(DIR_ROOT[DIR_TEXT],            NAME_MAX, "%s", "text/");
     snprintf(DIR_ROOT[DIR_WORLDS],          NAME_MAX, "%s", "worlds/");

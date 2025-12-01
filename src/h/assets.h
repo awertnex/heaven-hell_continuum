@@ -1,7 +1,7 @@
 #ifndef GAME_ASSETS_H
 #define GAME_ASSETS_H
 
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 #include "dir.h"
 
 typedef enum BlockID

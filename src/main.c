@@ -6,6 +6,7 @@
 #include <engine/h/logger.h>
 #include <engine/h/math.h>
 #include <engine/h/platform.h>
+#include <engine/h/string.h>
 
 #include "h/main.h"
 #include "h/assets.h"
@@ -90,8 +91,8 @@ static void callback_scroll(
 static void shaders_init(void);
 static void bind_shader_uniforms(void);
 static void generate_standard_meshes(void);
+u32 settings_init(void);
 void settings_update(void);
-void settings_init(void);
 static void input_update(Player *player);
 u32 world_init(str *name);
 static void world_update(Player *player);
@@ -137,11 +138,46 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
                 0.0f, CAMERA_ZOOM_MAX);
 }
 
-void settings_init(void)
+u32 settings_init(void)
 {
+    str tokens[4][24] =
+    {
+        "mouse_sensitivity",
+        "field_of_view",
+        "render_distance",
+        "target_fps",
+    };
+    str *settings_file_contents = stringf(
+            "%s = %d\n"
+            "%s = %d\n"
+            "%s = %d\n"
+            "%s = %d\n",
+            tokens[0], SET_MOUSE_SENSITIVITY_DEFAULT,
+            tokens[1], SET_FOV_DEFAULT,
+            tokens[2], SET_RENDER_DISTANCE_DEFAULT,
+            tokens[3], SET_TARGET_FPS_DEFAULT);
+
+    if (is_dir_exists(DIR_ROOT[DIR_CONFIG], TRUE) != ERR_SUCCESS)
+        return *GAME_ERR;
+
+    if (is_file_exists(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
+                FALSE) != ERR_SUCCESS)
+    {
+        write_file(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
+                1, strlen(settings_file_contents),
+                settings_file_contents, "wb", TRUE);
+    }
+
+    settings_file_contents = NULL;
+    get_file_contents(
+            stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
+            (void*)&settings_file_contents, 1, "rb", TRUE);
+    if (*GAME_ERR != ERR_SUCCESS)
+        return *GAME_ERR;
+
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = SET_RENDER_DISTANCE_DEFAULT;
+    settings.render_distance = 3;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -155,17 +191,21 @@ void settings_init(void)
 
     settings.chunk_tab_center =
         settings.chunk_buf_radius +
-        (settings.chunk_buf_radius * settings.chunk_buf_diameter) +
-        (settings.chunk_buf_radius * settings.chunk_buf_layer);
+        settings.chunk_buf_radius * settings.chunk_buf_diameter +
+        settings.chunk_buf_radius * settings.chunk_buf_layer;
 
     settings.reach_distance = SET_REACH_DISTANCE_MAX;
-    settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT / 400.0f;
-    settings.fov = SET_FOV_DEFAULT;
-    settings.render_distance = SET_RENDER_DISTANCE_DEFAULT;
+    settings.mouse_sensitivity = (f32)SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
+    settings.fov = (f32)SET_FOV_DEFAULT;
     settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
 
-    settings_update();
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+    mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
+            "settings_init().settings_file_contents");
 }
 
 void settings_update(void)
@@ -641,6 +681,34 @@ static void input_update(Player *player)
 {
     player->movement = (v3f32){0};
 
+    /* ---- movement -------------------------------------------------------- */
+
+    if (is_key_hold(bind_walk_forward))
+    {
+        player->movement.x += player->cos_yaw * player->movement_speed;
+        player->movement.y -= player->sin_yaw * player->movement_speed;
+    }
+    if (is_key_press_double(bind_walk_forward))
+        player->flag |= FLAG_PLAYER_SPRINTING;
+
+    if (is_key_hold(bind_walk_backward))
+    {
+        player->movement.x -= player->cos_yaw * player->movement_speed;
+        player->movement.y += player->sin_yaw * player->movement_speed;
+    }
+
+    if (is_key_hold(bind_strafe_left))
+    {
+        player->movement.x += player->sin_yaw * player->movement_speed;
+        player->movement.y += player->cos_yaw * player->movement_speed;
+    }
+
+    if (is_key_hold(bind_strafe_right))
+    {
+        player->movement.x -= player->sin_yaw * player->movement_speed;
+        player->movement.y -= player->cos_yaw * player->movement_speed;
+    }
+
     /* ---- jumping --------------------------------------------------------- */
 
     if (is_key_hold(bind_jump))
@@ -660,6 +728,13 @@ static void input_update(Player *player)
         player->gravity_influence.z = 0.0f;
     }
 
+    /* ---- sprinting ------------------------------------------------------- */
+
+    if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forward))
+        player->flag |= FLAG_PLAYER_SPRINTING;
+    else if (is_key_release(bind_walk_forward))
+        player->flag &= ~FLAG_PLAYER_SPRINTING;
+
     /* ---- sneaking -------------------------------------------------------- */
 
     if (is_key_hold(bind_sneak))
@@ -669,41 +744,6 @@ static void input_update(Player *player)
         else player->flag |= FLAG_PLAYER_SNEAKING;
     }
     else player->flag &= ~FLAG_PLAYER_SNEAKING;
-
-    /* ---- sprinting ------------------------------------------------------- */
-
-    if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forwards))
-        player->flag |= FLAG_PLAYER_SPRINTING;
-    else if (is_key_release(bind_walk_forwards))
-        player->flag &= ~FLAG_PLAYER_SPRINTING;
-
-    /* ---- movement -------------------------------------------------------- */
-
-    if (is_key_hold(bind_strafe_left))
-    {
-        player->movement.x += player->sin_yaw * player->movement_speed;
-        player->movement.y += player->cos_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_strafe_right))
-    {
-        player->movement.x -= player->sin_yaw * player->movement_speed;
-        player->movement.y -= player->cos_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_walk_backwards))
-    {
-        player->movement.x -= player->cos_yaw * player->movement_speed;
-        player->movement.y += player->sin_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_walk_forwards))
-    {
-        player->movement.x += player->cos_yaw * player->movement_speed;
-        player->movement.y -= player->sin_yaw * player->movement_speed;
-    }
-    if (is_key_press_double(bind_walk_forwards))
-        player->flag |= FLAG_PLAYER_SPRINTING;
 
     /* ---- gameplay -------------------------------------------------------- */
 
@@ -722,12 +762,12 @@ static void input_update(Player *player)
                 CHUNK_DIAMETER));
     }
 
-    if (is_key_press(bind_pick_block))
+    if (is_key_press(bind_sample_block))
     {
     }
 
     if (glfwGetMouseButton(render.window,
-                bind_use_item_or_place_block) == GLFW_PRESS &&
+                bind_build_or_use) == GLFW_PRESS &&
             (flag & FLAG_MAIN_PARSE_TARGET) &&
             !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
             chunk_tab[chunk_tab_index])
@@ -745,8 +785,8 @@ static void input_update(Player *player)
 
     u32 i = 0;
     for (; i < 10; ++i)
-        if (is_key_press(bind_hotbar_slot[i]) ||
-                is_key_press(bind_hotbar_slot_kp[i]))
+        if (is_key_press(bind_hotbar[i]) ||
+                is_key_press(bind_hotbar_kp[i]))
             hotbar_slot_selected = i + 1;
 
     if (is_key_press(bind_inventory))
@@ -775,16 +815,7 @@ static void input_update(Player *player)
         flag ^= FLAG_MAIN_HUD;
 
     if (is_key_press(bind_toggle_debug))
-    {
-        if (flag & FLAG_MAIN_DEBUG)
-            flag &= ~(FLAG_MAIN_DEBUG | FLAG_MAIN_DEBUG_MORE);
-        else
-        {
-            flag |= FLAG_MAIN_DEBUG;
-            if (is_key_hold(KEY_LEFT_SHIFT))
-                flag |= FLAG_MAIN_DEBUG_MORE;
-        }
-    }
+        flag ^= FLAG_MAIN_DEBUG;
 
     if (is_key_press(bind_toggle_perspective))
         player->camera_mode = (player->camera_mode + 1) % MODE_CAMERA_COUNT;
@@ -801,6 +832,18 @@ static void input_update(Player *player)
 
     if (is_key_hold(bind_debug_mod))
     {
+        if (is_key_press(bind_toggle_trans_blocks))
+            debug_mode[DEBUG_MODE_TRANS_BLOCKS] ^= 1;
+
+        if (is_key_press(bind_toggle_chunk_bounds))
+            debug_mode[DEBUG_MODE_CHUNK_BOUNDS] ^= 1;
+
+        if (is_key_press(bind_toggle_bounding_boxes))
+            debug_mode[DEBUG_MODE_BOUNDING_BOXES] ^= 1;
+
+        if (is_key_press(bind_toggle_chunk_gizmo))
+            debug_mode[DEBUG_MODE_CHUNK_GIZMO] ^= 1;
+
         if (is_key_press(bind_toggle_chunk_queue_visualizer))
             debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER] ^= 1;
     }
@@ -822,7 +865,7 @@ u32 world_init(str *name)
     if (*GAME_ERR != ERR_SUCCESS)
         return *GAME_ERR;
 
-    player_state_update(&render, &lily, CHUNK_DIAMETER,
+    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
     set_player_pos(&lily, 346.5f, 203.5f, -43.0f);
@@ -839,8 +882,7 @@ u32 world_init(str *name)
             (i64)lily.target.z,
         };
 
-    chunking_update(lily.delta_chunk);
-    flag |= FLAG_MAIN_DEBUG_MORE | FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
+    flag |= FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
     lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
@@ -861,14 +903,14 @@ static void world_update(Player *player)
         show_cursor;
     else disable_cursor;
 
-    player_state_update(&render, &lily, CHUNK_DIAMETER,
+    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    player_collision_update(&lily);
+    player_collision_update(render.frame_delta, &lily);
 
     b8 use_mouse = TRUE;
     use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    player_camera_movement_update(&render, player, use_mouse);
+    player_camera_movement_update(render.mouse_delta, player, use_mouse);
     update_camera_perspective(&player->camera, &projection_world);
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
@@ -1000,7 +1042,7 @@ static void draw_everything(void)
             (GLfloat*)&skybox_data.color);
 
     f32 opacity = 1.0f;
-    if (flag & FLAG_MAIN_DEBUG_MORE)
+    if (debug_mode[DEBUG_MODE_TRANS_BLOCKS])
         opacity = 0.75f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
@@ -1085,7 +1127,7 @@ static void draw_everything(void)
 
     /* ---- draw player chunk bounding box ---------------------------------- */
 
-    if (flag & FLAG_MAIN_DEBUG_MORE)
+    if (debug_mode[DEBUG_MODE_CHUNK_BOUNDS])
     {
         glUniform3f(uniform.bounding_box.position,
                 lily.chunk.x * CHUNK_DIAMETER,
@@ -1101,7 +1143,7 @@ static void draw_everything(void)
 
     /* ---- draw player collision check bounding box ------------------------ */
 
-    if (flag & FLAG_MAIN_DEBUG_MORE)
+    if (debug_mode[DEBUG_MODE_BOUNDING_BOXES])
     {
         glUniform3f(uniform.bounding_box.position,
                 lily.collision_check_pos.x,
@@ -1117,37 +1159,20 @@ static void draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    if (!debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER])
-        goto skip_chunk_queue_visualizer;
-
     /* ---- draw player chunk queue visualizer ------------------------------ */
 
-    glUseProgram(shader[SHADER_BOUNDING_BOX].id);
-    glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection_world.perspective);
-    glUniform3f(uniform.bounding_box.size,
-            CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
-
-    cursor = CHUNK_ORDER;
-    end = CHUNK_ORDER + CHUNK_QUEUE_1.size;
-    u32 i = 0;
-    for (; cursor < end; ++i, ++cursor)
+    if (debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER])
     {
-        if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
-        glUniform3f(uniform.bounding_box.position,
-                (**cursor)->pos.x * CHUNK_DIAMETER,
-                (**cursor)->pos.y * CHUNK_DIAMETER,
-                (**cursor)->pos.z * CHUNK_DIAMETER);
+        glUseProgram(shader[SHADER_BOUNDING_BOX].id);
+        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
+                (GLfloat*)&projection_world.perspective);
+        glUniform3f(uniform.bounding_box.size,
+                CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
 
-        glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
-        glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-    }
-
-    if (CHUNK_QUEUE_2.size)
-    {
-        end += CHUNK_QUEUE_2.size;
-        for (i = 0; cursor < end; ++i, ++cursor)
+        cursor = CHUNK_ORDER;
+        end = CHUNK_ORDER + CHUNK_QUEUE_1.size;
+        u32 i = 0;
+        for (; cursor < end; ++i, ++cursor)
         {
             if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
             glUniform3f(uniform.bounding_box.position,
@@ -1155,30 +1180,46 @@ static void draw_everything(void)
                     (**cursor)->pos.y * CHUNK_DIAMETER,
                     (**cursor)->pos.z * CHUNK_DIAMETER);
 
-            glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+            glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
             glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
             glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
         }
-    }
 
-    if (CHUNK_QUEUE_3.size)
-    {
-        end += CHUNK_QUEUE_3.size;
-        for (i = 0; cursor < end; ++i, ++cursor)
+        if (CHUNK_QUEUE_2.size)
         {
-            if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
-            glUniform3f(uniform.bounding_box.position,
-                    (**cursor)->pos.x * CHUNK_DIAMETER,
-                    (**cursor)->pos.y * CHUNK_DIAMETER,
-                    (**cursor)->pos.z * CHUNK_DIAMETER);
+            end += CHUNK_QUEUE_2.size;
+            for (i = 0; cursor < end; ++i, ++cursor)
+            {
+                if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+                glUniform3f(uniform.bounding_box.position,
+                        (**cursor)->pos.x * CHUNK_DIAMETER,
+                        (**cursor)->pos.y * CHUNK_DIAMETER,
+                        (**cursor)->pos.z * CHUNK_DIAMETER);
 
-            glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
-            glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-            glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+                glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
+                glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            }
+        }
+
+        if (CHUNK_QUEUE_3.size)
+        {
+            end += CHUNK_QUEUE_3.size;
+            for (i = 0; cursor < end; ++i, ++cursor)
+            {
+                if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+                glUniform3f(uniform.bounding_box.position,
+                        (**cursor)->pos.x * CHUNK_DIAMETER,
+                        (**cursor)->pos.y * CHUNK_DIAMETER,
+                        (**cursor)->pos.z * CHUNK_DIAMETER);
+
+                glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
+                glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+            }
         }
     }
 
-skip_chunk_queue_visualizer:
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
     glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
@@ -1210,7 +1251,7 @@ skip_chunk_queue_visualizer:
     glDrawElements(GL_TRIANGLES, 30,
             GL_UNSIGNED_INT, (void*)(60 * sizeof(GLuint)));
 
-    if (flag & FLAG_MAIN_DEBUG_MORE)
+    if (debug_mode[DEBUG_MODE_CHUNK_GIZMO])
     {
         glClear(GL_DEPTH_BUFFER_BIT);
         glUseProgram(shader[SHADER_GIZMO_CHUNK].id);
@@ -1541,6 +1582,13 @@ skip_chunk_queue_visualizer:
 
 int main(int argc, char **argv)
 {
+    Buf buf = get_tokens("Heaven-Hell Continuum/config/settings.txt");
+    u32 f = 0;
+    for (; f < buf.memb; ++f)
+        printf("buf[%d]: %s\n", f, buf.i[f]);
+    mem_free_buf(&buf, "fuck");
+    return 0;
+
     glfwSetErrorCallback(callback_error);
     if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)
         return *GAME_ERR;
@@ -1561,7 +1609,8 @@ int main(int argc, char **argv)
                 "%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
     }
 
-    if (paths_init() != ERR_SUCCESS)
+    if (paths_init() != ERR_SUCCESS ||
+            settings_init() != ERR_SUCCESS)
         return *GAME_ERR;
 
     if (
@@ -1575,10 +1624,8 @@ int main(int argc, char **argv)
             (1080 - render.size.y) / 2);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 512, 288, 3840, 2160);
 
-    flag =
-        FLAG_MAIN_ACTIVE |
-        FLAG_MAIN_PARSE_CURSOR |
-        FLAG_MAIN_DEBUG;
+    flag = FLAG_MAIN_ACTIVE |
+        FLAG_MAIN_PARSE_CURSOR;
 
     /* ---- set mouse input ------------------------------------------------- */
 
@@ -1682,8 +1729,6 @@ int main(int argc, char **argv)
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
 
-    settings_init();
-
     if (
             gui_init() != ERR_SUCCESS ||
             assets_init() != ERR_SUCCESS ||
@@ -1705,8 +1750,8 @@ int main(int argc, char **argv)
 
     lily.camera_hud =
         (Camera){
-            .fovy = SET_FOV_DEFAULT,
-            .fovy_smooth = SET_FOV_DEFAULT,
+            .fovy = (f32)SET_FOV_DEFAULT,
+            .fovy_smooth = (f32)SET_FOV_DEFAULT,
             .ratio = (f32)render.size.x / (f32)render.size.y,
             .far = CAMERA_CLIP_FAR_DEFAULT,
             .near = CAMERA_CLIP_NEAR_DEFAULT,

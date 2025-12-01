@@ -1,6 +1,8 @@
 #ifndef GAME_TERRAIN_H
 #define GAME_TERRAIN_H
 
+#include <engine/h/types.h>
+
 /* coordinates = current block to sample */
 f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency);
 

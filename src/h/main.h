@@ -13,7 +13,7 @@
 #define GAME_VERSION        "0.2.4"GAME_VERSION_DEV
 
 #include <engine/h/core.h>
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 #include <engine/h/diagnostics.h>
 
 /* ---- settings ------------------------------------------------------------ */
@@ -36,21 +36,21 @@
 #define SET_RENDER_DISTANCE_DEFAULT     6
 #define SET_RENDER_DISTANCE_MIN         2
 #define SET_RENDER_DISTANCE_MAX         32
-#define SET_FOV_DEFAULT                 70.0f
-#define SET_FOV_MIN                     30.0f
-#define SET_FOV_MAX                     150.0f
-#define SET_MOUSE_SENSITIVITY_DEFAULT   100.0f
-#define SET_MOUSE_SENSITIVITY_MIN       10.0f
-#define SET_MOUSE_SENSITIVITY_MAX       200.0f
+#define SET_FOV_DEFAULT                 70
+#define SET_FOV_MIN                     30
+#define SET_FOV_MAX                     150
+#define SET_MOUSE_SENSITIVITY_DEFAULT   100
+#define SET_MOUSE_SENSITIVITY_MIN       10
+#define SET_MOUSE_SENSITIVITY_MAX       200
 #define SET_TARGET_FPS_DEFAULT          60
 #define SET_TARGET_FPS_MIN              1
 #define SET_TARGET_FPS_MAX              241     /* 240 max, 241 = unlimited */
-#define SET_GUI_SCALE_DEFAULT           2.0f
-#define SET_GUI_SCALE_0                 0.0f /* TODO: auto gui scale */
-#define SET_GUI_SCALE_1                 1.0f
-#define SET_GUI_SCALE_2                 2.0f
-#define SET_GUI_SCALE_3                 3.0f
-#define SET_GUI_SCALE_4                 4.0f
+#define SET_GUI_SCALE_DEFAULT           2
+#define SET_GUI_SCALE_0                 0 /* TODO: auto gui scale */
+#define SET_GUI_SCALE_1                 1
+#define SET_GUI_SCALE_2                 2
+#define SET_GUI_SCALE_3                 3
+#define SET_GUI_SCALE_4                 4
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_GLIDE            2.5f
 #define SET_LERP_SPEED_RIGID            100.0f
@@ -111,6 +111,8 @@
 #define COLOR_CHUNK_LOADED                  0x4c260715
 #define COLOR_CHUNK_RENDER                  0x5e7a0aff
 
+#define FILE_NAME_SETTINGS "settings.txt"
+
 enum MainFlag
 {
     FLAG_MAIN_ACTIVE                        = 0x00000001,
@@ -118,18 +120,21 @@ enum MainFlag
     FLAG_MAIN_PARSE_CURSOR                  = 0x00000004,
     FLAG_MAIN_HUD                           = 0x00000008,
     FLAG_MAIN_DEBUG                         = 0x00000010,
-    FLAG_MAIN_DEBUG_MORE                    = 0x00000020,
-    FLAG_MAIN_SUPER_DEBUG                   = 0x00000040,
-    FLAG_MAIN_FULLSCREEN                    = 0x00000080,
-    FLAG_MAIN_MENU_OPEN                     = 0x00000100,
-    FLAG_MAIN_DOUBLE_PRESS                  = 0x00000200,
-    FLAG_MAIN_PARSE_TARGET                  = 0x00000400,
-    FLAG_MAIN_WORLD_LOADED                  = 0x00000800,
-    FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00001000,
+    FLAG_MAIN_SUPER_DEBUG                   = 0x00000020,
+    FLAG_MAIN_FULLSCREEN                    = 0x00000040,
+    FLAG_MAIN_MENU_OPEN                     = 0x00000080,
+    FLAG_MAIN_DOUBLE_PRESS                  = 0x00000100,
+    FLAG_MAIN_PARSE_TARGET                  = 0x00000200,
+    FLAG_MAIN_WORLD_LOADED                  = 0x00000400,
+    FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00000800,
 }; /* MainFlag */
 
 enum DebugMode
 {
+    DEBUG_MODE_TRANS_BLOCKS,
+    DEBUG_MODE_CHUNK_BOUNDS,
+    DEBUG_MODE_BOUNDING_BOXES,
+    DEBUG_MODE_CHUNK_GIZMO,
     DEBUG_MODE_CHUNK_QUEUE_VISUALIZER,
     DEBUG_MODE_COUNT,
 }; /* DebugMode */
@@ -154,14 +159,14 @@ struct Settings
 
     /* ---- controls -------------------------------------------------------- */
 
-    f64 mouse_sensitivity;
+    f32 mouse_sensitivity;
 
     /* ---- video ----------------------------------------------------------- */
 
     f32 fov;
     u8 render_distance;
     u32 target_fps;
-    f32 gui_scale;
+    u32 gui_scale;
 }; /* Settings */
 
 struct Uniform

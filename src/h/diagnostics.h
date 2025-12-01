@@ -1,7 +1,7 @@
 #ifndef GAME_DIAGNOSTICS_H
 #define GAME_DIAGNOSTICS_H
 
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 #include <engine/h/diagnostics.h>
 #include <engine/h/limits.h>
 
