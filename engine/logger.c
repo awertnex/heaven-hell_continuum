@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <inttypes.h>
 
-#include "h/defines.h"
+#include "h/types.h"
 #include "h/diagnostics.h"
 #include "h/limits.h"
 #include "h/logger.h"

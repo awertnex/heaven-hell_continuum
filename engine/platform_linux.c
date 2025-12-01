@@ -46,7 +46,7 @@ u32 _get_path_bin_root(str *path)
     return engine_err;
 }
 
-u32 exec(buf *cmd, str *cmd_name)
+u32 exec(Buf *cmd, str *cmd_name)
 {
     pid_t pid = fork();
     if (pid < 0)

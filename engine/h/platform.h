@@ -1,7 +1,7 @@
 #ifndef ENGINE_PLATFORM_H
 #define ENGINE_PLATFORM_H
 
-#include "defines.h"
+#include "types.h"
 
 #if defined(__linux__) || defined(__linux)
     #define PLATFORM_LINUX 1
@@ -52,6 +52,6 @@ u32 _get_path_bin_root(str *path);
  * cmd_name = command name (for logging).
  *
  * return non-zero on failure and engine_err is set accordingly */
-u32 exec(buf *cmd, str *cmd_name);
+u32 exec(Buf *cmd, str *cmd_name);
 
 #endif /* ENGINE_PLATFORM_H */

@@ -28,6 +28,7 @@
 
 #define LOGGER_LINES_MAX            8192
 #define STRING_MAX                  2048
+#define STRING_TOKEN_MAX            128
 #define STRINGF_BUFFERS_MAX         4
 #define IN_STRING_MAX               STRING_MAX
 #define OUT_STRING_MAX              (STRING_MAX * 2)

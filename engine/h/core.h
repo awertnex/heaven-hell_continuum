@@ -16,7 +16,7 @@
 #include <engine/include/stb_truetype.h>
 #include <engine/include/stb_image.h>
 
-#include "defines.h"
+#include "types.h"
 #include "platform.h"
 #include "limits.h"
 
@@ -318,7 +318,7 @@ typedef struct Font
      * used by stb_truetype.h's stbtt_InitFont() */
     u8 *buf;
 
-    u64 buf_len;            /* buf size in bytes */
+    u64 buf_len;            /* 'buf' size in bytes */
     u8 *bitmap;             /* memory block for all font glyph bitmaps */
 
     GLuint id;              /* used by opengl's glGenTextures() */
@@ -383,7 +383,7 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
 void fbo_free(FBO *fbo);
 
-/* load image data from disk into texture->buf,
+/* load image data from disk into 'texture->buf',
  * set texture info,
  *
  * return non-zero on failure and engine_err is set accordingly */
@@ -430,14 +430,14 @@ b8 is_key_release(const u32 key);
 void update_key_states(Render *render);
 
 /* load font from file at font_path,
- * allocate memory for font.buf and load file contents into it in binary format,
- * allocate memory for font.bitmap and render glyphs onto it,
- * generate square texture of diameter "size * 16" and bake bitmap onto it.
+ * allocate memory for 'font.buf' and load file contents into it in binary format,
+ * allocate memory for 'font.bitmap' and render glyphs onto it,
+ * generate square texture of diameter 'size * 16' and bake bitmap onto it.
  *
  * size = font size & character bitmap diameter,
  * font_path = font path.
  *
- * return non-zero on failure and engine_err is set accordingly */
+ * return non-zero on failure and 'engine_err' is set accordingly */
 u32 font_init(Font *font, u32 size, const str *font_path);
 
 void font_free(Font *font);
@@ -446,7 +446,7 @@ void font_free(Font *font);
  *
  * init text rendering settings.
  *
- * return non-zero on failure and engine_err is set accordingly */
+ * return non-zero on failure and 'engine_err' is set accordingly */
 u32 text_init(ShaderProgram *program);
 
 /* -- IMPLEMENTATION: text.c --;

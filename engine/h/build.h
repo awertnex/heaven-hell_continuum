@@ -1,7 +1,7 @@
 #ifndef ENGINE_BUILD_H
 #define ENGINE_BUILD_H
 
-#include "defines.h"
+#include "types.h"
 #include "diagnostics.h"
 #include "platform.h"
 
@@ -35,7 +35,6 @@ u32 engine_build(const str *engine_dir, const str *out_dir);
 /* link engine's dependencies with software */
 void engine_link_libs(void);
 
-u64 argv_compare(str *arg, int argc, str **argv);
 b8 extension_evaluate(const str *file_name);
 void extension_strip(const str *file_name, str *dest);
 void cmd_push(const str *string);
@@ -49,6 +48,6 @@ void cmd_free(void);
 void cmd_fail(void);
 
 extern str *str_build_root;
-extern buf cmd;
+extern Buf cmd;
 
 #endif /* ENGINE_BUILD_H */

@@ -4,6 +4,7 @@
 #include "memory.c"
 #include "dir.c"
 #include "logger.c"
+#include "string.c"
 
 #if PLATFORM_LINUX
     #include "platform_linux.c"
@@ -25,10 +26,14 @@
     };
 #endif /* PLATFORM */
 
-#if defined(__STDC_VERSION__)
-    #define STD __STDC_VERSION__
-#elif defined(__STDC__)
-    #define STD 89
+#ifdef __STDC_VERSION__
+    #if (__STDC_VERSION__ == 199901)
+        #define STD __STDC_VERSION__
+    #else
+        #define STD 0
+    #endif
+#else
+    #define STD 0
 #endif /* STD */
 
 u32 engine_err = ERR_SUCCESS;
@@ -38,7 +43,7 @@ static str str_build_src[CMD_SIZE] = {0};
 static str str_build_bin[CMD_SIZE] = {0};
 static str str_build_bin_new[CMD_SIZE] = {0};
 static str str_build_bin_old[CMD_SIZE] = {0};
-buf cmd = {NULL};
+Buf cmd = {NULL};
 static u64 cmd_pos = 0;
 
 static u32 is_build_source_changed(void);
@@ -56,18 +61,18 @@ static void help(void);
 void build_init(int argc, char **argv,
         const str *build_src_name, const str *build_bin_name)
 {
-    if (argv_compare("help", argc, argv))       help();
-    if (argv_compare("show", argc, argv))       flag |= FLAG_CMD_SHOW;
-    if (argv_compare("raw", argc, argv))        flag |= FLAG_CMD_RAW;
+    if (find_token("help", argc, argv))       help();
+    if (find_token("show", argc, argv))       flag |= FLAG_CMD_SHOW;
+    if (find_token("raw", argc, argv))        flag |= FLAG_CMD_RAW;
 
     logger_init(TRUE, argc, argv);
 
-    if (argv_compare("LOGFATAL", argc, argv)) log_level_max = LOGLEVEL_FATAL;
-    if (argv_compare("LOGERROR", argc, argv)) log_level_max = LOGLEVEL_ERROR;
-    if (argv_compare("LOGWARN", argc, argv)) log_level_max = LOGLEVEL_WARNING;
-    if (argv_compare("LOGINFO", argc, argv)) log_level_max = LOGLEVEL_INFO;
-    if (argv_compare("LOGDEBUG", argc, argv)) log_level_max = LOGLEVEL_DEBUG;
-    if (argv_compare("LOGTRACE", argc, argv)) log_level_max = LOGLEVEL_TRACE;
+    if (find_token("LOGFATAL", argc, argv)) log_level_max = LOGLEVEL_FATAL;
+    if (find_token("LOGERROR", argc, argv)) log_level_max = LOGLEVEL_ERROR;
+    if (find_token("LOGWARN", argc, argv)) log_level_max = LOGLEVEL_WARNING;
+    if (find_token("LOGINFO", argc, argv)) log_level_max = LOGLEVEL_INFO;
+    if (find_token("LOGDEBUG", argc, argv)) log_level_max = LOGLEVEL_DEBUG;
+    if (find_token("LOGTRACE", argc, argv)) log_level_max = LOGLEVEL_TRACE;
 
     str_build_root = get_path_bin_root();
     if (engine_err != ERR_SUCCESS)
@@ -86,9 +91,9 @@ void build_init(int argc, char **argv,
     snprintf(str_build_bin_old, CMD_SIZE, "%s%s_old",
             str_build_root, build_bin_name);
 
-    if (STD != 89)
+    if (STD != 199901)
     {
-        LOGINFO(FALSE, "%s\n", "Rebuilding Self With -std=c89..");
+        LOGINFO(FALSE, "%s\n", "Rebuilding Self With -std=c99..");
         self_rebuild(argv);
     }
 
@@ -144,7 +149,7 @@ static void self_rebuild(char **argv)
     cmd_push(COMPILER);
     cmd_push(str_build_src);
     cmd_push("-ggdb");
-    cmd_push("-std=c89");
+    cmd_push("-std=c99");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
@@ -200,6 +205,7 @@ u32 engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%smath.c", engine_dir_processed));
     cmd_push(stringf("%smemory.c", engine_dir_processed));
     cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
+    cmd_push(stringf("%sstring.c", engine_dir_processed));
     cmd_push(stringf("%stext.c", engine_dir_processed));
     snprintf(temp, CMD_SIZE, "%sinclude/glad/glad.c", engine_dir_processed);
     normalize_slash(temp);
@@ -244,18 +250,6 @@ static void _engine_link_libs(void)
     cmd_push(temp);
     for (;i < arr_len(str_libs); ++i)
         cmd_push(str_libs[i]);
-}
-
-u64 argv_compare(str *arg, int argc, char **argv)
-{
-    if (argc == 1)
-        return 0;
-
-    u32 i = 1;
-    for (; (int)i < argc; ++i)
-        if (!strncmp(argv[i], arg, strlen(arg) + 1))
-            return i;
-    return 0;
 }
 
 static void cmd_show(void)

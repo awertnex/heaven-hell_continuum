@@ -9,6 +9,7 @@
 #include "h/logger.h"
 #include "h/math.h"
 #include "h/memory.h"
+#include "h/string.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <engine/include/stb_truetype.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -148,7 +149,7 @@ static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
  * process shader before compilation:
  * parse includes recursively.
  *
- * return NULL on failure and engine_err is set accordingly */
+ * return NULL on failure and 'engine_err' is set accordingly */
 static str *shader_pre_process(const str *path, u64 *file_len);
 
 /* -- INTERNAL USE ONLY --;
@@ -156,15 +157,15 @@ static str *shader_pre_process(const str *path, u64 *file_len);
  * process shader before compilation:
  * parse includes recursively.
  *
- * return NULL on failure and engine_err is set accordingly */
+ * return NULL on failure and 'engine_err' is set accordingly */
 static str *_shader_pre_process(const str *path, u64 *file_len,
         u64 recursion_limit);
 
 /* -- INTERNAL USE ONLY --;
  *
- * generate texture for opengl from *buf.
+ * generate texture for opengl from 'buf'.
  *
- * return non-zero on failure and engine_err is set accordingly */
+ * return non-zero on failure and 'engine_err' is set accordingly */
 static u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
@@ -1152,7 +1153,7 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                                 (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
                             (canvas + x + (y * resolution)), 1);
             }
-            mem_zero((void*)&canvas, resolution * resolution,
+            mem_clear((void*)&canvas, resolution * resolution,
                     "font_init().font_glyph_canvas");
         }
         g->texture_sample.x = col * font->char_size;

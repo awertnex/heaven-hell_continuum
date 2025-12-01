@@ -16,7 +16,7 @@ str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
 int main(int argc, char **argv)
 {
     build_init(argc, argv, "build.c", "build"EXE);
-    if (argv_compare("engine", argc, argv))
+    if (find_token("engine", argc, argv))
         engine_build(
                 stringf("%sengine/", str_build_root),
                 stringf("%sengine/lib/"PLATFORM, str_build_root));

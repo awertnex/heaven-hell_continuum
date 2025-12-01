@@ -1,7 +1,7 @@
 #ifndef ENGINE_DIAGNOSTICS_H
 #define ENGINE_DIAGNOSTICS_H
 
-#include "defines.h"
+#include "types.h"
 #include "limits.h"
 
 #define DIAGNOSTIC_COLOR_DEFAULT    0xecececff

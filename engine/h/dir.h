@@ -1,7 +1,7 @@
 #ifndef ENGINE_DIR_H
 #define ENGINE_DIR_H
 
-#include "defines.h"
+#include "types.h"
 
 /* return file type to file_type.
  *
@@ -30,14 +30,14 @@ u32 is_dir_exists(const str *path, b8 log);
  * terminate = TRUE will NULL terminate buffer.
  *
  * return file size in bytes,
- * engine_err is set accordingly on failure */
+ * return 0 on failure and engine_err is set accordingly */
 u64 get_file_contents(const str *path, void **destination,
         u64 size, const str *format, b8 terminate);
 
 /* return directory entries at dir_path.
  *
- * return (buf){NULL} on failure and engine_err is set accordingly */
-buf get_dir_contents(const str *path);
+ * return (Buf){NULL} on failure and engine_err is set accordingly */
+Buf get_dir_contents(const str *path);
 
 /* return dir entry count at path.
  *

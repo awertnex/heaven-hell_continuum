@@ -26,14 +26,14 @@ typedef char        str;
 typedef uint8_t     b8;
 typedef uint32_t    b32;
 
-typedef struct buf
+typedef struct Buf
 {
     void **i;
     void *buf;
     u64 memb;
     u64 size;
     b8 loaded;
-} buf;
+} Buf;
 
 /* ---- vector2u ------------------------------------------------------------ */
 

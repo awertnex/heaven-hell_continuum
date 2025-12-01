@@ -120,14 +120,14 @@ u64 get_file_contents(const str *path, void **destination,
         u64 size, const str *read_format, b8 terminate)
 {
     if (is_file_exists(path, TRUE) != ERR_SUCCESS)
-            return engine_err;
+            return 0;
 
     FILE *file = NULL;
     if ((file = fopen(path, read_format)) == NULL)
     {
         LOGERROR(TRUE, ERR_FILE_OPEN_FAIL,
                 "File Opening '%s' Failed\n", path);
-        return engine_err;
+        return 0;
     }
 
     fseek(file, 0, SEEK_END);
@@ -150,16 +150,16 @@ cleanup:
     return 0;
 }
 
-buf get_dir_contents(const str *path)
+Buf get_dir_contents(const str *path)
 {
     if (path == NULL)
     {
         engine_err = ERR_POINTER_NULL;
-        return (buf){NULL};
+        return (Buf){NULL};
     }
 
     if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
-        return (buf){NULL};
+        return (Buf){NULL};
 
     str *dir_path_absolute = get_path_absolute(path);
     if (!dir_path_absolute)
@@ -170,7 +170,7 @@ buf get_dir_contents(const str *path)
 
     DIR *dir = NULL;
     struct dirent *entry;
-    buf contents = {NULL};
+    Buf contents = {NULL};
 
     dir = opendir(dir_path_absolute);
     if (dir == NULL)
@@ -220,7 +220,7 @@ cleanup:
             "get_dir_contents().dir_path_absolute");
     mem_free_buf((void*)&contents,
             "get_dir_contents().dir_contents");
-    return (buf){NULL};
+    return (Buf){NULL};
 }
 
 u64 get_dir_entry_count(const str *path)
@@ -298,7 +298,7 @@ u32 copy_dir(const str *path, const str *destination, b8 overwrite,
     if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
         return engine_err;
 
-    buf dir_contents = {0};
+    Buf dir_contents = {0};
     dir_contents = get_dir_contents(path);
     if (!dir_contents.loaded)
         return engine_err;

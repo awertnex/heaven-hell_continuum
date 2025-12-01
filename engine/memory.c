@@ -54,7 +54,7 @@ u32 _mem_alloc_memb(void **x, u64 memb, u64 size,
     return engine_err;
 }
 
-u32 _mem_alloc_buf(buf *x, u64 memb, u64 size,
+u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (x == NULL)
@@ -152,36 +152,41 @@ void _mem_free(void **x, u64 size,
         return;
 
     void *temp = *x;
-    memset(*x, 0, size);
+    mem_clear(x, size, name);
     free(*x);
     *x = NULL;
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded [%lldB]\n",
-            name, temp, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name, temp);
 }
 
-void _mem_free_buf(buf *x, const str *name, const str *file, u64 line)
+void _mem_free_buf(Buf *x, const str *name, const str *file, u64 line)
 {
+    if (x == NULL) return;
     void *temp = NULL;
+    str name_i[NAME_MAX] = {0};
+    str name_buf[NAME_MAX] = {0};
+    snprintf(name_i, NAME_MAX, "%s.i", name);
+    snprintf(name_buf, NAME_MAX, "%s.buf", name);
+
     if (x->i != NULL)
     {
         temp = x->i;
-        memset(x->i, 0, x->memb * sizeof(str*));
+        mem_clear((void*)&x->i, x->memb * sizeof(str*), name_i);
         free(x->i);
-        LOGTRACEEX(TRUE, file, line, "%s.i[%p] Memory Unloaded [%lldB]\n",
-                name, temp, x->memb * sizeof(str*));
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_i, temp);
     }
     if (x->buf != NULL)
     {
         temp = x->buf;
-        memset(x->buf, 0, x->memb * x->size);
+        mem_clear((void*)&x->i, x->memb * sizeof(str*), name_buf);
         free(x->buf);
-        LOGTRACEEX(TRUE, file, line, "%s.buf[%p] Memory Unloaded [%lldB]\n",
-                name, temp, x->memb * x->size);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_buf, temp);
     }
-    *x = (buf){NULL};
+    *x = (Buf){NULL};
 }
 
-u32 _mem_zero(void **x, u64 size,
+u32 _mem_clear(void **x, u64 size,
         const str *name, const str *file, u64 line)
 {
     if (*x == NULL)
@@ -239,69 +244,23 @@ void swap_bits_u64(u64 *a, u64 *b)
     *a ^= *b;
 }
 
-void swap_strings(str *s1, str *s2)
-{
-    u16 len = (strlen(s1) > strlen(s2)) ? strlen(s1) : strlen(s2);
-    u16 i = 0;
-    for (; i <= len; ++i)
-        swap_bits(&s1[i], &s2[i]);
-}
-
-str *swap_string_char(str *string, char c1, char c2)
-{
-    u64 len = strlen(string);
-    if (!len) return string;
-
-    u64 i = 0;
-    for (; i < len; ++i)
-    {
-        if (string[i] == c1)
-            string[i] = c2;
-    }
-
-    return string;
-}
-
-/* inspired by 'raylib':
- * github.com/raysan5/raylib/src/rtext.c/TextFormat() */
-str *stringf(const str* format, ...)
-{
-    static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
-    static u64 index = 0;
-    str *string = str_buf[index];
-
-    __builtin_va_list args;
-    __builtin_va_start(args, format);
-    u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
-    __builtin_va_end(args);
-
-    if (required_bytes >= OUT_STRING_MAX - 1)
-    {
-        char *trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
-        snprintf(trunc_buf, 4, "...");
-    }
-
-    index = (index + 1) % STRINGF_BUFFERS_MAX;
-    return string;
-}
-
 #if 0
-void sort_buf(buf *buffer) /* TODO: fucking fix this */
+void sort_buf(Buf *buf) /* TODO: fucking fix this */
 {
-    for (u16 i = 0, smallest = 0; i < buffer->memb - 1 && buffer->i[i] != NULL; ++i)
+    for (u16 i = 0, smallest = 0; i < buf->memb - 1 && buf->i[i] != NULL; ++i)
     {
         smallest = i;
-        for (u64 j = i + 1; j < buffer->memb && buffer->i[j] != NULL; ++j)
+        for (u64 j = i + 1; j < buf->memb && buf->i[j] != NULL; ++j)
         {
-            char cmp0 = tolower(buffer->i[j] + 0);
-            char cmp1 = tolower(buffer->i[smallest] + 0);
-            if (cmp0 < cmp1 && buffer->i[j][0] && buffer->i[smallest][0])
+            char cmp0 = tolower(buf->i[j] + 0);
+            char cmp1 = tolower(buf->i[smallest] + 0);
+            if (cmp0 < cmp1 && buf->i[j][0] && buf->i[smallest][0])
                 smallest = j;
 
-            if (cmp0 == cmp1 && buffer->i[j] && cmp1)
-                for (u16 k = 1; k < NAME_MAX - 1 && buffer->i[j][k - 1] && buffer->i[smallest][k - 1]; ++k)
+            if (cmp0 == cmp1 && buf->i[j] && cmp1)
+                for (u16 k = 1; k < NAME_MAX - 1 && buf->i[j][k - 1] && buf->i[smallest][k - 1]; ++k)
                 {
-                    if (tolower(buffer->i[j] + k) < tolower(buffer->i[smallest] + k))
+                    if (tolower(buf->i[j] + k) < tolower(buf->i[smallest] + k))
                     {
                         smallest = j;
                         break;
@@ -309,7 +268,7 @@ void sort_buf(buf *buffer) /* TODO: fucking fix this */
                 }
         }
 
-        swap_strings(buffer->i[i], buffer->i[smallest]);
+        swap_strings(buf->i[i], buf->i[smallest]);
     }
 }
 #endif

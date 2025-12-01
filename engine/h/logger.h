@@ -1,7 +1,7 @@
 #ifndef ENGINE_LOGGER_H
 #define ENGINE_LOGGER_H
 
-#include "defines.h"
+#include "types.h"
 #include "memory.h"
 #include "diagnostics.h"
 
