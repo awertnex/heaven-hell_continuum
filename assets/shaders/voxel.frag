@@ -2,7 +2,7 @@
 
 #extension GL_ARB_bindless_texture: require
 
-layout(binding = 0, std430) readonly buffer ssbo
+layout(binding = 1, std430) readonly buffer ssbo_textures
 {
     sampler2D textures[];
 };
@@ -13,13 +13,13 @@ uniform float opacity;
 in vec3 position;
 in vec2 tex_coords;
 in vec3 normal;
-in flat uint block_id;
+in flat uint face_index;
 out vec4 color;
 
 #include "h/defaults.frag.h"
 
 vec3 base_color = vec3(1.0, 0.74, 0.41);
-vec4 base_texture = texture(textures[block_id], tex_coords);
+vec4 base_texture = texture(textures[face_index], tex_coords);
 float distance = length(position - player_position);
 float flashlight = FLASHLIGHT_INTENSITY / (distance * FALLOFF);
 

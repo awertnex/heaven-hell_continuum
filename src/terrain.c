@@ -6,14 +6,14 @@
 #include "h/terrain.h"
 
 /* random number look-up table */
-i32 *RAND_TAB = {0};
+f32 *RAND_TAB = {0};
 
 u32 rand_init(void)
 {
     str file_name[PATH_MAX] = {0};
-    i32 *file_contents = NULL;
+    f32 *file_contents = NULL;
     u64 file_len = 0;
-    i32 i, j, n;
+    i32 i;
 
     if (mem_map((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
                 "terrain_init().RAND_TAB") != ERR_SUCCESS)
@@ -21,29 +21,29 @@ u32 rand_init(void)
 
     snprintf(file_name, PATH_MAX, "%slookup_rand_tab.bin", DIR_ROOT[DIR_LOOKUPS]);
 
-    /* ---- build RAND_TAB lookup ------------------------------------------- */
-
-    if (is_file_exists(file_name, FALSE) != ERR_SUCCESS)
+    if (is_file_exists(file_name, FALSE) == ERR_SUCCESS)
     {
+        file_len = get_file_contents(file_name,
+                (void*)&file_contents, sizeof(f32), "rb", FALSE);
+        if (*GAME_ERR != ERR_SUCCESS || file_contents == NULL)
+            goto cleanup;
+
         for (i = 0; i < SET_RAND_TAB_MAX; ++i)
-            RAND_TAB[i] = random_i32(i);
+            RAND_TAB[i] = file_contents[i];
+
+        mem_free((void*)&file_contents, file_len,
+                "terrain_init().file_contents");
+    }
+    else
+    {
+
+        for (i = 0; i < SET_RAND_TAB_MAX; ++i)
+            RAND_TAB[i] = rand_f32(i);
 
         if (write_file(file_name, sizeof(i32), SET_RAND_TAB_MAX,
                     RAND_TAB, "wb", TRUE) != ERR_SUCCESS)
             goto cleanup;
     }
-
-    /* ---- load RAND_TAB lookup -------------------------------------------- */
-
-    file_len = get_file_contents(file_name,
-            (void*)&file_contents, sizeof(i32), "rb", FALSE);
-    if (*GAME_ERR != ERR_SUCCESS || file_contents == NULL)
-        goto cleanup;
-
-    for (i = 0; i < SET_RAND_TAB_MAX; ++i)
-        RAND_TAB[i] = file_contents[i];
-
-    mem_free((void*)&file_contents, file_len, "terrain_init().file_contents");
 
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
@@ -57,20 +57,6 @@ void rand_free(void)
 {
     mem_unmap((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
             "terrain_free().RAND_TAB");
-}
-
-i32 random_i32(i32 n)
-{
-    const u32 S = 32;
-    u32 a = n + 234678493574;
-    u32 b = n - 879763936541;
-
-    a *= 3284157443;
-    b ^= a << S | a >> S;
-    b *= 1911520717;
-    a ^= b << S | b >> S;
-
-    return a * 2048419325;
 }
 
 v3f32 random_2d(i32 x, i32 y, u32 seed)
@@ -118,9 +104,8 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
 
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 {
-    f32 sample = (f32)RAND_TAB[SET_TERRAIN_SEED_DEFAULT +
-        (u32)(734 + ax * 87654 + ay) % SET_RAND_TAB_MAX] * RAND_SCALE;
-    sample = sin(sample);
+    f32 sample = RAND_TAB[SET_TERRAIN_SEED_DEFAULT +
+        (u32)(734 + ax * 87654 + ay) % SET_RAND_TAB_MAX];
     return
         (vx - ax) * sample +
         (vy - ay) * sample;

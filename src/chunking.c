@@ -45,7 +45,7 @@ static void _block_break(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z);
 
-/* index = (chunk_tab index),
+/* index = 'chunk_tab' index,
  * rate = number of blocks to process per chunk per frame,
  * terrain = the final terrain noise function to execute */
 static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain());
@@ -64,12 +64,12 @@ static void _chunk_deserialize(Chunk *chunk, str *world_name);
 
 /* -- INTERNAL USE ONLY --;
  *
- * index = (chunk_tab index) */
+ * index = 'chunk_tab' index */
 static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
 
 /* -- INTERNAL USE ONLY --;
  *
- * index = (chunk_tab index) */
+ * index = 'chunk_tab' index */
 static void _chunk_buf_pop(u32 index);
 
 u32 chunking_init(void)
@@ -611,8 +611,14 @@ static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
                 };
 
                 if (terrain(coordinates))
+                {
                     _block_place(ch, px, nx, py, ny, pz, nz,
                             chunk_tab_coordinates, x, y, z, BLOCK_GRASS);
+
+                    if (z > 0 && ch->block[z - 1][y][x])
+                        _block_place(ch, px, nx, py, ny, pz, nz,
+                                chunk_tab_coordinates, x, y, z - 1, BLOCK_DIRT);
+                }
                 --rate;
             }
             x = 0;

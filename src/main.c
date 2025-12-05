@@ -178,7 +178,7 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 16;
+    settings.render_distance = 20;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -200,6 +200,7 @@ u32 settings_init(void)
     settings.fov = (f32)SET_FOV_DEFAULT;
     settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
+    settings.anti_aliasing = TRUE;
 
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
@@ -869,7 +870,7 @@ u32 world_init(str *name)
     player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, 115.5f, -39.5f, 13.0f);
+    set_player_pos(&lily, 758.5f, -20.5f, 7.5f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1028,15 +1029,18 @@ static void draw_everything(void)
 
     /* ---- draw world ------------------------------------------------------ */
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader[SHADER_VOXEL].id);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
     glUniform3f(uniform.voxel.player_position,
-            lily.pos.x, lily.pos.y,
-            lily.pos.z + lily.eye_height);
+            lily.pos.x, lily.pos.y, lily.pos.z + lily.eye_height);
     glUniform3fv(uniform.voxel.sun_rotation, 1,
             (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_color, 1,
@@ -1221,14 +1225,21 @@ static void draw_everything(void)
         }
     }
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
-    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    if (settings.anti_aliasing)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
+        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
     /* ---- draw hud -------------------------------------------------------- */
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD].fbo);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shader[SHADER_GIZMO].id);
 
@@ -1323,10 +1334,13 @@ static void draw_everything(void)
         }
     }
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_HUD].fbo);
-    glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-            render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    if (settings.anti_aliasing)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_HUD].fbo);
+        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
+                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
 
     /* ---- draw overlays --------------------------------------------------- */
 

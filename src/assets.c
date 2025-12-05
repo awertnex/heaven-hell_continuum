@@ -7,156 +7,195 @@
 #include "h/assets.h"
 #include "h/dir.h"
 
-u32 base_texture_size;
-TextureLayout one_side;
-TextureLayout two_side;
-TextureLayout three_side;
-TextureLayout three_side_alt;
-TextureLayout four_side;
+Block *blocks = NULL;
+static Texture *block_textures = NULL;
+static GLuint ssbo_texture_indices_id = 0;
+static u32 ssbo_texture_indices[BLOCK_COUNT * 6] = {0};
 static GLuint ssbo_texture_handles_id = 0;
-static u64 ssbo_texture_handles[BLOCK_COUNT] = {0};
+static u64 ssbo_texture_handles[BLOCK_TEXTURE_COUNT] = {0};
 
 /* ---- functions ----------------------------------------------------------- */
 
 u32 assets_init(void)
 {
-    u32 i = 0;
-    base_texture_size = 16;
+    u32 i;
 
-    /* ---- texture layouts ------------------------------------------------- */
+    if (
+            mem_map((void*)&block_textures, BLOCK_TEXTURE_COUNT * sizeof(Texture),
+                "assets_init().block_textures") != ERR_SUCCESS ||
+            mem_map((void*)&blocks, BLOCK_COUNT * sizeof(Block),
+                "assets_init().blocks") != ERR_SUCCESS)
+        goto cleanup;
 
-    one_side = (TextureLayout){0, 0, 0, 0, 0, 0};
-    two_side = (TextureLayout){0, 0, base_texture_size,
-        0, 0, base_texture_size};
-    three_side = (TextureLayout){0, 0, base_texture_size,
-            0, 0, (base_texture_size * 2)};
-    three_side_alt = (TextureLayout){
-        0, base_texture_size, (base_texture_size * 2),
-            0, base_texture_size, (base_texture_size * 2)};
-    four_side = (TextureLayout){
-        0, base_texture_size, (base_texture_size * 2),
-            base_texture_size, base_texture_size,  (base_texture_size * 3)};
+    /* ---- textures -------------------------------------------------------- */
+
+    if (
+            block_texture_init(BLOCK_TEXTURE_GRASS_SIDE, (v2i32){16, 16},
+                "grass_side.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_GRASS_TOP, (v2i32){16, 16},
+                "grass_top.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_DIRT, (v2i32){16, 16},
+                "dirt.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_DIRTUP, (v2i32){16, 16},
+                "dirtup.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_STONE, (v2i32){16, 16},
+                "stone.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_SAND, (v2i32){16, 16},
+                "sand.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_GLASS, (v2i32){16, 16},
+                "glass.png") != ERR_SUCCESS)
+        goto cleanup;
+
+    for (i = 0; i < BLOCK_TEXTURE_COUNT; ++i)
+        ssbo_texture_handles[i] = block_textures[i].handle;
+
+    blocks_init();
 
     for (i = 0; i < BLOCK_COUNT; ++i)
     {
-        if (block_init(&blocks[i]) != ERR_SUCCESS)
-            return *GAME_ERR;
-        ssbo_texture_handles[i] = blocks[i].texture.handle;
+        ssbo_texture_indices[(i * 6) + 0] = blocks[i].texture_index[0];
+        ssbo_texture_indices[(i * 6) + 1] = blocks[i].texture_index[1];
+        ssbo_texture_indices[(i * 6) + 2] = blocks[i].texture_index[2];
+        ssbo_texture_indices[(i * 6) + 3] = blocks[i].texture_index[3];
+        ssbo_texture_indices[(i * 6) + 4] = blocks[i].texture_index[4];
+        ssbo_texture_indices[(i * 6) + 5] = blocks[i].texture_index[5];
     }
+
+    glGenBuffers(1, &ssbo_texture_indices_id);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_texture_indices_id);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, BLOCK_COUNT * sizeof(u32) * 6,
+                &ssbo_texture_indices, GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_texture_indices_id);
 
     glGenBuffers(1, &ssbo_texture_handles_id);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_texture_handles_id);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, BLOCK_COUNT * sizeof(u64),
+    glBufferData(GL_SHADER_STORAGE_BUFFER, BLOCK_TEXTURE_COUNT * sizeof(u64),
                 &ssbo_texture_handles, GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_texture_handles_id);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_texture_handles_id);
+
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+    assets_free();
     return *GAME_ERR;
 }
 
 void assets_free(void)
 {
     u32 i = 0;
-    for (i = 0; i < BLOCK_COUNT; ++i)
-        texture_free(&blocks[i].texture);
+    for (i = 0; i < BLOCK_TEXTURE_COUNT; ++i)
+        texture_free(&block_textures[i]);
+
+    mem_unmap((void*)&block_textures, BLOCK_TEXTURE_COUNT * sizeof(Texture),
+            "assets_free().block_textures");
+
+    mem_unmap((void*)&blocks, BLOCK_COUNT * sizeof(Block),
+            "assets_free().blocks");
+
+    if (ssbo_texture_indices_id)
+        glDeleteBuffers(1, &ssbo_texture_indices_id);
 
     if (ssbo_texture_handles_id)
         glDeleteBuffers(1, &ssbo_texture_handles_id);
 }
 
-u32 block_init(Block *block)
+u32 block_texture_init(u32 index, v2i32 size, str *name)
 {
-    if (!block->name)
+    if (!name)
     {
         LOGERROR(FALSE, ERR_POINTER_NULL,
-                "Failed to Initialize Block [%p], 'block.name' Empty\n",
-                &block);
-        return *GAME_ERR;
+                "Failed to Initialize Texture [%p], 'name' NULL\n",
+                &block_textures[index]);
+        goto cleanup;
     }
 
-    if (texture_init(&block->texture, block->texture.size,
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_BLOCKS],
-                    block->name)) != ERR_SUCCESS)
-        return *GAME_ERR;
+    block_textures[index].size = size;
 
-    if (texture_generate(&block->texture, TRUE) != ERR_SUCCESS)
+    if (
+            texture_init(&block_textures[index], block_textures[index].size,
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_BLOCKS], name)) != ERR_SUCCESS ||
+
+            texture_generate(&block_textures[index], TRUE) != ERR_SUCCESS)
         goto cleanup;
 
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
-    texture_free(&block->texture);
+    texture_free(&block_textures[index]);
     return *GAME_ERR;
 }
 
-/* ---- blocks -------------------------------------------------------------- */
-
-Block blocks[BLOCK_COUNT] =
+void blocks_init(void)
 {
-    { /* Grass */
-        .name = "grass.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &three_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Grass */
+    snprintf(blocks[BLOCK_GRASS].name, NAME_MAX, "%s", "block_grass");
+    blocks[BLOCK_GRASS].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_GRASS].texture_index[0] = BLOCK_TEXTURE_GRASS_SIDE;
+    blocks[BLOCK_GRASS].texture_index[1] = BLOCK_TEXTURE_GRASS_SIDE;
+    blocks[BLOCK_GRASS].texture_index[2] = BLOCK_TEXTURE_GRASS_SIDE;
+    blocks[BLOCK_GRASS].texture_index[3] = BLOCK_TEXTURE_GRASS_SIDE;
+    blocks[BLOCK_GRASS].texture_index[4] = BLOCK_TEXTURE_GRASS_TOP;
+    blocks[BLOCK_GRASS].texture_index[5] = BLOCK_TEXTURE_DIRT;
 
-    { /* Dirt */
-        .name = "dirt.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &one_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Dirt */
+    snprintf(blocks[BLOCK_DIRT].name, NAME_MAX, "%s", "block_dirt");
+    blocks[BLOCK_DIRT].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_DIRT].texture_index[0] = BLOCK_TEXTURE_DIRT;
+    blocks[BLOCK_DIRT].texture_index[1] = BLOCK_TEXTURE_DIRT;
+    blocks[BLOCK_DIRT].texture_index[2] = BLOCK_TEXTURE_DIRT;
+    blocks[BLOCK_DIRT].texture_index[3] = BLOCK_TEXTURE_DIRT;
+    blocks[BLOCK_DIRT].texture_index[4] = BLOCK_TEXTURE_DIRT;
+    blocks[BLOCK_DIRT].texture_index[5] = BLOCK_TEXTURE_DIRT;
 
-    { /* Dirtup */
-        .name = "dirtup.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &one_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Dirtup */
+    snprintf(blocks[BLOCK_DIRTUP].name, NAME_MAX, "%s", "block_dirtup");
+    blocks[BLOCK_DIRTUP].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_DIRTUP].texture_index[0] = BLOCK_TEXTURE_DIRTUP;
+    blocks[BLOCK_DIRTUP].texture_index[1] = BLOCK_TEXTURE_DIRTUP;
+    blocks[BLOCK_DIRTUP].texture_index[2] = BLOCK_TEXTURE_DIRTUP;
+    blocks[BLOCK_DIRTUP].texture_index[3] = BLOCK_TEXTURE_DIRTUP;
+    blocks[BLOCK_DIRTUP].texture_index[4] = BLOCK_TEXTURE_DIRTUP;
+    blocks[BLOCK_DIRTUP].texture_index[5] = BLOCK_TEXTURE_DIRTUP;
 
-    { /* Stone */
-        .name = "stone.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &one_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Stone */
+    snprintf(blocks[BLOCK_STONE].name, NAME_MAX, "%s", "block_stone");
+    blocks[BLOCK_STONE].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_STONE].texture_index[0] = BLOCK_TEXTURE_STONE;
+    blocks[BLOCK_STONE].texture_index[1] = BLOCK_TEXTURE_STONE;
+    blocks[BLOCK_STONE].texture_index[2] = BLOCK_TEXTURE_STONE;
+    blocks[BLOCK_STONE].texture_index[3] = BLOCK_TEXTURE_STONE;
+    blocks[BLOCK_STONE].texture_index[4] = BLOCK_TEXTURE_STONE;
+    blocks[BLOCK_STONE].texture_index[5] = BLOCK_TEXTURE_STONE;
 
-    { /* Sand */
-        .name = "sand.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &one_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Sand */
+    snprintf(blocks[BLOCK_SAND].name, NAME_MAX, "%s", "block_sand");
+    blocks[BLOCK_SAND].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_SAND].texture_index[0] = BLOCK_TEXTURE_SAND;
+    blocks[BLOCK_SAND].texture_index[1] = BLOCK_TEXTURE_SAND;
+    blocks[BLOCK_SAND].texture_index[2] = BLOCK_TEXTURE_SAND;
+    blocks[BLOCK_SAND].texture_index[3] = BLOCK_TEXTURE_SAND;
+    blocks[BLOCK_SAND].texture_index[4] = BLOCK_TEXTURE_SAND;
+    blocks[BLOCK_SAND].texture_index[5] = BLOCK_TEXTURE_SAND;
 
-    { /* Glass */
-        .name = "glass.png",
-        .state = BLOCK_STATE_SOLID,
-        .texture_layout = &one_side,
-        .texture =
-        {
-            .size = (v2i32){16, 16},
-        },
-    }, /* Glass */
-};
+    snprintf(blocks[BLOCK_GLASS].name, NAME_MAX, "%s", "block_glass");
+    blocks[BLOCK_GLASS].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_GLASS].texture_index[0] = BLOCK_TEXTURE_GLASS;
+    blocks[BLOCK_GLASS].texture_index[1] = BLOCK_TEXTURE_GLASS;
+    blocks[BLOCK_GLASS].texture_index[2] = BLOCK_TEXTURE_GLASS;
+    blocks[BLOCK_GLASS].texture_index[3] = BLOCK_TEXTURE_GLASS;
+    blocks[BLOCK_GLASS].texture_index[4] = BLOCK_TEXTURE_GLASS;
+    blocks[BLOCK_GLASS].texture_index[5] = BLOCK_TEXTURE_GLASS;
+}
 
 /* ---- special_blocks ------------------------------------------------------ */
+
 /* ---- items --------------------------------------------------------------- */
+
 /* ---- tools --------------------------------------------------------------- */
+

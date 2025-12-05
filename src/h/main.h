@@ -64,7 +64,7 @@
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_TERRAIN_SEED_DEFAULT        0
-#define SET_RAND_TAB_DIAMETER           256
+#define SET_RAND_TAB_DIAMETER           128
 #define SET_RAND_TAB_MAX                SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER
 
 #define CHUNK_DIAMETER  16
@@ -169,6 +169,7 @@ struct Settings
     u8 render_distance;
     u32 target_fps;
     u32 gui_scale;
+    b8 anti_aliasing;
 }; /* Settings */
 
 struct Uniform

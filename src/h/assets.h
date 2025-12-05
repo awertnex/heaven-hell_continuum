@@ -2,7 +2,20 @@
 #define GAME_ASSETS_H
 
 #include <engine/h/types.h>
+#include <engine/h/limits.h>
 #include "dir.h"
+
+enum BlockTexture
+{
+    BLOCK_TEXTURE_GRASS_SIDE,
+    BLOCK_TEXTURE_GRASS_TOP,
+    BLOCK_TEXTURE_DIRT,
+    BLOCK_TEXTURE_DIRTUP,
+    BLOCK_TEXTURE_STONE,
+    BLOCK_TEXTURE_SAND,
+    BLOCK_TEXTURE_GLASS,
+    BLOCK_TEXTURE_COUNT,
+}; /* BlockTexture */
 
 typedef enum BlockID
 {
@@ -17,32 +30,24 @@ typedef enum BlockID
 
 typedef struct Block
 {
-    str *name;
+    str name[NAME_MAX];
     u16 state;
-    void *texture_layout;
-    Texture texture;
+    u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
 } Block;
 
-typedef struct TextureLayout
-{
-    u8 px, py, pz;
-    u8 nx, ny, nz;
-} TextureLayout;
-
-extern u32 base_texture_size;
-extern TextureLayout one_side;
-extern TextureLayout two_side;
-extern TextureLayout three_side;
-extern TextureLayout three_side_alt;
-extern TextureLayout four_side;
-extern Block blocks[BLOCK_COUNT];
+extern Block *blocks;
 
 /* return non-zero on failure and '*GAME_ERR' is set accordingly */
 u32 assets_init(void);
 
 void assets_free(void);
 
+/* index = 'block_textures' index.
+ *
+ * return non-zero on failure and '*GAME_ERR' is set accordingly */
+u32 block_texture_init(u32 index, v2i32 size, str *name);
+
 /* return non-zero on failure and '*GAME_ERR' is set accordingly */
-u32 block_init(Block *block);
+void blocks_init(void);
 
 #endif /* GAME_ASSETS_H */

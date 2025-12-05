@@ -3,13 +3,12 @@
 
 #include <engine/h/types.h>
 
-extern i32 *RAND_TAB;
+extern f32 *RAND_TAB;
 
 /* return non-zero on failure and '*GAME_ERR' is set accordingly */
 u32 rand_init(void);
 
 void rand_free(void);
-i32 random_i32(i32 n);
 v3f32 random_2d(i32 x, i32 y, u32 seed);
 v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed);
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay);

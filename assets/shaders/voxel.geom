@@ -6,6 +6,11 @@
 layout(points) in;
 layout(triangle_strip, max_vertices = MAX_VERTICES) out;
 
+layout(binding = 0, std430) readonly buffer ssbo_texture_indices
+{
+    uint texture_indices[];
+};
+
 /* from src/h/main.h */
 #define ID              0x000003ff
 #define ACTIVE          0x00000400
@@ -22,12 +27,12 @@ in vec3 vs_position[];
 out vec3 position;
 out vec2 tex_coords;
 out vec3 normal;
-out flat uint block_id;
+out flat uint face_index;
 uniform mat4 mat_perspective;
 
 void main()
 {
-    block_id = vs_data[0] & ID;
+    uint block_id = vs_data[0] & ID;
 
     vec3 vbo[8] =
         vec3[](
@@ -68,6 +73,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
+            face_index = texture_indices[block_id * 6 + 0];
             normal = vec3(1.0, 0.0, 0.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
@@ -81,6 +87,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i + FACE_VERTICES]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
+            face_index = texture_indices[block_id * 6 + 1];
             normal = vec3(-1.0, 0.0, 0.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
@@ -94,6 +101,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 2)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
+            face_index = texture_indices[block_id * 6 + 2];
             normal = vec3(0.0, 1.0, 0.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
@@ -107,6 +115,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 3)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
+            face_index = texture_indices[block_id * 6 + 3];
             normal = vec3(0.0, -1.0, 0.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
@@ -120,6 +129,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 4)]];
             tex_coords = gs_tex_coords[ebo_tex_coords_top[i]];
+            face_index = texture_indices[block_id * 6 + 4];
             normal = vec3(0.0, 0.0, 1.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
@@ -133,6 +143,7 @@ void main()
             position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 5)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
+            face_index = texture_indices[block_id * 6 + 5];
             normal = vec3(0.0, 0.0, -1.0);
 
             gl_Position = mat_perspective * vec4(position, 1.0);
