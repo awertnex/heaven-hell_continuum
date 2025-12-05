@@ -14,7 +14,7 @@ u32 *const BUILD_ERR = &engine_err;
 #endif /* PLATFORM */
 
 str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
-buf str_tests = {NULL};
+buf str_tests = {0};
 str str_main[CMD_SIZE] = {0};
 str str_out[CMD_SIZE] = STR_OUT;
 
