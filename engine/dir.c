@@ -155,11 +155,11 @@ Buf get_dir_contents(const str *path)
     if (path == NULL)
     {
         engine_err = ERR_POINTER_NULL;
-        return (Buf){NULL};
+        return (Buf){0};
     }
 
     if (is_dir_exists(path, TRUE) != ERR_SUCCESS)
-        return (Buf){NULL};
+        return (Buf){0};
 
     str *dir_path_absolute = get_path_absolute(path);
     if (!dir_path_absolute)
@@ -170,7 +170,7 @@ Buf get_dir_contents(const str *path)
 
     DIR *dir = NULL;
     struct dirent *entry;
-    Buf contents = {NULL};
+    Buf contents = {0};
 
     dir = opendir(dir_path_absolute);
     if (dir == NULL)
@@ -220,7 +220,7 @@ cleanup:
             "get_dir_contents().dir_path_absolute");
     mem_free_buf((void*)&contents,
             "get_dir_contents().dir_contents");
-    return (Buf){NULL};
+    return (Buf){0};
 }
 
 u64 get_dir_entry_count(const str *path)

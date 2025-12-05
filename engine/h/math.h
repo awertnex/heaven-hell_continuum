@@ -9,6 +9,7 @@
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
 #define GRAVITY     -9.7803267715f
+#define RAND_SCALE  (PI / ~(~0u >> 1))
 
 #define mod(n, max) ((((n) % (max)) + (max)) % (max))
 
@@ -40,10 +41,11 @@ m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
 
-f32 lerp_f32(f32 start, f32 end, f32 speed, f64 t);
-v3f64 lerp_v3f64(v3f64 start, v3f64 end, f32 t);
-f32 easein_f32(f32 start, f32 end, f32 t);
-f32 easeout_f32(f32 start, f32 end, f32 t);
-f32 smoothstep_f32(f32 start, f32 end, f32 t);
+f32 lerp_f32(f32 a, f32 b, f64 t, f32 rate);
+f32 lerp_cubic_f32(f32 a, f32 b, f64 t);
+v3f64 lerp_v3f64(v3f64 a, v3f64 b, f32 t);
+f32 easein_f32(f32 a, f32 b, f32 t);
+f32 easeout_f32(f32 a, f32 b, f32 t);
+f32 smoothstep_f32(f32 a, f32 b, f32 t);
 
 #endif /* ENGINE_MATH_H */

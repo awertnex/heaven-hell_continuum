@@ -28,12 +28,24 @@ typedef uint32_t    b32;
 
 typedef struct Buf
 {
+    b8 loaded;
     void **i;
     void *buf;
     u64 memb;
     u64 size;
-    b8 loaded;
 } Buf;
+
+typedef struct KeyValue
+{
+    b8 loaded;
+    void **key;
+    void **val;
+    void *buf_key;
+    void *buf_val;
+    u64 memb;
+    u64 size_key;
+    u64 size_val;
+} KeyValue;
 
 /* ---- vector2u ------------------------------------------------------------ */
 

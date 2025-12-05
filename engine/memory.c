@@ -65,6 +65,7 @@ u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
         return engine_err;
     }
 
+    u64 i = 0;
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
     snprintf(name_i, NAME_MAX, "%s.i", name);
@@ -81,11 +82,60 @@ u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
         return engine_err;
     }
 
-    u64 i = 0;
-    for (; i < memb; ++i)
-        x->i[i] = x->buf + (i * size);
+    for (i = 0; i < memb; ++i)
+        x->i[i] = x->buf + i * size;
     x->memb = memb;
     x->size = size;
+    x->loaded = TRUE;
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
+}
+
+u32 _mem_alloc_key_val(KeyValue *x, u64 memb, u64 size_key, u64 size_val,
+        const str *name, const str *file, u64 line)
+{
+    if (x == NULL)
+    {
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Allocation Failed, Pointer NULL\n",
+                name, NULL);
+        return engine_err;
+    }
+
+    u64 i = 0;
+    str name_key[NAME_MAX] = {0};
+    str name_val[NAME_MAX] = {0};
+    str name_buf_key[NAME_MAX] = {0};
+    str name_buf_val[NAME_MAX] = {0};
+    snprintf(name_key, NAME_MAX, "%s.key", name);
+    snprintf(name_val, NAME_MAX, "%s.val", name);
+    snprintf(name_buf_key, NAME_MAX, "%s.buf_key", name);
+    snprintf(name_buf_val, NAME_MAX, "%s.buf_val", name);
+
+    if (
+            _mem_alloc_memb((void*)&x->key,
+                memb, sizeof(str*), name_key, file, line) != ERR_SUCCESS ||
+            _mem_alloc_memb((void*)&x->val,
+                memb, sizeof(str*), name_val, file, line) != ERR_SUCCESS ||
+            _mem_alloc_memb((void*)&x->buf_key,
+                memb, size_key, name_buf_key, file, line) != ERR_SUCCESS ||
+            _mem_alloc_memb((void*)&x->buf_val,
+                memb, size_val, name_buf_val, file, line) != ERR_SUCCESS)
+    {
+        _mem_free_key_val(x, name, file, line);
+        return engine_err;
+    }
+
+    for (i = 0; i < memb; ++i)
+    {
+        x->key[i] = x->buf_key + i * size_key;
+        x->val[i] = x->buf_val + i * size_val;
+    }
+
+    x->memb = memb;
+    x->size_key = size_key;
+    x->size_val = size_val;
     x->loaded = TRUE;
 
     engine_err = ERR_SUCCESS;
@@ -178,12 +228,60 @@ void _mem_free_buf(Buf *x, const str *name, const str *file, u64 line)
     if (x->buf != NULL)
     {
         temp = x->buf;
-        mem_clear((void*)&x->i, x->memb * sizeof(str*), name_buf);
+        mem_clear((void*)&x->buf, x->memb * x->size, name_buf);
         free(x->buf);
         LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
                 name_buf, temp);
     }
-    *x = (Buf){NULL};
+    *x = (Buf){0};
+}
+
+void _mem_free_key_val(KeyValue *x, const str *name, const str *file, u64 line)
+{
+    if (x == NULL) return;
+    void *temp = NULL;
+    str name_key[NAME_MAX] = {0};
+    str name_val[NAME_MAX] = {0};
+    str name_buf_key[NAME_MAX] = {0};
+    str name_buf_val[NAME_MAX] = {0};
+    snprintf(name_key, NAME_MAX, "%s.key", name);
+    snprintf(name_val, NAME_MAX, "%s.val", name);
+    snprintf(name_buf_key, NAME_MAX, "%s.buf_key", name);
+    snprintf(name_buf_val, NAME_MAX, "%s.buf_val", name);
+
+    if (x->key != NULL)
+    {
+        temp = x->key;
+        mem_clear((void*)&x->key, x->memb * sizeof(str*), name_key);
+        free(x->key);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_key, temp);
+    }
+    if (x->val != NULL)
+    {
+        temp = x->val;
+        mem_clear((void*)&x->val, x->memb * sizeof(str*), name_val);
+        free(x->val);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_val, temp);
+    }
+    if (x->buf_key != NULL)
+    {
+        temp = x->buf_key;
+        mem_clear((void*)&x->buf_key, x->memb * x->size_key, name_buf_key);
+        free(x->buf_key);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_buf_key, temp);
+    }
+    if (x->buf_val != NULL)
+    {
+        temp = x->buf_val;
+        mem_clear((void*)&x->buf_val, x->memb * x->size_val, name_buf_val);
+        free(x->buf_val);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
+                name_buf_val, temp);
+    }
+    *x = (KeyValue){0};
 }
 
 u32 _mem_clear(void **x, u64 size,

@@ -1094,7 +1094,7 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                 stringf("font_init().%s", file_name)) != ERR_SUCCESS)
         goto cleanup;
 
-    u8 *canvas = {NULL};
+    u8 *canvas = {0};
     if (mem_alloc((void*)&canvas, resolution * resolution,
                 "font_init().font_glyph_canvas") != ERR_SUCCESS)
         goto cleanup;
@@ -1141,17 +1141,17 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
 
             void *bitmap_offset =
                 font->bitmap +
-                (col * resolution) +
-                (row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION) +
-                1 + (resolution * FONT_ATLAS_CELL_RESOLUTION);
+                col * resolution +
+                row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION +
+                1 + resolution * FONT_ATLAS_CELL_RESOLUTION;
 
             u32 y = 0, x = 0;
             for (; y < resolution - 1; ++y)
             {
                 for (x = 0; x < resolution - 1; ++x)
-                    memcpy((bitmap_offset + x +
-                                (y * resolution * FONT_ATLAS_CELL_RESOLUTION)),
-                            (canvas + x + (y * resolution)), 1);
+                    memcpy(bitmap_offset + x +
+                            y * resolution * FONT_ATLAS_CELL_RESOLUTION,
+                            canvas + x + y * resolution, 1);
             }
             mem_clear((void*)&canvas, resolution * resolution,
                     "font_init().font_glyph_canvas");

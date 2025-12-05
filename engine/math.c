@@ -203,23 +203,28 @@ v4f32 matrix_multiply_vector(m4f32 a, v4f32 b)
     };
 }
 
-f32 lerp_f32(f32 start, f32 end, f32 speed, f64 t)
+f32 lerp_f32(f32 a, f32 b, f64 t, f32 rate)
 {
-    return start + (end - start) * (1.0f - expf(-speed * t));
+    return a + (b - a) * (1.0f - expf(-rate * t));
 }
 
-v3f64 lerp_v3f64(v3f64 start, v3f64 end, f32 t)
+f32 lerp_cubic_f32(f32 a, f32 b, f64 t)
+{
+    return (b - a) * (3.0f - t * 2.0f) * t * t + a;
+}
+
+v3f64 lerp_v3f64(v3f64 a, v3f64 b, f32 t)
 {
     return (v3f64){
-        start.x + (end.x - start.x) * t,
-        start.y + (end.y - start.y) * t,
-        start.z + (end.z - start.z) * t,
+        a.x + (b.x - a.x) * t,
+        a.y + (b.y - a.y) * t,
+        a.z + (b.z - a.z) * t,
     };
 }
 
-f32 easein_f32(f32 start, f32 end, f32 t)
+f32 easein_f32(f32 a, f32 b, f32 t)
 {
-    return start + (end - start) * (t * t);
+    return a + (b - a) * t * t;
 }
 
 f32 smoothstep_f32(f32 a, f32 b, f32 t)

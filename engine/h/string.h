@@ -22,10 +22,11 @@ str *stringf(const str* format, ...);
  * return 0 if no matches found */
 u64 find_token(str *arg, int argc, str **argv);
 
-/* load tokens from file at 'path' into a 'Buf'.
+/* load tokens from file at 'path' into a 'KeyValue' buffer as
+ * 'str' and 'u64' respectively.
  *
- * return 'Buf' of tokens,
- * return (Buf){NULL} on failure and 'engine_err' is set accordingly */
-Buf get_tokens(const str *path);
+ * return 'KeyValue' buffer of tokens,
+ * return (KeyValue){0} on failure and 'engine_err' is set accordingly */
+KeyValue get_tokens_key_val(const str *path);
 
 #endif /* ENGINE_STRING_H */

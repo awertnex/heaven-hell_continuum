@@ -43,7 +43,7 @@ static str str_build_src[CMD_SIZE] = {0};
 static str str_build_bin[CMD_SIZE] = {0};
 static str str_build_bin_new[CMD_SIZE] = {0};
 static str str_build_bin_old[CMD_SIZE] = {0};
-Buf cmd = {NULL};
+Buf cmd = {0};
 static u64 cmd_pos = 0;
 
 static u32 is_build_source_changed(void);

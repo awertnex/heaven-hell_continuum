@@ -15,6 +15,9 @@
 #define mem_alloc_buf(x, memb, size, name) \
     _mem_alloc_buf(x, memb, size, name, __FILE__, __LINE__)
 
+#define mem_alloc_key_val(x, memb, size_key, size_val, name) \
+    _mem_alloc_key_val(x, memb, size_key, size_val, name, __FILE__, __LINE__)
+
 #define mem_realloc(x, size, name) \
     _mem_realloc(x, size, name, __FILE__, __LINE__)
 
@@ -26,6 +29,9 @@
 
 #define mem_free_buf(x, name) \
     _mem_free_buf(x, name, __FILE__, __LINE__)
+
+#define mem_free_key_val(x, name) \
+    _mem_free_key_val(x, name, __FILE__, __LINE__)
 
 #define mem_clear(x, size, name) \
     _mem_clear(x, size, name, __FILE__, __LINE__)
@@ -69,6 +75,17 @@ u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
 
 /* -- INTERNAL USE ONLY --;
  *
+ * memb = number of members per buffer,
+ * size_key = 'key' member size in bytes,
+ * size_val = 'val' member size in bytes,
+ * name = pointer name (for logging).
+ *
+ * return non-zero on failure and engine_err is set accordingly */
+u32 _mem_alloc_key_val(KeyValue *x, u64 memb, u64 size_key, u64 size_val,
+        const str *name, const str *file, u64 line);
+
+/* -- INTERNAL USE ONLY --;
+ *
  * size = size in bytes,
  * name = pointer name (for logging).
  *
@@ -96,6 +113,12 @@ void _mem_free(void **x, u64 size, const str *name, const str *file, u64 line);
  *
  * name = pointer name (for logging) */
 void _mem_free_buf(Buf *x, const str *name, const str *file, u64 line);
+
+/* -- INTERNAL USE ONLY --;
+ *
+ * name = pointer name (for logging) */
+void _mem_free_key_val(KeyValue *x,
+        const str *name, const str *file, u64 line);
 
 /* -- INTERNAL USE ONLY --;
  *

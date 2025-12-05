@@ -36,7 +36,7 @@ u64 get_file_contents(const str *path, void **destination,
 
 /* return directory entries at dir_path.
  *
- * return (Buf){NULL} on failure and engine_err is set accordingly */
+ * return (Buf){0} on failure and engine_err is set accordingly */
 Buf get_dir_contents(const str *path);
 
 /* return dir entry count at path.
@@ -101,7 +101,7 @@ void posix_slash(str *path);
 
 /* return path retracted to its parent directory.
  *
- * on failure, engine_err is set accordingly */
+ * return NULL on failure and 'engine_err' is set accordingly */
 str *retract_path(str *path);
 
 #endif /* ENGINE_DIR_H */
