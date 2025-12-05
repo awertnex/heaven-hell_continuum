@@ -86,6 +86,7 @@ u32 block_init(Block *block)
 
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
+
 cleanup:
     texture_free(&block->texture);
     return *GAME_ERR;

@@ -1,78 +1,200 @@
 #include <engine/h/math.h>
+#include <engine/h/memory.h>
 
+#include "h/dir.h"
 #include "h/main.h"
 #include "h/terrain.h"
 
-static v3f32 random(f32 x0, f32 y0, u32 seed);
-static f32 gradient(f32 x0, f32 y0, f32 x, f32 y);
-static f32 interp(f32 a, f32 b, f32 scale);
+/* random number look-up table */
+i32 *RAND_TAB = {0};
 
-static v3f32 random(f32 x0, f32 y0, u32 seed)
+u32 rand_init(void)
 {
-    const u32 w = 8 * sizeof(u64);
-    const u32 s = w / 2; 
-    u32 a = (i32)x0 + seed + 5000, b = (i32)y0 - seed - 5000;
+    str file_name[PATH_MAX] = {0};
+    i32 *file_contents = NULL;
+    u64 file_len = 0;
+    i32 i, j, n;
+
+    if (mem_map((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
+                "terrain_init().RAND_TAB") != ERR_SUCCESS)
+        goto cleanup;
+
+    snprintf(file_name, PATH_MAX, "%slookup_rand_tab.bin", DIR_ROOT[DIR_LOOKUPS]);
+
+    /* ---- build RAND_TAB lookup ------------------------------------------- */
+
+    if (is_file_exists(file_name, FALSE) != ERR_SUCCESS)
+    {
+        for (i = 0; i < SET_RAND_TAB_MAX; ++i)
+            RAND_TAB[i] = random_i32(i);
+
+        if (write_file(file_name, sizeof(i32), SET_RAND_TAB_MAX,
+                    RAND_TAB, "wb", TRUE) != ERR_SUCCESS)
+            goto cleanup;
+    }
+
+    /* ---- load RAND_TAB lookup -------------------------------------------- */
+
+    file_len = get_file_contents(file_name,
+            (void*)&file_contents, sizeof(i32), "rb", FALSE);
+    if (*GAME_ERR != ERR_SUCCESS || file_contents == NULL)
+        goto cleanup;
+
+    for (i = 0; i < SET_RAND_TAB_MAX; ++i)
+        RAND_TAB[i] = file_contents[i];
+
+    mem_free((void*)&file_contents, file_len, "terrain_init().file_contents");
+
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+    rand_free();
+    return *GAME_ERR;
+}
+
+void rand_free(void)
+{
+    mem_unmap((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
+            "terrain_free().RAND_TAB");
+}
+
+i32 random_i32(i32 n)
+{
+    const u32 S = 32;
+    u32 a = n + 234678493574;
+    u32 b = n - 879763936541;
+
     a *= 3284157443;
- 
-    b ^= a << s | a >> (w - s);
+    b ^= a << S | a >> S;
     b *= 1911520717;
- 
-    a ^= b << s | b >> (w - s);
+    a ^= b << S | b >> S;
+
+    return a * 2048419325;
+}
+
+v3f32 random_2d(i32 x, i32 y, u32 seed)
+{
+    const u32 S = 32;
+    u32 a = x + seed + 94580993;
+    u32 b = y - seed - 35786975;
+
+    a *= 3284157443;
+    b ^= a << S | a >> S;
+    b *= 1911520717;
+    a ^= b << S | b >> S;
     a *= 2048419325;
-    f32 final = a * (PI / ~(~0u >> 1));
-    
+    f32 final = a * RAND_SCALE;
+
     return (v3f32){
         sin(final),
         cos(final),
-        1.0f,
+        sin(final + 0.25f),
     };
 }
 
-static f32 gradient(f32 x0, f32 y0, f32 x, f32 y)
+v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
 {
-    v3f32 grad = random(x0, y0, SET_TERRAIN_SEED_DEFAULT);
-    f32 dx = x0 - x;
-    f32 dy = y0 - y;
-    return dx * grad.x + dy * grad.y;
+    const u32 S = 32;
+    u32 a = x + seed + 7467244;
+    u32 b = y - seed - 4909393;
+    u32 c = z + seed + 2500462;
+
+    a *= 3284157443;
+    b ^= a << S | a >> S;
+    b *= 1911520717;
+    a ^= b << S | b >> S;
+    a *= 2048419325;
+    c ^= a << S | b >> S;
+    c *= 3567382653;
+    f32 final = c * RAND_SCALE;
+
+    return (v3f32){
+        sin(final),
+        cos(final),
+        sin(final + 0.25f),
+    };
 }
 
-static f32 interp(f32 a, f32 b, f32 t)
+f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 {
-    return (b - a) * (3.0f - t * 2.0f) * t * t + a;
+    f32 sample = (f32)RAND_TAB[SET_TERRAIN_SEED_DEFAULT +
+        (u32)(734 + ax * 87654 + ay) % SET_RAND_TAB_MAX] * RAND_SCALE;
+    sample = sin(sample);
+    return
+        (vx - ax) * sample +
+        (vy - ay) * sample;
 }
 
-f32 terrain_noise(v3i32 coordinates, f32 amplitude, f32 frequency)
+f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az)
 {
-    f32 x = (f32)coordinates.x / frequency;
-    f32 y = (f32)coordinates.y / frequency;
-    i32 x0 = (i32)floorf(x);
-    i32 y0 = (i32)floorf(y);
-    i32 x1 = x0 + 1;
-    i32 y1 = y0 + 1;
-
-    f32 sx = x - (f32)x0;
-    f32 sy = y - (f32)y0;
-
-    f32 n0 = gradient(x0, y0, x, y);
-    f32 n1 = gradient(x1, y0, x, y);
-    f32 ix0 = interp(n0, n1, sx);
-
-    n0 = gradient(x0, y1, x, y);
-    n1 = gradient(x1, y1, x, y);
-    f32 ix1 = interp(n0, n1, sx);
-
-    return interp(ix0, ix1, sy) * amplitude;
+    v3f32 grad = random_3d(ax, ay, az, SET_TERRAIN_SEED_DEFAULT);
+    return
+        (ax - vx) * grad.x +
+        (ay - vy) * grad.y +
+        (az - vz) * grad.z;
 }
 
-f32 terrain_land(v3i32 coordinates)
+f32 terrain_noise_2d(v3i32 coordinates, f32 amplitude, f32 frequency)
+{
+    f32 vx = (f32)coordinates.x / frequency;
+    f32 vy = (f32)coordinates.y / frequency;
+    i32 ax = (i32)floorf(vx);
+    i32 ay = (i32)floorf(vy);
+    i32 bx = ax + 1;
+    i32 by = ay + 1;
+
+    f32 dx = vx - (f32)ax;
+    f32 dy = vy - (f32)ay;
+
+    f32 g0 = gradient_2d(vx, vy, ax, ay);
+    f32 g1 = gradient_2d(vx, vy, bx, ay);
+    f32 l0 = lerp_cubic_f32(g0, g1, dx);
+
+    g0 = gradient_2d(vx, vy, ax, by);
+    g1 = gradient_2d(vx, vy, bx, by);
+    f32 l1 = lerp_cubic_f32(g0, g1, dx);
+
+    return lerp_cubic_f32(l0, l1, dy) * amplitude;
+}
+
+f32 terrain_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency)
+{
+    f32 vx = (f32)coordinates.x / frequency;
+    f32 vy = (f32)coordinates.y / frequency;
+    f32 vz = (f32)coordinates.z / frequency;
+    i32 ax = (i32)floorf(vx);
+    i32 ay = (i32)floorf(vy);
+    i32 az = (i32)floorf(vz);
+    i32 bx = ax + 1;
+    i32 by = ay + 1;
+    i32 bz = az + 1;
+    f32 dx = vx - (f32)ax;
+    f32 dy = vy - (f32)ay;
+    f32 dz = vz - (f32)az;
+
+    f32 g0 = gradient_3d(ax, ay, az, vx, vy, vz);
+    f32 g1 = gradient_3d(bx, ay, az, vx, vy, vz);
+    f32 l0 = lerp_cubic_f32(g0, g1, dx);
+
+    g0 = gradient_3d(ax, by, az, vx, vy, vz);
+    g1 = gradient_3d(bx, by, az, vx, vy, vz);
+    f32 l1 = lerp_cubic_f32(g0, g1, dx);
+
+    f32 l2 = lerp_cubic_f32(l0, l1, dy);
+
+    return l2 * amplitude;
+}
+
+b8 terrain_land(v3i32 coordinates)
 {
     f32 elevation = clamp_f32(
-            terrain_noise(coordinates, 1.0f, 329.0f) + 0.5f, 0.0f, 1.0f);
-    f32 influence = terrain_noise(coordinates, 1.0, 50.0f);
-    f32 terrain = terrain_noise(coordinates, 250.0f, 256.0f) * elevation;
-    terrain += terrain_noise(coordinates, 30.0f, 40.0f) * elevation;
-    terrain += (terrain_noise(coordinates, 10.0f, 10.0f) * influence);
-    terrain += expf(-terrain_noise(coordinates, 8.0f, 150.0f));
+            terrain_noise_2d(coordinates, 1.0f, 329.0f) + 0.5f, 0.0f, 1.0f);
+    f32 influence = terrain_noise_2d(coordinates, 1.0, 50.0f);
+    f32 terrain = terrain_noise_2d(coordinates, 250.0f, 256.0f) * elevation;
+    terrain += terrain_noise_2d(coordinates, 30.0f, 40.0f) * elevation;
+    terrain += (terrain_noise_2d(coordinates, 10.0f, 10.0f) * influence);
+    terrain += expf(-terrain_noise_2d(coordinates, 8.0f, 150.0f));
 
-    return terrain;
+    return terrain > coordinates.z;
 }

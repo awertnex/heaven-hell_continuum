@@ -37,8 +37,12 @@ extern TextureLayout three_side_alt;
 extern TextureLayout four_side;
 extern Block blocks[BLOCK_COUNT];
 
+/* return non-zero on failure and '*GAME_ERR' is set accordingly */
 u32 assets_init(void);
+
 void assets_free(void);
+
+/* return non-zero on failure and '*GAME_ERR' is set accordingly */
 u32 block_init(Block *block);
 
 #endif /* GAME_ASSETS_H */

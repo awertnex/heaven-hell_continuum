@@ -48,7 +48,7 @@ static void _block_break(Chunk *chunk,
 /* index = (chunk_tab index),
  * rate = number of blocks to process per chunk per frame,
  * terrain = the final terrain noise function to execute */
-static void chunk_generate(Chunk **chunk, u32 rate, f32 terrain());
+static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain());
 
 /* -- INTERNAL USE ONLY -- */
 static void chunk_mesh_update(Chunk *chunk);
@@ -78,7 +78,7 @@ u32 chunking_init(void)
     str CHUNKS_MAX_lookup_file_name[PATH_MAX] = {0};
     u32 *CHUNK_ORDER_lookup_file_contents = NULL;
     u64 *CHUNKS_MAX_lookup_file_contents = NULL;
-    u64 file_len = 0;
+    u64 i, j, k, file_len;
 
     u32 render_distance = 0;
     v3i32 center = {0};
@@ -88,25 +88,22 @@ u32 chunking_init(void)
     u64 chunk_buf_diameter = 0;
     u64 chunk_buf_volume = 0;
     u64 chunks_max = 0;
-    u64 i = 0, j = 0, k = 0;
 
     if (mem_map((void*)&chunk_buf, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk),
                 "chunking_init().chunk_buf") != ERR_SUCCESS)
         return *GAME_ERR;
 
-    if (mem_map((void*)&chunk_tab, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
-                "chunking_init().chunk_tab") != ERR_SUCCESS)
-        goto cleanup;
+    if (
+            mem_map((void*)&chunk_tab, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk*),
+                "chunking_init().chunk_tab") != ERR_SUCCESS ||
 
-    if (mem_map((void*)&CHUNK_ORDER, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_ORDER") != ERR_SUCCESS)
-        goto cleanup;
+            mem_map((void*)&CHUNK_ORDER, CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
+                "chunking_init().CHUNK_ORDER") != ERR_SUCCESS ||
 
-    if (mem_map((void*)&distance, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-                "chunking_init().distance") != ERR_SUCCESS)
-        goto cleanup;
+            mem_map((void*)&distance, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+                "chunking_init().distance") != ERR_SUCCESS ||
 
-    if (mem_map((void*)&index, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            mem_map((void*)&index, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
                 "chunking_init().index") != ERR_SUCCESS)
         goto cleanup;
 
@@ -168,12 +165,12 @@ u32 chunking_init(void)
             "%slookup_chunk_order_0x%02x.bin",
             DIR_ROOT[DIR_LOOKUPS], settings.render_distance);
 
-        file_len = get_file_contents(CHUNK_ORDER_lookup_file_name,
-                (void*)&CHUNK_ORDER_lookup_file_contents,
-                sizeof(u32), "rb", FALSE);
-        if (*GAME_ERR != ERR_SUCCESS ||
-                CHUNK_ORDER_lookup_file_contents == NULL)
-            goto cleanup;
+    file_len = get_file_contents(CHUNK_ORDER_lookup_file_name,
+            (void*)&CHUNK_ORDER_lookup_file_contents,
+            sizeof(u32), "rb", FALSE);
+    if (*GAME_ERR != ERR_SUCCESS ||
+            CHUNK_ORDER_lookup_file_contents == NULL)
+        goto cleanup;
 
     for (i = 0; i < settings.chunk_buf_volume; ++i)
         CHUNK_ORDER[i] = &chunk_tab[CHUNK_ORDER_lookup_file_contents[i]];
@@ -214,8 +211,7 @@ u32 chunking_init(void)
             CHUNKS_MAX[i] = chunks_max;
         }
 
-        LOGTRACE(FALSE,
-                "%s\n", "Writing CHUNKS_MAX Lookup To File..\n");
+        LOGTRACE(FALSE, "%s\n", "Writing CHUNKS_MAX Lookup To File..\n");
 
         if (write_file(CHUNKS_MAX_lookup_file_name,
                 sizeof(u64), SET_RENDER_DISTANCE_MAX + 1,
@@ -223,12 +219,11 @@ u32 chunking_init(void)
             goto cleanup;
     }
 
-        file_len = get_file_contents(CHUNKS_MAX_lookup_file_name,
-                (void*)&CHUNKS_MAX_lookup_file_contents,
-                sizeof(u64), "rb", FALSE);
-        if (*GAME_ERR != ERR_SUCCESS ||
-                CHUNKS_MAX_lookup_file_contents == NULL)
-            return engine_err;
+    file_len = get_file_contents(CHUNKS_MAX_lookup_file_name,
+            (void*)&CHUNKS_MAX_lookup_file_contents, sizeof(u64), "rb", FALSE);
+    if (*GAME_ERR != ERR_SUCCESS ||
+            CHUNKS_MAX_lookup_file_contents == NULL)
+        goto cleanup;
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         CHUNKS_MAX[i] = CHUNKS_MAX_lookup_file_contents[i];
@@ -261,17 +256,16 @@ u32 chunking_init(void)
     CHUNK_QUEUE_3.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_LOW;
     CHUNK_QUEUE_3.rate_block = BLOCK_PARSE_RATE;
 
-    if (mem_map((void*)&CHUNK_QUEUE_1.queue,
+    if (
+            mem_map((void*)&CHUNK_QUEUE_1.queue,
                 CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_QUEUE_1.queue") != ERR_SUCCESS)
-        goto cleanup;
+                "chunking_init().CHUNK_QUEUE_1.queue") != ERR_SUCCESS ||
 
-    if (mem_map((void*)&CHUNK_QUEUE_2.queue,
+            mem_map((void*)&CHUNK_QUEUE_2.queue,
                 CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_QUEUE_2.queue") != ERR_SUCCESS)
-        goto cleanup;
+                "chunking_init().CHUNK_QUEUE_2.queue") != ERR_SUCCESS ||
 
-    if (mem_map((void*)&CHUNK_QUEUE_3.queue,
+            mem_map((void*)&CHUNK_QUEUE_3.queue,
                 CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
                 "chunking_init().CHUNK_QUEUE_3.queue") != ERR_SUCCESS)
         goto cleanup;
@@ -566,16 +560,18 @@ static void _block_break(Chunk *chunk,
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-static void chunk_generate(Chunk **chunk, u32 rate, f32 terrain())
+static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
 {
     u32 index = 0;
     v3u32 chunk_tab_coordinates = {0};
-    Chunk *px = NULL, *nx = NULL,
+    Chunk *ch = NULL,
+          *px = NULL, *nx = NULL,
           *py = NULL, *ny = NULL,
           *pz = NULL, *nz = NULL;
-    u32 i = 0;
+    u32 x, y, z;
 
     if (!chunk || !*chunk || !terrain) return;
+    ch = *chunk;
 
     index = chunk - chunk_tab;
     chunk_tab_coordinates =
@@ -598,32 +594,35 @@ static void chunk_generate(Chunk **chunk, u32 rate, f32 terrain())
     if (chunk_tab_coordinates.z > 0)
         nz = *(chunk - settings.chunk_buf_layer);
 
-    for (i = (*chunk)->cursor; i < CHUNK_VOLUME && rate; ++i)
+    x = ch->cursor % CHUNK_DIAMETER;
+    y = (ch->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
+    z = ch->cursor / CHUNK_LAYER;
+    for (; z < CHUNK_DIAMETER && rate; ++z)
     {
-        v3u32 pos =
+        for (; y < CHUNK_DIAMETER && rate; ++y)
         {
-            i % CHUNK_DIAMETER,
-            (i / CHUNK_DIAMETER) % CHUNK_DIAMETER,
-            i / CHUNK_LAYER,
-        };
+            for (; x < CHUNK_DIAMETER && rate; ++x)
+            {
+                v3i32 coordinates =
+                {
+                    x + ch->pos.x * CHUNK_DIAMETER,
+                    y + ch->pos.y * CHUNK_DIAMETER,
+                    z + ch->pos.z * CHUNK_DIAMETER,
+                };
 
-        v3i32 coordinates =
-        {
-            pos.x + ((*chunk)->pos.x * CHUNK_DIAMETER),
-            pos.y + ((*chunk)->pos.y * CHUNK_DIAMETER),
-            pos.z + ((*chunk)->pos.z * CHUNK_DIAMETER),
-        };
-
-        if (terrain(coordinates) > coordinates.z)
-            _block_place(*chunk, px, nx, py, ny, pz, nz,
-                    chunk_tab_coordinates, pos.x, pos.y, pos.z, BLOCK_GRASS);
-        --rate;
+                if (terrain(coordinates))
+                    _block_place(ch, px, nx, py, ny, pz, nz,
+                            chunk_tab_coordinates, x, y, z, BLOCK_GRASS);
+                --rate;
+            }
+            x = 0;
+        }
+        y = 0;
     }
-    (*chunk)->cursor = i;
+    ch->cursor = x + y * CHUNK_DIAMETER + z * CHUNK_LAYER;
 
-    if ((*chunk)->cursor == CHUNK_VOLUME &&
-            !((*chunk)->flag & FLAG_CHUNK_GENERATED))
-        chunk_mesh_init(*chunk);
+    if (ch->cursor == CHUNK_VOLUME && !(ch->flag & FLAG_CHUNK_GENERATED))
+        chunk_mesh_init(ch);
 }
 
 static void chunk_mesh_update(Chunk *chunk)
@@ -788,8 +787,8 @@ static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
             ++chunk_buf_cursor;
             return;
         }
-    LOGERROR(FALSE,
-            ERR_BUFFER_FULL, "'%s'\n", "chunk_buf Full");
+
+    LOGERROR(FALSE, ERR_BUFFER_FULL, "'%s'\n", "chunk_buf Full");
 }
 
 static void _chunk_buf_pop(u32 index)
@@ -824,6 +823,7 @@ void chunk_queue_update(ChunkQueue *q)
         goto generate_and_mesh;
 
     /* ---- push chunk queue ------------------------------------------------ */
+
     if (q->id == CHUNK_QUEUE_LAST_ID)
         end = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance];
     else end = CHUNK_ORDER + q->offset + size;
@@ -925,6 +925,7 @@ void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
         }
 
     /* ---- mark chunks on-edge --------------------------------------------- */
+
     for (i = 0; i < settings.chunk_buf_volume; ++i)
     {
         if (!chunk_tab[i]) continue;
@@ -1012,6 +1013,7 @@ void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
     }
 
     /* ---- shift chunk_tab ------------------------------------------------- */
+
     for (i = (INCREMENT == 1) ? 0 : settings.chunk_buf_volume - 1;
             i < settings.chunk_buf_volume && i >= 0; i += INCREMENT)
     {
@@ -1102,7 +1104,8 @@ u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
         (i16)floorf((f64)player_delta_target.z / CHUNK_DIAMETER) -
             player_chunk.z + settings.chunk_buf_radius,
     };
-    return offset.x +
-        (offset.y * settings.chunk_buf_diameter) +
-        (offset.z * settings.chunk_buf_layer);
+    return
+        offset.x +
+        offset.y * settings.chunk_buf_diameter +
+        offset.z * settings.chunk_buf_layer;
 }

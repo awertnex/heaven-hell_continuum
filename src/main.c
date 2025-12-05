@@ -16,6 +16,7 @@
 #include "h/gui.h"
 #include "h/input.h"
 #include "h/logic.h"
+#include "h/terrain.h"
 
 u32 engine_err = ERR_SUCCESS;
 u32 *const GAME_ERR = (u32*)&engine_err;
@@ -177,7 +178,7 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 3;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -868,7 +869,7 @@ u32 world_init(str *name)
     player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, 346.5f, 203.5f, -43.0f);
+    set_player_pos(&lily, 115.5f, -39.5f, 13.0f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1582,13 +1583,6 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
-    Buf buf = get_tokens("Heaven-Hell Continuum/config/settings.txt");
-    u32 f = 0;
-    for (; f < buf.memb; ++f)
-        printf("buf[%d]: %s\n", f, buf.i[f]);
-    mem_free_buf(&buf, "fuck");
-    return 0;
-
     glfwSetErrorCallback(callback_error);
     if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)
         return *GAME_ERR;
@@ -1610,8 +1604,9 @@ int main(int argc, char **argv)
     }
 
     if (paths_init() != ERR_SUCCESS ||
+            rand_init() != ERR_SUCCESS ||
             settings_init() != ERR_SUCCESS)
-        return *GAME_ERR;
+        goto cleanup;
 
     if (
             glfw_init(FALSE) != ERR_SUCCESS ||
@@ -1816,6 +1811,7 @@ cleanup: /* ----------------------------------------------------------------- */
     for (i = 0; i < SHADER_COUNT; ++i)
         shader_program_free(&shader[i]);
     text_free();
+    rand_free();
     logger_close();
     glfwDestroyWindow(render.window);
     glfwTerminate();

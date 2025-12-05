@@ -21,7 +21,7 @@
 #define MODE_INTERNAL_VSYNC                     0
 #define MODE_INTERNAL_DEBUG                     1
 #define MODE_INTERNAL_LOAD_CHUNKS               1
-#define MODE_INTERNAL_COLLIDE                   1
+#define MODE_INTERNAL_COLLIDE                   0
 
 #define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
 #define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
@@ -64,6 +64,8 @@
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_TERRAIN_SEED_DEFAULT        0
+#define SET_RAND_TAB_DIAMETER           256
+#define SET_RAND_TAB_MAX                SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)

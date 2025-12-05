@@ -26,7 +26,7 @@ extern ChunkQueue CHUNK_QUEUE_3;
  * declared by the user*/
 extern u32 chunk_tab_index;
 
-/* return non-zero on failure and game_err is set accordingly */
+/* return non-zero on failure and '*GAME_ERR' is set accordingly */
 u32 chunking_init(void);
 
 void chunking_update(v3i16 player_delta_chunk);
@@ -49,4 +49,5 @@ void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
 u32 *get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z);
 
 u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
+
 #endif /* GAME_CHUNKING_H */
