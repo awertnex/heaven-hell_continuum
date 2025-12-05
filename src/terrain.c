@@ -16,7 +16,7 @@ u32 rand_init(void)
     i32 i;
 
     if (mem_map((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
-                "terrain_init().RAND_TAB") != ERR_SUCCESS)
+                "rand_init().RAND_TAB") != ERR_SUCCESS)
         goto cleanup;
 
     snprintf(file_name, PATH_MAX, "%slookup_rand_tab.bin", DIR_ROOT[DIR_LOOKUPS]);
@@ -32,7 +32,7 @@ u32 rand_init(void)
             RAND_TAB[i] = file_contents[i];
 
         mem_free((void*)&file_contents, file_len,
-                "terrain_init().file_contents");
+                "rand_init().file_contents");
     }
     else
     {
@@ -56,7 +56,7 @@ cleanup:
 void rand_free(void)
 {
     mem_unmap((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
-            "terrain_free().RAND_TAB");
+            "rand_free().RAND_TAB");
 }
 
 v3f32 random_2d(i32 x, i32 y, u32 seed)
