@@ -232,3 +232,18 @@ f32 smoothstep_f32(f32 a, f32 b, f32 t)
    t = clamp_f32((t - a) / (b - a), -1.0f, 1.0f);
    return t * t * (3.0f - 2.0f * t);
 }
+
+f32 rand_f32(i32 n)
+{
+    const u32 S = 32;
+    u32 a = (i32)n + 234678493574;
+    u32 b = (i32)n - 879763936541;
+
+    a *= 3284157443;
+    b ^= a << S | a >> S;
+    b *= 1911520717;
+    a ^= b << S | b >> S;
+    a *= 2048419325;
+
+    return sin((f32)a * RAND_SCALE);
+}

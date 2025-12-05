@@ -47,5 +47,6 @@ v3f64 lerp_v3f64(v3f64 a, v3f64 b, f32 t);
 f32 easein_f32(f32 a, f32 b, f32 t);
 f32 easeout_f32(f32 a, f32 b, f32 t);
 f32 smoothstep_f32(f32 a, f32 b, f32 t);
+f32 rand_f32(i32 n);
 
 #endif /* ENGINE_MATH_H */
