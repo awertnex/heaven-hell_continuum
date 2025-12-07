@@ -19,6 +19,7 @@ enum BlockTexture
 
 typedef enum BlockID
 {
+    BLOCK_NONE,
     BLOCK_GRASS,
     BLOCK_DIRT,
     BLOCK_DIRTUP,

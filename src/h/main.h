@@ -395,7 +395,6 @@ typedef struct Player
     v3f32 movement_smooth;          /* lerped movement */
     f32 movement_speed;             /* scalar for 'movement' */
     v3f32 movement_lerp_speed;
-    u64 container_state;            /* enum: ContainerFlag */
     u64 flag;                       /* enum: PlayerFlag */
 
     Camera camera;
@@ -410,6 +409,8 @@ typedef struct Player
     v3i16 delta_chunk;              /* previous chunk player was in */
 
     v3i64 spawn_point;
+    u64 container_state;            /* enum: ContainerFlag */
+    u32 hotbar_slot_selected;
 } Player;
 
 typedef enum BlockState
@@ -421,36 +422,32 @@ enum BlockFlag
 {
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00000001 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_PX =    0x0000000000010000,
+    FLAG_BLOCK_FACE_PX =        0x0000000000010000,
 
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00000010 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_NX =    0x0000000000020000,
+    FLAG_BLOCK_FACE_NX =        0x0000000000020000,
 
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00000100 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_PY =    0x0000000000040000,
+    FLAG_BLOCK_FACE_PY =        0x0000000000040000,
 
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00001000 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_NY =    0x0000000000080000,
+    FLAG_BLOCK_FACE_NY =        0x0000000000080000,
 
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00010000 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_PZ =    0x0000000000100000,
+    FLAG_BLOCK_FACE_PZ =        0x0000000000100000,
 
     /* 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 00100000 00000000 00000000] 00; */
-    FLAG_BLOCK_FACE_NZ =    0x0000000000200000,
+    FLAG_BLOCK_FACE_NZ =        0x0000000000200000,
 
-    /* 63 [00000000 00000000 00000000 00000000] 32;
-     * 31 [00000000 01000000 00000000 00000000] 00; */
-    FLAG_BLOCK_NOT_EMPTY =  0x0000000000400000,
-
-    /* run-length encoding
+    /* run-length encoding (for chunk serialization)
      * 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 10000000 00000000 00000000] 00; */
-    FLAG_BLOCK_RLE =        0x0000000000800000,
+    FLAG_BLOCK_RLE =            0x0000000000800000,
 }; /* BlockFlag */
 
 enum BlockMask

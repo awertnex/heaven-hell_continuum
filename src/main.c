@@ -178,7 +178,7 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 20;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -196,8 +196,8 @@ u32 settings_init(void)
         settings.chunk_buf_radius * settings.chunk_buf_layer;
 
     settings.reach_distance = SET_REACH_DISTANCE_MAX;
-    settings.mouse_sensitivity = (f32)SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
-    settings.fov = (f32)SET_FOV_DEFAULT;
+    settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
+    settings.fov = SET_FOV_DEFAULT;
     settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
     settings.anti_aliasing = TRUE;
@@ -749,38 +749,28 @@ static void input_update(Player *player)
 
     /* ---- gameplay -------------------------------------------------------- */
 
-    if (glfwGetMouseButton(render.window,
-                bind_attack_or_destroy) == GLFW_PRESS &&
-            (flag & FLAG_MAIN_PARSE_TARGET) &&
+    if (
             !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
+            (flag & FLAG_MAIN_PARSE_TARGET) &&
             chunk_tab[chunk_tab_index])
     {
-        block_break(chunk_tab_index,
-            player->target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
-                CHUNK_DIAMETER),
-            player->target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
-                CHUNK_DIAMETER),
-            player->target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
-                CHUNK_DIAMETER));
-    }
+        if (glfwGetMouseButton(render.window, bind_attack_or_destroy) == GLFW_PRESS)
+        {
+            block_break(chunk_tab_index,
+                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
+                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
+                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER);
+        }
+        if (glfwGetMouseButton(render.window, bind_build_or_use) == GLFW_PRESS)
+        {
+            block_place(chunk_tab_index,
+                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
+                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
+                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
+                    BLOCK_STONE);
+        }
 
-    if (is_key_press(bind_sample_block))
-    {
-    }
-
-    if (glfwGetMouseButton(render.window,
-                bind_build_or_use) == GLFW_PRESS &&
-            (flag & FLAG_MAIN_PARSE_TARGET) &&
-            !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
-            chunk_tab[chunk_tab_index])
-    {
-        block_place(chunk_tab_index,
-            player->target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
-                CHUNK_DIAMETER),
-            player->target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
-                CHUNK_DIAMETER),
-            player->target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
-                CHUNK_DIAMETER), BLOCK_STONE);
+        if (is_key_press(bind_sample_block)) {}
     }
 
     /* ---- inventory ------------------------------------------------------- */
@@ -895,9 +885,7 @@ u32 world_init(str *name)
 
 static void world_update(Player *player)
 {
-    game_tick = 8000 + (u64)(render.frame_start * 20) -
-        (SET_DAY_TICKS_MAX * game_days);
-
+    game_tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * game_days;
     if (game_tick >= SET_DAY_TICKS_MAX)
         ++game_days;
 
@@ -1112,12 +1100,9 @@ static void draw_everything(void)
     if ((flag & FLAG_MAIN_PARSE_TARGET) && (flag & FLAG_MAIN_HUD) &&
             chunk_tab[chunk_tab_index] &&
             chunk_tab[chunk_tab_index]->block
-            [lily.target_snapped.z - (chunk_tab[chunk_tab_index]->pos.z *
-                CHUNK_DIAMETER)]
-            [lily.target_snapped.y - (chunk_tab[chunk_tab_index]->pos.y *
-                CHUNK_DIAMETER)]
-            [lily.target_snapped.x - (chunk_tab[chunk_tab_index]->pos.x *
-                CHUNK_DIAMETER)] & FLAG_BLOCK_NOT_EMPTY)
+            [lily.target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER]
+            [lily.target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER]
+            [lily.target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER])
     {
         glUniform3f(uniform.bounding_box.position,
                 lily.target_snapped.x,
