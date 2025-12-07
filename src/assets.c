@@ -138,6 +138,8 @@ cleanup:
 
 void blocks_init(void)
 {
+    snprintf(blocks[BLOCK_NONE].name, NAME_MAX, "%s", "block_none");
+
     snprintf(blocks[BLOCK_GRASS].name, NAME_MAX, "%s", "block_grass");
     blocks[BLOCK_GRASS].state = BLOCK_STATE_SOLID;
     blocks[BLOCK_GRASS].texture_index[0] = BLOCK_TEXTURE_GRASS_SIDE;
