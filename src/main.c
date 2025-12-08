@@ -46,10 +46,7 @@ static FBO fbo[FBO_COUNT] = {0};
 static Player lily =
 {
     .name = "Lily",
-    .pos = {0},
     .size = {0.6f, 0.6f, 1.8f},
-    .collision_check_pos = {0},
-    .collision_check_size = {0},
     .pitch = 0.0f,
     .yaw = 0.0f,
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
@@ -57,10 +54,19 @@ static Player lily =
     .eye_height = SET_PLAYER_EYE_HEIGHT,
     .mass = 2.0f,
     .movement_speed = SET_PLAYER_SPEED_WALK,
-    .container_state = 0,
     .camera_mode = 0,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
+
     .spawn_point = {0},
+    .container_state = 0,
+    .hotbar_slots[0] = BLOCK_GRASS,
+    .hotbar_slots[1] = BLOCK_DIRT,
+    .hotbar_slots[2] = BLOCK_STONE,
+    .hotbar_slots[3] = BLOCK_SAND,
+    .hotbar_slots[4] = BLOCK_GLASS,
+    .hotbar_slots[5] = BLOCK_WOOD_OAK_LOG,
+    .hotbar_slots[6] = BLOCK_WOOD_BIRCH_LOG,
+    .hotbar_slots[7] = BLOCK_WOOD_CHERRY_LOG,
 };
 
 static struct /* skybox_data */
@@ -178,7 +184,7 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 16;
+    settings.render_distance = 15;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -681,6 +687,7 @@ cleanup:
 
 static void input_update(Player *player)
 {
+    u32 i;
     player->movement = (v3f32){0};
 
     /* ---- movement -------------------------------------------------------- */
@@ -767,7 +774,7 @@ static void input_update(Player *player)
                     player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
                     player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
                     player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
-                    BLOCK_STONE);
+                    player->hotbar_slots[player->hotbar_slot_selected]);
         }
 
         if (is_key_press(bind_sample_block)) {}
@@ -775,11 +782,10 @@ static void input_update(Player *player)
 
     /* ---- inventory ------------------------------------------------------- */
 
-    u32 i = 0;
-    for (; i < 10; ++i)
+    for (i = 0; i < SET_HOTBAR_SLOTS_MAX; ++i)
         if (is_key_press(bind_hotbar[i]) ||
                 is_key_press(bind_hotbar_kp[i]))
-            hotbar_slot_selected = i + 1;
+            player->hotbar_slot_selected = i;
 
     if (is_key_press(bind_inventory))
     {
@@ -857,10 +863,11 @@ u32 world_init(str *name)
     if (*GAME_ERR != ERR_SUCCESS)
         return *GAME_ERR;
 
+    set_player_spawn(&lily, 0, 0, 0);
+    set_player_block(&lily, 758, -20, 8);
     player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    set_player_pos(&lily, 758.5f, -20.5f, 7.5f);
     lily.spawn_point =
         (v3i64){
             (i64)lily.pos.x,
@@ -1036,30 +1043,25 @@ static void draw_everything(void)
 
     f32 opacity = 1.0f;
     if (debug_mode[DEBUG_MODE_TRANS_BLOCKS])
-        opacity = 0.75f;
+        opacity = 0.7f;
 
     glUniform1f(uniform.voxel.opacity, opacity);
 
     static Chunk ***cursor = NULL;
     static Chunk ***end = NULL;
     static Chunk *chunk = NULL;
-    cursor = CHUNK_ORDER;
-    end = cursor + CHUNKS_MAX[settings.render_distance];
-    for (; **cursor && cursor < end; ++cursor)
+    cursor = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance] - 1;
+    end = CHUNK_ORDER;
+    for (; cursor >= end; --cursor)
     {
         chunk = **cursor;
-        if (!(chunk->flag & FLAG_CHUNK_RENDER))
-            continue;
+        if (!chunk || !(chunk->flag & FLAG_CHUNK_RENDER))
+                continue;
 
-        v3f32 chunk_position =
-        {
-            (f32)(chunk->pos.x * CHUNK_DIAMETER),
-            (f32)(chunk->pos.y * CHUNK_DIAMETER),
-            (f32)(chunk->pos.z * CHUNK_DIAMETER),
-        };
-
-        glUniform3fv(uniform.voxel.chunk_position, 1,
-                (GLfloat*)&chunk_position);
+        glUniform3f(uniform.voxel.chunk_position,
+                (f32)(chunk->pos.x * CHUNK_DIAMETER),
+                (f32)(chunk->pos.y * CHUNK_DIAMETER),
+                (f32)(chunk->pos.z * CHUNK_DIAMETER));
 
         glBindVertexArray(chunk->vao);
         glDrawArrays(GL_POINTS, 0, chunk->vbo_len);
@@ -1153,7 +1155,6 @@ static void draw_everything(void)
 
     if (debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER])
     {
-        glUseProgram(shader[SHADER_BOUNDING_BOX].id);
         glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
                 (GLfloat*)&projection_world.perspective);
         glUniform3f(uniform.bounding_box.size,
@@ -1161,14 +1162,14 @@ static void draw_everything(void)
 
         cursor = CHUNK_ORDER;
         end = CHUNK_ORDER + CHUNK_QUEUE_1.size;
-        u32 i = 0;
-        for (; cursor < end; ++i, ++cursor)
+        for (; cursor < end; ++cursor)
         {
-            if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+            chunk = **cursor;
+            if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
             glUniform3f(uniform.bounding_box.position,
-                    (**cursor)->pos.x * CHUNK_DIAMETER,
-                    (**cursor)->pos.y * CHUNK_DIAMETER,
-                    (**cursor)->pos.z * CHUNK_DIAMETER);
+                    chunk->pos.x * CHUNK_DIAMETER,
+                    chunk->pos.y * CHUNK_DIAMETER,
+                    chunk->pos.z * CHUNK_DIAMETER);
 
             glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
             glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1178,13 +1179,14 @@ static void draw_everything(void)
         if (CHUNK_QUEUE_2.size)
         {
             end += CHUNK_QUEUE_2.size;
-            for (i = 0; cursor < end; ++i, ++cursor)
+            for (; cursor < end; ++cursor)
             {
-                if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+                chunk = **cursor;
+                if (!(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
                 glUniform3f(uniform.bounding_box.position,
-                        (**cursor)->pos.x * CHUNK_DIAMETER,
-                        (**cursor)->pos.y * CHUNK_DIAMETER,
-                        (**cursor)->pos.z * CHUNK_DIAMETER);
+                        chunk->pos.x * CHUNK_DIAMETER,
+                        chunk->pos.y * CHUNK_DIAMETER,
+                        chunk->pos.z * CHUNK_DIAMETER);
 
                 glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
                 glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1195,13 +1197,14 @@ static void draw_everything(void)
         if (CHUNK_QUEUE_3.size)
         {
             end += CHUNK_QUEUE_3.size;
-            for (i = 0; cursor < end; ++i, ++cursor)
+            for (; cursor < end; ++cursor)
             {
-                if (!((**cursor)->flag & FLAG_CHUNK_QUEUED)) continue;
+                chunk = **cursor;
+                if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
                 glUniform3f(uniform.bounding_box.position,
-                        (**cursor)->pos.x * CHUNK_DIAMETER,
-                        (**cursor)->pos.y * CHUNK_DIAMETER,
-                        (**cursor)->pos.z * CHUNK_DIAMETER);
+                        chunk->pos.x * CHUNK_DIAMETER,
+                        chunk->pos.y * CHUNK_DIAMETER,
+                        chunk->pos.z * CHUNK_DIAMETER);
 
                 glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
                 glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1272,8 +1275,8 @@ static void draw_everything(void)
 
         v3f32 camera_position =
         {
-            -(lily.cos_yaw * lily.cos_pitch),
-            (lily.sin_yaw * lily.cos_pitch),
+            -lily.cos_yaw * lily.cos_pitch,
+            lily.sin_yaw * lily.cos_pitch,
             lily.sin_pitch,
         };
 
@@ -1291,7 +1294,7 @@ static void draw_everything(void)
             v3f32 pos =
             {
                 (f32)(i % settings.chunk_buf_diameter),
-                (f32)((i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter),
+                (f32)(i / settings.chunk_buf_diameter % settings.chunk_buf_diameter),
                 (f32)i / settings.chunk_buf_layer,
             };
             pos = sub_v3f32(pos, (v3f32){

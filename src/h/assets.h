@@ -14,6 +14,15 @@ enum BlockTexture
     BLOCK_TEXTURE_STONE,
     BLOCK_TEXTURE_SAND,
     BLOCK_TEXTURE_GLASS,
+    BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE,
+    BLOCK_TEXTURE_WOOD_BIRCH_LOG_TOP,
+    BLOCK_TEXTURE_WOOD_BIRCH_PLANKS,
+    BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE,
+    BLOCK_TEXTURE_WOOD_CHERRY_LOG_TOP,
+    BLOCK_TEXTURE_WOOD_CHERRY_PLANKS,
+    BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE,
+    BLOCK_TEXTURE_WOOD_OAK_LOG_TOP,
+    BLOCK_TEXTURE_WOOD_OAK_PLANKS,
     BLOCK_TEXTURE_COUNT,
 }; /* BlockTexture */
 
@@ -26,13 +35,24 @@ typedef enum BlockID
     BLOCK_STONE,
     BLOCK_SAND,
     BLOCK_GLASS,
+    BLOCK_WOOD_BIRCH_LOG,
+    BLOCK_WOOD_BIRCH_PLANKS,
+    BLOCK_WOOD_CHERRY_LOG,
+    BLOCK_WOOD_CHERRY_PLANKS,
+    BLOCK_WOOD_OAK_LOG,
+    BLOCK_WOOD_OAK_PLANKS,
     BLOCK_COUNT,
 } BlockID;
+
+typedef enum BlockState
+{
+    BLOCK_STATE_SOLID = 1,
+} BlockState;
 
 typedef struct Block
 {
     str name[NAME_MAX];
-    u16 state;
+    BlockState state;
     u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
 } Block;
 

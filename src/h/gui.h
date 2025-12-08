@@ -12,8 +12,6 @@
 #define COL_Y               0x32ff32ff
 #define COL_Z               0x3232ffff
 
-extern u8 hotbar_slot_selected;
-
 extern u16 menu_index;
 extern u16 menu_layer[5];
 extern u8 state_menu_depth;

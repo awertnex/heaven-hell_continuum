@@ -63,9 +63,10 @@
 #define SET_PLAYER_SPEED_SPRINT         8.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
+#define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
 #define SET_TERRAIN_SEED_DEFAULT        0
 #define SET_RAND_TAB_DIAMETER           128
-#define SET_RAND_TAB_MAX                SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER
+#define SET_RAND_TAB_MAX                (SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER)
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
@@ -96,12 +97,12 @@
 #define BLOCK_BUFFERS_MAX       2
 
 /* number of chunks to process per frame */
-#define CHUNK_PARSE_RATE_PRIORITY_LOW       64
-#define CHUNK_PARSE_RATE_PRIORITY_MID       128
-#define CHUNK_PARSE_RATE_PRIORITY_HIGH      2048
+#define CHUNK_PARSE_RATE_PRIORITY_LOW       128
+#define CHUNK_PARSE_RATE_PRIORITY_MID       256
+#define CHUNK_PARSE_RATE_PRIORITY_HIGH      CHUNK_VOLUME
 
 /* number of blocks to process per chunk per frame */
-#define BLOCK_PARSE_RATE                    512
+#define BLOCK_PARSE_RATE                    768
 
 #define COLOR_TEXT_DEFAULT                  DIAGNOSTIC_COLOR_DEBUG
 #define COLOR_TEXT_BRIGHT                   DIAGNOSTIC_COLOR_DEFAULT
@@ -411,12 +412,9 @@ typedef struct Player
     v3i64 spawn_point;
     u64 container_state;            /* enum: ContainerFlag */
     u32 hotbar_slot_selected;
+    u32 hotbar_slots[SET_HOTBAR_SLOTS_MAX];
+    u32 inventory_slots[SET_INVENTORY_SLOTS_MAX];
 } Player;
-
-typedef enum BlockState
-{
-    BLOCK_STATE_SOLID = 1,
-} BlockState;
 
 enum BlockFlag
 {

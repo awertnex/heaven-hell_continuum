@@ -11,8 +11,6 @@
 #include "h/gui.h"
 #include "h/dir.h"
 
-u8 hotbar_slot_selected = 1;
-
 u16 menu_index;
 u16 menu_layer[5] = {0};
 u8 state_menu_depth = 0;

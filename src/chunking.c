@@ -338,7 +338,7 @@ void chunking_free(void)
 
 void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
 {
-    if (chunk_tab[index]->block[z][y][x]) return;
+    if (chunk_tab[index]->block[z][y][x] || !block_id) return;
     v3u32 coordinates =
     {
         index % settings.chunk_buf_diameter,

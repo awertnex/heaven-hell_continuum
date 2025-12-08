@@ -313,18 +313,22 @@ void set_player_pos(Player *player, f64 x, f64 y, f64 z)
     player->pos_last = player->pos;
 }
 
-void set_player_block(Player *player, i32 x, i32 y, i32 z)
+void set_player_block(Player *player, i64 x, i64 y, i64 z)
 {
     player->pos = (v3f64){(f64)x + 0.5f, (f64)y + 0.5f, (f64)z + 0.5f};
     player->pos_last = player->pos;
 }
 
+void set_player_spawn(Player *player, i64 x, i64 y, i64 z)
+{
+    player->spawn_point = (v3i64){x, y, z};
+}
+
 void player_kill(Player *player)
 {
-    player->vel = (v3f32){0};
     player->movement = (v3f32){0};
-    player->movement_speed = 0.0f;
-    player->container_state = 0;
+    player->vel = (v3f32){0};
+    player->gravity_influence = (v3f32){0};
     player->flag |= FLAG_PLAYER_DEAD;
 }
 

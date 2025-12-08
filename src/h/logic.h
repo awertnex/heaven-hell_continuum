@@ -23,7 +23,8 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
 void player_camera_movement_update(v2f64 mouse_delta, Player *player, b8 use_mouse);
 void player_target_update(Player *player);
 void set_player_pos(Player *player, f64 x, f64 y, f64 z);
-void set_player_block(Player *player, i32 x, i32 y, i32 z);
+void set_player_block(Player *player, i64 x, i64 y, i64 z);
+void set_player_spawn(Player *player, i64 x, i64 y, i64 z);
 void player_kill(Player *player);
 void player_respawn(Player *player);
 void player_collision_update(f64 dt, Player *player);

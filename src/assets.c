@@ -49,7 +49,34 @@ u32 assets_init(void)
                 "sand.png") != ERR_SUCCESS ||
 
             block_texture_init(BLOCK_TEXTURE_GLASS, (v2i32){16, 16},
-                "glass.png") != ERR_SUCCESS)
+                "glass.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE, (v2i32){16, 16},
+                    "wood_birch_log_side.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_BIRCH_LOG_TOP, (v2i32){16, 16},
+                    "wood_birch_log_top.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_BIRCH_PLANKS, (v2i32){16, 16},
+                    "wood_birch_planks.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE, (v2i32){16, 16},
+                    "wood_cherry_log_side.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_CHERRY_LOG_TOP, (v2i32){16, 16},
+                    "wood_cherry_log_top.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_CHERRY_PLANKS, (v2i32){16, 16},
+                    "wood_cherry_planks.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE, (v2i32){16, 16},
+                    "wood_oak_log_side.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_OAK_LOG_TOP, (v2i32){16, 16},
+                    "wood_oak_log_top.png") != ERR_SUCCESS ||
+
+            block_texture_init(BLOCK_TEXTURE_WOOD_OAK_PLANKS, (v2i32){16, 16},
+                    "wood_oak_planks.png") != ERR_SUCCESS)
         goto cleanup;
 
     for (i = 0; i < BLOCK_TEXTURE_COUNT; ++i)
@@ -193,6 +220,60 @@ void blocks_init(void)
     blocks[BLOCK_GLASS].texture_index[3] = BLOCK_TEXTURE_GLASS;
     blocks[BLOCK_GLASS].texture_index[4] = BLOCK_TEXTURE_GLASS;
     blocks[BLOCK_GLASS].texture_index[5] = BLOCK_TEXTURE_GLASS;
+
+    snprintf(blocks[BLOCK_WOOD_BIRCH_LOG].name, NAME_MAX, "%s", "block_wood_birch_log");
+    blocks[BLOCK_WOOD_BIRCH_LOG].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[0] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[1] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[2] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[3] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[4] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_TOP;
+    blocks[BLOCK_WOOD_BIRCH_LOG].texture_index[5] = BLOCK_TEXTURE_WOOD_BIRCH_LOG_TOP;
+
+    snprintf(blocks[BLOCK_WOOD_BIRCH_PLANKS].name, NAME_MAX, "%s", "block_wood_birch_planks");
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[0] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[1] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[2] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[3] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[4] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+    blocks[BLOCK_WOOD_BIRCH_PLANKS].texture_index[5] = BLOCK_TEXTURE_WOOD_BIRCH_PLANKS;
+
+    snprintf(blocks[BLOCK_WOOD_CHERRY_LOG].name, NAME_MAX, "%s", "block_wood_cherry_log");
+    blocks[BLOCK_WOOD_CHERRY_LOG].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[0] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[1] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[2] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[3] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[4] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_TOP;
+    blocks[BLOCK_WOOD_CHERRY_LOG].texture_index[5] = BLOCK_TEXTURE_WOOD_CHERRY_LOG_TOP;
+
+    snprintf(blocks[BLOCK_WOOD_CHERRY_PLANKS].name, NAME_MAX, "%s", "block_wood_cherry_planks");
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[0] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[1] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[2] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[3] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[4] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+    blocks[BLOCK_WOOD_CHERRY_PLANKS].texture_index[5] = BLOCK_TEXTURE_WOOD_CHERRY_PLANKS;
+
+    snprintf(blocks[BLOCK_WOOD_OAK_LOG].name, NAME_MAX, "%s", "block_wood_oak_log");
+    blocks[BLOCK_WOOD_OAK_LOG].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[0] = BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[1] = BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[2] = BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[3] = BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[4] = BLOCK_TEXTURE_WOOD_OAK_LOG_TOP;
+    blocks[BLOCK_WOOD_OAK_LOG].texture_index[5] = BLOCK_TEXTURE_WOOD_OAK_LOG_TOP;
+
+    snprintf(blocks[BLOCK_WOOD_OAK_PLANKS].name, NAME_MAX, "%s", "block_wood_oak_planks");
+    blocks[BLOCK_WOOD_OAK_PLANKS].state = BLOCK_STATE_SOLID;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[0] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[1] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[2] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[3] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[4] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
+    blocks[BLOCK_WOOD_OAK_PLANKS].texture_index[5] = BLOCK_TEXTURE_WOOD_OAK_PLANKS;
 }
 
 /* ---- special_blocks ------------------------------------------------------ */
