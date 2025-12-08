@@ -15,7 +15,7 @@ u32 rand_init(void)
     u64 file_len = 0;
     i32 i;
 
-    if (mem_map((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
+    if (mem_map((void*)&RAND_TAB, RAND_TAB_VOLUME * sizeof(f32),
                 "rand_init().RAND_TAB") != ERR_SUCCESS)
         goto cleanup;
 
@@ -28,7 +28,7 @@ u32 rand_init(void)
         if (*GAME_ERR != ERR_SUCCESS || file_contents == NULL)
             goto cleanup;
 
-        for (i = 0; i < SET_RAND_TAB_MAX; ++i)
+        for (i = 0; i < RAND_TAB_VOLUME; ++i)
             RAND_TAB[i] = file_contents[i];
 
         mem_free((void*)&file_contents, file_len,
@@ -37,10 +37,10 @@ u32 rand_init(void)
     else
     {
 
-        for (i = 0; i < SET_RAND_TAB_MAX; ++i)
+        for (i = 0; i < RAND_TAB_VOLUME; ++i)
             RAND_TAB[i] = rand_f32(i);
 
-        if (write_file(file_name, sizeof(i32), SET_RAND_TAB_MAX,
+        if (write_file(file_name, sizeof(i32), RAND_TAB_VOLUME,
                     RAND_TAB, "wb", TRUE) != ERR_SUCCESS)
             goto cleanup;
     }
@@ -55,7 +55,7 @@ cleanup:
 
 void rand_free(void)
 {
-    mem_unmap((void*)&RAND_TAB, SET_RAND_TAB_MAX * sizeof(f32),
+    mem_unmap((void*)&RAND_TAB, RAND_TAB_VOLUME * sizeof(f32),
             "rand_free().RAND_TAB");
 }
 
@@ -104,16 +104,22 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
 
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 {
-    f32 sample = RAND_TAB[SET_TERRAIN_SEED_DEFAULT +
-        (u32)(734 + ax * 87654 + ay) % SET_RAND_TAB_MAX];
+    v2f32 sample =
+    {
+        RAND_TAB[TERRAIN_SEED_DEFAULT +
+            (u32)(734 + ax * 87654 + ay) % RAND_TAB_VOLUME],
+        RAND_TAB[TERRAIN_SEED_DEFAULT +
+            (u32)(87654 + ay * 98023 + ax) % RAND_TAB_VOLUME],
+    };
+
     return
-        (vx - ax) * sample +
-        (vy - ay) * sample;
+        (vx - ax) * sample.x +
+        (vy - ay) * sample.y;
 }
 
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az)
 {
-    v3f32 grad = random_3d(ax, ay, az, SET_TERRAIN_SEED_DEFAULT);
+    v3f32 grad = random_3d(ax, ay, az, TERRAIN_SEED_DEFAULT);
     return
         (ax - vx) * grad.x +
         (ay - vy) * grad.y +

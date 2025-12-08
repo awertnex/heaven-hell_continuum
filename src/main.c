@@ -208,6 +208,9 @@ u32 settings_init(void)
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
     settings.anti_aliasing = TRUE;
 
+    mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
+            "settings_init().settings_file_contents");
+
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
 
@@ -912,32 +915,19 @@ static void world_update(Player *player)
     update_camera_perspective(&player->camera_hud, &projection_hud);
     player_target_update(&lily);
 
+    chunking_update(lily.chunk, &lily.chunk_delta);
+
     chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_snapped);
-    (chunk_tab_index >= settings.chunk_buf_volume)
-        ? chunk_tab_index = settings.chunk_tab_center : 0;
-
-    if (flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
-    {
-        flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
-        chunk_tab_shift(lily.chunk, &lily.delta_chunk);
-        chunking_update(lily.delta_chunk);
-    }
-
-    chunk_queue_update(&CHUNK_QUEUE_1);
-    if (!CHUNK_QUEUE_1.count && CHUNK_QUEUE_2.size)
-    {
-        chunk_queue_update(&CHUNK_QUEUE_2);
-        if (!CHUNK_QUEUE_2.count && CHUNK_QUEUE_3.size)
-            chunk_queue_update(&CHUNK_QUEUE_3);
-    }
+    if (chunk_tab_index >= settings.chunk_buf_volume)
+        chunk_tab_index = settings.chunk_tab_center;
 
     /* ---- player targeting ------------------------------------------------ */
 
     if (is_in_volume_i64(
                 lily.target_snapped,
                 (v3i64){
-                -(WORLD_DIAMETER * CHUNK_DIAMETER),
-                -(WORLD_DIAMETER * CHUNK_DIAMETER),
+                -WORLD_DIAMETER * CHUNK_DIAMETER,
+                -WORLD_DIAMETER * CHUNK_DIAMETER,
                 -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER},
                 (v3i64){
                 WORLD_DIAMETER * CHUNK_DIAMETER,
@@ -1051,8 +1041,7 @@ static void draw_everything(void)
     static Chunk ***end = NULL;
     static Chunk *chunk = NULL;
     cursor = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance] - 1;
-    end = CHUNK_ORDER;
-    for (; cursor >= end; --cursor)
+    for (; cursor >= CHUNK_ORDER; --cursor)
     {
         chunk = **cursor;
         if (!chunk || !(chunk->flag & FLAG_CHUNK_RENDER))
@@ -1294,7 +1283,7 @@ static void draw_everything(void)
             v3f32 pos =
             {
                 (f32)(i % settings.chunk_buf_diameter),
-                (f32)(i / settings.chunk_buf_diameter % settings.chunk_buf_diameter),
+                (f32)((i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter),
                 (f32)i / settings.chunk_buf_layer,
             };
             pos = sub_v3f32(pos, (v3f32){

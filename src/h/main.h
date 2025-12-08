@@ -64,9 +64,6 @@
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
-#define SET_TERRAIN_SEED_DEFAULT        0
-#define SET_RAND_TAB_DIAMETER           128
-#define SET_RAND_TAB_MAX                (SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER * SET_RAND_TAB_DIAMETER)
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
@@ -103,6 +100,10 @@
 
 /* number of blocks to process per chunk per frame */
 #define BLOCK_PARSE_RATE                    768
+
+#define TERRAIN_SEED_DEFAULT    0
+#define RAND_TAB_DIAMETER       128
+#define RAND_TAB_VOLUME         (RAND_TAB_DIAMETER * RAND_TAB_DIAMETER * RAND_TAB_DIAMETER)
 
 #define COLOR_TEXT_DEFAULT                  DIAGNOSTIC_COLOR_DEBUG
 #define COLOR_TEXT_BRIGHT                   DIAGNOSTIC_COLOR_DEFAULT
@@ -167,7 +168,7 @@ struct Settings
     /* ---- video ----------------------------------------------------------- */
 
     f32 fov;
-    u8 render_distance;
+    u32 render_distance;
     u32 target_fps;
     u32 gui_scale;
     b8 anti_aliasing;
@@ -407,7 +408,7 @@ typedef struct Player
     u8 overflow;
 
     v3i16 chunk;                    /* current chunk player is in */
-    v3i16 delta_chunk;              /* previous chunk player was in */
+    v3i16 chunk_delta;              /* previous chunk player was in */
 
     v3i64 spawn_point;
     u64 container_state;            /* enum: ContainerFlag */
@@ -524,20 +525,20 @@ enum ChunkShiftState
 
 typedef struct Chunk
 {
-    v3i16 pos;      /* (world XYZ) / CHUNK_DIAMETER */
+    v3i16 pos;      /* world position / CHUNK_DIAMETER */
 
     /* format:
-     * ((pos.x & 0xffff) << 0x00) |
-     * ((pos.y & 0xffff) << 0x10) |
-     * ((pos.z & 0xffff) << 0x20) */
+     * (pos.x & 0xffff) << 0x00 |
+     * (pos.y & 0xffff) << 0x10 |
+     * (pos.z & 0xffff) << 0x20 */
     u64 id;
 
     u32 color;      /* debug color: 0xrrggbbaa */
+    u32 cursor;     /* block iterator for per-chunk generation progress */
+    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     GLuint vao;
     GLuint vbo;
     u64 vbo_len;
-    u32 cursor;     /* block iterator for per-chunk generation progress */
-    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 flag;
 } Chunk;
 

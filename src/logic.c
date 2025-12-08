@@ -49,9 +49,9 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
         };
 
     if (
-            player->delta_chunk.x - player->chunk.x ||
-            player->delta_chunk.y - player->chunk.y ||
-            player->delta_chunk.z - player->chunk.z)
+            player->chunk_delta.x - player->chunk.x ||
+            player->chunk_delta.y - player->chunk.y ||
+            player->chunk_delta.z - player->chunk.z)
         flag |= FLAG_MAIN_CHUNK_BUF_DIRTY;
 
     player->movement_speed = SET_PLAYER_SPEED_WALK;
@@ -82,8 +82,7 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     }
     else
     {
-        gravity_update(dt,
-                &player->pos, &player->gravity_influence, player->mass);
+        gravity_update(dt, &player->pos, &player->gravity_influence, player->mass);
 
         if (player->flag & FLAG_PLAYER_SNEAKING)
             player->movement_speed = SET_PLAYER_SPEED_SNEAK;
@@ -98,15 +97,6 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
         player->camera.fovy = settings.fov - player->camera.zoom;
 
     /* ---- post-process parameters ----------------------------------------- */
-
-    player->movement = (v3f32){
-        clamp_f32(player->movement.x,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-        clamp_f32(player->movement.y,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-        clamp_f32(player->movement.z,
-                -SET_PLAYER_SPEED_MAX, SET_PLAYER_SPEED_MAX),
-    };
 
     player->movement_smooth = (v3f32){
         lerp_f32(player->movement_smooth.x, player->movement.x,
@@ -301,9 +291,9 @@ void player_target_update(Player *player)
     };
 
     player->target_snapped = (v3i64){
-        (i64)floorf(player->target.x),
-        (i64)floorf(player->target.y),
-        (i64)floorf(player->target.z),
+        (i64)floor(player->target.x),
+        (i64)floor(player->target.y),
+        (i64)floor(player->target.z),
     };
 }
 
@@ -548,6 +538,7 @@ void player_collision_update(f64 dt, Player *player)
                     player->pos.x -= player->vel.x * dt;
                     player->pos.y -= player->vel.y * dt;
                     player->pos.z -= player->vel.z * dt;
+
                     box_1[0] = (v3f64){
                         player->pos.x - (player->size.x / 2.0f),
                         player->pos.y - (player->size.y / 2.0f),
@@ -578,10 +569,10 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
     return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
-void gravity_update(f64 dt, v3f64 *position, v3f32 *influence, f32 mass)
+void gravity_update(f64 dt, v3f64 *position, v3f32 *acceleration, f32 mass)
 {
-    influence->z += GRAVITY * mass * dt;
-    position->x += influence->x * dt;
-    position->y += influence->y * dt;
-    position->z += influence->z * dt;
+    acceleration->z += GRAVITY * dt;
+    position->x += acceleration->x * dt;
+    position->y += acceleration->y * dt;
+    position->z += acceleration->z * dt;
 }

@@ -38,13 +38,13 @@ int main(int argc, char **argv)
     cmd_push(DIR_SRC"logic.c");
     cmd_push(DIR_SRC"terrain.c");
     cmd_push(stringf("-I%s", str_build_root));
+    cmd_push("-O1");
     cmd_push("-std=c99");
     cmd_push("-ggdb");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
-    snprintf(temp, CMD_SIZE, "%s",
-            "-Wl,-rpath="RUNTIME_PATH);
+    snprintf(temp, CMD_SIZE, "%s", "-Wl,-rpath="RUNTIME_PATH);
     normalize_slash(temp);
     cmd_push(temp);
     engine_link_libs();

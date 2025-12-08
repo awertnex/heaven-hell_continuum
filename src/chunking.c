@@ -51,10 +51,10 @@ static void _block_break(Chunk *chunk,
 static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain());
 
 /* -- INTERNAL USE ONLY -- */
-static void chunk_mesh_update(Chunk *chunk);
+static void chunk_mesh_init(Chunk *chunk);
 
 /* -- INTERNAL USE ONLY -- */
-static void chunk_mesh_init(Chunk *chunk);
+static void chunk_mesh_update(Chunk *chunk);
 
 /* -- INTERNAL USE ONLY -- */
 static void _chunk_serialize(Chunk *chunk, str *world_name);
@@ -65,12 +65,15 @@ static void _chunk_deserialize(Chunk *chunk, str *world_name);
 /* -- INTERNAL USE ONLY --;
  *
  * index = 'chunk_tab' index */
-static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk);
+static void _chunk_buf_push(u32 index, v3i16 player_chunk_delta);
 
 /* -- INTERNAL USE ONLY --;
  *
  * index = 'chunk_tab' index */
 static void _chunk_buf_pop(u32 index);
+
+/* -- INTERNAL USE ONLY -- */
+static void _chunk_queue_update(ChunkQueue *q);
 
 u32 chunking_init(void)
 {
@@ -290,14 +293,263 @@ cleanup:
     return *GAME_ERR;
 }
 
-void chunking_update(v3i16 player_delta_chunk)
+void chunking_update(v3i16 player_chunk, v3i16 *player_chunk_delta)
 {
-    u32 i = 0;
-    for (; i < CHUNKS_MAX[settings.render_distance]; ++i)
+    v3u32 _coordinates, _mirror_index, _target_index;
+    u32 mirror_index, target_index;
+    u8 is_on_edge;
+    v3u8 _is_on_edge;
+    i64 i;
+    v3i16 DELTA;
+    u8 AXIS;
+    i8 INCREMENT;
+    i32 RENDER_DISTANCE;
+    Chunk ***cursor;
+
+    _chunk_queue_update(&CHUNK_QUEUE_1);
+    if (!CHUNK_QUEUE_1.count && CHUNK_QUEUE_2.size)
+    {
+        _chunk_queue_update(&CHUNK_QUEUE_2);
+        if (!CHUNK_QUEUE_2.count && CHUNK_QUEUE_3.size)
+            _chunk_queue_update(&CHUNK_QUEUE_3);
+    }
+
+    if (!(flag & FLAG_MAIN_CHUNK_BUF_DIRTY))
+        return;
+
+chunk_tab_shift:
+
+    DELTA =
+    (v3i16){
+        player_chunk.x - player_chunk_delta->x,
+        player_chunk.y - player_chunk_delta->y,
+        player_chunk.z - player_chunk_delta->z,
+    };
+
+    AXIS =
+        DELTA.x > 0 ? STATE_CHUNK_SHIFT_PX :
+        DELTA.x < 0 ? STATE_CHUNK_SHIFT_NX :
+        DELTA.y > 0 ? STATE_CHUNK_SHIFT_PY :
+        DELTA.y < 0 ? STATE_CHUNK_SHIFT_NY :
+        DELTA.z > 0 ? STATE_CHUNK_SHIFT_PZ :
+        DELTA.z < 0 ? STATE_CHUNK_SHIFT_NZ : 0;
+
+    INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
+    RENDER_DISTANCE = settings.render_distance * settings.render_distance + 2;
+
+    if ((i32)len_v3f32(
+                (v3f32){DELTA.x, DELTA.y, DELTA.z}) > RENDER_DISTANCE)
+    {
+        cursor = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance] - 1;
+        for (; cursor >= CHUNK_ORDER; --cursor)
+            if (**cursor) _chunk_buf_pop(*cursor - chunk_tab);
+
+        *player_chunk_delta = player_chunk;
+        goto chunk_buf_push;
+    }
+
+    /* this keeps chunk_buf from exploding on a chunk_tab shift */
+    chunk_buf_cursor = 0;
+
+    switch (AXIS)
+    {
+        case STATE_CHUNK_SHIFT_PX:
+        case STATE_CHUNK_SHIFT_NX:
+            player_chunk_delta->x += INCREMENT;
+            break;
+
+        case STATE_CHUNK_SHIFT_PY:
+        case STATE_CHUNK_SHIFT_NY:
+            player_chunk_delta->y += INCREMENT;
+            break;
+
+        case STATE_CHUNK_SHIFT_PZ:
+        case STATE_CHUNK_SHIFT_NZ:
+            player_chunk_delta->z += INCREMENT;
+            break;
+
+        default:
+            goto chunk_buf_push;
+    }
+
+    /* ---- mark chunks on-edge --------------------------------------------- */
+
+    for (i = 0; i < settings.chunk_buf_volume; ++i)
+    {
+        if (!chunk_tab[i]) continue;
+
+        _coordinates =
+        (v3u32){
+            i % settings.chunk_buf_diameter,
+            (i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
+            i / settings.chunk_buf_layer,
+        };
+
+        _mirror_index =
+        (v3u32){
+            i + settings.chunk_buf_diameter - 1 - _coordinates.x * 2,
+
+            _coordinates.z * settings.chunk_buf_layer +
+                (settings.chunk_buf_diameter - 1 - _coordinates.y) *
+                settings.chunk_buf_diameter + _coordinates.x,
+
+            (settings.chunk_buf_diameter - 1 - _coordinates.z) * settings.chunk_buf_layer +
+                _coordinates.y * settings.chunk_buf_diameter + _coordinates.x,
+        };
+
+        switch (INCREMENT)
+        {
+            case -1:
+                _is_on_edge =
+                    (v3u8){
+                        _coordinates.x == settings.chunk_buf_diameter - 1 ||
+                            !chunk_tab[i + 1],
+
+                        _coordinates.y == settings.chunk_buf_diameter - 1 ||
+                            !chunk_tab[i + settings.chunk_buf_diameter],
+
+                        _coordinates.z == settings.chunk_buf_diameter - 1 ||
+                            !chunk_tab[i + settings.chunk_buf_layer],
+                    };
+                break;
+
+            case 1:
+                _is_on_edge =
+                    (v3u8){
+                        _coordinates.x == 0 || !chunk_tab[i - 1],
+
+                        _coordinates.y == 0 ||
+                            !chunk_tab[i - settings.chunk_buf_diameter],
+
+                        _coordinates.z == 0 ||
+                            !chunk_tab[i - settings.chunk_buf_layer],
+                    };
+                break;
+        }
+
+        switch (AXIS)
+        {
+            case STATE_CHUNK_SHIFT_PX:
+            case STATE_CHUNK_SHIFT_NX:
+                mirror_index = _mirror_index.x;
+                is_on_edge = _is_on_edge.x;
+                break;
+
+            case STATE_CHUNK_SHIFT_PY:
+            case STATE_CHUNK_SHIFT_NY:
+                mirror_index = _mirror_index.y;
+                is_on_edge = _is_on_edge.y;
+                break;
+
+            case STATE_CHUNK_SHIFT_PZ:
+            case STATE_CHUNK_SHIFT_NZ:
+                mirror_index = _mirror_index.z;
+                is_on_edge = _is_on_edge.z;
+                break;
+        }
+
+        if (is_on_edge)
+        {
+            chunk_tab[i]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER);
+            chunk_tab[i]->color = 0;
+            if (chunk_tab[mirror_index])
+                chunk_tab[mirror_index]->flag |= FLAG_CHUNK_EDGE;
+        }
+    }
+
+    /* ---- shift 'chunk_tab' ----------------------------------------------- */
+
+    for (i = (INCREMENT == 1) ? 0 : settings.chunk_buf_volume - 1;
+            i < settings.chunk_buf_volume && i >= 0; i += INCREMENT)
+    {
+        if (!chunk_tab[i]) continue;
+
+        _coordinates =
+        (v3u32){
+            i % settings.chunk_buf_diameter,
+            (i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
+            i / settings.chunk_buf_layer,
+        };
+
+        _mirror_index =
+        (v3u32){
+            i + settings.chunk_buf_diameter - 1 - _coordinates.x * 2,
+
+            _coordinates.z * settings.chunk_buf_layer +
+                (settings.chunk_buf_diameter - 1 - _coordinates.y) *
+                 settings.chunk_buf_diameter + _coordinates.x,
+
+            (settings.chunk_buf_diameter - 1 - _coordinates.z) * settings.chunk_buf_layer +
+                _coordinates.y * settings.chunk_buf_diameter + _coordinates.x,
+        };
+
+        switch (INCREMENT)
+        {
+            case -1:
+                _target_index = (v3u32){
+                        _coordinates.x == 0 ? i : i - 1,
+                        _coordinates.y == 0 ? i : i - settings.chunk_buf_diameter,
+                        _coordinates.z == 0 ? i : i - settings.chunk_buf_layer};
+                break;
+
+            case 1:
+                _target_index = (v3u32){
+                        _coordinates.x == settings.chunk_buf_diameter - 1 ? i : i + 1,
+
+                        _coordinates.y == settings.chunk_buf_diameter - 1 ?
+                            i : i + settings.chunk_buf_diameter,
+
+                        _coordinates.z == settings.chunk_buf_diameter - 1 ?
+                            i : i + settings.chunk_buf_layer};
+                break;
+        }
+
+        switch (AXIS)
+        {
+            case STATE_CHUNK_SHIFT_PX:
+            case STATE_CHUNK_SHIFT_NX:
+                mirror_index = _mirror_index.x;
+                target_index = _target_index.x;
+                break;
+
+            case STATE_CHUNK_SHIFT_PY:
+            case STATE_CHUNK_SHIFT_NY:
+                mirror_index = _mirror_index.y;
+                target_index = _target_index.y;
+                break;
+
+            case STATE_CHUNK_SHIFT_PZ:
+            case STATE_CHUNK_SHIFT_NZ:
+                mirror_index = _mirror_index.z;
+                target_index = _target_index.z;
+                break;
+        }
+
+        chunk_tab[i] = chunk_tab[target_index];
+        if (chunk_tab[i])
+        {
+            if (chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
+                chunk_tab[target_index] = NULL;
+
+            chunk_tab[i]->flag &= ~(FLAG_CHUNK_EDGE | FLAG_CHUNK_QUEUED);
+        }
+    }
+
+    if (flag & FLAG_MAIN_CHUNK_BUF_DIRTY)
+    {
+        if (DELTA.x || DELTA.y || DELTA.z)
+            goto chunk_tab_shift;
+        else
+            flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
+    }
+
+chunk_buf_push:
+
+    for (i = 0; i < CHUNKS_MAX[settings.render_distance]; ++i)
     {
         Chunk **p = CHUNK_ORDER[i];
         u32 index = p - chunk_tab;
-        if (!*p) _chunk_buf_push(index, player_delta_chunk);
+        if (!*p) _chunk_buf_push(index, *player_chunk_delta);
     }
 }
 
@@ -342,7 +594,7 @@ void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
     v3u32 coordinates =
     {
         index % settings.chunk_buf_diameter,
-        index / settings.chunk_buf_diameter % settings.chunk_buf_diameter,
+        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
         index / settings.chunk_buf_layer,
     };
 
@@ -460,7 +712,7 @@ void block_break(u32 index, u32 x, u32 y, u32 z)
     v3u32 coordinates =
     {
         index % settings.chunk_buf_diameter,
-        index / settings.chunk_buf_diameter % settings.chunk_buf_diameter,
+        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
         index / settings.chunk_buf_layer,
     };
 
@@ -594,7 +846,7 @@ static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
         nz = *(chunk - settings.chunk_buf_layer);
 
     x = ch->cursor % CHUNK_DIAMETER;
-    y = ch->cursor / CHUNK_DIAMETER % CHUNK_DIAMETER;
+    y = (ch->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
     z = ch->cursor / CHUNK_LAYER;
     for (; z < CHUNK_DIAMETER && rate; ++z)
     {
@@ -643,46 +895,55 @@ static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
         chunk_mesh_init(ch);
 }
 
-static void chunk_mesh_update(Chunk *chunk)
+static void chunk_mesh_init(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
-    if (!chunk || !chunk->vbo || !chunk->vao) return;
+
     u64 *buf = &buffer[cur_buf][0];
     u64 *cursor = buf;
-    u32 *i = &chunk->block[0][0][0];
-    u32 *p = i + CHUNK_VOLUME;
-    u64 index = 0;
-    v3u64 pos = {0};
+    u32 *i = (u32*)chunk->block;
+    u32 *end = i + CHUNK_VOLUME;
+    u64 index;
+    v3u64 pos;
     b8 should_render = FALSE;
-    for (; i < p; ++i)
+
+    for (; i < end; ++i)
         if (*i & MASK_BLOCK_FACES)
         {
             should_render = TRUE;
-            index = CHUNK_VOLUME - (u64)(p - i);
+            index = CHUNK_VOLUME - (end - i);
             pos =
                 (v3u64){
                     index % CHUNK_DIAMETER,
                     (index / CHUNK_DIAMETER) % CHUNK_DIAMETER,
                     index / CHUNK_LAYER,
                 };
-            *(cursor++) = (u64)*i |
-                (((u64)pos.x & 0xf) << 32) |
-                (((u64)pos.y & 0xf) << 36) |
-                (((u64)pos.z & 0xf) << 40);
+            *(cursor++) = *i |
+                (pos.x & 0xf) << SHIFT_BLOCK_X |
+                (pos.y & 0xf) << SHIFT_BLOCK_Y |
+                (pos.z & 0xf) << SHIFT_BLOCK_Z;
         }
     cur_buf = (cur_buf + 1) % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
     chunk->vbo_len = len;
 
+    if (!chunk->vao) glGenVertexArrays(1, &chunk->vao);
+    if (!chunk->vbo) glGenBuffers(1, &chunk->vbo);
+
     glBindVertexArray(chunk->vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
-            buf, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64), buf, GL_DYNAMIC_DRAW);
+
+    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    chunk->flag &= ~FLAG_CHUNK_DIRTY;
+    chunk->flag |= FLAG_CHUNK_GENERATED | FLAG_CHUNK_DIRTY;
 
     if (should_render)
     {
@@ -696,60 +957,47 @@ static void chunk_mesh_update(Chunk *chunk)
     }
 }
 
-static void chunk_mesh_init(Chunk *chunk)
+static void chunk_mesh_update(Chunk *chunk)
 {
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
 
-    if (!chunk) return;
+    if (!chunk->vbo || !chunk->vao) return;
     u64 *buf = &buffer[cur_buf][0];
     u64 *cursor = buf;
-    u32 *i = &chunk->block[0][0][0];
-    u32 *p = i + CHUNK_VOLUME;
-    u64 index = 0;
-    v3u64 pos = {0};
+    u32 *i = (u32*)chunk->block;
+    u32 *end = i + CHUNK_VOLUME;
+    u64 index;
+    v3u64 pos;
     b8 should_render = FALSE;
-    for (; i < p; ++i)
+
+    for (; i < end; ++i)
         if (*i & MASK_BLOCK_FACES)
         {
             should_render = TRUE;
-            index = CHUNK_VOLUME - (u64)(p - i);
+            index = CHUNK_VOLUME - (end - i);
             pos =
                 (v3u64){
                     index % CHUNK_DIAMETER,
                     (index / CHUNK_DIAMETER) % CHUNK_DIAMETER,
                     index / CHUNK_LAYER,
                 };
-            *(cursor++) = (u64)*i |
-                (((u64)pos.x & 0xf) << 32) |
-                (((u64)pos.y & 0xf) << 36) |
-                (((u64)pos.z & 0xf) << 40);
+            *(cursor++) = *i |
+                (pos.x & 0xf) << SHIFT_BLOCK_X |
+                (pos.y & 0xf) << SHIFT_BLOCK_Y |
+                (pos.z & 0xf) << SHIFT_BLOCK_Z;
         }
     cur_buf = (cur_buf + 1) % BLOCK_BUFFERS_MAX;
     u64 len = cursor - buf;
     chunk->vbo_len = len;
 
-    (chunk->vbo) ? glDeleteBuffers(1, &chunk->vbo) : 0;
-    (chunk->vao) ? glDeleteVertexArrays(1, &chunk->vao) : 0;
-
-    glGenVertexArrays(1, &chunk->vao);
-    glGenBuffers(1, &chunk->vbo);
     glBindVertexArray(chunk->vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk->vbo);
-    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64),
-            buf, GL_DYNAMIC_DRAW);
-
-    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64),
-            (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64),
-            (void*)sizeof(u32));
-    glEnableVertexAttribArray(1);
+    glBufferData(GL_ARRAY_BUFFER, len * sizeof(u64), buf, GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    chunk->flag |= FLAG_CHUNK_GENERATED | FLAG_CHUNK_DIRTY;
+    chunk->flag &= ~FLAG_CHUNK_DIRTY;
 
     if (should_render)
     {
@@ -774,12 +1022,12 @@ static void chunk_deserialize(Chunk *chunk, str *world_name)
 {
 }
 
-static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
+static void _chunk_buf_push(u32 index, v3i16 player_chunk_delta)
 {
     v3u32 coordinates =
     {
         index % settings.chunk_buf_diameter,
-        index / settings.chunk_buf_diameter % settings.chunk_buf_diameter,
+        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
         index / settings.chunk_buf_layer,
     };
 
@@ -788,17 +1036,22 @@ static void _chunk_buf_push(u32 index, v3i16 player_delta_chunk)
     for (; chunk < end; ++chunk)
         if (!(chunk->flag & FLAG_CHUNK_LOADED))
         {
+            if (chunk->vbo) glDeleteBuffers(1, &chunk->vbo);
+            if (chunk->vao) glDeleteVertexArrays(1, &chunk->vao);
             *chunk = (Chunk){0};
+
             chunk->pos =
                 (v3i16){
-                    player_delta_chunk.x + (coordinates.x - settings.chunk_buf_radius),
-                    player_delta_chunk.y + (coordinates.y - settings.chunk_buf_radius),
-                    player_delta_chunk.z + (coordinates.z - settings.chunk_buf_radius),
+                    player_chunk_delta.x + coordinates.x - settings.chunk_buf_radius,
+                    player_chunk_delta.y + coordinates.y - settings.chunk_buf_radius,
+                    player_chunk_delta.z + coordinates.z - settings.chunk_buf_radius,
                 };
+
             chunk->id =
-                ((u64)(chunk->pos.x & 0xffff) << 0x00) |
-                ((u64)(chunk->pos.y & 0xffff) << 0x10) |
-                ((u64)(chunk->pos.z & 0xffff) << 0x20);
+                (chunk->pos.x & 0xffff) << 0x00 |
+                (chunk->pos.y & 0xffff) << 0x10 |
+                (chunk->pos.z & 0xffff) << 0x20;
+
             chunk->color = COLOR_CHUNK_LOADED;
             chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
             chunk_tab[index] = chunk;
@@ -813,10 +1066,16 @@ static void _chunk_buf_pop(u32 index)
 {
     u32 index_popped = chunk_tab[index] - chunk_buf;
 
-    chunk_tab[index]->vbo ?
-        glDeleteBuffers(1, &chunk_tab[index]->vbo) : 0;
-    chunk_tab[index]->vao ?
-        glDeleteVertexArrays(1, &chunk_tab[index]->vao) : 0;
+    if (chunk_tab[index]->vbo)
+    {
+        glDeleteBuffers(1, &chunk_tab[index]->vbo);
+        chunk_tab[index]->vbo = 0;
+    }
+    if (chunk_tab[index]->vao)
+    {
+        glDeleteVertexArrays(1, &chunk_tab[index]->vao);
+        chunk_tab[index]->vao = 0;
+    }
 
     chunk_tab[index]->flag = 0;
     if (chunk_buf_cursor > index_popped)
@@ -825,7 +1084,7 @@ static void _chunk_buf_pop(u32 index)
 }
 
 /* TODO: grab chunks from disk if previously generated */
-void chunk_queue_update(ChunkQueue *q)
+static void _chunk_queue_update(ChunkQueue *q)
 {
     if (!MODE_INTERNAL_LOAD_CHUNKS) return;
 
@@ -862,6 +1121,7 @@ void chunk_queue_update(ChunkQueue *q)
     if (!q->count) return;
 
 generate_and_mesh:
+
     for (i = 0; i < size && rate_chunk; ++i)
         if (q->queue[i])
         {
@@ -878,237 +1138,17 @@ generate_and_mesh:
         }
 }
 
-void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk)
-{
-    v3u32 _coordinates, _mirror_index, _target_index;
-    u32 mirror_index, target_index;
-    u8 is_on_edge;
-    v3u8 _is_on_edge;
-    i64 i;
-    const v3i16 DELTA =
-    {
-        player_chunk.x - player_delta_chunk->x,
-        player_chunk.y - player_delta_chunk->y,
-        player_chunk.z - player_delta_chunk->z,
-    };
-    const u8 AXIS =
-        (DELTA.x > 0) ? STATE_CHUNK_SHIFT_PX :
-        (DELTA.x < 0) ? STATE_CHUNK_SHIFT_NX :
-        (DELTA.y > 0) ? STATE_CHUNK_SHIFT_PY :
-        (DELTA.y < 0) ? STATE_CHUNK_SHIFT_NY :
-        (DELTA.z > 0) ? STATE_CHUNK_SHIFT_PZ :
-        (DELTA.z < 0) ? STATE_CHUNK_SHIFT_NZ : 0;
-    if (!AXIS) return;
-    const i8 INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
-    const i32 RENDER_DISTANCE = (i32)powf(settings.render_distance, 2.0f) + 2;
-
-    if ((i32)len_v3f32(
-                (v3f32){DELTA.x, DELTA.y, DELTA.z}) > RENDER_DISTANCE)
-    {
-        for (i = 0; i < (i64)CHUNKS_MAX[settings.render_distance]; ++i)
-            if (*CHUNK_ORDER[i])
-                _chunk_buf_pop(CHUNK_ORDER[i] - chunk_tab);
-
-        *player_delta_chunk = player_chunk;
-        return;
-    }
-
-    /* this keeps chunk_buf from exploding on a chunk_tab shift */
-    chunk_buf_cursor = 0;
-
-    switch (AXIS)
-    {
-        case STATE_CHUNK_SHIFT_PX:
-        case STATE_CHUNK_SHIFT_NX:
-            player_delta_chunk->x += INCREMENT;
-            break;
-
-        case STATE_CHUNK_SHIFT_PY:
-        case STATE_CHUNK_SHIFT_NY:
-            player_delta_chunk->y += INCREMENT;
-            break;
-
-        case STATE_CHUNK_SHIFT_PZ:
-        case STATE_CHUNK_SHIFT_NZ:
-            player_delta_chunk->z += INCREMENT;
-            break;
-    }
-
-    /* ---- mark chunks on-edge --------------------------------------------- */
-
-    for (i = 0; i < settings.chunk_buf_volume; ++i)
-    {
-        if (!chunk_tab[i]) continue;
-
-        _coordinates =
-        (v3u32){
-            i % settings.chunk_buf_diameter,
-            i / settings.chunk_buf_diameter % settings.chunk_buf_diameter,
-            i / settings.chunk_buf_layer,
-        };
-
-        _mirror_index =
-        (v3u32){
-            i + settings.chunk_buf_diameter - 1 - _coordinates.x * 2,
-
-            _coordinates.z * settings.chunk_buf_layer +
-                (settings.chunk_buf_diameter - 1 - _coordinates.y) *
-                settings.chunk_buf_diameter + _coordinates.x,
-
-            (settings.chunk_buf_diameter - 1 - _coordinates.z) * settings.chunk_buf_layer +
-                _coordinates.y * settings.chunk_buf_diameter + _coordinates.x,
-        };
-
-        switch (INCREMENT)
-        {
-            case -1:
-                _is_on_edge =
-                    (v3u8){
-                        _coordinates.x == settings.chunk_buf_diameter - 1 ||
-                            !chunk_tab[i + 1],
-
-                        _coordinates.y == settings.chunk_buf_diameter - 1 ||
-                            !chunk_tab[i + settings.chunk_buf_diameter],
-
-                        _coordinates.z == settings.chunk_buf_diameter - 1 ||
-                            !chunk_tab[i + settings.chunk_buf_layer],
-                    };
-                break;
-
-            case 1:
-                _is_on_edge =
-                    (v3u8){
-                        _coordinates.x == 0 || !chunk_tab[i - 1],
-
-                        _coordinates.y == 0 ||
-                            !chunk_tab[i - settings.chunk_buf_diameter],
-
-                        _coordinates.z == 0 ||
-                            !chunk_tab[i - settings.chunk_buf_layer],
-                    };
-                break;
-        }
-
-        switch (AXIS)
-        {
-            case STATE_CHUNK_SHIFT_PX:
-            case STATE_CHUNK_SHIFT_NX:
-                mirror_index = _mirror_index.x;
-                is_on_edge = _is_on_edge.x;
-                break;
-
-            case STATE_CHUNK_SHIFT_PY:
-            case STATE_CHUNK_SHIFT_NY:
-                mirror_index = _mirror_index.y;
-                is_on_edge = _is_on_edge.y;
-                break;
-
-            case STATE_CHUNK_SHIFT_PZ:
-            case STATE_CHUNK_SHIFT_NZ:
-                mirror_index = _mirror_index.z;
-                is_on_edge = _is_on_edge.z;
-                break;
-        }
-
-        if (is_on_edge)
-        {
-            chunk_tab[i]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_RENDER);
-            chunk_tab[i]->color = 0;
-            if (chunk_tab[mirror_index])
-                chunk_tab[mirror_index]->flag |= FLAG_CHUNK_EDGE;
-        }
-    }
-
-    /* ---- shift chunk_tab ------------------------------------------------- */
-
-    for (i = (INCREMENT == 1) ? 0 : settings.chunk_buf_volume - 1;
-            i < settings.chunk_buf_volume && i >= 0; i += INCREMENT)
-    {
-        if (!chunk_tab[i]) continue;
-
-        _coordinates =
-        (v3u32){
-            i % settings.chunk_buf_diameter,
-            i / settings.chunk_buf_diameter % settings.chunk_buf_diameter,
-            i / settings.chunk_buf_layer,
-        };
-
-        _mirror_index =
-        (v3u32){
-            i + settings.chunk_buf_diameter - 1 - _coordinates.x * 2,
-
-            _coordinates.z * settings.chunk_buf_layer +
-                (settings.chunk_buf_diameter - 1 - _coordinates.y) *
-                 settings.chunk_buf_diameter + _coordinates.x,
-
-            (settings.chunk_buf_diameter - 1 - _coordinates.z) * settings.chunk_buf_layer +
-                _coordinates.y * settings.chunk_buf_diameter + _coordinates.x,
-        };
-
-        switch (INCREMENT)
-        {
-            case -1:
-                _target_index = (v3u32){
-                        _coordinates.x == 0 ? i : i - 1,
-                        _coordinates.y == 0 ? i : i - settings.chunk_buf_diameter,
-                        _coordinates.z == 0 ? i : i - settings.chunk_buf_layer};
-                break;
-
-            case 1:
-                _target_index = (v3u32){
-                        _coordinates.x == settings.chunk_buf_diameter - 1 ? i : i + 1,
-
-                        _coordinates.y == settings.chunk_buf_diameter - 1 ?
-                            i : i + settings.chunk_buf_diameter,
-
-                        _coordinates.z == settings.chunk_buf_diameter - 1 ?
-                            i : i + settings.chunk_buf_layer};
-                break;
-        }
-
-        switch (AXIS)
-        {
-            case STATE_CHUNK_SHIFT_PX:
-            case STATE_CHUNK_SHIFT_NX:
-                mirror_index = _mirror_index.x;
-                target_index = _target_index.x;
-                break;
-
-            case STATE_CHUNK_SHIFT_PY:
-            case STATE_CHUNK_SHIFT_NY:
-                mirror_index = _mirror_index.y;
-                target_index = _target_index.y;
-                break;
-
-            case STATE_CHUNK_SHIFT_PZ:
-            case STATE_CHUNK_SHIFT_NZ:
-                mirror_index = _mirror_index.z;
-                target_index = _target_index.z;
-                break;
-        }
-
-        chunk_tab[i] = chunk_tab[target_index];
-        if (chunk_tab[i])
-        {
-            if (chunk_tab[i]->flag & FLAG_CHUNK_EDGE)
-                chunk_tab[target_index] = NULL;
-
-            chunk_tab[i]->flag &= ~(FLAG_CHUNK_EDGE | FLAG_CHUNK_QUEUED);
-        }
-    }
-}
-
-u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target)
+u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_target_delta)
 {
     v3i16 offset =
     {
-        (i16)floorf((f64)player_delta_target.x / CHUNK_DIAMETER) -
+        (i16)floorf((f64)player_target_delta.x / CHUNK_DIAMETER) -
             player_chunk.x + settings.chunk_buf_radius,
 
-        (i16)floorf((f64)player_delta_target.y / CHUNK_DIAMETER) -
+        (i16)floorf((f64)player_target_delta.y / CHUNK_DIAMETER) -
             player_chunk.y + settings.chunk_buf_radius,
 
-        (i16)floorf((f64)player_delta_target.z / CHUNK_DIAMETER) -
+        (i16)floorf((f64)player_target_delta.z / CHUNK_DIAMETER) -
             player_chunk.z + settings.chunk_buf_radius,
     };
     return
