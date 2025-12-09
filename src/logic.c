@@ -87,7 +87,7 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     }
     else
     {
-        gravity_update(dt, &player->pos, &player->gravity_influence, player->mass);
+        gravity_update(dt, &player->pos, &player->gravity_influence, player->weight);
 
         if (player->flag & FLAG_PLAYER_SNEAKING)
             player->movement_speed = SET_PLAYER_SPEED_SNEAK;
@@ -105,13 +105,13 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
 
     player->movement_smooth = (v3f32){
         lerp_f32(player->movement_smooth.x, player->movement.x,
-                player->movement_lerp_speed.x, dt),
+                dt, player->movement_lerp_speed.x),
 
         lerp_f32(player->movement_smooth.y, player->movement.y,
-                player->movement_lerp_speed.y, dt),
+                dt, player->movement_lerp_speed.y),
 
         lerp_f32(player->movement_smooth.z, player->movement.z,
-                player->movement_lerp_speed.z, dt),
+                dt, player->movement_lerp_speed.z),
     };
 
     player->pos = (v3f64){
@@ -120,18 +120,20 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
         player->pos.z + player->movement_smooth.z * dt,
     };
 
-    player->vel = (v3f32){
+    player->velocity = (v3f32){
         (player->pos.x - player->pos_last.x) / dt,
         (player->pos.y - player->pos_last.y) / dt,
         (player->pos.z - player->pos_last.z) / dt,
     };
 
     player->pos_last = player->pos;
-    player->speed = sqrtf(len_v3f32(player->vel));
+    player->speed = sqrtf(len_v3f32(player->velocity));
+    if (player->speed > EPSILON)
+        player->camera.fovy += player->speed * 0.05f;
     player->camera.fovy = clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
-                settings.lerp_speed, dt);
+                dt, settings.lerp_speed);
 }
 
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
@@ -147,8 +149,8 @@ static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
     const i64 WORLD_MARGIN_V =
         (radius_v - SET_RENDER_DISTANCE_MAX) * chunk_diameter;
 
-    const i64 OVERFLOW_EDGE     = (radius + 1) * chunk_diameter;
-    const i64 OVERFLOW_EDGE_V   = (radius_v + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE =     (radius + 1) * chunk_diameter;
+    const i64 OVERFLOW_EDGE_V =   (radius_v + 1) * chunk_diameter;
 
     /* ---- world margin ---------------------------------------------------- */
 
@@ -181,12 +183,36 @@ static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
 
     /* ---- overflow edge --------------------------------------------------- */
 
-    if (player->pos.x > OVERFLOW_EDGE)      player->pos.x -= DIAMETER;
-    if (player->pos.x < -OVERFLOW_EDGE)     player->pos.x += DIAMETER;
-    if (player->pos.y > OVERFLOW_EDGE)      player->pos.y -= DIAMETER;
-    if (player->pos.y < -OVERFLOW_EDGE)     player->pos.y += DIAMETER;
-    if (player->pos.z > OVERFLOW_EDGE_V)    player->pos.z -= DIAMETER_V;
-    if (player->pos.z < -OVERFLOW_EDGE_V)   player->pos.z += DIAMETER_V;
+    if (player->pos.x > OVERFLOW_EDGE)
+    {
+        player->pos.x -= DIAMETER;
+        player->pos_last.x -= DIAMETER;
+    }
+    if (player->pos.x < -OVERFLOW_EDGE)
+    {
+        player->pos.x += DIAMETER;
+        player->pos_last.x += DIAMETER;
+    }
+    if (player->pos.y > OVERFLOW_EDGE)
+    {
+        player->pos.y -= DIAMETER;
+        player->pos_last.y -= DIAMETER;
+    }
+    if (player->pos.y < -OVERFLOW_EDGE)
+    {
+        player->pos.y += DIAMETER;
+        player->pos_last.y += DIAMETER;
+    }
+    if (player->pos.z > OVERFLOW_EDGE_V)
+    {
+        player->pos.z -= DIAMETER_V;
+        player->pos_last.z -= DIAMETER_V;
+    }
+    if (player->pos.z < -OVERFLOW_EDGE_V)
+    {
+        player->pos.z += DIAMETER_V;
+        player->pos_last.z += DIAMETER_V;
+    }
 }
 
 void player_camera_movement_update(
@@ -201,7 +227,7 @@ void player_camera_movement_update(
         else zoom = 0.0f;
 
         f32 sensitivity = settings.mouse_sensitivity /
-            ((zoom / CAMERA_ZOOM_SENSITIVITY) + 1.0f);
+            (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0f);
 
         player->yaw += mouse_delta.x * sensitivity;
         player->pitch += mouse_delta.y * sensitivity;
@@ -211,8 +237,7 @@ void player_camera_movement_update(
     if (player->yaw < 0.0f)
         player->yaw += CAMERA_RANGE_MAX;
 
-    player->pitch = clamp_f32(player->pitch,
-            -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
+    player->pitch = clamp_f32(player->pitch, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
 
     player->sin_pitch = sin(player->pitch * DEG2RAD);
     player->cos_pitch = cos(player->pitch * DEG2RAD);
@@ -241,30 +266,22 @@ void player_camera_movement_update(
         case MODE_CAMERA_3RD_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x -
-                        ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y +
-                        ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z + player->eye_height +
-                        (SPCH * player->camera_distance),
+                    player->pos.x - CYAW * CPCH * player->camera_distance,
+                    player->pos.y + SYAW * CPCH * player->camera_distance,
+                    player->pos.z + player->eye_height + SPCH * player->camera_distance,
                 };
             break;
 
         case MODE_CAMERA_3RD_PERSON_FRONT:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x +
-                        ((CYAW * CPCH) * player->camera_distance),
-                    player->pos.y -
-                        ((SYAW * CPCH) * player->camera_distance),
-                    player->pos.z + player->eye_height -
-                        (SPCH * player->camera_distance),
+                    player->pos.x + CYAW * CPCH * player->camera_distance,
+                    player->pos.y - SYAW * CPCH * player->camera_distance,
+                    player->pos.z + player->eye_height - SPCH * player->camera_distance,
                 };
             player->camera.sin_pitch = -SPCH;
-            player->camera.sin_yaw =
-                sin((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
-            player->camera.cos_yaw =
-                cos((player->yaw + (CAMERA_RANGE_MAX / 2.0f)) * DEG2RAD);
+            player->camera.sin_yaw = sin((player->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
+            player->camera.cos_yaw = cos((player->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
             break;
 
             /* TODO: make the stalker camera mode */
@@ -322,7 +339,7 @@ void set_player_spawn(Player *player, i64 x, i64 y, i64 z)
 void player_kill(Player *player)
 {
     player->movement = (v3f32){0};
-    player->vel = (v3f32){0};
+    player->velocity = (v3f32){0};
     player->gravity_influence = (v3f32){0};
     player->flag |= FLAG_PLAYER_DEAD;
 }
@@ -540,9 +557,9 @@ void player_collision_update(f64 dt, Player *player)
                         player->gravity_influence.z = 0.0f;
                     }
 
-                    player->pos.x -= player->vel.x * dt;
-                    player->pos.y -= player->vel.y * dt;
-                    player->pos.z -= player->vel.z * dt;
+                    player->pos.x -= player->velocity.x * dt;
+                    player->pos.y -= player->velocity.y * dt;
+                    player->pos.z -= player->velocity.z * dt;
 
                     box_1[0] = (v3f64){
                         player->pos.x - (player->size.x / 2.0f),
@@ -574,9 +591,9 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
     return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
-void gravity_update(f64 dt, v3f64 *position, v3f32 *acceleration, f32 mass)
+void gravity_update(f64 dt, v3f64 *position, v3f32 *acceleration, f32 weight)
 {
-    acceleration->z += GRAVITY * dt;
+    acceleration->z += GRAVITY * weight * dt;
     position->x += acceleration->x * dt;
     position->y += acceleration->y * dt;
     position->z += acceleration->z * dt;

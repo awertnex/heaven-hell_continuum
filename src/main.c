@@ -18,7 +18,6 @@
 #include "h/logic.h"
 #include "h/terrain.h"
 
-u32 engine_err = ERR_SUCCESS;
 u32 *const GAME_ERR = (u32*)&engine_err;
 u32 chunk_tab_index = 0;
 
@@ -52,7 +51,7 @@ static Player lily =
     .sin_pitch = 0.0f, .cos_pitch = 0.0f,
     .sin_yaw = 0.0f, .cos_yaw = 0.0f,
     .eye_height = SET_PLAYER_EYE_HEIGHT,
-    .mass = 2.0f,
+    .weight = 2.0f,
     .movement_speed = SET_PLAYER_SPEED_WALK,
     .camera_mode = 0,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
@@ -1447,7 +1446,7 @@ static void draw_everything(void)
                 chunk_tab[settings.chunk_tab_center]->pos.z : 0,
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw,
-                lily.vel.x, lily.vel.y, lily.vel.z,
+                lily.velocity.x, lily.velocity.y, lily.velocity.z,
                 lily.speed),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);

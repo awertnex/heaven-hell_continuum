@@ -19,6 +19,10 @@ str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
 
 u32 paths_init(void)
 {
+    str *path_bin_root = NULL;
+    str string[PATH_MAX] = {0};
+    u32 i = 0;
+
     snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
     snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
     snprintf(DIR_ROOT[DIR_AUDIO],           NAME_MAX, "%s", "assets/audio/");
@@ -42,10 +46,6 @@ u32 paths_init(void)
     snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], NAME_MAX, "%s", "entities/");
     snprintf(DIR_WORLD[DIR_WORLD_LOGS],     NAME_MAX, "%s", "logs/");
     snprintf(DIR_WORLD[DIR_WORLD_PLAYER],   NAME_MAX, "%s", "player/");
-
-    str *path_bin_root = NULL;
-    str string[PATH_MAX] = {0};
-    u32 i = 0;
 
     path_bin_root = get_path_bin_root();
     if (*GAME_ERR != ERR_SUCCESS)

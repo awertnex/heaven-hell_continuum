@@ -38,7 +38,7 @@
 #define SET_RENDER_DISTANCE_MAX         32
 #define SET_FOV_DEFAULT                 70
 #define SET_FOV_MIN                     30
-#define SET_FOV_MAX                     150
+#define SET_FOV_MAX                     160
 #define SET_MOUSE_SENSITIVITY_DEFAULT   100
 #define SET_MOUSE_SENSITIVITY_MIN       10
 #define SET_MOUSE_SENSITIVITY_MAX       200
@@ -578,7 +578,7 @@ typedef struct ChunkQueue
     Chunk ***queue;
 } ChunkQueue;
 
-/*! @brief global pointer to game/engine specific error codes.
+/*! @brief global pointer to variable for game/engine-specific error codes.
  *
  *  @remark must be initialized globally, tho the pointed to variable itself can be modified.
  */
