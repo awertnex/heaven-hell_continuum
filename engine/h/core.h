@@ -8,7 +8,7 @@
 
 #define ENGINE_AUTHOR           "Lily Awertnex"
 #define ENGINE_NAME             "Fossil Engine"
-#define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
+#define ENGINE_VERSION          "0.1.3"ENGINE_VERSION_STABLE
 
 #include <engine/include/glad/glad.h>
 #define GLFW_INCLUDE_NONE
@@ -477,9 +477,9 @@ void font_free(Font *font);
 
 /*! -- IMPLEMENTATION: text.c --;
  *
- * @brief init text rendering settings.
+ *  @brief init text rendering settings.
  *
- * @return non-zero on failure and 'engine_err' is set accordingly.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
  */
 u32 text_init(ShaderProgram *program);
 
@@ -504,6 +504,7 @@ void text_start(u64 length, f32 size, Font *font,
  *
  *  @remark can be called multiple times within a text rendering batch,
  *  chained with 'text_render()'.
+ *
  *  @remark default alignment top left (0, 0), enum: TextAlignment.
  */
 void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);

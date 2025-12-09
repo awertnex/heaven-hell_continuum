@@ -48,10 +48,12 @@ static u64 cmd_pos = 0;
 
 static u32 is_build_source_changed(void);
 
-/* can force-terminate process */
+/*! @remark can force-terminate process.
+ */
 static void self_rebuild(char **argv);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _engine_link_libs(void);
 
 static void cmd_show(void);
@@ -208,6 +210,7 @@ u32 engine_build(const str *engine_dir, const str *out_dir)
     cmd_push("-shared");
     cmd_push("-fPIC");
     cmd_push("-std=c99");
+    cmd_push("-Ofast");
     cmd_push("-Wall");
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");

@@ -146,30 +146,30 @@ static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 
 /*! -- INTERNAL USE ONLY --;
  *
- * @brief process shader before compilation.
+ *  @brief process shader before compilation.
  *
- * parse includes recursively.
+ *  parse includes recursively.
  *
- * @return NULL on failure and 'engine_err' is set accordingly.
+ *  @return NULL on failure and 'engine_err' is set accordingly.
  */
 static str *shader_pre_process(const str *path, u64 *file_len);
 
 /*! -- INTERNAL USE ONLY --;
  *
- * @brief process shader before compilation.
+ *  @brief process shader before compilation.
  *
- * parse includes recursively.
+ *  parse includes recursively.
  *
- * @return NULL on failure and 'engine_err' is set accordingly.
+ *  @return NULL on failure and 'engine_err' is set accordingly.
  */
 static str *_shader_pre_process(const str *path, u64 *file_len,
         u64 recursion_limit);
 
 /*! -- INTERNAL USE ONLY --;
  *
- * @brief generate texture for opengl from 'buf'.
+ *  @brief generate texture for opengl from 'buf'.
  *
- * @return non-zero on failure and 'engine_err' is set accordingly.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
  */
 static u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,

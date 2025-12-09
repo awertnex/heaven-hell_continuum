@@ -56,6 +56,8 @@ v3f32 normalize_v3f32(v3f32 v)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Warray-bounds"
 f32 q_rsqrt(f32 n)
 {
     i64 i;
@@ -235,7 +237,7 @@ f32 smoothstep_f32(f32 a, f32 b, f32 t)
 
 f32 rand_f32(i32 n)
 {
-    const u32 S = 32;
+    const u32 S = 31;
     u32 a = (i32)n + 234678493574;
     u32 b = (i32)n - 879763936541;
 
