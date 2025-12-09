@@ -551,6 +551,8 @@ chunk_buf_push:
         u32 index = p - chunk_tab;
         if (!*p) _chunk_buf_push(index, *player_chunk_delta);
     }
+
+    flag &= ~FLAG_MAIN_CHUNK_BUF_DIRTY;
 }
 
 void chunking_free(void)

@@ -953,7 +953,7 @@ static void draw_everything(void)
             sin(skybox_data.time * PI * 2.0f),
         };
 
-    f32 intensity = 0.0039f;
+    f32 intensity =     0.0039f;
     f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
 
     f32 pre_burn =      fabsf(sinf(powf(sinf(
