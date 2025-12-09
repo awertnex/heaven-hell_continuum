@@ -73,15 +73,16 @@
 #define WORLD_RADIUS            2048    /* chunk count */
 #define WORLD_RADIUS_VERTICAL   64      /* chunk count */
 
-#define WORLD_DIAMETER          ((WORLD_RADIUS * 2) + 1)
-#define WORLD_DIAMETER_VERTICAL ((WORLD_RADIUS_VERTICAL * 2) + 1)
+#define WORLD_DIAMETER          (WORLD_RADIUS * 2 + 1)
+#define WORLD_DIAMETER_VERTICAL (WORLD_RADIUS_VERTICAL * 2 + 1)
 #define WORLD_MAX_CHUNKS        (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
 #define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
-#define CHUNK_BUF_DIAMETER_MAX  ((CHUNK_BUF_RADIUS_MAX * 2) + 1)
+#define CHUNK_BUF_DIAMETER_MAX  (CHUNK_BUF_RADIUS_MAX * 2 + 1)
 #define CHUNK_BUF_LAYER_MAX     (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 #define CHUNK_BUF_VOLUME_MAX    (CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX * CHUNK_BUF_DIAMETER_MAX)
 
+#define CHUNK_QUEUES_MAX        3
 #define CHUNK_QUEUE_1ST_ID      0
 #define CHUNK_QUEUE_2ND_ID      1
 #define CHUNK_QUEUE_3RD_ID      2
@@ -90,15 +91,19 @@
 #define CHUNK_QUEUE_2ND_MAX     4096
 #define CHUNK_QUEUE_3RD_MAX     16384
 
-/* 'chunk_mesh()' temp static buffer count */
+/*! @brief count of temporary static buffers in internal functions
+ *  'chunk_mesh_init()' and 'chunk_mesh_update()'.
+ */
 #define BLOCK_BUFFERS_MAX       2
 
-/* number of chunks to process per frame */
+/*! @brief number of chunks to process per frame.
+ */
 #define CHUNK_PARSE_RATE_PRIORITY_LOW       128
 #define CHUNK_PARSE_RATE_PRIORITY_MID       256
 #define CHUNK_PARSE_RATE_PRIORITY_HIGH      CHUNK_VOLUME
 
-/* number of blocks to process per chunk per frame */
+/*! @brief number of blocks to process per chunk per frame.
+ */
 #define BLOCK_PARSE_RATE                    768
 
 #define TERRAIN_SEED_DEFAULT    0
@@ -147,7 +152,10 @@ struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
 
-    /* conversion from world-space to screen-space */
+    /*! @brief conversion from world-space to screen-space.
+     *
+     *  @remark read-only, updated internally in 'main.c/settings_update()'.
+     */
     v2f32 ndc_scale;
 
     u32 fps;
@@ -158,7 +166,8 @@ struct Settings
     u32 chunk_buf_volume;
     u32 chunk_tab_center;
 
-    /* for player reach (arm length) */
+    /*! @brief player reach (arm length).
+     */
     u8 reach_distance;
 
     /* ---- controls -------------------------------------------------------- */
@@ -356,8 +365,9 @@ enum PlayerFlag
     FLAG_PLAYER_OVERFLOW_Y      = 0x00000400,
     FLAG_PLAYER_OVERFLOW_Z      = 0x00000800,
 
-    /* positive overflow direction flags,
-     * default is negative (or 0) */
+    /*! @brief positive overflow direction flags,
+     *  @remark default is 0 for negative overflow (underflow).
+     */
     FLAG_PLAYER_OVERFLOW_PX     = 0x00001000,
     FLAG_PLAYER_OVERFLOW_PY     = 0x00002000,
     FLAG_PLAYER_OVERFLOW_PZ     = 0x00004000,
@@ -378,19 +388,19 @@ typedef struct Player
     str name[64];                   /* player in-game name */
     v3f64 pos;                      /* player current coordinates in world */
     v3f64 pos_last;                 /* player previous coordinates in world */
+    v3f32 size;                     /* player size (for collision detection) */
     v3f64 target;                   /* player arm */
-    v3i64 target_snapped;           /* player arm floored */
-    v3f32 size;                     /* player size for collision detection */
+    v3i64 target_snapped;           /* floor of player arm */
     v3f64 collision_check_pos;
     v3f64 collision_check_size;
-    f32 pitch, yaw;                 /* for player camera direction and target */
-    f32 sin_pitch;                  /* processed player pitch sine angle */
-    f32 cos_pitch;                  /* processed player pitch cosine angle */
-    f32 sin_yaw;                    /* processed player yaw sine angle */
-    f32 cos_yaw;                    /* processed player yaw cosine angle */
-    f32 eye_height;                 /* height of player camera, usually */
-    v3f32 vel;                      /* velocity */
-    f32 mass;                       /* for gravity influence */
+    f32 pitch, yaw;                 /* player look direction */
+    f32 sin_pitch;                  /* sine of player pitch */
+    f32 cos_pitch;                  /* cosine of player pitch */
+    f32 sin_yaw;                    /* sine of player yaw */
+    f32 cos_yaw;                    /* cosine of player yaw */
+    f32 eye_height;                 /* player eye-level (camera height) */
+    v3f32 velocity;
+    f32 weight;
     v3f32 gravity_influence;
     f32 speed;                      /* derived from velocity */
     v3f32 movement;                 /* raw movement from user input */
@@ -400,15 +410,16 @@ typedef struct Player
     u64 flag;                       /* enum: PlayerFlag */
 
     Camera camera;
-    Camera camera_hud;
-    u8 camera_mode;                 /* camera perspective mode */
+    Camera camera_hud;              /* for hud 3d gizmos */
     f32 camera_distance;            /* for camera collision detection */
+    u8 camera_mode;                 /* enum: CameraModes */
 
-    /* player at world edge, enum: PlayerFlag */
+    /*! @brief player at world edge, enum: PlayerFlag.
+     */
     u8 overflow;
 
-    v3i16 chunk;                    /* current chunk player is in */
-    v3i16 chunk_delta;              /* previous chunk player was in */
+    v3i16 chunk;                    /* player current chunk */
+    v3i16 chunk_delta;              /* player previous chunk */
 
     v3i64 spawn_point;
     u64 container_state;            /* enum: ContainerFlag */
@@ -443,7 +454,8 @@ enum BlockFlag
      * 31 [00000000 00100000 00000000 00000000] 00; */
     FLAG_BLOCK_FACE_NZ =        0x0000000000200000,
 
-    /* run-length encoding (for chunk serialization)
+    /*! @brief run-length encoding, for chunk serialization.
+     *
      * 63 [00000000 00000000 00000000 00000000] 32;
      * 31 [00000000 10000000 00000000 00000000] 00; */
     FLAG_BLOCK_RLE =            0x0000000000800000,
@@ -509,7 +521,8 @@ enum ChunkFlag
     FLAG_CHUNK_GENERATED =  0x08,
     FLAG_CHUNK_RENDER =     0x10,
 
-    /* chunk marking for chunk_tab shifting logic */
+    /*! @brief chunk marking for chunk_tab shifting logic.
+     */
     FLAG_CHUNK_EDGE =       0x20,
 }; /* ChunkFlag */
 
@@ -527,14 +540,25 @@ typedef struct Chunk
 {
     v3i16 pos;      /* world position / CHUNK_DIAMETER */
 
-    /* format:
+    /*! @brief chunk's unique id derived from its position.
+     *
+     * format:
      * (pos.x & 0xffff) << 0x00 |
      * (pos.y & 0xffff) << 0x10 |
-     * (pos.z & 0xffff) << 0x20 */
+     * (pos.z & 0xffff) << 0x20.
+     */
     u64 id;
 
-    u32 color;      /* debug color: 0xrrggbbaa */
-    u32 cursor;     /* block iterator for per-chunk generation progress */
+    /*! @brief debug color,
+     *
+     *  format: 0xrrggbbaa.
+     */
+    u32 color;
+
+    /*! @brief block iterator for per-chunk generation progress.
+     */
+    u32 cursor;
+
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     GLuint vao;
     GLuint vbo;
@@ -554,7 +578,12 @@ typedef struct ChunkQueue
     Chunk ***queue;
 } ChunkQueue;
 
+/*! @brief global pointer to game/engine specific error codes.
+ *
+ *  @remark must be initialized globally, tho the pointed to variable itself can be modified.
+ */
 extern u32 *const GAME_ERR;
+
 extern struct Settings settings;
 extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];

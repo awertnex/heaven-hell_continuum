@@ -12,7 +12,6 @@
 #include "h/diagnostics.h"
 #include "h/dir.h"
 
-u32 *const GAME_DIR_ERR = (u32*)&engine_err;
 str PATH_ROOT[PATH_MAX] = {0};
 str PATH_WORLD[PATH_MAX] = {0};
 str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
@@ -49,8 +48,8 @@ u32 paths_init(void)
     u32 i = 0;
 
     path_bin_root = get_path_bin_root();
-    if (*GAME_DIR_ERR != ERR_SUCCESS)
-        return *GAME_DIR_ERR;
+    if (*GAME_ERR != ERR_SUCCESS)
+        return *GAME_ERR;
 
     snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
     mem_free((void*)&path_bin_root, strlen(path_bin_root),
@@ -73,11 +72,11 @@ u32 paths_init(void)
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
         if (!is_dir_exists(DIR_ROOT[i], TRUE) != ERR_SUCCESS)
-            return *GAME_DIR_ERR;
+            return *GAME_ERR;
 
     LOGINFO(TRUE, "Main Directory Created '%s'\n", PATH_ROOT);
-    *GAME_DIR_ERR = ERR_SUCCESS;
-    return *GAME_DIR_ERR;
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
 }
 
 u32 world_dir_init(const str *world_name)
@@ -89,14 +88,14 @@ u32 world_dir_init(const str *world_name)
     {
         LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
                 "World Creation '%s' Failed\n", world_name);
-        return *GAME_DIR_ERR;
+        return *GAME_ERR;
     }
 
     if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
     {
         LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
                 "World Creation '%s' Failed\n", world_name);
-        return *GAME_DIR_ERR;
+        return *GAME_ERR;
     }
 
     snprintf(PATH_WORLD, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
@@ -107,7 +106,7 @@ u32 world_dir_init(const str *world_name)
     {
         LOGERROR(FALSE, ERR_WORLD_EXISTS,
                 "World Already Exists '%s'\n", world_name);
-        return *GAME_DIR_ERR;
+        return *GAME_ERR;
     }
 
     make_dir(PATH_WORLD);
@@ -128,9 +127,9 @@ u32 world_dir_init(const str *world_name)
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
         if (is_dir_exists(DIR_WORLD[i], TRUE) != ERR_SUCCESS)
-            return *GAME_DIR_ERR;
+            return *GAME_ERR;
 
     LOGINFO(FALSE, "World Created '%s'\n", world_name);
-    *GAME_DIR_ERR = ERR_SUCCESS;
-    return *GAME_DIR_ERR;
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
 }

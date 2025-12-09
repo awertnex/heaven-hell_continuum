@@ -9,7 +9,7 @@
 
 enum Directories
 {
-    /* ---- grandpath directories ------------------------------------------- */
+    /* ---- root directories ------------------------------------------------ */
 
     DIR_LOGS,
     DIR_ASSETS,
@@ -40,16 +40,21 @@ enum Directories
     DIR_WORLD_COUNT,
 }; /* Directories */
 
-extern u32 *game_dir_err;
 extern str PATH_ROOT[PATH_MAX];
 extern str PATH_WORLD[PATH_MAX];
 extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
 extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
 
-/* return non-zero on failure and game_err is set accordingly */
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 paths_init(void);
 
-/* return non-zero on failure and game_err is set accordingly */
+/*! @brief initialize world directory structure.
+ *
+ *  create world directories needed on disk.
+ *
+ *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 world_dir_init(const str *world_name);
 
 #endif /* GAME_DIR_H */

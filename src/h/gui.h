@@ -34,16 +34,19 @@ enum MenuNames
 enum ButtonNames
 {
     /* ---- title screen ---------------------------------------------------- */
+
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER,
     BTN_SETTINGS,
     BTN_QUIT,
 
     /* ---- world menu ------------------------------------------------------ */
+
     BTN_UNPAUSE = 0,
     BTN_ENABLE_LAN_CONNECTION,
 
     /* ---- settings -------------------------------------------------------- */
+
     BTN_DONE = 0,
     BTN_FOV,
     BTN_SETTINGS_AUDIO,
@@ -51,6 +54,7 @@ enum ButtonNames
     BTN_CONTROLS,
 
     /* ---- hotbar slots ---------------------------------------------------- */
+
     BTN_HOTBAR_1,
     BTN_HOTBAR_2,
     BTN_HOTBAR_3,
@@ -62,6 +66,7 @@ enum ButtonNames
     BTN_HOTBAR_9,
 
     /* ---- functional ------------------------------------------------------ */
+
     BTN_ITEM_IN_1,
     BTN_ITEM_IN_2,
     BTN_ITEM_IN_3,
@@ -76,11 +81,13 @@ enum ButtonNames
     BTN_ITEM_OUT_3,
 
     /* ---- super debugger (SDB) -------------------------------------------- */
+
     BTN_SDB_ADD,
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-/* return non-zero on failure and game_err is set accordingly */
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 gui_init(void);
 
 void gui_free(void);
@@ -108,7 +115,5 @@ void btn_func_back();
 void btn_func_unpause();
 void btn_func_quit_game();
 void btn_func_quit_world();
-
-extern u32 *game_gui_err;
 
 #endif /* GAME_GUI_H */

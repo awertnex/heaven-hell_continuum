@@ -18,61 +18,73 @@
 
 u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
 
-/* chunk buffer, raw chunk data */
+/*! @brief chunk buffer, raw chunk data.
+ */
 static Chunk *chunk_buf = NULL;
+
+/*! @brief position of first empty slot in 'chunk_buf'
+ *
+ *  @remark updated internally.
+ */
 static u64 chunk_buf_cursor = 0;
 
-/* chunk pointer look-up table that points to chunk_buf addresses.
- * mapping of chunk_buf entries to chunk positions in 3d space */
 Chunk **chunk_tab = NULL;
-
-/* chunk pointer pointer look-up table that points to chunk_tab addresses.
- * order of chunk_tab based on distance away from player */
 Chunk ***CHUNK_ORDER = NULL;
+ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX] = {0};
 
-/* queues of chunks to be processed */
-ChunkQueue CHUNK_QUEUE_1 = {0};
-ChunkQueue CHUNK_QUEUE_2 = {0};
-ChunkQueue CHUNK_QUEUE_3 = {0};
-
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _block_place(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z, BlockID block_id);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _block_break(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
         v3u32 coordinates, u32 x, u32 y, u32 z);
 
-/* index = 'chunk_tab' index,
- * rate = number of blocks to process per chunk per frame,
- * terrain = the final terrain noise function to execute */
+/*! @brief generate chunk blocks.
+ *
+ *  @param index = 'chunk_tab' index.
+ *  @param rate = number of blocks to process per chunk per frame.
+ *  @param terrain = the terrain function to execute.
+ *
+ *  @remark calls 'chunk_mesh_init()' when done generating.
+ *  @remark must be called before 'chunk_mesh_update()'.
+ */
 static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain());
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void chunk_mesh_init(Chunk *chunk);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void chunk_mesh_update(Chunk *chunk);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _chunk_serialize(Chunk *chunk, str *world_name);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _chunk_deserialize(Chunk *chunk, str *world_name);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * index = 'chunk_tab' index */
+ *  @param index = index into global array 'chunk_tab'.
+ */
 static void _chunk_buf_push(u32 index, v3i16 player_chunk_delta);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * index = 'chunk_tab' index */
+ *  @param index = index into global array 'chunk_tab'.
+ */
 static void _chunk_buf_pop(u32 index);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static void _chunk_queue_update(ChunkQueue *q);
 
 u32 chunking_init(void)
@@ -110,7 +122,7 @@ u32 chunking_init(void)
                 "chunking_init().index") != ERR_SUCCESS)
         goto cleanup;
 
-    /* ---- build distance lookups ------------------------------------------ */
+    /* ---- build distance look-ups ----------------------------------------- */
 
     for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
     {
@@ -180,7 +192,7 @@ u32 chunking_init(void)
     mem_free((void*)&CHUNK_ORDER_lookup_file_contents, file_len,
             "chunking_init().CHUNK_ORDER_lookup_file_contents");
 
-    /* ---- build CHUNKS_MAX lookup ----------------------------------------- */
+    /* ---- build CHUNKS_MAX look-up ---------------------------------------- */
 
     snprintf(CHUNKS_MAX_lookup_file_name, PATH_MAX,
             "%slookup_chunks_max.bin", DIR_ROOT[DIR_LOOKUPS]);
@@ -235,42 +247,42 @@ u32 chunking_init(void)
 
     /* ---- init chunk parsing priority queues ------------------------------ */
 
-    CHUNK_QUEUE_1.id = CHUNK_QUEUE_1ST_ID;
-    CHUNK_QUEUE_1.offset = 0;
-    CHUNK_QUEUE_1.size =
+    CHUNK_QUEUE[0].id = CHUNK_QUEUE_1ST_ID;
+    CHUNK_QUEUE[0].offset = 0;
+    CHUNK_QUEUE[0].size =
         (u64)clamp_i64(CHUNKS_MAX[settings.render_distance],
                 0, CHUNK_QUEUE_1ST_MAX);
-    CHUNK_QUEUE_1.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_HIGH;
-    CHUNK_QUEUE_1.rate_block = BLOCK_PARSE_RATE;
+    CHUNK_QUEUE[0].rate_chunk = CHUNK_PARSE_RATE_PRIORITY_HIGH;
+    CHUNK_QUEUE[0].rate_block = BLOCK_PARSE_RATE;
 
-    CHUNK_QUEUE_2.id = CHUNK_QUEUE_2ND_ID;
-    CHUNK_QUEUE_2.offset = CHUNK_QUEUE_1ST_MAX;
-    CHUNK_QUEUE_2.size =
+    CHUNK_QUEUE[1].id = CHUNK_QUEUE_2ND_ID;
+    CHUNK_QUEUE[1].offset = CHUNK_QUEUE_1ST_MAX;
+    CHUNK_QUEUE[1].size =
         (u64)clamp_i64(CHUNKS_MAX[settings.render_distance] -
-                CHUNK_QUEUE_2.offset, 0, CHUNK_QUEUE_2ND_MAX);
-    CHUNK_QUEUE_2.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_MID;
-    CHUNK_QUEUE_2.rate_block = BLOCK_PARSE_RATE;
+                CHUNK_QUEUE[1].offset, 0, CHUNK_QUEUE_2ND_MAX);
+    CHUNK_QUEUE[1].rate_chunk = CHUNK_PARSE_RATE_PRIORITY_MID;
+    CHUNK_QUEUE[1].rate_block = BLOCK_PARSE_RATE;
 
-    CHUNK_QUEUE_3.id = CHUNK_QUEUE_3RD_ID;
-    CHUNK_QUEUE_3.offset = CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX;
-    CHUNK_QUEUE_3.size =
+    CHUNK_QUEUE[2].id = CHUNK_QUEUE_3RD_ID;
+    CHUNK_QUEUE[2].offset = CHUNK_QUEUE_1ST_MAX + CHUNK_QUEUE_2ND_MAX;
+    CHUNK_QUEUE[2].size =
         (u64)clamp_i64(CHUNKS_MAX[settings.render_distance] -
-            CHUNK_QUEUE_3.offset, 0, CHUNK_QUEUE_3RD_MAX);
-    CHUNK_QUEUE_3.rate_chunk = CHUNK_PARSE_RATE_PRIORITY_LOW;
-    CHUNK_QUEUE_3.rate_block = BLOCK_PARSE_RATE;
+            CHUNK_QUEUE[2].offset, 0, CHUNK_QUEUE_3RD_MAX);
+    CHUNK_QUEUE[2].rate_chunk = CHUNK_PARSE_RATE_PRIORITY_LOW;
+    CHUNK_QUEUE[2].rate_block = BLOCK_PARSE_RATE;
 
     if (
-            mem_map((void*)&CHUNK_QUEUE_1.queue,
+            mem_map((void*)&CHUNK_QUEUE[0].queue,
                 CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_QUEUE_1.queue") != ERR_SUCCESS ||
+                "chunking_init().CHUNK_QUEUE[0].queue") != ERR_SUCCESS ||
 
-            mem_map((void*)&CHUNK_QUEUE_2.queue,
+            mem_map((void*)&CHUNK_QUEUE[1].queue,
                 CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_QUEUE_2.queue") != ERR_SUCCESS ||
+                "chunking_init().CHUNK_QUEUE[1].queue") != ERR_SUCCESS ||
 
-            mem_map((void*)&CHUNK_QUEUE_3.queue,
+            mem_map((void*)&CHUNK_QUEUE[2].queue,
                 CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-                "chunking_init().CHUNK_QUEUE_3.queue") != ERR_SUCCESS)
+                "chunking_init().CHUNK_QUEUE[2].queue") != ERR_SUCCESS)
         goto cleanup;
 
     mem_unmap((void*)&distance, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
@@ -283,6 +295,7 @@ u32 chunking_init(void)
     return *GAME_ERR;
 
 cleanup:
+
     mem_unmap((void*)&distance, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunking_free().distance");
 
@@ -306,12 +319,12 @@ void chunking_update(v3i16 player_chunk, v3i16 *player_chunk_delta)
     i32 RENDER_DISTANCE;
     Chunk ***cursor;
 
-    _chunk_queue_update(&CHUNK_QUEUE_1);
-    if (!CHUNK_QUEUE_1.count && CHUNK_QUEUE_2.size)
+    _chunk_queue_update(&CHUNK_QUEUE[0]);
+    if (!CHUNK_QUEUE[0].count && CHUNK_QUEUE[1].size)
     {
-        _chunk_queue_update(&CHUNK_QUEUE_2);
-        if (!CHUNK_QUEUE_2.count && CHUNK_QUEUE_3.size)
-            _chunk_queue_update(&CHUNK_QUEUE_3);
+        _chunk_queue_update(&CHUNK_QUEUE[1]);
+        if (!CHUNK_QUEUE[1].count && CHUNK_QUEUE[2].size)
+            _chunk_queue_update(&CHUNK_QUEUE[2]);
     }
 
     if (!(flag & FLAG_MAIN_CHUNK_BUF_DIRTY))
@@ -577,17 +590,17 @@ void chunking_free(void)
             CHUNK_BUF_VOLUME_MAX * sizeof(Chunk**),
             "chunking_free().CHUNK_ORDER");
 
-    mem_unmap((void*)&CHUNK_QUEUE_1.queue,
+    mem_unmap((void*)&CHUNK_QUEUE[0].queue,
             CHUNK_QUEUE_1ST_MAX * sizeof(Chunk**),
-            "chunking_free().CHUNK_QUEUE_1.queue");
+            "chunking_free().CHUNK_QUEUE[0].queue");
 
-    mem_unmap((void*)&CHUNK_QUEUE_2.queue,
+    mem_unmap((void*)&CHUNK_QUEUE[1].queue,
             CHUNK_QUEUE_2ND_MAX * sizeof(Chunk**),
-            "chunking_free().CHUNK_QUEUE_2.queue");
+            "chunking_free().CHUNK_QUEUE[1].queue");
 
-    mem_unmap((void*)&CHUNK_QUEUE_3.queue,
+    mem_unmap((void*)&CHUNK_QUEUE[2].queue,
             CHUNK_QUEUE_3RD_MAX * sizeof(Chunk**),
-            "chunking_free().CHUNK_QUEUE_3.queue");
+            "chunking_free().CHUNK_QUEUE[2].queue");
 }
 
 void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
@@ -1014,7 +1027,6 @@ static void chunk_mesh_update(Chunk *chunk)
 }
 
 /* TODO: make chunk_serialize() */
-/* TODO: add 'version' byte for serialization */
 static void chunk_serialize(Chunk *chunk, str *world_name)
 {
 }

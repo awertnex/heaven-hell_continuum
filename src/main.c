@@ -98,10 +98,20 @@ static void callback_scroll(
 static void shaders_init(void);
 static void bind_shader_uniforms(void);
 static void generate_standard_meshes(void);
-u32 settings_init(void);
+
+/*! -- INTERNAL USE ONLY --;
+ *
+ *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
+static u32 settings_init(void);
+
 void settings_update(void);
 static void input_update(Player *player);
+
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 world_init(str *name);
+
 static void world_update(Player *player);
 static void draw_everything(void);
 
@@ -145,7 +155,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
                 0.0f, CAMERA_ZOOM_MAX);
 }
 
-u32 settings_init(void)
+static u32 settings_init(void)
 {
     str tokens[4][24] =
     {
@@ -215,6 +225,7 @@ u32 settings_init(void)
     return *GAME_ERR;
 
 cleanup:
+
     mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
             "settings_init().settings_file_contents");
 }
@@ -685,6 +696,7 @@ static void generate_standard_meshes(void)
     return;
 
 cleanup:
+
     mesh_free(&mesh[MESH_PLAYER]);
 }
 
@@ -1150,7 +1162,7 @@ static void draw_everything(void)
                 CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
 
         cursor = CHUNK_ORDER;
-        end = CHUNK_ORDER + CHUNK_QUEUE_1.size;
+        end = CHUNK_ORDER + CHUNK_QUEUE[0].size;
         for (; cursor < end; ++cursor)
         {
             chunk = **cursor;
@@ -1165,9 +1177,9 @@ static void draw_everything(void)
             glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
         }
 
-        if (CHUNK_QUEUE_2.size)
+        if (CHUNK_QUEUE[1].size)
         {
-            end += CHUNK_QUEUE_2.size;
+            end += CHUNK_QUEUE[1].size;
             for (; cursor < end; ++cursor)
             {
                 chunk = **cursor;
@@ -1183,9 +1195,9 @@ static void draw_everything(void)
             }
         }
 
-        if (CHUNK_QUEUE_3.size)
+        if (CHUNK_QUEUE[2].size)
         {
-            end += CHUNK_QUEUE_3.size;
+            end += CHUNK_QUEUE[2].size;
             for (; cursor < end; ++cursor)
             {
                 chunk = **cursor;
@@ -1503,13 +1515,13 @@ static void draw_everything(void)
     text_render(COLOR_DIAGNOSTIC_INFO, TRUE);
 
     text_push(stringf(
+                "CHUNK QUEUE 0 [%d/%"PRId64"]\n"
                 "CHUNK QUEUE 1 [%d/%"PRId64"]\n"
                 "CHUNK QUEUE 2 [%d/%"PRId64"]\n"
-                "CHUNK QUEUE 3 [%d/%"PRId64"]\n"
                 "TOTAL CHUNKS [%"PRId64"]\n",
-                CHUNK_QUEUE_1.count, CHUNK_QUEUE_1.size,
-                CHUNK_QUEUE_2.count, CHUNK_QUEUE_2.size,
-                CHUNK_QUEUE_3.count, CHUNK_QUEUE_3.size,
+                CHUNK_QUEUE[0].count, CHUNK_QUEUE[0].size,
+                CHUNK_QUEUE[1].count, CHUNK_QUEUE[1].size,
+                CHUNK_QUEUE[2].count, CHUNK_QUEUE[2].size,
                 CHUNKS_MAX[settings.render_distance]),
             (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
             TEXT_ALIGN_RIGHT, 0);
@@ -1789,7 +1801,7 @@ section_world_loaded:
             goto section_menu_pause;
     }
 
-cleanup: /* ----------------------------------------------------------------- */
+cleanup:
 
     assets_free();
     gui_free();

@@ -5,7 +5,6 @@
 #include "h/main.h"
 #include "h/terrain.h"
 
-/* random number look-up table */
 f32 *RAND_TAB = {0};
 
 u32 rand_init(void)
@@ -49,6 +48,7 @@ u32 rand_init(void)
     return *GAME_ERR;
 
 cleanup:
+
     rand_free();
     return *GAME_ERR;
 }

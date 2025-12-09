@@ -58,17 +58,20 @@ typedef struct Block
 
 extern Block *blocks;
 
-/* return non-zero on failure and '*GAME_ERR' is set accordingly */
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 assets_init(void);
 
 void assets_free(void);
 
-/* index = 'block_textures' index.
+/*! @param index = index into global array 'block_textures'.
  *
- * return non-zero on failure and '*GAME_ERR' is set accordingly */
+ *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 u32 block_texture_init(u32 index, v2i32 size, str *name);
 
-/* return non-zero on failure and '*GAME_ERR' is set accordingly */
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
 void blocks_init(void);
 
 #endif /* GAME_ASSETS_H */

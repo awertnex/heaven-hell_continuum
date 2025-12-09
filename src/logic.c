@@ -7,12 +7,17 @@
 #include "h/main.h"
 #include "h/logic.h"
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * radius = world radius,
- * radius_v = world radius, vertical,
- * diameter = world diameter,
- * diameter_v = world diameter, vertical */
+ *  @brief handle player being near or past world edges.
+ *
+ *  teleport player to the other side of the world if they cross a world edge.
+ *
+ *  @param radius = world radius.
+ *  @param radius_v = world radius, vertical.
+ *  @param diameter = world diameter.
+ *  @param diameter_v = world diameter, vertical.
+ */
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 

@@ -14,8 +14,6 @@ static u32 ssbo_texture_indices[BLOCK_COUNT * 6] = {0};
 static GLuint ssbo_texture_handles_id = 0;
 static u64 ssbo_texture_handles[BLOCK_TEXTURE_COUNT] = {0};
 
-/* ---- functions ----------------------------------------------------------- */
-
 u32 assets_init(void)
 {
     u32 i;
@@ -112,13 +110,14 @@ u32 assets_init(void)
     return *GAME_ERR;
 
 cleanup:
+
     assets_free();
     return *GAME_ERR;
 }
 
 void assets_free(void)
 {
-    u32 i = 0;
+    u32 i;
     for (i = 0; i < BLOCK_TEXTURE_COUNT; ++i)
         texture_free(&block_textures[i]);
 
@@ -159,6 +158,7 @@ u32 block_texture_init(u32 index, v2i32 size, str *name)
     return *GAME_ERR;
 
 cleanup:
+
     texture_free(&block_textures[index]);
     return *GAME_ERR;
 }
