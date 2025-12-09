@@ -3,105 +3,135 @@
 
 #include "types.h"
 
-/* return file type to file_type.
+/*! @brief get file type of 'name'.
  *
- * return 0 on failure and engine_err is set accordingly */
-u64 get_file_type(const str *path_type);
+ *  @return 0 on failure and 'engine_err' is set accordingly.
+ */
+u64 get_file_type(const str *name);
 
-/* return non-zero on failure and engine_err is set accordingly */
-u32 is_file(const str *path);
+/*! @return 0 on success.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 is_file(const str *name);
 
-/* log = enable/disable logging.
+/*! @param log = enable/disable logging.
  *
- * return non-zero on failure and engine_err is set accordingly */
-u32 is_file_exists(const str *path, b8 log);
+ *  @return 0 on success.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 is_file_exists(const str *name, b8 log);
 
-/* return non-zero on failure and engine_err is set accordingly */
-u32 is_dir(const str *path);
+/*! @return 0 on success.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 is_dir(const str *name);
 
-/* log = enable/disable logging.
+/*! @param log = enable/disable logging.
  *
- * return non-zero on failure and engine_err is set accordingly */
-u32 is_dir_exists(const str *path, b8 log);
+ *  @return 0 on success.
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 is_dir_exists(const str *name, b8 log);
 
-/* destination = pointer to NULL buffer to store file contents,
- * 'destination' is allocated file size, + 1 if 'terminate',
- * read_format = read file at 'path' using 'format' (fopen() parameter),
- * terminate = TRUE will NULL terminate buffer.
+/*! @param destination = pointer to NULL buffer to store file contents.
+ *  @remark 'destination' is allocated file size, + 1 if 'terminate' is TRUE.
  *
- * return file size in bytes,
- * return 0 on failure and engine_err is set accordingly */
-u64 get_file_contents(const str *path, void **destination,
+ *  @param format = read file 'name' using 'format' ('fopen()' parameter).
+ *  @param terminate = TRUE will NULL terminate buffer.
+ *
+ *  @return file size in bytes.
+ *  @return 0 on failure and 'engine_err' is set accordingly.
+ */
+u64 get_file_contents(const str *name, void **destination,
         u64 size, const str *format, b8 terminate);
 
-/* return directory entries at dir_path.
+/*! @brief get directory entries of 'name'.
  *
- * return (Buf){0} on failure and engine_err is set accordingly */
-Buf get_dir_contents(const str *path);
+ *  @return (Buf){0} on failure and 'engine_err' is set accordingly.
+ */
+Buf get_dir_contents(const str *name);
 
-/* return dir entry count at path.
+/*! @brief get directory entry count of 'name'.
  *
- * engine_err is set accordingly on failure */
-u64 get_dir_entry_count(const str *path);
+ *  @return entry count, 'engine_err' is set accordingly on failure.
+ */
+u64 get_dir_entry_count(const str *name);
 
-/* copy file at path into file/directory at destination.
+/*! @brief copy 'source' into 'destination'.
  *
- * read_format = read file at path in specified format (fopen() parameter),
- * write_format = write new file at destination in specified format
- * (fopen() parameter).
+ *  @param read_format = read file 'name' using 'read_format'
+ *  ('fopen()' parameter).
  *
- * return non-zero on failure and engine_err is set accordingly */
-u32 copy_file(const str *path, const str *destination,
+ *  @param write_format = write new file 'destination' using 'write_format'
+ *  ('fopen()' parameter).
+ *
+ *  @remark can overwrite files.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 copy_file(const str *source, const str *destination,
         const str *read_format, const str *write_format);
 
-/* copy directory at path into directory at destination.
+/*! @brief copy 'source' into 'destination'.
  *
- * overwrite TRUE will copy contents at path
- * into directory at destination,
- * overwrite FALSE will copy directory at path itself
- * into directory at destination,
+ *  @param overwrite =
+ *      TRUE: copy contents at 'source' into directory at 'destination'.
+ *      FALSE: copy directory at 'source' and place inside 'destination' if
+ *      'destination' exists.
  *
- * read_format = read files within path in specified format
- * (fopen() parameter),
- * write_format = write new files at destination in specified format
- * (fopen() parameter).
+ *  @param read_format = read entries at 'source' using 'read_format'
+ *  ('fopen()' parameter).
  *
- * return non-zero on failure and engine_err is set accordingly */
-u32 copy_dir(const str *path, const str *destination, b8 overwrite,
+ *  @param write_format = write entries into 'destination' using 'write_format'
+ *  ('fopen()' parameter).
+ *
+ *  @remark can overwrite directories and files, unless 'overwrite' is FALSE.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 copy_dir(const str *source, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format);
 
-/* return non-zero on failure and engine_err is set accordingly */
-u32 write_file(const str *path, u64 size, u64 length, void *buf,
-        const str *write_format, b8 log);
-
-/* return calloc'd string of resolved 'path'.
+/*! @param log = enable/disable logging.
  *
- * return NULL on failure and engine_err is set accordingly */
-str *get_path_absolute(const str *path);
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 write_file(const str *name, u64 size, u64 length, void *buf, const str *write_format, b8 log);
 
-/* return calloc'd string of executable's path, slash and null terminated.
+/*! @brief get calloc'd string of resolved 'name'.
  *
- * return NULL on failure and engine_err is set accordingly */
+ *  @return NULL on failure and 'engine_err' is set accordingly.
+ */
+str *get_path_absolute(const str *name);
+
+/*! @brief get calloc'd string of executable's path, slash and NULL terminated.
+ *
+ *  @return NULL on failure and 'engine_err' is set accordingly.
+ */
 str *get_path_bin_root(void);
 
-/* append '/' onto path if path not ending in '/', null terminated.
+/*! @brief append '/' onto 'path' if 'path' not ending in '/', NULL terminated.
  *
- * on failure, engine_err is set accordingly */
+ *  @remark 'engine_err' is set accordingly on failure.
+ */
 void check_slash(str *path);
 
-/* normalize all slashes to '/' or '\' based on operating system.
+/*! @brief normalize all slashes to '/' or '\' depending on operating system.
  *
- * on failure, engine_err is set accordingly */
+ *  @remark 'engine_err' is set accordingly on failure.
+ */
 void normalize_slash(str *path);
 
-/* change all '\\' to '\'.
+/*! @brief change all '\\' to '\'.
  *
- * on failure, engine_err is set accordingly */
+ *  @remark 'engine_err' is set accordingly on failure.
+ */
 void posix_slash(str *path);
 
-/* return path retracted to its parent directory.
+/*! @brief get 'path' retracted to its parent directory.
  *
- * return NULL on failure and 'engine_err' is set accordingly */
+ *  @return NULL on failure and 'engine_err' is set accordingly.
+ */
 str *retract_path(str *path);
 
 #endif /* ENGINE_DIR_H */

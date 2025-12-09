@@ -144,48 +144,59 @@ static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * process shader before compilation:
+ * @brief process shader before compilation.
+ *
  * parse includes recursively.
  *
- * return NULL on failure and 'engine_err' is set accordingly */
+ * @return NULL on failure and 'engine_err' is set accordingly.
+ */
 static str *shader_pre_process(const str *path, u64 *file_len);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * process shader before compilation:
+ * @brief process shader before compilation.
+ *
  * parse includes recursively.
  *
- * return NULL on failure and 'engine_err' is set accordingly */
+ * @return NULL on failure and 'engine_err' is set accordingly.
+ */
 static str *_shader_pre_process(const str *path, u64 *file_len,
         u64 recursion_limit);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * generate texture for opengl from 'buf'.
+ * @brief generate texture for opengl from 'buf'.
  *
- * return non-zero on failure and 'engine_err' is set accordingly */
+ * @return non-zero on failure and 'engine_err' is set accordingly.
+ */
 static u32 _texture_generate(
         GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_press(const u32 key);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_listen_double(const u32 key);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_hold(const u32 key);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_hold_double(const u32 key);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_release(const u32 key);
 
-/* -- INTERNAL USE ONLY -- */
+/*! -- INTERNAL USE ONLY --;
+ */
 static b8 _is_key_release_double(const u32 key);
 
 /* ---- section: windowing -------------------------------------------------- */
@@ -392,6 +403,7 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
     return buf_resolved;
 
 cleanup:
+
     mem_free((void*)&buf_include, buf_include_len,
             "_shader_pre_process().buf_include");
     mem_free((void*)&buf_resolved, buf_resolved_len,
@@ -506,6 +518,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     if (multisample)
     {
         /* ---- color buffer ------------------------------------------------ */
+
         glGenTextures(1, &fbo->color_buf);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf);
         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA,
@@ -527,6 +540,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
                 GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf, 0);
 
         /* ---- render buffer ----------------------------------------------- */
+
         glGenRenderbuffers(1, &fbo->rbo);
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
@@ -537,6 +551,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     else
     {
         /* ---- color buffer ------------------------------------------------ */
+
         glGenTextures(1, &fbo->color_buf);
         glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
@@ -550,6 +565,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
                 GL_TEXTURE_2D, fbo->color_buf, 0);
 
         /* ---- render buffer ----------------------------------------------- */
+
         glGenRenderbuffers(1, &fbo->rbo);
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
@@ -570,6 +586,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     /* ---- mesh data ------------------------------------------------------- */
+
     if (mesh_fbo == NULL || mesh_fbo->vbo_data != NULL) return 0;
 
     mesh_fbo->vbo_len = 16;
@@ -589,6 +606,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     memcpy(mesh_fbo->vbo_data, vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len);
 
     /* ---- bind mesh ------------------------------------------------------- */
+
     glGenVertexArrays(1, &mesh_fbo->vao);
     glGenBuffers(1, &mesh_fbo->vbo);
 
@@ -613,6 +631,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     return engine_err;
 
 cleanup:
+
     fbo_free(fbo);
     mesh_free(mesh_fbo);
     return engine_err;
@@ -625,6 +644,7 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
     if (multisample)
     {
         /* ---- color buffer ------------------------------------------------ */
+
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf);
         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA,
                 render->size.x, render->size.y, GL_TRUE);
@@ -633,6 +653,7 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
                 GL_TEXTURE_2D_MULTISAMPLE, fbo->color_buf, 0);
 
         /* ---- render buffer ----------------------------------------------- */
+
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
                 GL_DEPTH_COMPONENT24, render->size.x, render->size.y);
@@ -640,11 +661,13 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
     else
     {
         /* ---- color buffer ------------------------------------------------ */
+
         glBindTexture(GL_TEXTURE_2D, fbo->color_buf);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                 render->size.x, render->size.y, 0, GL_RGBA, GL_FLOAT, NULL);
 
         /* ---- render buffer ----------------------------------------------- */
+
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
                 render->size.x, render->size.y);
@@ -669,10 +692,11 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
 
 void fbo_free(FBO *fbo)
 {
-    if (fbo == NULL) return;
+    if (!fbo) return;
     fbo->rbo ? glDeleteFramebuffers(1, &fbo->rbo) : 0;
     fbo->color_buf ? glDeleteTextures(1, &fbo->color_buf) : 0;
     fbo->fbo ? glDeleteFramebuffers(1, &fbo->fbo) : 0;
+    *fbo = (FBO){0};
 };
 
 u32 texture_init(Texture *texture, v2i32 size,
@@ -766,7 +790,7 @@ static u32 _texture_generate(
 
 void texture_free(Texture *texture)
 {
-    if (texture == NULL) return;
+    if (!texture) return;
 
     if (texture->handle)
     {
@@ -804,6 +828,7 @@ u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
     memcpy(mesh->ebo_data, ebo_data, sizeof(GLuint) * ebo_len);
 
     /* ---- bind mesh ------------------------------------------------------- */
+
     glGenVertexArrays(1, &mesh->vao);
     glGenBuffers(1, &mesh->vbo);
     glGenBuffers(1, &mesh->ebo);
@@ -827,6 +852,7 @@ u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
     return engine_err;
 
 cleanup:
+
     mesh_free(mesh);
     engine_err = ERR_MESH_GENERATION_FAIL;
     return engine_err;
@@ -834,7 +860,7 @@ cleanup:
 
 void mesh_free(Mesh *mesh)
 {
-    if (mesh == NULL) return;
+    if (!mesh) return;
     mesh->ebo ? glDeleteBuffers(1, &mesh->ebo) : 0;
     mesh->vbo ? glDeleteBuffers(1, &mesh->vbo) : 0;
     mesh->vao ? glDeleteVertexArrays(1, &mesh->vao) : 0;
@@ -859,10 +885,10 @@ void update_camera_movement(Camera *camera)
     if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
     camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
 
-    camera->sin_pitch = sinf((camera->rot.y) * DEG2RAD);
-    camera->cos_pitch = cosf((camera->rot.y) * DEG2RAD);
-    camera->sin_yaw =   sinf((camera->rot.z) * DEG2RAD);
-    camera->cos_yaw =   cosf((camera->rot.z) * DEG2RAD);
+    camera->sin_pitch = sinf(camera->rot.y * DEG2RAD);
+    camera->cos_pitch = cosf(camera->rot.y * DEG2RAD);
+    camera->sin_yaw =   sinf(camera->rot.z * DEG2RAD);
+    camera->cos_yaw =   cosf(camera->rot.z * DEG2RAD);
 }
 
 void update_camera_perspective(Camera *camera, Projection *projection)
@@ -880,6 +906,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
     f32 offset = -(2.0f * far * near) / (far - near);
 
     /* ---- target ---------------------------------------------------------- */
+
     projection->target =
         (m4f32){
             1.0f,           0.0f,           0.0f,   0.0f,
@@ -889,6 +916,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
         };
 
     /* ---- translation ----------------------------------------------------- */
+
     projection->translation =
         (m4f32){
             1.0f,           0.0f,           0.0f,           0.0f,
@@ -898,6 +926,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
         };
 
     /* ---- rotation: yaw --------------------------------------------------- */
+
     projection->rotation =
         (m4f32){
             CYAW,   SYAW, 0.0f, 0.0f,
@@ -907,6 +936,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
         };
 
     /* ---- rotation: pitch ------------------------------------------------- */
+
     projection->rotation = matrix_multiply(projection->rotation,
             (m4f32){
             CPCH,   0.0f, SPCH, 0.0f,
@@ -916,6 +946,7 @@ void update_camera_perspective(Camera *camera, Projection *projection)
             });
 
     /* ---- orientation: z-up ----------------------------------------------- */
+
     projection->orientation =
         (m4f32){
             0.0f,   0.0f, -1.0f,    0.0f,
@@ -925,12 +956,13 @@ void update_camera_perspective(Camera *camera, Projection *projection)
         };
 
     /* ---- view ------------------------------------------------------------ */
+
     projection->view =
         matrix_multiply(projection->translation,
-                matrix_multiply(projection->rotation,
-                    projection->orientation));
+                matrix_multiply(projection->rotation, projection->orientation));
 
     /* ---- projection ------------------------------------------------------ */
+
     projection->projection =
         (m4f32){
             fovy / ratio,   0.0f,   0.0f,   0.0f,
@@ -1012,9 +1044,10 @@ static b8 _is_key_release_double(const u32 key)
 
 void update_key_states(Render *render)
 {
-    static f64 key_press_start_time[KEYBOARD_KEYS_MAX];
-    u32 i = 0;
-    for (; i < KEYBOARD_KEYS_MAX; ++i)
+    static f64 key_press_start_time[KEYBOARD_KEYS_MAX] = {0};
+    u32 i;
+
+    for (i = 0; i < KEYBOARD_KEYS_MAX; ++i)
     {
         b8 key_press =
             (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_PRESS);
@@ -1029,8 +1062,8 @@ void update_key_states(Render *render)
         }
         else if (key_press && _is_key_listen_double(i))
         {
-            if ((render->frame_start - key_press_start_time[i])
-                    < KEYBOARD_DOUBLE_PRESS_TIME)
+            if (render->frame_start - key_press_start_time[i] <
+                    KEYBOARD_DOUBLE_PRESS_TIME)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
                 keyboard_key[i] = KEY_PRESS;
@@ -1050,7 +1083,6 @@ void update_key_states(Render *render)
         if (is_key_press_double(i))     keyboard_key[i] = KEY_HOLD_DOUBLE;
         if (_is_key_release(i))         keyboard_key[i] = KEY_LISTEN_DOUBLE;
         if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
-
     }
 }
 
@@ -1058,35 +1090,36 @@ void update_key_states(Render *render)
 
 u32 font_init(Font *font, u32 resolution, const str *file_name)
 {
+    f32 scale;
+    u32 i, x, y;
+    u8 *canvas = NULL;
+    Glyph *g = NULL;
+
     if (resolution <= 2)
     {
         LOGERROR(FALSE, ERR_IMAGE_SIZE_TOO_SMALL,
-                "Failed to Initialize Font '%s', Font Size Too Small\n",
-                file_name);
+                "Failed to Initialize Font '%s', Font Size Too Small\n", file_name);
         return engine_err;
     }
 
     if (strlen(file_name) >= PATH_MAX)
     {
         LOGERROR(FALSE, ERR_PATH_TOO_LONG,
-                "Failed to Initialize Font '%s', File Path Too Long\n",
-                file_name);
+                "Failed to Initialize Font '%s', File Path Too Long\n", file_name);
         return engine_err;
     }
 
     if (is_file_exists(file_name, TRUE) != ERR_SUCCESS)
         return engine_err;
 
-    font->buf_len = get_file_contents(file_name, (void*)&font->buf,
-            1, "rb", TRUE);
+    font->buf_len = get_file_contents(file_name, (void*)&font->buf, 1, "rb", TRUE);
     if (!font->buf)
         return engine_err;
 
     if (!stbtt_InitFont(&font->info, (const unsigned char*)font->buf, 0))
     {
         LOGERROR(FALSE, ERR_FONT_INIT_FAIL,
-                "Failed to Initialize Font '%s', 'stbtt_InitFont()' Failed\n",
-                file_name);
+                "Failed to Initialize Font '%s', 'stbtt_InitFont()' Failed\n", file_name);
         goto cleanup;
     }
 
@@ -1094,42 +1127,34 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                 stringf("font_init().%s", file_name)) != ERR_SUCCESS)
         goto cleanup;
 
-    u8 *canvas = {0};
     if (mem_alloc((void*)&canvas, resolution * resolution,
                 "font_init().font_glyph_canvas") != ERR_SUCCESS)
         goto cleanup;
 
     snprintf(font->path, PATH_MAX, "%s", file_name);
-
-    stbtt_GetFontVMetrics(&font->info,
-            &font->ascent, &font->descent, &font->line_gap);
-
+    stbtt_GetFontVMetrics(&font->info, &font->ascent, &font->descent, &font->line_gap);
     font->resolution = resolution;
     font->char_size = 1.0f / FONT_ATLAS_CELL_RESOLUTION;
     font->line_height = font->ascent - font->descent + font->line_gap;
     font->size = resolution;
+    scale = stbtt_ScaleForPixelHeight(&font->info, resolution);
 
-    f32 scale = stbtt_ScaleForPixelHeight(&font->info, resolution);
-    u32 i = 0;
-    for (; i < GLYPH_MAX; ++i)
+    for (i = 0; i < GLYPH_MAX; ++i)
     {
         int glyph_index = stbtt_FindGlyphIndex(&font->info, i);
-        if (!glyph_index)
-            continue;
+        if (!glyph_index) continue;
 
-        Glyph *g = &font->glyph[i];
+        g = &font->glyph[i];
 
-        stbtt_GetGlyphHMetrics(&font->info, glyph_index,
-                &g->advance, &g->bearing.x);
-
+        stbtt_GetGlyphHMetrics(&font->info, glyph_index, &g->advance, &g->bearing.x);
         stbtt_GetGlyphBitmapBoxSubpixel(&font->info, glyph_index,
                 1.0f, 1.0f, 0.0f, 0.0f, &g->x0, &g->y0, &g->x1, &g->y1);
 
         g->bearing.y = g->y0;
         g->scale.x = g->x1 - g->x0;
         g->scale.y = g->y1 - g->y0;
-        (g->scale.x > font->scale.x) ? font->scale.x = g->scale.x : 0;
-        (g->scale.y > font->scale.y) ? font->scale.y = g->scale.y : 0;
+        g->scale.x > font->scale.x ? font->scale.x = g->scale.x : 0;
+        g->scale.y > font->scale.y ? font->scale.y = g->scale.y : 0;
 
         u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
         u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
@@ -1145,17 +1170,16 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                 row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION +
                 1 + resolution * FONT_ATLAS_CELL_RESOLUTION;
 
-            u32 y = 0, x = 0;
-            for (; y < resolution - 1; ++y)
-            {
+            for (y = 0; y < resolution - 1; ++y)
                 for (x = 0; x < resolution - 1; ++x)
                     memcpy(bitmap_offset + x +
                             y * resolution * FONT_ATLAS_CELL_RESOLUTION,
                             canvas + x + y * resolution, 1);
-            }
+
             mem_clear((void*)&canvas, resolution * resolution,
                     "font_init().font_glyph_canvas");
         }
+
         g->texture_sample.x = col * font->char_size;
         g->texture_sample.y = row * font->char_size;
         font->glyph[i].loaded = TRUE;
@@ -1167,24 +1191,22 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                 font->bitmap, TRUE) != ERR_SUCCESS)
         goto cleanup;
 
-    mem_free((void*)&canvas, resolution * resolution,
-            "font_init().font_glyph_canvas");
+    mem_free((void*)&canvas, resolution * resolution, "font_init().font_glyph_canvas");
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 
 cleanup:
-    mem_free((void*)&canvas, resolution * resolution,
-            "font_init().font_glyph_canvas");
+
+    mem_free((void*)&canvas, resolution * resolution, "font_init().font_glyph_canvas");
     font_free(font);
     return engine_err;
 }
 
 void font_free(Font *font)
 {
-    if (font == NULL) return;
-    mem_free((void*)&font->buf, font->buf_len,
-            "font_free().file_contents");
+    if (!font) return;
+    mem_free((void*)&font->buf, font->buf_len, "font_free().file_contents");
     mem_free((void*)&font->bitmap,
             GLYPH_MAX * font->resolution * font->resolution, font->path);
     *font = (Font){0};

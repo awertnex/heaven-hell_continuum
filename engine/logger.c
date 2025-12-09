@@ -50,18 +50,12 @@ u32 logger_init(b8 release_build, int argc, char **argv)
 
     if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
     {
-        if (!strncmp(argv[2], "FATAL", 5))
-            log_level_max = LOGLEVEL_FATAL;
-        else if (!strncmp(argv[2], "ERROR", 5))
-            log_level_max = LOGLEVEL_ERROR;
-        else if (!strncmp(argv[2], "WARN", 4))
-            log_level_max = LOGLEVEL_WARNING;
-        else if (!strncmp(argv[2], "INFO", 4))
-            log_level_max = LOGLEVEL_INFO;
-        else if (!strncmp(argv[2], "DEBUG", 5))
-            log_level_max = LOGLEVEL_DEBUG;
-        else if (!strncmp(argv[2], "TRACE", 5))
-            log_level_max = LOGLEVEL_TRACE;
+        if (!strncmp(argv[2], "FATAL", 5))      log_level_max = LOGLEVEL_FATAL;
+        else if (!strncmp(argv[2], "ERROR", 5)) log_level_max = LOGLEVEL_ERROR;
+        else if (!strncmp(argv[2], "WARN", 4))  log_level_max = LOGLEVEL_WARNING;
+        else if (!strncmp(argv[2], "INFO", 4))  log_level_max = LOGLEVEL_INFO;
+        else if (!strncmp(argv[2], "DEBUG", 5)) log_level_max = LOGLEVEL_DEBUG;
+        else if (!strncmp(argv[2], "TRACE", 5)) log_level_max = LOGLEVEL_TRACE;
     }
 
     engine_err = ERR_SUCCESS;
@@ -70,16 +64,16 @@ u32 logger_init(b8 release_build, int argc, char **argv)
 
 void logger_close(void)
 {
-    mem_unmap((void*)&logger_buf,
-            LOGGER_LINES_MAX * STRING_MAX, "logger_close().logger_buf");
+    mem_unmap((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX, "logger_close().logger_buf");
 }
 
 void _log_output(b8 verbose, const str *file, u64 line,
         u8 level, u32 error_code, const str* format, ...)
 {
+    __builtin_va_list args;
+
     if (level > log_level_max) return;
 
-    __builtin_va_list args;
     va_start(args, format);
     vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);

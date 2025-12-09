@@ -103,8 +103,7 @@ void build_init(int argc, char **argv,
         self_rebuild(argv);
     }
 
-    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE,
-                "build_init().cmd") != ERR_SUCCESS)
+    if (mem_alloc_buf(&cmd, CMD_MEMB, CMD_SIZE, "build_init().cmd") != ERR_SUCCESS)
         cmd_fail();
 }
 
@@ -119,8 +118,7 @@ static u32 is_build_source_changed(void)
         mtime_src = stats.st_mtime;
     else
     {
-        LOGERROR(FALSE, ERR_FILE_NOT_FOUND,
-                "%s\n", "Build Source File Not Found");
+        LOGERROR(FALSE, ERR_FILE_NOT_FOUND, "%s\n", "Build Source File Not Found");
         return engine_err;
     }
 
@@ -128,8 +126,7 @@ static u32 is_build_source_changed(void)
         mtime_bin = stats.st_mtime;
     else
     {
-        LOGERROR(FALSE, ERR_FILE_NOT_FOUND,
-                "%s\n", "File 'build"EXE"' Not Found");
+        LOGERROR(FALSE, ERR_FILE_NOT_FOUND, "%s\n", "File 'build"EXE"' Not Found");
         return engine_err;
     }
 
@@ -142,8 +139,7 @@ static u32 is_build_source_changed(void)
 
 static void self_rebuild(char **argv)
 {
-    if (mem_alloc_buf(&cmd, 16, CMD_SIZE,
-                "self_rebuild().cmd") != ERR_SUCCESS)
+    if (mem_alloc_buf(&cmd, 16, CMD_SIZE, "self_rebuild().cmd") != ERR_SUCCESS)
         cmd_fail();
 
     cmd_push(COMPILER);
@@ -169,13 +165,11 @@ static void self_rebuild(char **argv)
         remove(str_build_bin_old);
 
         execvp(argv[0], (str *const *)argv);
-        LOGFATAL(FALSE, ERR_EXECVP_FAIL,
-                "%s\n", "'build"EXE"' Failed, Process Aborted");
+        LOGFATAL(FALSE, ERR_EXECVP_FAIL, "%s\n", "'build"EXE"' Failed, Process Aborted");
         cmd_fail();
     }
 
-    LOGFATAL(FALSE, engine_err,
-            "%s\n", "Self-Rebuild Failed, Process Aborted");
+    LOGFATAL(FALSE, engine_err, "%s\n", "Self-Rebuild Failed, Process Aborted");
     cmd_fail();
 }
 

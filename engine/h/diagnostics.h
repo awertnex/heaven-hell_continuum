@@ -62,7 +62,10 @@
 #define ERR_SELF_INCLUDE                4141
 #define ERR_DLL_LOAD_FAIL               4142
 
-/* can be declared by the user if 'engine/core.c' not included */
+/*! @brief global variable for engine-specific error codes.
+ *
+ *  @remark must be declared by the user if not including 'engine/core.c'.
+ */
 extern u32 engine_err;
 
 #endif /* ENGING_DIAGNOSTICS_H */

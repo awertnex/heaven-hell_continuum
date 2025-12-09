@@ -4,6 +4,7 @@
 #include "h/memory.h"
 
 static Mesh mesh_text = {0};
+
 static struct /* text_core */
 {
     Font *font;
@@ -12,7 +13,8 @@ static struct /* text_core */
     f32 line;
     v2f32 ndc_scale;
 
-    /* iterator for internal buffer between text_start() and text_render() */
+    /*! @brief iterator for internal buffer between 'text_start()' and 'text_render()'.
+     */
     GLuint cursor;
 
     struct /* uniform */
@@ -20,12 +22,12 @@ static struct /* text_core */
         GLint offset;
         GLint ndc_scale;
     } uniform;
+
 } text_core;
 
 u32 text_init(ShaderProgram *program)
 {
-    if (mem_alloc((void*)&mesh_text.vbo_data,
-                STRING_MAX * sizeof(GLfloat) * 4,
+    if (mem_alloc((void*)&mesh_text.vbo_data, STRING_MAX * sizeof(GLfloat) * 4,
                 "text_init().mesh_text.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
@@ -52,18 +54,16 @@ u32 text_init(ShaderProgram *program)
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    text_core.uniform.offset =
-        glGetUniformLocation(program->id, "offset");
-    text_core.uniform.ndc_scale =
-        glGetUniformLocation(program->id, "ndc_scale");
+    text_core.uniform.offset = glGetUniformLocation(program->id, "offset");
+    text_core.uniform.ndc_scale = glGetUniformLocation(program->id, "ndc_scale");
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 
 cleanup:
+
     mesh_free(&mesh_text);
-    LOGFATAL(FALSE, ERR_TEXT_INIT_FAIL,
-            "%s\n", "Failed to Initialize Text, Process Aborted");
+    LOGFATAL(FALSE, ERR_TEXT_INIT_FAIL, "%s\n", "Failed to Initialize Text, Process Aborted");
     return engine_err;
 }
 
@@ -98,12 +98,19 @@ void text_start(u64 length, f32 size, Font *font,
     return;
 
 cleanup:
+
     mesh_free(&mesh_text);
     LOGERROR(FALSE, engine_err, "%s\n", "Failed to Start Text");
 }
 
 void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 {
+    u64 len, i;
+    i64 j;
+    f32 scale, advance, descent, line_height;
+    v2f32 ndc_scale;
+    Glyphf *g = NULL;
+
     if (!mesh_text.vbo_data)
     {
         LOGERROR(FALSE, ERR_BUFFER_EMPTY,
@@ -111,7 +118,7 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         return;
     }
 
-    u64 len = strlen(text);
+    len = strlen(text);
     if (len >= STRING_MAX)
     {
         LOGERROR(FALSE, ERR_STRING_TOO_LONG,
@@ -133,75 +140,63 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         mesh_text.ebo_len += STRING_MAX;
     }
 
-    f32 scale = stbtt_ScaleForPixelHeight(
-            &text_core.font->info, text_core.font_size);
+    scale = stbtt_ScaleForPixelHeight(&text_core.font->info, text_core.font_size);
 
-    v2f32 ndc_size =
-    {
+    ndc_scale =
+    (v2f32){
         scale * text_core.ndc_scale.x,
         scale * text_core.ndc_scale.y,
     };
     pos.x *= text_core.ndc_scale.x;
     pos.y *= text_core.ndc_scale.y;
-    pos.y += text_core.font->scale.y * ndc_size.y;
+    pos.y += text_core.font->scale.y * ndc_scale.y;
 
 
-    Glyphf *g = NULL;
-    u64 i = 0;
-    for (; i < GLYPH_MAX; ++i)
+    for (i = 0; i < GLYPH_MAX; ++i)
     {
         if (!text_core.font->glyph[i].loaded)
             continue;
         g = &text_core.glyph[i];
 
-        g->bearing.x = text_core.font->glyph[i].bearing.x * ndc_size.x;
-        g->bearing.y = text_core.font->glyph[i].bearing.y * ndc_size.y;
-        g->advance = text_core.font->glyph[i].advance * ndc_size.x;
+        g->bearing.x = text_core.font->glyph[i].bearing.x * ndc_scale.x;
+        g->bearing.y = text_core.font->glyph[i].bearing.y * ndc_scale.y;
+        g->advance = text_core.font->glyph[i].advance * ndc_scale.x;
         g->texture_sample.x = text_core.font->glyph[i].texture_sample.x;
         g->texture_sample.y = text_core.font->glyph[i].texture_sample.y;
         g->loaded = TRUE;
     }
 
-    f32 advance = 0.0f;
-    f32 descent = text_core.font->descent * ndc_size.y;
-    f32 line_height = text_core.font->line_height;
+    advance = 0.0f;
+    descent = text_core.font->descent * ndc_scale.y;
+    line_height = text_core.font->line_height;
     for (i = 0; i < len; ++i)
     {
         g = &text_core.glyph[(u64)text[i]];
         if (text[i] == '\n')
         {
-            i64 j = 0;
             if (align_x == TEXT_ALIGN_CENTER)
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_core.cursor - (j * 4)] -=
+                    mesh_text.vbo_data[text_core.cursor - j * 4] -=
                         advance / 2.0f;
             else if (align_x == TEXT_ALIGN_RIGHT)
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_core.cursor - (j * 4)] -=
+                    mesh_text.vbo_data[text_core.cursor - j * 4] -=
                         advance;
 
             advance = 0.0f;
-            text_core.line += (line_height * ndc_size.y);
+            text_core.line += line_height * ndc_scale.y;
             continue;
         }
         if (text[i] == '\t')
         {
-            advance +=
-                (text_core.glyph[' '].advance * TEXT_TAB_SIZE);
+            advance += text_core.glyph[' '].advance * TEXT_TAB_SIZE;
             continue;
         }
 
-        mesh_text.vbo_data[text_core.cursor++] =
-            pos.x + advance + g->bearing.x;
-
-        mesh_text.vbo_data[text_core.cursor++] =
-            -pos.y - descent - text_core.line - g->bearing.y;
-
-        mesh_text.vbo_data[text_core.cursor++] =
-            g->texture_sample.x;
-
-        mesh_text.vbo_data[text_core.cursor++] =
-            g->texture_sample.y;
+        mesh_text.vbo_data[text_core.cursor++] = pos.x + advance + g->bearing.x;
+        mesh_text.vbo_data[text_core.cursor++] = -pos.y - descent - text_core.line - g->bearing.y;
+        mesh_text.vbo_data[text_core.cursor++] = g->texture_sample.x;
+        mesh_text.vbo_data[text_core.cursor++] = g->texture_sample.y;
 
         advance += g->advance;
     }
@@ -225,16 +220,14 @@ void text_render(u32 color, b8 shadow)
 
     glBindVertexArray(mesh_text.vao);
     glBindBuffer(GL_ARRAY_BUFFER, mesh_text.vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-            mesh_text.vbo_len * sizeof(GLfloat),
+    glBufferData(GL_ARRAY_BUFFER, mesh_text.vbo_len * sizeof(GLfloat),
             mesh_text.vbo_data, GL_DYNAMIC_DRAW);
 
     glUniform1f(text_core.font->uniform.char_size, text_core.font->char_size);
     glUniform2f(text_core.font->uniform.font_size,
             text_core.font_size * text_core.ndc_scale.x,
             text_core.font_size * text_core.ndc_scale.y);
-    glUniform2fv(text_core.uniform.ndc_scale, 1,
-            (GLfloat*)&text_core.ndc_scale);
+    glUniform2fv(text_core.uniform.ndc_scale, 1, (GLfloat*)&text_core.ndc_scale);
 
     if (shadow)
     {
@@ -243,8 +236,7 @@ void text_render(u32 color, b8 shadow)
                 (f32)((TEXT_COLOR_SHADOW >> 0x10) & 0xff) / 0xff,
                 (f32)((TEXT_COLOR_SHADOW >> 0x08) & 0xff) / 0xff,
                 (f32)((TEXT_COLOR_SHADOW >> 0x00) & 0xff) / 0xff);
-        glUniform2f(text_core.uniform.offset,
-                TEXT_OFFSET_SHADOW, TEXT_OFFSET_SHADOW);
+        glUniform2f(text_core.uniform.offset, TEXT_OFFSET_SHADOW, TEXT_OFFSET_SHADOW);
         glDrawArrays(GL_POINTS, 0, (text_core.cursor / 4));
     }
 

@@ -49,6 +49,8 @@ u32 _get_path_bin_root(str *path)
 u32 exec(Buf *cmd, str *cmd_name)
 {
     pid_t pid = fork();
+    int status, exit_code = 0, sig;
+
     if (pid < 0)
     {
         LOGERROR(TRUE, ERR_PROCESS_FORK_FAIL,
@@ -62,7 +64,6 @@ u32 exec(Buf *cmd, str *cmd_name)
         return engine_err;
     }
 
-    int status;
     if (waitpid(pid, &status, 0) == -1)
     {
         LOGERROR(TRUE, ERR_WAITPID_FAIL, "'%s' Waitpid Failed\n", cmd_name);
@@ -71,11 +72,10 @@ u32 exec(Buf *cmd, str *cmd_name)
 
     if (WIFEXITED(status))
     {
-        int exit_code = WEXITSTATUS(status);
+        exit_code = WEXITSTATUS(status);
         if (exit_code == 0)
         {
-            LOGINFO(FALSE,
-                    "'%s' Success, Exit Code: %d\n", cmd_name, exit_code);
+            LOGINFO(FALSE, "'%s' Success, Exit Code: %d\n", cmd_name, exit_code);
         }
         else
         {
@@ -86,16 +86,14 @@ u32 exec(Buf *cmd, str *cmd_name)
     }
     else if (WIFSIGNALED(status))
     {
-        int sig = WTERMSIG(status);
+        sig = WTERMSIG(status);
         LOGFATAL(TRUE, ERR_EXEC_TERMINATE_BY_SIGNAL,
-                "'%s' Terminated by Signal: %d, Process Aborted\n",
-                cmd_name, sig);
+                "'%s' Terminated by Signal: %d, Process Aborted\n", cmd_name, sig);
         return engine_err;
     }
     else
     {
-        LOGERROR(TRUE, ERR_EXEC_ABNORMAL_EXIT,
-                "'%s' Exited Abnormally\n", cmd_name);
+        LOGERROR(TRUE, ERR_EXEC_ABNORMAL_EXIT, "'%s' Exited Abnormally\n", cmd_name);
         return engine_err;
     }
 
@@ -103,10 +101,9 @@ u32 exec(Buf *cmd, str *cmd_name)
     return engine_err;
 }
 
-u32 _mem_map(void **x, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_map(void **x, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x != NULL)
+    if (*x)
     {
         engine_err = ERR_POINTER_NOT_NULL;
         return engine_err;
@@ -120,15 +117,13 @@ u32 _mem_map(void **x, u64 size,
                 "%s[%p] Memory Map Failed, Process Aborted\n", name, NULL);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line,
-            "%s[%p] Memory Mapped [%"PRId64"B]\n", name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Mapped [%"PRId64"B]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
-u32 _mem_commit(void **x, void *offset, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_commit(void **x, void *offset, u64 size, const str *name, const str *file, u64 line)
 {
     if (!x)
     {
@@ -152,13 +147,11 @@ u32 _mem_commit(void **x, void *offset, u64 size,
     return engine_err;
 }
 
-void _mem_unmap(void **x, u64 size,
-        const str *name, const str *file, u64 line)
+void _mem_unmap(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (!*x) return;
     munmap(*x, size);
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%"PRId64"B]\n",
-            name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%"PRId64"B]\n", name, *x, size);
     *x = NULL;
 }
 

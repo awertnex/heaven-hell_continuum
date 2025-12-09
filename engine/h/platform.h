@@ -27,31 +27,32 @@
 
 int make_dir(const str *path);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * get real path.
+ *  @brief get real path.
  * 
- * path = relative path,
- * path_real = result/canonical path, ending with slash.
+ *  @param path = relative path,
+ *  @param path_real = result/canonical path, ending with slash.
  *
- * return non-zero on failure and engine_err is set accordingly */
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
 u32 _get_path_absolute(const str *path, str *path_real);
 
-/* -- INTERNAL USE ONLY --;
+/*! -- INTERNAL USE ONLY --;
  *
- * get current path of binary/executable,
- * assign allocated path string to path.
+ *  @brief get current path of binary/executable, assign allocated path string to 'path'.
  *
- * return non-zero on failure and engine_err is set accordingly */
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
 u32 _get_path_bin_root(str *path);
 
-/* fork child process and execute command,
- * based on execvp().
+/*! @brief fork child process and execute command, based on 'execvp()'.
  * 
- * cmd = command and args,
- * cmd_name = command name (for logging).
+ *  @param cmd = command and args.
+ *  @param cmd_name = command name (for logging).
  *
- * return non-zero on failure and engine_err is set accordingly */
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
 u32 exec(Buf *cmd, str *cmd_name);
 
 #endif /* ENGINE_PLATFORM_H */

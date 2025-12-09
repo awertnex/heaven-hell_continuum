@@ -12,62 +12,56 @@
 
 u32 _mem_alloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x != NULL)
+    if (*x)
     {
         engine_err = ERR_POINTER_NOT_NULL;
         return engine_err;
     }
 
     *x = calloc(1, size);
-    if (*x == NULL)
+    if (!*x)
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_ALLOC_FAIL,
-                "%s[%p] Memory Allocation Failed, Process Aborted\n",
-                name, NULL);
+                "%s[%p] Memory Allocation Failed, Process Aborted\n", name, NULL);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n",
-            name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
-u32 _mem_alloc_memb(void **x, u64 memb, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_alloc_memb(void **x, u64 memb, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x != NULL)
+    if (*x)
         return TRUE;
 
     *x = calloc(memb, size);
-    if (*x == NULL)
+    if (!*x)
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_ALLOC_FAIL,
-                "%s[%p] Memory Allocation Failed, Process Aborted\n",
-                name, NULL);
+                "%s[%p] Memory Allocation Failed, Process Aborted\n", name, NULL);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n",
-            name, *x, memb * size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Allocated [%lldB]\n", name, *x, memb * size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
-u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size, const str *name, const str *file, u64 line)
 {
-    if (x == NULL)
+    str name_i[NAME_MAX] = {0};
+    str name_buf[NAME_MAX] = {0};
+    u64 i;
+
+    if (!x)
     {
         LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
-                "%s[%p] Memory Allocation Failed, Pointer NULL\n",
-                name, NULL);
+                "%s[%p] Memory Allocation Failed, Pointer NULL\n", name, NULL);
         return engine_err;
     }
 
-    u64 i = 0;
-    str name_i[NAME_MAX] = {0};
-    str name_buf[NAME_MAX] = {0};
     snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
@@ -75,8 +69,7 @@ u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
                 memb, sizeof(str*), name_i, file, line) != ERR_SUCCESS)
         return engine_err;
 
-    if (_mem_alloc_memb((void*)&x->buf,
-                memb, size, name_buf, file, line) != ERR_SUCCESS)
+    if (_mem_alloc_memb((void*)&x->buf, memb, size, name_buf, file, line) != ERR_SUCCESS)
     {
         _mem_free((void*)&x->i, memb * sizeof(str*), name_i, file, line);
         return engine_err;
@@ -95,19 +88,19 @@ u32 _mem_alloc_buf(Buf *x, u64 memb, u64 size,
 u32 _mem_alloc_key_val(KeyValue *x, u64 memb, u64 size_key, u64 size_val,
         const str *name, const str *file, u64 line)
 {
-    if (x == NULL)
-    {
-        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
-                "%s[%p] Memory Allocation Failed, Pointer NULL\n",
-                name, NULL);
-        return engine_err;
-    }
-
-    u64 i = 0;
     str name_key[NAME_MAX] = {0};
     str name_val[NAME_MAX] = {0};
     str name_buf_key[NAME_MAX] = {0};
     str name_buf_val[NAME_MAX] = {0};
+    u64 i;
+
+    if (!x)
+    {
+        LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
+                "%s[%p] Memory Allocation Failed, Pointer NULL\n", name, NULL);
+        return engine_err;
+    }
+
     snprintf(name_key, NAME_MAX, "%s.key", name);
     snprintf(name_val, NAME_MAX, "%s.val", name);
     snprintf(name_buf_key, NAME_MAX, "%s.buf_key", name);
@@ -142,28 +135,27 @@ u32 _mem_alloc_key_val(KeyValue *x, u64 memb, u64 size_key, u64 size_val,
     return engine_err;
 }
 
-u32 _mem_realloc(void **x, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_realloc(void **x, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x == NULL)
+    void *temp = NULL;
+
+    if (!*x)
     {
         LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
-                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
-                name, NULL);
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, NULL);
         return engine_err;
     }
 
-    void *temp = realloc(*x, size);
-    if (temp == NULL)
+    temp = realloc(*x, size);
+    if (!temp)
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_REALLOC_FAIL,
-                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, *x);
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n", name, *x);
         return engine_err;
     }
+
     *x = temp;
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n",
-            name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -172,36 +164,37 @@ u32 _mem_realloc(void **x, u64 size,
 u32 _mem_realloc_memb(void **x, u64 memb, u64 size,
         const str *name, const str *file, u64 line)
 {
-    if (*x == NULL)
+    void *temp = NULL;
+
+    if (!*x)
     {
         LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
-                "%s[%p] Memory Reallocation Failed, Pointer NULL\n",
-                name, NULL);
+                "%s[%p] Memory Reallocation Failed, Pointer NULL\n", name, NULL);
         return engine_err;
     }
-    void *temp = realloc(*x, memb * size);
-    if (temp == NULL)
+
+    temp = realloc(*x, memb * size);
+    if (!temp)
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_REALLOC_FAIL,
-                "%s[%p] Memory Reallocation Failed, Process Aborted\n",
-                name, *x);
+                "%s[%p] Memory Reallocation Failed, Process Aborted\n", name, *x);
         return engine_err;
     }
+
     *x = temp;
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n",
-            name, *x, memb * size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Reallocated [%lldB]\n", name, *x, memb * size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
 }
 
-void _mem_free(void **x, u64 size,
-        const str *name, const str *file, u64 line)
+void _mem_free(void **x, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x == NULL)
+    void *temp = NULL;
+    if (!*x)
         return;
 
-    void *temp = *x;
+    temp = *x;
     mem_clear(x, size, name);
     free(*x);
     *x = NULL;
@@ -210,92 +203,94 @@ void _mem_free(void **x, u64 size,
 
 void _mem_free_buf(Buf *x, const str *name, const str *file, u64 line)
 {
-    if (x == NULL) return;
-    void *temp = NULL;
     str name_i[NAME_MAX] = {0};
     str name_buf[NAME_MAX] = {0};
+    void *temp = NULL;
+
+    if (!x) return;
+
     snprintf(name_i, NAME_MAX, "%s.i", name);
     snprintf(name_buf, NAME_MAX, "%s.buf", name);
 
-    if (x->i != NULL)
+    if (x->i)
     {
         temp = x->i;
         mem_clear((void*)&x->i, x->memb * sizeof(str*), name_i);
         free(x->i);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_i, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_i, temp);
     }
-    if (x->buf != NULL)
+
+    if (x->buf)
     {
         temp = x->buf;
         mem_clear((void*)&x->buf, x->memb * x->size, name_buf);
         free(x->buf);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_buf, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_buf, temp);
     }
+
     *x = (Buf){0};
 }
 
 void _mem_free_key_val(KeyValue *x, const str *name, const str *file, u64 line)
 {
-    if (x == NULL) return;
-    void *temp = NULL;
     str name_key[NAME_MAX] = {0};
     str name_val[NAME_MAX] = {0};
     str name_buf_key[NAME_MAX] = {0};
     str name_buf_val[NAME_MAX] = {0};
+    void *temp = NULL;
+
+    if (!x) return;
+
     snprintf(name_key, NAME_MAX, "%s.key", name);
     snprintf(name_val, NAME_MAX, "%s.val", name);
     snprintf(name_buf_key, NAME_MAX, "%s.buf_key", name);
     snprintf(name_buf_val, NAME_MAX, "%s.buf_val", name);
 
-    if (x->key != NULL)
+    if (x->key)
     {
         temp = x->key;
         mem_clear((void*)&x->key, x->memb * sizeof(str*), name_key);
         free(x->key);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_key, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_key, temp);
     }
-    if (x->val != NULL)
+
+    if (x->val)
     {
         temp = x->val;
         mem_clear((void*)&x->val, x->memb * sizeof(str*), name_val);
         free(x->val);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_val, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_val, temp);
     }
-    if (x->buf_key != NULL)
+
+    if (x->buf_key)
     {
         temp = x->buf_key;
         mem_clear((void*)&x->buf_key, x->memb * x->size_key, name_buf_key);
         free(x->buf_key);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_buf_key, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_buf_key, temp);
     }
-    if (x->buf_val != NULL)
+
+    if (x->buf_val)
     {
         temp = x->buf_val;
         mem_clear((void*)&x->buf_val, x->memb * x->size_val, name_buf_val);
         free(x->buf_val);
-        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n",
-                name_buf_val, temp);
+        LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unloaded\n", name_buf_val, temp);
     }
+
     *x = (KeyValue){0};
 }
 
-u32 _mem_clear(void **x, u64 size,
-        const str *name, const str *file, u64 line)
+u32 _mem_clear(void **x, u64 size, const str *name, const str *file, u64 line)
 {
-    if (*x == NULL)
+    if (!*x)
     {
         engine_err = ERR_POINTER_NULL;
         return engine_err;
     }
 
     memset(*x, 0, size);
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Cleared [%lldB]\n",
-            name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Cleared [%lldB]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;

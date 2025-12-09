@@ -16,11 +16,10 @@ void swap_strings(str *s1, str *s2)
 
 str *swap_string_char(str *string, char c1, char c2)
 {
-    u64 len = strlen(string);
+    u64 len = strlen(string), i;
     if (!len) return string;
 
-    u64 i = 0;
-    for (; i < len; ++i)
+    for (i = 0; i < len; ++i)
     {
         if (string[i] == c1)
             string[i] = c2;
@@ -32,17 +31,18 @@ str *swap_string_char(str *string, char c1, char c2)
 str *stringf(const str* format, ...)
 {
     static str str_buf[STRINGF_BUFFERS_MAX][OUT_STRING_MAX] = {0};
-    static u64 index = 0;
+    static u64 index = 0, required_bytes;
     str *string = str_buf[index];
-
     __builtin_va_list args;
+    char *trunc_buf = NULL;
+
     __builtin_va_start(args, format);
-    u64 required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
+    required_bytes = vsnprintf(string, OUT_STRING_MAX, format, args);
     __builtin_va_end(args);
 
     if (required_bytes >= OUT_STRING_MAX - 1)
     {
-        char *trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
+        trunc_buf = str_buf[index] + OUT_STRING_MAX - 4;
         snprintf(trunc_buf, 4, "...");
     }
 

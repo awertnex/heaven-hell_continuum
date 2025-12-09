@@ -12,32 +12,32 @@ v3f32 sub_v3f32(v3f32 a, v3f32 b)
 
 i32 clamp_i32(i32 n, i32 min, i32 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 u32 clamp_u32(u32 n, u32 min, u32 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 f32 clamp_f32(f32 n, f32 min, f32 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 i64 clamp_i64(i64 n, i64 min, i64 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 u64 clamp_u64(u64 n, u64 min, u64 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 f64 clamp_f64(f64 n, f64 min, f64 max)
 {
-    return (n < min) ? min : (n > max) ? max : n;
+    return n < min ? min : n > max ? max : n;
 }
 
 f32 len_v3f32(v3f32 v)
@@ -48,7 +48,7 @@ f32 len_v3f32(v3f32 v)
 v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
-    if (len == 0)
+    if (len < EPSILON)
         return (v3f32){0};
 
     return (v3f32){v.x / len, v.y / len, v.z / len};

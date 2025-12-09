@@ -89,6 +89,7 @@ int main(int argc, char **argv)
     return engine_err;
 
 cleanup:
+
     cmd_fail();
     return engine_err;
 }

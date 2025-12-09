@@ -5,7 +5,8 @@
 
 #include "types.h"
 
-#define PI          3.14159265358979323846
+#define EPSILON     1e-7f
+#define PI          3.14159265358979323846f
 #define DEG2RAD     (PI / 180.0f)   /* 0.017453293f */
 #define RAD2DEG     (180.0f / PI)   /* 57.295779513f */
 #define GRAVITY     -9.7803267715f
@@ -35,12 +36,10 @@ b8 is_in_area_f32(v2f32 v, v2f32 min, v2f32 max);
 b8 is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max);
 b8 is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max);
 b8 is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max);
-
 m4f32 matrix_add(m4f32 a, m4f32 b);
 m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);
 v4f32 matrix_multiply_vector(m4f32 a, v4f32 b);
-
 f32 lerp_f32(f32 a, f32 b, f64 t, f32 rate);
 f32 lerp_cubic_f32(f32 a, f32 b, f64 t);
 v3f64 lerp_v3f64(v3f64 a, v3f64 b, f32 t);
