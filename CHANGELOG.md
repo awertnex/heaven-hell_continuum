@@ -1,5 +1,13 @@
 # changelog
 
+## v<version> (DD MMM YYYY)
+
+#### changes
+
+
+#### bugs and flaws
+
+- - -
 ## v0.3.0-beta (10 Dec 2025)
 
 #### changes
