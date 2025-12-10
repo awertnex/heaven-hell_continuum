@@ -1,7 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define GAME_RELEASE_BUILD  0
+#define GAME_RELEASE_BUILD  1
 
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"
@@ -10,7 +10,7 @@
 
 #define GAME_AUTHOR         "Author: Lily Awertnex"
 #define GAME_NAME           "Heaven-Hell Continuum"
-#define GAME_VERSION        "0.2.4"GAME_VERSION_DEV
+#define GAME_VERSION        "0.3.0"GAME_VERSION_BETA
 
 #include <engine/h/core.h>
 #include <engine/h/types.h>
@@ -21,7 +21,7 @@
 #define MODE_INTERNAL_VSYNC                     0
 #define MODE_INTERNAL_DEBUG                     1
 #define MODE_INTERNAL_LOAD_CHUNKS               1
-#define MODE_INTERNAL_COLLIDE                   0
+#define MODE_INTERNAL_COLLIDE                   1
 
 #define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
 #define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
@@ -53,7 +53,10 @@
 #define SET_GUI_SCALE_4                 4
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_GLIDE            2.5f
+#define SET_LERP_SPEED_GLIDE_V          10.0f
+#define SET_LERP_SPEED_WALK             18.0f
 #define SET_LERP_SPEED_RIGID            100.0f
+#define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
 #define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_SPEED_WALK           4.0f
@@ -423,7 +426,13 @@ typedef struct Player
 
     v3i64 spawn_point;
     u64 container_state;            /* enum: ContainerFlag */
-    u32 hotbar_slot_selected;
+
+    /*! @remark signed instead of unsigned so it's possible to navigate
+     *  'hotbar_slots' when using mousewheel, used for wrapping around
+     *  when out of range.
+     */
+    i32 hotbar_slot_selected;
+
     u32 hotbar_slots[SET_HOTBAR_SLOTS_MAX];
     u32 inventory_slots[SET_INVENTORY_SLOTS_MAX];
 } Player;

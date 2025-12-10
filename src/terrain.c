@@ -61,7 +61,7 @@ void rand_free(void)
 
 v3f32 random_2d(i32 x, i32 y, u32 seed)
 {
-    const u32 S = 32;
+    const u32 S = 31;
     u32 a = x + seed + 94580993;
     u32 b = y - seed - 35786975;
 
@@ -81,7 +81,7 @@ v3f32 random_2d(i32 x, i32 y, u32 seed)
 
 v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
 {
-    const u32 S = 32;
+    const u32 S = 31;
     u32 a = x + seed + 7467244;
     u32 b = y - seed - 4909393;
     u32 c = z + seed + 2500462;

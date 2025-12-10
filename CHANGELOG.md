@@ -1,6 +1,10 @@
 # changelog
 
-## v0.2.4-beta (DD MMM 2025)
+## v0.3.0-beta (10 Dec 2025)
+
+#### changes
+- nudging the major version up by 1 is an understatement, this is almost
+  an entirely different game from the previous version
 - changed directory structure completely
 - removed instance directories, now the main directory is the only instance
 - added baking for lookup tables for faster runtime fetching
@@ -12,12 +16,44 @@
 - added cool textures
 - revived old code completely and removed all scrap code
 - fixed chunk queue offset miscalculation
-- fixed windows support
+- fixed windows support (10 Dec 2025: actually broke it later)
 - fixed z-fighting between overlapped quads and lines
 - added basic AABB collision
 - added proper skybox and stars
-
-#### changes
+- fixed memory leak from forgetting to zero chunk VAOs and VBOs after deleting
+- fixed 'chunk_tab' shifting overhead from resetting all chunks when player
+  chunk delta is too large, by skipping zeroing chunks when popping and only
+  zeroing chunks when pushing to 'chunk_buf'
+- added OpenGL extension: GL_ARB_bindless_texture
+- added texturing per block face
+- added more textures and assets
+- added inventory slots and block selection
+- optimized chunking in general quite hard
+- improved readability and documentation
+- fixed wrong indexing caused by my terrible idea to shift chunks only one axis
+  per frame, instead prioritized shifting all required axes before allowing
+  anything else to interact with chunks
+- added zooming
+- added smooth movement
+- improved physics a lot
+- added player overflow logic:
+    - if player crosses 1 chunk boundary beyond world edge, they're teleported
+      to 1 chunk boundary before opposite world edge
+    - if player enters region of certain distance of chunks near world edge,
+      their overflow flag for that axis is triggered, for future, very cool
+      logic
+- un-spaghettified a lot of code, notably:
+    - function 'logic.c/player_state_update()', when handling player movement
+      flags, now instead of checking 'if player is flying' with every other
+      if-statement that needs it, everything is under one 'if player is
+      flying' statement
+    - in 'chunking.c', combined functions 'chunk_tab_shift()',
+      'chunking_update()' and chain of 'chunk_queue_update()' calls into one
+      function 'chunking_update()' (actually makes readability more difficult
+      but since it's internal it's better to just call that one function in
+      'main.c' and let it handle things related to chunking
+- made build tool build engine separately into a dynamic shared library
+- simplified build tool by removing some unnecessary commands
 
 - - -
 ## v0.2.3-beta (16 Oct 2025)
@@ -37,7 +73,7 @@
 
 #### changes
 - optimized chunk rendering:
-    - added a queue for qirty chunks to process at a reasonable rate per frame
+    - added queues for processing chunks at a reasonable rate per frame
     - changed block data from 'u64' -> 'u32' to save memory, and sacrifice
       some performance by calculating position data at meshing time
     - removed render flags from invisible inside chunks

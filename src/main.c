@@ -46,14 +46,9 @@ static Player lily =
 {
     .name = "Lily",
     .size = {0.6f, 0.6f, 1.8f},
-    .pitch = 0.0f,
-    .yaw = 0.0f,
-    .sin_pitch = 0.0f, .cos_pitch = 0.0f,
-    .sin_yaw = 0.0f, .cos_yaw = 0.0f,
     .eye_height = SET_PLAYER_EYE_HEIGHT,
     .weight = 2.0f,
-    .movement_speed = SET_PLAYER_SPEED_WALK,
-    .camera_mode = 0,
+    .camera_mode = MODE_CAMERA_1ST_PERSON,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
 
     .spawn_point = {0},
@@ -75,24 +70,15 @@ static struct /* skybox_data */
     v3f32 color;
 } skybox_data;
 
-/* ---- callbacks ----------------------------------------------------------- */
-
 static void callback_error(int error, const char* message)
 {
     (void)error;
     LOGERROR(TRUE, ERR_GLFW, "GLFW: %s\n", message);
 }
 
-static void callback_framebuffer_size(
-        GLFWwindow* window, int width, int height);
-
-static void callback_key(
-        GLFWwindow *window, int key, int scancode, int action, int mods);
-
-static void callback_scroll(
-        GLFWwindow *window, double xoffset, double yoffset);
-
-/* ---- signatures ---------------------------------------------------------- */
+static void callback_framebuffer_size(GLFWwindow* window, int width, int height);
+static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods);
+static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset);
 
 static void shaders_init(void);
 static void bind_shader_uniforms(void);
@@ -134,8 +120,7 @@ static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
     fbo_realloc(&render, &fbo[FBO_POST_PROCESSING], FALSE, 4);
 }
 
-static void callback_key( GLFWwindow *window,
-        int key, int scancode, int action, int mods)
+static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
@@ -149,9 +134,17 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
     (void)window;
     (void)xoffset;
 
-    lily.camera.zoom =
-        clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED,
-                0.0f, CAMERA_ZOOM_MAX);
+    if (lily.flag & FLAG_PLAYER_ZOOMER)
+        lily.camera.zoom =
+            clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED, 0.0f, CAMERA_ZOOM_MAX);
+    else
+    {
+        lily.hotbar_slot_selected += (i64)yoffset;
+        if (lily.hotbar_slot_selected >= SET_HOTBAR_SLOTS_MAX)
+            lily.hotbar_slot_selected = 0;
+        else if (lily.hotbar_slot_selected < 0)
+            lily.hotbar_slot_selected = SET_HOTBAR_SLOTS_MAX - 1;
+    }
 }
 
 static u32 settings_init(void)
@@ -896,7 +889,7 @@ u32 world_init(str *name)
         };
 
     flag |= FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
-    lily.flag |= FLAG_PLAYER_FLYING | FLAG_PLAYER_ZOOMER;
+    lily.flag |= FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
 

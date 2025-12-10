@@ -61,9 +61,9 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
 
     player->movement_speed = SET_PLAYER_SPEED_WALK;
     player->movement_lerp_speed = (v3f32){
-        SET_LERP_SPEED_DEFAULT,
-        SET_LERP_SPEED_DEFAULT,
-        SET_LERP_SPEED_RIGID,
+        SET_LERP_SPEED_WALK,
+        SET_LERP_SPEED_WALK,
+        SET_LERP_SPEED_WALK,
     };
     player->camera.fovy = settings.fov;
 
@@ -75,9 +75,11 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
         player->camera.fovy += 10.0f;
 
         player->movement_speed = SET_PLAYER_SPEED_FLY;
-        player->movement_lerp_speed.x = SET_LERP_SPEED_GLIDE;
-        player->movement_lerp_speed.y = SET_LERP_SPEED_GLIDE;
-        player->movement_lerp_speed.z = SET_LERP_SPEED_DEFAULT;
+        player->movement_lerp_speed = (v3f32){
+            SET_LERP_SPEED_GLIDE,
+            SET_LERP_SPEED_GLIDE,
+            SET_LERP_SPEED_GLIDE_V,
+        };
 
         if (player->flag & FLAG_PLAYER_SPRINTING)
         {
@@ -129,11 +131,11 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     player->pos_last = player->pos;
     player->speed = sqrtf(len_v3f32(player->velocity));
     if (player->speed > EPSILON)
-        player->camera.fovy += player->speed * 0.05f;
+        player->camera.fovy += player->speed * 0.03f;
     player->camera.fovy = clamp_f32(player->camera.fovy, 1.0f, SET_FOV_MAX);
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
-                dt, settings.lerp_speed);
+                dt, SET_LERP_SPEED_FOV_MODE);
 }
 
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,

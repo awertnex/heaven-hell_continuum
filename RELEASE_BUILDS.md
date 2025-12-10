@@ -9,6 +9,19 @@
         <th> Windows </th>
     </tr>
     <tr>
+        <td> 0.3.0-beta </td>
+        <td> 10 Dec 2025 </td>
+        <td>
+            <a href="https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.tar.gz">linux-x86_64.tar.gz</a>
+        </td>
+        <td>
+            <a href="https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.zip">linux-x86_64.zip</a>
+        </td>
+        <td>
+            <a href=""></a>
+        </td>
+    </tr>
+    <tr>
         <td> 0.2.0-beta </td>
         <td> 05 Oct 2025 </td>
         <td>
@@ -48,4 +61,3 @@
         </td>
     </tr>
 </table>
-

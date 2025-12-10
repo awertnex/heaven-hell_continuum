@@ -11,8 +11,8 @@
 
 \# | Linux x86_64 (latest) | Windows (latest)
 --- | --- | ---
-tar | [v0.2.0-beta-linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-linux-x86_64.tar.gz)
-zip | [v0.2.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.2.0-beta/heaven-hell_continuum-v0.2.0-beta-linux-x86_64.zip) | not yet available
+tar | [v0.3.0-beta-linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.tar.gz)
+zip | [v0.3.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.zip) | not yet available
 [All Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
 
 
