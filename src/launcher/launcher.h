@@ -10,10 +10,10 @@
 #define color(r, g, b, v, a) \
     (Color){((f32)r/255)*v, ((f32)g/255)*v, ((f32)b/255)*v, a}
 
-enum States
+enum State
 {
     FLAG_ACTIVE =           0x01,
-}; /* States */
+}; /* State */
 
 #define COL_BG              color(0x30, 0x30, 0x30, 0xFF, 0xFF)
 #define COL_BUTTON          color(0x26, 0x26, 0x26, 0xFF, 0xFF)

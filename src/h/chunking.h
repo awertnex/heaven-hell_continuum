@@ -1,52 +1,95 @@
 #ifndef GAME_CHUNKING_H
 #define GAME_CHUNKING_H
 
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 
 #include "main.h"
 
-extern u64 CHUNKS_MAX;
+#define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
 
-/* chunk pointer look-up table that points to chunk_buf addresses.
- * mapping of table entries to chunk positions in 3d space */
+/*! @brief look-up table to reduce redundant checks of untouched regions of 'chunk_buf'.
+ *
+ *  the sphere of chunks around 'chunk_tab' center are the only chunks that get processed,
+ *  and since 'CHUNK_ORDER' is a look-up that orders 'chunk_tab' addresses based on
+ *  their distance from the center index, using 'CHUNKS_MAX[render_distance]'
+ *  is useful for iteration from 'CHUNK_ORDER[0]' to 'CHUNK_ORDER[CHUNKS_MAX[render_distance]]'.
+ *
+ *  @remark index 0 of this array is always 0 since render distance of 0 is not
+ *  possible (it's possible but goofy)
+ *
+ *  @remark read-only, initialized internally in 'chunking_init()'.
+ */
+extern u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1];
+
+/*! @brief chunk pointer look-up table that points to chunk_buf addresses.
+ *
+ *  'chunk_buf' addresses ordered by their positions in 3d space relative to player position.
+ */
 extern Chunk **chunk_tab;
 
-/* chunk pointer pointer look-up table that points to chunk_tab addresses.
- * order of chunks based on distance away from player */
-extern Chunk ***chunk_order;
+/*! @brief chunk pointer pointer look-up table that points to chunk_tab addresses.
+ *
+ *  'chunk_tab' addresses ordered by distance from 'chunk_tab' center in ascending order.
+ *
+ *  @remark read-only, initialized internally in 'chunking_init()'.
+ */
+extern Chunk ***CHUNK_ORDER;
 
-/* queue of chunks to be processed */
-extern ChunkQueue chunk_queue;
+/*! @brief queues of chunks to be processed.
+ *
+ *  @remark read-only, updated internally in 'chunking_update()'.
+ */
+extern ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX];
 
-/* player relative chunk tab access */
-static u16 chunk_tab_index;
+/*! @brief player relative chunk tab access.
+ *
+ *  @remark declared by the user.
+ */
+extern u32 chunk_tab_index;
 
-/* return FALSE (0) on failure */
-u8 chunking_init(void);
+/*! @brief initialize chunking resources.
+ *
+ *  allocate resources for 'chunk_buf', 'chunk_tab', 'CHUNK_ORDER' and
+ *  'CHUNK_QUEUE[]' and load necessary look-ups from disk if found and build them if not found.
+ *
+ *  @remark building the look-ups is cpu-guzzling (performance-taxing).
+ *
+ *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
+u32 chunking_init(void);
 
-void chunking_update(v3i16 player_delta_chunk);
+/*! @update everything about chunks during gameplay.
+ *
+ *  1. load dirty chunks into their priority queues based on their distance from
+ *     the player.
+ *  2. if '(flag & FLAG_MAIN_CHUNK_BUF_DIRTY)', shift 'chunk_tab'
+ *     to compensate for the player crossing a chunk boundary.
+ *  3. check if player has crossed more than one axis and go back to shift
+ *     along that axis if true.
+ *  4. find empty slots within 'settings.render_distance' and push chunks to
+ *     'chunk_buf' and return that address to the respective index in 'chunk_tab'.
+ *  5. remove flag 'FLAG_MAIN_CHUNK_BUF_DIRTY' when no further processing is required.
+ */
+void chunking_update(v3i16 player_chunk, v3i16 *player_chunk_delta);
+
 void chunking_free(void);
 
-/* index = (chunk_tab index) */
-void block_place(u32 index, u32 x, u32 y, u32 z);
+/*! @param index = index into global array 'chunk_tab'.
+ */
+void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id);
 
-/* index = (chunk_tab index) */
+/*! @param index = index into global array 'chunk_tab'.
+ */
 void block_break(u32 index, u32 x, u32 y, u32 z);
 
-/* queue_stride = first chunk_order index to start parsing,
- * queue_size = number of indices to process in queue,
- * rate_chunk = number of chunks to process per frame,
- * rate_block = number of blocks to process per chunk per frame */
-void chunk_queue_update(u32 *cursor, u32 *count, Chunk ***queue,
-        u64 queue_stride, u64 queue_size, u32 rate_chunk, u32 rate_block);
+/*! @brief translate block world position to chunk_buf index relative to '*chunk'.
+ *
+ *  @param x, y, z = coordinates of block relative to '*chunk'.
+ *
+ *  @return pointer to block in 'chunk_buf'.
+ */
+u32 *get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z);
 
-void chunk_tab_shift(v3i16 player_chunk, v3i16 *player_delta_chunk);
-u16 get_target_chunk_index(v3i16 player_chunk, v3i64 player_delta_target);
-#ifdef FUCK // TODO: undef FUCK
-void draw_line_3d(v3i32 pos_0, v3i32 pos_1, v4u8 color);
-void draw_block_wires(v3i32 pos);
-void draw_bounding_box(Vector3 origin, Vector3 scl, Color col);
-void draw_bounding_box_clamped(Vector3 origin, Vector3 scl, Color col);
-#endif // TODO: undef FUCK
+u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_target_delta);
 
 #endif /* GAME_CHUNKING_H */

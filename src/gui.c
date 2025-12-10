@@ -2,13 +2,14 @@
 #include <string.h>
 #include <math.h>
 
+#include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/memory.h>
+#include <engine/h/string.h>
+
 #include "h/main.h"
 #include "h/gui.h"
 #include "h/dir.h"
-
-u8 hotbar_slot_selected = 1;
 
 u16 menu_index;
 u16 menu_layer[5] = {0};
@@ -16,120 +17,87 @@ u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 
-void
-print_menu_layers()
+u32 gui_init(void)
 {
-    str menu_names[10][24] =
+    str *font_path[FONT_COUNT] =
     {
-        "",
-        "MENU_TITLE",
-        "MENU_SINGLEPLAYER",
-        "MENU_MULTIPLAYER",
-        "MENU_SETTINGS",
-        "MENU_SETTINGS_AUDIO",
-        "MENU_SETTINGS_VIDEO",
-        "MENU_GAME_PAUSE",
-        "MENU_DEATH",
-    };
-
-    printf("menu layers:\n");
-    u8 i = 0;
-    for (; i < 9; ++i)
-        printf("layer %1d: %s\n", i, menu_names[menu_layer[i]]);
-
-    putchar('\n');
-}
-
-b8
-gui_init(void)
-{
-    str *font_path[] =
-    {
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf"),
-        stringf("%s%s", INSTANCE_DIR[DIR_FONTS],
+        stringf("%s%s", DIR_ROOT[DIR_FONTS],
                 "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
     };
 
-    normalize_slash(font_path[0]);
-    normalize_slash(font_path[1]);
-    normalize_slash(font_path[2]);
-    normalize_slash(font_path[3]);
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+    {
+        normalize_slash(font_path[i]);
+        if (font_init(&font[i], FONT_RESOLUTION_DEFAULT,
+                    font_path[i]) != ERR_SUCCESS)
+            goto cleanup;
+    }
 
     if (
-            !font_init(&font[FONT_REG],
-                FONT_RESOLUTION_DEFAULT, font_path[0]) ||
-            !font_init(&font[FONT_REG_BOLD],
-                FONT_RESOLUTION_DEFAULT, font_path[1]) ||
-            !font_init(&font[FONT_MONO],
-                FONT_RESOLUTION_DEFAULT, font_path[2]) ||
-            !font_init(&font[FONT_MONO_BOLD],
-                FONT_RESOLUTION_DEFAULT, font_path[3]))
+            texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "crosshair.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "item_bar.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_active.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_GUI],
+                    "sdb_inactive.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SKYBOX_VAL], (v2i32){512, 512},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_ENV],
+                    "skybox_val.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SKYBOX_HORIZON], (v2i32){512, 512},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_ENV],
+                    "skybox_horizon.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){512, 512},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_ENV],
+                    "skybox_stars.png")) != ERR_SUCCESS)
         goto cleanup;
 
-
-    if (
-            !texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "crosshair.png")) ||
-
-            !texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_active.png")) ||
-
-            !texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_GUI], "sdb_inactive.png")) ||
-
-            !texture_init(&texture[TEXTURE_DIRT], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "dirt.png")) ||
-
-            !texture_init(&texture[TEXTURE_STONE], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "stone.png")) ||
-
-            !texture_init(&texture[TEXTURE_SAND], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 0, FALSE,
-                stringf("%s%s", INSTANCE_DIR[DIR_BLOCKS], "sand.png")))
-        goto cleanup;
-
-    if (
-            !texture_generate(&texture[TEXTURE_CROSSHAIR]) ||
-            !texture_generate(&texture[TEXTURE_SDB_ACTIVE]) ||
-            !texture_generate(&texture[TEXTURE_SDB_INACTIVE]) ||
-            !texture_generate(&texture[TEXTURE_DIRT]) ||
-            !texture_generate(&texture[TEXTURE_STONE]) ||
-            !texture_generate(&texture[TEXTURE_SAND]))
-        goto cleanup;
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        if (texture_generate(&texture[i], FALSE) != ERR_SUCCESS)
+            goto cleanup;
 
     //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
     //menu_index = MENU_TITLE;
     //memset(buttons, 0, BTN_COUNT);
-    return 0;
+    return *GAME_ERR;
 
 cleanup:
     gui_free();
-    return -1;
+    return *GAME_ERR;
 }
 
-void
-gui_free(void)
+void gui_free(void)
 {
-    font_free(&font[FONT_REG]);
-    font_free(&font[FONT_REG]);
-    font_free(&font[FONT_MONO]);
-    font_free(&font[FONT_MONO_BOLD]);
-    texture_free(&texture[TEXTURE_CROSSHAIR]);
-    texture_free(&texture[TEXTURE_SDB_ACTIVE]);
-    texture_free(&texture[TEXTURE_SDB_INACTIVE]);
-    texture_free(&texture[TEXTURE_DIRT]);
-    texture_free(&texture[TEXTURE_STONE]);
-    texture_free(&texture[TEXTURE_SAND]);
+    u32 i = 0;
+    for (i = 0; i < FONT_COUNT; ++i)
+        font_free(&font[i]);
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        texture_free(&texture[i]);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */
@@ -137,8 +105,7 @@ gui_free(void)
 /* 
  * scale = (source.scale * scl);
  */
-void
-draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
+void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -168,8 +135,7 @@ draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v
     rlVertex2f(pos.x + tile_width, pos.y);
 }
 
-void
-update_menus(v2f32 render_size)
+void update_menus(v2f32 render_size)
 {
     if (!menu_index)
         return;
@@ -335,8 +301,7 @@ update_menus(v2f32 render_size)
     }
 }
 
-void
-draw_hud()
+void draw_hud()
 {
     rlBegin(RL_QUADS);
 
@@ -369,8 +334,7 @@ draw_hud()
     rlSetTexture(0);
 }
 
-float
-get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
+float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
 {
     f32 result = 0;
     f32 text_offset_x = 0.0f;
@@ -407,8 +371,7 @@ get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
  * align_x = (0 = left, 1 = center, 2 = right);
  * align_y = (0 = top, 1 = center, 2 = bottom);
  */
-void
-draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
+void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -465,8 +428,7 @@ draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align
 /* 
  * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
  */
-void
-draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
+void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
 {
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
@@ -562,8 +524,7 @@ draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 po
 
 /* raylib/rtextures.c/DrawTexturePro refactored;
    scale = (scl); */
-void
-draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
+void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
 {
     if (texture.id <= 0) return;
     f32 width = (f32)texture.width;
@@ -588,8 +549,7 @@ draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, C
 
 /* align_x = (0 = left, 1 = center, 2 = right);
    align_y = (0 = top, 1 = center, 2 = bottom); */
-void
-draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
     switch (align_x)
     {
@@ -642,8 +602,7 @@ draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align
             0, 0, COL_TEXTURE_DEFAULT);
 }
 
-void
-btn_func_singleplayer()
+void btn_func_singleplayer()
 {
     menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
@@ -653,30 +612,26 @@ btn_func_singleplayer()
     init_world("Poop Consistency Tester"); /*temp*/
 }
 
-void
-btn_func_multiplayer()
+void btn_func_multiplayer()
 {
     menu_index = MENU_MULTIPLAYER;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
 
-void
-btn_func_settings()
+void btn_func_settings()
 {
     menu_index = MENU_SETTINGS;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
 
-void
-btn_func_quit_game()
+void btn_func_quit_game()
 {
     flag &= ~FLAG_ACTIVE;
 }
 
-void
-btn_func_unpause()
+void btn_func_unpause()
 {
     menu_index = 0;
     state_menu_depth = 0;
@@ -686,8 +641,7 @@ btn_func_unpause()
     lily.container_state = 0;
 }
 
-void
-btn_func_quit_world()
+void btn_func_quit_world()
 {
     menu_index = MENU_TITLE;
     state_menu_depth = 1;
@@ -696,8 +650,7 @@ btn_func_quit_world()
     flag &= ~FLAG_WORLD_LOADED;
 }
 
-void
-btn_func_back()
+void btn_func_back()
 {
     menu_layer[state_menu_depth] = 0;
     --state_menu_depth;

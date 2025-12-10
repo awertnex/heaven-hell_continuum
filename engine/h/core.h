@@ -8,18 +8,20 @@
 
 #define ENGINE_AUTHOR           "Lily Awertnex"
 #define ENGINE_NAME             "Fossil Engine"
-#define ENGINE_VERSION          "0.1.1"ENGINE_VERSION_BETA
+#define ENGINE_VERSION          "0.1.3"ENGINE_VERSION_STABLE
 
-#include <engine/include/glad/glad_modified.h>
+#include <engine/include/glad/glad.h>
 #define GLFW_INCLUDE_NONE
-#include <engine/include/glfw3_modified.h>
-#include <engine/include/stb_truetype_modified.h>
-#include <engine/include/stb_image_modified.h>
+#include <engine/include/glfw3.h>
+#include <engine/include/stb_truetype.h>
+#include <engine/include/stb_image.h>
 
-#include "defines.h"
+#include "types.h"
 #include "platform.h"
 #include "limits.h"
 
+#define CAMERA_CLIP_FAR_DEFAULT GL_CLIP_DISTANCE0
+#define CAMERA_CLIP_NEAR_DEFAULT 0.03f
 #define CAMERA_ANGLE_MAX 90.0f
 #define CAMERA_RANGE_MAX 360.0f
 #define CAMERA_ZOOM_MAX 69.0f
@@ -31,6 +33,8 @@
 #define FONT_RESOLUTION_DEFAULT 64
 #define FONT_SIZE_DEFAULT 22.0f
 #define TEXT_TAB_SIZE 4
+#define TEXT_COLOR_SHADOW 0x00000060
+#define TEXT_OFFSET_SHADOW 2.0f
 
 enum KeyboardKeyState
 {
@@ -197,17 +201,17 @@ typedef struct Mesh
 typedef struct Shader
 {
     str *file_name;
-    GLuint id;          /* used by opengl's "glCreateShader()" */
-    GLuint type;        /* GL_<x>_SHADER */
+    GLuint id;          /* used by 'glCreateShader()' */
+    GLuint type;        /* 'GL_<x>_SHADER' */
     GLchar *source;     /* shader file source code */
-    GLint loaded;       /* used by opengl's "glGetShaderiv()" */
+    GLint loaded;       /* used by 'glGetShaderiv()' */
 } Shader;
 
 typedef struct ShaderProgram
 {
     str *name;          /* for stress-free debugging */
-    GLuint id;          /* used by opengl's glCreateProgram() */
-    GLint loaded;       /* used by opengl's "glGetProgramiv()" */
+    GLuint id;          /* used by 'lCreateProgram()' */
+    GLint loaded;       /* used by 'glGetProgramiv()' */
     Shader vertex;
     Shader geometry;
     Shader fragment;
@@ -224,12 +228,18 @@ typedef struct Texture
 {
     v2i32 size;
     u64 data_len;
-    GLuint id;              /* used by opengl's glGenTextures() */
-    GLint format;           /* used by opengl's glTexImage2D() */
-    GLint format_internal;  /* used by opengl's glTexImage2D() */
-    GLint filter;           /* used by opengl's glTexParameteri() */
+    GLuint id;              /* used by 'glGenTextures() */
 
-    /* number of color channels, used by stb_image.h's stbi_load() */
+    /*! @brief used by opengl extension 'GL_ARB_bindless_texture'.
+     */
+    u64 handle;
+
+    GLint format;           /* used by 'glTexImage2D()' */
+    GLint format_internal;  /* used by 'glTexImage2D()' */
+    GLint filter;           /* used by 'glTexParameteri()' */
+
+    /*! @brief number of color channels, used by 'stbi_load()'.
+     */
     int channels;
 
     b8 grayscale;
@@ -285,17 +295,21 @@ typedef struct Glyphf
 
 typedef struct Font
 {
-    /* font file name,
-     * assigned in load_font() automatically */
+    /*! @brief font file name,
+     *
+     *  initialized internally in 'load_font()'.
+     */
     str path[PATH_MAX];
 
     u32 resolution;         /* glyph bitmap diameter in bytes */
     f32 char_size;          /* for font atlas sampling */
 
-    /* glyphs highest points' deviation from baseline */
+    /*! @brief glyphs highest points' deviation from baseline.
+     */
     i32 ascent;
 
-    /* glyphs lowest points' deviation from baseline */
+    /*! @brief glyphs lowest points' deviation from baseline.
+     */
     i32 descent;
 
     i32 line_gap;
@@ -303,14 +317,17 @@ typedef struct Font
     f32 size;               /* global font size for text uniformity */
     v2i32 scale;            /* biggest glyph bounding box in pixels */
 
-    /* used by stb_truetype.h's stbtt_InitFont() */
+    /*! @brief used by 'stbtt_InitFont()'.
+     */
     stbtt_fontinfo info;
 
-    /* font file contents,
-     * used by stb_truetype.h's stbtt_InitFont() */
+    /*! @brief font file contents.
+     *
+     *  used by 'stbtt_InitFont()'.
+     */
     u8 *buf;
 
-    u64 buf_len;            /* buf size in bytes */
+    u64 buf_len;            /* 'buf' size in bytes */
     u8 *bitmap;             /* memory block for all font glyph bitmaps */
 
     GLuint id;              /* used by opengl's glGenTextures() */
@@ -334,160 +351,181 @@ enum TextAlignment
     TEXT_ALIGN_BOTTOM = 2,
 }; /* TextAlignment */
 
-extern u32 keyboard_key[KEYBOARD_KEYS_MAX];
-extern u32 keyboard_tab[KEYBOARD_KEYS_MAX];
-
-/* multisample = turn on multisampling;
+/*! @param multisample = turn on multisampling.
  *
- * return non-zero on failure */
-int init_glfw(b8 multisample);
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 glfw_init(b8 multisample);
 
-/* return non-zero on failure */
-int init_window(Render *render);
+/*! @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 window_init(Render *render);
 
-/* return non-zero on failure */
-int init_glad(void);
+/*! @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 glad_init(void);
 
-/* read_format = read files within path in specified format
- * (fread() parameter),
+/*! @brief initialize single shader.
  *
- * return non-zero on failure */
-int shader_init(const str *shaders_dir, Shader *shader,
-        const str *read_format);
-
-/* read_format = read files within path in specified format
- * (fread() parameter),
+ *  calls 'shader_pre_process()' on 'shader->file_name' before compiling
+ *  shader, then compiles shader.
  *
- * return non-zero on failure */
-int shader_program_init(const str *shaders_dir, ShaderProgram *program,
-        const str *read_format);
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 shader_init(const str *shaders_dir, Shader *shader);
+
+/*! @brief initialize shader program.
+ *
+ *  calls 'shader_init()' on all shaders in 'program' if 'shader->type' is set.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 shader_program_init(const str *shaders_dir, ShaderProgram *program);
 
 void shader_program_free(ShaderProgram *program);
 
-/* return non-zero on failure */
-int fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
-        b8 multisample, u32 samples, b8 flip_vertical);
+/*! @brief set a vec3 attribute array for a vao.
+ */
+void attrib_vec3(void);
 
-/* return non-zero on failure */
-int fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
+/*! @brief set a vec3 and a vec2 attribute arrays for a vao.
+ */
+void attrib_vec3_vec2(void);
+
+/*! @brief set a vec3 and a vec3 attribute arrays for a vao.
+ */
+void attrib_vec3_vec3(void);
+
+/*! @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
+        b8 multisample, u32 samples);
+
+/*! @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples);
 
 void fbo_free(FBO *fbo);
 
-/* load image data from disk into texture->buf,
- * set texture info,
+/*! @brief load image data from disk into 'texture->buf' and set texture info.
  *
- * return FALSE (0) on failure */
-b8 texture_init(Texture *texture, v2i32 size,
+ *  @return non-zero on failure and engine_err is set accordingly.
+ */
+u32 texture_init(Texture *texture, v2i32 size,
         const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name);
 
-/* generate texture for opengl from image loaded by texture_init(),
+/*! @brief generate texture for opengl from image loaded by 'texture_init()'.
  *
- * return FALSE (0) on failure */
-b8 texture_generate(Texture *texture);
-
-/* -- INTERNAL USE ONLY --;
+ *  @param bindless = use opengl extension 'GL_ARB_bindless_texture'.
  *
- * generate texture for opengl from *buf.
- *
- * return FALSE (0) on failure */
-b8 _texture_generate(
-        GLuint *id, const GLint format_internal,  const GLint format,
-        GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 texture_generate(Texture *texture, b8 bindless);
 
 void texture_free(Texture *texture);
 
-/* usage = GL_<x>_DRAW */
-int mesh_generate(Mesh *mesh, GLenum usage,
-        GLuint vbo_len, GLuint ebo_len,
-        GLfloat *vbo_data, GLuint *ebo_data);
+/*! @param attrib = pointer to a function to set attribute arrays for 'mesh->vao'
+ *  (e.g. &attrib_vec3, set a single vec3 attribute array),
+ *  @param usage = 'GL_<x>_DRAW'.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
+        GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data);
 
 void mesh_free(Mesh *mesh);
 
-/* apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw)
- * from camera rotation,
- * restrict rotation ranges: roll: 0 - 0, pitch: -90 - 90, yaw: 0 - 360 */
+/*! @brief apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw) from camera rotation.
+ *
+ *  restrict rotation ranges:
+ *      roll: 0 - 0.
+ *      pitch: -90 - 90.
+ *      yaw: 0 - 360.
+ */
 void update_camera_movement(Camera *camera);
 
-/* setup camera matrices for Z-up right-handed coordinates
- * and vertical fov (fovy) */
+/*! @brief setup camera matrices for Z-up, right-handed coordinates and vertical fov (fovy).
+ */
 void update_camera_perspective(Camera *camera, Projection *projection);
 
 void update_mouse_movement(Render *render);
 
-/* update internal key states: press, double-press, hold, release */
+b8 is_key_press(const u32 key);
+b8 is_key_press_double(const u32 key);
+b8 is_key_hold(const u32 key);
+b8 is_key_release(const u32 key);
+
+/*! @brief update internal key states: press, double-press, hold, release,
+ */
 void update_key_states(Render *render);
 
-static b8 is_key_press(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS ||
-            keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static b8 is_key_press_double(const u32 key)
-{
-    return (keyboard_key[key] == KEY_PRESS_DOUBLE);
-}
-
-static b8 is_key_hold(const u32 key)
-{
-    return (keyboard_key[key] == KEY_HOLD ||
-            keyboard_key[key] == KEY_HOLD_DOUBLE);
-}
-
-static b8 is_key_release(const u32 key)
-{
-    return (keyboard_key[key] == KEY_RELEASE ||
-            keyboard_key[key] == KEY_RELEASE_DOUBLE);
-}
-
-/* load font from file at font_path,
- * allocate memory for font.buf and load file contents into it in binary format,
- * allocate memory for font.bitmap and render glyphs onto it,
- * generate square texture of diameter "size * 16" and bake bitmap onto it.
+/*! @brief load font from file at font_path.
  *
- * size = font size & character bitmap diameter,
- * font_path = font path.
+ *  1. allocate memory for 'font.buf' and load file contents into it in binary format.
+ *  2. allocate memory for 'font.bitmap' and render glyphs onto it.
+ *  3. generate square texture of diameter (size * 16) and bake bitmap onto it.
  *
- * return FALSE (0) on failure */
-b8 font_init(Font *font, u32 size, const str *font_path);
+ *  @param size = font size & character bitmap diameter.
+ *  @param font_path = font path.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 font_init(Font *font, u32 size, const str *font_path);
 
 void font_free(Font *font);
 
-/* init text rendering settings */
-u8 text_init(void);
-
-/* start text rendering batch.
+/*! -- IMPLEMENTATION: text.c --;
  *
- * length = pre-allocate buffer for string (if 0, STRING_MAX is allocated),
- * size = font height in pixels,
- * color = hex format: 0xrrggbbaa,
- * clear = clear the framebuffer before rendering */
+ *  @brief init text rendering settings.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 text_init(ShaderProgram *program);
+
+/*! -- IMPLEMENTATION: text.c --;
+ *
+ *  @brief start text rendering batch.
+ *
+ *  @param length = pre-allocate buffer for string (if 0, STRING_MAX is allocated).
+ *  @param size = font height in pixels.
+ *  @param color = hex format: 0xrrggbbaa.
+ *  @param clear = clear the framebuffer before rendering.
+ */
 void text_start(u64 length, f32 size, Font *font,
         Render *render, ShaderProgram *program, FBO *fbo, b8 clear);
 
-/* push string's glyph metrics, position
- * and alignment to render buffer.
+/*! -- IMPLEMENTATION: text.c --;
  *
- * align_x = TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT,
- * align_y = TEXT_ALIGN_TOP, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM,
- * default alignment (e.g. (0, 0)) top left,
- * enum: TextAlignment.
+ *  @brief push string's glyph metrics, position and alignment to render buffer.
  *
- * can be called multiple times within a text rendering
- * batch, chained with 'text_render()' */
+ *  @param align_x = TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER, TEXT_ALIGN_LEFT.
+ *  @param align_y = TEXT_ALIGN_TOP, TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM.
+ *
+ *  @remark can be called multiple times within a text rendering batch,
+ *  chained with 'text_render()'.
+ *
+ *  @remark default alignment top left (0, 0), enum: TextAlignment.
+ */
 void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y);
 
-/* render text to framebuffer.
+/*! -- IMPLEMENTATION: text.c --;
+ *  @brief render text to framebuffer.
  *
- * can be called multiple times within a text rendering
- * batch, chained with 'text_push()' */
-void text_render(u32 color);
+ *  @remark can be called multiple times within a text rendering batch,
+ *  chained with 'text_push()'.
+ */
+void text_render(u32 color, b8 shadow);
 
-/* cleanup for text rendering.
- * unbind text framebuffer, enable depth test */
+/*! -- IMPLEMENTATION: text.c --;
+ *
+ *  @brief cleanup for text rendering.
+ *
+ *  unbind text framebuffer, enable depth test.
+ */
 void text_stop(void);
 
+/*! -- IMPLEMENTATION: text.c --; */
 void text_free(void);
 
 #endif /* ENGINE_CORE_H */

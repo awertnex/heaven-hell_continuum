@@ -1,7 +1,7 @@
 #ifndef GAME_SUPER_DEBUGGER_H
 #define GAME_SUPER_DEBUGGER_H
 
-#include <engine/h/defines.h>
+#include <engine/h/types.h>
 #include "gui.h"
 
 #define SDB_ROW_HEIGHT  22

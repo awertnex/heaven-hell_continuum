@@ -1,18 +1,9 @@
 #ifndef ENGINE_LOGGER_H
 #define ENGINE_LOGGER_H
 
-#include "defines.h"
+#include "types.h"
 #include "memory.h"
-
-#define RELEASE_BUILD 0
-
-#if RELEASE_BUILD
-    #define LOGGING_DEBUG 0
-    #define LOGGING_TRACE 0
-#else
-    #define LOGGING_DEBUG 1
-    #define LOGGING_TRACE 1
-#endif /* RELEASE_BUILD */
+#include "diagnostics.h"
 
 enum LogLevel
 {
@@ -24,62 +15,89 @@ enum LogLevel
     LOGLEVEL_TRACE,
 }; /* LogLevel */
 
-extern u32 log_level;
+#define LOGFATAL(verbose, err, format, ...) \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_FATAL, err, format, ##__VA_ARGS__); \
+}
 
-b8 init_logger();
-void close_logger();
-void log_output(const str *file, u64 line, u8 level, const str* format, ...);
+#define LOGERROR(verbose, err, format, ...) \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_ERROR, err, format, ##__VA_ARGS__); \
+}
 
-#define LOGFATAL(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+#define LOGWARNING(verbose, err, format, ...) \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_WARNING, err, format, ##__VA_ARGS__); \
+}
 
-#define LOGERROR(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+#define LOGINFO(verbose, format, ...) \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_INFO, 0, format, ##__VA_ARGS__)
 
-#define LOGWARNING(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+#define LOGDEBUG(verbose, format, ...) \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_DEBUG, 0, format, ##__VA_ARGS__)
 
-#define LOGINFO(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_INFO, format, ##__VA_ARGS__)
+#define LOGTRACE(verbose, format, ...) \
+    _log_output(verbose, __FILE__, __LINE__, \
+            LOGLEVEL_TRACE, 0, format, ##__VA_ARGS__)
 
-#if LOGGING_DEBUG == 1
-    #define LOGDEBUG(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
-#else
-    #define LOGDEBUG(file, line, format, ...)
-#endif /* LOGGING_DEBUG */
+#define LOGFATALEX(verbose, file, line, err, format, ...); \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, file, line, LOGLEVEL_FATAL, err, format, ##__VA_ARGS__); \
+}
 
-#if LOGGING_TRACE == 1
-    #define LOGTRACE(format, ...) \
-        log_output(__FILE__, __LINE__, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
-#else
-    #define LOGTRACE(format, ...)
-#endif /* LOGGING_TRACE */
+#define LOGERROREX(verbose, file, line, err, format, ...); \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, file, line, LOGLEVEL_ERROR, err, format, ##__VA_ARGS__); \
+}
 
-#define LOGFATALV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_FATAL, format, ##__VA_ARGS__)
+#define LOGWARNINGEX(verbose, file, line, err, format, ...) \
+{ \
+    engine_err = (u32)err; \
+    _log_output(verbose, file, line, \
+            LOGLEVEL_WARNING, err, format, ##__VA_ARGS__); \
+}
 
-#define LOGERRORV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_ERROR, format, ##__VA_ARGS__)
+#define LOGINFOEX(verbose, file, line, format, ...) \
+    _log_output(verbose, file, line, LOGLEVEL_INFO, 0, format, ##__VA_ARGS__)
 
-#define LOGWARNINGV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_WARNING, format, ##__VA_ARGS__)
+#define LOGDEBUGEX(verbose, file, line, format, ...) \
+    _log_output(verbose, file, line, \
+            LOGLEVEL_DEBUG, 0, format, ##__VA_ARGS__)
 
-#define LOGINFOV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_INFO, format, ##__VA_ARGS__)
+#define LOGTRACEEX(verbose, file, line, format, ...) \
+    _log_output(verbose, file, line, \
+            LOGLEVEL_TRACE, 0, format, ##__VA_ARGS__)
 
-#if LOGGING_DEBUG == 1
-    #define LOGDEBUGV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_DEBUG, format, ##__VA_ARGS__)
-#else
-    #define LOGDEBUGV(file, line, format, ...)
-#endif /* LOGGING_DEBUG */
+#define LOG_MESH_GENERATE(err, mesh_name) \
+{ \
+    if (err == ERR_SUCCESS) \
+    LOGINFO(FALSE, "Mesh '%s' Generated\n", mesh_name); \
+    else if (err == ERR_MESH_GENERATION_FAIL) \
+    LOGERROR(TRUE, ERR_MESH_GENERATION_FAIL, "Mesh '%s' Generation Failed\n", mesh_name); \
+}
 
-#if LOGGING_TRACE == 1
-    #define LOGTRACEV(file, line, format, ...) \
-        log_output(file, line, LOGLEVEL_TRACE, format, ##__VA_ARGS__)
-#else
-    #define LOGTRACEV(file, line, format, ...)
-#endif /* LOGGING_TRACE */
+/*! @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 logger_init(b8 release_build, int argc, char **argv);
+
+void logger_close(void);
+
+/*! -- INTERNAL USE ONLY --;
+ */
+void _log_output(b8 verbose, const str *file, u64 line,
+        u8 level, u32 error_code, const str* format, ...);
+
+extern u32 log_level_max;
+extern str *logger_buf;
 
 #endif /* ENGINE_LOGGER_H */

@@ -10,8 +10,7 @@ v2i16 render_size = {500, 720};
 DIR *dir;
 struct dirent *drnt;
 
-void
-init_launcher()
+void init_launcher()
 {
     state |= FLAG_ACTIVE;
     SetWindowState(FLAG_MSAA_4X_HINT);
@@ -25,8 +24,7 @@ init_launcher()
     }
 }
 
-int
-main(void)
+int main(void)
 {
     init_launcher();
 
@@ -40,8 +38,7 @@ main(void)
     return 0;
 }
 
-void
-update_launcher()
+void update_launcher()
 {
     if (IsWindowResized())
         render_size = (v2i16){GetRenderWidth(), GetRenderHeight()};
@@ -52,14 +49,12 @@ update_launcher()
     EndDrawing();
 }
 
-void
-update_launcher_input() /* TODO: evaluate instance */
+void update_launcher_input() /* TODO: evaluate instance */
 {
     if (IsKeyPressed(KEY_Q))
         state &= ~FLAG_ACTIVE;
 }
 
-void
-evaluate_instance(str *path)
+void evaluate_instance(str *path)
 {
 }

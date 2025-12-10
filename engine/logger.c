@@ -2,15 +2,13 @@
 #include <stdarg.h>
 #include <inttypes.h>
 
-#include "h/defines.h"
+#include "h/types.h"
+#include "h/diagnostics.h"
 #include "h/limits.h"
 #include "h/logger.h"
 
-#if RELEASE_BUILD
-u32 log_level = LOGLEVEL_ERROR;
-#else
-u32 log_level = LOGLEVEL_TRACE;
-#endif /* RELEASE_BUILD */
+u32 log_level_max = LOGLEVEL_TRACE;
+str *logger_buf = NULL;
 
 static str log_tag[][16] =
 {
@@ -22,7 +20,7 @@ static str log_tag[][16] =
     "TRACE",
 };
 
-str esc_code_open[][16] =
+str esc_code_color[][16] =
 {
     "\033[31m",
     "\033[91m",
@@ -32,38 +30,82 @@ str esc_code_open[][16] =
     "\033[33m",
 };
 
-str esc_code_close[] = "\033[0m";
+str esc_code_nocolor[] = "\033[0m";
 
 static str in_message[IN_STRING_MAX] = {0};
 static str out_message[OUT_STRING_MAX] = {0};
 
-b8
-init_logger()
+u32 logger_init(b8 release_build, int argc, char **argv)
 {
-    /* TODO: init logger */
-    return TRUE;
+    if (mem_map((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX,
+                "logger_init().logger_buf") != ERR_SUCCESS)
+    {
+        LOGFATAL(FALSE, ERR_LOGGER_INIT_FAIL,
+                "%s\n", "Failed to Initialize Logger, Process Aborted");
+        return engine_err;
+    }
+
+    if (release_build)
+        log_level_max = LOGLEVEL_INFO;
+
+    if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
+    {
+        if (!strncmp(argv[2], "FATAL", 5))      log_level_max = LOGLEVEL_FATAL;
+        else if (!strncmp(argv[2], "ERROR", 5)) log_level_max = LOGLEVEL_ERROR;
+        else if (!strncmp(argv[2], "WARN", 4))  log_level_max = LOGLEVEL_WARNING;
+        else if (!strncmp(argv[2], "INFO", 4))  log_level_max = LOGLEVEL_INFO;
+        else if (!strncmp(argv[2], "DEBUG", 5)) log_level_max = LOGLEVEL_DEBUG;
+        else if (!strncmp(argv[2], "TRACE", 5)) log_level_max = LOGLEVEL_TRACE;
+    }
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }
 
-void
-close_logger()
+void logger_close(void)
 {
-    /* TODO: close logger */
+    mem_unmap((void*)&logger_buf, LOGGER_LINES_MAX * STRING_MAX, "logger_close().logger_buf");
 }
 
-void
-log_output(const str *file, u64 line, u8 level, const str* format, ...)
+void _log_output(b8 verbose, const str *file, u64 line,
+        u8 level, u32 error_code, const str* format, ...)
 {
-    if (level > log_level) return;
-
     __builtin_va_list args;
+
+    if (level > log_level_max) return;
+
     va_start(args, format);
     vsnprintf(in_message, IN_STRING_MAX, format, args);
     va_end(args);
 
-    snprintf(out_message, OUT_STRING_MAX, "%s%s%s:%s%"PRId64"%s:%s%s: %s%s",
-            esc_code_open[level], file, esc_code_close,
-            esc_code_open[level], line, esc_code_close,
-            esc_code_open[level], log_tag[level], in_message, esc_code_close);
+    if (level <= LOGLEVEL_WARNING)
+    {
+        if (verbose)
+            snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s%s:%s%"PRId64"%s:%s%s[%"PRId32"]: %s%s",
+                    esc_code_color[level], file, esc_code_nocolor,
+                    esc_code_color[level], line, esc_code_nocolor,
+                    esc_code_color[level],
+                    log_tag[level], error_code, in_message, esc_code_nocolor);
+        else snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s[%"PRId32"]: %s%s",
+                    esc_code_color[level],
+                    log_tag[level], error_code, in_message, esc_code_nocolor);
+    }
+    else
+    {
+        if (verbose)
+            snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s%s:%s%"PRId64"%s:%s%s: %s%s",
+                    esc_code_color[level], file, esc_code_nocolor,
+                    esc_code_color[level], line, esc_code_nocolor,
+                    esc_code_color[level],
+                    log_tag[level], in_message, esc_code_nocolor);
+        else snprintf(out_message, OUT_STRING_MAX,
+                    "%s%s: %s%s",
+                    esc_code_color[level],
+                    log_tag[level], in_message, esc_code_nocolor);
+    }
 
     fprintf(stderr, "%s", out_message);
 }

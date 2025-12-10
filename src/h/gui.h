@@ -12,8 +12,6 @@
 #define COL_Y               0x32ff32ff
 #define COL_Z               0x3232ffff
 
-extern u8 hotbar_slot_selected;
-
 extern u16 menu_index;
 extern u16 menu_layer[5];
 extern u8 state_menu_depth;
@@ -36,16 +34,19 @@ enum MenuNames
 enum ButtonNames
 {
     /* ---- title screen ---------------------------------------------------- */
+
     BTN_SINGLEPLAYER = 0,
     BTN_MULTIPLAYER,
     BTN_SETTINGS,
     BTN_QUIT,
 
     /* ---- world menu ------------------------------------------------------ */
+
     BTN_UNPAUSE = 0,
     BTN_ENABLE_LAN_CONNECTION,
 
     /* ---- settings -------------------------------------------------------- */
+
     BTN_DONE = 0,
     BTN_FOV,
     BTN_SETTINGS_AUDIO,
@@ -53,6 +54,7 @@ enum ButtonNames
     BTN_CONTROLS,
 
     /* ---- hotbar slots ---------------------------------------------------- */
+
     BTN_HOTBAR_1,
     BTN_HOTBAR_2,
     BTN_HOTBAR_3,
@@ -64,6 +66,7 @@ enum ButtonNames
     BTN_HOTBAR_9,
 
     /* ---- functional ------------------------------------------------------ */
+
     BTN_ITEM_IN_1,
     BTN_ITEM_IN_2,
     BTN_ITEM_IN_3,
@@ -78,11 +81,15 @@ enum ButtonNames
     BTN_ITEM_OUT_3,
 
     /* ---- super debugger (SDB) -------------------------------------------- */
+
     BTN_SDB_ADD,
     BTN_SDB_SUB,
 }; /* ButtonNames */
 
-b8 gui_init(void);
+/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ */
+u32 gui_init(void);
+
 void gui_free(void);
 
 #if 0 /* TODO: undef */
