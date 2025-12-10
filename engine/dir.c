@@ -345,20 +345,22 @@ u32 copy_dir(const str *source, const str *destination, b8 overwrite,
     return engine_err;
 }
 
-u32 write_file(const str *name, u64 size, u64 length, void *buf, const str *write_format, b8 log)
+u32 write_file(const str *name, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log, b8 text)
 {
     FILE *file = NULL;
     if ((file = fopen(name, write_format)) == NULL)
     {
         if (log)
         {
-            LOGERROR(TRUE, ERR_FILE_OPEN_FAIL, "File Opening '%s' Failed\n", name);
+            LOGERROR(TRUE, ERR_FILE_OPEN_FAIL, "Failed to Open File '%s'\n", name);
         }
         else engine_err = ERR_FILE_OPEN_FAIL;
         return engine_err;
     }
 
     fwrite(buf, size, length, file);
+    if (text) fprintf(file, "%c", '\n');
     fclose(file);
 
     LOGTRACE(FALSE, "File Written '%s'\n", name);

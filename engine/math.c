@@ -58,6 +58,7 @@ v3f32 normalize_v3f32(v3f32 v)
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Warray-bounds"
+
 f32 q_rsqrt(f32 n)
 {
     i64 i;
@@ -74,6 +75,7 @@ f32 q_rsqrt(f32 n)
 
     return y;
 }
+
 #pragma GCC diagnostic pop
 
 u32 distance_v3i32(v3i32 a, v3i32 b)
@@ -235,9 +237,12 @@ f32 smoothstep_f32(f32 a, f32 b, f32 t)
    return t * t * (3.0f - 2.0f * t);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshift-count-overflow"
+
 f32 rand_f32(i32 n)
 {
-    const u32 S = 31;
+    const u32 S = 32;
     u32 a = (i32)n + 234678493574;
     u32 b = (i32)n - 879763936541;
 
@@ -249,3 +254,19 @@ f32 rand_f32(i32 n)
 
     return sin((f32)a * RAND_SCALE);
 }
+
+u64 rand_u64(u64 n)
+{
+    const u64 S = 63;
+    u64 a = (i64)n + 234678493574;
+    u64 b = (i64)n - 879763936541;
+
+    a *= 3284157443;
+    b ^= a << S | a >> S;
+    b *= 1911520717;
+    a ^= b << S | b >> S;
+
+    return a * 2048419325;
+}
+
+#pragma GCC diagnostic pop

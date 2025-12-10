@@ -61,6 +61,7 @@
 #define ERR_INCLUDE_RECURSION_LIMIT     4140
 #define ERR_SELF_INCLUDE                4141
 #define ERR_DLL_LOAD_FAIL               4142
+#define ERR_SIZE_TOO_SMALL              4143
 
 /*! @brief global variable for engine-specific error codes.
  *

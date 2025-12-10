@@ -123,7 +123,8 @@
 #define COLOR_CHUNK_LOADED                  0x4c260715
 #define COLOR_CHUNK_RENDER                  0x5e7a0aff
 
-#define FILE_NAME_SETTINGS "settings.txt"
+#define FILE_NAME_SETTINGS      "settings.txt"
+#define FILE_NAME_WORLD_SEED    "seed.txt"
 
 enum MainFlag
 {
@@ -151,6 +152,16 @@ enum DebugMode
     DEBUG_MODE_COUNT,
 }; /* DebugMode */
 
+typedef struct WorldInfo
+{
+    u64 id;
+    str name[NAME_MAX];
+    u32 type;
+    u64 seed;
+    u64 tick;
+    u64 days;
+} WorldInfo;
+
 struct Settings
 {
     /* ---- internal -------------------------------------------------------- */
@@ -173,16 +184,22 @@ struct Settings
      */
     u8 reach_distance;
 
+    WorldInfo world;
+
     /* ---- controls -------------------------------------------------------- */
 
     f32 mouse_sensitivity;
 
     /* ---- video ----------------------------------------------------------- */
 
+    u32 gui_scale;
+    f32 font_size;
+    u32 target_fps;
+
+    /* ---- graphics -------------------------------------------------------- */
+
     f32 fov;
     u32 render_distance;
-    u32 target_fps;
-    u32 gui_scale;
     b8 anti_aliasing;
 }; /* Settings */
 
@@ -359,21 +376,20 @@ enum PlayerFlag
     FLAG_PLAYER_SPRINTING       = 0x00000004,
     FLAG_PLAYER_FLYING          = 0x00000008,
     FLAG_PLAYER_SWIMMING        = 0x00000010,
-    FLAG_PLAYER_VELOCITY_DIRTY  = 0x00000020,
-    FLAG_PLAYER_HUNGRY          = 0x00000040,
-    FLAG_PLAYER_DEAD            = 0x00000080,
-    FLAG_PLAYER_ZOOMER          = 0x00000100,
+    FLAG_PLAYER_HUNGRY          = 0x00000020,
+    FLAG_PLAYER_DEAD            = 0x00000040,
+    FLAG_PLAYER_ZOOMER          = 0x00000080,
 
-    FLAG_PLAYER_OVERFLOW_X      = 0x00000200,
-    FLAG_PLAYER_OVERFLOW_Y      = 0x00000400,
-    FLAG_PLAYER_OVERFLOW_Z      = 0x00000800,
+    FLAG_PLAYER_OVERFLOW_X      = 0x00000100,
+    FLAG_PLAYER_OVERFLOW_Y      = 0x00000200,
+    FLAG_PLAYER_OVERFLOW_Z      = 0x00000400,
 
     /*! @brief positive overflow direction flags,
      *  @remark default is 0 for negative overflow (underflow).
      */
-    FLAG_PLAYER_OVERFLOW_PX     = 0x00001000,
-    FLAG_PLAYER_OVERFLOW_PY     = 0x00002000,
-    FLAG_PLAYER_OVERFLOW_PZ     = 0x00004000,
+    FLAG_PLAYER_OVERFLOW_PX     = 0x00000800,
+    FLAG_PLAYER_OVERFLOW_PY     = 0x00001000,
+    FLAG_PLAYER_OVERFLOW_PZ     = 0x00002000,
 }; /* PlayerFlag */
 
 enum CameraModes
@@ -396,12 +412,14 @@ typedef struct Player
     v3i64 target_snapped;           /* floor of player arm */
     v3f64 collision_check_pos;
     v3f64 collision_check_size;
-    f32 pitch, yaw;                 /* player look direction */
-    f32 sin_pitch;                  /* sine of player pitch */
-    f32 cos_pitch;                  /* cosine of player pitch */
+
+    f32 yaw, pitch;                 /* player look direction */
     f32 sin_yaw;                    /* sine of player yaw */
     f32 cos_yaw;                    /* cosine of player yaw */
+    f32 sin_pitch;                  /* sine of player pitch */
+    f32 cos_pitch;                  /* cosine of player pitch */
     f32 eye_height;                 /* player eye-level (camera height) */
+
     v3f32 velocity;
     f32 weight;
     v3f32 gravity_influence;
@@ -424,7 +442,7 @@ typedef struct Player
     v3i16 chunk;                    /* player current chunk */
     v3i16 chunk_delta;              /* player previous chunk */
 
-    v3i64 spawn_point;
+    v3i64 spawn;                    /* player spawn point */
     u64 container_state;            /* enum: ContainerFlag */
 
     /*! @remark signed instead of unsigned so it's possible to navigate
@@ -529,10 +547,11 @@ enum ChunkFlag
     FLAG_CHUNK_QUEUED =     0x04,
     FLAG_CHUNK_GENERATED =  0x08,
     FLAG_CHUNK_RENDER =     0x10,
+    FLAG_CHUNK_MODIFIED =   0x20,
 
     /*! @brief chunk marking for chunk_tab shifting logic.
      */
-    FLAG_CHUNK_EDGE =       0x20,
+    FLAG_CHUNK_EDGE =       0x40,
 }; /* ChunkFlag */
 
 enum ChunkShiftState
@@ -598,8 +617,6 @@ extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];
 extern u64 flag;
 extern f64 game_start_time;
-extern u64 game_tick;
-extern u64 game_days;
 extern u8 debug_mode[DEBUG_MODE_COUNT];
 
 #endif /* GAME_MAIN_H */

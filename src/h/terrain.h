@@ -21,8 +21,8 @@ extern f32 *RAND_TAB;
 u32 rand_init(void);
 
 void rand_free(void);
-v3f32 random_2d(i32 x, i32 y, u32 seed);
-v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed);
+v3f32 random_2d(i32 x, i32 y, u64 seed);
+v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed);
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay);
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az);
 

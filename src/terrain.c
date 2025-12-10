@@ -40,7 +40,7 @@ u32 rand_init(void)
             RAND_TAB[i] = rand_f32(i);
 
         if (write_file(file_name, sizeof(i32), RAND_TAB_VOLUME,
-                    RAND_TAB, "wb", TRUE) != ERR_SUCCESS)
+                    RAND_TAB, "wb", TRUE, FALSE) != ERR_SUCCESS)
             goto cleanup;
     }
 
@@ -59,32 +59,35 @@ void rand_free(void)
             "rand_free().RAND_TAB");
 }
 
-v3f32 random_2d(i32 x, i32 y, u32 seed)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshift-count-overflow"
+
+v3f32 random_2d(i32 x, i32 y, u64 seed)
 {
-    const u32 S = 31;
-    u32 a = x + seed + 94580993;
-    u32 b = y - seed - 35786975;
+    const u64 S = 64;
+    u64 a = x + seed + 94580993;
+    u64 b = y - seed - 35786975;
 
     a *= 3284157443;
     b ^= a << S | a >> S;
     b *= 1911520717;
     a ^= b << S | b >> S;
     a *= 2048419325;
-    f32 final = a * RAND_SCALE;
+    f64 final = (f64)a * RAND_SCALE;
 
     return (v3f32){
-        sin(final),
-        cos(final),
-        sin(final + 0.25f),
+        sinf((f32)final),
+        cosf((f32)final),
+        sinf((f32)final + 0.25f),
     };
 }
 
-v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
+v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed)
 {
-    const u32 S = 31;
-    u32 a = x + seed + 7467244;
-    u32 b = y - seed - 4909393;
-    u32 c = z + seed + 2500462;
+    const u64 S = 64;
+    u64 a = x + seed + 7467244;
+    u64 b = y - seed - 4909393;
+    u64 c = z + seed + 2500462;
 
     a *= 3284157443;
     b ^= a << S | a >> S;
@@ -93,23 +96,23 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u32 seed)
     a *= 2048419325;
     c ^= a << S | b >> S;
     c *= 3567382653;
-    f32 final = c * RAND_SCALE;
+    f64 final = (f64)c * RAND_SCALE;
 
     return (v3f32){
-        sin(final),
-        cos(final),
-        sin(final + 0.25f),
+        sinf((f32)final),
+        cosf((f32)final),
+        sinf((f32)final + 0.25f),
     };
 }
+
+#pragma GCC diagnostic pop
 
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 {
     v2f32 sample =
     {
-        RAND_TAB[TERRAIN_SEED_DEFAULT +
-            (u32)(734 + ax * 87654 + ay) % RAND_TAB_VOLUME],
-        RAND_TAB[TERRAIN_SEED_DEFAULT +
-            (u32)(87654 + ay * 98023 + ax) % RAND_TAB_VOLUME],
+        RAND_TAB[(settings.world.seed + (u32)(734 + ax * 87654 + ay)) % RAND_TAB_VOLUME],
+        RAND_TAB[(settings.world.seed + (u32)(87654 + ay * 98023 + ax)) % RAND_TAB_VOLUME],
     };
 
     return
@@ -119,7 +122,7 @@ f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az)
 {
-    v3f32 grad = random_3d(ax, ay, az, TERRAIN_SEED_DEFAULT);
+    v3f32 grad = random_3d(ax, ay, az, settings.world.seed);
     return
         (ax - vx) * grad.x +
         (ay - vy) * grad.y +
@@ -179,13 +182,32 @@ f32 terrain_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency)
 
 b8 terrain_land(v3i32 coordinates)
 {
-    f32 elevation = clamp_f32(
-            terrain_noise_2d(coordinates, 1.0f, 329.0f) + 0.5f, 0.0f, 1.0f);
-    f32 influence = terrain_noise_2d(coordinates, 1.0, 50.0f);
-    f32 terrain = terrain_noise_2d(coordinates, 250.0f, 256.0f) * elevation;
-    terrain += terrain_noise_2d(coordinates, 30.0f, 40.0f) * elevation;
-    terrain += (terrain_noise_2d(coordinates, 10.0f, 10.0f) * influence);
-    terrain += expf(-terrain_noise_2d(coordinates, 8.0f, 150.0f));
+    f32 terrain = 0.0f,
+        mountains = 0.0f,
+        peaks = 0.0f,
+        hills = 0.0f,
+        ridges = 0.0f,
+        elevation = 0.0f,
+        influence = 0.0f,
+        gathering = 0.0f;
+
+    elevation = terrain_noise_2d(coordinates, 1.0f, 329.0f) + 0.5f;
+    elevation = clamp_f32(elevation, 0.0f, 1.0f);
+    influence = terrain_noise_2d(coordinates, 1.0f, 50.0f) + 0.5f;
+    influence = clamp_f32(influence, 0.0f, 1.0f);
+    gathering = terrain_noise_2d(coordinates, 1.0f, 70.0f);
+    gathering = clamp_f32(gathering, 0.0f, 30.0f);
+
+    mountains = terrain_noise_2d(coordinates, 250.0f, 256.0f);
+    peaks = expf(-terrain_noise_2d(coordinates, 8.0f, 150.0f));
+    hills = terrain_noise_2d(coordinates, 30.0f, 40.0f);
+    ridges = terrain_noise_2d(coordinates, 10.0f, 12.0f + gathering);
+
+    terrain =
+        mountains * elevation +
+        peaks +
+        hills * elevation +
+        ridges * influence * influence;
 
     return terrain > coordinates.z;
 }

@@ -7,10 +7,14 @@
 #include <engine/h/platform.h>
 #include <engine/h/dir.h>
 #include <engine/h/logger.h>
+#include <engine/h/math.h>
 #include <engine/h/memory.h>
-#include "h/main.h"
+#include <engine/h/string.h>
+
 #include "h/diagnostics.h"
 #include "h/dir.h"
+#include "h/logic.h"
+#include "h/main.h"
 
 str PATH_ROOT[PATH_MAX] = {0};
 str PATH_WORLD[PATH_MAX] = {0};
@@ -21,7 +25,7 @@ u32 paths_init(void)
 {
     str *path_bin_root = NULL;
     str string[PATH_MAX] = {0};
-    u32 i = 0;
+    u32 i;
 
     snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
     snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
@@ -82,19 +86,31 @@ u32 paths_init(void)
 u32 world_dir_init(const str *world_name)
 {
     str string[PATH_MAX] = {0};
-    u32 i = 0;
+    u32 i;
+
+    if (!strlen(world_name))
+    {
+        LOGERROR(FALSE, ERR_POINTER_NULL, "%s\n", "World Name Cannot Be Empty");
+        return *GAME_ERR;
+    }
+
+    if (!strlen(world_name))
+    {
+        *GAME_ERR = ERR_POINTER_NULL;
+        return *GAME_ERR;
+    }
 
     if (is_dir_exists(PATH_ROOT, TRUE) != ERR_SUCCESS)
     {
         LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
-                "World Creation '%s' Failed\n", world_name);
+                "Failed to Create World '%s', Root Directory Not Found\n", world_name);
         return *GAME_ERR;
     }
 
     if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
     {
         LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
-                "World Creation '%s' Failed\n", world_name);
+                "Failed to Create World '%s', World Directory Not Found\n", world_name);
         return *GAME_ERR;
     }
 
@@ -103,11 +119,7 @@ u32 world_dir_init(const str *world_name)
     normalize_slash(PATH_WORLD);
 
     if (is_dir_exists(PATH_WORLD, FALSE) == ERR_SUCCESS)
-    {
-        LOGERROR(FALSE, ERR_WORLD_EXISTS,
-                "World Already Exists '%s'\n", world_name);
         return *GAME_ERR;
-    }
 
     make_dir(PATH_WORLD);
 
@@ -130,6 +142,84 @@ u32 world_dir_init(const str *world_name)
             return *GAME_ERR;
 
     LOGINFO(FALSE, "World Created '%s'\n", world_name);
+    *GAME_ERR = ERR_SUCCESS;
+    return *GAME_ERR;
+}
+
+u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
+{
+    str string[2][PATH_MAX] = {0};
+    str *file_contents = NULL;
+    u64 file_len = 0;
+    u32 i;
+
+    /* ---- error handling -------------------------------------------------- */
+
+    if (!strlen(world_name))
+    {
+        LOGERROR(FALSE, ERR_POINTER_NULL, "%s\n", "World Name Cannot Be Empty");
+        return *GAME_ERR;
+    }
+
+    if (is_dir_exists(PATH_ROOT, TRUE) != ERR_SUCCESS)
+    {
+        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
+                "Failed to Load World '%s', Root Directory Not Found\n", world_name);
+        return *GAME_ERR;
+    }
+
+    if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
+    {
+        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
+                "Failed to Load World '%s', 'worlds/' Directory Not Found\n", world_name);
+        return *GAME_ERR;
+    }
+
+    snprintf(string[0], PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
+    if (is_dir_exists(string[0], TRUE) != ERR_SUCCESS)
+    {
+        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
+                "Failed to Load World '%s', World Not Found\n", world_name);
+        return *GAME_ERR;
+    }
+
+    /* ---- metadata i'll get back to, TODO: load other world metadata ------ */
+
+    world->id = 0;
+
+    snprintf(world->name, NAME_MAX, "%s", world_name);
+
+    world->type = 0;
+
+    /* ---- world seed ------------------------------------------------------ */
+
+    snprintf(string[0], PATH_MAX, "%s%s/"FILE_NAME_WORLD_SEED, DIR_ROOT[DIR_WORLDS], world_name);
+    if (is_file_exists(string[0], FALSE) == ERR_SUCCESS)
+    {
+        file_len = get_file_contents(string[0], (void*)&file_contents, 1, "rb", TRUE);
+        if (*GAME_ERR != ERR_SUCCESS || !file_contents)
+            return *GAME_ERR;
+        seed = (u64)strtoul(file_contents, NULL, 10);
+        mem_free((void*)&file_contents, file_len, "world_init().file_contents");
+    }
+    else
+    {
+        if (!seed)
+            seed = rand_u64(get_time_logic());
+
+        convert_u64_to_str(string[1], NAME_MAX, seed);
+        if (write_file(string[0], 1, strlen(string[1]),
+                    &string[1], "wb", TRUE, TRUE) != ERR_SUCCESS)
+            return *GAME_ERR;
+    }
+
+    world->seed = seed;
+
+    /* ---- TODO: load the rest of world metadata --------------------------- */
+
+    world->tick = 0;
+    world->days = 0;
+
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
 }

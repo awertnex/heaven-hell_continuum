@@ -31,16 +31,15 @@ quirks:
       framebuffers) (10 Sep 2025)
 - [ ] bake skybox into a look-up table, or HDR (retain old code, just because
       it was fun to write)
-- [ ] get subpixel mouse deltas, PLEASE
 - [ ] limit framerate
 - [ ] add camera look-at
 - [ ] fix double press for windows
 - [x] fix chunk queue sort (13 Oct 2025)
 - [x] make the chunk generation count per frame (09 Oct 2025)
-- [ ] make mem_map() for windows
-- [ ] make mem_commit() for windows
-- [ ] make mem_unmap() for windows
-- [ ] fix overhead from function 'chunk_tab_shift()'
+- [x] make mem_map() for windows (DD Nov 2025)
+- [x] make mem_commit() for windows (DD Nov 2025)
+- [x] make mem_unmap() for windows (DD Nov 2025)
+- [x] fix overhead from function 'chunk_tab_shift()' (09 Dec 2025)
 - [ ] possibly fix overhead from bubble-sorting in function 'chunking_init()'
 - [ ] put blocks in a contiguous array and bind it all to an SSBO, and bind
       chunk pointers to their addresses

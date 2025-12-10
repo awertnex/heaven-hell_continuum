@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -30,8 +31,6 @@ Render render =
 struct Settings settings = {0};
 u64 flag = 0;
 f64 game_start_time = 0;
-u64 game_tick = 0;
-u64 game_days = 0;
 u8 debug_mode[DEBUG_MODE_COUNT] = {0};
 static ShaderProgram shader[SHADER_COUNT] = {0};
 Texture texture[TEXTURE_COUNT] = {0};
@@ -51,7 +50,6 @@ static Player lily =
     .camera_mode = MODE_CAMERA_1ST_PERSON,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
 
-    .spawn_point = {0},
     .container_state = 0,
     .hotbar_slots[0] = BLOCK_GRASS,
     .hotbar_slots[1] = BLOCK_DIRT,
@@ -95,7 +93,7 @@ static void input_update(Player *player);
 
 /*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
  */
-u32 world_init(str *name);
+u32 world_init(str *name, u64 seed);
 
 static void world_update(Player *player);
 static void draw_everything(void);
@@ -174,7 +172,7 @@ static u32 settings_init(void)
     {
         write_file(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
                 1, strlen(settings_file_contents),
-                settings_file_contents, "wb", TRUE);
+                settings_file_contents, "wb", TRUE, TRUE);
     }
 
     settings_file_contents = NULL;
@@ -205,9 +203,10 @@ static u32 settings_init(void)
 
     settings.reach_distance = SET_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
-    settings.fov = SET_FOV_DEFAULT;
-    settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
+    settings.font_size = 20.0f;
+    settings.target_fps = SET_TARGET_FPS_DEFAULT;
+    settings.fov = SET_FOV_DEFAULT;
     settings.anti_aliasing = TRUE;
 
     mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
@@ -695,7 +694,6 @@ cleanup:
 static void input_update(Player *player)
 {
     u32 i;
-    player->movement = (v3f32){0};
 
     /* ---- movement -------------------------------------------------------- */
 
@@ -739,10 +737,7 @@ static void input_update(Player *player)
         }
     }
     if (is_key_press_double(bind_jump))
-    {
         player->flag ^= FLAG_PLAYER_FLYING;
-        player->gravity_influence.z = 0.0f;
-    }
 
     /* ---- sprinting ------------------------------------------------------- */
 
@@ -854,33 +849,25 @@ static void input_update(Player *player)
     }
 }
 
-u32 world_init(str *name)
+u32 world_init(str *name, u64 seed)
 {
-    if (!strlen(name))
-    {
-        *GAME_ERR = ERR_POINTER_NULL;
-        return *GAME_ERR;
-    }
-
     world_dir_init(name);
     if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
         return *GAME_ERR;
 
-    chunking_init();
-    if (*GAME_ERR != ERR_SUCCESS)
+    world_load(&settings.world, name, seed);
+    if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
         return *GAME_ERR;
 
-    set_player_spawn(&lily, 0, 0, 0);
-    set_player_block(&lily, 758, -20, 8);
+    if (chunking_init() != ERR_SUCCESS)
+        return *GAME_ERR;
+
+    set_player_spawn(&lily, 1547, -531, 0);
+    player_spawn(&lily);
     player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
             WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    lily.spawn_point =
-        (v3i64){
-            (i64)lily.pos.x,
-            (i64)lily.pos.y,
-            (i64)lily.pos.z
-        };
+
     lily.target_snapped =
         (v3i64){
             (i64)lily.target.x,
@@ -889,7 +876,6 @@ u32 world_init(str *name)
         };
 
     flag |= FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
-    lily.flag |= FLAG_PLAYER_ZOOMER;
     disable_cursor;
     center_cursor;
 
@@ -899,9 +885,10 @@ u32 world_init(str *name)
 
 static void world_update(Player *player)
 {
-    game_tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * game_days;
-    if (game_tick >= SET_DAY_TICKS_MAX)
-        ++game_days;
+    settings.world.tick = 8000 + (u64)(render.frame_start * 20.0f) -
+        SET_DAY_TICKS_MAX * settings.world.days;
+    if (settings.world.tick >= SET_DAY_TICKS_MAX)
+        ++settings.world.days;
 
     if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
         show_cursor;
@@ -949,7 +936,7 @@ static void draw_everything(void)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_SKYBOX].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_data.time = (f32)game_tick / SET_DAY_TICKS_MAX;
+    skybox_data.time = (f32)settings.world.tick / SET_DAY_TICKS_MAX;
     skybox_data.sun_rotation =
         (v3f32){
             cos(skybox_data.time * PI * 2.0f),
@@ -1100,9 +1087,9 @@ static void draw_everything(void)
             [lily.target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER])
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.target_snapped.x,
-                lily.target_snapped.y,
-                lily.target_snapped.z);
+                (f32)(lily.target_snapped.x),
+                (f32)(lily.target_snapped.y),
+                (f32)(lily.target_snapped.z));
         glUniform3f(uniform.bounding_box.size, 1.0f, 1.0f, 1.0f);
         glUniform4f(uniform.bounding_box.color, 0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -1115,9 +1102,9 @@ static void draw_everything(void)
     if (debug_mode[DEBUG_MODE_CHUNK_BOUNDS])
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.chunk.x * CHUNK_DIAMETER,
-                lily.chunk.y * CHUNK_DIAMETER,
-                lily.chunk.z * CHUNK_DIAMETER);
+                (f32)(lily.chunk.x * CHUNK_DIAMETER),
+                (f32)(lily.chunk.y * CHUNK_DIAMETER),
+                (f32)(lily.chunk.z * CHUNK_DIAMETER));
         glUniform3f(uniform.bounding_box.size,
                 CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
         glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
@@ -1160,9 +1147,9 @@ static void draw_everything(void)
             chunk = **cursor;
             if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
             glUniform3f(uniform.bounding_box.position,
-                    chunk->pos.x * CHUNK_DIAMETER,
-                    chunk->pos.y * CHUNK_DIAMETER,
-                    chunk->pos.z * CHUNK_DIAMETER);
+                    (f32)(chunk->pos.x * CHUNK_DIAMETER),
+                    (f32)(chunk->pos.y * CHUNK_DIAMETER),
+                    (f32)(chunk->pos.z * CHUNK_DIAMETER));
 
             glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
             glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1177,9 +1164,9 @@ static void draw_everything(void)
                 chunk = **cursor;
                 if (!(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
                 glUniform3f(uniform.bounding_box.position,
-                        chunk->pos.x * CHUNK_DIAMETER,
-                        chunk->pos.y * CHUNK_DIAMETER,
-                        chunk->pos.z * CHUNK_DIAMETER);
+                        (f32)(chunk->pos.x * CHUNK_DIAMETER),
+                        (f32)(chunk->pos.y * CHUNK_DIAMETER),
+                        (f32)(chunk->pos.z * CHUNK_DIAMETER));
 
                 glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
                 glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1195,9 +1182,9 @@ static void draw_everything(void)
                 chunk = **cursor;
                 if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
                 glUniform3f(uniform.bounding_box.position,
-                        chunk->pos.x * CHUNK_DIAMETER,
-                        chunk->pos.y * CHUNK_DIAMETER,
-                        chunk->pos.z * CHUNK_DIAMETER);
+                        (f32)(chunk->pos.x * CHUNK_DIAMETER),
+                        (f32)(chunk->pos.y * CHUNK_DIAMETER),
+                        (f32)(chunk->pos.z * CHUNK_DIAMETER));
 
                 glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
                 glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
@@ -1398,56 +1385,45 @@ static void draw_everything(void)
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    text_start(0, FONT_SIZE_DEFAULT, &font[FONT_MONO_BOLD], &render,
+    text_start(0, settings.font_size, &font[FONT_MONO_BOLD], &render,
             &shader[SHADER_TEXT], &fbo[FBO_TEXT], TRUE);
-    text_push(stringf("FPS               [%d]\n", settings.fps),
+    text_push(stringf("FPS         [%d]\n", settings.fps),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render((settings.fps > 60) ?
-            COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
+    text_render(settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
 
     text_push(stringf("\n"
-                "FRAME TIME        [%.2lf]\n"
-                "FRAME DELTA       [%.5lf]\n"
-                "    TICKS         [%"PRId64"]\n"
-                "    DAYS          [%"PRId64"]\n",
+                "TIME        [%.2lf]\n"
+                "TICKS       [%"PRId64"]\n"
+                "DAYS        [%"PRId64"]\n",
                 render.frame_start,
-                render.frame_delta,
-                game_tick, game_days),
+                settings.world.tick, settings.world.days),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_MOSS, TRUE);
 
-    text_push(stringf("\n\n\n\n\n"
-                "PLAYER NAME       [%s]\n"
-                "PLAYER XYZ        [%.2f %.2f %.2f]\n"
-                "PLAYER BLOCK      [%d %d %d]\n"
-                "PLAYER CHUNK      [%d %d %d]\n"
-                "CURRENT CHUNK     [%d %d %d]\n"
-                "PLAYER PITCH      [%.2f]\n"
-                "PLAYER YAW        [%.2f]\n"
-                "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n"
-                "PLAYER SPEED      [%5.2f]\n",
-                lily.name,
+    text_push(stringf("\n\n\n\n"
+                "XYZ         [%5.2lf %5.2lf %5.2lf]\n"
+                "BLOCK       [%d %d %d]\n"
+                "CHUNK       [%d %d %d]\n"
+                "PITCH/YAW   [%5.2f][%5.2f]\n"
+                "VELOCITY    [%5.2f %5.2f %5.2f]\n"
+                "GRAVITY     [%5.2f %5.2f %5.2f]\n"
+                "SPEED       [%5.2f]\n",
                 lily.pos.x, lily.pos.y, lily.pos.z,
                 (i32)floorf(lily.pos.x),
                 (i32)floorf(lily.pos.y),
                 (i32)floorf(lily.pos.z),
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.x : 0,
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.y : 0,
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.z : 0,
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw,
                 lily.velocity.x, lily.velocity.y, lily.velocity.z,
+                lily.gravity_influence.x,
+                lily.gravity_influence.y,
+                lily.gravity_influence.z,
                 lily.speed),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "PLAYER OVERFLOW X [%s]\n"
-                "PLAYER OVERFLOW Y [%s]\n"
-                "PLAYER OVERFLOW Z [%s]\n",
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n"
+                "OVERFLOW    [%s %s %s]\n",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_X) ?
                 (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ?
                 "        " : "        " : "NONE",
@@ -1460,41 +1436,33 @@ static void draw_everything(void)
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n"
+                "             %s %s %s\n",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "    ",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "    ",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
+                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : "    "),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n"
+                "             %s %s %s\n",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "    ",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "    ",
                 (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
+                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : "    "),
             (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "MOUSE XY          [%.2f %.2f]\n"
-                "DELTA XY          [%.2f %.2f]\n"
-                "RENDER RATIO      [%.4f]\n"
-                "SKYBOX TIME       [%.2f]\n"
-                "SKYBOX RGB        [%.2f %.2f %.2f]\n"
-                "SUN ANGLE         [%.2f %.2f %.2f]\n",
-                render.mouse_position.x, render.mouse_position.y,
-                render.mouse_delta.x, render.mouse_delta.y,
+    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n"
+                "RATIO       [%.2f]\n"
+                "SKYBOX TIME [%.2f]\n"
+                "SKYBOX RGB  [%.2f %.2f %.2f]\n"
+                "SUN ANGLE   [%.2f %.2f %.2f]\n",
                 (f32)render.size.x / render.size.y,
                 skybox_data.time,
                 skybox_data.color.x,
@@ -1561,7 +1529,7 @@ static void draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, fbo[FBO_UI].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    /* ---- everything ------------------------------------------------------ */
+    /* ---- final ----------------------------------------------------------- */
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader[SHADER_POST_PROCESSING].id);
@@ -1757,7 +1725,7 @@ section_menu_pause:
 section_world_loaded:
 
     if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
-            world_init("Poop Consistency Tester") != ERR_SUCCESS)
+            world_init("Poop Consistency Tester", 0) != ERR_SUCCESS)
             goto cleanup;
 
     generate_standard_meshes();

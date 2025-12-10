@@ -41,4 +41,23 @@ u64 find_token(str *arg, int argc, str **argv);
  */
 KeyValue get_tokens_key_val(const str *path);
 
+/*! @brief convert an int into a string.
+ *
+ *  convert a signed 32-bit integer into a string and write into 'dest'
+ *  at most 'size' bytes.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 convert_i32_to_str(str *dest, i32 size, i32 n);
+
+
+/*! @brief convert an int into a string.
+ *
+ *  convert an unsigned 64-bit integer into a string and write into 'dest'
+ *  at most 'size' bytes.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 convert_u64_to_str(str *dest, u64 size, u64 n);
+
 #endif /* ENGINE_STRING_H */

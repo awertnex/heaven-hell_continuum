@@ -93,10 +93,12 @@ u32 copy_dir(const str *source, const str *destination, b8 overwrite,
         const str *read_format, const str *write_format);
 
 /*! @param log = enable/disable logging.
+ *  @param text = TRUE will newline-terminate file.
  *
  *  @return non-zero on failure and 'engine_err' is set accordingly.
  */
-u32 write_file(const str *name, u64 size, u64 length, void *buf, const str *write_format, b8 log);
+u32 write_file(const str *name, u64 size, u64 length, void *buf,
+        const str *write_format, b8 log, b8 text);
 
 /*! @brief get calloc'd string of resolved 'name'.
  *

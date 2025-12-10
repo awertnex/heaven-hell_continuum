@@ -14,7 +14,20 @@ enum ContainerState
     STATE_CONTR_COUNT,
 }; /* ContainerState */
 
-f64 get_time_ms(void);
+/*! @brief get time for logic purposes, like for random number generators
+ *  that require a seed.
+ *
+ *  get an unsigned 64-bit integer value based on unix time,
+ *  but added nanoseconds of unix time.
+ *
+ *  @remark not accurate to actual time.
+ */
+u64 get_time_logic(void);
+
+/*! @brief get time since process started in seconds and fractional milliseconds.
+ */
+f64 get_time_f64(void);
+
 b8 get_timer(f64 *time_start, f32 interval);
 
 /*! @brief update player parameters like movement and zoom based on flags.
@@ -46,9 +59,9 @@ void set_player_pos(Player *player, f64 x, f64 y, f64 z);
 void set_player_block(Player *player, i64 x, i64 y, i64 z);
 void set_player_spawn(Player *player, i64 x, i64 y, i64 z);
 void player_kill(Player *player);
-void player_respawn(Player *player);
+void player_spawn(Player *player);
 void player_collision_update(f64 dt, Player *player);
 b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2]);
-void gravity_update(f64 dt, v3f64 *position, v3f32 *acceleration, f32 weight);
+void gravity_update(f64 dt, v3f64 *velocity, v3f32 *acceleration, f32 weight);
 
 #endif /* GAME_LOGIC_H */

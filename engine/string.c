@@ -3,6 +3,7 @@
 #include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/limits.h"
+#include "h/logger.h"
 #include "h/memory.h"
 #include "h/string.h"
 
@@ -57,4 +58,84 @@ u64 find_token(str *arg, int argc, char **argv)
         if (!strncmp(argv[i], arg, strlen(arg) + 1))
             return i;
     return 0;
+}
+
+u32 convert_i32_to_str(str *dest, i32 size, i32 n)
+{
+    i32 i = 1, j = 0, len = 0, sign = n;
+
+    if (size <= 0)
+    {
+        LOGERROR(FALSE, ERR_SIZE_TOO_SMALL,
+                "%s\n", "Failed to Convert i32 to str, 'size' Too Small");
+        return engine_err;
+    }
+
+    if (n == 0)
+    {
+        dest[0] = '0';
+        dest[1] = '\0';
+        engine_err = ERR_SUCCESS;
+        return engine_err;
+    }
+
+    (n < 0) ? ++len : 0;
+    n = abs(n);
+    for (; i < n + 1 && len < size - 1; i *= 10)
+        ++len;
+  
+    i = 0;
+    while (n > 0 && i < size - 1)
+    {
+        dest[i++] = (n % 10) + '0';
+      	n /= 10;
+    }
+
+    if (sign < 0)
+        dest[i++] = '-';
+    dest[i] = '\0';
+
+    for (j = i - 1, i = 0; i < j; i++, j--)
+        swap_bits(&dest[i], &dest[j]);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
+}
+
+u32 convert_u64_to_str(str *dest, u64 size, u64 n)
+{
+    u64 i = 1, j = 0, len = 0;
+
+    if (size == 0)
+    {
+        LOGERROR(FALSE, ERR_SIZE_TOO_SMALL,
+                "%s\n", "Failed to Convert u64 to str, 'size' Too Small");
+        return engine_err;
+    }
+
+    if (n == 0)
+    {
+        dest[0] = '0';
+        dest[1] = '\0';
+        engine_err = ERR_SUCCESS;
+        return engine_err;
+    }
+
+    for (; i < n + 1 && len < size - 1; i *= 10)
+        ++len;
+  
+    i = 0;
+    while (n > 0 && i < size - 1)
+    {
+        dest[i++] = (n % 10) + '0';
+      	n /= 10;
+    }
+
+    dest[i] = '\0';
+
+    for (j = i - 1, i = 0; i < j; i++, j--)
+        swap_bits(&dest[i], &dest[j]);
+
+    engine_err = ERR_SUCCESS;
+    return engine_err;
 }

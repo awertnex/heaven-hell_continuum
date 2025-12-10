@@ -21,7 +21,14 @@
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
         u64 radius, u64 radius_v, u64 diameter, u64 diameter_v);
 
-f64 get_time_ms(void)
+u64 get_time_logic(void)
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    return (u64)(tp.tv_sec + tp.tv_usec);
+}
+
+f64 get_time_f64(void)
 {
     struct timeval tp;
     gettimeofday(&tp, NULL);
@@ -30,7 +37,7 @@ f64 get_time_ms(void)
 
 b8 get_timer(f64 *time_start, f32 interval)
 {
-    f64 time_current = get_time_ms();
+    f64 time_current = get_time_f64();
     if (time_current - *time_start >= interval)
     {
         *time_start = time_current;
@@ -80,6 +87,8 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
             SET_LERP_SPEED_GLIDE,
             SET_LERP_SPEED_GLIDE_V,
         };
+
+        player->gravity_influence.z = 0.0f;
 
         if (player->flag & FLAG_PLAYER_SPRINTING)
         {
@@ -136,6 +145,8 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
                 dt, SET_LERP_SPEED_FOV_MODE);
+
+    player->movement = (v3f32){0};
 }
 
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
@@ -220,7 +231,7 @@ static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
 void player_camera_movement_update(
         v2f64 mouse_delta, Player *player, b8 use_mouse)
 {
-    static f32 zoom = 0.0f;
+    f32 zoom, sensitivity, spch, cpch, syaw, cyaw;
 
     if (use_mouse)
     {
@@ -228,31 +239,32 @@ void player_camera_movement_update(
             zoom = player->camera.zoom;
         else zoom = 0.0f;
 
-        f32 sensitivity = settings.mouse_sensitivity /
+        sensitivity = settings.mouse_sensitivity /
             (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0f);
 
         player->yaw += mouse_delta.x * sensitivity;
         player->pitch += mouse_delta.y * sensitivity;
+
+        player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
+        if (player->yaw < 0.0f)
+            player->yaw += CAMERA_RANGE_MAX;
+
+        player->pitch = clamp_f32(player->pitch,
+                -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
     }
 
-    player->yaw = fmodf(player->yaw, CAMERA_RANGE_MAX);
-    if (player->yaw < 0.0f)
-        player->yaw += CAMERA_RANGE_MAX;
-
-    player->pitch = clamp_f32(player->pitch, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
-
-    player->sin_pitch = sin(player->pitch * DEG2RAD);
-    player->cos_pitch = cos(player->pitch * DEG2RAD);
-    player->sin_yaw =   sin(player->yaw * DEG2RAD);
-    player->cos_yaw =   cos(player->yaw * DEG2RAD);
-    const f32 SPCH = player->sin_pitch;
-    const f32 CPCH = player->cos_pitch;
-    const f32 SYAW = player->sin_yaw;
-    const f32 CYAW = player->cos_yaw;
-    player->camera.sin_pitch =  SPCH;
-    player->camera.cos_pitch =  CPCH;
-    player->camera.sin_yaw =    SYAW;
-    player->camera.cos_yaw =    CYAW;
+    syaw = sin(player->yaw * DEG2RAD);
+    cyaw = cos(player->yaw * DEG2RAD);
+    spch = sin(player->pitch * DEG2RAD);
+    cpch = cos(player->pitch * DEG2RAD);
+    player->sin_yaw = syaw;
+    player->cos_yaw = cyaw;
+    player->sin_pitch = spch;
+    player->cos_pitch = cpch;
+    player->camera.sin_yaw = syaw;
+    player->camera.cos_yaw = cyaw;
+    player->camera.sin_pitch = spch;
+    player->camera.cos_pitch = cpch;
 
     switch (player->camera_mode)
     {
@@ -268,20 +280,20 @@ void player_camera_movement_update(
         case MODE_CAMERA_3RD_PERSON:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x - CYAW * CPCH * player->camera_distance,
-                    player->pos.y + SYAW * CPCH * player->camera_distance,
-                    player->pos.z + player->eye_height + SPCH * player->camera_distance,
+                    player->pos.x - cyaw * cpch * player->camera_distance,
+                    player->pos.y + syaw * cpch * player->camera_distance,
+                    player->pos.z + player->eye_height + spch * player->camera_distance,
                 };
             break;
 
         case MODE_CAMERA_3RD_PERSON_FRONT:
             player->camera.pos =
                 (v3f32){
-                    player->pos.x + CYAW * CPCH * player->camera_distance,
-                    player->pos.y - SYAW * CPCH * player->camera_distance,
-                    player->pos.z + player->eye_height - SPCH * player->camera_distance,
+                    player->pos.x + cyaw * cpch * player->camera_distance,
+                    player->pos.y - syaw * cpch * player->camera_distance,
+                    player->pos.z + player->eye_height - spch * player->camera_distance,
                 };
-            player->camera.sin_pitch = -SPCH;
+            player->camera.sin_pitch = -spch;
             player->camera.sin_yaw = sin((player->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
             player->camera.cos_yaw = cos((player->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
             break;
@@ -295,23 +307,23 @@ void player_camera_movement_update(
             break;
     }
 
-    player->camera_hud.sin_pitch =  player->camera.sin_pitch;
-    player->camera_hud.cos_pitch =  player->camera.cos_pitch;
-    player->camera_hud.sin_yaw =    player->camera.sin_yaw;
-    player->camera_hud.cos_yaw =    player->camera.cos_yaw;
+    player->camera_hud.sin_pitch = player->camera.sin_pitch;
+    player->camera_hud.cos_pitch = player->camera.cos_pitch;
+    player->camera_hud.sin_yaw = player->camera.sin_yaw;
+    player->camera_hud.cos_yaw = player->camera.cos_yaw;
 }
 
 void player_target_update(Player *player)
 {
-    const f32 SPCH = player->sin_pitch;
-    const f32 CPCH = player->cos_pitch;
-    const f32 SYAW = player->sin_yaw;
-    const f32 CYAW = player->cos_yaw;
+    f32 spch = player->sin_pitch;
+    f32 cpch = player->cos_pitch;
+    f32 syaw = player->sin_yaw;
+    f32 cyaw = player->cos_yaw;
 
     player->target = (v3f64){
-        player->pos.x + CYAW * CPCH * settings.reach_distance,
-        player->pos.y - SYAW * CPCH * settings.reach_distance,
-        player->pos.z + player->eye_height - SPCH * settings.reach_distance,
+        player->pos.x + cyaw * cpch * settings.reach_distance,
+        player->pos.y - syaw * cpch * settings.reach_distance,
+        player->pos.z + player->eye_height - spch * settings.reach_distance,
     };
 
     player->target_snapped = (v3i64){
@@ -335,7 +347,7 @@ void set_player_block(Player *player, i64 x, i64 y, i64 z)
 
 void set_player_spawn(Player *player, i64 x, i64 y, i64 z)
 {
-    player->spawn_point = (v3i64){x, y, z};
+    player->spawn = (v3i64){x, y, z};
 }
 
 void player_kill(Player *player)
@@ -346,14 +358,13 @@ void player_kill(Player *player)
     player->flag |= FLAG_PLAYER_DEAD;
 }
 
-void player_respawn(Player *player)
+void player_spawn(Player *player)
 {
-    player->pos = (v3f64){
-        player->spawn_point.x,
-        player->spawn_point.y,
-        player->spawn_point.z
-    };
-    player->flag = 0;
+    set_player_pos(player,
+            player->spawn.x + 0.5f,
+            player->spawn.y + 0.5f,
+            player->spawn.z + 0.5f);
+    player->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_HUNGRY | FLAG_PLAYER_DEAD);
 }
 
 void player_collision_update(f64 dt, Player *player)
@@ -593,10 +604,10 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
     return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
-void gravity_update(f64 dt, v3f64 *position, v3f32 *acceleration, f32 weight)
+void gravity_update(f64 dt, v3f64 *velocity, v3f32 *acceleration, f32 weight)
 {
     acceleration->z += GRAVITY * weight * dt;
-    position->x += acceleration->x * dt;
-    position->y += acceleration->y * dt;
-    position->z += acceleration->z * dt;
+    velocity->x += acceleration->x * dt;
+    velocity->y += acceleration->y * dt;
+    velocity->z += acceleration->z * dt;
 }

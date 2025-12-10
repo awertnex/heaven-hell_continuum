@@ -12,9 +12,9 @@ void main()
 {
     vec4 sky = texture(texture_sky, tex_coords);
     vec4 horizon = texture(texture_horizon, tex_coords);
-    horizon.g *= 0.5f;
-    horizon.b *= 0.3f;
-    float alpha = (horizon.r + horizon.g + horizon.b) / 3.0f;
+    horizon.g *= 0.5;
+    horizon.b *= 0.3;
+    float alpha = (horizon.r + horizon.g + horizon.b) / 3.0;
     vec4 stars = texture(texture_stars, tex_coords);
 
     color = vec4(sky_color, 1.0) * mix(sky, horizon, alpha) + stars;
