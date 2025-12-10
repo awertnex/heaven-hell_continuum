@@ -3,6 +3,7 @@
 ## v<version> (DD MMM YYYY)
 
 #### changes
+- added input reduction while mid-air and not flying
 
 
 #### bugs and flaws

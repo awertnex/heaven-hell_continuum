@@ -1,7 +1,6 @@
 #ifndef GAME_GUI_H
 #define GAME_GUI_H
 
-#include <engine/h/core.h>
 #include "main.h"
 
 #define BTN_COUNT 110

@@ -4,6 +4,7 @@
 #include <engine/h/types.h>
 
 #include "main.h"
+#include "assets.h"
 
 #define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
 

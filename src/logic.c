@@ -79,7 +79,7 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     if (player->flag & FLAG_PLAYER_FLYING)
     {
         player->flag &= ~FLAG_PLAYER_CAN_JUMP;
-        player->camera.fovy += 10.0f;
+        player->flag &= ~FLAG_PLAYER_MID_AIR;
 
         player->movement_speed = SET_PLAYER_SPEED_FLY;
         player->movement_lerp_speed = (v3f32){
@@ -90,6 +90,8 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
 
         player->gravity_influence.z = 0.0f;
 
+        player->camera.fovy += 10.0f;
+
         if (player->flag & FLAG_PLAYER_SPRINTING)
         {
             player->movement_speed = SET_PLAYER_SPEED_FLY_FAST;
@@ -99,6 +101,9 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     else
     {
         gravity_update(dt, &player->pos, &player->gravity_influence, player->weight);
+
+        if (!(player->flag & FLAG_PLAYER_CAN_JUMP))
+            player->flag |= FLAG_PLAYER_MID_AIR;
 
         if (player->flag & FLAG_PLAYER_SNEAKING)
             player->movement_speed = SET_PLAYER_SPEED_SNEAK;
@@ -145,8 +150,6 @@ void player_state_update(f64 dt, Player *player, u64 chunk_diameter,
     player->camera.fovy_smooth =
         lerp_f32(player->camera.fovy_smooth, player->camera.fovy,
                 dt, SET_LERP_SPEED_FOV_MODE);
-
-    player->movement = (v3f32){0};
 }
 
 static void player_wrap_coordinates(Player *player, u64 chunk_diameter,
@@ -561,6 +564,7 @@ void player_collision_update(f64 dt, Player *player)
                         player->movement_smooth.z = 0.0f;
                         player->gravity_influence.z = 0.0f;
                         player->flag |= FLAG_PLAYER_CAN_JUMP;
+                        player->flag &= ~FLAG_PLAYER_MID_AIR;
                         player->flag &= ~FLAG_PLAYER_FLYING;
                     }
                     if (box_1[1].z < box_2[1].z)
@@ -604,10 +608,10 @@ b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2])
     return is_intersect.x && is_intersect.y && is_intersect.z;
 };
 
-void gravity_update(f64 dt, v3f64 *velocity, v3f32 *acceleration, f32 weight)
+void gravity_update(f64 dt, v3f64 *movement, v3f32 *acceleration, f32 weight)
 {
     acceleration->z += GRAVITY * weight * dt;
-    velocity->x += acceleration->x * dt;
-    velocity->y += acceleration->y * dt;
-    velocity->z += acceleration->z * dt;
+    movement->x += acceleration->x * dt;
+    movement->y += acceleration->y * dt;
+    movement->z += acceleration->z * dt;
 }

@@ -3,7 +3,9 @@
 
 #include <engine/h/core.h>
 #include <engine/h/types.h>
+
 #include "main.h"
+#include "logic.h"
 
 /* ---- movement ------------------------------------------------------------ */
 
@@ -24,8 +26,10 @@ extern u32 bind_build_or_use;
 /* ---- inventory ----------------------------------------------------------- */
 
 /* extern u32 bind_drop_item; */
-extern u32 bind_hotbar[SET_HOTBAR_SLOTS_MAX];
-extern u32 bind_hotbar_kp[SET_HOTBAR_SLOTS_MAX];
+
+/* two arrays for number keys and numberpad keys */
+extern u32 bind_hotbar[2][SET_HOTBAR_SLOTS_MAX];
+
 extern u32 bind_inventory;
 
 /* ---- misc ---------------------------------------------------------------- */
@@ -54,5 +58,14 @@ extern u32 bind_toggle_chunk_bounds;
 extern u32 bind_toggle_bounding_boxes;
 extern u32 bind_toggle_chunk_gizmo;
 extern u32 bind_toggle_chunk_queue_visualizer;
+
+/*! @brief update input from keyboard.
+ *
+ *  handle all key binds listed above and perform their logic on mostly 'player.flag'.
+ *
+ *  @remark only updates player flags, no parameters are updated except for
+ *  'player.movement'.
+ */
+void input_update(Render render, Player *player);
 
 #endif /* GAME_INPUT_H */

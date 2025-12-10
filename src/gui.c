@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <engine/h/core.h>
 #include <engine/h/diagnostics.h>
 #include <engine/h/logger.h>
 #include <engine/h/memory.h>

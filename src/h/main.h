@@ -13,8 +13,8 @@
 #define GAME_VERSION        "0.4.0"GAME_VERSION_DEV
 
 #include <engine/h/core.h>
-#include <engine/h/types.h>
 #include <engine/h/diagnostics.h>
+#include <engine/h/types.h>
 
 /* ---- settings ------------------------------------------------------------ */
 
@@ -59,12 +59,13 @@
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
 #define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
-#define SET_PLAYER_SPEED_WALK           4.0f
+#define SET_PLAYER_SPEED_WALK           3.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
 #define SET_PLAYER_SPEED_FLY_FAST       40.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
-#define SET_PLAYER_SPEED_SPRINT         8.0f
+#define SET_PLAYER_SPEED_SPRINT         6.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
+#define SET_PLAYER_AIR_MOVEMENT_SCALAR  0.4f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
 
@@ -371,25 +372,26 @@ enum FontIndices
 
 enum PlayerFlag
 {
-    FLAG_PLAYER_CAN_JUMP        = 0x00000001,
-    FLAG_PLAYER_SNEAKING        = 0x00000002,
-    FLAG_PLAYER_SPRINTING       = 0x00000004,
-    FLAG_PLAYER_FLYING          = 0x00000008,
-    FLAG_PLAYER_SWIMMING        = 0x00000010,
-    FLAG_PLAYER_HUNGRY          = 0x00000020,
-    FLAG_PLAYER_DEAD            = 0x00000040,
-    FLAG_PLAYER_ZOOMER          = 0x00000080,
+    FLAG_PLAYER_CAN_JUMP =      0x00000001,
+    FLAG_PLAYER_SNEAKING =      0x00000002,
+    FLAG_PLAYER_SPRINTING =     0x00000004,
+    FLAG_PLAYER_FLYING =        0x00000008,
+    FLAG_PLAYER_MID_AIR =       0x00000010,
+    FLAG_PLAYER_SWIMMING =      0x00000020,
+    FLAG_PLAYER_HUNGRY =        0x00000040,
+    FLAG_PLAYER_DEAD =          0x00000080,
+    FLAG_PLAYER_ZOOMER =        0x00000100,
 
-    FLAG_PLAYER_OVERFLOW_X      = 0x00000100,
-    FLAG_PLAYER_OVERFLOW_Y      = 0x00000200,
-    FLAG_PLAYER_OVERFLOW_Z      = 0x00000400,
+    FLAG_PLAYER_OVERFLOW_X =    0x00000200,
+    FLAG_PLAYER_OVERFLOW_Y =    0x00000400,
+    FLAG_PLAYER_OVERFLOW_Z =    0x00000800,
 
     /*! @brief positive overflow direction flags,
      *  @remark default is 0 for negative overflow (underflow).
      */
-    FLAG_PLAYER_OVERFLOW_PX     = 0x00000800,
-    FLAG_PLAYER_OVERFLOW_PY     = 0x00001000,
-    FLAG_PLAYER_OVERFLOW_PZ     = 0x00002000,
+    FLAG_PLAYER_OVERFLOW_PX =   0x00001000,
+    FLAG_PLAYER_OVERFLOW_PY =   0x00002000,
+    FLAG_PLAYER_OVERFLOW_PZ =   0x00004000,
 }; /* PlayerFlag */
 
 enum CameraModes
@@ -404,34 +406,34 @@ enum CameraModes
 
 typedef struct Player
 {
-    str name[64];                   /* player in-game name */
-    v3f64 pos;                      /* player current coordinates in world */
-    v3f64 pos_last;                 /* player previous coordinates in world */
-    v3f32 size;                     /* player size (for collision detection) */
-    v3f64 target;                   /* player arm */
-    v3i64 target_snapped;           /* floor of player arm */
+    str name[64];                   /* in-game name */
+    u64 flag;                       /* enum: PlayerFlag */
+    v3f64 pos;                      /* current coordinates in world */
+    v3f64 pos_last;                 /* previous coordinates in world */
+    v3f32 size;                     /* size (for collision detection) */
+    v3f64 target;                   /* arm */
+    v3i64 target_snapped;           /* floor of 'target' */
     v3f64 collision_check_pos;
     v3f64 collision_check_size;
 
-    f32 yaw, pitch;                 /* player look direction */
-    f32 sin_yaw;                    /* sine of player yaw */
-    f32 cos_yaw;                    /* cosine of player yaw */
-    f32 sin_pitch;                  /* sine of player pitch */
-    f32 cos_pitch;                  /* cosine of player pitch */
-    f32 eye_height;                 /* player eye-level (camera height) */
+    f32 yaw, pitch;                 /* look direction */
+    f32 sin_yaw;                    /* sine of 'yaw' */
+    f32 cos_yaw;                    /* cosine of 'yaw' */
+    f32 sin_pitch;                  /* sine of 'pitch' */
+    f32 cos_pitch;                  /* cosine of 'pitch' */
+    f32 eye_height;                 /* eye-level (camera height) */
 
-    v3f32 velocity;
-    f32 weight;
-    v3f32 gravity_influence;
-    f32 speed;                      /* derived from velocity */
-    v3f32 movement;                 /* raw movement from user input */
-    v3f32 movement_smooth;          /* lerped movement */
+    v3f32 movement;                 /* raw user input */
+    v3f32 movement_smooth;          /* lerped 'movement', forwarded to 'pos' */
     f32 movement_speed;             /* scalar for 'movement' */
     v3f32 movement_lerp_speed;
-    u64 flag;                       /* enum: PlayerFlag */
+    v3f32 velocity;                 /* derived from 'movement' */
+    v3f32 gravity_influence;
+    f32 weight;
+    f32 speed;                      /* derived from 'movement' */
 
     Camera camera;
-    Camera camera_hud;              /* for hud 3d gizmos */
+    Camera camera_hud;              /* for hud 3d elements */
     f32 camera_distance;            /* for camera collision detection */
     u8 camera_mode;                 /* enum: CameraModes */
 
@@ -439,10 +441,10 @@ typedef struct Player
      */
     u8 overflow;
 
-    v3i16 chunk;                    /* player current chunk */
-    v3i16 chunk_delta;              /* player previous chunk */
+    v3i16 chunk;                    /* current chunk */
+    v3i16 chunk_delta;              /* previous chunk */
 
-    v3i64 spawn;                    /* player spawn point */
+    v3i64 spawn;                    /* spawn point */
     u64 container_state;            /* enum: ContainerFlag */
 
     /*! @remark signed instead of unsigned so it's possible to navigate
@@ -611,6 +613,7 @@ typedef struct ChunkQueue
  *  @remark must be initialized globally, tho the pointed to variable itself can be modified.
  */
 extern u32 *const GAME_ERR;
+extern u32 chunk_tab_index;
 
 extern struct Settings settings;
 extern Texture texture[TEXTURE_COUNT];

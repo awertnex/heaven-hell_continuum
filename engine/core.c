@@ -1042,7 +1042,7 @@ static b8 _is_key_release_double(const u32 key)
     return (keyboard_key[key] == KEY_RELEASE_DOUBLE);
 }
 
-void update_key_states(Render *render)
+void update_key_states(Render render)
 {
     static f64 key_press_start_time[KEYBOARD_KEYS_MAX] = {0};
     u32 i;
@@ -1050,24 +1050,24 @@ void update_key_states(Render *render)
     for (i = 0; i < KEYBOARD_KEYS_MAX; ++i)
     {
         b8 key_press =
-            (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_PRESS);
+            (glfwGetKey(render.window, keyboard_tab[i]) == GLFW_PRESS);
         b8 key_release =
-            (glfwGetKey(render->window, keyboard_tab[i]) == GLFW_RELEASE);
+            (glfwGetKey(render.window, keyboard_tab[i]) == GLFW_RELEASE);
 
         if (key_press && !keyboard_key[i])
         {
             keyboard_key[i] = KEY_PRESS;
-            key_press_start_time[i] = render->frame_start;
+            key_press_start_time[i] = render.frame_start;
             continue;
         }
         else if (key_press && _is_key_listen_double(i))
         {
-            if (render->frame_start - key_press_start_time[i] <
+            if (render.frame_start - key_press_start_time[i] <
                     KEYBOARD_DOUBLE_PRESS_TIME)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
                 keyboard_key[i] = KEY_PRESS;
-            key_press_start_time[i] = render->frame_start;
+            key_press_start_time[i] = render.frame_start;
             continue;
         }
         else if (key_release && keyboard_key[i] != KEY_PRESS)

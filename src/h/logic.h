@@ -62,6 +62,6 @@ void player_kill(Player *player);
 void player_spawn(Player *player);
 void player_collision_update(f64 dt, Player *player);
 b8 is_intersect_aabb(v3f64 box_1[2], v3f64 box_1_last[2], v3f64 box_2[2]);
-void gravity_update(f64 dt, v3f64 *velocity, v3f32 *acceleration, f32 weight);
+void gravity_update(f64 dt, v3f64 *movement, v3f32 *acceleration, f32 weight);
 
 #endif /* GAME_LOGIC_H */

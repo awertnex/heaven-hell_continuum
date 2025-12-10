@@ -458,7 +458,7 @@ b8 is_key_release(const u32 key);
 
 /*! @brief update internal key states: press, double-press, hold, release,
  */
-void update_key_states(Render *render);
+void update_key_states(Render render);
 
 /*! @brief load font from file at font_path.
  *

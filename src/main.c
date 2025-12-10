@@ -89,7 +89,6 @@ static void generate_standard_meshes(void);
 static u32 settings_init(void);
 
 void settings_update(void);
-static void input_update(Player *player);
 
 /*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
  */
@@ -689,164 +688,6 @@ static void generate_standard_meshes(void)
 cleanup:
 
     mesh_free(&mesh[MESH_PLAYER]);
-}
-
-static void input_update(Player *player)
-{
-    u32 i;
-
-    /* ---- movement -------------------------------------------------------- */
-
-    if (is_key_hold(bind_walk_forward))
-    {
-        player->movement.x += player->cos_yaw * player->movement_speed;
-        player->movement.y -= player->sin_yaw * player->movement_speed;
-    }
-    if (is_key_press_double(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
-
-    if (is_key_hold(bind_walk_backward))
-    {
-        player->movement.x -= player->cos_yaw * player->movement_speed;
-        player->movement.y += player->sin_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_strafe_left))
-    {
-        player->movement.x += player->sin_yaw * player->movement_speed;
-        player->movement.y += player->cos_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_strafe_right))
-    {
-        player->movement.x -= player->sin_yaw * player->movement_speed;
-        player->movement.y -= player->cos_yaw * player->movement_speed;
-    }
-
-    /* ---- jumping --------------------------------------------------------- */
-
-    if (is_key_hold(bind_jump))
-    {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            player->movement.z += player->movement_speed;
-
-        if (player->flag & FLAG_PLAYER_CAN_JUMP)
-        {
-            player->gravity_influence.z += SET_PLAYER_JUMP_INITIAL_VELOCITY;
-            player->flag &= ~FLAG_PLAYER_CAN_JUMP;
-        }
-    }
-    if (is_key_press_double(bind_jump))
-        player->flag ^= FLAG_PLAYER_FLYING;
-
-    /* ---- sprinting ------------------------------------------------------- */
-
-    if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
-    else if (is_key_release(bind_walk_forward))
-        player->flag &= ~FLAG_PLAYER_SPRINTING;
-
-    /* ---- sneaking -------------------------------------------------------- */
-
-    if (is_key_hold(bind_sneak))
-    {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            player->movement.z -= player->movement_speed;
-        else player->flag |= FLAG_PLAYER_SNEAKING;
-    }
-    else player->flag &= ~FLAG_PLAYER_SNEAKING;
-
-    /* ---- gameplay -------------------------------------------------------- */
-
-    if (
-            !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
-            (flag & FLAG_MAIN_PARSE_TARGET) &&
-            chunk_tab[chunk_tab_index])
-    {
-        if (glfwGetMouseButton(render.window, bind_attack_or_destroy) == GLFW_PRESS)
-        {
-            block_break(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER);
-        }
-        if (glfwGetMouseButton(render.window, bind_build_or_use) == GLFW_PRESS)
-        {
-            block_place(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
-                    player->hotbar_slots[player->hotbar_slot_selected]);
-        }
-
-        if (is_key_press(bind_sample_block)) {}
-    }
-
-    /* ---- inventory ------------------------------------------------------- */
-
-    for (i = 0; i < SET_HOTBAR_SLOTS_MAX; ++i)
-        if (is_key_press(bind_hotbar[i]) ||
-                is_key_press(bind_hotbar_kp[i]))
-            player->hotbar_slot_selected = i;
-
-    if (is_key_press(bind_inventory))
-    {
-        if ((player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
-        {
-            state_menu_depth = 0;
-            player->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
-        }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                !state_menu_depth)
-        {
-            state_menu_depth = 1;
-            player->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
-        }
-
-        if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
-            --state_menu_depth;
-    }
-
-    /* ---- miscellaneous --------------------------------------------------- */
-
-    if (is_key_press(bind_toggle_hud))
-        flag ^= FLAG_MAIN_HUD;
-
-    if (is_key_press(bind_toggle_debug))
-        flag ^= FLAG_MAIN_DEBUG;
-
-    if (is_key_press(bind_toggle_perspective))
-        player->camera_mode = (player->camera_mode + 1) % MODE_CAMERA_COUNT;
-
-    if (is_key_press(bind_toggle_zoom))
-        player->flag ^= FLAG_PLAYER_ZOOMER;
-
-    /* ---- debug ----------------------------------------------------------- */
-
-#if !GAME_RELEASE_BUILD
-    if (is_key_press(bind_toggle_super_debug))
-        flag ^= FLAG_MAIN_SUPER_DEBUG;
-#endif /* GAME_RELEASE_BUILD */
-
-    if (is_key_hold(bind_debug_mod))
-    {
-        if (is_key_press(bind_toggle_trans_blocks))
-            debug_mode[DEBUG_MODE_TRANS_BLOCKS] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_bounds))
-            debug_mode[DEBUG_MODE_CHUNK_BOUNDS] ^= 1;
-
-        if (is_key_press(bind_toggle_bounding_boxes))
-            debug_mode[DEBUG_MODE_BOUNDING_BOXES] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_gizmo))
-            debug_mode[DEBUG_MODE_CHUNK_GIZMO] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_queue_visualizer))
-            debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER] ^= 1;
-    }
 }
 
 u32 world_init(str *name, u64 seed)
@@ -1744,8 +1585,8 @@ section_world_loaded:
         }
 
         glfwPollEvents();
-        update_key_states(&render);
-        input_update(&lily);
+        update_key_states(render);
+        input_update(render, &lily);
 
         update_mouse_movement(&render);
         settings_update();
