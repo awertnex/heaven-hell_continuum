@@ -1,7 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define GAME_RELEASE_BUILD  1
+#define GAME_RELEASE_BUILD  0
 
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"
@@ -10,7 +10,7 @@
 
 #define GAME_AUTHOR         "Author: Lily Awertnex"
 #define GAME_NAME           "Heaven-Hell Continuum"
-#define GAME_VERSION        "0.3.0"GAME_VERSION_BETA
+#define GAME_VERSION        "0.4.0"GAME_VERSION_DEV
 
 #include <engine/h/core.h>
 #include <engine/h/types.h>
