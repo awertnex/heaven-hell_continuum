@@ -172,6 +172,14 @@ b8 is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max)
         (v.z - min.z >= 0) & (max.z - v.z >= 0);
 }
 
+b8 is_in_volume_f64(v3f64 v, v3f64 min, v3f64 max)
+{
+    return
+        (v.x - min.x >= 0.0f) & (max.x - v.x >= 0.0f) &
+        (v.y - min.y >= 0.0f) & (max.y - v.y >= 0.0f) &
+        (v.z - min.z >= 0.0f) & (max.z - v.z >= 0.0f);
+}
+
 m4f32 matrix_add(m4f32 a, m4f32 b)
 {
     return (m4f32){

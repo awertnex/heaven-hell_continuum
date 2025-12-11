@@ -151,7 +151,6 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
     str string[2][PATH_MAX] = {0};
     str *file_contents = NULL;
     u64 file_len = 0;
-    u32 i;
 
     /* ---- error handling -------------------------------------------------- */
 

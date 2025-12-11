@@ -59,9 +59,6 @@ void rand_free(void)
             "rand_free().RAND_TAB");
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshift-count-overflow"
-
 v3f32 random_2d(i32 x, i32 y, u64 seed)
 {
     const u64 S = 64;
@@ -104,8 +101,6 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed)
         sinf((f32)final + 0.25f),
     };
 }
-
-#pragma GCC diagnostic pop
 
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
 {

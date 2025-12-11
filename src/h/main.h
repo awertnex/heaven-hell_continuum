@@ -61,11 +61,12 @@
 #define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_SPEED_WALK           3.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       40.0f
+#define SET_PLAYER_SPEED_FLY_FAST       4000.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
 #define SET_PLAYER_SPEED_SPRINT         6.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_PLAYER_AIR_MOVEMENT_SCALAR  0.4f
+#define SET_BP_REGION_MARGIN            1.0f    /* broad-phase region margin */
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
 
@@ -404,6 +405,12 @@ enum CameraModes
     MODE_CAMERA_COUNT,
 }; /* CameraModes */
 
+typedef struct BoundingBox
+{
+    v3i64 pos;
+    v3i32 size;
+} BoundingBox;
+
 typedef struct Player
 {
     str name[64];                   /* in-game name */
@@ -413,8 +420,6 @@ typedef struct Player
     v3f32 size;                     /* size (for collision detection) */
     v3f64 target;                   /* arm */
     v3i64 target_snapped;           /* floor of 'target' */
-    v3f64 collision_check_pos;
-    v3f64 collision_check_size;
 
     f32 yaw, pitch;                 /* look direction */
     f32 sin_yaw;                    /* sine of 'yaw' */
@@ -427,9 +432,9 @@ typedef struct Player
     v3f32 movement_smooth;          /* lerped 'movement', forwarded to 'pos' */
     f32 movement_speed;             /* scalar for 'movement' */
     v3f32 movement_lerp_speed;
+    f32 weight;
     v3f32 velocity;                 /* derived from 'movement' */
     v3f32 gravity_influence;
-    f32 weight;
     f32 speed;                      /* derived from 'movement' */
 
     Camera camera;
@@ -441,8 +446,8 @@ typedef struct Player
      */
     u8 overflow;
 
-    v3i16 chunk;                    /* current chunk */
-    v3i16 chunk_delta;              /* previous chunk */
+    v3i32 chunk;                    /* current chunk */
+    v3i32 chunk_delta;              /* previous chunk */
 
     v3i64 spawn;                    /* spawn point */
     u64 container_state;            /* enum: ContainerFlag */
@@ -455,6 +460,8 @@ typedef struct Player
 
     u32 hotbar_slots[SET_HOTBAR_SLOTS_MAX];
     u32 inventory_slots[SET_INVENTORY_SLOTS_MAX];
+
+    BoundingBox bp_region;
 } Player;
 
 enum BlockFlag

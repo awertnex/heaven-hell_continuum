@@ -1,3 +1,5 @@
+#include <engine/h/math.h>
+
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/gui.h"

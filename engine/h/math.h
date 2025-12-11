@@ -40,6 +40,7 @@ b8 is_in_area_f32(v2f32 v, v2f32 min, v2f32 max);
 b8 is_in_volume_i32(v3i32 v, v3i32 min, v3i32 max);
 b8 is_in_volume_f32(v3f32 v, v3f32 min, v3f32 max);
 b8 is_in_volume_i64(v3i64 v, v3i64 min, v3i64 max);
+b8 is_in_volume_f64(v3f64 v, v3f64 min, v3f64 max);
 m4f32 matrix_add(m4f32 a, m4f32 b);
 m4f32 matrix_subtract(m4f32 a, m4f32 b);
 m4f32 matrix_multiply(m4f32 a, m4f32 b);

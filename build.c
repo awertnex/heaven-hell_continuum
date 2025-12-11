@@ -43,6 +43,7 @@ int main(int argc, char **argv)
     cmd_push("-ggdb");
     cmd_push("-Wall");
     cmd_push("-Wextra");
+    cmd_push("-Wno-shift-count-overflow");
     cmd_push("-fno-builtin");
     snprintf(temp, CMD_SIZE, "%s", "-Wl,-rpath="RUNTIME_PATH);
     normalize_slash(temp);

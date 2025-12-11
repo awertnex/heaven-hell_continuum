@@ -94,7 +94,7 @@ void settings_update(void);
  */
 u32 world_init(str *name, u64 seed);
 
-static void world_update(Player *player);
+static void world_update(Player *p);
 static void draw_everything(void);
 
 static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
@@ -703,20 +703,10 @@ u32 world_init(str *name, u64 seed)
     if (chunking_init() != ERR_SUCCESS)
         return *GAME_ERR;
 
-    set_player_spawn(&lily, 1547, -531, 0);
-    player_spawn(&lily);
-    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
-            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
-            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
+    set_player_spawn(&lily, 1547, -531, 10);
+    player_spawn(&lily, TRUE);
 
-    lily.target_snapped =
-        (v3i64){
-            (i64)lily.target.x,
-            (i64)lily.target.y,
-            (i64)lily.target.z,
-        };
-
-    flag |= FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
+    flag |= FLAG_MAIN_CHUNK_BUF_DIRTY | FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
     disable_cursor;
     center_cursor;
 
@@ -724,7 +714,7 @@ u32 world_init(str *name, u64 seed)
     return *GAME_ERR;
 }
 
-static void world_update(Player *player)
+static void world_update(Player *p)
 {
     settings.world.tick = 8000 + (u64)(render.frame_start * 20.0f) -
         SET_DAY_TICKS_MAX * settings.world.days;
@@ -735,28 +725,22 @@ static void world_update(Player *player)
         show_cursor;
     else disable_cursor;
 
-    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
-            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
-            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    player_collision_update(render.frame_delta, &lily);
+    player_state_update(p, render.frame_delta);
+    player_target_update(p);
 
     b8 use_mouse = TRUE;
     use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    player_camera_movement_update(render.mouse_delta, player, use_mouse);
-    update_camera_perspective(&player->camera, &projection_world);
-    update_camera_perspective(&player->camera_hud, &projection_hud);
-    player_target_update(&lily);
+    player_camera_movement_update(p, render.mouse_delta, use_mouse);
+    update_camera_perspective(&p->camera, &projection_world);
+    update_camera_perspective(&p->camera_hud, &projection_hud);
 
-    chunking_update(lily.chunk, &lily.chunk_delta);
-
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_snapped);
-    if (chunk_tab_index >= settings.chunk_buf_volume)
-        chunk_tab_index = settings.chunk_tab_center;
+    chunking_update(p->chunk, &p->chunk_delta);
+    chunk_tab_index = get_chunk_index(p->chunk, p->target);
 
     /* ---- player targeting ------------------------------------------------ */
 
     if (is_in_volume_i64(
-                lily.target_snapped,
+                p->target_snapped,
                 (v3i64){
                 -WORLD_DIAMETER * CHUNK_DIAMETER,
                 -WORLD_DIAMETER * CHUNK_DIAMETER,
@@ -954,21 +938,23 @@ static void draw_everything(void)
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    /* ---- draw player collision check bounding box ------------------------ */
+    /* ---- draw player broad-phase region ---------------------------------- */
 
     if (debug_mode[DEBUG_MODE_BOUNDING_BOXES])
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.collision_check_pos.x,
-                lily.collision_check_pos.y,
-                lily.collision_check_pos.z);
+                lily.bp_region.pos.x, lily.bp_region.pos.y, lily.bp_region.pos.z);
         glUniform3f(uniform.bounding_box.size,
-                lily.collision_check_size.x,
-                lily.collision_check_size.y,
-                lily.collision_check_size.z);
+                lily.bp_region.size.x, lily.bp_region.size.y, lily.bp_region.size.z);
         glUniform4f(uniform.bounding_box.color, 0.3f, 0.6f, 0.9f, 1.0f);
 
         glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
+
+        glUniform3f(uniform.bounding_box.position,
+                lily.pos.x - lily.size.x * 0.5f, lily.pos.y - lily.size.y * 0.5f, lily.pos.z);
+        glUniform3f(uniform.bounding_box.size, lily.size.x, lily.size.y, lily.size.z);
+        glUniform4f(uniform.bounding_box.color, 1.0f, 0.1f, 0.1f, 1.0f);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 

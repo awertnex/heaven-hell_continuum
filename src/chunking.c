@@ -34,15 +34,15 @@ ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX] = {0};
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void _block_place(Chunk *chunk,
+static void _block_place(Chunk *ch,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
-        v3u32 chunk_tab_coordinates, u32 x, u32 y, u32 z, BlockID block_id);
+        v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z, BlockID block_id);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void _block_break(Chunk *chunk,
+static void _block_break(Chunk *ch,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
-        v3u32 chunk_tab_coordinates, u32 x, u32 y, u32 z);
+        v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z);
 
 /*! @brief generate chunk blocks.
  *
@@ -53,29 +53,29 @@ static void _block_break(Chunk *chunk,
  *  @remark calls 'chunk_mesh_init()' when done generating.
  *  @remark must be called before 'chunk_mesh_update()'.
  */
-static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain());
+static void chunk_generate(Chunk **ch, u32 rate, b8 terrain());
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void chunk_mesh_init(Chunk *chunk);
+static void chunk_mesh_init(Chunk *ch);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void chunk_mesh_update(Chunk *chunk);
+static void chunk_mesh_update(Chunk *ch);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void _chunk_serialize(Chunk *chunk, str *world_name);
+static void _chunk_serialize(Chunk *ch, str *world_name);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static void _chunk_deserialize(Chunk *chunk, str *world_name);
+static void _chunk_deserialize(Chunk *ch, str *world_name);
 
 /*! -- INTERNAL USE ONLY --;
  *
  *  @param index = index into global array 'chunk_tab'.
  */
-static void _chunk_buf_push(u32 index, v3i16 player_chunk_delta);
+static void _chunk_buf_push(u32 index, v3i32 player_chunk_delta);
 
 /*! -- INTERNAL USE ONLY --;
  *
@@ -94,7 +94,6 @@ u32 chunking_init(void)
     u32 *CHUNK_ORDER_lookup_file_contents = NULL;
     u64 *CHUNKS_MAX_lookup_file_contents = NULL;
     u64 i, j, k, file_len;
-
     u32 render_distance = 0;
     v3i32 center = {0};
     v3i32 coordinates = {0};
@@ -306,7 +305,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-void chunking_update(v3i16 player_chunk, v3i16 *player_chunk_delta)
+void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta)
 {
     v3u32 _coordinates, _mirror_index, _target_index;
     u32 mirror_index, target_index;
@@ -361,7 +360,7 @@ chunk_tab_shift:
         goto chunk_buf_push;
     }
 
-    /* this keeps chunk_buf from exploding on a chunk_tab shift */
+    /* this keeps chunk_buf from exploding on a 'chunk_tab' shift */
     chunk_buf_cursor = 0;
 
     switch (AXIS)
@@ -603,7 +602,7 @@ void chunking_free(void)
             "chunking_free().CHUNK_QUEUE[2].queue");
 }
 
-void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
+void block_place(u32 index, i32 x, i32 y, i32 z, BlockID block_id)
 {
     v3u32 chunk_tab_coordinates =
     {
@@ -627,13 +626,13 @@ void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id)
 
 static void _block_place(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
-        v3u32 chunk_tab_coordinates, u32 x, u32 y, u32 z, BlockID block_id)
+        v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z, BlockID block_id)
 {
     u8 is_on_edge;
 
-    x %= CHUNK_DIAMETER;
-    y %= CHUNK_DIAMETER;
-    z %= CHUNK_DIAMETER;
+    x = mod(x, CHUNK_DIAMETER);
+    y = mod(y, CHUNK_DIAMETER);
+    z = mod(z, CHUNK_DIAMETER);
     SET_BLOCK_ID(chunk->block[z][y][x], block_id);
 
     if (x == CHUNK_DIAMETER - 1)
@@ -723,7 +722,7 @@ static void _block_place(Chunk *chunk,
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-void block_break(u32 index, u32 x, u32 y, u32 z)
+void block_break(u32 index, i32 x, i32 y, i32 z)
 {
     v3u32 chunk_tab_coordinates =
     {
@@ -747,12 +746,12 @@ void block_break(u32 index, u32 x, u32 y, u32 z)
 
 static void _block_break(Chunk *chunk,
         Chunk *px, Chunk *nx, Chunk *py, Chunk *ny, Chunk *pz, Chunk *nz, 
-        v3u32 chunk_tab_coordinates, u32 x, u32 y, u32 z)
+        v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z)
 {
     u8 is_on_edge;
-    x %= CHUNK_DIAMETER;
-    y %= CHUNK_DIAMETER;
-    z %= CHUNK_DIAMETER;
+    x = mod(x, CHUNK_DIAMETER);
+    y = mod(y, CHUNK_DIAMETER);
+    z = mod(z, CHUNK_DIAMETER);
 
     if (x == CHUNK_DIAMETER - 1)
     {
@@ -838,7 +837,7 @@ static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
           *px = NULL, *nx = NULL,
           *py = NULL, *ny = NULL,
           *pz = NULL, *nz = NULL;
-    u32 x, y, z;
+    i32 x, y, z;
 
     if (!chunk || !*chunk || !terrain) return;
 
@@ -1040,7 +1039,7 @@ static void chunk_deserialize(Chunk *chunk, str *world_name)
 {
 }
 
-static void _chunk_buf_push(u32 index, v3i16 player_chunk_delta)
+static void _chunk_buf_push(u32 index, v3i32 player_chunk_delta)
 {
     v3u32 chunk_tab_coordinates =
     {
@@ -1156,21 +1155,38 @@ generate_and_mesh:
         }
 }
 
-u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_target_delta)
+u32 get_chunk_index(v3i32 chunk, v3f64 pos)
 {
-    v3i16 offset =
+    v3i32 offset =
     {
-        (i16)floorf((f64)player_target_delta.x / CHUNK_DIAMETER) -
-            player_chunk.x + settings.chunk_buf_radius,
-
-        (i16)floorf((f64)player_target_delta.y / CHUNK_DIAMETER) -
-            player_chunk.y + settings.chunk_buf_radius,
-
-        (i16)floorf((f64)player_target_delta.z / CHUNK_DIAMETER) -
-            player_chunk.z + settings.chunk_buf_radius,
+        (i32)floorf(pos.x / CHUNK_DIAMETER) - chunk.x + settings.chunk_buf_radius,
+        (i32)floorf(pos.y / CHUNK_DIAMETER) - chunk.y + settings.chunk_buf_radius,
+        (i32)floorf(pos.z / CHUNK_DIAMETER) - chunk.z + settings.chunk_buf_radius,
     };
-    return
+    u32 index =
         offset.x +
         offset.y * settings.chunk_buf_diameter +
         offset.z * settings.chunk_buf_layer;
+
+    if (index >= settings.chunk_buf_volume)
+        return settings.chunk_tab_center;
+    return index;
+}
+
+Chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z)
+{
+    x = (i32)floorf((f32)x / CHUNK_DIAMETER);
+    y = (i32)floorf((f32)y / CHUNK_DIAMETER);
+    z = (i32)floorf((f32)z / CHUNK_DIAMETER);
+    return chunk_tab[index + x +
+        y * settings.chunk_buf_diameter +
+        z * settings.chunk_buf_layer];
+}
+
+u32 *get_block_resolved(Chunk *ch, i32 x, i32 y, i32 z)
+{
+    x = mod(x, CHUNK_DIAMETER);
+    y = mod(y, CHUNK_DIAMETER);
+    z = mod(z, CHUNK_DIAMETER);
+    return &ch->block[z][y][x];
 }

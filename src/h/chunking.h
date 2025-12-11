@@ -71,26 +71,45 @@ u32 chunking_init(void);
  *     'chunk_buf' and return that address to the respective index in 'chunk_tab'.
  *  5. remove flag 'FLAG_MAIN_CHUNK_BUF_DIRTY' when no further processing is required.
  */
-void chunking_update(v3i16 player_chunk, v3i16 *player_chunk_delta);
+void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta);
 
 void chunking_free(void);
 
 /*! @param index = index into global array 'chunk_tab'.
  */
-void block_place(u32 index, u32 x, u32 y, u32 z, BlockID block_id);
+void block_place(u32 index, i32 x, i32 y, i32 z, BlockID block_id);
 
 /*! @param index = index into global array 'chunk_tab'.
  */
-void block_break(u32 index, u32 x, u32 y, u32 z);
+void block_break(u32 index, i32 x, i32 y, i32 z);
 
-/*! @brief translate block world position to chunk_buf index relative to '*chunk'.
+/*! @brief translate block world position to 'chunk_buf' index relative to '*chunk'.
  *
  *  @param x, y, z = coordinates of block relative to '*chunk'.
  *
  *  @return pointer to block in 'chunk_buf'.
  */
-u32 *get_block_chunk_buf_index_relative(Chunk *chunk, i32 x, i32 y, i32 z);
+u32 *get_block_chunk_buf_index_relative(Chunk *ch, i32 x, i32 y, i32 z);
 
-u32 get_target_chunk_index(v3i16 player_chunk, v3i64 player_target_delta);
+/*! @brief translate position to 'chunk_tab' index relative to chunk position.
+ *
+ *  @return index into global array 'chunk_tab'.
+ *  @return 'settings.chunk_tab_center' if index out of bounds.
+ */
+u32 get_chunk_index(v3i32 chunk, v3f64 pos);
+
+/*! @brief get chunk relative to position.
+ *
+ *  @return chunk at index if 'x', 'y' and 'z' are within chunk bounds and
+ *  return the correct neighboring chunk otherwise.
+ */
+Chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z);
+
+/*! @brief get block relative to chunk.
+ *
+ *  @return block address in chunk if 'x', 'y' and 'z' are within chunk bounds and
+ *  return the correct block in the neighboring chunk otherwise.
+ */
+u32 *get_block_resolved(Chunk *ch, i32 x, i32 y, i32 z);
 
 #endif /* GAME_CHUNKING_H */
