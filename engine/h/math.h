@@ -12,7 +12,7 @@
 #define GRAVITY     -9.7803267715f
 #define RAND_SCALE  (PI / ~(~0u >> 1))
 
-#define mod(n, max) ((((n) % (max)) + (max)) % (max))
+#define mod(n, max) (((n) % (max) + (max)) % (max))
 
 v3f32 add_v3f32(v3f32 a, v3f32 b);
 v3f32 sub_v3f32(v3f32 a, v3f32 b);
@@ -22,6 +22,10 @@ f32 clamp_f32(f32 n, f32 min, f32 max);
 i64 clamp_i64(i64 n, i64 min, i64 max);
 u64 clamp_u64(u64 n, u64 min, u64 max);
 f64 clamp_f64(f64 n, f64 min, f64 max);
+f32 min_v3f32(v3f32 v);
+f32 max_v3f32(v3f32 v);
+u32 min_axis_v3f32(v3f32 v);
+u32 max_axis_v3f32(v3f32 v);
 f32 len_v3f32(v3f32 v);
 v3f32 normalize_v3f32(v3f32 v);
 f32 q_rsqrt(f32 n);

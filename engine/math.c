@@ -40,6 +40,26 @@ f64 clamp_f64(f64 n, f64 min, f64 max)
     return n < min ? min : n > max ? max : n;
 }
 
+f32 min_v3f32(v3f32 v)
+{
+    return v.x < v.y ? v.x < v.z ? v.x : v.z : v.y < v.z ? v.y : v.z;
+}
+
+f32 max_v3f32(v3f32 v)
+{
+    return v.x > v.y ? v.x > v.z ? v.x : v.z : v.y > v.z ? v.y : v.z;
+}
+
+u32 min_axis_v3f32(v3f32 v)
+{
+    return v.x < v.y ? v.x < v.z ? 1 : 3 : v.y < v.z ? 2 : 3;
+}
+
+u32 max_axis_v3f32(v3f32 v)
+{
+    return v.x > v.y ? v.x > v.z ? 1 : 3 : v.y > v.z ? 2 : 3;
+}
+
 f32 len_v3f32(v3f32 v)
 {
     return v.x * v.x + v.y * v.y + v.z * v.z;
