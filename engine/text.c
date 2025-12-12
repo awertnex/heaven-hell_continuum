@@ -74,8 +74,7 @@ void text_start(u64 length, f32 size, Font *font,
         length = STRING_MAX;
     else if (length > mesh_text.ebo_len)
     {
-        if (mem_realloc((void*)&mesh_text.vbo_data,
-                    length * sizeof(GLfloat) * 4,
+        if (mem_realloc((void*)&mesh_text.vbo_data, length * sizeof(GLfloat) * 4,
                     "text_start().mesh_text.vbo_data") != ERR_SUCCESS)
             goto cleanup;
         mesh_text.vbo_len = length * 4;
@@ -113,16 +112,14 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 
     if (!mesh_text.vbo_data)
     {
-        LOGERROR(FALSE, ERR_BUFFER_EMPTY,
-                "%s\n", "Failed to Push Text, 'mesh_text.vbo_data' Null");
+        LOGERROR(FALSE, ERR_BUFFER_EMPTY, "%s\n", "Failed to Push Text, 'mesh_text.vbo_data' Null");
         return;
     }
 
     len = strlen(text);
     if (len >= STRING_MAX)
     {
-        LOGERROR(FALSE, ERR_STRING_TOO_LONG,
-                "%s\n", "Failed to Push Text, Text Too Long");
+        LOGERROR(FALSE, ERR_STRING_TOO_LONG, "%s\n", "Failed to Push Text, Text Too Long");
         return;
     }
 
@@ -175,13 +172,15 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
         if (text[i] == '\n')
         {
             if (align_x == TEXT_ALIGN_CENTER)
+            {
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_core.cursor - j * 4] -=
-                        advance / 2.0f;
+                    mesh_text.vbo_data[text_core.cursor - j * 4] -= advance * 0.5f;
+            }
             else if (align_x == TEXT_ALIGN_RIGHT)
+            {
                 for (j = 1; (i64)i - j >= 0 && text[i - j] != '\n'; ++j)
-                    mesh_text.vbo_data[text_core.cursor - j * 4] -=
-                        advance;
+                    mesh_text.vbo_data[text_core.cursor - j * 4] -= advance;
+            }
 
             advance = 0.0f;
             text_core.line += line_height * ndc_scale.y;
@@ -203,7 +202,7 @@ void text_push(const str *text, v2f32 pos, i8 align_x, i8 align_y)
 
     if (align_y == TEXT_ALIGN_CENTER)
         for (i = 0; i < text_core.cursor; i += 4)
-            mesh_text.vbo_data[i + 1] += text_core.line / 2.0f;
+            mesh_text.vbo_data[i + 1] += text_core.line * 0.5f;
     else if (align_y == TEXT_ALIGN_BOTTOM)
         for (i = 0; i < text_core.cursor; i += 4)
             mesh_text.vbo_data[i + 1] += text_core.line;

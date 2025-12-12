@@ -5,7 +5,7 @@
 
 #include "types.h"
 
-#define EPSILON     1e-7f
+#define EPSILON     1e-5f
 #define PI          3.14159265358979323846f
 #define DEG2RAD     (PI / 180.0f)
 #define RAD2DEG     (180.0f / PI)
@@ -28,6 +28,7 @@ u32 min_axis_v3f32(v3f32 v);
 u32 max_axis_v3f32(v3f32 v);
 f32 len_v3f32(v3f32 v);
 v3f32 normalize_v3f32(v3f32 v);
+f32 dot_v3f32(v3f32 a, v3f32 b);
 f32 q_rsqrt(f32 n);
 u32 distance_v3i32(v3i32 a, v3i32 b);
 f32 distance_v3f32(v3f32 a, v3f32 b);

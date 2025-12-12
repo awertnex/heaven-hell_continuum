@@ -74,6 +74,11 @@ v3f32 normalize_v3f32(v3f32 v)
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
+f32 dot_v3f32(v3f32 a, v3f32 b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
