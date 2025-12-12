@@ -71,27 +71,28 @@ void player_kill(Player *p);
 void player_spawn(Player *p, b8 hard);
 
 void player_collision_update(Player *p, f64 dt);
+BoundingBox make_broad_phase_region(v3f64 pos, v3f32 size, v3f32 velocity, f64 dt);
 
-/*! @brief make a broad-phase region for collision detection.
+/*! @brief make a collision capsule for collision detection.
  *
- *  useful for limiting collision checks to only within the specified region.
+ *  useful for limiting collision checks to only within a capsule.
  *
- *  @param padding = padding difference between the region and the bounding box
+ *  @param chunk = current chunk the player is in.
+ *
+ *  @param padding = padding difference between the capsule and the bounding box
  *  it encapsulates.
  */
-BoundingBox make_aabb_broad_phase_region(Player *p, f32 padding, f64 dt);
+CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding, f64 dt);
 
-b8 is_aabb_intersect(v3f64 a[2], v3f64 b[2]);
+b8 is_intersect_aabb(BoundingBox a, BoundingBox b);
 
-/*! @brief get unit scalar of collision time between 'a' and 'b'.
+/*! @brief get collision status and stats between 'a' and 'b' using
+ *  'Swept AABB' algorithm.
  *
  *  @param velocity = velocity of 'a' since this function assumes 'b' is static.
- *  @param diff = vector for collision resolution.
- *
- *  @return unit scalar of difference between entry and exit times of collision.
- *  @return 1.0f on failure.
  */
-f32 get_aabb_collision_time(v3f64 a[2], v3f64 b[2], v3f32 velocity, v3f32 *diff, v3f32 *normal);
+b8 is_collision_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity,
+        f32 *entry_time, v3f32 *normal);
 
 void gravity_update(v3f64 *movement, v3f32 *influence, f32 weight, f64 dt);
 

@@ -61,12 +61,12 @@
 #define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_SPEED_WALK           3.0f
 #define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       4000.0f
+#define SET_PLAYER_SPEED_FLY_FAST       40.0f
 #define SET_PLAYER_SPEED_SNEAK          1.5f
-#define SET_PLAYER_SPEED_SPRINT         6.0f
+#define SET_PLAYER_SPEED_SPRINT         5.0f
 #define SET_PLAYER_SPEED_MAX            100.0f
 #define SET_PLAYER_AIR_MOVEMENT_SCALAR  0.4f
-#define SET_BP_REGION_MARGIN            1.0f    /* broad-phase region margin */
+#define SET_COLLISION_CAPSULE_PADDING   1.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
 
@@ -407,16 +407,24 @@ enum CameraModes
 
 typedef struct BoundingBox
 {
+    v3f64 pos;
+    v3f32 size;
+} BoundingBox;
+
+/*! @brief region for which collisions checks are limited within.
+ */
+typedef struct CollisionCapsule
+{
     v3i64 pos;
     v3i32 size;
-} BoundingBox;
+} CollisionCapsule;
 
 typedef struct Player
 {
     str name[64];                   /* in-game name */
     u64 flag;                       /* enum: PlayerFlag */
-    v3f64 pos;                      /* current coordinates in world */
-    v3f64 pos_last;                 /* previous coordinates in world */
+    v3f64 pos;                      /* coordinates in world */
+    v3f64 pos_last;                 /* coordinates in world of previous frame */
     v3f32 size;                     /* size (for collision detection) */
     v3f64 target;                   /* arm */
     v3i64 target_snapped;           /* floor of 'target' */
@@ -461,7 +469,8 @@ typedef struct Player
     u32 hotbar_slots[SET_HOTBAR_SLOTS_MAX];
     u32 inventory_slots[SET_INVENTORY_SLOTS_MAX];
 
-    BoundingBox bp_region;
+    BoundingBox bbox;
+    CollisionCapsule capsule;
 } Player;
 
 enum BlockFlag
@@ -558,7 +567,7 @@ enum ChunkFlag
     FLAG_CHUNK_RENDER =     0x10,
     FLAG_CHUNK_MODIFIED =   0x20,
 
-    /*! @brief chunk marking for chunk_tab shifting logic.
+    /*! @brief chunk marking for 'chunk_tab' shifting logic.
      */
     FLAG_CHUNK_EDGE =       0x40,
 }; /* ChunkFlag */

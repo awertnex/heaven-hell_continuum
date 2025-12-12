@@ -943,18 +943,12 @@ static void draw_everything(void)
     if (debug_mode[DEBUG_MODE_BOUNDING_BOXES])
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.bp_region.pos.x, lily.bp_region.pos.y, lily.bp_region.pos.z);
+                lily.bbox.pos.x, lily.bbox.pos.y, lily.bbox.pos.z);
         glUniform3f(uniform.bounding_box.size,
-                lily.bp_region.size.x, lily.bp_region.size.y, lily.bp_region.size.z);
-        glUniform4f(uniform.bounding_box.color, 0.3f, 0.6f, 0.9f, 1.0f);
+                lily.bbox.size.x, lily.bbox.size.y, lily.bbox.size.z);
+        glUniform4f(uniform.bounding_box.color, 1.0f, 0.3f, 0.2f, 1.0f);
 
         glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-        glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-
-        glUniform3f(uniform.bounding_box.position,
-                lily.pos.x - lily.size.x * 0.5f, lily.pos.y - lily.size.y * 0.5f, lily.pos.z);
-        glUniform3f(uniform.bounding_box.size, lily.size.x, lily.size.y, lily.size.z);
-        glUniform4f(uniform.bounding_box.color, 1.0f, 0.1f, 0.1f, 1.0f);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
@@ -1369,6 +1363,22 @@ static void draw_everything(void)
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+#include <assert.h>
+
+f64 max_(v3f64 v)
+{
+    if (v.x > v.y)
+    {
+        if (v.x > v.z) return v.x;
+        else return v.z;
+    }
+    else
+    {
+        if (v.y > v.z) return v.y;
+        else return v.z;
+    }
 }
 
 int main(int argc, char **argv)
