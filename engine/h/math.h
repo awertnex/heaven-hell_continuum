@@ -9,7 +9,7 @@
 #define PI          3.14159265358979323846f
 #define DEG2RAD     (PI / 180.0f)
 #define RAD2DEG     (180.0f / PI)
-#define GRAVITY     -9.7803267715f
+#define GRAVITY     9.7803267715f
 #define RAND_SCALE  (PI / ~(~0u >> 1))
 
 #define mod(n, max) (((n) % (max) + (max)) % (max))
