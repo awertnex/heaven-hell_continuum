@@ -70,8 +70,7 @@ void player_kill(Player *p);
  */
 void player_spawn(Player *p, b8 hard);
 
-void player_collision_update(Player *p, f64 dt);
-BoundingBox make_broad_phase_region(v3f64 pos, v3f32 size, v3f32 velocity, f64 dt);
+b8 player_collision_update(Player *p, f64 dt);
 
 /*! @brief make a collision capsule for collision detection.
  *
@@ -90,10 +89,9 @@ b8 is_intersect_aabb(BoundingBox a, BoundingBox b);
  *  'Swept AABB' algorithm.
  *
  *  @param velocity = velocity of 'a' since this function assumes 'b' is static.
+ *
+ *  @return entry time.
  */
-b8 is_collision_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity,
-        f32 *entry_time, v3f32 *normal);
-
-void gravity_update(v3f64 *movement, v3f32 *influence, f32 weight, f64 dt);
+f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal);
 
 #endif /* GAME_LOGIC_H */

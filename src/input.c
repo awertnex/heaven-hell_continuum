@@ -46,6 +46,7 @@ u32 bind_toggle_cinematic_camera =  KEY_F4;
 u32 bind_toggle_perspective =       KEY_F5;
 u32 bind_toggle_fullscreen =        KEY_F11;
 u32 bind_toggle_zoom =              KEY_Z;
+u32 bind_toggle_fly_natural =       KEY_N;
 u32 bind_pause =                    KEY_ESCAPE;
 u32 bind_chat_or_command =          KEY_SLASH;
 
@@ -64,89 +65,67 @@ u32 bind_toggle_bounding_boxes =    KEY_B;
 u32 bind_toggle_chunk_gizmo =       KEY_G;
 u32 bind_toggle_chunk_queue_visualizer = KEY_V;
 
-void input_update(Render render, Player *player)
+void input_update(Render render, Player *p)
 {
     u32 i;
-    static v3f32 movement = {0};
-    static v3f32 movement_air = {0};
+    f32 px = 0.0f, nx = 0.0f,
+        py = 0.0f, ny = 0.0f,
+        pz = 0.0f, nz = 0.0f;
+
+    p->input = (v3f32){0};
 
     /* ---- movement -------------------------------------------------------- */
 
     if (is_key_hold(bind_walk_forward))
-    {
-        movement.x += player->cos_yaw * player->movement_speed;
-        movement.y -= player->sin_yaw * player->movement_speed;
-    }
-
+        px += 1.0f;
     if (is_key_hold(bind_walk_backward))
-    {
-        movement.x -= player->cos_yaw * player->movement_speed;
-        movement.y += player->sin_yaw * player->movement_speed;
-    }
-
+        nx += 1.0f;
     if (is_key_hold(bind_strafe_left))
-    {
-        movement.x += player->sin_yaw * player->movement_speed;
-        movement.y += player->cos_yaw * player->movement_speed;
-    }
-
+        py += 1.0f;
     if (is_key_hold(bind_strafe_right))
-    {
-        movement.x -= player->sin_yaw * player->movement_speed;
-        movement.y -= player->cos_yaw * player->movement_speed;
-    }
+        ny += 1.0f;
 
     if (is_key_press_double(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
+        p->flag |= FLAG_PLAYER_SPRINTING;
 
     /* ---- jumping --------------------------------------------------------- */
 
     if (is_key_hold(bind_jump))
     {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            movement.z += player->movement_speed;
-        else if (player->flag & FLAG_PLAYER_CAN_JUMP)
+        if (p->flag & FLAG_PLAYER_FLYING)
+            pz += 1.0f;
+        else if (p->flag & FLAG_PLAYER_CAN_JUMP)
         {
-            player->gravity_influence.z += SET_PLAYER_JUMP_INITIAL_VELOCITY;
-            player->flag &= ~FLAG_PLAYER_CAN_JUMP;
+            p->velocity.z += SET_PLAYER_JUMP_INITIAL_VELOCITY;
+            p->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }
 
     if (is_key_press_double(bind_jump))
-        player->flag ^= FLAG_PLAYER_FLYING;
+        p->flag ^= FLAG_PLAYER_FLYING;
 
     /* ---- sprinting ------------------------------------------------------- */
 
     if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
+        p->flag |= FLAG_PLAYER_SPRINTING;
     else if (is_key_release(bind_walk_forward))
-        player->flag &= ~FLAG_PLAYER_SPRINTING;
+        p->flag &= ~FLAG_PLAYER_SPRINTING;
 
     /* ---- sneaking -------------------------------------------------------- */
 
     if (is_key_hold(bind_sneak))
     {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            movement.z -= player->movement_speed;
-        else player->flag |= FLAG_PLAYER_SNEAKING;
+        if (p->flag & FLAG_PLAYER_FLYING)
+            nz += 1.0f;
+        else p->flag |= FLAG_PLAYER_SNEAKING;
     }
-    else player->flag &= ~FLAG_PLAYER_SNEAKING;
+    else p->flag &= ~FLAG_PLAYER_SNEAKING;
 
-    /* ---- apply movement -------------------------------------------------- */
-
-    if (player->flag & FLAG_PLAYER_MID_AIR)
-        player->movement = (v3f32){
-            movement_air.x + movement.x * SET_PLAYER_AIR_MOVEMENT_SCALAR,
-            movement_air.y + movement.y * SET_PLAYER_AIR_MOVEMENT_SCALAR,
-            movement_air.z + movement.z * SET_PLAYER_AIR_MOVEMENT_SCALAR,
-        };
-    else
-    {
-        movement_air = movement;
-        player->movement = movement;
-    }
-
-    movement = (v3f32){0};
+    p->input = (v3f32){
+        (px - nx) * cosf(p->yaw * DEG2RAD) + (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f),
+        (px - nx) * -sinf(p->yaw * DEG2RAD) + (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f),
+        pz - nz,
+    };
 
     /* ---- gameplay -------------------------------------------------------- */
 
@@ -158,17 +137,17 @@ void input_update(Render render, Player *player)
         if (glfwGetMouseButton(render.window, bind_attack_or_destroy) == GLFW_PRESS)
         {
             block_break(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER);
+                    p->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
+                    p->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
+                    p->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER);
         }
         if (glfwGetMouseButton(render.window, bind_build_or_use) == GLFW_PRESS)
         {
             block_place(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
-                    player->hotbar_slots[player->hotbar_slot_selected]);
+                    p->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
+                    p->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
+                    p->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
+                    p->hotbar_slots[p->hotbar_slot_selected]);
         }
 
         if (is_key_press(bind_sample_block)) {}
@@ -178,25 +157,22 @@ void input_update(Render render, Player *player)
 
     for (i = 0; i < SET_HOTBAR_SLOTS_MAX; ++i)
         if (is_key_press(bind_hotbar[0][i]) || is_key_press(bind_hotbar[1][i]))
-            player->hotbar_slot_selected = i;
+            p->hotbar_slot_selected = i;
 
     if (is_key_press(bind_inventory))
     {
-        if ((player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
+        if ((p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && state_menu_depth)
         {
             state_menu_depth = 0;
-            player->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
+            p->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
         }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                !state_menu_depth)
+        else if (!(p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && !state_menu_depth)
         {
             state_menu_depth = 1;
-            player->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
+            p->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
         }
 
-        if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
+        if (!(p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && state_menu_depth)
             --state_menu_depth;
     }
 
@@ -209,10 +185,13 @@ void input_update(Render render, Player *player)
         flag ^= FLAG_MAIN_DEBUG;
 
     if (is_key_press(bind_toggle_perspective))
-        player->camera_mode = (player->camera_mode + 1) % MODE_CAMERA_COUNT;
+        p->camera_mode = (p->camera_mode + 1) % MODE_CAMERA_COUNT;
 
     if (is_key_press(bind_toggle_zoom))
-        player->flag ^= FLAG_PLAYER_ZOOMER;
+        p->flag ^= FLAG_PLAYER_ZOOMER;
+
+    if (is_key_press(bind_toggle_fly_natural))
+        p->fly_natural ^= 1;
 
     /* ---- debug ----------------------------------------------------------- */
 

@@ -1226,8 +1226,8 @@ static void draw_everything(void)
                 "BLOCK       [%d %d %d]\n"
                 "CHUNK       [%d %d %d]\n"
                 "PITCH/YAW   [%5.2f][%5.2f]\n"
+                "ACCELERATION[%5.2f %5.2f %5.2f]\n"
                 "VELOCITY    [%5.2f %5.2f %5.2f]\n"
-                "GRAVITY     [%5.2f %5.2f %5.2f]\n"
                 "SPEED       [%5.2f]\n",
                 lily.pos.x, lily.pos.y, lily.pos.z,
                 (i32)floorf(lily.pos.x),
@@ -1235,10 +1235,8 @@ static void draw_everything(void)
                 (i32)floorf(lily.pos.z),
                 lily.chunk.x, lily.chunk.y, lily.chunk.z,
                 lily.pitch, lily.yaw,
+                lily.acceleration.x, lily.acceleration.y, lily.acceleration.z,
                 lily.velocity.x, lily.velocity.y, lily.velocity.z,
-                lily.gravity_influence.x,
-                lily.gravity_influence.y,
-                lily.gravity_influence.z,
                 lily.speed),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
     text_render(COLOR_TEXT_DEFAULT, TRUE);
@@ -1365,22 +1363,6 @@ static void draw_everything(void)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#include <assert.h>
-
-f64 max_(v3f64 v)
-{
-    if (v.x > v.y)
-    {
-        if (v.x > v.z) return v.x;
-        else return v.z;
-    }
-    else
-    {
-        if (v.y > v.z) return v.y;
-        else return v.z;
-    }
-}
-
 int main(int argc, char **argv)
 {
     glfwSetErrorCallback(callback_error);
@@ -1419,8 +1401,7 @@ int main(int argc, char **argv)
             (1080 - render.size.y) / 2);
     /*temp*/ glfwSetWindowSizeLimits(render.window, 512, 288, 3840, 2160);
 
-    flag = FLAG_MAIN_ACTIVE |
-        FLAG_MAIN_PARSE_CURSOR;
+    flag = FLAG_MAIN_ACTIVE | FLAG_MAIN_PARSE_CURSOR;
 
     /* ---- set mouse input ------------------------------------------------- */
 
@@ -1430,11 +1411,8 @@ int main(int argc, char **argv)
         glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
         LOGINFO(FALSE, "%s\n", "GLFW: Raw Mouse Motion Enabled");
     }
-    else LOGERROR(FALSE, ERR_GLFW,
-            "%s\n", "GLFW: Raw Mouse Motion Not Supported");
-    glfwGetCursorPos(render.window,
-            &render.mouse_position.x,
-            &render.mouse_position.y);
+    else LOGERROR(FALSE, ERR_GLFW, "%s\n", "GLFW: Raw Mouse Motion Not Supported");
+    glfwGetCursorPos(render.window, &render.mouse_position.x, &render.mouse_position.y);
 
     /* ---- set callbacks --------------------------------------------------- */
 
@@ -1452,67 +1430,29 @@ int main(int argc, char **argv)
     shaders_init();
 
     if (
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_FBO]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_DEFAULT]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI_9_SLICE]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_TEXT]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO_CHUNK]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_SKYBOX]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_POST_PROCESSING]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_VOXEL]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                    &shader[SHADER_BOUNDING_BOX]) != ERR_SUCCESS)
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_FBO]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_DEFAULT]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_UI]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_UI_9_SLICE]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_TEXT]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_GIZMO]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_GIZMO_CHUNK]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_SKYBOX]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_POST_PROCESSING]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_VOXEL]) != ERR_SUCCESS ||
+            shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_BOUNDING_BOX]) != ERR_SUCCESS)
         goto cleanup;
 
     if(
-            fbo_init(&render,
-                &fbo[FBO_SKYBOX], &mesh[MESH_UNIT], FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_WORLD],       NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_WORLD_MSAA],  NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_HUD],         NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_HUD_MSAA],    NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_UI],          NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_TEXT],        NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_TEXT_MSAA],   NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_POST_PROCESSING], NULL, FALSE, 4) != ERR_SUCCESS)
+            fbo_init(&render, &fbo[FBO_SKYBOX], &mesh[MESH_UNIT], FALSE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_WORLD],      NULL, FALSE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_WORLD_MSAA], NULL, TRUE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_HUD],        NULL, FALSE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_HUD_MSAA],   NULL, TRUE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_UI],         NULL, FALSE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_TEXT],       NULL, FALSE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_TEXT_MSAA],  NULL, TRUE, 4) != ERR_SUCCESS ||
+            fbo_init(&render, &fbo[FBO_POST_PROCESSING], NULL, FALSE, 4) != ERR_SUCCESS)
         goto cleanup;
 
     glfwSwapInterval(MODE_INTERNAL_VSYNC);

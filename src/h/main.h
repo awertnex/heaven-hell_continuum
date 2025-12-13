@@ -52,21 +52,23 @@
 #define SET_GUI_SCALE_3                 3
 #define SET_GUI_SCALE_4                 4
 #define SET_LERP_SPEED_DEFAULT          25.0f
-#define SET_LERP_SPEED_GLIDE            2.5f
-#define SET_LERP_SPEED_GLIDE_V          10.0f
-#define SET_LERP_SPEED_WALK             18.0f
-#define SET_LERP_SPEED_RIGID            100.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
-#define SET_PLAYER_EYE_HEIGHT           1.55f
-#define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
-#define SET_PLAYER_SPEED_WALK           3.0f
-#define SET_PLAYER_SPEED_FLY            9.0f
-#define SET_PLAYER_SPEED_FLY_FAST       40.0f
-#define SET_PLAYER_SPEED_SNEAK          1.5f
-#define SET_PLAYER_SPEED_SPRINT         5.0f
-#define SET_PLAYER_SPEED_MAX            100.0f
-#define SET_PLAYER_AIR_MOVEMENT_SCALAR  0.4f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
+#define SET_COLLISION_EPSILON           1e-3f
+#define SET_COLLISION_SWEEP_MAX         3
+#define SET_DRAG_DEFAULT                2.0f
+#define SET_DRAG_AIR                    0.1f
+#define SET_DRAG_FLYING                 4.0f
+#define SET_DRAG_FLYING_V               13.0f
+#define SET_DRAG_WALK                   18.0f
+#define SET_PLAYER_EYE_HEIGHT           1.55f
+#define SET_PLAYER_JUMP_INITIAL_VELOCITY 6.5f
+#define SET_PLAYER_ACCELERATION_SNEAK   1.5f
+#define SET_PLAYER_ACCELERATION_WALK    3.0f
+#define SET_PLAYER_ACCELERATION_SPRINT  5.0f
+#define SET_PLAYER_ACCELERATION_FLY     9.0f
+#define SET_PLAYER_ACCELERATION_FLY_FAST 40.0f
+#define SET_PLAYER_ACCELERATION_MAX     100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
 
@@ -436,14 +438,13 @@ typedef struct Player
     f32 cos_pitch;                  /* cosine of 'pitch' */
     f32 eye_height;                 /* eye-level (camera height) */
 
-    v3f32 movement;                 /* raw user input */
-    v3f32 movement_smooth;          /* lerped 'movement', forwarded to 'pos' */
-    f32 movement_speed;             /* scalar for 'movement' */
-    v3f32 movement_lerp_speed;
+    v3f32 input;                    /* raw user input */
+    v3f32 acceleration;
+    f32 acceleration_rate;          /* scalar for 'acceleration' */
+    v3f32 velocity;
+    f32 speed;                      /* derived from 'velocity' */
+    v3f32 drag;
     f32 weight;
-    v3f32 velocity;                 /* derived from 'movement' */
-    v3f32 gravity_influence;
-    f32 speed;                      /* derived from 'movement' */
 
     Camera camera;
     Camera camera_hud;              /* for hud 3d elements */
@@ -459,6 +460,7 @@ typedef struct Player
 
     v3i64 spawn;                    /* spawn point */
     u64 container_state;            /* enum: ContainerFlag */
+    u32 fly_natural;                /* nice flying kinematics */
 
     /*! @remark signed instead of unsigned so it's possible to navigate
      *  'hotbar_slots' when using mousewheel, used for wrapping around

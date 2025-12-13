@@ -61,11 +61,11 @@ extern u32 bind_toggle_chunk_queue_visualizer;
 
 /*! @brief update input from keyboard.
  *
- *  handle all key binds listed above and perform their logic on mostly 'player.flag'.
+ *  handle all key binds listed above and perform their logic on mostly 'p->flag'.
  *
  *  @remark only updates player flags, no parameters are updated except for
- *  'player.movement'.
+ *  'p->acceleration'.
  */
-void input_update(Render render, Player *player);
+void input_update(Render render, Player *p);
 
 #endif /* GAME_INPUT_H */
