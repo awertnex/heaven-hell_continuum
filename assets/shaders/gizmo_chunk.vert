@@ -1,12 +1,13 @@
 #version 430 core
 
-#define MARGIN 260.0
-#define SCALE 0.09
+#define SCALE 150.0
+#define RENDER_DISTANCE_MAX 32.0
+#define RENDER_DISTANCE_MIN 2.0
 
 layout (location = 0) in vec3 a_pos;
 
 uniform ivec2 render_size;
-uniform int render_distance;
+uniform int chunk_buf_diameter;
 uniform mat4 mat_translation;
 uniform mat4 mat_rotation;
 uniform mat4 mat_orientation;
@@ -17,14 +18,14 @@ out vec3 vertex_position;
 
 void main()
 {
-    float gizmo_scale = SCALE / pow(render_distance, 0.75);
+    float gizmo_scale = SCALE * (1.0 / chunk_buf_diameter) * (2.0 / render_size.y);
 
     mat4 mat_offset = mat4(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 1.0, 0.0,
-            (render_size.x - MARGIN) / render_size.x,
-            (render_size.y - MARGIN) / render_size.y,
+            (render_size.x - SCALE * 2.0) / render_size.x,
+            (render_size.y - SCALE * 2.0) / render_size.y,
             0.0, 1.0);
 
     vec3 voxel_size = (a_pos * size) + ((1.0 - size) / 2.0);

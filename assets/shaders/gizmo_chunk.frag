@@ -2,7 +2,7 @@
 
 #define FALLOFF 0.1
 #define SKY_INFLUENCE 0.13
-#define DISTANCE 30.0
+#define CAMERA_DISTANCE 24.0
 
 uniform vec4 chunk_color;
 uniform vec3 camera_position;
@@ -12,13 +12,9 @@ out vec4 color;
 
 void main()
 {
-    vec3 light_position = vec3(
-            camera_position.x,
-            camera_position.y,
-            camera_position.z) * DISTANCE;
+    vec3 light_position = camera_position.xyz * CAMERA_DISTANCE;
 
-    float distance = length(vertex_position - light_position);
-    distance /= sqrt(distance);
+    float distance = sqrt(length(vertex_position - light_position));
 
     float sky_brightness = sky_color.r + sky_color.g + sky_color.b;
     float flashlight =

@@ -1,8 +1,8 @@
 #define FLASHLIGHT_INTENSITY 30.0
-#define FALLOFF 5.0
-#define SKY_BRIGHTNESS 3.0
+#define FALLOFF 9.0
+#define SKY_BRIGHTNESS 2.5
 #define SKY_INFLUENCE 0.25
-#define SUN_INFLUENCE 0.8
+#define SUN_INFLUENCE 1.0
 #define BRIGHTNESS 1.0
 #define CONTRAST 0.5
 
