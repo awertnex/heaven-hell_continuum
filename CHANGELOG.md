@@ -3,8 +3,15 @@
 ## v<version> (DD MMM YYYY)
 
 #### changes
-- added input reduction while mid-air and not flying
-
+- added player air control while not flying
+- made movement kinematic (physically-based):
+    - acceleration_rate
+    - input: vector that takes raw keyboard input * acceleration_rate
+    - acceleration: vector that takes 'Player.input'
+    - velocity: vector that accumulates 'Player.acceleration'
+    - 'Player.pos' accumulates 'Player.velocity'
+    - Player.drag: air drag
+- added working collision even at high speeds
 
 #### bugs and flaws
 

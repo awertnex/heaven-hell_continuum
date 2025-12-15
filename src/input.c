@@ -44,9 +44,10 @@ u32 bind_take_screenshot =          KEY_F2;
 u32 bind_toggle_debug =             KEY_F3;
 u32 bind_toggle_cinematic_camera =  KEY_F4;
 u32 bind_toggle_perspective =       KEY_F5;
+u32 bind_toggle_cinematic_motion =  KEY_F6;
 u32 bind_toggle_fullscreen =        KEY_F11;
 u32 bind_toggle_zoom =              KEY_Z;
-u32 bind_toggle_fly_natural =       KEY_N;
+u32 bind_toggle_flashlight =        KEY_F;
 u32 bind_pause =                    KEY_ESCAPE;
 u32 bind_chat_or_command =          KEY_SLASH;
 
@@ -121,11 +122,28 @@ void input_update(Render render, Player *p)
     }
     else p->flag &= ~FLAG_PLAYER_SNEAKING;
 
-    p->input = (v3f32){
-        (px - nx) * cosf(p->yaw * DEG2RAD) + (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f),
-        (px - nx) * -sinf(p->yaw * DEG2RAD) + (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f),
-        pz - nz,
-    };
+    /* ---- apply raw motion ------------------------------------------------ */
+
+    if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+    {
+        p->input.x =
+            (px - nx) * cosf(p->yaw * DEG2RAD) * cosf(p->pitch * DEG2RAD)+
+            (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f) +
+            (pz - nz) * cosf(p->yaw * DEG2RAD) * sinf(p->pitch * DEG2RAD);
+        p->input.y =
+            (px - nx) * -sinf(p->yaw * DEG2RAD) * cosf(p->pitch * DEG2RAD)+
+            (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f) +
+            (pz - nz) * -sinf(p->yaw * DEG2RAD) * sinf(p->pitch * DEG2RAD);
+        p->input.z =
+            (px - nx) * -sinf(p->pitch * DEG2RAD) +
+            (pz - nz) * cosf(p->pitch * DEG2RAD);
+    }
+    else
+        p->input = (v3f32){
+            (px - nx) * cosf(p->yaw * DEG2RAD) + (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f),
+            (px - nx) * -sinf(p->yaw * DEG2RAD) + (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f),
+            pz - nz,
+        };
 
     /* ---- gameplay -------------------------------------------------------- */
 
@@ -190,8 +208,11 @@ void input_update(Render render, Player *p)
     if (is_key_press(bind_toggle_zoom))
         p->flag ^= FLAG_PLAYER_ZOOMER;
 
-    if (is_key_press(bind_toggle_fly_natural))
-        p->fly_natural ^= 1;
+    if (is_key_press(bind_toggle_flashlight))
+        p->flag ^= FLAG_PLAYER_FLASHLIGHT;
+
+    if (is_key_press(bind_toggle_cinematic_motion))
+        p->flag ^= FLAG_PLAYER_CINEMATIC_MOTION;
 
     /* ---- debug ----------------------------------------------------------- */
 

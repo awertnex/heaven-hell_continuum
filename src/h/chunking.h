@@ -6,6 +6,7 @@
 #include "main.h"
 #include "assets.h"
 
+#define GET_BLOCK_ID(block)     (block & MASK_BLOCK_ID)
 #define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
 
 /*! @brief look-up table to reduce redundant checks of untouched regions of 'chunk_buf'.

@@ -74,19 +74,22 @@ b8 player_collision_update(Player *p, f64 dt);
 
 /*! @brief make a collision capsule for collision detection.
  *
- *  useful for limiting collision checks to only within a capsule.
+ *  useful for limiting collision checks to only within the capsule.
  *
  *  @param chunk = current chunk the player is in.
  *
  *  @param padding = padding difference between the capsule and the bounding box
  *  it encapsulates.
+ *
+ *  @remark collision capsule position is in chunk-relative coordinates, not world
+ *  coordinates.
  */
 CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding, f64 dt);
 
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b);
 
 /*! @brief get collision status and stats between 'a' and 'b' using
- *  'Swept AABB' algorithm.
+ *  the 'Swept AABB' algorithm.
  *
  *  @param velocity = velocity of 'a' since this function assumes 'b' is static.
  *

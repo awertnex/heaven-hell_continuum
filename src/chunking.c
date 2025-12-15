@@ -48,12 +48,11 @@ static void _block_break(Chunk *ch,
  *
  *  @param index = 'chunk_tab' index.
  *  @param rate = number of blocks to process per chunk per frame.
- *  @param terrain = the terrain function to execute.
  *
  *  @remark calls 'chunk_mesh_init()' when done generating.
  *  @remark must be called before 'chunk_mesh_update()'.
  */
-static void chunk_generate(Chunk **ch, u32 rate, b8 terrain());
+static void chunk_generate(Chunk **ch, u32 rate, Terrain terrain());
 
 /*! -- INTERNAL USE ONLY --;
  */
@@ -201,7 +200,7 @@ u32 chunking_init(void)
         for (i = 0; i <= SET_RENDER_DISTANCE_MAX; ++i)
         {
             LOGTRACE(FALSE,
-                    "Building CHUNKS_MAX Lookup, Progress [%"PRId64"/%d]..\n",
+                    "Building CHUNKS_MAX Lookup, Progress [%"PRIu64"/%d]..\n",
                     i, SET_RENDER_DISTANCE_MAX);
             chunk_buf_diameter = (i * 2) + 1;
             chunk_buf_volume =
@@ -829,10 +828,12 @@ static void _block_break(Chunk *chunk,
     chunk->flag |= FLAG_CHUNK_DIRTY;
 }
 
-static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
+static void chunk_generate(Chunk **chunk, u32 rate, Terrain terrain())
 {
     u32 index;
     v3u32 chunk_tab_coordinates;
+    v3i32 coordinates;
+    Terrain terrain_info;
     Chunk *ch = NULL,
           *px = NULL, *nx = NULL,
           *py = NULL, *ny = NULL,
@@ -872,34 +873,40 @@ static void chunk_generate(Chunk **chunk, u32 rate, b8 terrain())
         {
             for (; x < CHUNK_DIAMETER && rate; ++x)
             {
-                v3i32 coordinates =
-                {
+                coordinates =
+                (v3i32){
                     x + ch->pos.x * CHUNK_DIAMETER,
                     y + ch->pos.y * CHUNK_DIAMETER,
                     z + ch->pos.z * CHUNK_DIAMETER,
                 };
 
-                if (terrain(coordinates))
+                terrain_info = terrain(coordinates);
+
+                if (terrain_info.block_id)
                 {
                     _block_place(ch, px, nx, py, ny, pz, nz,
-                            chunk_tab_coordinates, x, y, z, BLOCK_GRASS);
+                            chunk_tab_coordinates, x, y, z, terrain_info.block_id);
 
-                    if (z == 0)
+                    if (terrain_info.biome == BIOME_HILLS)
                     {
-                        if (nz && nz->block[CHUNK_DIAMETER - 1][y][x])
+                        if (z == 0)
                         {
-                            SET_BLOCK_ID(nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
-                            nz->flag |= FLAG_CHUNK_DIRTY;
+                            if (nz && GET_BLOCK_ID(nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
+                            {
+                                SET_BLOCK_ID(nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
+                                nz->flag |= FLAG_CHUNK_DIRTY;
+                            }
                         }
-                    }
-                    else if (ch->block[z - 1][y][x])
-                    {
-                        SET_BLOCK_ID(ch->block[z - 1][y][x], BLOCK_DIRT);
-                        ch->flag |= FLAG_CHUNK_DIRTY;
-                    }
+                        else if (ch->block[z - 1][y][x] && GET_BLOCK_ID(ch->block[z - 1][y][x]) == BLOCK_GRASS)
+                        {
+                            SET_BLOCK_ID(ch->block[z - 1][y][x], BLOCK_DIRT);
+                            ch->flag |= FLAG_CHUNK_DIRTY;
+                        }
 
-                    if (z == CHUNK_DIAMETER - 1 && pz && pz->block[0][y][x])
-                        SET_BLOCK_ID(ch->block[z][y][x], BLOCK_DIRT);
+                        if (z == CHUNK_DIAMETER - 1 && GET_BLOCK_ID(ch->block[z][y][x]) == BLOCK_GRASS &&
+                                pz && pz->block[0][y][x])
+                            SET_BLOCK_ID(ch->block[z][y][x], BLOCK_DIRT);
+                    }
                 }
                 --rate;
             }

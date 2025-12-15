@@ -102,12 +102,15 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed)
     };
 }
 
-f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
+f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay, i32 dispx, i32 dispy)
 {
     v2f32 sample =
     {
-        RAND_TAB[(settings.world.seed + (u32)(734 + ax * 87654 + ay)) % RAND_TAB_VOLUME],
-        RAND_TAB[(settings.world.seed + (u32)(87654 + ay * 98023 + ax)) % RAND_TAB_VOLUME],
+        RAND_TAB[(u32)(world.seed + (28734 + (i32)ax) *
+                (64372 + (i32)ay) + dispx) % RAND_TAB_VOLUME],
+
+        RAND_TAB[(u32)(world.seed + (87262 + (i32)ax) *
+                (85673 + (i32)ay) + dispy) % RAND_TAB_VOLUME],
     };
 
     return
@@ -115,16 +118,27 @@ f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay)
         (vy - ay) * sample.y;
 }
 
-f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az)
+f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az, i32 dispx, i32 dispy, i32 dispz)
 {
-    v3f32 grad = random_3d(ax, ay, az, settings.world.seed);
+    v3f32 sample =
+    {
+        RAND_TAB[(u32)(world.seed + (87534 + (i32)ax) *
+                (60977 + (i32)ay) * (87634 + (i32)az) + dispx) % RAND_TAB_VOLUME],
+
+        RAND_TAB[(u32)(world.seed + (57623 + (i32)ax) *
+                (32643 + (i32)ay) * (37628 + (i32)az) + dispy) % RAND_TAB_VOLUME],
+
+        RAND_TAB[(u32)(world.seed + (12218 + (i32)ax) *
+                (87453 + (i32)ay) * (95853 + (i32)az) + dispz) % RAND_TAB_VOLUME],
+    };
+
     return
-        (ax - vx) * grad.x +
-        (ay - vy) * grad.y +
-        (az - vz) * grad.z;
+        (vx - ax) * sample.x +
+        (vy - ay) * sample.y +
+        (vz - az) * sample.z;
 }
 
-f32 terrain_noise_2d(v3i32 coordinates, f32 amplitude, f32 frequency)
+f32 perlin_noise_2d(v2i32 coordinates, f32 amplitude, f32 frequency, i32 dispx, i32 dispy)
 {
     f32 vx = (f32)coordinates.x / frequency;
     f32 vy = (f32)coordinates.y / frequency;
@@ -136,73 +150,174 @@ f32 terrain_noise_2d(v3i32 coordinates, f32 amplitude, f32 frequency)
     f32 dx = vx - (f32)ax;
     f32 dy = vy - (f32)ay;
 
-    f32 g0 = gradient_2d(vx, vy, ax, ay);
-    f32 g1 = gradient_2d(vx, vy, bx, ay);
+    f32 g0 = gradient_2d(vx, vy, ax, ay, dispx, dispy);
+    f32 g1 = gradient_2d(vx, vy, bx, ay, dispx, dispy);
     f32 l0 = lerp_cubic_f32(g0, g1, dx);
 
-    g0 = gradient_2d(vx, vy, ax, by);
-    g1 = gradient_2d(vx, vy, bx, by);
+    g0 = gradient_2d(vx, vy, ax, by, dispx, dispy);
+    g1 = gradient_2d(vx, vy, bx, by, dispx, dispy);
     f32 l1 = lerp_cubic_f32(g0, g1, dx);
 
     return lerp_cubic_f32(l0, l1, dy) * amplitude;
 }
 
-f32 terrain_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency)
+f32 perlin_noise_2d_ex(v2i32 coordinates, f32 intensity, f32 scale,
+        u32 octaves, f32 persistence, f32 gathering, i32 dispx, i32 dispy)
 {
-    f32 vx = (f32)coordinates.x / frequency;
-    f32 vy = (f32)coordinates.y / frequency;
-    f32 vz = (f32)coordinates.z / frequency;
-    i32 ax = (i32)floorf(vx);
-    i32 ay = (i32)floorf(vy);
-    i32 az = (i32)floorf(vz);
-    i32 bx = ax + 1;
-    i32 by = ay + 1;
-    i32 bz = az + 1;
-    f32 dx = vx - (f32)ax;
-    f32 dy = vy - (f32)ay;
-    f32 dz = vz - (f32)az;
+    u32 i;
+    f32 final = 0.0f;
+    for (i = 0; i < octaves; ++i)
+    {
+        final += perlin_noise_2d(coordinates, intensity, scale, dispx, dispy);
+        intensity *= persistence;
+        scale *= gathering;
+    }
 
-    f32 g0 = gradient_3d(ax, ay, az, vx, vy, vz);
-    f32 g1 = gradient_3d(bx, ay, az, vx, vy, vz);
-    f32 l0 = lerp_cubic_f32(g0, g1, dx);
-
-    g0 = gradient_3d(ax, by, az, vx, vy, vz);
-    g1 = gradient_3d(bx, by, az, vx, vy, vz);
-    f32 l1 = lerp_cubic_f32(g0, g1, dx);
-
-    f32 l2 = lerp_cubic_f32(l0, l1, dy);
-
-    return l2 * amplitude;
+    return final;
 }
 
-b8 terrain_land(v3i32 coordinates)
+f32 perlin_noise_3d(v3i32 coordinates, f32 intensity, f32 scale, i32 dispx, i32 dispy, i32 dispz)
 {
-    f32 terrain = 0.0f,
-        mountains = 0.0f,
-        peaks = 0.0f,
-        hills = 0.0f,
-        ridges = 0.0f,
-        elevation = 0.0f,
-        influence = 0.0f,
-        gathering = 0.0f;
+    f32 vx = (f32)coordinates.x / scale,
+        vy = (f32)coordinates.y / scale,
+        vz = (f32)coordinates.z / scale;
+    i32 ax = (i32)floorf(vx),
+        ay = (i32)floorf(vy),
+        az = (i32)floorf(vz);
+    i32 bx = ax + 1,
+        by = ay + 1,
+        bz = az + 1;
+    f32 dx = vx - (f32)ax,
+        dy = vy - (f32)ay,
+        dz = vz - (f32)az;
 
-    elevation = terrain_noise_2d(coordinates, 1.0f, 329.0f) + 0.5f;
+    f32 g0 = gradient_3d(vx, vy, vz, ax, ay, az, dispx, dispy, dispz);
+    f32 g1 = gradient_3d(vx, vy, vz, bx, ay, az, dispx, dispy, dispz);
+    f32 l0 = lerp_cubic_f32(g0, g1, dx);
+
+    g0 = gradient_3d(vx, vy, vz, ax, by, az, dispx, dispy, dispz);
+    g1 = gradient_3d(vx, vy, vz, bx, by, az, dispx, dispy, dispz);
+    f32 l1 = lerp_cubic_f32(g0, g1, dx);
+
+    f32 ll0 = lerp_cubic_f32(l0, l1, dy);
+
+    g0 = gradient_3d(vx, vy, vz, ax, ay, bz, dispx, dispy, dispz);
+    g1 = gradient_3d(vx, vy, vz, bx, ay, bz, dispx, dispy, dispz);
+    l0 = lerp_cubic_f32(g0, g1, dx);
+
+    g0 = gradient_3d(vx, vy, vz, ax, by, bz, dispx, dispy, dispz);
+    g1 = gradient_3d(vx, vy, vz, bx, by, bz, dispx, dispy, dispz);
+    l1 = lerp_cubic_f32(g0, g1, dx);
+
+    f32 ll1 = lerp_cubic_f32(l0, l1, dy);
+
+    return lerp_cubic_f32(ll0, ll1, dz) * intensity;
+}
+
+f32 perlin_noise_3d_ex(v3i32 coordinates, f32 intensity, f32 scale,
+        u32 octaves, f32 persistence, f32 gathering, i32 dispx, i32 dispy, i32 dispz)
+{
+    u32 i;
+    f32 final = 0.0f;
+    for (i = 0; i < octaves; ++i)
+    {
+        final += perlin_noise_3d(coordinates, intensity, scale, dispx, dispy, dispz);
+        intensity *= persistence;
+        scale *= gathering * gathering;
+    }
+
+    return final;
+}
+
+Terrain terrain_land(v3i32 coordinates)
+{
+    Terrain terrain = {0};
+    v2i32 coordinates_2d = {coordinates.x, coordinates.y};
+
+    f32 mountains,
+        peaks,
+        hills,
+        ridges,
+        elevation,
+        influence,
+        gathering,
+        cave_frequency,
+        cave_spaghetti,
+        cave_features_big,
+        cave_features_small,
+        cave_entrances,
+        cave_level,
+        biome_blend = perlin_noise_2d(coordinates_2d, 15.0f, 1000.0f, 15, 374),
+        crush = fabsf((((f32)coordinates.z - (WORLD_RADIUS_VERTICAL / 2)) / WORLD_CRUSH_FACTOR) + 0.4f) * 0.8f,
+        final = 0.0f,
+        cave_final = 0.0f;
+
+    /* ---- flow control ---------------------------------------------------- */
+
+    elevation = perlin_noise_2d(coordinates_2d, 1.0f, 129.0f, 3, -14) + 0.5f;
     elevation = clamp_f32(elevation, 0.0f, 1.0f);
-    influence = terrain_noise_2d(coordinates, 1.0f, 50.0f) + 0.5f;
+    influence = perlin_noise_2d(coordinates_2d, 1.0f, 53.0f, 135, -7) + 0.5f;
     influence = clamp_f32(influence, 0.0f, 1.0f);
-    gathering = terrain_noise_2d(coordinates, 1.0f, 70.0f);
-    gathering = clamp_f32(gathering, 0.0f, 30.0f);
+    gathering = perlin_noise_2d(coordinates_2d, 0.5f, 133.0f, 376, 921);
 
-    mountains = terrain_noise_2d(coordinates, 250.0f, 256.0f);
-    peaks = expf(-terrain_noise_2d(coordinates, 8.0f, 150.0f));
-    hills = terrain_noise_2d(coordinates, 30.0f, 40.0f);
-    ridges = terrain_noise_2d(coordinates, 10.0f, 12.0f + gathering);
+    /* ---- land shape ------------------------------------------------------ */
 
-    terrain =
-        mountains * elevation +
-        peaks +
-        hills * elevation +
-        ridges * influence * influence;
+    mountains = perlin_noise_2d_ex(coordinates_2d, 250.0f, 255.0f, 3, 0.8f, 0.8f, 72, 853);
+    peaks = expf(-perlin_noise_2d(coordinates_2d, 8.0f, 148.0f, 2, 346));
+    hills = perlin_noise_2d(coordinates_2d, 30.0f, 41.0f, 273, 239);
+    ridges = perlin_noise_2d(coordinates_2d, 10.0f, 12.0f + gathering, 983, 1652);
 
-    return terrain > coordinates.z;
+    /* ---- caves ----------------------------------------------------------- */
+
+    cave_frequency = perlin_noise_3d_ex(coordinates, 1.0f, 208.0f, 2, 0.8f, 0.8f, 4923, 974, 456);
+    cave_spaghetti = perlin_noise_3d(coordinates, 1.0f, 22.0f, 0, 299, -239);
+    cave_features_big = perlin_noise_3d_ex(coordinates, 0.1f, 190.0f, 3, 0.7f, 0.5f, 133479, 356421, 483094) + 0.04f;
+    cave_features_small = perlin_noise_3d_ex(coordinates, 1.0f, 20.0f, 3, 0.7f, 0.75f, 847234, 275613, 986233);
+    cave_entrances = perlin_noise_3d(coordinates, 1.0f, 55.0f, 665, 6, -736);
+    cave_entrances *= perlin_noise_3d(coordinates, 1.0f, 43.0f, 463, 6523, 3847);
+
+    /* ---- final ----------------------------------------------------------- */
+
+    final += mountains * elevation;
+    final += peaks;
+    final += hills * elevation;
+    final += ridges * influence * influence;
+
+    cave_final = cave_spaghetti + cave_frequency + cave_features_big + cave_features_small;
+    cave_level = final - 8.0f;
+
+    /* ---- biome construction ---------------------------------------------- */
+
+    if (biome_blend > 0.0f)
+    {
+        terrain.biome = BIOME_HILLS;
+        terrain.block_id = BLOCK_GRASS;
+    }
+    else
+    {
+        terrain.biome = BIOME_SANDSTORM;
+        terrain.block_id = BLOCK_SAND;
+    }
+
+    if (cave_level > (f32)coordinates.z)
+    {
+        terrain.block_id = BLOCK_STONE;
+        if (cave_spaghetti > crush)
+            terrain.block_id = 0;
+    }
+    if (final < (f32)coordinates.z || cave_entrances > 0.22f)
+        terrain.block_id = 0;
+
+    return terrain;
+
+ignore:
+
+    //f32 surface_fickle = perlin_noise_2d_ex(coordinates_2d, 92.0f, 150.0f, 3, 0.5f, 0.5f, 3564, -483);
+    //surface_fickle += perlin_noise_2d_ex(coordinates_2d, 20.0f, 47.0f, 3, 0.75f, 0.5f, 937, -123);
+
+    if (cave_final > 0.0f)
+        terrain.block_id = 0;
+    else terrain.block_id = BLOCK_STONE;
+
+    return terrain;
 }

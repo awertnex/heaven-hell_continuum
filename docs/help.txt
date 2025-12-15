@@ -32,8 +32,10 @@ Take Screenshot:                F2
 Toggle Debug:                   F3
 Toggle Cinematic Camera:        F4
 Toggle Perspective:             F5
+Toggle Cinematic Motion:        F6
 Toggle Fullscreen:              F11
 Toggle Zoom:                    Z
+Toggle Flashlight:              F
 Pause:                          Escape
 Chat/Command:                   Slash
 

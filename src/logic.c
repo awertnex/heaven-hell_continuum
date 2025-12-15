@@ -41,10 +41,14 @@ b8 get_timer(f64 *time_start, f32 interval)
     return FALSE;
 }
 
+f32 map_range_f32(f32 a, f32 a_min, f32 a_max, f32 r_min, f32 r_max)
+{
+    return r_min + ((a - a_min) * (r_max - r_min)) / (a_max - a_min);
+}
+
 void player_state_update(Player *p, f64 dt)
 {
-    v3f32 control = {0}, drag = {0}, forces = {0};
-    f32 gravity = 0.0f;
+    v3f32 control = {0}, drag = {0}, gravity = {0};
 
     p->acceleration = (v3f32){0};
     p->acceleration_rate = SET_PLAYER_ACCELERATION_WALK;
@@ -54,6 +58,10 @@ void player_state_update(Player *p, f64 dt)
         SET_DRAG_AIR,
     };
     p->camera.fovy = settings.fov;
+    p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+    p->bbox.pos.y = p->pos.y - p->size.y * 0.5f;
+    p->bbox.pos.z = p->pos.z;
+    p->bbox.size = p->size;
 
     /* ---- player flags ---------------------------------------------------- */
 
@@ -63,18 +71,26 @@ void player_state_update(Player *p, f64 dt)
 
         p->acceleration_rate = SET_PLAYER_ACCELERATION_FLY;
 
-        if (p->fly_natural)
-            p->drag = (v3f32){
-                SET_DRAG_AIR,
-                SET_DRAG_AIR,
-                SET_DRAG_AIR,
-            };
+        if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        {
+            p->drag.x = SET_DRAG_FLY_NATURAL;
+            p->drag.y = SET_DRAG_FLY_NATURAL;
+            p->drag.z = SET_DRAG_FLY_NATURAL;
+            p->friction = (v3f32){0};
+
+            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
+            p->bbox.pos.z = p->pos.z + p->eye_height - p->size.x * 0.5f;
+            p->bbox.size.x = p->size.x;
+            p->bbox.size.y = p->size.x;
+            p->bbox.size.z = p->size.x;
+        }
         else
-            p->drag = (v3f32){
-                SET_DRAG_FLYING,
-                SET_DRAG_FLYING,
-                SET_DRAG_FLYING_V,
-            };
+        {
+            p->drag.x = SET_DRAG_FLYING;
+            p->drag.y = SET_DRAG_FLYING;
+            p->drag.z = SET_DRAG_FLYING_V;
+        }
 
         p->camera.fovy += 10.0f;
 
@@ -86,12 +102,10 @@ void player_state_update(Player *p, f64 dt)
     }
     else
     {
-        gravity = -GRAVITY;
-        p->drag = (v3f32){
-            SET_DRAG_AIR,
-            SET_DRAG_AIR,
-            SET_DRAG_AIR,
-        };
+        gravity.z -= GRAVITY * 2.0f;
+        p->drag.x = map_range_f32(p->friction.x, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
+        p->drag.y = map_range_f32(p->friction.y, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
+        p->drag.z = map_range_f32(p->friction.z, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
 
         if (!(p->flag &FLAG_PLAYER_CAN_JUMP))
             p->flag |= FLAG_PLAYER_MID_AIR;
@@ -122,16 +136,10 @@ void player_state_update(Player *p, f64 dt)
         p->drag.z * p->velocity.z,
     };
 
-    forces = (v3f32){
-        0.0f,
-        0.0f,
-        gravity,
-    };
-
     p->acceleration = (v3f32){
-        control.x - drag.x + forces.x,
-        control.y - drag.y + forces.y,
-        control.z - drag.z + forces.z,
+        control.x - drag.x + gravity.x,
+        control.y - drag.y + gravity.y,
+        control.z - drag.z + gravity.z,
     };
 
     p->velocity.x += p->acceleration.x * dt;
@@ -148,16 +156,9 @@ void player_state_update(Player *p, f64 dt)
 
     if (!player_collision_update(p, dt))
     {
-        p->pos = (v3f64){
-            p->pos.x + p->velocity.x * dt,
-            p->pos.y + p->velocity.y * dt,
-            p->pos.z + p->velocity.z * dt,
-        };
-
-        p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
-        p->bbox.pos.y = p->pos.y - p->size.y * 0.5f;
-        p->bbox.pos.z = p->pos.z;
-        p->bbox.size = p->size;
+        p->pos.x += p->velocity.x * dt;
+        p->pos.y += p->velocity.y * dt;
+        p->pos.z += p->velocity.z * dt;
     }
 
     player_wrap_coordinates(p);
@@ -166,11 +167,9 @@ void player_state_update(Player *p, f64 dt)
 
 void player_chunk_update(Player *p)
 {
-    p->chunk = (v3i32){
-        floorf((f32)p->pos.x / CHUNK_DIAMETER),
-        floorf((f32)p->pos.y / CHUNK_DIAMETER),
-        floorf((f32)p->pos.z / CHUNK_DIAMETER),
-    };
+    p->chunk.x = floorf((f32)p->pos.x / CHUNK_DIAMETER);
+    p->chunk.y = floorf((f32)p->pos.y / CHUNK_DIAMETER);
+    p->chunk.z = floorf((f32)p->pos.z / CHUNK_DIAMETER);
 
     if (
             p->chunk_delta.x - p->chunk.x ||
@@ -274,8 +273,7 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
             zoom = p->camera.zoom;
         else zoom = 0.0f;
 
-        sensitivity = settings.mouse_sensitivity /
-            (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0f);
+        sensitivity = settings.mouse_sensitivity / (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0f);
 
         p->yaw += mouse_delta.x * sensitivity;
         p->pitch += mouse_delta.y * sensitivity;
@@ -303,30 +301,22 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
     switch (p->camera_mode)
     {
         case MODE_CAMERA_1ST_PERSON:
-            p->camera.pos =
-                (v3f32){
-                    p->pos.x,
-                    p->pos.y,
-                    p->pos.z + p->eye_height
-                };
+            p->camera.pos.x = p->pos.x;
+            p->camera.pos.y = p->pos.y;
+            p->camera.pos.z = p->pos.z + p->eye_height;
             break;
 
         case MODE_CAMERA_3RD_PERSON:
-            p->camera.pos =
-                (v3f32){
-                    p->pos.x - cyaw * cpch * p->camera_distance,
-                    p->pos.y + syaw * cpch * p->camera_distance,
-                    p->pos.z + p->eye_height + spch * p->camera_distance,
-                };
+            p->camera.pos.x = p->pos.x - cyaw * cpch * p->camera_distance;
+            p->camera.pos.y = p->pos.y + syaw * cpch * p->camera_distance;
+            p->camera.pos.z = p->pos.z + p->eye_height + spch * p->camera_distance;
             break;
 
         case MODE_CAMERA_3RD_PERSON_FRONT:
-            p->camera.pos =
-                (v3f32){
-                    p->pos.x + cyaw * cpch * p->camera_distance,
-                    p->pos.y - syaw * cpch * p->camera_distance,
-                    p->pos.z + p->eye_height - spch * p->camera_distance,
-                };
+            p->camera.pos.x = p->pos.x + cyaw * cpch * p->camera_distance;
+            p->camera.pos.y = p->pos.y - syaw * cpch * p->camera_distance;
+            p->camera.pos.z = p->pos.z + p->eye_height - spch * p->camera_distance;
+
             p->camera.sin_pitch = -spch;
             p->camera.sin_yaw = sin((p->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
             p->camera.cos_yaw = cos((p->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
@@ -354,17 +344,13 @@ void player_target_update(Player *p)
     f32 syaw = p->sin_yaw;
     f32 cyaw = p->cos_yaw;
 
-    p->target = (v3f64){
-        p->pos.x + cyaw * cpch * settings.reach_distance,
-        p->pos.y - syaw * cpch * settings.reach_distance,
-        p->pos.z + p->eye_height - spch * settings.reach_distance,
-    };
+    p->target.x = p->pos.x + cyaw * cpch * settings.reach_distance;
+    p->target.y = p->pos.y - syaw * cpch * settings.reach_distance;
+    p->target.z = p->pos.z + p->eye_height - spch * settings.reach_distance;
 
-    p->target_snapped = (v3i64){
-        (i64)floor(p->target.x),
-        (i64)floor(p->target.y),
-        (i64)floor(p->target.z),
-    };
+    p->target_snapped.x = (i64)floor(p->target.x);
+    p->target_snapped.y = (i64)floor(p->target.y);
+    p->target_snapped.z = (i64)floor(p->target.z);
 }
 
 void set_player_pos(Player *p, f64 x, f64 y, f64 z)
@@ -376,7 +362,9 @@ void set_player_pos(Player *p, f64 x, f64 y, f64 z)
 
 void set_player_block(Player *p, i64 x, i64 y, i64 z)
 {
-    p->pos = (v3f64){(f64)x + 0.5f, (f64)y + 0.5f, (f64)z + 0.5f};
+    p->pos.x = (f64)x + 0.5f;
+    p->pos.y = (f64)y + 0.5f;
+    p->pos.z = (f64)z + 0.5f;
     p->pos_last = p->pos;
 }
 
@@ -406,12 +394,8 @@ b8 player_collision_update(Player *p, f64 dt)
 {
     if (!MODE_INTERNAL_COLLIDE) return FALSE;
 
-    u32 resolved = 0;
     f32 time = 0.0f;
     f32 best_time = 1.0f;
-    f32 remaining_time = 1.0f;
-    v3f32 velocity = p->velocity;
-    v3f64 pos = p->pos;
     v3f32 normal = {0};
     v3f32 best_normal = {0};
     f32 dot = 0.0f;
@@ -421,86 +405,70 @@ b8 player_collision_update(Player *p, f64 dt)
     u32 *best_block = NULL;
     BoundingBox block_box = {0};
     BoundingBox best_block_box = {0};
-    i32 i, x, y, z;
+    i32 x, y, z;
 
-    for (i = 0; i < SET_COLLISION_SWEEP_MAX; ++i)
-    {
-        p->bbox.pos.x = pos.x - p->size.x * 0.5f;
-        p->bbox.pos.y = pos.y - p->size.y * 0.5f;
-        p->bbox.pos.z = pos.z;
-        p->bbox.size = p->size;
+    p->capsule = make_collision_capsule(p->bbox, p->chunk, p->velocity,
+            SET_COLLISION_CAPSULE_PADDING, dt);
 
-        p->capsule = make_collision_capsule(p->bbox, p->chunk, velocity,
-                SET_COLLISION_CAPSULE_PADDING, dt);
+    for (z = p->capsule.pos.z; z < p->capsule.pos.z + p->capsule.size.z; ++z)
+        for (y = p->capsule.pos.y; y < p->capsule.pos.y + p->capsule.size.y; ++y)
+            for (x = p->capsule.pos.x; x < p->capsule.pos.x + p->capsule.size.x; ++x)
+            {
+                ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
+                if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED)) continue;
+                block = get_block_resolved(ch, x, y, z);
+                if (!block || !*block) continue;
 
-        for (z = p->capsule.pos.z; z < p->capsule.pos.z + p->capsule.size.z; ++z)
-            for (y = p->capsule.pos.y; y < p->capsule.pos.y + p->capsule.size.y; ++y)
-                for (x = p->capsule.pos.x; x < p->capsule.pos.x + p->capsule.size.x; ++x)
+                block_box.pos.x = (f64)((i64)ch->pos.x * CHUNK_DIAMETER + mod(x, CHUNK_DIAMETER));
+                block_box.pos.y = (f64)((i64)ch->pos.y * CHUNK_DIAMETER + mod(y, CHUNK_DIAMETER));
+                block_box.pos.z = (f64)((i64)ch->pos.z * CHUNK_DIAMETER + mod(z, CHUNK_DIAMETER));
+                block_box.size = (v3f32){1.0f, 1.0f, 1.0f};
+
+                time = get_swept_aabb(p->bbox, block_box, p->velocity, &normal);
+
+                if (time < best_time)
                 {
-                    ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
-                    if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED)) continue;
-                    block = get_block_resolved(ch, x, y, z);
-                    if (!block || !*block) continue;
-
-                    block_box.pos.x = (f64)((i64)ch->pos.x * CHUNK_DIAMETER + mod(x, CHUNK_DIAMETER));
-                    block_box.pos.y = (f64)((i64)ch->pos.y * CHUNK_DIAMETER + mod(y, CHUNK_DIAMETER));
-                    block_box.pos.z = (f64)((i64)ch->pos.z * CHUNK_DIAMETER + mod(z, CHUNK_DIAMETER));
-                    block_box.size = (v3f32){1.0f, 1.0f, 1.0f};
-
-                    time = get_swept_aabb(p->bbox, block_box, velocity, &normal);
-
-                    if (time < best_time)
-                    {
-                        best_ch = ch;
-                        best_time = time;
-                        best_normal = normal;
-                        best_block = block;
-                        best_block_box = block_box;
-                    }
+                    best_ch = ch;
+                    best_time = time;
+                    best_normal = normal;
+                    best_block = block;
+                    best_block_box = block_box;
                 }
+            }
 
-        if (!is_intersect_aabb(p->bbox, best_block_box))
-        {
-            p->pos.x += p->velocity.x * dt;
-            p->pos.y += p->velocity.y * dt;
-            p->pos.z += p->velocity.z * dt;
-            return FALSE;
-        }
-
-        pos.x += velocity.x * dt * best_time;
-        pos.y += velocity.y * dt * best_time;
-        pos.z += velocity.z * dt * best_time;
-
-        dot = dot_v3f32(velocity, best_normal);
-        if (dot < 0.0f)
-        {
-            velocity.x -= best_normal.x * dot;
-            velocity.y -= best_normal.y * dot;
-            velocity.z -= best_normal.z * dot;
-        }
-
-        remaining_time -= best_time;
-        pos.x += velocity.x * dt * remaining_time;
-        pos.y += velocity.y * dt * remaining_time;
-        pos.z += velocity.z * dt * remaining_time;
-
-        velocity.x *= remaining_time;
-        velocity.y *= remaining_time;
-        velocity.z *= remaining_time;
-
-        if (len_v3f32(velocity) < SET_COLLISION_EPSILON * SET_COLLISION_EPSILON)
-            return FALSE;
-
+    if (best_block && is_intersect_aabb(p->bbox, best_block_box))
+    {
         if (best_normal.z > 0.0f)
         {
             p->flag |= FLAG_PLAYER_CAN_JUMP;
-            p->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_MID_AIR);
+            p->flag &= ~FLAG_PLAYER_FLYING;
+            p->friction.x = 0.8f;
+            p->friction.y = 0.8f;
         }
+        else
+        {
+            p->friction.x = 0.3f;
+            p->friction.y = 0.3f;
+        }
+
+        p->pos.x += p->velocity.x * best_time + (best_normal.x * SET_COLLISION_EPSILON);
+        p->pos.y += p->velocity.y * best_time + (best_normal.y * SET_COLLISION_EPSILON);
+        p->pos.z += p->velocity.z * best_time + (best_normal.z * SET_COLLISION_EPSILON);
+
+        dot = dot_v3f32(p->velocity, best_normal);
+        if (dot < 0.0f)
+        {
+            p->velocity.x -= best_normal.x * dot;
+            p->velocity.y -= best_normal.y * dot;
+            p->velocity.z -= best_normal.z * dot;
+        }
+
+        p->pos.x += p->velocity.x * dt * (1.0f - best_time);
+        p->pos.y += p->velocity.y * dt * (1.0f - best_time);
+        p->pos.z += p->velocity.z * dt * (1.0f - best_time);
+        return TRUE;
     }
 
-    p->pos = pos;
-    p->velocity = velocity;
-    
     return FALSE;
 }
 
@@ -509,11 +477,10 @@ CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 veloci
     v3f64 pos = {0};
     v3f32 size = {0};
     v3f32 delta = {0};
-    velocity = (v3f32){
-        velocity.x * dt,
-        velocity.y * dt,
-        velocity.z * dt,
-    };
+
+    velocity.x *= dt;
+    velocity.y *= dt;
+    velocity.z *= dt;
 
     if (padding < 1.0f)
         padding = 1.0f;
@@ -574,11 +541,9 @@ CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 veloci
 
 BoundingBox make_broad_phase_region(v3f64 pos, v3f32 size, v3f32 velocity, f64 dt)
 {
-    velocity = (v3f32){
-        velocity.x * dt,
-        velocity.y * dt,
-        velocity.z * dt,
-    };
+    velocity.x *= dt;
+    velocity.y *= dt;
+    velocity.z *= dt;
 
     if (velocity.x > 0.0f)
     {
@@ -621,19 +586,15 @@ BoundingBox make_broad_phase_region(v3f64 pos, v3f32 size, v3f32 velocity, f64 d
 
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b)
 {
-    return !(a.pos.x > b.pos.x + b.size.x || a.pos.x + a.size.x < b.pos.x ||
-            a.pos.y > b.pos.y + b.size.y || a.pos.y + a.size.y < b.pos.y ||
-            a.pos.z > b.pos.z + b.size.z || a.pos.z + a.size.z < b.pos.z);
+    return !(a.pos.x > b.pos.x + b.size.x || b.pos.x > a.size.x + a.pos.x ||
+            a.pos.y > b.pos.y + b.size.y || b.pos.y > a.size.y + a.pos.y ||
+            a.pos.z > b.pos.z + b.size.z || b.pos.z > a.size.z + a.pos.z);
 }
 
 f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 {
-    v3f32 entry = {0};
-    v3f32 exit = {0};
-    v3f32 entry_distance = {0};
-    v3f32 exit_distance = {0};
-    f32 entry_time = 0.0f;
-    f32 exit_time = 0.0f;
+    v3f32 entry, exit, entry_distance, exit_distance;
+    f32 entry_time, exit_time;
 
     *normal = (v3f32){0};
 
@@ -676,8 +637,11 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.x == 0.0f)
     {
-        entry.x = 0.0f;
-        exit.x = 0.0f;
+        if (a.pos.x + a.size.x <= b.pos.x || a.pos.x >= b.pos.x + b.size.x)
+            return 1.0f;
+
+        entry.x = -INFINITY;
+        exit.x = INFINITY;
     }
     else
     {
@@ -687,8 +651,11 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.y == 0.0f)
     {
-        entry.y = 0.0f;
-        exit.y = 0.0f;
+        if (a.pos.y + a.size.y <= b.pos.y || a.pos.y >= b.pos.y + b.size.y)
+            return 1.0f;
+
+        entry.y = -INFINITY;
+        exit.y = INFINITY;
     }
     else
     {
@@ -698,8 +665,11 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.z == 0.0f)
     {
-        entry.z = 0.0f;
-        exit.z = 0.0f;
+        if (a.pos.z + a.size.z <= b.pos.z || a.pos.z >= b.pos.z + b.size.z)
+            return 1.0f;
+
+        entry.z = -INFINITY;
+        exit.z = INFINITY;
     }
     else
     {
@@ -710,7 +680,7 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
     entry_time = max_v3f32(entry);
     exit_time = min_v3f32(exit);
 
-    if (entry_time > exit_time || exit_time < 0.0f || entry_time > 1.0f)
+    if (entry_time > exit_time || exit_time < 0.0f)
         return 1.0f;
 
     /* ---- normals --------------------------------------------------------- */
@@ -720,22 +690,19 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
         case 1:
             if (velocity.x > 0.0f)
                 normal->x = -1.0f;
-            else
-                normal->x = 1.0f;
+            else normal->x = 1.0f;
             break;
 
         case 2:
             if (velocity.y > 0.0f)
                 normal->y = -1.0f;
-            else
-                normal->y = 1.0f;
+            else normal->y = 1.0f;
             break;
 
         case 3:
             if (velocity.z > 0.0f)
                 normal->z = -1.0f;
-            else
-                normal->z = 1.0f;
+            else normal->z = 1.0f;
             break;
     }
 

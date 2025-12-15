@@ -18,10 +18,10 @@
 
 /* ---- settings ------------------------------------------------------------ */
 
-#define MODE_INTERNAL_VSYNC                     0
-#define MODE_INTERNAL_DEBUG                     1
-#define MODE_INTERNAL_LOAD_CHUNKS               1
-#define MODE_INTERNAL_COLLIDE                   1
+#define MODE_INTERNAL_VSYNC         0
+#define MODE_INTERNAL_DEBUG         1
+#define MODE_INTERNAL_LOAD_CHUNKS   1
+#define MODE_INTERNAL_COLLIDE       1
 
 #define show_cursor     glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
 #define disable_cursor  glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
@@ -54,20 +54,19 @@
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
-#define SET_COLLISION_EPSILON           1e-3f
-#define SET_COLLISION_SWEEP_MAX         3
-#define SET_DRAG_DEFAULT                2.0f
-#define SET_DRAG_AIR                    0.1f
+#define SET_COLLISION_EPSILON           0.0003f
+#define SET_DRAG_AIR                    0.2f
+#define SET_DRAG_FLY_NATURAL            1.0f
 #define SET_DRAG_FLYING                 4.0f
 #define SET_DRAG_FLYING_V               13.0f
-#define SET_DRAG_WALK                   18.0f
+#define SET_DRAG_GROUND_SOLID           23.0f
 #define SET_PLAYER_EYE_HEIGHT           1.55f
-#define SET_PLAYER_JUMP_INITIAL_VELOCITY 6.5f
+#define SET_PLAYER_JUMP_INITIAL_VELOCITY 8.0f
 #define SET_PLAYER_ACCELERATION_SNEAK   1.5f
 #define SET_PLAYER_ACCELERATION_WALK    3.0f
 #define SET_PLAYER_ACCELERATION_SPRINT  5.0f
 #define SET_PLAYER_ACCELERATION_FLY     9.0f
-#define SET_PLAYER_ACCELERATION_FLY_FAST 40.0f
+#define SET_PLAYER_ACCELERATION_FLY_FAST 30.0f
 #define SET_PLAYER_ACCELERATION_MAX     100.0f
 #define SET_HOTBAR_SLOTS_MAX            10
 #define SET_INVENTORY_SLOTS_MAX         (SET_HOTBAR_SLOTS_MAX * 4)
@@ -83,6 +82,8 @@
 #define WORLD_DIAMETER          (WORLD_RADIUS * 2 + 1)
 #define WORLD_DIAMETER_VERTICAL (WORLD_RADIUS_VERTICAL * 2 + 1)
 #define WORLD_MAX_CHUNKS        (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
+
+#define WORLD_CRUSH_FACTOR      ((f32)WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER)
 
 #define CHUNK_BUF_RADIUS_MAX    SET_RENDER_DISTANCE_MAX
 #define CHUNK_BUF_DIAMETER_MAX  (CHUNK_BUF_RADIUS_MAX * 2 + 1)
@@ -105,45 +106,46 @@
 
 /*! @brief number of chunks to process per frame.
  */
-#define CHUNK_PARSE_RATE_PRIORITY_LOW       128
-#define CHUNK_PARSE_RATE_PRIORITY_MID       256
+#define CHUNK_PARSE_RATE_PRIORITY_LOW       64
+#define CHUNK_PARSE_RATE_PRIORITY_MID       128
 #define CHUNK_PARSE_RATE_PRIORITY_HIGH      CHUNK_VOLUME
 
 /*! @brief number of blocks to process per chunk per frame.
  */
-#define BLOCK_PARSE_RATE                    768
+#define BLOCK_PARSE_RATE                    512
 
 #define TERRAIN_SEED_DEFAULT    0
 #define RAND_TAB_DIAMETER       128
+#define RAND_TAB_LAYER          (RAND_TAB_DIAMETER * RAND_TAB_DIAMETER)
 #define RAND_TAB_VOLUME         (RAND_TAB_DIAMETER * RAND_TAB_DIAMETER * RAND_TAB_DIAMETER)
 
-#define COLOR_TEXT_DEFAULT                  DIAGNOSTIC_COLOR_DEBUG
-#define COLOR_TEXT_BRIGHT                   DIAGNOSTIC_COLOR_DEFAULT
-#define COLOR_TEXT_MOSS                     0x6f9f3fff
-#define COLOR_TEXT_RADIOACTIVE              0x3f9f3fff
-#define COLOR_DIAGNOSTIC_NONE               0x995429ff
-#define COLOR_DIAGNOSTIC_ERROR              0xec6051ff
-#define COLOR_DIAGNOSTIC_INFO               0x3f6f9fff
-#define COLOR_CHUNK_LOADED                  0x4c260715
-#define COLOR_CHUNK_RENDER                  0x5e7a0aff
+#define COLOR_TEXT_DEFAULT      DIAGNOSTIC_COLOR_DEBUG
+#define COLOR_TEXT_BRIGHT       DIAGNOSTIC_COLOR_DEFAULT
+#define COLOR_TEXT_MOSS         0x6f9f3fff
+#define COLOR_TEXT_RADIOACTIVE  0x3f9f3fff
+#define COLOR_DIAGNOSTIC_NONE   0x995429ff
+#define COLOR_DIAGNOSTIC_ERROR  0xec6051ff
+#define COLOR_DIAGNOSTIC_INFO   0x3f6f9fff
+#define COLOR_CHUNK_LOADED      0x4c260715
+#define COLOR_CHUNK_RENDER      0x5e7a0aff
 
 #define FILE_NAME_SETTINGS      "settings.txt"
 #define FILE_NAME_WORLD_SEED    "seed.txt"
 
 enum MainFlag
 {
-    FLAG_MAIN_ACTIVE                        = 0x00000001,
-    FLAG_MAIN_PAUSED                        = 0x00000002,
-    FLAG_MAIN_PARSE_CURSOR                  = 0x00000004,
-    FLAG_MAIN_HUD                           = 0x00000008,
-    FLAG_MAIN_DEBUG                         = 0x00000010,
-    FLAG_MAIN_SUPER_DEBUG                   = 0x00000020,
-    FLAG_MAIN_FULLSCREEN                    = 0x00000040,
-    FLAG_MAIN_MENU_OPEN                     = 0x00000080,
-    FLAG_MAIN_DOUBLE_PRESS                  = 0x00000100,
-    FLAG_MAIN_PARSE_TARGET                  = 0x00000200,
-    FLAG_MAIN_WORLD_LOADED                  = 0x00000400,
-    FLAG_MAIN_CHUNK_BUF_DIRTY               = 0x00000800,
+    FLAG_MAIN_ACTIVE =          0x00000001,
+    FLAG_MAIN_PAUSED =          0x00000002,
+    FLAG_MAIN_PARSE_CURSOR =    0x00000004,
+    FLAG_MAIN_HUD =             0x00000008,
+    FLAG_MAIN_DEBUG =           0x00000010,
+    FLAG_MAIN_SUPER_DEBUG =     0x00000020,
+    FLAG_MAIN_FULLSCREEN =      0x00000040,
+    FLAG_MAIN_MENU_OPEN =       0x00000080,
+    FLAG_MAIN_DOUBLE_PRESS =    0x00000100,
+    FLAG_MAIN_PARSE_TARGET =    0x00000200,
+    FLAG_MAIN_WORLD_LOADED =    0x00000400,
+    FLAG_MAIN_CHUNK_BUF_DIRTY = 0x00000800,
 }; /* MainFlag */
 
 enum DebugMode
@@ -184,11 +186,7 @@ struct Settings
     u32 chunk_buf_volume;
     u32 chunk_tab_center;
 
-    /*! @brief player reach (arm length).
-     */
-    u8 reach_distance;
-
-    WorldInfo world;
+    u8 reach_distance;  /* brief player reach (arm length) */
 
     /* ---- controls -------------------------------------------------------- */
 
@@ -264,6 +262,7 @@ struct Uniform
 
     struct /* gizmo */
     {
+        GLint ndc_scale;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;
@@ -274,7 +273,7 @@ struct Uniform
     struct /* gizmo_chunk */
     {
         GLint render_size;
-        GLint render_distance;
+        GLint chunk_buf_diameter;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;
@@ -300,6 +299,7 @@ struct Uniform
         GLint chunk_position;
         GLint color;
         GLint opacity;
+        GLint toggle_flashlight;
     } voxel;
 
     struct /* bounding_box */
@@ -375,26 +375,28 @@ enum FontIndices
 
 enum PlayerFlag
 {
-    FLAG_PLAYER_CAN_JUMP =      0x00000001,
-    FLAG_PLAYER_SNEAKING =      0x00000002,
-    FLAG_PLAYER_SPRINTING =     0x00000004,
-    FLAG_PLAYER_FLYING =        0x00000008,
-    FLAG_PLAYER_MID_AIR =       0x00000010,
-    FLAG_PLAYER_SWIMMING =      0x00000020,
-    FLAG_PLAYER_HUNGRY =        0x00000040,
-    FLAG_PLAYER_DEAD =          0x00000080,
-    FLAG_PLAYER_ZOOMER =        0x00000100,
+    FLAG_PLAYER_CAN_JUMP =          0x00000001,
+    FLAG_PLAYER_SNEAKING =          0x00000002,
+    FLAG_PLAYER_SPRINTING =         0x00000004,
+    FLAG_PLAYER_FLYING =            0x00000008,
+    FLAG_PLAYER_MID_AIR =           0x00000010,
+    FLAG_PLAYER_SWIMMING =          0x00000020,
+    FLAG_PLAYER_HUNGRY =            0x00000040,
+    FLAG_PLAYER_DEAD =              0x00000080,
+    FLAG_PLAYER_ZOOMER =            0x00000100,
+    FLAG_PLAYER_CINEMATIC_MOTION =  0x00000200,
+    FLAG_PLAYER_FLASHLIGHT =        0x00000400,
 
-    FLAG_PLAYER_OVERFLOW_X =    0x00000200,
-    FLAG_PLAYER_OVERFLOW_Y =    0x00000400,
-    FLAG_PLAYER_OVERFLOW_Z =    0x00000800,
+    FLAG_PLAYER_OVERFLOW_X =        0x00000800,
+    FLAG_PLAYER_OVERFLOW_Y =        0x00001000,
+    FLAG_PLAYER_OVERFLOW_Z =        0x00002000,
 
     /*! @brief positive overflow direction flags,
      *  @remark default is 0 for negative overflow (underflow).
      */
-    FLAG_PLAYER_OVERFLOW_PX =   0x00001000,
-    FLAG_PLAYER_OVERFLOW_PY =   0x00002000,
-    FLAG_PLAYER_OVERFLOW_PZ =   0x00004000,
+    FLAG_PLAYER_OVERFLOW_PX =       0x00004000,
+    FLAG_PLAYER_OVERFLOW_PY =       0x00008000,
+    FLAG_PLAYER_OVERFLOW_PZ =       0x00010000,
 }; /* PlayerFlag */
 
 enum CameraModes
@@ -444,6 +446,7 @@ typedef struct Player
     v3f32 velocity;
     f32 speed;                      /* derived from 'velocity' */
     v3f32 drag;
+    v3f32 friction;
     f32 weight;
 
     Camera camera;
@@ -460,7 +463,6 @@ typedef struct Player
 
     v3i64 spawn;                    /* spawn point */
     u64 container_state;            /* enum: ContainerFlag */
-    u32 fly_natural;                /* nice flying kinematics */
 
     /*! @remark signed instead of unsigned so it's possible to navigate
      *  'hotbar_slots' when using mousewheel, used for wrapping around
@@ -631,9 +633,14 @@ typedef struct ChunkQueue
  *  @remark must be initialized globally, tho the pointed to variable itself can be modified.
  */
 extern u32 *const GAME_ERR;
-extern u32 chunk_tab_index;
 
+extern u32 chunk_tab_index;
 extern struct Settings settings;
+
+/*! @brief info of current world loaded.
+ */
+extern WorldInfo world;
+
 extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];
 extern u64 flag;
