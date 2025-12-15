@@ -46,7 +46,7 @@ f32 map_range_f32(f32 a, f32 a_min, f32 a_max, f32 r_min, f32 r_max)
     return r_min + ((a - a_min) * (r_max - r_min)) / (a_max - a_min);
 }
 
-void player_state_update(Player *p, f64 dt)
+void player_update(Player *p, f64 dt)
 {
     v3f32 control = {0}, drag = {0}, gravity = {0};
 
@@ -102,7 +102,7 @@ void player_state_update(Player *p, f64 dt)
     }
     else
     {
-        gravity.z -= GRAVITY * 2.0f;
+        gravity.z -= GRAVITY;
         p->drag.x = map_range_f32(p->friction.x, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
         p->drag.y = map_range_f32(p->friction.y, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
         p->drag.z = map_range_f32(p->friction.z, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
@@ -159,6 +159,23 @@ void player_state_update(Player *p, f64 dt)
         p->pos.x += p->velocity.x * dt;
         p->pos.y += p->velocity.y * dt;
         p->pos.z += p->velocity.z * dt;
+
+        if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        {
+            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
+            p->bbox.pos.z = p->pos.z + p->eye_height - p->size.x * 0.5f;
+            p->bbox.size.x = p->size.x;
+            p->bbox.size.y = p->size.x;
+            p->bbox.size.z = p->size.x;
+        }
+        else
+        {
+            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
+            p->bbox.pos.z = p->pos.z;
+            p->bbox.size = p->size;
+        }
     }
 
     player_wrap_coordinates(p);
@@ -373,13 +390,6 @@ void set_player_spawn(Player *p, i64 x, i64 y, i64 z)
     p->spawn = (v3i64){x, y, z};
 }
 
-void player_kill(Player *p)
-{
-    p->acceleration = (v3f32){0};
-    p->velocity = (v3f32){0};
-    p->flag |= FLAG_PLAYER_DEAD;
-}
-
 void player_spawn(Player *p, b8 hard)
 {
     set_player_pos(p,
@@ -388,6 +398,13 @@ void player_spawn(Player *p, b8 hard)
             p->spawn.z + 0.5f);
     if (!hard) return;
     p->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_HUNGRY | FLAG_PLAYER_DEAD);
+}
+
+void player_kill(Player *p)
+{
+    p->acceleration = (v3f32){0};
+    p->velocity = (v3f32){0};
+    p->flag |= FLAG_PLAYER_DEAD;
 }
 
 b8 player_collision_update(Player *p, f64 dt)
@@ -440,8 +457,9 @@ b8 player_collision_update(Player *p, f64 dt)
     {
         if (best_normal.z > 0.0f)
         {
+            if (!(p->flag & FLAG_PLAYER_CINEMATIC_MOTION))
+                p->flag &= ~FLAG_PLAYER_FLYING;
             p->flag |= FLAG_PLAYER_CAN_JUMP;
-            p->flag &= ~FLAG_PLAYER_FLYING;
             p->friction.x = 0.8f;
             p->friction.y = 0.8f;
         }
@@ -539,51 +557,6 @@ CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 veloci
     };
 }
 
-BoundingBox make_broad_phase_region(v3f64 pos, v3f32 size, v3f32 velocity, f64 dt)
-{
-    velocity.x *= dt;
-    velocity.y *= dt;
-    velocity.z *= dt;
-
-    if (velocity.x > 0.0f)
-    {
-        pos.x = pos.x - size.x * 0.5f;
-        size.x = size.x + velocity.x;
-    }
-    else
-    {
-        pos.x = pos.x + velocity.x - size.x * 0.5f;
-        size.x = size.x - velocity.x;
-    }
-
-    if (velocity.y > 0.0f)
-    {
-        pos.y = pos.y - size.y * 0.5f;
-        size.y = size.y + velocity.y;
-    }
-    else
-    {
-        pos.y = pos.y + velocity.y - size.y * 0.5f;
-        size.y = size.y - velocity.y;
-    }
-
-    if (velocity.z > 0.0f)
-    {
-        pos.z = pos.z;
-        size.z = size.z + velocity.z;
-    }
-    else
-    {
-        pos.z = pos.z + velocity.z;
-        size.z = size.z - velocity.z;
-    }
-
-    return (BoundingBox){
-        .pos = pos,
-        .size = size,
-    };
-}
-
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b)
 {
     return !(a.pos.x > b.pos.x + b.size.x || b.pos.x > a.size.x + a.pos.x ||
@@ -595,8 +568,6 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 {
     v3f32 entry, exit, entry_distance, exit_distance;
     f32 entry_time, exit_time;
-
-    *normal = (v3f32){0};
 
     /* ---- entry and exit distance ----------------------------------------- */
 
@@ -691,18 +662,24 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
             if (velocity.x > 0.0f)
                 normal->x = -1.0f;
             else normal->x = 1.0f;
+            normal->y = 0.0f;
+            normal->z = 0.0f;
             break;
 
         case 2:
             if (velocity.y > 0.0f)
                 normal->y = -1.0f;
             else normal->y = 1.0f;
+            normal->x = 0.0f;
+            normal->z = 0.0f;
             break;
 
         case 3:
             if (velocity.z > 0.0f)
                 normal->z = -1.0f;
             else normal->z = 1.0f;
+            normal->x = 0.0f;
+            normal->y = 0.0f;
             break;
     }
 

@@ -30,24 +30,22 @@ f64 get_time_f64(void);
 
 b8 get_timer(f64 *time_start, f32 interval);
 
-/*! @brief update player parameters like movement and zoom based on flags.
+/*! @brief update everything related to a player.
  *
- *  1. wrap player coordinates, teleport to the other side of the world if
- *     they cross a world edge.
- *  2. calculate 'p->chunk' from 'p->pos'.
- *  3. add 'FLAG_MAIN_CHUNK_BUF_DIRTY' to 'flag' if player crosses a chunk boundary.
- *  4. update 'p->movement_speed' based on 'p->flag'.
- *  5. update various movement permissions and mechanics based on 'p->flag'.
- *  6. update 'p->camera.fovy' based on 'p->flag' and 'p->camera.zoom'.
- *  7. update player gravity.
- *  8. add vector 'p->movement' to 'p->pos'.
+ *  1. update kinematics and movement permissions based on 'p->flag'.
+ *  2. update player FOV based on speed and camera zoom.
+ *  3. update player collision.
+ *  4. wrap player coordinates (teleport to the other side of the world if
+ *    they cross a world edge).
+ *  5. update player current chunk.
+ *  6. make entire chunk buffer dirty if player crosses a chunk boundary.
  */
-void player_state_update(Player *p, f64 dt);
+void player_update(Player *p, f64 dt);
 
 /*! @brief update player chunk deltas.
  *
  *  calculate current chunk and delta chunk, and determine whether
- *  FLAG_MAIN_CHUNK_BUF_DIRTY should be set or not.
+ *  'FLAG_MAIN_CHUNK_BUF_DIRTY' should be set or not.
  */
 void player_chunk_update(Player *p);
 
@@ -61,14 +59,18 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse);
 void player_target_update(Player *p);
 void set_player_pos(Player *p, f64 x, f64 y, f64 z);
 void set_player_block(Player *p, i64 x, i64 y, i64 z);
+
+/*! @brief set player spawn point.
+ */
 void set_player_spawn(Player *p, i64 x, i64 y, i64 z);
-void player_kill(Player *p);
 
 /*! @brief re-spawn player.
  *
- *  @param hard = TRUE will reset all player stats, FALSE will only teleport.
+ *  @param hard = TRUE will reset all player stats, FALSE will only teleport to spawn.
  */
 void player_spawn(Player *p, b8 hard);
+
+void player_kill(Player *p);
 
 b8 player_collision_update(Player *p, f64 dt);
 

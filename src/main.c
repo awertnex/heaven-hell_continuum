@@ -22,7 +22,7 @@
 u32 *const GAME_ERR = (u32*)&engine_err;
 u32 chunk_tab_index = 0;
 
-Render render =
+static Render render =
 {
     .title = GAME_NAME": "GAME_VERSION,
     .size = {1280, 720},
@@ -721,7 +721,7 @@ u32 world_init(str *name, u64 seed)
 
 static void world_update(Player *p)
 {
-    world.tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
+    world.tick = (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
     if (world.tick >= SET_DAY_TICKS_MAX)
         ++world.days;
 
@@ -729,7 +729,7 @@ static void world_update(Player *p)
         show_cursor;
     else disable_cursor;
 
-    player_state_update(p, render.frame_delta);
+    player_update(p, render.frame_delta);
     player_target_update(p);
 
     b8 use_mouse = TRUE;
