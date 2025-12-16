@@ -97,7 +97,7 @@ void input_update(Render render, Player *p)
             pz += 1.0f;
         else if (p->flag & FLAG_PLAYER_CAN_JUMP)
         {
-            p->velocity.z += sqrtf(2.0f * GRAVITY * SET_PLAYER_JUMP_HEIGHT);
+            p->velocity.z += sqrtf(2.0f * world.gravity * SET_PLAYER_JUMP_HEIGHT);
             p->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }

@@ -46,13 +46,12 @@ static void _block_break(Chunk *ch,
 
 /*! @brief generate chunk blocks.
  *
- *  @param index = 'chunk_tab' index.
  *  @param rate = number of blocks to process per chunk per frame.
  *
  *  @remark calls 'chunk_mesh_init()' when done generating.
  *  @remark must be called before 'chunk_mesh_update()'.
  */
-static void chunk_generate(Chunk **ch, u32 rate, Terrain terrain());
+static void chunk_generate(Chunk **chunk, u32 rate, Terrain terrain());
 
 /*! -- INTERNAL USE ONLY --;
  */

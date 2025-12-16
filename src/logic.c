@@ -58,11 +58,6 @@ void player_update(Player *p, f64 dt)
         SET_DRAG_AIR,
     };
     p->camera.fovy = settings.fov;
-    p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
-    p->bbox.pos.y = p->pos.y - p->size.y * 0.5f;
-    p->bbox.pos.z = p->pos.z;
-    p->bbox.size = p->size;
-
     /* ---- player flags ---------------------------------------------------- */
 
     if (p->flag & FLAG_PLAYER_FLYING)
@@ -77,13 +72,6 @@ void player_update(Player *p, f64 dt)
             p->drag.y = SET_DRAG_FLY_NATURAL;
             p->drag.z = SET_DRAG_FLY_NATURAL;
             p->friction = (v3f32){0};
-
-            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
-            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
-            p->bbox.pos.z = p->pos.z + p->eye_height - p->size.x * 0.5f;
-            p->bbox.size.x = p->size.x;
-            p->bbox.size.y = p->size.x;
-            p->bbox.size.z = p->size.x;
         }
         else
         {
@@ -102,7 +90,7 @@ void player_update(Player *p, f64 dt)
     }
     else
     {
-        gravity.z -= GRAVITY;
+        gravity.z -= world.gravity;
         p->drag.x = map_range_f32(p->friction.x, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
         p->drag.y = map_range_f32(p->friction.y, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
         p->drag.z = map_range_f32(p->friction.z, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
@@ -146,6 +134,10 @@ void player_update(Player *p, f64 dt)
     p->velocity.y += p->acceleration.y * dt;
     p->velocity.z += p->acceleration.z * dt;
 
+    p->pos.x += p->velocity.x * dt;
+    p->pos.y += p->velocity.y * dt;
+    p->pos.z += p->velocity.z * dt;
+
     p->speed = sqrtf(len_v3f32(p->velocity));
     if (p->speed > EPSILON)
         p->camera.fovy += p->speed * 0.03f;
@@ -153,31 +145,24 @@ void player_update(Player *p, f64 dt)
     p->camera.fovy_smooth = lerp_f32(p->camera.fovy_smooth, p->camera.fovy,
                 dt, SET_LERP_SPEED_FOV_MODE);
 
-
-    if (!player_collision_update(p, dt))
+    if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
     {
-        p->pos.x += p->velocity.x * dt;
-        p->pos.y += p->velocity.y * dt;
-        p->pos.z += p->velocity.z * dt;
-
-        if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
-        {
-            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
-            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
-            p->bbox.pos.z = p->pos.z + p->eye_height - p->size.x * 0.5f;
-            p->bbox.size.x = p->size.x;
-            p->bbox.size.y = p->size.x;
-            p->bbox.size.z = p->size.x;
-        }
-        else
-        {
-            p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
-            p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
-            p->bbox.pos.z = p->pos.z;
-            p->bbox.size = p->size;
-        }
+        p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+        p->bbox.pos.y = p->pos.y - p->size.x * 0.5f;
+        p->bbox.pos.z = p->pos.z + p->eye_height - p->size.x * 0.5f;
+        p->bbox.size.x = p->size.x;
+        p->bbox.size.y = p->size.x;
+        p->bbox.size.z = p->size.x;
+    }
+    else
+    {
+        p->bbox.pos.x = p->pos.x - p->size.x * 0.5f;
+        p->bbox.pos.y = p->pos.y - p->size.y * 0.5f;
+        p->bbox.pos.z = p->pos.z;
+        p->bbox.size = p->size;
     }
 
+    player_collision_update(p, dt);
     player_wrap_coordinates(p);
     player_chunk_update(p);
 }
@@ -413,6 +398,12 @@ b8 player_collision_update(Player *p, f64 dt)
 
     f32 time = 0.0f;
     f32 best_time = 1.0f;
+    v3f32 displacement =
+    {
+        p->velocity.x * dt,
+        p->velocity.y * dt,
+        p->velocity.z * dt,
+    };
     v3f32 normal = {0};
     v3f32 best_normal = {0};
     f32 dot = 0.0f;
@@ -424,8 +415,8 @@ b8 player_collision_update(Player *p, f64 dt)
     BoundingBox best_block_box = {0};
     i32 x, y, z;
 
-    p->capsule = make_collision_capsule(p->bbox, p->chunk, p->velocity,
-            SET_COLLISION_CAPSULE_PADDING, dt);
+    p->capsule = make_collision_capsule(p->bbox, p->chunk, displacement,
+            SET_COLLISION_CAPSULE_PADDING);
 
     for (z = p->capsule.pos.z; z < p->capsule.pos.z + p->capsule.size.z; ++z)
         for (y = p->capsule.pos.y; y < p->capsule.pos.y + p->capsule.size.y; ++y)
@@ -441,7 +432,7 @@ b8 player_collision_update(Player *p, f64 dt)
                 block_box.pos.z = (f64)((i64)ch->pos.z * CHUNK_DIAMETER + mod(z, CHUNK_DIAMETER));
                 block_box.size = (v3f32){1.0f, 1.0f, 1.0f};
 
-                time = get_swept_aabb(p->bbox, block_box, p->velocity, &normal);
+                time = get_swept_aabb(p->bbox, block_box, displacement, &normal);
 
                 if (time < best_time)
                 {
@@ -453,25 +444,16 @@ b8 player_collision_update(Player *p, f64 dt)
                 }
             }
 
+    p->friction.x = 0.1f;
+    p->friction.y = 0.1f;
+
     if (best_block && is_intersect_aabb(p->bbox, best_block_box))
     {
-        if (best_normal.z > 0.0f)
-        {
-            if (!(p->flag & FLAG_PLAYER_CINEMATIC_MOTION))
-                p->flag &= ~FLAG_PLAYER_FLYING;
-            p->flag |= FLAG_PLAYER_CAN_JUMP;
-            p->friction.x = 0.8f;
-            p->friction.y = 0.8f;
-        }
-        else
-        {
-            p->friction.x = 0.3f;
-            p->friction.y = 0.3f;
-        }
+        /* ---- resolution -------------------------------------------------- */
 
-        p->pos.x += p->velocity.x * best_time + (best_normal.x * SET_COLLISION_EPSILON);
-        p->pos.y += p->velocity.y * best_time + (best_normal.y * SET_COLLISION_EPSILON);
-        p->pos.z += p->velocity.z * best_time + (best_normal.z * SET_COLLISION_EPSILON);
+        p->pos.x += displacement.x * best_time + best_normal.x * SET_COLLISION_EPSILON;
+        p->pos.y += displacement.y * best_time + best_normal.y * SET_COLLISION_EPSILON;
+        p->pos.z += displacement.z * best_time + best_normal.z * SET_COLLISION_EPSILON;
 
         dot = dot_v3f32(p->velocity, best_normal);
         if (dot < 0.0f)
@@ -481,24 +463,39 @@ b8 player_collision_update(Player *p, f64 dt)
             p->velocity.z -= best_normal.z * dot;
         }
 
-        p->pos.x += p->velocity.x * dt * (1.0f - best_time);
-        p->pos.y += p->velocity.y * dt * (1.0f - best_time);
-        p->pos.z += p->velocity.z * dt * (1.0f - best_time);
+        p->pos.x -= p->velocity.x * dt * best_time;
+        p->pos.y -= p->velocity.y * dt * best_time;
+        p->pos.z -= p->velocity.z * dt * best_time;
+
+        /* ---- flags ------------------------------------------------------- */
+
+        /*
+        if (p->speed > 20.0f)
+            block_break((u32)(best_ch - *chunk_tab),
+                    (i32)best_block_box.pos.x,
+                    (i32)best_block_box.pos.y,
+                    (i32)best_block_box.pos.z);
+                    */
+
+        if (best_normal.z > 0.0f)
+        {
+            if (!(p->flag & FLAG_PLAYER_CINEMATIC_MOTION))
+                p->flag &= ~FLAG_PLAYER_FLYING;
+            p->flag |= FLAG_PLAYER_CAN_JUMP;
+            p->friction.x = 0.8f;
+            p->friction.y = 0.8f;
+        }
         return TRUE;
     }
 
     return FALSE;
 }
 
-CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding, f64 dt)
+CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding)
 {
     v3f64 pos = {0};
     v3f32 size = {0};
     v3f32 delta = {0};
-
-    velocity.x *= dt;
-    velocity.y *= dt;
-    velocity.z *= dt;
 
     if (padding < 1.0f)
         padding = 1.0f;
@@ -559,9 +556,9 @@ CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 veloci
 
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b)
 {
-    return !(a.pos.x > b.pos.x + b.size.x || b.pos.x > a.size.x + a.pos.x ||
-            a.pos.y > b.pos.y + b.size.y || b.pos.y > a.size.y + a.pos.y ||
-            a.pos.z > b.pos.z + b.size.z || b.pos.z > a.size.z + a.pos.z);
+    return !(a.pos.x >= b.pos.x + b.size.x || b.pos.x >= a.size.x + a.pos.x ||
+            a.pos.y >= b.pos.y + b.size.y || b.pos.y >= a.size.y + a.pos.y ||
+            a.pos.z >= b.pos.z + b.size.z || b.pos.z >= a.size.z + a.pos.z);
 }
 
 f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
@@ -608,8 +605,8 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.x == 0.0f)
     {
-        if (a.pos.x + a.size.x <= b.pos.x || a.pos.x >= b.pos.x + b.size.x)
-            return 1.0f;
+        if (a.pos.x >= b.pos.x + b.size.x)
+            goto cleanup;
 
         entry.x = -INFINITY;
         exit.x = INFINITY;
@@ -622,8 +619,8 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.y == 0.0f)
     {
-        if (a.pos.y + a.size.y <= b.pos.y || a.pos.y >= b.pos.y + b.size.y)
-            return 1.0f;
+        if (a.pos.y >= b.pos.y + b.size.y)
+            goto cleanup;
 
         entry.y = -INFINITY;
         exit.y = INFINITY;
@@ -636,8 +633,8 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.z == 0.0f)
     {
-        if (a.pos.z + a.size.z <= b.pos.z || a.pos.z >= b.pos.z + b.size.z)
-            return 1.0f;
+        if (a.pos.z >= b.pos.z + b.size.z)
+            goto cleanup;
 
         entry.z = -INFINITY;
         exit.z = INFINITY;
@@ -651,10 +648,12 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
     entry_time = max_v3f32(entry);
     exit_time = min_v3f32(exit);
 
-    if (entry_time > exit_time || exit_time < 0.0f)
-        return 1.0f;
+    if (entry_time > exit_time || exit_time < 0.0f || entry_time > 1.0f)
+        goto cleanup;
 
     /* ---- normals --------------------------------------------------------- */
+
+    *normal = (v3f32){0};
 
     switch (max_axis_v3f32(entry))
     {
@@ -662,26 +661,25 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
             if (velocity.x > 0.0f)
                 normal->x = -1.0f;
             else normal->x = 1.0f;
-            normal->y = 0.0f;
-            normal->z = 0.0f;
             break;
 
         case 2:
             if (velocity.y > 0.0f)
                 normal->y = -1.0f;
             else normal->y = 1.0f;
-            normal->x = 0.0f;
-            normal->z = 0.0f;
             break;
 
         case 3:
             if (velocity.z > 0.0f)
                 normal->z = -1.0f;
             else normal->z = 1.0f;
-            normal->x = 0.0f;
-            normal->y = 0.0f;
             break;
     }
 
     return entry_time;
+
+cleanup:
+
+    *normal = (v3f32){0};
+    return 1.0f;
 }

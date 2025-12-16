@@ -176,8 +176,7 @@ static u32 settings_init(void)
     }
 
     settings_file_contents = NULL;
-    get_file_contents(
-            stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
+    get_file_contents(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
             (void*)&settings_file_contents, 1, "rb", TRUE);
     if (*GAME_ERR != ERR_SUCCESS)
         return *GAME_ERR;
@@ -708,8 +707,11 @@ u32 world_init(str *name, u64 seed)
     if (chunking_init() != ERR_SUCCESS)
         return *GAME_ERR;
 
+    world.gravity = GRAVITY * 1.5f;
+
     set_player_spawn(&lily, 1547, -531, 10);
     player_spawn(&lily, TRUE);
+    player_chunk_update(&lily);
 
     flag |= FLAG_MAIN_CHUNK_BUF_DIRTY | FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
     disable_cursor;
@@ -721,7 +723,7 @@ u32 world_init(str *name, u64 seed)
 
 static void world_update(Player *p)
 {
-    world.tick = (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
+    world.tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
     if (world.tick >= SET_DAY_TICKS_MAX)
         ++world.days;
 
@@ -1449,7 +1451,7 @@ int main(int argc, char **argv)
             shader_program_init(DIR_ROOT[DIR_SHADERS], &shader[SHADER_BOUNDING_BOX]) != ERR_SUCCESS)
         goto cleanup;
 
-    if(
+    if (
             fbo_init(&render, &fbo[FBO_SKYBOX], &mesh[MESH_UNIT], FALSE, 4) != ERR_SUCCESS ||
             fbo_init(&render, &fbo[FBO_WORLD],      NULL, FALSE, 4) != ERR_SUCCESS ||
             fbo_init(&render, &fbo[FBO_WORLD_MSAA], NULL, TRUE, 4) != ERR_SUCCESS ||

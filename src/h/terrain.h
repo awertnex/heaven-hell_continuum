@@ -75,7 +75,7 @@ f32 gradient_3d(f32 vx, f32 vy, f32 vz, f32 ax, f32 ay, f32 az, i32 dispx, i32 d
 f32 perlin_noise_2d(v2i32 coordinates, f32 intensity, f32 scale, i32 dispx, i32 dispy);
 
 /*! @brief calls 'perlin_noise_2d()' for as many 'octaves'.
- *  
+ *
  *  @param coordinates = current block to sample.
  *  @param intensity = height, or contrast of the noise.
  *  @param scale = frequency of the noise.
@@ -99,7 +99,7 @@ f32 perlin_noise_2d_ex(v2i32 coordinates, f32 intensity, f32 scale,
 f32 perlin_noise_3d(v3i32 coordinates, f32 intensity, f32 scale, i32 dispx, i32 dispy, i32 dispz);
 
 /*! @brief calls 'perlin_noise_3d()' for as many 'octaves'.
- *  
+ *
  *  @param coordinates = current block to sample.
  *  @param intensity = height, or contrast of the noise.
  *  @param scale = frequency of the noise.

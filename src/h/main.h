@@ -54,7 +54,7 @@
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
-#define SET_COLLISION_EPSILON           0.0003f
+#define SET_COLLISION_EPSILON           1e-3f
 #define SET_DRAG_AIR                    0.2f
 #define SET_DRAG_FLY_NATURAL            1.0f
 #define SET_DRAG_FLYING                 4.0f
@@ -166,6 +166,9 @@ typedef struct WorldInfo
     u64 seed;
     u64 tick;
     u64 days;
+
+    f32 gravity;
+    f32 drag;
 } WorldInfo;
 
 struct Settings

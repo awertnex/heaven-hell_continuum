@@ -86,7 +86,7 @@ b8 player_collision_update(Player *p, f64 dt);
  *  @remark collision capsule position is in chunk-relative coordinates, not world
  *  coordinates.
  */
-CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding, f64 dt);
+CollisionCapsule make_collision_capsule(BoundingBox b, v3i32 chunk, v3f32 velocity, f32 padding);
 
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b);
 
