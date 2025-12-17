@@ -48,15 +48,16 @@ u32 logger_init(b8 release_build, int argc, char **argv)
     if (release_build)
         log_level_max = LOGLEVEL_INFO;
 
-    if (argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
-    {
-        if (!strncmp(argv[2], "FATAL", 5))      log_level_max = LOGLEVEL_FATAL;
-        else if (!strncmp(argv[2], "ERROR", 5)) log_level_max = LOGLEVEL_ERROR;
-        else if (!strncmp(argv[2], "WARN", 4))  log_level_max = LOGLEVEL_WARNING;
-        else if (!strncmp(argv[2], "INFO", 4))  log_level_max = LOGLEVEL_INFO;
-        else if (!strncmp(argv[2], "DEBUG", 5)) log_level_max = LOGLEVEL_DEBUG;
-        else if (!strncmp(argv[2], "TRACE", 5)) log_level_max = LOGLEVEL_TRACE;
-    }
+    if (argc && argv &&
+            argc > 2 && !strncmp(argv[1], "LOGLEVEL", 8))
+        {
+            if (!strncmp(argv[2], "FATAL", 5))      log_level_max = LOGLEVEL_FATAL;
+            else if (!strncmp(argv[2], "ERROR", 5)) log_level_max = LOGLEVEL_ERROR;
+            else if (!strncmp(argv[2], "WARN", 4))  log_level_max = LOGLEVEL_WARNING;
+            else if (!strncmp(argv[2], "INFO", 4))  log_level_max = LOGLEVEL_INFO;
+            else if (!strncmp(argv[2], "DEBUG", 5)) log_level_max = LOGLEVEL_DEBUG;
+            else if (!strncmp(argv[2], "TRACE", 5)) log_level_max = LOGLEVEL_TRACE;
+        }
 
     engine_err = ERR_SUCCESS;
     return engine_err;

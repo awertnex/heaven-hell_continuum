@@ -3,7 +3,6 @@
 
 #include <engine/h/types.h>
 #include <engine/h/dir.h>
-#include "main.h"
 
 #define DIR_MAX 128
 
@@ -55,28 +54,5 @@ extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
  *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
  */
 u32 paths_init(void);
-
-/*! @brief initialize world directory structure.
- *
- *  create world directories needed on disk.
- *
- *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
- */
-u32 world_dir_init(const str *world_name);
-
-/*! @brief load world and initialize files if not present.
- *
- *  load world data into memory if present and generate and write to disk if not:
- *  1. seed.txt, file containing world seed, can be changed,
- *     but changes only apply if world is loaded again.
- *
- *  @param seed = if file 'seed.txt' not present, it will be created and 'seed'
- *  will be written to it.
- *
- *  @remark if 'seed' is 0, a random seed will be generated.
- *
- *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
- */
-u32 world_load(WorldInfo *world, const str *world_name, u64 seed);
 
 #endif /* GAME_DIR_H */

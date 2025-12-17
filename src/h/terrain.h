@@ -6,6 +6,12 @@
 #include "main.h"
 #include "assets.h"
 
+#define TERRAIN_SEED_DEFAULT 0
+
+#define RAND_TAB_DIAMETER   128
+#define RAND_TAB_LAYER      (RAND_TAB_DIAMETER * RAND_TAB_DIAMETER)
+#define RAND_TAB_VOLUME     (RAND_TAB_DIAMETER * RAND_TAB_DIAMETER * RAND_TAB_DIAMETER)
+
 typedef enum Biome
 {
     BIOME_HILLS,
@@ -20,7 +26,7 @@ typedef struct Terrain
 
 /*! @brief random number look-up table.
  *
- *  the values are extremely small so to directly use in terrain functions.
+ *  the values are extremely small so to directly use in perlin noise functions.
  *
  *  @remark read-only, initialized internally in 'rand_init()'.
  */
@@ -29,7 +35,7 @@ extern f32 *RAND_TAB;
 /*! @brief initialize and allocate resources for 'RAND_TAB'.
  *
  *  allocate resources for 'RAND_TAB' and load its look-up from disk if found
- *  and build it if not found.
+ *  and build if not found.
  *
  *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
  */
@@ -47,8 +53,7 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed);
  *
  *  @param dispx, dispy = index displacement into 'RAND_TAB'.
  *
- *  @return the dot product of the distance between 'v' and 'a' and the sampled
- *  random numbers.
+ *  @return the dot product between 'v - a' and the sampled random numbers vector.
  */
 f32 gradient_2d(f32 vx, f32 vy, f32 ax, f32 ay, i32 dispx, i32 dispy);
 
@@ -113,9 +118,9 @@ f32 perlin_noise_3d(v3i32 coordinates, f32 intensity, f32 scale, i32 dispx, i32 
 f32 perlin_noise_3d_ex(v3i32 coordinates, f32 intensity, f32 scale,
         u32 octaves, f32 persistence, f32 gathering, i32 dispx, i32 dispy, i32 dispz);
 
-/*! @brief basic terrain of mountains and valleys, built on 'terrain_noise()'
+/*! @brief default terrain of mountains valleys, caves and biomes.
  *
- *  @return terrain info, like block ID at specified coordinates.
+ *  @return terrain info (e.g. block ID at specified coordinates).
  */
 Terrain terrain_land(v3i32 coordinates);
 

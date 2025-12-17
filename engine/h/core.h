@@ -20,6 +20,11 @@
 #include "platform.h"
 #include "limits.h"
 
+enum EngineFlag
+{
+    FLAG_ENGINE_GLFW_INITIALIZED,
+}; /* EngineFlag */
+
 #define CAMERA_CLIP_FAR_DEFAULT GL_CLIP_DISTANCE0
 #define CAMERA_CLIP_FAR_OPTIMAL 2048.0f
 #define CAMERA_CLIP_FAR_UI 256.0f
@@ -252,10 +257,8 @@ typedef struct Camera
 {
     v3f32 pos;
     v3f32 rot;
-    f32 sin_pitch;
-    f32 cos_pitch;
-    f32 sin_yaw;
-    f32 cos_yaw;
+    f32 sin_roll, sin_pitch, sin_yaw;
+    f32 cos_roll, cos_pitch, cos_yaw;
     f32 fovy;
     f32 fovy_smooth;
     f32 ratio;
@@ -353,6 +356,36 @@ enum TextAlignment
     TEXT_ALIGN_BOTTOM = 2,
 }; /* TextAlignment */
 
+/*! @brief initialize engine stuff.
+ *
+ *  set GLFW error callback.
+ *  initialize logger.
+ *  call 'change_dir()' to change working directory to the running applications'.
+ *  calls 'glfw_init()', 'window_init()' and 'glad_init()'.
+ *
+ *  @param argc, argv = used for logger log level if args provided.
+ *  @param release_build = if TRUE, TRACE and DEBUG logs will be disabled.
+ *
+ *  @remark release_build can be overridden with these args in 'argv':
+ *      LOGLEVEL FATAL = log only fatal errors.
+ *      LOGLEVEL ERROR = log errors and above.
+ *      LOGLEVEL WARNING = log warnings and above.
+ *      LOGLEVEL INFO = log info and above.
+ *      LOGLEVEL DEBUG = log debug and above.
+ *      LOGLEVEL TRACE = log everything, default.
+ *
+ *  @remark on error, 'engine_close()' must be called to free allocated resources.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
+ */
+u32 engine_init(int argc, char **argv, Render *render, b8 multisample, b8 release_build);
+
+/*! @brief free engine resources.
+ *
+ *  free logger, destroy window (if not NULL) and terminate glfw.
+ */
+void engine_close(GLFWwindow *window);
+
 /*! @param multisample = turn on multisampling.
  *
  *  @return non-zero on failure and 'engine_err' is set accordingly.
@@ -438,18 +471,26 @@ u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
 
 void mesh_free(Mesh *mesh);
 
-/*! @brief apply camera sin(pitch), sin(yaw), cos(pitch) and cos(yaw) from camera rotation.
+/*! @brief apply sin() and cos() to camera's roll, pitch and yaw from camera rotation.
  *
- *  restrict rotation ranges:
- *      roll: 0 - 0.
- *      pitch: -90 - 90.
- *      yaw: 0 - 360.
+ *  @param roll = if TRUE, roll rotation will be applied from 'camera.rot.x',
+ *  and set to 0 if FALSE.
+ *
+ *  @remark rotation limits:
+ *      roll: [0, 360].
+ *      pitch: [-90, 90].
+ *      yaw: [0, 360].
  */
-void update_camera_movement(Camera *camera);
+void update_camera_movement(Camera *camera, b8 roll);
 
-/*! @brief setup camera matrices for Z-up, right-handed coordinates and vertical fov (fovy).
+/*! @brief make perspective projection matrices from camera parameters.
+ *
+ *  setup camera matrices for Z-up, right-handed coordinates and vertical fov (fovy).
+ *  setup roll, pitch and yaw rotations from 'camera.rot'.
+ *
+ *  @param roll = if TRUE, roll rotation will be applied from 'camera.rot.x'.
  */
-void update_camera_perspective(Camera *camera, Projection *projection);
+void update_projection_perspective(Camera camera, Projection *projection, b8 roll);
 
 void update_mouse_movement(Render *render);
 

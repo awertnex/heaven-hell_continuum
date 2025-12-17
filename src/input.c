@@ -4,6 +4,8 @@
 #include "h/chunking.h"
 #include "h/gui.h"
 #include "h/input.h"
+#include "h/player.h"
+#include "h/world.h"
 
 /* ---- movement ------------------------------------------------------------ */
 
@@ -24,7 +26,7 @@ u32 bind_build_or_use =             GLFW_MOUSE_BUTTON_RIGHT;
 /* ---- inventory ----------------------------------------------------------- */
 
 u32 bind_selected_item =            KEY_Q;
-u32 bind_hotbar[2][SET_HOTBAR_SLOTS_MAX] =
+u32 bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX] =
 {
     {
         KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
@@ -97,7 +99,7 @@ void input_update(Render render, Player *p)
             pz += 1.0f;
         else if (p->flag & FLAG_PLAYER_CAN_JUMP)
         {
-            p->velocity.z += sqrtf(2.0f * world.gravity * SET_PLAYER_JUMP_HEIGHT);
+            p->velocity.z += sqrtf(2.0f * world.gravity * PLAYER_JUMP_HEIGHT);
             p->flag &= ~FLAG_PLAYER_CAN_JUMP;
         }
     }
@@ -173,24 +175,24 @@ void input_update(Render render, Player *p)
 
     /* ---- inventory ------------------------------------------------------- */
 
-    for (i = 0; i < SET_HOTBAR_SLOTS_MAX; ++i)
+    for (i = 0; i < PLAYER_HOTBAR_SLOTS_MAX; ++i)
         if (is_key_press(bind_hotbar[0][i]) || is_key_press(bind_hotbar[1][i]))
             p->hotbar_slot_selected = i;
 
     if (is_key_press(bind_inventory))
     {
-        if ((p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && state_menu_depth)
+        if ((p->container_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && state_menu_depth)
         {
             state_menu_depth = 0;
-            p->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
+            p->container_state &= ~STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
         }
-        else if (!(p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && !state_menu_depth)
+        else if (!(p->container_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && !state_menu_depth)
         {
             state_menu_depth = 1;
-            p->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
+            p->container_state |= STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
         }
 
-        if (!(p->container_state & STATE_CONTR_INVENTORY_SURVIVAL) && state_menu_depth)
+        if (!(p->container_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && state_menu_depth)
             --state_menu_depth;
     }
 
@@ -203,7 +205,7 @@ void input_update(Render render, Player *p)
         flag ^= FLAG_MAIN_DEBUG;
 
     if (is_key_press(bind_toggle_perspective))
-        p->camera_mode = (p->camera_mode + 1) % MODE_CAMERA_COUNT;
+        p->camera_mode = (p->camera_mode + 1) % PLAYER_CAMERA_MODE_COUNT;
 
     if (is_key_press(bind_toggle_zoom))
         p->flag ^= FLAG_PLAYER_ZOOMER;

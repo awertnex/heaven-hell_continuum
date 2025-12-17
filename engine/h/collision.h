@@ -1,0 +1,25 @@
+#ifndef ENGINE_COLLISION_H
+#define ENGINE_COLLISION_H
+
+#include "types.h"
+
+#define COLLISION_EPSILON 1e-3f
+
+typedef struct BoundingBox
+{
+    v3f64 pos;
+    v3f64 size;
+} BoundingBox;
+
+b8 is_intersect_aabb(BoundingBox a, BoundingBox b);
+
+/*! @brief get collision status and stats between 'a' and 'b' using
+ *  the 'Swept AABB' algorithm.
+ *
+ *  @param velocity = velocity of 'a' since this function assumes 'b' is static.
+ *
+ *  @return entry time.
+ */
+f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal);
+
+#endif /* ENGINE_COLLISION_H */

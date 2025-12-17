@@ -86,7 +86,19 @@ enum LogLevel
     LOGERROR(TRUE, ERR_MESH_GENERATION_FAIL, "Mesh '%s' Generation Failed\n", mesh_name); \
 }
 
-/*! @return non-zero on failure and 'engine_err' is set accordingly.
+/*! @brief initialize logger.
+ *
+ *  @param argc, argv = used for logger log level if args provided.
+ *
+ *  @remark args:
+ *      LOGLEVEL FATAL = log only fatal errors.
+ *      LOGLEVEL ERROR = log errors and above.
+ *      LOGLEVEL WARNING = log warnings and above.
+ *      LOGLEVEL INFO = log info and above.
+ *      LOGLEVEL DEBUG = log debug and above.
+ *      LOGLEVEL TRACE = log everything, default.
+ *
+ *  @return non-zero on failure and 'engine_err' is set accordingly.
  */
 u32 logger_init(b8 release_build, int argc, char **argv);
 

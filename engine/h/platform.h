@@ -27,6 +27,10 @@
 
 int make_dir(const str *path);
 
+/*! @brief change current working directory.
+ */
+int change_dir(const str *path);
+
 /*! -- INTERNAL USE ONLY --;
  *
  *  @brief get real path.

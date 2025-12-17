@@ -36,7 +36,9 @@ int main(int argc, char **argv)
     cmd_push(DIR_SRC"gui.c");
     cmd_push(DIR_SRC"input.c");
     cmd_push(DIR_SRC"logic.c");
+    cmd_push(DIR_SRC"player.c");
     cmd_push(DIR_SRC"terrain.c");
+    cmd_push(DIR_SRC"world.c");
     cmd_push(stringf("-I%s", str_build_root));
     cmd_push("-Ofast");
     cmd_push("-std=c99");

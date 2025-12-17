@@ -6,6 +6,7 @@
 
 #include "h/assets.h"
 #include "h/dir.h"
+#include "h/main.h"
 
 Block *blocks = NULL;
 static Texture *block_textures = NULL;

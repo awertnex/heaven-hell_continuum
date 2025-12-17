@@ -24,6 +24,7 @@ u64 clamp_u64(u64 n, u64 min, u64 max);
 f64 clamp_f64(f64 n, f64 min, f64 max);
 f32 min_v3f32(v3f32 v);
 f32 max_v3f32(v3f32 v);
+f32 map_range_f32(f32 n, f32 n_min, f32 n_max, f32 r_min, f32 r_max);
 u32 min_axis_v3f32(v3f32 v);
 u32 max_axis_v3f32(v3f32 v);
 f32 len_v3f32(v3f32 v);

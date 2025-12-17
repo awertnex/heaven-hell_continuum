@@ -19,6 +19,11 @@ int make_dir(const str *path)
     return exit_code;
 }
 
+int change_dir(const str *path)
+{
+    return chdir(path);
+}
+
 u32 _get_path_absolute(const str *path, str *path_real)
 {
     if (!GetFullPathNameA(path, PATH_MAX, path_real, NULL))

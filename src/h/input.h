@@ -6,6 +6,7 @@
 
 #include "main.h"
 #include "logic.h"
+#include "player.h"
 
 /* ---- movement ------------------------------------------------------------ */
 
@@ -28,7 +29,7 @@ extern u32 bind_build_or_use;
 /* extern u32 bind_drop_item; */
 
 /* two arrays for number keys and numberpad keys */
-extern u32 bind_hotbar[2][SET_HOTBAR_SLOTS_MAX];
+extern u32 bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX];
 
 extern u32 bind_inventory;
 
@@ -66,7 +67,7 @@ extern u32 bind_toggle_chunk_queue_visualizer;
  *  handle all key binds listed above and perform their logic on mostly 'p->flag'.
  *
  *  @remark only updates player flags, no parameters are updated except for
- *  'p->acceleration'.
+ *  'p->input'.
  */
 void input_update(Render render, Player *p);
 

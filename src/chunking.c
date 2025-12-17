@@ -29,6 +29,7 @@ static Chunk *chunk_buf = NULL;
 static u64 chunk_buf_cursor = 0;
 
 Chunk **chunk_tab = NULL;
+u32 chunk_tab_index = 0;
 Chunk ***CHUNK_ORDER = NULL;
 ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX] = {0};
 
@@ -138,7 +139,7 @@ u32 chunking_init(void)
             for (j = 0; j < chunk_buf_volume; ++j)
             {
                 LOGTRACE(FALSE,
-                        "Building CHUNK_ORDER Distance Lookup [0x%02"PRIx64"/0x%02x] Progress [%ld/%ld]..\n",
+                        "Building CHUNK_ORDER Distance Lookup [0x%02"PRIx64"/0x%02x] Progress [%"PRIu64"/%"PRIu64"]..\n",
                         i, SET_RENDER_DISTANCE_MAX, j, chunk_buf_volume);
 
                 coordinates =
@@ -1161,22 +1162,12 @@ generate_and_mesh:
         }
 }
 
-u32 get_chunk_index(v3i32 chunk, v3f64 pos)
+u32 *get_block_resolved(Chunk *ch, i32 x, i32 y, i32 z)
 {
-    v3i32 offset =
-    {
-        (i32)floorf(pos.x / CHUNK_DIAMETER) - chunk.x + settings.chunk_buf_radius,
-        (i32)floorf(pos.y / CHUNK_DIAMETER) - chunk.y + settings.chunk_buf_radius,
-        (i32)floorf(pos.z / CHUNK_DIAMETER) - chunk.z + settings.chunk_buf_radius,
-    };
-    u32 index =
-        offset.x +
-        offset.y * settings.chunk_buf_diameter +
-        offset.z * settings.chunk_buf_layer;
-
-    if (index >= settings.chunk_buf_volume)
-        return settings.chunk_tab_center;
-    return index;
+    x = mod(x, CHUNK_DIAMETER);
+    y = mod(y, CHUNK_DIAMETER);
+    z = mod(z, CHUNK_DIAMETER);
+    return &ch->block[z][y][x];
 }
 
 Chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z)
@@ -1189,10 +1180,20 @@ Chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z)
         z * settings.chunk_buf_layer];
 }
 
-u32 *get_block_resolved(Chunk *ch, i32 x, i32 y, i32 z)
+u32 get_chunk_index(v3i32 chunk_pos, v3f64 pos)
 {
-    x = mod(x, CHUNK_DIAMETER);
-    y = mod(y, CHUNK_DIAMETER);
-    z = mod(z, CHUNK_DIAMETER);
-    return &ch->block[z][y][x];
+    v3i32 offset =
+    {
+        (i32)floorf(pos.x / CHUNK_DIAMETER) - chunk_pos.x + settings.chunk_buf_radius,
+        (i32)floorf(pos.y / CHUNK_DIAMETER) - chunk_pos.y + settings.chunk_buf_radius,
+        (i32)floorf(pos.z / CHUNK_DIAMETER) - chunk_pos.z + settings.chunk_buf_radius,
+    };
+    u32 index =
+        offset.x +
+        offset.y * settings.chunk_buf_diameter +
+        offset.z * settings.chunk_buf_layer;
+
+    if (index >= settings.chunk_buf_volume)
+        return settings.chunk_tab_center;
+    return index;
 }

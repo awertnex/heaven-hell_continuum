@@ -60,6 +60,11 @@ u32 max_axis_v3f32(v3f32 v)
     return v.x > v.y ? v.x > v.z ? 1 : 3 : v.y > v.z ? 2 : 3;
 }
 
+f32 map_range_f32(f32 n, f32 n_min, f32 n_max, f32 r_min, f32 r_max)
+{
+    return r_min + ((n - n_min) * (r_max - r_min)) / (n_max - n_min);
+}
+
 f32 len_v3f32(v3f32 v)
 {
     return v.x * v.x + v.y * v.y + v.z * v.z;

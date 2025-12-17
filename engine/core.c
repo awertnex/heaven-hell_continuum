@@ -15,6 +15,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <engine/include/stb_image.h>
 
+
+static u64 engine_flag = 0; /* enum: EngineFlag */
 u32 engine_err = ERR_SUCCESS;
 static u32 keyboard_key[KEYBOARD_KEYS_MAX] = {0};
 static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
@@ -145,6 +147,14 @@ static u32 keyboard_tab[KEYBOARD_KEYS_MAX] =
 /* ---- section: signatures ------------------------------------------------- */
 
 /*! -- INTERNAL USE ONLY --;
+ */
+static void glfw_callback_error(int error, const char* message)
+{
+    (void)error;
+    LOGERROR(TRUE, ERR_GLFW, "GLFW: %s\n", message);
+}
+
+/*! -- INTERNAL USE ONLY --;
  *
  *  @brief process shader before compilation.
  *
@@ -199,7 +209,37 @@ static b8 _is_key_release(const u32 key);
  */
 static b8 _is_key_release_double(const u32 key);
 
-/* ---- section: windowing -------------------------------------------------- */
+/* ---- section: init ------------------------------------------------------- */
+
+u32 engine_init(int argc, char **argv, Render *render, b8 multisample, b8 release_build)
+{
+    str *path = get_path_bin_root();
+
+    glfwSetErrorCallback(glfw_callback_error);
+
+    change_dir(path);
+
+    if (
+            logger_init(release_build, argc, argv) != ERR_SUCCESS ||
+            glfw_init(multisample) != ERR_SUCCESS ||
+            window_init(render) != ERR_SUCCESS ||
+            glad_init() != ERR_SUCCESS)
+        engine_close(render->window);
+
+    return engine_err;
+}
+
+void engine_close(GLFWwindow *window)
+{
+    logger_close();
+    if (window)
+        glfwDestroyWindow(window);
+    if (engine_flag & FLAG_ENGINE_GLFW_INITIALIZED)
+    {
+        glfwTerminate();
+        engine_flag &= ~FLAG_ENGINE_GLFW_INITIALIZED;
+    }
+}
 
 u32 glfw_init(b8 multisample)
 {
@@ -209,6 +249,8 @@ u32 glfw_init(b8 multisample)
                 "%s\n", "Failed to Initialize GLFW, Process Aborted");
         return engine_err;
     }
+
+    engine_flag |= FLAG_ENGINE_GLFW_INITIALIZED;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -876,14 +918,26 @@ void mesh_free(Mesh *mesh)
 
 /* ---- section: camera ----------------------------------------------------- */
 
-void update_camera_movement(Camera *camera)
+void update_camera_movement(Camera *camera, b8 roll)
 {
-    const f32 ANGLE = 90.0f;
-    const f32 RANGE = 360.0f;
+    if (roll)
+    {
+        camera->rot.x = fmodf(camera->rot.x, CAMERA_RANGE_MAX);
+        if (camera->rot.x < 0.0f) camera->rot.x += CAMERA_RANGE_MAX;
 
-    camera->rot.z = fmodf(camera->rot.z, RANGE);
-    if (camera->rot.z < 0.0f) camera->rot.z += RANGE;
-    camera->rot.y = clamp_f32(camera->rot.y, -ANGLE, ANGLE);
+        camera->sin_roll =  sinf(camera->rot.x * DEG2RAD);
+        camera->cos_roll =  cosf(camera->rot.x * DEG2RAD);
+    }
+    else
+    {
+        camera->rot.x = 0.0f;
+        camera->sin_roll = 0.0f;
+        camera->cos_roll = 1.0f;
+    }
+
+    camera->rot.y = clamp_f32(camera->rot.y, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
+    camera->rot.z = fmodf(camera->rot.z, CAMERA_RANGE_MAX);
+    if (camera->rot.z < 0.0f) camera->rot.z += CAMERA_RANGE_MAX;
 
     camera->sin_pitch = sinf(camera->rot.y * DEG2RAD);
     camera->cos_pitch = cosf(camera->rot.y * DEG2RAD);
@@ -891,44 +945,43 @@ void update_camera_movement(Camera *camera)
     camera->cos_yaw =   cosf(camera->rot.z * DEG2RAD);
 }
 
-void update_camera_perspective(Camera *camera, Projection *projection)
+void update_projection_perspective(Camera camera, Projection *projection, b8 roll)
 {
-    const f32 SPCH = camera->sin_pitch;
-    const f32 CPCH = camera->cos_pitch;
-    const f32 SYAW = camera->sin_yaw;
-    const f32 CYAW = camera->cos_yaw;
+    const f32 SROL = camera.sin_roll;
+    const f32 CROL = camera.cos_roll;
+    const f32 SPCH = camera.sin_pitch;
+    const f32 CPCH = camera.cos_pitch;
+    const f32 SYAW = camera.sin_yaw;
+    const f32 CYAW = camera.cos_yaw;
 
-    f32 ratio = camera->ratio;
-    f32 fovy = 1.0f / tanf((camera->fovy_smooth / 2.0f) * DEG2RAD);
-    f32 far = camera->far;
-    f32 near = camera->near;
+    f32 ratio = camera.ratio;
+    f32 fovy = 1.0f / tanf((camera.fovy_smooth / 2.0f) * DEG2RAD);
+    f32 far = camera.far;
+    f32 near = camera.near;
     f32 clip = -(far + near) / (far - near);
     f32 offset = -(2.0f * far * near) / (far - near);
 
     /* ---- target ---------------------------------------------------------- */
 
-    projection->target =
-        (m4f32){
-            1.0f,           0.0f,           0.0f,   0.0f,
-            0.0f,           1.0f,           0.0f,   0.0f,
-            0.0f,           0.0f,           1.0f,   0.0f,
-            -CYAW * -CPCH,  SYAW * -CPCH,   -SPCH,  1.0f,
-        };
+    projection->target = (m4f32){
+        1.0f,           0.0f,           0.0f,   0.0f,
+        0.0f,           1.0f,           0.0f,   0.0f,
+        0.0f,           0.0f,           1.0f,   0.0f,
+        -CYAW * -CPCH,  SYAW * -CPCH,   -SPCH,  1.0f,
+    };
 
     /* ---- translation ----------------------------------------------------- */
 
-    projection->translation =
-        (m4f32){
-            1.0f,           0.0f,           0.0f,           0.0f,
-            0.0f,           1.0f,           0.0f,           0.0f,
-            0.0f,           0.0f,           1.0f,           0.0f,
-            -camera->pos.x, -camera->pos.y, -camera->pos.z, 1.0f,
-        };
+    projection->translation = (m4f32){
+        1.0f,           0.0f,           0.0f,           0.0f,
+        0.0f,           1.0f,           0.0f,           0.0f,
+        0.0f,           0.0f,           1.0f,           0.0f,
+        -camera.pos.x,  -camera.pos.y,  -camera.pos.z,  1.0f,
+    };
 
     /* ---- rotation: yaw --------------------------------------------------- */
 
-    projection->rotation =
-        (m4f32){
+    projection->rotation = (m4f32){
             CYAW,   SYAW, 0.0f, 0.0f,
             -SYAW,  CYAW, 0.0f, 0.0f,
             0.0f,   0.0f, 1.0f, 0.0f,
@@ -945,15 +998,25 @@ void update_camera_perspective(Camera *camera, Projection *projection)
             0.0f,   0.0f, 0.0f, 1.0f,
             });
 
+    /* ---- rotation: roll -------------------------------------------------- */
+
+    if (roll)
+        projection->rotation = matrix_multiply(projection->rotation,
+                (m4f32){
+                1.0f,   0.0f,   0.0f, 0.0f,
+                0.0f,   CROL,   SROL, 0.0f,
+                0.0f,   -SROL,  CROL, 0.0f,
+                0.0f,   0.0f,   0.0f, 1.0f,
+                });
+
     /* ---- orientation: z-up ----------------------------------------------- */
 
-    projection->orientation =
-        (m4f32){
-            0.0f,   0.0f, -1.0f,    0.0f,
-            -1.0f,  0.0f, 0.0f,     0.0f,
-            0.0f,   1.0f, 0.0f,     0.0f,
-            0.0f,   0.0f, 0.0f,     1.0f,
-        };
+    projection->orientation = (m4f32){
+        0.0f,   0.0f, -1.0f,    0.0f,
+        -1.0f,  0.0f, 0.0f,     0.0f,
+        0.0f,   1.0f, 0.0f,     0.0f,
+        0.0f,   0.0f, 0.0f,     1.0f,
+    };
 
     /* ---- view ------------------------------------------------------------ */
 
@@ -963,13 +1026,12 @@ void update_camera_perspective(Camera *camera, Projection *projection)
 
     /* ---- projection ------------------------------------------------------ */
 
-    projection->projection =
-        (m4f32){
-            fovy / ratio,   0.0f,   0.0f,   0.0f,
-            0.0f,           fovy,   0.0f,   0.0f,
-            0.0f,           0.0f,   clip,  -1.0f,
-            0.0f,           0.0f,   offset, 0.0f,
-        };
+    projection->projection = (m4f32){
+        fovy / ratio,   0.0f,   0.0f,   0.0f,
+        0.0f,           fovy,   0.0f,   0.0f,
+        0.0f,           0.0f,   clip,  -1.0f,
+        0.0f,           0.0f,   offset, 0.0f,
+    };
 
     projection->perspective =
         matrix_multiply(projection->view, projection->projection);

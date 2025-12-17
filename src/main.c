@@ -10,6 +10,7 @@
 #include <engine/h/string.h>
 
 #include "h/main.h"
+
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/diagnostics.h"
@@ -17,27 +18,27 @@
 #include "h/gui.h"
 #include "h/input.h"
 #include "h/logic.h"
+#include "h/player.h"
 #include "h/terrain.h"
+#include "h/world.h"
 
 u32 *const GAME_ERR = (u32*)&engine_err;
-u32 chunk_tab_index = 0;
 
-static Render render =
+Render render =
 {
     .title = GAME_NAME": "GAME_VERSION,
     .size = {1280, 720},
 };
 
 struct Settings settings = {0};
-WorldInfo world = {0};
 u64 flag = 0;
 f64 game_start_time = 0;
 u8 debug_mode[DEBUG_MODE_COUNT] = {0};
 static ShaderProgram shader[SHADER_COUNT] = {0};
 Texture texture[TEXTURE_COUNT] = {0};
 Font font[FONT_COUNT];
-static Projection projection_world = {0};
-static Projection projection_hud = {0};
+Projection projection_world = {0};
+Projection projection_hud = {0};
 static struct Uniform uniform = {0};
 static Mesh mesh[MESH_COUNT] = {0};
 static FBO fbo[FBO_COUNT] = {0};
@@ -46,9 +47,9 @@ static Player lily =
 {
     .name = "Lily",
     .size = {0.6f, 0.6f, 1.8f},
-    .eye_height = SET_PLAYER_EYE_HEIGHT,
+    .eye_height = PLAYER_EYE_HEIGHT,
     .weight = 2.0f,
-    .camera_mode = MODE_CAMERA_1ST_PERSON,
+    .camera_mode = PLAYER_CAMERA_MODE_1ST_PERSON,
     .camera_distance = SET_CAMERA_DISTANCE_MAX,
 
     .container_state = 0,
@@ -69,12 +70,6 @@ static struct /* skybox_data */
     v3f32 color;
 } skybox_data;
 
-static void callback_error(int error, const char* message)
-{
-    (void)error;
-    LOGERROR(TRUE, ERR_GLFW, "GLFW: %s\n", message);
-}
-
 static void callback_framebuffer_size(GLFWwindow* window, int width, int height);
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods);
 static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset);
@@ -90,12 +85,6 @@ static void generate_standard_meshes(void);
 static u32 settings_init(void);
 
 void settings_update(void);
-
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
- */
-u32 world_init(str *name, u64 seed);
-
-static void world_update(Player *p);
 static void draw_everything(void);
 
 static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
@@ -138,10 +127,10 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
     else
     {
         lily.hotbar_slot_selected += (i64)yoffset;
-        if (lily.hotbar_slot_selected >= SET_HOTBAR_SLOTS_MAX)
+        if (lily.hotbar_slot_selected >= PLAYER_HOTBAR_SLOTS_MAX)
             lily.hotbar_slot_selected = 0;
         else if (lily.hotbar_slot_selected < 0)
-            lily.hotbar_slot_selected = SET_HOTBAR_SLOTS_MAX - 1;
+            lily.hotbar_slot_selected = PLAYER_HOTBAR_SLOTS_MAX - 1;
     }
 }
 
@@ -200,7 +189,7 @@ static u32 settings_init(void)
         settings.chunk_buf_radius * settings.chunk_buf_diameter +
         settings.chunk_buf_radius * settings.chunk_buf_layer;
 
-    settings.reach_distance = SET_REACH_DISTANCE_MAX;
+    settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
     settings.font_size = 20.0f;
@@ -694,71 +683,6 @@ cleanup:
     mesh_free(&mesh[MESH_PLAYER]);
 }
 
-u32 world_init(str *name, u64 seed)
-{
-    world_dir_init(name);
-    if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
-        return *GAME_ERR;
-
-    world_load(&world, name, seed);
-    if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
-        return *GAME_ERR;
-
-    if (chunking_init() != ERR_SUCCESS)
-        return *GAME_ERR;
-
-    world.gravity = GRAVITY * 1.5f;
-
-    set_player_spawn(&lily, 1547, -531, 10);
-    player_spawn(&lily, TRUE);
-    player_chunk_update(&lily);
-
-    flag |= FLAG_MAIN_CHUNK_BUF_DIRTY | FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
-    disable_cursor;
-    center_cursor;
-
-    *GAME_ERR = ERR_SUCCESS;
-    return *GAME_ERR;
-}
-
-static void world_update(Player *p)
-{
-    world.tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
-    if (world.tick >= SET_DAY_TICKS_MAX)
-        ++world.days;
-
-    if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
-        show_cursor;
-    else disable_cursor;
-
-    player_update(p, render.frame_delta);
-    player_target_update(p);
-
-    b8 use_mouse = TRUE;
-    use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    player_camera_movement_update(p, render.mouse_delta, use_mouse);
-    update_camera_perspective(&p->camera, &projection_world);
-    update_camera_perspective(&p->camera_hud, &projection_hud);
-
-    chunking_update(p->chunk, &p->chunk_delta);
-    chunk_tab_index = get_chunk_index(p->chunk, p->target);
-
-    /* ---- player targeting ------------------------------------------------ */
-
-    if (is_in_volume_i64(
-                p->target_snapped,
-                (v3i64){
-                -WORLD_DIAMETER * CHUNK_DIAMETER,
-                -WORLD_DIAMETER * CHUNK_DIAMETER,
-                -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER},
-                (v3i64){
-                WORLD_DIAMETER * CHUNK_DIAMETER,
-                WORLD_DIAMETER * CHUNK_DIAMETER,
-                WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER}))
-        flag |= FLAG_MAIN_PARSE_TARGET;
-    else flag &= ~FLAG_MAIN_PARSE_TARGET;
-}
-
 static void draw_everything(void)
 {
     /* ---- draw skybox ----------------------------------------------------- */
@@ -879,7 +803,7 @@ static void draw_everything(void)
 
     /* ---- draw player ----------------------------------------------------- */
 
-    if (lily.camera_mode != MODE_CAMERA_1ST_PERSON)
+    if (lily.camera_mode != PLAYER_CAMERA_MODE_1ST_PERSON)
     {
 
         glUseProgram(shader[SHADER_DEFAULT].id);
@@ -1373,9 +1297,8 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
-    glfwSetErrorCallback(callback_error);
-    if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)
-        return *GAME_ERR;
+    if (engine_init(argc, argv, &render, FALSE, GAME_RELEASE_BUILD) != ERR_SUCCESS)
+        goto cleanup;
 
     if (!GAME_RELEASE_BUILD)
         LOGDEBUG(FALSE, "%s\n", "DEVELOPMENT BUILD");
@@ -1396,12 +1319,6 @@ int main(int argc, char **argv)
     if (paths_init() != ERR_SUCCESS ||
             rand_init() != ERR_SUCCESS ||
             settings_init() != ERR_SUCCESS)
-        goto cleanup;
-
-    if (
-            glfw_init(FALSE) != ERR_SUCCESS ||
-            window_init(&render) != ERR_SUCCESS ||
-            glad_init() != ERR_SUCCESS)
         goto cleanup;
 
     /*temp*/ glfwSetWindowPos(render.window,
@@ -1510,7 +1427,7 @@ section_menu_pause:
 section_world_loaded:
 
     if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
-            world_init("Poop Consistency Tester", 0) != ERR_SUCCESS)
+            world_init("Poop Consistency Tester", 0, &lily) != ERR_SUCCESS)
             goto cleanup;
 
     generate_standard_meshes();
@@ -1560,8 +1477,6 @@ cleanup:
         shader_program_free(&shader[i]);
     text_free();
     rand_free();
-    logger_close();
-    glfwDestroyWindow(render.window);
-    glfwTerminate();
+    engine_close(render.window);
     return *GAME_ERR;
 }
