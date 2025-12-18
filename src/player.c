@@ -135,18 +135,41 @@ void player_collision_update(Player *p, f64 dt)
     f32 dot = 0.0f;
     BoundingBox block_box = {0};
     BoundingBox collision_capsule;
-    i32 i, x, y, z,
-        startx, starty, startz,
-        endx, endy, endz;
+    i32 i, x, y, z;
+    v3i32 MIN, MAX, START = {0}, INCREMENT = {1, 1, 1};
     b8 resolved = TRUE;
 
     collision_capsule = make_collision_capsule(p->bbox, p->chunk, displacement);
-    startx = (i32)collision_capsule.pos.x;
-    starty = (i32)collision_capsule.pos.y;
-    startz = (i32)collision_capsule.pos.z;
-    endx = (i32)(collision_capsule.pos.x + collision_capsule.size.x);
-    endy = (i32)(collision_capsule.pos.y + collision_capsule.size.y);
-    endz = (i32)(collision_capsule.pos.z + collision_capsule.size.z);
+    MIN.x = (i32)collision_capsule.pos.x;
+    MIN.y = (i32)collision_capsule.pos.y;
+    MIN.z = (i32)collision_capsule.pos.z;
+    MAX.x = (i32)(collision_capsule.pos.x + collision_capsule.size.x);
+    MAX.y = (i32)(collision_capsule.pos.y + collision_capsule.size.y);
+    MAX.z = (i32)(collision_capsule.pos.z + collision_capsule.size.z);
+
+    if (p->velocity.x >= 0.0f)
+        START.x = MIN.x;
+    else
+    {
+        START.x = MAX.x - 1;
+        INCREMENT.x = -1;
+    }
+
+    if (p->velocity.y >= 0.0f)
+        START.y = MIN.y;
+    else
+    {
+        START.y = MAX.y - 1;
+        INCREMENT.y = -1;
+    }
+
+    if (p->velocity.z >= 0.0f)
+        START.z = MIN.z;
+    else
+    {
+        START.z = MAX.z - 1;
+        INCREMENT.z = -1;
+    }
 
     p->flag &= ~FLAG_PLAYER_CAN_JUMP;
     p->friction.x = 0.0f;
@@ -155,11 +178,11 @@ void player_collision_update(Player *p, f64 dt)
     for (i = 0; i < 3 && resolved; ++i)
     {
         resolved = FALSE;
-        for (z = startz; z < endz; ++z)
+        for (z = START.z; z >= MIN.z && z < MAX.z; z += INCREMENT.z)
         {
-            for (y = starty; y < endy; ++y)
+            for (y = START.y; y >= MIN.y && y < MAX.y; y += INCREMENT.y)
             {
-                for (x = startx; x < endx; ++x)
+                for (x = START.x; x >= MIN.x && x < MAX.x; x += INCREMENT.x)
                 {
                     ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
                     if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED)) continue;
@@ -174,7 +197,7 @@ void player_collision_update(Player *p, f64 dt)
                     block_box.size.z = 1.0;
 
                     time = get_swept_aabb(p->bbox, block_box, p->velocity, &normal);
-                    if (normal.z > 0.0f && p->bbox.pos.z - (block_box.pos.z + block_box.size.z) < 0.3)
+                    if (normal.z > 0.0f && p->bbox.pos.z - (block_box.pos.z + block_box.size.z) < 0.2f)
                     {
                         p->friction.x = 0.7f;
                         p->friction.y = 0.7f;
@@ -183,10 +206,6 @@ void player_collision_update(Player *p, f64 dt)
                     {
                         /* ---- resolution ---------------------------------- */
 
-                        printf("x[%u] i[%u] v[%.3f %.3f %.3f] n[%.0f %.0f %.0f]\n",
-                                x, i, p->velocity.x, p->velocity.y, p->velocity.z,
-                                normal.x, normal.y, normal.z);
-
                         p->pos.x += p->velocity.x * time + normal.x * COLLISION_EPSILON;
                         p->pos.y += p->velocity.y * time + normal.y * COLLISION_EPSILON;
                         p->pos.z += p->velocity.z * time + normal.z * COLLISION_EPSILON;
@@ -194,9 +213,9 @@ void player_collision_update(Player *p, f64 dt)
                         dot = dot_v3f32(p->velocity, normal);
                         if (dot < 0.0f)
                         {
-                            p->velocity.x -= normal.x * dot;
-                            p->velocity.y -= normal.y * dot;
-                            p->velocity.z -= normal.z * dot;
+                            p->velocity.x -= dot * normal.x;
+                            p->velocity.y -= dot * normal.y;
+                            p->velocity.z -= dot * normal.z;
                         }
 
                         p->pos.x -= p->velocity.x * time;
