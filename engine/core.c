@@ -891,27 +891,21 @@ void update_camera_movement(Camera *camera, b8 roll)
 {
     if (roll)
     {
-        camera->rot.x = fmodf(camera->rot.x, CAMERA_RANGE_MAX);
-        if (camera->rot.x < 0.0f) camera->rot.x += CAMERA_RANGE_MAX;
-
-        camera->sin_roll = sinf(camera->rot.x * DEG2RAD);
-        camera->cos_roll = cosf(camera->rot.x * DEG2RAD);
+        camera->roll = fmod(camera->roll, CAMERA_RANGE_MAX);
+        if (camera->roll < 0.0) camera->roll += CAMERA_RANGE_MAX;
     }
-    else
-    {
-        camera->rot.x = 0.0f;
-        camera->sin_roll = 0.0f;
-        camera->cos_roll = 1.0f;
-    }
+    else camera->roll = 0.0;
 
-    camera->rot.y = clamp_f32(camera->rot.y, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
-    camera->rot.z = fmodf(camera->rot.z, CAMERA_RANGE_MAX);
-    if (camera->rot.z < 0.0f) camera->rot.z += CAMERA_RANGE_MAX;
+    camera->pitch = clamp_f64(camera->pitch, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
+    camera->yaw = fmod(camera->yaw, CAMERA_RANGE_MAX);
+    if (camera->yaw < 0.0) camera->yaw += CAMERA_RANGE_MAX;
 
-    camera->sin_pitch = sinf(camera->rot.y * DEG2RAD);
-    camera->cos_pitch = cosf(camera->rot.y * DEG2RAD);
-    camera->sin_yaw = sinf(camera->rot.z * DEG2RAD);
-    camera->cos_yaw = cosf(camera->rot.z * DEG2RAD);
+    camera->sin_roll = sin(camera->roll * DEG2RAD);
+    camera->cos_roll = cos(camera->roll * DEG2RAD);
+    camera->sin_pitch = sin(camera->pitch * DEG2RAD);
+    camera->cos_pitch = cos(camera->pitch * DEG2RAD);
+    camera->sin_yaw = sin(camera->yaw * DEG2RAD);
+    camera->cos_yaw = cos(camera->yaw * DEG2RAD);
 }
 
 void update_projection_perspective(Camera camera, Projection *projection, b8 roll)
@@ -1002,6 +996,17 @@ void update_projection_perspective(Camera camera, Projection *projection, b8 rol
     };
 
     projection->perspective = matrix_multiply(projection->view, projection->projection);
+}
+
+void get_camera_lookat_angles(v3f64 camera_pos, v3f64 target, f64 *pitch, f64 *yaw)
+{
+    v3f64 direction = normalize_v3f64((v3f64){
+            camera_pos.x - target.x,
+            camera_pos.y - target.y,
+            camera_pos.z - target.z,
+            });
+    *pitch = atan2(direction.z, sqrt(direction.x * direction.x + direction.y * direction.y));
+    *yaw = atan2(-direction.y, direction.x);
 }
 
 /* ---- section: input ------------------------------------------------------ */

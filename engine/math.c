@@ -70,6 +70,11 @@ f32 len_v3f32(v3f32 v)
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
+f64 len_v3f64(v3f64 v)
+{
+    return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
 v3f32 normalize_v3f32(v3f32 v)
 {
     f32 len = len_v3f32(v);
@@ -79,7 +84,21 @@ v3f32 normalize_v3f32(v3f32 v)
     return (v3f32){v.x / len, v.y / len, v.z / len};
 }
 
+v3f64 normalize_v3f64(v3f64 v)
+{
+    f64 len = len_v3f64(v);
+    if (len < EPSILON)
+        return (v3f64){0};
+
+    return (v3f64){v.x / len, v.y / len, v.z / len};
+}
+
 f32 dot_v3f32(v3f32 a, v3f32 b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+f64 dot_v3f64(v3f64 a, v3f64 b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }

@@ -29,11 +29,11 @@ enum EngineFlag
 #define CAMERA_CLIP_FAR_OPTIMAL 2048.0f
 #define CAMERA_CLIP_FAR_UI 256.0f
 #define CAMERA_CLIP_NEAR_DEFAULT 0.03f
-#define CAMERA_ANGLE_MAX 90.0f
-#define CAMERA_RANGE_MAX 360.0f
+#define CAMERA_ANGLE_MAX 90.0
+#define CAMERA_RANGE_MAX 360.0
 #define CAMERA_ZOOM_MAX 69.0f
-#define CAMERA_ZOOM_SPEED 10.0f
-#define CAMERA_ZOOM_SENSITIVITY 6.0f
+#define CAMERA_ZOOM_SPEED 10.0
+#define CAMERA_ZOOM_SENSITIVITY 6.0
 #define KEYBOARD_KEYS_MAX 120
 #define KEYBOARD_DOUBLE_PRESS_TIME 0.5f
 #define FONT_ATLAS_CELL_RESOLUTION 16
@@ -254,10 +254,10 @@ typedef struct Texture
 
 typedef struct Camera
 {
-    v3f32 pos;
-    v3f32 rot;
-    f32 sin_roll, sin_pitch, sin_yaw;
-    f32 cos_roll, cos_pitch, cos_yaw;
+    v3f64 pos;
+    f64 roll, pitch, yaw;
+    f64 sin_roll, sin_pitch, sin_yaw;
+    f64 cos_roll, cos_pitch, cos_yaw;
     f32 fovy;
     f32 fovy_smooth;
     f32 ratio;
@@ -489,6 +489,12 @@ void update_camera_movement(Camera *camera, b8 roll);
  *  @param roll = if TRUE, roll rotation will be applied from 'camera.rot.x'.
  */
 void update_projection_perspective(Camera camera, Projection *projection, b8 roll);
+
+/*! @brief get camera look-at angles from camera position and target position.
+ *  
+ *  assign vertical angle to 'pitch' and horizontal angle to 'yaw'.
+ */
+void get_camera_lookat_angles(v3f64 camera_pos, v3f64 target, f64 *pitch, f64 *yaw);
 
 void update_mouse_movement(Render *render);
 
