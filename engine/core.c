@@ -187,27 +187,27 @@ static u32 _texture_generate(
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_press(const u32 key);
+static inline b8 _is_key_press(const u32 key);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_listen_double(const u32 key);
+static inline b8 _is_key_listen_double(const u32 key);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_hold(const u32 key);
+static inline b8 _is_key_hold(const u32 key);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_hold_double(const u32 key);
+static inline b8 _is_key_hold_double(const u32 key);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_release(const u32 key);
+static inline b8 _is_key_release(const u32 key);
 
 /*! -- INTERNAL USE ONLY --;
  */
-static b8 _is_key_release_double(const u32 key);
+static inline b8 _is_key_release_double(const u32 key);
 
 /* ---- section: init ------------------------------------------------------- */
 
@@ -215,8 +215,8 @@ u32 engine_init(int argc, char **argv, Render *render, b8 multisample, b8 releas
 {
     str *path = get_path_bin_root();
 
+    get_time_f64(); /* initialize start time */
     glfwSetErrorCallback(glfw_callback_error);
-
     change_dir(path);
 
     if (
@@ -794,7 +794,7 @@ u32 texture_generate(Texture *texture, b8 bindless)
     {
         texture->handle = glGetTextureHandleARB(texture->id);
         glMakeTextureHandleResidentARB(texture->handle);
-        LOGTRACE(FALSE, "Handle[%"PRId64"] for Texture[%d] Created\n",
+        LOGTRACE(FALSE, "Handle[%"PRIu64"] for Texture[%d] Created\n",
                 texture->handle, texture->id);
     }
 
@@ -837,7 +837,7 @@ void texture_free(Texture *texture)
     if (texture->handle)
     {
         glMakeTextureHandleNonResidentARB(texture->handle);
-        LOGTRACE(FALSE, "Handle[%"PRId64"] for Texture[%d] Destroyed\n",
+        LOGTRACE(FALSE, "Handle[%"PRIu64"] for Texture[%d] Destroyed\n",
                 texture->handle, texture->id);
     }
 
@@ -1053,100 +1053,157 @@ void update_mouse_movement(Render *render)
 
 b8 is_key_press(const u32 key)
 {
-    return (keyboard_key[key] == KEY_PRESS ||
-            keyboard_key[key] == KEY_PRESS_DOUBLE);
+    return keyboard_key[key] == KEY_PRESS ||
+        keyboard_key[key] == KEY_PRESS_DOUBLE;
 }
 
 b8 is_key_press_double(const u32 key)
 {
-    return (keyboard_key[key] == KEY_PRESS_DOUBLE);
+    return keyboard_key[key] == KEY_PRESS_DOUBLE;
 }
 
 b8 is_key_hold(const u32 key)
 {
-    return (keyboard_key[key] == KEY_HOLD ||
-            keyboard_key[key] == KEY_HOLD_DOUBLE);
+    return keyboard_key[key] == KEY_HOLD ||
+        keyboard_key[key] == KEY_HOLD_DOUBLE;
 }
 
 b8 is_key_release(const u32 key)
 {
-    return (keyboard_key[key] == KEY_RELEASE ||
-            keyboard_key[key] == KEY_RELEASE_DOUBLE);
+    return keyboard_key[key] == KEY_RELEASE ||
+        keyboard_key[key] == KEY_RELEASE_DOUBLE;
 }
 
-static b8 _is_key_press(const u32 key)
+static inline b8 _is_key_press(const u32 key)
 {
-    return (keyboard_key[key] == KEY_PRESS);
+    return keyboard_key[key] == KEY_PRESS;
 }
 
-static b8 _is_key_listen_double(const u32 key)
+static inline b8 _is_key_listen_double(const u32 key)
 {
-    return (keyboard_key[key] == KEY_LISTEN_DOUBLE);
+    return keyboard_key[key] == KEY_LISTEN_DOUBLE;
 }
 
-static b8 _is_key_hold(const u32 key)
+static inline b8 _is_key_hold(const u32 key)
 {
-    return (keyboard_key[key] == KEY_HOLD);
+    return keyboard_key[key] == KEY_HOLD;
 }
 
-static b8 _is_key_hold_double(const u32 key)
+static inline b8 _is_key_hold_double(const u32 key)
 {
-    return (keyboard_key[key] == KEY_HOLD_DOUBLE);
+    return keyboard_key[key] == KEY_HOLD_DOUBLE;
 }
 
-static b8 _is_key_release(const u32 key)
+static inline b8 _is_key_release(const u32 key)
 {
-    return (keyboard_key[key] == KEY_RELEASE);
+    return keyboard_key[key] == KEY_RELEASE;
 }
 
-static b8 _is_key_release_double(const u32 key)
+static inline b8 _is_key_release_double(const u32 key)
 {
-    return (keyboard_key[key] == KEY_RELEASE_DOUBLE);
+    return keyboard_key[key] == KEY_RELEASE_DOUBLE;
 }
 
 void update_key_states(Render render)
 {
     static f64 key_press_start_time[KEYBOARD_KEYS_MAX] = {0};
+    b8 key_press = FALSE, key_release = FALSE;
     u32 i;
 
     for (i = 0; i < KEYBOARD_KEYS_MAX; ++i)
     {
-        b8 key_press =
-            (glfwGetKey(render.window, keyboard_tab[i]) == GLFW_PRESS);
-        b8 key_release =
-            (glfwGetKey(render.window, keyboard_tab[i]) == GLFW_RELEASE);
+        key_press = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_PRESS;
+        key_release = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_RELEASE;
+
+        if (key_press)
+        {
+            if (keyboard_key[i] == KEY_IDLE)
+            {
+                keyboard_key[i] = KEY_PRESS;
+                key_press_start_time[i] = render.time;
+                continue;
+            }
+            else if (_is_key_listen_double(i))
+            {
+                if (render.time - key_press_start_time[i] <= KEYBOARD_DOUBLE_PRESS_TIME)
+                    keyboard_key[i] = KEY_PRESS_DOUBLE;
+                else
+                {
+                    keyboard_key[i] = KEY_PRESS;
+                    key_press_start_time[i] = render.time;
+                }
+                continue;
+            }
+        }
+        else if (key_release)
+        {
+            if (_is_key_press(i) || _is_key_hold(i))
+            {
+                keyboard_key[i] = KEY_RELEASE;
+                continue;
+            }
+            else if (is_key_press_double(i) || _is_key_hold_double(i))
+            {
+                keyboard_key[i] = KEY_RELEASE_DOUBLE;
+                continue;
+            }
+        }
+
+        if (_is_key_press(i))               keyboard_key[i] = KEY_HOLD;
+        else if (_is_key_release(i))        keyboard_key[i] = KEY_LISTEN_DOUBLE;
+        if (is_key_press_double(i))         keyboard_key[i] = KEY_HOLD_DOUBLE;
+        else if (_is_key_release_double(i)) keyboard_key[i] = KEY_IDLE;
+    }
+}
+/*
+{
+    static f64 key_press_start_time[KEYBOARD_KEYS_MAX] = {0};
+    b8 key_press = FALSE, key_release = FALSE;
+    u32 i;
+
+    for (i = 0; i < KEYBOARD_KEYS_MAX; ++i)
+    {
+        key_press = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_PRESS;
+        key_release = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_RELEASE;
 
         if (key_press && !keyboard_key[i])
         {
             keyboard_key[i] = KEY_PRESS;
-            key_press_start_time[i] = render.frame_start;
+            key_press_start_time[i] = render.time;
             continue;
         }
         else if (key_press && _is_key_listen_double(i))
         {
-            if (render.frame_start - key_press_start_time[i] <
-                    KEYBOARD_DOUBLE_PRESS_TIME)
+            if (render.time - key_press_start_time[i] <= KEYBOARD_DOUBLE_PRESS_TIME)
                 keyboard_key[i] = KEY_PRESS_DOUBLE;
             else
+            {
                 keyboard_key[i] = KEY_PRESS;
-            key_press_start_time[i] = render.frame_start;
+                key_press_start_time[i] = render.time;
+            }
             continue;
         }
-        else if (key_release && keyboard_key[i] != KEY_PRESS)
+        else if (key_release)
         {
-            if (_is_key_hold(i))
+            if (_is_key_press(i) || _is_key_hold(i))
+            {
                 keyboard_key[i] = KEY_RELEASE;
-            else if (_is_key_hold_double(i))
+                continue;
+            }
+            else if (is_key_press_double(i) || _is_key_hold_double(i))
+            {
                 keyboard_key[i] = KEY_RELEASE_DOUBLE;
-            continue;
+                continue;
+            }
         }
 
-        if (_is_key_press(i))           keyboard_key[i] = KEY_HOLD;
-        if (is_key_press_double(i))     keyboard_key[i] = KEY_HOLD_DOUBLE;
-        if (_is_key_release(i))         keyboard_key[i] = KEY_LISTEN_DOUBLE;
-        if (_is_key_release_double(i))  keyboard_key[i] = KEY_IDLE;
+        if (_is_key_press(i))               keyboard_key[i] = KEY_HOLD;
+        else if (_is_key_release(i))        keyboard_key[i] = KEY_LISTEN_DOUBLE;
+        if (is_key_press_double(i))         keyboard_key[i] = KEY_HOLD_DOUBLE;
+        else if (_is_key_release_double(i)) keyboard_key[i] = KEY_IDLE;
     }
 }
+*/
 
 /* ---- section: font ------------------------------------------------------- */
 

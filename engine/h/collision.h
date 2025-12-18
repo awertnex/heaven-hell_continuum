@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define COLLISION_EPSILON 1e-3f
+#define COLLISION_EPSILON 1e-3
 
 typedef struct BoundingBox
 {

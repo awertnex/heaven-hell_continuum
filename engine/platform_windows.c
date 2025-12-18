@@ -3,6 +3,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <windows.h>
+#include <direct.h>
 
 #include "h/diagnostics.h"
 #include "h/dir.h"
@@ -19,9 +20,10 @@ int make_dir(const str *path)
     return exit_code;
 }
 
+/* TODO: make 'change_dir()' for windows */
 int change_dir(const str *path)
 {
-    return chdir(path);
+    return _chdir(path);
 }
 
 u32 _get_path_absolute(const str *path, str *path_real)
@@ -128,7 +130,7 @@ u32 _mem_map(void **x, u64 size, const str *name, const str *file, u64 line)
                 "%s[%p] Memory Map Failed, Process Aborted\n", name, NULL);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Mapped [%"PRId64"B]\n", name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Mapped [%"PRIu64"B]\n", name, *x, size);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -139,7 +141,7 @@ u32 _mem_commit(void **x, void *offset, u64 size, const str *name, const str *fi
     if (!x)
     {
         LOGERROREX(TRUE, file, line, ERR_POINTER_NULL,
-                "%s[%p][%p] Memory Commit [%"PRId64"B] Failed, Pointer NULL\n",
+                "%s[%p][%p] Memory Commit [%"PRIu64"B] Failed, Pointer NULL\n",
                 name, x, offset, size);
         return engine_err;
     }
@@ -147,11 +149,11 @@ u32 _mem_commit(void **x, void *offset, u64 size, const str *name, const str *fi
     if (!VirtualAlloc((*(u8*)x + (u8*)offset), size, MEM_COMMIT, PAGE_READWRITE))
     {
         LOGFATALEX(TRUE, file, line, ERR_MEM_COMMIT_FAIL,
-                "%s[%p][%p] Memory Commit [%"PRId64"B] Failed, Process Aborted\n",
+                "%s[%p][%p] Memory Commit [%"PRIu64"B] Failed, Process Aborted\n",
                 name, *x, offset, size);
         return engine_err;
     }
-    LOGTRACEEX(TRUE, file, line, "%s[%p][%p] Memory Committed [%"PRId64"B]\n",
+    LOGTRACEEX(TRUE, file, line, "%s[%p][%p] Memory Committed [%"PRIu64"B]\n",
             name, x, offset, size);
 
     engine_err = ERR_SUCCESS;
@@ -162,6 +164,6 @@ void _mem_unmap(void **x, u64 size, const str *name, const str *file, u64 line)
 {
     if (!*x) return;
     VirtualFree(x, 0, MEM_RELEASE);
-    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%"PRId64"B]\n", name, *x, size);
+    LOGTRACEEX(TRUE, file, line, "%s[%p] Memory Unmapped [%"PRIu64"B]\n", name, *x, size);
     *x = NULL;
 }

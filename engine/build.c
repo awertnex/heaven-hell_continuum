@@ -63,9 +63,9 @@ static void help(void);
 void build_init(int argc, char **argv,
         const str *build_src_name, const str *build_bin_name)
 {
-    if (find_token("help", argc, argv))       help();
-    if (find_token("show", argc, argv))       flag |= FLAG_CMD_SHOW;
-    if (find_token("raw", argc, argv))        flag |= FLAG_CMD_RAW;
+    if (find_token("help", argc, argv)) help();
+    if (find_token("show", argc, argv)) flag |= FLAG_CMD_SHOW;
+    if (find_token("raw", argc, argv)) flag |= FLAG_CMD_RAW;
 
     logger_init(TRUE, argc, argv);
 
@@ -86,12 +86,9 @@ void build_init(int argc, char **argv,
     snprintf(str_build_src, CMD_SIZE, "%s%s", str_build_root, build_src_name);
     normalize_slash(str_build_src);
 
-    snprintf(str_build_bin, CMD_SIZE, "%s%s",
-            str_build_root, build_bin_name);
-    snprintf(str_build_bin_new, CMD_SIZE, "%s%s_new",
-            str_build_root, build_bin_name);
-    snprintf(str_build_bin_old, CMD_SIZE, "%s%s_old",
-            str_build_root, build_bin_name);
+    snprintf(str_build_bin, CMD_SIZE, "%s%s", str_build_root, build_bin_name);
+    snprintf(str_build_bin_new, CMD_SIZE, "%s%s_new", str_build_root, build_bin_name);
+    snprintf(str_build_bin_old, CMD_SIZE, "%s%s_old", str_build_root, build_bin_name);
 
     if (STD != 199901)
     {
@@ -204,18 +201,22 @@ u32 engine_build(const str *engine_dir, const str *out_dir)
     cmd_push(stringf("%splatform_"_PLATFORM".c", engine_dir_processed));
     cmd_push(stringf("%sstring.c", engine_dir_processed));
     cmd_push(stringf("%stext.c", engine_dir_processed));
+    cmd_push(stringf("%stime.c", engine_dir_processed));
     snprintf(temp, CMD_SIZE, "%sinclude/glad/glad.c", engine_dir_processed);
     normalize_slash(temp);
     cmd_push(temp);
     cmd_push(stringf("-I%s..", engine_dir_processed));
     cmd_push("-shared");
-    cmd_push("-fPIC");
     cmd_push("-std=c99");
+#if PLATFORM_LINUX
+    cmd_push("-D_GNU_SOURCE");
+#endif /* PLATFORM_LINUX */
+    cmd_push("-fPIC");
     cmd_push("-Ofast");
     cmd_push("-Wall");
     cmd_push("-Wextra");
-    cmd_push("-fno-builtin");
     cmd_push("-Wno-implicit-function-declaration");
+    cmd_push("-fno-builtin");
     _engine_link_libs();
     cmd_push("-o");
     cmd_push(stringf("%s"ENGINE_NAME_LIB, out_dir_processed));
@@ -287,14 +288,11 @@ void cmd_push(const str *string)
 
     if (strlen(string) >= CMD_SIZE - 1)
     {
-        LOGERROR(FALSE, ERR_STRING_TOO_LONG,
-                "string '%s' Too Long\n", string);
+        LOGERROR(FALSE, ERR_STRING_TOO_LONG, "string '%s' Too Long\n", string);
         return;
     }
 
-    LOGTRACE(FALSE,
-            "Pushing String '%s' to cmd.i[%"PRId64"]..\n",
-            string, cmd_pos);
+    LOGTRACE(FALSE, "Pushing String '%s' to cmd.i[%"PRIu64"]..\n", string, cmd_pos);
     strncpy(cmd.i[cmd_pos++], string, CMD_SIZE);
 }
 
@@ -310,6 +308,7 @@ void cmd_ready(void)
 
 void cmd_free(void)
 {
+    logger_close();
     mem_free((void*)&str_build_root, CMD_SIZE, "cmd_free().str_build_root");
     mem_free_buf(&cmd, "cmd_free().cmd");
     cmd_pos = 0;

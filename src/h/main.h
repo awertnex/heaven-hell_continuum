@@ -308,7 +308,6 @@ extern struct Settings settings;
 extern Texture texture[TEXTURE_COUNT];
 extern Font font[FONT_COUNT];
 extern u64 flag;
-extern f64 game_start_time;
 extern u8 debug_mode[DEBUG_MODE_COUNT];
 extern Render render;
 extern Projection projection_world;

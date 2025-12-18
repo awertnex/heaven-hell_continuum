@@ -4,9 +4,9 @@
 
 b8 is_intersect_aabb(BoundingBox a, BoundingBox b)
 {
-    return !(a.pos.x >= b.pos.x + b.size.x || b.pos.x >= a.size.x + a.pos.x ||
-            a.pos.y >= b.pos.y + b.size.y || b.pos.y >= a.size.y + a.pos.y ||
-            a.pos.z >= b.pos.z + b.size.z || b.pos.z >= a.size.z + a.pos.z);
+    return !(a.pos.x >= b.pos.x + b.size.x || b.pos.x >= a.pos.x + a.size.x ||
+            a.pos.y >= b.pos.y + b.size.y || b.pos.y >= a.pos.y + a.size.y ||
+            a.pos.z >= b.pos.z + b.size.z || b.pos.z >= a.pos.z + a.size.z);
 }
 
 f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
@@ -53,9 +53,6 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.x == 0.0f)
     {
-        if (a.pos.x >= b.pos.x + b.size.x)
-            goto cleanup;
-
         entry.x = -INFINITY;
         exit.x = INFINITY;
     }
@@ -67,9 +64,6 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.y == 0.0f)
     {
-        if (a.pos.y >= b.pos.y + b.size.y)
-            goto cleanup;
-
         entry.y = -INFINITY;
         exit.y = INFINITY;
     }
@@ -81,9 +75,6 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
 
     if (velocity.z == 0.0f)
     {
-        if (a.pos.z >= b.pos.z + b.size.z)
-            goto cleanup;
-
         entry.z = -INFINITY;
         exit.z = INFINITY;
     }
@@ -106,21 +97,15 @@ f32 get_swept_aabb(BoundingBox a, BoundingBox b, v3f32 velocity, v3f32 *normal)
     switch (max_axis_v3f32(entry))
     {
         case 1:
-            if (velocity.x > 0.0f)
-                normal->x = -1.0f;
-            else normal->x = 1.0f;
+            normal->x = velocity.x > 0.0f ? -1.0f : 1.0f;
             break;
 
         case 2:
-            if (velocity.y > 0.0f)
-                normal->y = -1.0f;
-            else normal->y = 1.0f;
+            normal->y = velocity.y > 0.0f ? -1.0f : 1.0f;
             break;
 
         case 3:
-            if (velocity.z > 0.0f)
-                normal->z = -1.0f;
-            else normal->z = 1.0f;
+            normal->z = velocity.z > 0.0f ? -1.0f : 1.0f;
             break;
     }
 

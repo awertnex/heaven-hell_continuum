@@ -3,12 +3,12 @@
 #include <engine/h/logger.h>
 #include <engine/h/math.h>
 #include <engine/h/string.h>
+#include <engine/h/time.h>
 
 #include "h/chunking.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/gui.h"
-#include "h/logic.h"
 #include "h/main.h"
 #include "h/world.h"
 
@@ -27,7 +27,7 @@ u32 world_init(str *name, u64 seed, Player *p)
     if (chunking_init() != ERR_SUCCESS)
         return *GAME_ERR;
 
-    world.gravity = GRAVITY * 1.5f;
+    world.gravity = GRAVITY * 2.0f;
 
     set_player_spawn(p, 1547, -531, 10);
     player_spawn(p, TRUE);
@@ -181,7 +181,7 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
 void world_update(Player *p)
 {
-    world.tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * world.days;
+    world.tick = 8000 + (u64)(render.time * 20.0f) - SET_DAY_TICKS_MAX * world.days;
     if (world.tick >= SET_DAY_TICKS_MAX)
         ++world.days;
 

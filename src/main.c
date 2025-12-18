@@ -8,6 +8,7 @@
 #include <engine/h/math.h>
 #include <engine/h/platform.h>
 #include <engine/h/string.h>
+#include <engine/h/time.h>
 
 #include "h/main.h"
 
@@ -17,7 +18,6 @@
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/input.h"
-#include "h/logic.h"
 #include "h/player.h"
 #include "h/terrain.h"
 #include "h/world.h"
@@ -32,7 +32,6 @@ Render render =
 
 struct Settings settings = {0};
 u64 flag = 0;
-f64 game_start_time = 0;
 u8 debug_mode[DEBUG_MODE_COUNT] = {0};
 static ShaderProgram shader[SHADER_COUNT] = {0};
 Texture texture[TEXTURE_COUNT] = {0};
@@ -1033,7 +1032,7 @@ static void draw_everything(void)
                     settings.chunk_buf_radius + 0.5f});
             glUniform3fv(uniform.gizmo_chunk.cursor, 1, (GLfloat*)&pos);
 
-            f32 pulse = (sinf((pos.z * 0.3f) - (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
+            f32 pulse = (sinf((pos.z * 0.3f) - (render.time * 5.0f)) * 0.1f) + 0.9f;
             glUniform1f(uniform.gizmo_chunk.size, pulse);
 
             v4f32 color =
@@ -1144,7 +1143,7 @@ static void draw_everything(void)
                     "TIME        [%.2lf]\n"
                     "TICKS       [%"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
-                    render.frame_start,
+                    render.time,
                     world.tick, world.days),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
         text_render(COLOR_TEXT_MOSS, TRUE);
@@ -1287,7 +1286,7 @@ static void draw_everything(void)
     glClear(GL_COLOR_BUFFER_BIT);
     glBindVertexArray(mesh[MESH_UNIT].vao);
     glUniform1ui(uniform.post_processing.time,
-            ((u32)(render.frame_start * settings.target_fps) & 511) + 1);
+            ((u32)(render.time * settings.target_fps) & 511) + 1);
     glBindTexture(GL_TEXTURE_2D, fbo[FBO_POST_PROCESSING].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -1297,6 +1296,8 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
+    get_time_f64(); /* initialize start time */
+
     if (engine_init(argc, argv, &render, FALSE, GAME_RELEASE_BUILD) != ERR_SUCCESS)
         goto cleanup;
 
@@ -1418,7 +1419,6 @@ int main(int argc, char **argv)
         };
 
     bind_shader_uniforms();
-    game_start_time = glfwGetTime();
 
 section_menu_title:
 
@@ -1434,9 +1434,8 @@ section_world_loaded:
 
     while (!glfwWindowShouldClose(render.window) && (flag & FLAG_MAIN_ACTIVE))
     {
-        render.frame_start = glfwGetTime() - game_start_time;
-        render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_last = render.frame_start;
+        render.time = get_time_f64();
+        render.frame_delta = get_time_delta_f64();
 
         /* cursor mode change jitter prevention */
         if (!(flag & FLAG_MAIN_PARSE_CURSOR))

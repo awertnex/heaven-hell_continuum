@@ -83,13 +83,13 @@ void _log_output(b8 verbose, const str *file, u64 line,
     {
         if (verbose)
             snprintf(out_message, OUT_STRING_MAX,
-                    "%s%s%s:%s%"PRId64"%s:%s%s[%"PRId32"]: %s%s",
+                    "%s%s%s:%s%"PRIu64"%s:%s%s[%"PRIu32"]: %s%s",
                     esc_code_color[level], file, esc_code_nocolor,
                     esc_code_color[level], line, esc_code_nocolor,
                     esc_code_color[level],
                     log_tag[level], error_code, in_message, esc_code_nocolor);
         else snprintf(out_message, OUT_STRING_MAX,
-                    "%s%s[%"PRId32"]: %s%s",
+                    "%s%s[%"PRIu32"]: %s%s",
                     esc_code_color[level],
                     log_tag[level], error_code, in_message, esc_code_nocolor);
     }
@@ -97,7 +97,7 @@ void _log_output(b8 verbose, const str *file, u64 line,
     {
         if (verbose)
             snprintf(out_message, OUT_STRING_MAX,
-                    "%s%s%s:%s%"PRId64"%s:%s%s: %s%s",
+                    "%s%s%s:%s%"PRIu64"%s:%s%s: %s%s",
                     esc_code_color[level], file, esc_code_nocolor,
                     esc_code_color[level], line, esc_code_nocolor,
                     esc_code_color[level],

@@ -189,8 +189,7 @@ typedef struct Render
     v2f64 mouse_position;
     v2f64 mouse_last;
     v2f64 mouse_delta;
-    f64 frame_start;
-    f64 frame_last;
+    f64 time;
     f64 frame_delta;
 } Render;
 

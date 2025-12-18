@@ -138,22 +138,23 @@ void player_collision_update(Player *p, f64 dt)
     i32 i, x, y, z,
         startx, starty, startz,
         endx, endy, endz;
-
-    p->friction.x = 0.1f;
-    p->friction.y = 0.1f;
+    b8 resolved = TRUE;
 
     collision_capsule = make_collision_capsule(p->bbox, p->chunk, displacement);
-
     startx = (i32)collision_capsule.pos.x;
     starty = (i32)collision_capsule.pos.y;
     startz = (i32)collision_capsule.pos.z;
-
     endx = (i32)(collision_capsule.pos.x + collision_capsule.size.x);
     endy = (i32)(collision_capsule.pos.y + collision_capsule.size.y);
     endz = (i32)(collision_capsule.pos.z + collision_capsule.size.z);
 
-    for (i = 0; i < 3; ++i)
+    p->flag &= ~FLAG_PLAYER_CAN_JUMP;
+    p->friction.x = 0.0f;
+    p->friction.y = 0.0f;
+
+    for (i = 0; i < 3 && resolved; ++i)
     {
+        resolved = FALSE;
         for (z = startz; z < endz; ++z)
         {
             for (y = starty; y < endy; ++y)
@@ -168,16 +169,27 @@ void player_collision_update(Player *p, f64 dt)
                     block_box.pos.x = (f64)((i64)ch->pos.x * CHUNK_DIAMETER + mod(x, CHUNK_DIAMETER));
                     block_box.pos.y = (f64)((i64)ch->pos.y * CHUNK_DIAMETER + mod(y, CHUNK_DIAMETER));
                     block_box.pos.z = (f64)((i64)ch->pos.z * CHUNK_DIAMETER + mod(z, CHUNK_DIAMETER));
-                    block_box.size = (v3f64){1.0f, 1.0f, 1.0f};
+                    block_box.size.x = 1.0;
+                    block_box.size.y = 1.0;
+                    block_box.size.z = 1.0;
 
-                    time = get_swept_aabb(p->bbox, block_box, displacement, &normal);
+                    time = get_swept_aabb(p->bbox, block_box, p->velocity, &normal);
+                    if (normal.z > 0.0f && p->bbox.pos.z - (block_box.pos.z + block_box.size.z) < 0.3)
+                    {
+                        p->friction.x = 0.7f;
+                        p->friction.y = 0.7f;
+                    }
                     if (is_intersect_aabb(p->bbox, block_box))
                     {
-                        /* ---- resolution -------------------------------------- */
+                        /* ---- resolution ---------------------------------- */
 
-                        p->pos.x += displacement.x * time + normal.x * COLLISION_EPSILON;
-                        p->pos.y += displacement.y * time + normal.y * COLLISION_EPSILON;
-                        p->pos.z += displacement.z * time + normal.z * COLLISION_EPSILON;
+                        printf("x[%u] i[%u] v[%.3f %.3f %.3f] n[%.0f %.0f %.0f]\n",
+                                x, i, p->velocity.x, p->velocity.y, p->velocity.z,
+                                normal.x, normal.y, normal.z);
+
+                        p->pos.x += p->velocity.x * time + normal.x * COLLISION_EPSILON;
+                        p->pos.y += p->velocity.y * time + normal.y * COLLISION_EPSILON;
+                        p->pos.z += p->velocity.z * time + normal.z * COLLISION_EPSILON;
 
                         dot = dot_v3f32(p->velocity, normal);
                         if (dot < 0.0f)
@@ -187,21 +199,13 @@ void player_collision_update(Player *p, f64 dt)
                             p->velocity.z -= normal.z * dot;
                         }
 
-                        p->pos.x -= p->velocity.x * dt * time;
-                        p->pos.y -= p->velocity.y * dt * time;
-                        p->pos.z -= p->velocity.z * dt * time;
+                        p->pos.x -= p->velocity.x * time;
+                        p->pos.y -= p->velocity.y * time;
+                        p->pos.z -= p->velocity.z * time;
 
                         player_bounding_box_update(p);
 
-                        /* ---- flags ------------------------------------------- */
-
-                        /*
-                           if (p->speed > 20.0f)
-                           block_break((u32)(ch - *chunk_tab),
-                           (i32)block_box.pos.x,
-                           (i32)block_box.pos.y,
-                           (i32)block_box.pos.z);
-                           */
+                        /* ---- flags --------------------------------------- */
 
                         if (normal.z > 0.0f)
                         {
@@ -211,6 +215,8 @@ void player_collision_update(Player *p, f64 dt)
                             p->friction.x = 0.7f;
                             p->friction.y = 0.7f;
                         }
+
+                        resolved = TRUE;
                     }
                 }
             }

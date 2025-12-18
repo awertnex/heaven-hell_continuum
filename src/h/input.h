@@ -5,7 +5,6 @@
 #include <engine/h/types.h>
 
 #include "main.h"
-#include "logic.h"
 #include "player.h"
 
 /* ---- movement ------------------------------------------------------------ */

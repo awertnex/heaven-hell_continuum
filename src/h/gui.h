@@ -11,9 +11,6 @@
 
 #define COL_TEXT_DEFAULT    0xbcbcbcff
 #define COL_TEXT_HOVER      0xa4ed74ff
-#define COL_X               0xff3232ff
-#define COL_Y               0x32ff32ff
-#define COL_Z               0x3232ffff
 
 extern u16 menu_index;
 extern u16 menu_layer[5];
