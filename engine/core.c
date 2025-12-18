@@ -172,8 +172,7 @@ static str *shader_pre_process(const str *path, u64 *file_len);
  *
  *  @return NULL on failure and 'engine_err' is set accordingly.
  */
-static str *_shader_pre_process(const str *path, u64 *file_len,
-        u64 recursion_limit);
+static str *_shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit);
 
 /*! -- INTERNAL USE ONLY --;
  *
@@ -181,34 +180,50 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
  *
  *  @return non-zero on failure and 'engine_err' is set accordingly.
  */
-static u32 _texture_generate(
-        GLuint *id, const GLint format_internal,  const GLint format,
+static u32 _texture_generate(GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale);
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_press(const u32 key);
+*/
+static inline b8 _is_key_press(const u32 key)
+{
+    return keyboard_key[key] == KEY_PRESS;
+}
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_listen_double(const u32 key);
+*/
+static inline b8 _is_key_listen_double(const u32 key)
+{
+    return keyboard_key[key] == KEY_LISTEN_DOUBLE;
+}
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold(const u32 key);
+*/
+static inline b8 _is_key_hold(const u32 key)
+{
+    return keyboard_key[key] == KEY_HOLD;
+}
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_hold_double(const u32 key);
+*/
+static inline b8 _is_key_hold_double(const u32 key)
+{
+    return keyboard_key[key] == KEY_HOLD_DOUBLE;
+}
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release(const u32 key);
+*/
+static inline b8 _is_key_release(const u32 key)
+{
+    return keyboard_key[key] == KEY_RELEASE;
+}
 
 /*! -- INTERNAL USE ONLY --;
- */
-static inline b8 _is_key_release_double(const u32 key);
-
+*/
+static inline b8 _is_key_release_double(const u32 key)
+{
+    return keyboard_key[key] == KEY_RELEASE_DOUBLE;
+}
 /* ---- section: init ------------------------------------------------------- */
 
 u32 engine_init(int argc, char **argv, Render *render, b8 multisample, b8 release_build)
@@ -264,8 +279,7 @@ u32 glfw_init(b8 multisample)
 
 u32 window_init(Render *render)
 {
-    render->window = glfwCreateWindow(render->size.x, render->size.y,
-            render->title, NULL, NULL);
+    render->window = glfwCreateWindow(render->size.x, render->size.y, render->title, NULL, NULL);
 
     if (!render->window)
     {
@@ -297,14 +311,10 @@ u32 glad_init(void)
         return engine_err;
     }
 
-    LOGINFO(FALSE,
-            "OpenGL:    %s\n", glGetString(GL_VERSION));
-    LOGINFO(FALSE,
-            "GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    LOGINFO(FALSE,
-            "Vendor:    %s\n", glGetString(GL_VENDOR));
-    LOGINFO(FALSE,
-            "Renderer:  %s\n", glGetString(GL_RENDERER));
+    LOGINFO(FALSE, "OpenGL:    %s\n", glGetString(GL_VERSION));
+    LOGINFO(FALSE, "GLSL:      %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LOGINFO(FALSE, "Vendor:    %s\n", glGetString(GL_VENDOR));
+    LOGINFO(FALSE, "Renderer:  %s\n", glGetString(GL_RENDERER));
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -323,8 +333,7 @@ u32 shader_init(const str *shaders_dir, Shader *shader)
     shader->source = shader_pre_process(str_reg, NULL);
     if (!shader->source)
     {
-        LOGERROR(FALSE, ERR_POINTER_NULL,
-                "Shader Source '%s' NULL\n", shader->file_name);
+        LOGERROR(FALSE, ERR_POINTER_NULL, "Shader Source '%s' NULL\n", shader->file_name);
         return engine_err;
     }
     (shader->id) ? glDeleteShader(shader->id) : 0;
@@ -332,8 +341,7 @@ u32 shader_init(const str *shaders_dir, Shader *shader)
     shader->id = glCreateShader(shader->type);
     glShaderSource(shader->id, 1, (const GLchar**)&shader->source, NULL);
     glCompileShader(shader->id);
-    mem_free((void*)&shader->source, strlen(shader->source),
-            "shader_init().shader.source");
+    mem_free((void*)&shader->source, strlen(shader->source), "shader_init().shader.source");
     shader->source = NULL;
 
     glGetShaderiv(shader->id, GL_COMPILE_STATUS, &shader->loaded);
@@ -341,12 +349,10 @@ u32 shader_init(const str *shaders_dir, Shader *shader)
     {
         char log[STRING_MAX];
         glGetShaderInfoLog(shader->id, STRING_MAX, NULL, log);
-        LOGERROR(FALSE, ERR_SHADER_COMPILE_FAIL,
-                "Shader '%s':\n%s\n", shader->file_name, log);
+        LOGERROR(FALSE, ERR_SHADER_COMPILE_FAIL, "Shader '%s':\n%s\n", shader->file_name, log);
         return engine_err;
     }
-    else LOGINFO(FALSE,
-            "Shader %d '%s' Loaded\n", shader->id, shader->file_name);
+    else LOGINFO(FALSE, "Shader %d '%s' Loaded\n", shader->id, shader->file_name);
 
     engine_err = ERR_SUCCESS;
     return engine_err;
@@ -357,14 +363,12 @@ static str *shader_pre_process(const str *path, u64 *file_len)
     return _shader_pre_process(path, file_len, INCLUDE_RECURSION_LIMIT_MAX);
 }
 
-static str *_shader_pre_process(const str *path, u64 *file_len,
-        u64 recursion_limit)
+static str *_shader_pre_process(const str *path, u64 *file_len, u64 recursion_limit)
 {
     if (!recursion_limit)
     {
         LOGFATAL(FALSE, ERR_INCLUDE_RECURSION_LIMIT,
-                "Include Recursion Limit Exceeded '%s', Process Aborted\n",
-                path);
+                "Include Recursion Limit Exceeded '%s', Process Aborted\n", path);
         return NULL;
     }
 
@@ -387,6 +391,7 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
     if (mem_alloc((void*)&buf_resolved, buf_len + 1,
                 "_shader_pre_process().buf_resolved") != ERR_SUCCESS)
         goto cleanup;
+
     buf_resolved_len = buf_len + 1;
     snprintf(buf_resolved, buf_resolved_len, "%s", buf);
     for (; i < buf_len; ++i)
@@ -414,11 +419,9 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
                         "Self Include Detected '%s', Process Aborted\n", path);
                 goto cleanup;
             }
-            buf_include = _shader_pre_process(string,
-                    &buf_include_len, recursion_limit - 1);
+            buf_include = _shader_pre_process(string, &buf_include_len, recursion_limit - 1);
             if (engine_err != ERR_SUCCESS ||
-                    mem_realloc((void*)&buf_resolved,
-                        buf_resolved_len + buf_include_len + 1,
+                    mem_realloc((void*)&buf_resolved, buf_resolved_len + buf_include_len + 1,
                         "_shader_pre_process().buf_resolved") != ERR_SUCCESS)
                 goto cleanup;
             buf_resolved_len += buf_include_len;
@@ -430,8 +433,7 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
                     buf_resolved_len - cursor, "%s", buf_include);
 
             k = i + j;
-            mem_free((void*)&buf_include, buf_include_len,
-                    "_shader_pre_process().buf_include");
+            mem_free((void*)&buf_include, buf_include_len, "_shader_pre_process().buf_include");
         }
     }
 
@@ -446,12 +448,9 @@ static str *_shader_pre_process(const str *path, u64 *file_len,
 
 cleanup:
 
-    mem_free((void*)&buf_include, buf_include_len,
-            "_shader_pre_process().buf_include");
-    mem_free((void*)&buf_resolved, buf_resolved_len,
-            "_shader_pre_process().buf_resolved");
-    mem_free((void*)&buf, buf_len,
-            "_shader_pre_process().buf");
+    mem_free((void*)&buf_include, buf_include_len, "_shader_pre_process().buf_include");
+    mem_free((void*)&buf_resolved, buf_resolved_len, "_shader_pre_process().buf_resolved");
+    mem_free((void*)&buf, buf_len, "_shader_pre_process().buf");
     return NULL;
 }
 
@@ -503,18 +502,15 @@ void shader_program_free(ShaderProgram *program)
     glDeleteProgram(program->id);
 
     if (program->vertex.source)
-        mem_free((void*)&program->vertex.source,
-                strlen(program->vertex.source),
+        mem_free((void*)&program->vertex.source, strlen(program->vertex.source),
                 "shader_program_free().vertex.source");
 
     if (program->fragment.source)
-        mem_free((void*)&program->fragment.source,
-                strlen(program->fragment.source),
+        mem_free((void*)&program->fragment.source, strlen(program->fragment.source),
                 "shader_program_free().fragment.source");
 
     if (program->geometry.source)
-        mem_free((void*)&program->geometry.source,
-                strlen(program->geometry.source),
+        mem_free((void*)&program->geometry.source, strlen(program->geometry.source),
                 "shader_program_free().geometry.source");
 }
 
@@ -522,30 +518,25 @@ void shader_program_free(ShaderProgram *program)
 
 void attrib_vec3(void)
 {
-    glVertexAttribPointer(0, 3, GL_FLOAT,
-            GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 }
 
 void attrib_vec3_vec2(void)
 {
-    glVertexAttribPointer(0, 3, GL_FLOAT,
-            GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT,
-            GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 }
 
 void attrib_vec3_vec3(void)
 {
-    glVertexAttribPointer(0, 3, GL_FLOAT,
-            GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT,
-            GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 }
 
@@ -587,8 +578,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
                 GL_DEPTH_COMPONENT24, render->size.x, render->size.y);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                GL_RENDERBUFFER, fbo->rbo);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->rbo);
     }
     else
     {
@@ -610,17 +600,14 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
 
         glGenRenderbuffers(1, &fbo->rbo);
         glBindRenderbuffer(GL_RENDERBUFFER, fbo->rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
-                render->size.x, render->size.y);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                GL_RENDERBUFFER, fbo->rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, render->size.x, render->size.y);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->rbo);
     }
 
     GLuint status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
-        LOGFATAL(FALSE, ERR_FBO_INIT_FAIL,
-                "FBO '%d': Status '%d' Not Complete, Process Aborted\n",
+        LOGFATAL(FALSE, ERR_FBO_INIT_FAIL, "FBO '%d': Status '%d' Not Complete, Process Aborted\n",
                 fbo->fbo, status);
         return engine_err;
     }
@@ -640,8 +627,7 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
         1.0f, -1.0f, 1.0f, 0.0f,
     };
 
-    if (mem_alloc((void*)&mesh_fbo->vbo_data,
-                sizeof(GLfloat) * mesh_fbo->vbo_len,
+    if (mem_alloc((void*)&mesh_fbo->vbo_data, sizeof(GLfloat) * mesh_fbo->vbo_len,
                 "fbo_init().mesh_fbo.vbo_data") != ERR_SUCCESS)
         goto cleanup;
 
@@ -657,12 +643,10 @@ u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,
     glBufferData(GL_ARRAY_BUFFER, mesh_fbo->vbo_len * sizeof(GLfloat),
             mesh_fbo->vbo_data, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-            4 * sizeof(GLfloat), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-            4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
@@ -719,8 +703,7 @@ u32 fbo_realloc(Render *render, FBO *fbo, b8 multisample, u32 samples)
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
         LOGFATAL(FALSE, ERR_FBO_REALLOC_FAIL,
-                "FBO '%d': Status '%d' Not Complete, Process Aborted\n",
-                fbo->fbo, status);
+                "FBO '%d': Status '%d' Not Complete, Process Aborted\n", fbo->fbo, status);
 
         fbo_free(fbo);
         return engine_err;
@@ -741,23 +724,20 @@ void fbo_free(FBO *fbo)
     *fbo = (FBO){0};
 };
 
-u32 texture_init(Texture *texture, v2i32 size,
-        const GLint format_internal, const GLint format,
+u32 texture_init(Texture *texture, v2i32 size, const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name)
 {
     if (!size.x || !size.y)
     {
         LOGERROR(FALSE, ERR_IMAGE_SIZE_TOO_SMALL,
-                "Failed to Initialize Texture '%s', Image Size Too Small\n",
-                file_name);
+                "Failed to Initialize Texture '%s', Image Size Too Small\n", file_name);
         return engine_err;
     }
 
     if (strlen(file_name) >= PATH_MAX)
     {
         LOGERROR(FALSE, ERR_PATH_TOO_LONG,
-                "Failed to Initialize Texture '%s', File Path Too Long\n",
-                file_name);
+                "Failed to Initialize Texture '%s', File Path Too Long\n", file_name);
         return engine_err;
     }
 
@@ -769,8 +749,7 @@ u32 texture_init(Texture *texture, v2i32 size,
     if (!texture->buf)
     {
         LOGERROR(FALSE, ERR_IMAGE_LOAD_FAIL,
-                "Failed to Initialize Texture '%s', 'stbi_load()' Failed\n",
-                file_name);
+                "Failed to Initialize Texture '%s', 'stbi_load()' Failed\n", file_name);
         return engine_err;
     }
 
@@ -785,8 +764,7 @@ u32 texture_init(Texture *texture, v2i32 size,
 
 u32 texture_generate(Texture *texture, b8 bindless)
 {
-    _texture_generate(
-            &texture->id, texture->format_internal, texture->format,
+    _texture_generate(&texture->id, texture->format_internal, texture->format,
             texture->filter, texture->size.x, texture->size.y,
             texture->buf, texture->grayscale);
 
@@ -794,16 +772,14 @@ u32 texture_generate(Texture *texture, b8 bindless)
     {
         texture->handle = glGetTextureHandleARB(texture->id);
         glMakeTextureHandleResidentARB(texture->handle);
-        LOGTRACE(FALSE, "Handle[%"PRIu64"] for Texture[%d] Created\n",
-                texture->handle, texture->id);
+        LOGTRACE(FALSE, "Handle[%"PRIu64"] for Texture[%d] Created\n", texture->handle, texture->id);
     }
 
     (texture->buf) ? stbi_image_free(texture->buf) : 0;
     return engine_err;
 }
 
-static u32 _texture_generate(
-        GLuint *id, const GLint format_internal,  const GLint format,
+static u32 _texture_generate(GLuint *id, const GLint format_internal,  const GLint format,
         GLint filter, u32 width, u32 height, void *buf, b8 grayscale)
 {
     if (!width || !height)
@@ -851,8 +827,7 @@ void texture_free(Texture *texture)
 }
 
 u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
-        GLuint vbo_len, GLuint ebo_len,
-        GLfloat *vbo_data, GLuint *ebo_data)
+        GLuint vbo_len, GLuint ebo_len, GLfloat *vbo_data, GLuint *ebo_data)
 {
     if (mem_alloc((void*)&mesh->vbo_data, sizeof(GLfloat) * vbo_len,
                 "mesh_generate().mesh.vbo_data") != ERR_SUCCESS)
@@ -879,10 +854,8 @@ u32 mesh_generate(Mesh *mesh, void (*attrib)(), GLenum usage,
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
 
-    glBufferData(GL_ARRAY_BUFFER,
-            mesh->vbo_len * sizeof(GLfloat), mesh->vbo_data, usage);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-            mesh->ebo_len * sizeof(GLuint), mesh->ebo_data, usage);
+    glBufferData(GL_ARRAY_BUFFER, mesh->vbo_len * sizeof(GLfloat), mesh->vbo_data, usage);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo_len * sizeof(GLuint), mesh->ebo_data, usage);
 
     if (attrib) attrib();
 
@@ -907,12 +880,8 @@ void mesh_free(Mesh *mesh)
     mesh->vbo ? glDeleteBuffers(1, &mesh->vbo) : 0;
     mesh->vao ? glDeleteVertexArrays(1, &mesh->vao) : 0;
 
-    mem_free((void*)&mesh->vbo_data,
-            sizeof(GLfloat) * mesh->vbo_len, "mesh_free().mesh.vbo_data");
-
-    mem_free((void*)&mesh->ebo_data,
-            sizeof(GLuint) * mesh->ebo_len, "mesh_free().mesh.vbo_data");
-
+    mem_free((void*)&mesh->vbo_data, sizeof(GLfloat) * mesh->vbo_len, "mesh_free().mesh.vbo_data");
+    mem_free((void*)&mesh->ebo_data, sizeof(GLuint) * mesh->ebo_len, "mesh_free().mesh.vbo_data");
     *mesh = (Mesh){0};
 }
 
@@ -925,8 +894,8 @@ void update_camera_movement(Camera *camera, b8 roll)
         camera->rot.x = fmodf(camera->rot.x, CAMERA_RANGE_MAX);
         if (camera->rot.x < 0.0f) camera->rot.x += CAMERA_RANGE_MAX;
 
-        camera->sin_roll =  sinf(camera->rot.x * DEG2RAD);
-        camera->cos_roll =  cosf(camera->rot.x * DEG2RAD);
+        camera->sin_roll = sinf(camera->rot.x * DEG2RAD);
+        camera->cos_roll = cosf(camera->rot.x * DEG2RAD);
     }
     else
     {
@@ -941,8 +910,8 @@ void update_camera_movement(Camera *camera, b8 roll)
 
     camera->sin_pitch = sinf(camera->rot.y * DEG2RAD);
     camera->cos_pitch = cosf(camera->rot.y * DEG2RAD);
-    camera->sin_yaw =   sinf(camera->rot.z * DEG2RAD);
-    camera->cos_yaw =   cosf(camera->rot.z * DEG2RAD);
+    camera->sin_yaw = sinf(camera->rot.z * DEG2RAD);
+    camera->cos_yaw = cosf(camera->rot.z * DEG2RAD);
 }
 
 void update_projection_perspective(Camera camera, Projection *projection, b8 roll)
@@ -1020,8 +989,7 @@ void update_projection_perspective(Camera camera, Projection *projection, b8 rol
 
     /* ---- view ------------------------------------------------------------ */
 
-    projection->view =
-        matrix_multiply(projection->translation,
+    projection->view = matrix_multiply(projection->translation,
                 matrix_multiply(projection->rotation, projection->orientation));
 
     /* ---- projection ------------------------------------------------------ */
@@ -1033,21 +1001,18 @@ void update_projection_perspective(Camera camera, Projection *projection, b8 rol
         0.0f,           0.0f,   offset, 0.0f,
     };
 
-    projection->perspective =
-        matrix_multiply(projection->view, projection->projection);
+    projection->perspective = matrix_multiply(projection->view, projection->projection);
 }
 
 /* ---- section: input ------------------------------------------------------ */
 
 void update_mouse_movement(Render *render)
 {
-    glfwGetCursorPos(render->window,
-            &render->mouse_position.x, &render->mouse_position.y);
-    render->mouse_delta =
-        (v2f64){
-            render->mouse_position.x - render->mouse_last.x,
-            render->mouse_position.y - render->mouse_last.y,
-        };
+    glfwGetCursorPos(render->window, &render->mouse_position.x, &render->mouse_position.y);
+    render->mouse_delta = (v2f64){
+        render->mouse_position.x - render->mouse_last.x,
+        render->mouse_position.y - render->mouse_last.y,
+    };
     render->mouse_last = render->mouse_position;
 }
 
@@ -1072,36 +1037,6 @@ b8 is_key_release(const u32 key)
 {
     return keyboard_key[key] == KEY_RELEASE ||
         keyboard_key[key] == KEY_RELEASE_DOUBLE;
-}
-
-static inline b8 _is_key_press(const u32 key)
-{
-    return keyboard_key[key] == KEY_PRESS;
-}
-
-static inline b8 _is_key_listen_double(const u32 key)
-{
-    return keyboard_key[key] == KEY_LISTEN_DOUBLE;
-}
-
-static inline b8 _is_key_hold(const u32 key)
-{
-    return keyboard_key[key] == KEY_HOLD;
-}
-
-static inline b8 _is_key_hold_double(const u32 key)
-{
-    return keyboard_key[key] == KEY_HOLD_DOUBLE;
-}
-
-static inline b8 _is_key_release(const u32 key)
-{
-    return keyboard_key[key] == KEY_RELEASE;
-}
-
-static inline b8 _is_key_release_double(const u32 key)
-{
-    return keyboard_key[key] == KEY_RELEASE_DOUBLE;
 }
 
 void update_key_states(Render render)
@@ -1155,62 +1090,13 @@ void update_key_states(Render render)
         else if (_is_key_release_double(i)) keyboard_key[i] = KEY_IDLE;
     }
 }
-/*
-{
-    static f64 key_press_start_time[KEYBOARD_KEYS_MAX] = {0};
-    b8 key_press = FALSE, key_release = FALSE;
-    u32 i;
-
-    for (i = 0; i < KEYBOARD_KEYS_MAX; ++i)
-    {
-        key_press = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_PRESS;
-        key_release = glfwGetKey(render.window, keyboard_tab[i]) == GLFW_RELEASE;
-
-        if (key_press && !keyboard_key[i])
-        {
-            keyboard_key[i] = KEY_PRESS;
-            key_press_start_time[i] = render.time;
-            continue;
-        }
-        else if (key_press && _is_key_listen_double(i))
-        {
-            if (render.time - key_press_start_time[i] <= KEYBOARD_DOUBLE_PRESS_TIME)
-                keyboard_key[i] = KEY_PRESS_DOUBLE;
-            else
-            {
-                keyboard_key[i] = KEY_PRESS;
-                key_press_start_time[i] = render.time;
-            }
-            continue;
-        }
-        else if (key_release)
-        {
-            if (_is_key_press(i) || _is_key_hold(i))
-            {
-                keyboard_key[i] = KEY_RELEASE;
-                continue;
-            }
-            else if (is_key_press_double(i) || _is_key_hold_double(i))
-            {
-                keyboard_key[i] = KEY_RELEASE_DOUBLE;
-                continue;
-            }
-        }
-
-        if (_is_key_press(i))               keyboard_key[i] = KEY_HOLD;
-        else if (_is_key_release(i))        keyboard_key[i] = KEY_LISTEN_DOUBLE;
-        if (is_key_press_double(i))         keyboard_key[i] = KEY_HOLD_DOUBLE;
-        else if (_is_key_release_double(i)) keyboard_key[i] = KEY_IDLE;
-    }
-}
-*/
 
 /* ---- section: font ------------------------------------------------------- */
 
 u32 font_init(Font *font, u32 resolution, const str *file_name)
 {
     f32 scale;
-    u32 i, x, y;
+    u32 i, x, y, col, row;
     u8 *canvas = NULL;
     Glyph *g = NULL;
 
@@ -1275,16 +1161,14 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
         g->scale.x > font->scale.x ? font->scale.x = g->scale.x : 0;
         g->scale.y > font->scale.y ? font->scale.y = g->scale.y : 0;
 
-        u8 col = i % FONT_ATLAS_CELL_RESOLUTION;
-        u8 row = i / FONT_ATLAS_CELL_RESOLUTION;
+        col = i % FONT_ATLAS_CELL_RESOLUTION;
+        row = i / FONT_ATLAS_CELL_RESOLUTION;
         if (!stbtt_IsGlyphEmpty(&font->info, glyph_index))
         {
             stbtt_MakeGlyphBitmapSubpixel(&font->info, canvas,
-                    resolution, resolution, resolution,
-                    scale, scale, 0.0f, 0.0f, glyph_index);
+                    resolution, resolution, resolution, scale, scale, 0.0f, 0.0f, glyph_index);
 
-            void *bitmap_offset =
-                font->bitmap +
+            void *bitmap_offset = font->bitmap +
                 col * resolution +
                 row * resolution * resolution * FONT_ATLAS_CELL_RESOLUTION +
                 1 + resolution * FONT_ATLAS_CELL_RESOLUTION;
@@ -1295,8 +1179,7 @@ u32 font_init(Font *font, u32 resolution, const str *file_name)
                             y * resolution * FONT_ATLAS_CELL_RESOLUTION,
                             canvas + x + y * resolution, 1);
 
-            mem_clear((void*)&canvas, resolution * resolution,
-                    "font_init().font_glyph_canvas");
+            mem_clear((void*)&canvas, resolution * resolution, "font_init().font_glyph_canvas");
         }
 
         g->texture_sample.x = col * font->char_size;
@@ -1326,7 +1209,6 @@ void font_free(Font *font)
 {
     if (!font) return;
     mem_free((void*)&font->buf, font->buf_len, "font_free().file_contents");
-    mem_free((void*)&font->bitmap,
-            GLYPH_MAX * font->resolution * font->resolution, font->path);
+    mem_free((void*)&font->bitmap, GLYPH_MAX * font->resolution * font->resolution, font->path);
     *font = (Font){0};
 }

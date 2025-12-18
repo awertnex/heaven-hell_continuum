@@ -445,8 +445,7 @@ void fbo_free(FBO *fbo);
  *
  *  @return non-zero on failure and engine_err is set accordingly.
  */
-u32 texture_init(Texture *texture, v2i32 size,
-        const GLint format_internal, const GLint format,
+u32 texture_init(Texture *texture, v2i32 size, const GLint format_internal, const GLint format,
         GLint filter, int channels, b8 grayscale, const str *file_name);
 
 /*! @brief generate texture for opengl from image loaded by 'texture_init()'.
