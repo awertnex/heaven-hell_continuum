@@ -41,7 +41,7 @@ f64 get_time_delta_f64(void)
 b8 get_timer(f64 *time_start, f32 interval)
 {
     f64 time_current = get_time_f64();
-    if (time_current - *time_start >= interval)
+    if (!*time_start || time_current - *time_start >= interval)
     {
         *time_start = time_current;
         return TRUE;
