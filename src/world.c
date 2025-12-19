@@ -175,6 +175,10 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
     world->tick = 0;
     world->days = 0;
 
+    /* ---- other stuff ----------------------------------------------------- */
+
+    debug_mode[DEBUG_MODE_CHUNK_GIZMO] = 1;
+
     *GAME_ERR = ERR_SUCCESS;
     return *GAME_ERR;
 }

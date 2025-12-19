@@ -175,7 +175,7 @@ void player_collision_update(Player *p, f64 dt)
     p->friction.x = 0.0f;
     p->friction.y = 0.0f;
 
-    for (i = 0; i < 3 && resolved; ++i)
+    for (i = 0; i < 2 && resolved; ++i)
     {
         resolved = FALSE;
         for (z = START.z; z >= MIN.z && z < MAX.z; z += INCREMENT.z)
@@ -197,11 +197,6 @@ void player_collision_update(Player *p, f64 dt)
                     block_box.size.z = 1.0;
 
                     time = get_swept_aabb(p->bbox, block_box, p->velocity, &normal);
-                    if (normal.z > 0.0f && p->bbox.pos.z - (block_box.pos.z + block_box.size.z) < 0.2f)
-                    {
-                        p->friction.x = 0.7f;
-                        p->friction.y = 0.7f;
-                    }
                     if (is_intersect_aabb(p->bbox, block_box))
                     {
                         /* ---- resolution ---------------------------------- */
@@ -428,22 +423,30 @@ static void player_wrap_coordinates(Player *p)
 
 void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
 {
-    f32 zoom, sensitivity, srol, crol, spch, cpch, syaw, cyaw;
+    f64 zoom = 0.0, sensitivity = settings.mouse_sensitivity,
+        srol, crol, spch, cpch, syaw, cyaw,
+        lookat_pitch, lookat_yaw;
+    v3f64 eye_pos =
+    {
+        p->pos.x,
+        p->pos.y,
+        p->pos.z + p->eye_height,
+    };
 
     if (use_mouse)
     {
         if (p->flag & FLAG_PLAYER_ZOOMER)
             zoom = p->camera.zoom;
-        else zoom = 0.0f;
 
-        sensitivity = settings.mouse_sensitivity / (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0f);
+        if (p->camera_mode != PLAYER_CAMERA_MODE_STALKER)
+            sensitivity = settings.mouse_sensitivity / (zoom / CAMERA_ZOOM_SENSITIVITY + 1.0);
 
         p->pitch += mouse_delta.y * sensitivity;
         p->yaw += mouse_delta.x * sensitivity;
 
-        p->pitch = clamp_f32(p->pitch, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
-        p->yaw = fmodf(p->yaw, CAMERA_RANGE_MAX);
-        if (p->yaw < 0.0f)
+        p->pitch = clamp_f64(p->pitch, -CAMERA_ANGLE_MAX, CAMERA_ANGLE_MAX);
+        p->yaw = fmod(p->yaw, CAMERA_RANGE_MAX);
+        if (p->yaw < 0.0)
             p->yaw += CAMERA_RANGE_MAX;
     }
 
@@ -486,12 +489,17 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
             p->camera.pos.z = p->pos.z + p->eye_height - spch * p->camera_distance;
 
             p->camera.sin_pitch = -spch;
-            p->camera.sin_yaw = sin((p->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
-            p->camera.cos_yaw = cos((p->yaw + CAMERA_RANGE_MAX / 2.0f) * DEG2RAD);
+            p->camera.sin_yaw = sin((p->yaw + CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
+            p->camera.cos_yaw = cos((p->yaw + CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
             break;
 
-            /* TODO: make the stalker camera mode */
         case PLAYER_CAMERA_MODE_STALKER:
+            get_camera_lookat_angles(p->camera.pos, eye_pos, &lookat_pitch, &lookat_yaw);
+
+            p->camera.sin_pitch = sin(lookat_pitch);
+            p->camera.cos_pitch = cos(lookat_pitch);
+            p->camera.sin_yaw = sin(lookat_yaw + (CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
+            p->camera.cos_yaw = cos(lookat_yaw + (CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
             break;
 
             /* TODO: make the spectator camera mode */
@@ -507,10 +515,10 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
 
 void player_target_update(Player *p)
 {
-    f32 spch = p->sin_pitch;
-    f32 cpch = p->cos_pitch;
-    f32 syaw = p->sin_yaw;
-    f32 cyaw = p->cos_yaw;
+    f64 spch = p->sin_pitch;
+    f64 cpch = p->cos_pitch;
+    f64 syaw = p->sin_yaw;
+    f64 cyaw = p->cos_yaw;
 
     p->target.x = p->pos.x + cyaw * cpch * settings.reach_distance;
     p->target.y = p->pos.y - syaw * cpch * settings.reach_distance;

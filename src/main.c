@@ -1005,9 +1005,9 @@ static void draw_everything(void)
         f32 render_distance = settings.chunk_buf_diameter / CHUNK_BUF_DIAMETER_MAX;
         v3f32 camera_position =
         {
-            -lily.cos_yaw * lily.cos_pitch,
-            lily.sin_yaw * lily.cos_pitch,
-            lily.sin_pitch,
+            -lily.camera.cos_yaw * lily.camera.cos_pitch,
+            lily.camera.sin_yaw * lily.camera.cos_pitch,
+            lily.camera.sin_pitch,
         };
 
         glUniform3fv(uniform.gizmo_chunk.camera_position, 1, (GLfloat*)&camera_position);

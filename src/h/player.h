@@ -74,7 +74,7 @@ typedef struct Player
     v3f64 target;                   /* arm */
     v3i64 target_snapped;           /* floor of 'target' */
 
-    f32 roll, pitch, yaw;           /* look direction */
+    f64 roll, pitch, yaw;
     f32 sin_roll, sin_pitch, sin_yaw;
     f32 cos_roll, cos_pitch, cos_yaw;
     f32 eye_height;                 /* eye-level (camera height) */

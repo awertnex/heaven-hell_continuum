@@ -79,14 +79,10 @@ void input_update(Render render, Player *p)
 
     /* ---- movement -------------------------------------------------------- */
 
-    if (is_key_hold(bind_walk_forward))
-        px += 1.0f;
-    if (is_key_hold(bind_walk_backward))
-        nx += 1.0f;
-    if (is_key_hold(bind_strafe_left))
-        py += 1.0f;
-    if (is_key_hold(bind_strafe_right))
-        ny += 1.0f;
+    px += (f32)is_key_hold(bind_walk_forward);
+    nx += (f32)is_key_hold(bind_walk_backward);
+    py += (f32)is_key_hold(bind_strafe_left);
+    ny += (f32)is_key_hold(bind_strafe_right);
 
     if (is_key_press_double(bind_walk_forward))
         p->flag |= FLAG_PLAYER_SPRINTING;
@@ -129,21 +125,21 @@ void input_update(Render render, Player *p)
     if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
     {
         p->input.x =
-            (px - nx) * cosf(p->yaw * DEG2RAD) * cosf(p->pitch * DEG2RAD)+
-            (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f) +
-            (pz - nz) * cosf(p->yaw * DEG2RAD) * sinf(p->pitch * DEG2RAD);
+            (px - nx) * cos(p->yaw * DEG2RAD) * cos(p->pitch * DEG2RAD) +
+            (py - ny) * -cos(p->yaw * DEG2RAD + PI * 0.5) +
+            (pz - nz) * cos(p->yaw * DEG2RAD) * sin(p->pitch * DEG2RAD);
         p->input.y =
-            (px - nx) * -sinf(p->yaw * DEG2RAD) * cosf(p->pitch * DEG2RAD)+
-            (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f) +
-            (pz - nz) * -sinf(p->yaw * DEG2RAD) * sinf(p->pitch * DEG2RAD);
+            (px - nx) * -sin(p->yaw * DEG2RAD) * cos(p->pitch * DEG2RAD) +
+            (py - ny) * sin(p->yaw * DEG2RAD + PI * 0.5) +
+            (pz - nz) * -sin(p->yaw * DEG2RAD) * sin(p->pitch * DEG2RAD);
         p->input.z =
-            (px - nx) * -sinf(p->pitch * DEG2RAD) +
-            (pz - nz) * cosf(p->pitch * DEG2RAD);
+            (px - nx) * -sin(p->pitch * DEG2RAD) +
+            (pz - nz) * cos(p->pitch * DEG2RAD);
     }
     else
         p->input = (v3f32){
-            (px - nx) * cosf(p->yaw * DEG2RAD) + (py - ny) * -cosf(p->yaw * DEG2RAD + PI * 0.5f),
-            (px - nx) * -sinf(p->yaw * DEG2RAD) + (py - ny) * sinf(p->yaw * DEG2RAD + PI * 0.5f),
+            (px - nx) * cos(p->yaw * DEG2RAD) + (py - ny) * -cos(p->yaw * DEG2RAD + PI * 0.5),
+            (px - nx) * -sin(p->yaw * DEG2RAD) + (py - ny) * sin(p->yaw * DEG2RAD + PI * 0.5),
             pz - nz,
         };
 
