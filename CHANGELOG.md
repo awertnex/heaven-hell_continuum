@@ -12,8 +12,23 @@
     - 'Player.pos' accumulates 'Player.velocity'
     - Player.drag: air drag
 - added working collision even at high speeds
+- fixed double click infinite loop when a release state is recorded between
+  a key press and a key hold (when pressing and releasing too quick)
+- added nice color variation to chunk gizmo (Alt + G)
+- added caves, a sand biome, and better terrain in general
+- added multi-block placement (numbers 1..0, or scroll wheel to select)
+- added more blocks
+- fixed texture colors (semi-transparency used to be fully opaque)
+- added camera mode 'stalker':
+    - camera anchors itself to a random block within a certain distance from the
+      player and stalks the player, changes anchor if distance increases,
+      the distance limit is either the closer between max render distance or the
+      hard-coded max anchor distance
+    - mouse movement and keyboard controls still control the player,
+      not the camera
 
 #### bugs and flaws
+- extremely high speeds (e.g. 3000 m/s) breaks collision detection
 
 - - -
 ## v0.3.0-beta (10 Dec 2025)
