@@ -11,6 +11,7 @@ typedef struct WorldInfo
     u32 type;           /* gamemode set at world creation */
     u64 seed;
     u64 tick;
+    u64 tick_start;
     u64 days;
 
     f32 gravity;

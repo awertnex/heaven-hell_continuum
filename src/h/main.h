@@ -227,6 +227,7 @@ struct Uniform
         GLint color;
         GLint opacity;
         GLint toggle_flashlight;
+        GLint render_distance;
     } voxel;
 
     struct /* bounding_box */

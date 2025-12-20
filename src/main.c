@@ -125,7 +125,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
             clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED, 0.0f, CAMERA_ZOOM_MAX);
     else
     {
-        lily.hotbar_slot_selected += (i64)yoffset;
+        lily.hotbar_slot_selected -= (i64)yoffset;
         if (lily.hotbar_slot_selected >= PLAYER_HOTBAR_SLOTS_MAX)
             lily.hotbar_slot_selected = 0;
         else if (lily.hotbar_slot_selected < 0)
@@ -171,7 +171,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 16;
+    settings.render_distance = 8;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -468,6 +468,8 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader[SHADER_VOXEL].id, "opacity");
     uniform.voxel.toggle_flashlight =
         glGetUniformLocation(shader[SHADER_VOXEL].id, "toggle_flashlight");
+    uniform.voxel.render_distance =
+        glGetUniformLocation(shader[SHADER_VOXEL].id, "render_distance");
 
     uniform.bounding_box.mat_perspective =
         glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "mat_perspective");
@@ -845,6 +847,7 @@ static void draw_everything(void)
     glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);
     glUniform1f(uniform.voxel.toggle_flashlight, lily.flag & FLAG_PLAYER_FLASHLIGHT ? 1.0f : 0.0f);
+    glUniform1i(uniform.voxel.render_distance, settings.render_distance * CHUNK_DIAMETER);
 
     f32 opacity = 1.0f;
     if (debug_mode[DEBUG_MODE_TRANS_BLOCKS])
@@ -1191,7 +1194,7 @@ static void draw_everything(void)
                     "TICKS       [%"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
                     render.time,
-                    world.tick, world.days),
+                    world.tick % SET_DAY_TICKS_MAX, world.days),
                 (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
         text_render(COLOR_TEXT_MOSS, TRUE);
 

@@ -189,9 +189,8 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
 void world_update(Player *p)
 {
-    world.tick = (u64)(render.time * 20.0f) - SET_DAY_TICKS_MAX * world.days;
-    if (world.tick >= SET_DAY_TICKS_MAX)
-        ++world.days;
+    world.tick = (u64)(render.time * 20.0) - SET_DAY_TICKS_MAX * world.days;
+    world.days = (world.tick % SET_DAY_TICKS_MAX) / SET_DAY_TICKS_MAX;
 
     if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
         show_cursor;
@@ -200,8 +199,7 @@ void world_update(Player *p)
     player_update(p, render.frame_delta);
     player_target_update(p);
 
-    b8 use_mouse = TRUE;
-    use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
+    b8 use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
     player_camera_movement_update(p, render.mouse_delta, use_mouse);
     update_projection_perspective(p->camera, &projection_world, FALSE);
     update_projection_perspective(p->camera_hud, &projection_hud, FALSE);
