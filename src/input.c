@@ -120,9 +120,11 @@ void input_update(Render render, Player *p)
     }
     else p->flag &= ~FLAG_PLAYER_SNEAKING;
 
-    /* ---- apply raw motion ------------------------------------------------ */
+    /* ---- apply movement input -------------------------------------------- */
 
-    if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+    if (p->flag & FLAG_PLAYER_DEAD)
+    {}
+    else if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
     {
         p->input.x =
             (px - nx) * cos(p->yaw * DEG2RAD) * cos(p->pitch * DEG2RAD) +

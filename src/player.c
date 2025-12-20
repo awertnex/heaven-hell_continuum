@@ -345,8 +345,6 @@ static void player_wrap_coordinates(Player *p)
         OVERFLOW_EDGE = (WORLD_RADIUS + 1) * CHUNK_DIAMETER,
         OVERFLOW_EDGE_V = (WORLD_RADIUS_VERTICAL + 1) * CHUNK_DIAMETER;
 
-    /* ---- safety reset ---------------------------------------------------- */
-
     if (!is_in_volume_f64(p->pos,
                 (v3f64){
                 -(f64)(WORLD_DIAMETER + WORLD_RADIUS) * CHUNK_DIAMETER,
@@ -591,7 +589,6 @@ void player_spawn(Player *p, b8 hard)
 
 void player_kill(Player *p)
 {
-    p->acceleration = (v3f32){0};
     p->velocity = (v3f32){0};
     p->flag |= FLAG_PLAYER_DEAD;
 }

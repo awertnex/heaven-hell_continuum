@@ -48,9 +48,9 @@
 /* number of blocks to process per chunk per frame */
 #define BLOCK_PARSE_RATE                    512
 
-#define CHUNK_COLOR_LOADED      0x4c260715
-#define CHUNK_COLOR_RENDER      0x2efa08ff
-#define CHUNK_COLOR_FACTOR_INFLUENCE 0.2
+#define CHUNK_COLOR_LOADED  color_hex_u32(18, 3, 7, 100)
+#define CHUNK_COLOR_RENDER  color_hex_u32(62, 122, 8, 255)
+#define CHUNK_COLOR_FACTOR_INFLUENCE 0.1
 
 enum BlockFlag
 {
@@ -257,19 +257,17 @@ extern ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX];
  *
  *  for rendering chunk gizmo in one draw call.
  *
- *  stride: 8 bytes.
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-extern u32 *chunk_gizmo_loaded;
+extern v2u32 *chunk_gizmo_loaded;
 
 /*! @brief chunk gizmo render buffer data for transparent chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
  *
- *  stride: 8 bytes.
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-extern u32 *chunk_gizmo_render;
+extern v2u32 *chunk_gizmo_render;
 
 extern GLuint chunk_gizmo_loaded_vao;
 extern GLuint chunk_gizmo_loaded_vbo;

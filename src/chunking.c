@@ -37,24 +37,22 @@ ChunkQueue CHUNK_QUEUE[CHUNK_QUEUES_MAX] = {0};
  *
  *  for rendering chunk gizmo in one draw call.
  *
- *  stride: 8 bytes.
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-u32 *chunk_gizmo_loaded = NULL;
+v2u32 *chunk_gizmo_loaded = NULL;
 
 /*! @brief chunk gizmo render buffer data for transparent chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
  *
- *  stride: 8 bytes.
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-u32 *chunk_gizmo_render = NULL;
+v2u32 *chunk_gizmo_render = NULL;
 
-extern GLuint chunk_gizmo_loaded_vao = 0;
-extern GLuint chunk_gizmo_loaded_vbo = 0;
-extern GLuint chunk_gizmo_render_vao = 0;
-extern GLuint chunk_gizmo_render_vbo = 0;
+GLuint chunk_gizmo_loaded_vao = 0;
+GLuint chunk_gizmo_loaded_vbo = 0;
+GLuint chunk_gizmo_render_vao = 0;
+GLuint chunk_gizmo_render_vbo = 0;
 
 /*! -- INTERNAL USE ONLY --;
  */
@@ -152,10 +150,10 @@ u32 chunking_init(void)
             mem_map((void*)&index, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
                 "chunking_init().index") != ERR_SUCCESS ||
 
-            mem_map((void*)&chunk_gizmo_loaded, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+            mem_map((void*)&chunk_gizmo_loaded, CHUNK_BUF_VOLUME_MAX * sizeof(v2u32),
                 "chunking_init().chunk_gizmo_loaded") != ERR_SUCCESS ||
 
-            mem_map((void*)&chunk_gizmo_render, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+            mem_map((void*)&chunk_gizmo_render, CHUNK_BUF_VOLUME_MAX * sizeof(v2u32),
                 "chunking_init().chunk_gizmo_render") != ERR_SUCCESS)
         goto cleanup;
 
@@ -335,28 +333,22 @@ u32 chunking_init(void)
 
     glBindVertexArray(chunk_gizmo_loaded_vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_loaded_vbo);
-    glBufferData(GL_ARRAY_BUFFER, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+    glBufferData(GL_ARRAY_BUFFER, settings.chunk_buf_volume * sizeof(v2u32),
             chunk_gizmo_loaded, GL_STATIC_DRAW);
 
-    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 2 * sizeof(u32), (void*)0);
+    glVertexAttribIPointer(0, 2, GL_UNSIGNED_INT, sizeof(v2u32), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 2 * sizeof(u32), (void*)sizeof(u32));
-    glEnableVertexAttribArray(1);
 
     glGenVertexArrays(1, &chunk_gizmo_render_vao);
     glGenBuffers(1, &chunk_gizmo_render_vbo);
 
     glBindVertexArray(chunk_gizmo_render_vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_render_vbo);
-    glBufferData(GL_ARRAY_BUFFER, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+    glBufferData(GL_ARRAY_BUFFER, settings.chunk_buf_volume * sizeof(v2u32),
             chunk_gizmo_render, GL_STATIC_DRAW);
 
-    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, 2 * sizeof(u32), (void*)0);
+    glVertexAttribIPointer(0, 2, GL_UNSIGNED_INT, sizeof(v2u32), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, 2 * sizeof(u32), (void*)sizeof(u32));
-    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -672,10 +664,10 @@ void chunking_free(void)
     if (chunk_gizmo_render_vao) glDeleteVertexArrays(1, &chunk_gizmo_render_vao);
     if (chunk_gizmo_render_vbo) glDeleteBuffers(1, &chunk_gizmo_render_vbo);
 
-    mem_unmap((void*)&chunk_gizmo_loaded, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+    mem_unmap((void*)&chunk_gizmo_loaded, CHUNK_BUF_VOLUME_MAX * sizeof(v2u32),
             "chunking_free().chunk_gizmo_loaded");
 
-    mem_unmap((void*)&chunk_gizmo_render, CHUNK_BUF_VOLUME_MAX * 2 * sizeof(u32),
+    mem_unmap((void*)&chunk_gizmo_render, CHUNK_BUF_VOLUME_MAX * sizeof(v2u32),
             "chunking_free().chunk_gizmo_render");
 }
 
@@ -1274,40 +1266,38 @@ static void _chunk_gizmo_write(u32 index, Chunk *ch)
         (ch->color >> 0x00) & 0xff,
     };
 
-    index *= 2;
-
     chunk_color.x = (chunk_color.x + ((ch->color_variant >> 0x18) & 0xff)) / 2;
     chunk_color.y = (chunk_color.y + ((ch->color_variant >> 0x10) & 0xff)) / 2;
     chunk_color.z = (chunk_color.z + ((ch->color_variant >> 0x08) & 0xff)) / 2;
 
     if (ch->flag & FLAG_CHUNK_RENDER)
     {
-        chunk_gizmo_render[index] =
+        chunk_gizmo_render[index].x =
             (chunk_pos.x << 0x18) | (chunk_pos.y << 0x10) | (chunk_pos.z << 0x08);
-        chunk_gizmo_render[index + 1] =
-            (chunk_color.x << 0x18) | (chunk_color.y << 0x10) | (chunk_color.z << 0x08) | (chunk_color.w << 0x00);
-        chunk_gizmo_loaded[index + 1] = 0;
+        chunk_gizmo_render[index].y =
+            color_hex_u32(chunk_color.x, chunk_color.y, chunk_color.z, chunk_color.w);
+        chunk_gizmo_loaded[index].y = 0;
     }
     else if (ch->flag & FLAG_CHUNK_LOADED)
     {
-        chunk_gizmo_loaded[index] =
+        chunk_gizmo_loaded[index].x =
             (chunk_pos.x << 0x18) | (chunk_pos.y << 0x10) | (chunk_pos.z << 0x08);
-        chunk_gizmo_loaded[index + 1] =
-            (chunk_color.x << 0x18) | (chunk_color.y << 0x10) | (chunk_color.z << 0x08) | (chunk_color.w << 0x00);
-        chunk_gizmo_render[index + 1] = 0;
+        chunk_gizmo_loaded[index].y =
+            color_hex_u32(chunk_color.x, chunk_color.y, chunk_color.z, chunk_color.w);
+        chunk_gizmo_render[index].y = 0;
     }
     else
     {
-        chunk_gizmo_loaded[index + 1] = 0;
-        chunk_gizmo_render[index + 1] = 0;
+        chunk_gizmo_loaded[index].y = 0;
+        chunk_gizmo_render[index].y = 0;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_loaded_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, index * sizeof(u32), 2 * sizeof(u32),
+    glBufferSubData(GL_ARRAY_BUFFER, index * sizeof(v2u32), sizeof(v2u32),
             &chunk_gizmo_loaded[index]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_render_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, index * sizeof(u32), 2 * sizeof(u32),
+    glBufferSubData(GL_ARRAY_BUFFER, index * sizeof(v2u32), sizeof(v2u32),
             &chunk_gizmo_render[index]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

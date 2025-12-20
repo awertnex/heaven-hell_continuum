@@ -25,6 +25,8 @@
 
 /* ---- internal ------------------------------------------------------------ */
 
+#define color_hex_u32(r, g, b, a) ((r << 24) | (g << 16) | (b << 8) | (a))
+
 #define SET_MARGIN                      10
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_DAY_TICKS_MAX               24000

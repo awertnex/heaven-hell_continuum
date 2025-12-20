@@ -171,7 +171,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 8;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -1013,11 +1013,13 @@ static void draw_everything(void)
         glUniform3fv(uniform.gizmo_chunk.camera_position, 1, (GLfloat*)&camera_position);
         glUniform1f(uniform.gizmo_chunk.time, render.time);
 
-        glBindVertexArray(chunk_gizmo_render_vao);
-        glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
-
+        glDisable(GL_BLEND);
         glBindVertexArray(chunk_gizmo_loaded_vao);
         glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(chunk_gizmo_render_vao);
+        glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
+        glEnable(GL_BLEND);
     }
 
     if (settings.anti_aliasing)
