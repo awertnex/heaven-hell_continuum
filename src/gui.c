@@ -75,7 +75,12 @@ u32 gui_init(void)
             texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){512, 512},
                 GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
                 stringf("%s%s", DIR_ROOT[DIR_ENV],
-                    "skybox_stars.png")) != ERR_SUCCESS)
+                    "skybox_stars.png")) != ERR_SUCCESS ||
+
+            texture_init(&texture[TEXTURE_SUN], (v2i32){128, 128},
+                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
+                stringf("%s%s", DIR_ROOT[DIR_ENV],
+                    "sun.png")) != ERR_SUCCESS)
         goto cleanup;
 
     for (i = 0; i < TEXTURE_COUNT; ++i)

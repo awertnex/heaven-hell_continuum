@@ -189,7 +189,7 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
 void world_update(Player *p)
 {
-    world.tick = 8000 + (u64)(render.time * 20.0f) - SET_DAY_TICKS_MAX * world.days;
+    world.tick = (u64)(render.time * 20.0f) - SET_DAY_TICKS_MAX * world.days;
     if (world.tick >= SET_DAY_TICKS_MAX)
         ++world.days;
 

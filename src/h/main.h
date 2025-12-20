@@ -176,7 +176,10 @@ struct Uniform
 
     struct /* skybox */
     {
+        GLint texture_scale;
+        GLint mat_translation;
         GLint mat_rotation;
+        GLint mat_sun_rotation;
         GLint mat_orientation;
         GLint mat_projection;
         GLint texture_sky;
@@ -285,6 +288,7 @@ enum TextureIndices
     TEXTURE_SKYBOX_VAL,
     TEXTURE_SKYBOX_HORIZON,
     TEXTURE_SKYBOX_STARS,
+    TEXTURE_SUN,
     TEXTURE_COUNT,
 }; /* TextureIndices */
 

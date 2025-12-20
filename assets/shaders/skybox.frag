@@ -3,8 +3,8 @@
 uniform sampler2D texture_sky;
 uniform sampler2D texture_horizon;
 uniform sampler2D texture_stars;
-uniform vec3 sun_rotation;
 uniform vec3 sky_color;
+in vec3 vs_sun_rotation;
 in vec2 tex_coords;
 out vec4 color;
 
@@ -18,4 +18,6 @@ void main()
     vec4 stars = texture(texture_stars, tex_coords);
 
     color = vec4(sky_color, 1.0) * mix(sky, horizon, alpha) + stars;
+    color.rgb *= sky.a;
+    color.a = sky.a;
 }

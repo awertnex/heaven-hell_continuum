@@ -21,8 +21,8 @@ out vec4 color;
 
 vec4 base_texture = texture(textures[face_index], tex_coords);
 vec3 base_color = base_texture.rgb;
-float distance = length(position - player_position);
-float flashlight = (FLASHLIGHT_INTENSITY / (distance * FALLOFF)) * toggle_flashlight;
+float distance = inversesqrt(length(position - player_position));
+float flashlight = pow(distance, FLASHLIGHT_SHARPNESS) * FLASHLIGHT_INTENSITY * toggle_flashlight;
 
 void main()
 {
@@ -31,7 +31,7 @@ void main()
     base_color = mix(base_color.rgb, sky_color.rgb, sky_color_influence);
 
     /* reinhard tone mapping */
-    float W = 4.0;
+    float W = 15.0;
     base_color = (base_color * (1.0 + base_color / (W * W))) / (1.0 + base_color);
 
     /* brightness & contrast */

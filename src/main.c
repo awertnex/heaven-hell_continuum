@@ -394,8 +394,14 @@ static void bind_shader_uniforms(void)
     font[FONT_MONO_BOLD].uniform.font_size = uniform.font.font_size;
     font[FONT_MONO_BOLD].uniform.text_color = uniform.font.text_color;
 
+    uniform.skybox.texture_scale =
+        glGetUniformLocation(shader[SHADER_SKYBOX].id, "texture_scale");
+    uniform.skybox.mat_translation =
+        glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_translation");
     uniform.skybox.mat_rotation =
         glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_rotation");
+    uniform.skybox.mat_sun_rotation =
+        glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_sun_rotation");
     uniform.skybox.mat_orientation =
         glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_orientation");
     uniform.skybox.mat_projection =
@@ -475,13 +481,13 @@ static void bind_shader_uniforms(void)
 
 static void generate_standard_meshes(void)
 {
-    const u32 VBO_LEN_SKYBOX    = 120;
-    const u32 EBO_LEN_SKYBOX    = 36;
-    const u32 VBO_LEN_COH       = 24;
-    const u32 EBO_LEN_COH       = 36;
-    const u32 VBO_LEN_PLAYER    = 216;
-    const u32 VBO_LEN_GIZMO     = 51;
-    const u32 EBO_LEN_GIZMO     = 90;
+    const u32 VBO_LEN_SKYBOX =  120;
+    const u32 EBO_LEN_SKYBOX =  36;
+    const u32 VBO_LEN_COH =     24;
+    const u32 EBO_LEN_COH =     36;
+    const u32 VBO_LEN_PLAYER =  216;
+    const u32 VBO_LEN_GIZMO =   51;
+    const u32 EBO_LEN_GIZMO =   90;
 
     GLfloat vbo_data_skybox[] =
     {
@@ -730,9 +736,31 @@ static void draw_everything(void)
             clamp_f32(skybox_data.color.z * intensity, 0.0f, 1.0f),
         };
 
+    m4f32 translation =
+    {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+
+    m4f32 rotation =
+    {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+
     glUseProgram(shader[SHADER_SKYBOX].id);
+
+    glUniform1f(uniform.skybox.texture_scale, 0.25f);
+    glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&translation);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
             (GLfloat*)&projection_world.rotation);
+    glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE,
+            (GLfloat*)&rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
             (GLfloat*)&projection_world.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
@@ -754,6 +782,51 @@ static void draw_everything(void)
     glBindVertexArray(mesh[MESH_SKYBOX].vao);
     glDrawElements(GL_TRIANGLES, mesh[MESH_SKYBOX].ebo_len, GL_UNSIGNED_INT, 0);
     glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
+
+    /* ---- draw sun -------------------------------------------------------- */
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    translation = (m4f32){
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        skybox_data.sun_rotation.x * 2.0f,
+        skybox_data.sun_rotation.y * 2.0f,
+        skybox_data.sun_rotation.z * 2.0f,
+        1.0f,
+    };
+
+    f32 angle = skybox_data.time * PI * 2.0f + 90.0f * DEG2RAD;
+    rotation = (m4f32){
+        cosf(PI / 2.0f), sinf(PI / 2.0f), 0.0f, 0.0f,
+        -sinf(PI / 2.0f), cosf(PI / 2.0f), 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+
+    rotation = matrix_multiply(rotation,
+            (m4f32){
+            cosf(angle), 0.0f, sinf(angle), 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            -sinf(angle), 0.0f, cosf(angle), 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            });
+
+    glUniform1f(uniform.skybox.texture_scale, 1.0f);
+    glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&translation);
+    glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE,
+            (GLfloat*)&rotation);
+    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SUN].id);
+    glBindVertexArray(mesh[MESH_UNIT].vao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     /* ---- draw world ------------------------------------------------------ */
 

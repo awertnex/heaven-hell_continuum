@@ -26,16 +26,3 @@ void main()
     color.rgb = (color.rgb * (1.0 + color.rgb / (WHITE_POINT * WHITE_POINT))) /
         (1.0 + color.rgb);
 }
-
-void main2()
-{
-    float light_influence = (chunk_color.r + chunk_color.g + chunk_color.b) / 3.0;
-    //light_influence /= distance * (1.0 - normalize(vec3(1.0, camera_distance, 0.0)).x) * FALLOFF;
-
-    //color = vec4(vec3((chunk_color.rgb + light_influence) / (distance * 2.0)), 1.0);
-    color *= chunk_color.a;
-
-    /* reinhard tone mapping */
-    color.rgb = (color.rgb * (1.0 + color.rgb / (WHITE_POINT * WHITE_POINT))) /
-        (1.0 + color.rgb);
-}
