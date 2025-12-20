@@ -12,7 +12,8 @@ layout(binding = 0, std430) readonly buffer ssbo_texture_indices
 };
 
 /* from 'src/h/main.h' */
-#define ID              0x000003ff
+#define BLOCK_ID        0x000003ff
+#define BLOCK_LIGHT     0x0000003f
 #define POSITIVE_X      0x00010000
 #define NEGATIVE_X      0x00020000
 #define POSITIVE_Y      0x00040000
@@ -22,15 +23,17 @@ layout(binding = 0, std430) readonly buffer ssbo_texture_indices
 
 in uint vs_data[];
 in vec3 vs_position[];
-out vec3 position;
+out vec3 vertex_position;
 out vec2 tex_coords;
 out vec3 normal;
 out flat uint face_index;
+out float block_light;
 uniform mat4 mat_perspective;
 
 void main()
 {
-    uint block_id = vs_data[0] & ID;
+    uint block_id = vs_data[0] & BLOCK_ID;
+    block_light = ((vs_data[0] >> 24) & BLOCK_LIGHT) / float(BLOCK_LIGHT);
 
     vec3 vbo[8] =
         vec3[](
@@ -68,13 +71,13 @@ void main()
     if (bool(vs_data[0] & POSITIVE_X))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
             face_index = texture_indices[block_id * 6 + 0];
             normal = vec3(1.0, 0.0, 0.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }
@@ -82,13 +85,13 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_X))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i + FACE_VERTICES]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
             face_index = texture_indices[block_id * 6 + 1];
             normal = vec3(-1.0, 0.0, 0.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }
@@ -96,13 +99,13 @@ void main()
     if (bool(vs_data[0] & POSITIVE_Y))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 2)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
             face_index = texture_indices[block_id * 6 + 2];
             normal = vec3(0.0, 1.0, 0.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }
@@ -110,13 +113,13 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_Y))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 3)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
             face_index = texture_indices[block_id * 6 + 3];
             normal = vec3(0.0, -1.0, 0.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }
@@ -124,13 +127,13 @@ void main()
     if (bool(vs_data[0] & POSITIVE_Z))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 4)]];
             tex_coords = gs_tex_coords[ebo_tex_coords_top[i]];
             face_index = texture_indices[block_id * 6 + 4];
             normal = vec3(0.0, 0.0, 1.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }
@@ -138,13 +141,13 @@ void main()
     if (bool(vs_data[0] & NEGATIVE_Z))
         for (int i = 0; i < FACE_VERTICES; ++i)
         {
-            position = vs_position[0] +
+            vertex_position = vs_position[0] +
                 vbo[ebo[i + (FACE_VERTICES * 5)]];
             tex_coords = gs_tex_coords[ebo_tex_coords[i]];
             face_index = texture_indices[block_id * 6 + 5];
             normal = vec3(0.0, 0.0, -1.0);
 
-            gl_Position = mat_perspective * vec4(position, 1.0);
+            gl_Position = mat_perspective * vec4(vertex_position, 1.0);
             EmitVertex();
             if ((i + 1) % 3 == 0) EndPrimitive();
         }

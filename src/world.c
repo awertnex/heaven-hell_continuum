@@ -176,7 +176,7 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
     /* ---- TODO: load the rest of world metadata --------------------------- */
 
-    world->tick = 0;
+    world->tick_start = 23800;
     world->days = 0;
 
     /* ---- other stuff ----------------------------------------------------- */
@@ -189,8 +189,8 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
 void world_update(Player *p)
 {
-    world.tick = (u64)(render.time * 20.0) - SET_DAY_TICKS_MAX * world.days;
-    world.days = (world.tick % SET_DAY_TICKS_MAX) / SET_DAY_TICKS_MAX;
+    world.tick = world.tick_start + (u64)(render.time * 20.0);
+    world.days = world.tick / SET_DAY_TICKS_MAX;
 
     if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
         show_cursor;
