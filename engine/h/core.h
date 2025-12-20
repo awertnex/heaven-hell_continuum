@@ -430,6 +430,10 @@ void attrib_vec3_vec2(void);
  */
 void attrib_vec3_vec3(void);
 
+/*! @brief set a vec3 and a vec4 attribute arrays for a vao.
+ */
+void attrib_vec3_vec4(void);
+
 /*! @return non-zero on failure and 'engine_err' is set accordingly.
  */
 u32 fbo_init(Render *render, FBO *fbo, Mesh *mesh_fbo,

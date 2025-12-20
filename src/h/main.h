@@ -62,8 +62,6 @@
 #define COLOR_DIAGNOSTIC_NONE   0x995429ff
 #define COLOR_DIAGNOSTIC_ERROR  0xec6051ff
 #define COLOR_DIAGNOSTIC_INFO   0x3f6f9fff
-#define COLOR_CHUNK_LOADED      0x4c260715
-#define COLOR_CHUNK_RENDER      0x5e7a0aff
 
 #define FILE_NAME_SETTINGS      "settings.txt"
 #define FILE_NAME_WORLD_SEED    "seed.txt"
@@ -198,17 +196,15 @@ struct Uniform
 
     struct /* gizmo_chunk */
     {
+        GLint gizmo_offset;
         GLint render_size;
         GLint chunk_buf_diameter;
         GLint mat_translation;
         GLint mat_rotation;
         GLint mat_orientation;
         GLint mat_projection;
-        GLint cursor;
-        GLint size;
         GLint camera_position;
-        GLint sky_color;
-        GLint color;
+        GLint time;
     } gizmo_chunk;
 
     struct /* post_processing */

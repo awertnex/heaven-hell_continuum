@@ -40,7 +40,6 @@ enum Directories
 }; /* Directories */
 
 extern str PATH_ROOT[PATH_MAX];
-extern str PATH_WORLD[PATH_MAX];
 extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
 extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
 

@@ -1,26 +1,24 @@
 #version 430 core
 
 #define FACE_VERTICES   6
-#define MAX_VERTICES    36
+#define VERTICES_MAX    36
 
 layout(points) in;
-layout(triangle_strip, max_vertices = MAX_VERTICES) out;
+layout(triangle_strip, max_vertices = VERTICES_MAX) out;
 
 layout(binding = 0, std430) readonly buffer ssbo_texture_indices
 {
     uint texture_indices[];
 };
 
-/* from src/h/main.h */
+/* from 'src/h/main.h' */
 #define ID              0x000003ff
-#define ACTIVE          0x00000400
 #define POSITIVE_X      0x00010000
 #define NEGATIVE_X      0x00020000
 #define POSITIVE_Y      0x00040000
 #define NEGATIVE_Y      0x00080000
 #define POSITIVE_Z      0x00100000
 #define NEGATIVE_Z      0x00200000
-#define NOT_EMPTY       0x00400000
 
 in uint vs_data[];
 in vec3 vs_position[];
@@ -45,7 +43,7 @@ void main()
                 vec3(0.0, 1.0, 1.0),
                 vec3(1.0, 1.0, 1.0));
 
-    int ebo[MAX_VERTICES] =
+    int ebo[VERTICES_MAX] =
         int[](
                 1, 5, 7, 7, 3, 1,
                 2, 6, 4, 4, 0, 2,

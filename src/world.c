@@ -29,7 +29,7 @@ u32 world_init(str *name, u64 seed, Player *p)
 
     world.gravity = GRAVITY * 2.0f;
 
-    set_player_spawn(p, 1547, -531, 10);
+    set_player_spawn(p, 0, 0, 0);
     player_spawn(p, TRUE);
     player_chunk_update(p);
 
@@ -72,20 +72,24 @@ u32 world_dir_init(const str *world_name)
         return *GAME_ERR;
     }
 
-    snprintf(PATH_WORLD, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
-    check_slash(PATH_WORLD);
-    normalize_slash(PATH_WORLD);
+    snprintf(string, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
+    check_slash(string);
+    normalize_slash(string);
 
-    if (is_dir_exists(PATH_WORLD, FALSE) == ERR_SUCCESS)
+    if (is_dir_exists(world.path, FALSE) == ERR_SUCCESS)
+    {
+        snprintf(world.path, PATH_MAX, "%s", string);
         return *GAME_ERR;
+    }
 
-    make_dir(PATH_WORLD);
+    make_dir(string);
+    snprintf(world.path, PATH_MAX, "%s", string);
 
-    LOGINFO(FALSE, "Creating World Directories '%s'..\n", PATH_WORLD);
+    LOGINFO(FALSE, "Creating World Directories '%s'..\n", world.path);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
     {
-        snprintf(string, PATH_MAX, "%s%s", PATH_WORLD, DIR_WORLD[i]);
+        snprintf(string, PATH_MAX, "%s%s", world.path, DIR_WORLD[i]);
         check_slash(string);
         normalize_slash(string);
         snprintf(DIR_WORLD[i], PATH_MAX, "%s", string);
@@ -93,7 +97,7 @@ u32 world_dir_init(const str *world_name)
         make_dir(string);
     }
 
-    LOGINFO(FALSE, "Checking World Directories '%s'..\n", PATH_WORLD);
+    LOGINFO(FALSE, "Checking World Directories '%s'..\n", world.path);
 
     for (i = 0; i < DIR_WORLD_COUNT; ++i)
         if (is_dir_exists(DIR_WORLD[i], TRUE) != ERR_SUCCESS)

@@ -171,7 +171,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 16;
+    settings.render_distance = 8;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -288,6 +288,8 @@ static void shaders_init(void)
             .name = "gizmo_chunk",
             .vertex.file_name = "gizmo_chunk.vert",
             .vertex.type = GL_VERTEX_SHADER,
+            .geometry.file_name = "gizmo_chunk.geom",
+            .geometry.type = GL_GEOMETRY_SHADER,
             .fragment.file_name = "gizmo_chunk.frag",
             .fragment.type = GL_FRAGMENT_SHADER,
         };
@@ -422,6 +424,8 @@ static void bind_shader_uniforms(void)
     uniform.gizmo.color =
         glGetUniformLocation(shader[SHADER_GIZMO].id, "gizmo_color");
 
+    uniform.gizmo_chunk.gizmo_offset =
+        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "gizmo_offset");
     uniform.gizmo_chunk.render_size =
         glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "render_size");
     uniform.gizmo_chunk.chunk_buf_diameter =
@@ -434,16 +438,10 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_orientation");
     uniform.gizmo_chunk.mat_projection =
         glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_projection");
-    uniform.gizmo_chunk.cursor =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "cursor");
-    uniform.gizmo_chunk.size =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "size");
     uniform.gizmo_chunk.camera_position =
         glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "camera_position");
-    uniform.gizmo_chunk.sky_color =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "sky_color");
-    uniform.gizmo_chunk.color =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "chunk_color");
+    uniform.gizmo_chunk.time =
+        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "time");
 
     uniform.post_processing.time =
         glGetUniformLocation(shader[SHADER_POST_PROCESSING].id, "time");
@@ -950,7 +948,7 @@ static void draw_everything(void)
                 render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
-    /* ---- draw hud -------------------------------------------------------- */
+    /* ---- draw hud gizmo -------------------------------------------------- */
 
     if (settings.anti_aliasing)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
@@ -982,11 +980,14 @@ static void draw_everything(void)
         glDrawElements(GL_TRIANGLES, 30, GL_UNSIGNED_INT, (void*)(60 * sizeof(GLuint)));
     }
 
+    /* ---- draw hud chunk gizmo -------------------------------------------- */
+
     if (debug_mode[DEBUG_MODE_CHUNK_GIZMO] && flag & FLAG_MAIN_HUD)
     {
         glClear(GL_DEPTH_BUFFER_BIT);
         glUseProgram(shader[SHADER_GIZMO_CHUNK].id);
 
+        glUniform1f(uniform.gizmo_chunk.gizmo_offset, (f32)settings.chunk_buf_radius + 0.5f);
         glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render.size);
         glUniform1i(uniform.gizmo_chunk.chunk_buf_diameter, settings.chunk_buf_diameter);
 
@@ -1002,7 +1003,6 @@ static void draw_everything(void)
         glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection,
                 1, GL_FALSE, (GLfloat*)&projection_hud.projection);
 
-        f32 render_distance = settings.chunk_buf_diameter / CHUNK_BUF_DIAMETER_MAX;
         v3f32 camera_position =
         {
             -lily.camera.cos_yaw * lily.camera.cos_pitch,
@@ -1011,41 +1011,13 @@ static void draw_everything(void)
         };
 
         glUniform3fv(uniform.gizmo_chunk.camera_position, 1, (GLfloat*)&camera_position);
-        glUniform3fv(uniform.gizmo_chunk.sky_color, 1, (GLfloat*)&skybox_data.color);
-        glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+        glUniform1f(uniform.gizmo_chunk.time, render.time);
 
-        cursor = CHUNK_ORDER;
-        end = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance];
-        for (; **cursor && cursor < end; ++cursor)
-        {
-            chunk = **cursor;
-            u32 i = *cursor - chunk_tab;
-            v3f32 pos =
-            {
-                (f32)(i % settings.chunk_buf_diameter),
-                (f32)((i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter),
-                (f32)i / settings.chunk_buf_layer,
-            };
-            pos = sub_v3f32(pos, (v3f32){
-                    settings.chunk_buf_radius + 0.5f,
-                    settings.chunk_buf_radius + 0.5f,
-                    settings.chunk_buf_radius + 0.5f});
-            glUniform3fv(uniform.gizmo_chunk.cursor, 1, (GLfloat*)&pos);
+        glBindVertexArray(chunk_gizmo_render_vao);
+        glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
 
-            f32 pulse = (sinf((pos.z * 0.3f) - (render.time * 5.0f)) * 0.1f) + 0.9f;
-            glUniform1f(uniform.gizmo_chunk.size, pulse);
-
-            v4f32 color =
-            {
-                (f32)((chunk->color >> 24) & 0xff) / 0xff,
-                (f32)((chunk->color >> 16) & 0xff) / 0xff,
-                (f32)((chunk->color >> 8) & 0xff) / 0xff,
-                (f32)((chunk->color & 0xff)) / 0xff,
-            };
-
-            glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
-            glDrawElements(GL_TRIANGLES, mesh[MESH_CUBE_OF_HAPPINESS].ebo_len, GL_UNSIGNED_INT, 0);
-        }
+        glBindVertexArray(chunk_gizmo_loaded_vao);
+        glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
     }
 
     if (settings.anti_aliasing)

@@ -65,6 +65,11 @@ f32 map_range_f32(f32 n, f32 n_min, f32 n_max, f32 r_min, f32 r_max)
     return r_min + ((n - n_min) * (r_max - r_min)) / (n_max - n_min);
 }
 
+f64 map_range_f64(f64 n, f64 n_min, f64 n_max, f64 r_min, f64 r_max)
+{
+    return r_min + ((n - n_min) * (r_max - r_min)) / (n_max - n_min);
+}
+
 f32 len_v3f32(v3f32 v)
 {
     return v.x * v.x + v.y * v.y + v.z * v.z;
@@ -136,6 +141,14 @@ u32 distance_v3i32(v3i32 a, v3i32 b)
 }
 
 f32 distance_v3f32(v3f32 a, v3f32 b)
+{
+    return
+        (a.x - b.x) * (a.x - b.x) +
+        (a.y - b.y) * (a.y - b.y) +
+        (a.z - b.z) * (a.z - b.z);
+}
+
+f64 distance_v3f64(v3f64 a, v3f64 b)
 {
     return
         (a.x - b.x) * (a.x - b.x) +

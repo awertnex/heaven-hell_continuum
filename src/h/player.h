@@ -84,7 +84,6 @@ typedef struct Player
     f32 acceleration_rate;          /* scalar for 'acceleration' */
     v3f32 velocity;
     f32 speed;                      /* derived from 'velocity' */
-    v3f32 drag;
     v3f32 friction;
     f32 weight;
 

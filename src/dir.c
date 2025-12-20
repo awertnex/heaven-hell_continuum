@@ -16,39 +16,40 @@
 #include "h/main.h"
 
 str PATH_ROOT[PATH_MAX] = {0};
-str PATH_WORLD[PATH_MAX] = {0};
-str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
-str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
+str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] =
+{
+    [DIR_LOGS] = "logs/",
+    [DIR_ASSETS] = "assets/",
+    [DIR_AUDIO] = "assets/audio/",
+    [DIR_FONTS] = "assets/fonts/",
+    [DIR_LOOKUPS] = "assets/lookups/",
+    [DIR_MODELS] = "assets/models/",
+    [DIR_SHADERS] = "assets/shaders/",
+    [DIR_TEXTURES] = "assets/textures/",
+    [DIR_BLOCKS] = "assets/textures/blocks/",
+    [DIR_ENTITIES] = "assets/textures/entities/",
+    [DIR_GUI] = "assets/textures/gui/",
+    [DIR_ITEMS] = "assets/textures/items/",
+    [DIR_LOGO] = "assets/textures/logo/",
+    [DIR_ENV] = "assets/textures/env/",
+    [DIR_CONFIG] = "config/",
+    [DIR_SCREENSHOTS] = "screenshots/",
+    [DIR_TEXT] = "text/",
+    [DIR_WORLDS] = "worlds/",
+};
+
+str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] =
+{
+    [DIR_WORLD_CHUNKS] = "chunks/",
+    [DIR_WORLD_ENTITIES] = "entities/",
+    [DIR_WORLD_LOGS] = "logs/",
+    [DIR_WORLD_PLAYER] = "player/",
+};
 
 u32 paths_init(void)
 {
     str *path_bin_root = NULL;
-    str string[PATH_MAX] = {0};
     u32 i;
-
-    snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
-    snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
-    snprintf(DIR_ROOT[DIR_AUDIO],           NAME_MAX, "%s", "assets/audio/");
-    snprintf(DIR_ROOT[DIR_FONTS],           NAME_MAX, "%s", "assets/fonts/");
-    snprintf(DIR_ROOT[DIR_LOOKUPS],         NAME_MAX, "%s", "assets/lookups/");
-    snprintf(DIR_ROOT[DIR_MODELS],          NAME_MAX, "%s", "assets/models/");
-    snprintf(DIR_ROOT[DIR_SHADERS],         NAME_MAX, "%s", "assets/shaders/");
-    snprintf(DIR_ROOT[DIR_TEXTURES],        NAME_MAX, "%s", "assets/textures/");
-    snprintf(DIR_ROOT[DIR_BLOCKS],          NAME_MAX, "%s", "assets/textures/blocks/");
-    snprintf(DIR_ROOT[DIR_ENTITIES],        NAME_MAX, "%s", "assets/textures/entities/");
-    snprintf(DIR_ROOT[DIR_GUI],             NAME_MAX, "%s", "assets/textures/gui/");
-    snprintf(DIR_ROOT[DIR_ITEMS],           NAME_MAX, "%s", "assets/textures/items/");
-    snprintf(DIR_ROOT[DIR_LOGO],            NAME_MAX, "%s", "assets/textures/logo/");
-    snprintf(DIR_ROOT[DIR_ENV],             NAME_MAX, "%s", "assets/textures/env/");
-    snprintf(DIR_ROOT[DIR_CONFIG],          NAME_MAX, "%s", "config/");
-    snprintf(DIR_ROOT[DIR_SCREENSHOTS],     NAME_MAX, "%s", "screenshots/");
-    snprintf(DIR_ROOT[DIR_TEXT],            NAME_MAX, "%s", "text/");
-    snprintf(DIR_ROOT[DIR_WORLDS],          NAME_MAX, "%s", "worlds/");
-
-    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS],   NAME_MAX, "%s", "chunks/");
-    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], NAME_MAX, "%s", "entities/");
-    snprintf(DIR_WORLD[DIR_WORLD_LOGS],     NAME_MAX, "%s", "logs/");
-    snprintf(DIR_WORLD[DIR_WORLD_PLAYER],   NAME_MAX, "%s", "player/");
 
     path_bin_root = get_path_bin_root();
     if (*GAME_ERR != ERR_SUCCESS)
@@ -61,15 +62,8 @@ u32 paths_init(void)
     LOGINFO(TRUE, "Creating Main Directories '%s'..\n", PATH_ROOT);
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
-    {
-        snprintf(string, PATH_MAX, "%s%s", PATH_ROOT, DIR_ROOT[i]);
-        check_slash(string);
-        normalize_slash(string);
-        snprintf(DIR_ROOT[i], PATH_MAX, "%s", string);
-
-        if (is_dir_exists(string, FALSE) != ERR_SUCCESS)
-            make_dir(string);
-    }
+        if (is_dir_exists(DIR_ROOT[i], FALSE) != ERR_SUCCESS)
+            make_dir(DIR_ROOT[i]);
 
     LOGINFO(TRUE, "Checking Main Directories '%s'..\n", PATH_ROOT);
 

@@ -26,7 +26,7 @@ enum BlockTexture
     BLOCK_TEXTURE_COUNT,
 }; /* BlockTexture */
 
-typedef enum BlockID
+enum BlockID
 {
     BLOCK_NONE,
     BLOCK_GRASS,
@@ -42,17 +42,17 @@ typedef enum BlockID
     BLOCK_WOOD_OAK_LOG,
     BLOCK_WOOD_OAK_PLANKS,
     BLOCK_COUNT,
-} BlockID;
+}; /* BlockID */
 
-typedef enum BlockState
+enum BlockState
 {
     BLOCK_STATE_SOLID = 1,
-} BlockState;
+}; /* BlockState */
 
 typedef struct Block
 {
     str name[NAME_MAX];
-    BlockState state;
+    enum BlockState state;
     u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
 } Block;
 

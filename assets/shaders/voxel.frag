@@ -31,7 +31,8 @@ void main()
     base_color = mix(base_color.rgb, sky_color.rgb, sky_color_influence);
 
     /* reinhard tone mapping */
-    base_color /= base_color + vec3(1.0);
+    float W = 4.0;
+    base_color = (base_color * (1.0 + base_color / (W * W))) / (1.0 + base_color);
 
     /* brightness & contrast */
     base_color *= BRIGHTNESS;

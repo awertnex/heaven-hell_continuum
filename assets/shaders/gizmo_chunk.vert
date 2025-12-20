@@ -1,40 +1,21 @@
 #version 430 core
 
-#define SCALE 150.0
-#define RENDER_DISTANCE_MAX 32.0
-#define RENDER_DISTANCE_MIN 2.0
+layout (location = 0) in uint a_pos;
+layout (location = 1) in uint a_color;
 
-layout (location = 0) in vec3 a_pos;
-
-uniform ivec2 render_size;
-uniform int chunk_buf_diameter;
-uniform mat4 mat_translation;
-uniform mat4 mat_rotation;
-uniform mat4 mat_orientation;
-uniform mat4 mat_projection;
-uniform vec3 cursor;
-uniform float size;
-out vec3 vertex_position;
+uniform float gizmo_offset;
+out vec3 vs_position;
+out vec4 vs_color;
 
 void main()
 {
-    float gizmo_scale = SCALE * (1.0 / chunk_buf_diameter) * (2.0 / render_size.y);
-
-    mat4 mat_offset = mat4(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            (render_size.x - SCALE * 2.0) / render_size.x,
-            (render_size.y - SCALE * 2.0) / render_size.y,
-            0.0, 1.0);
-
-    vec3 voxel_size = (a_pos * size) + ((1.0 - size) / 2.0);
-    vertex_position = (voxel_size + cursor);
-    gl_Position =
-        mat_offset *
-        mat_projection *
-        mat_orientation *
-        mat_rotation *
-        mat_translation *
-        vec4(vertex_position * gizmo_scale, 1.0);
+    vs_position = vec3(
+            (a_pos >> 0x18) & 0xff,
+            (a_pos >> 0x10) & 0xff,
+            (a_pos >> 0x08) & 0xff) - gizmo_offset;
+    vs_color = vec4(
+            (a_color >> 0x18) & 0xff,
+            (a_color >> 0x10) & 0xff,
+            (a_color >> 0x08) & 0xff,
+            (a_color >> 0x00) & 0xff) / 0xff;
 }

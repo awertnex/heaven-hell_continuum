@@ -21,7 +21,7 @@ typedef enum Biome
 typedef struct Terrain
 {
     Biome biome;
-    BlockID block_id;
+    enum BlockID block_id;
 } Terrain;
 
 /*! @brief random number look-up table.

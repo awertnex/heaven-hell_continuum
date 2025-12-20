@@ -19,7 +19,7 @@ void player_update(Player *p, f64 dt)
 
     p->acceleration = (v3f32){0};
     p->acceleration_rate = PLAYER_ACCELERATION_WALK;
-    p->drag = (v3f32){
+    world.drag = (v3f32){
         SET_DRAG_AIR,
         SET_DRAG_AIR,
         SET_DRAG_AIR,
@@ -35,16 +35,16 @@ void player_update(Player *p, f64 dt)
 
         if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
         {
-            p->drag.x = SET_DRAG_FLY_NATURAL;
-            p->drag.y = SET_DRAG_FLY_NATURAL;
-            p->drag.z = SET_DRAG_FLY_NATURAL;
+            world.drag.x = SET_DRAG_FLY_NATURAL;
+            world.drag.y = SET_DRAG_FLY_NATURAL;
+            world.drag.z = SET_DRAG_FLY_NATURAL;
             p->friction = (v3f32){0};
         }
         else
         {
-            p->drag.x = SET_DRAG_FLYING;
-            p->drag.y = SET_DRAG_FLYING;
-            p->drag.z = SET_DRAG_FLYING_V;
+            world.drag.x = SET_DRAG_FLYING;
+            world.drag.y = SET_DRAG_FLYING;
+            world.drag.z = SET_DRAG_FLYING_V;
         }
 
         p->camera.fovy += 10.0f;
@@ -58,9 +58,9 @@ void player_update(Player *p, f64 dt)
     else
     {
         gravity.z -= world.gravity;
-        p->drag.x = map_range_f32(p->friction.x, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
-        p->drag.y = map_range_f32(p->friction.y, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
-        p->drag.z = map_range_f32(p->friction.z, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
+        world.drag.x = map_range_f32(p->friction.x, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
+        world.drag.y = map_range_f32(p->friction.y, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
+        world.drag.z = map_range_f32(p->friction.z, 0.0f, 1.0f, SET_DRAG_AIR, SET_DRAG_GROUND_SOLID);
 
         if (!(p->flag &FLAG_PLAYER_CAN_JUMP))
             p->flag |= FLAG_PLAYER_MID_AIR;
@@ -80,15 +80,15 @@ void player_update(Player *p, f64 dt)
     /* ---- apply parameters ------------------------------------------------ */
 
     control = (v3f32){
-        p->input.x * p->acceleration_rate * p->drag.x,
-        p->input.y * p->acceleration_rate * p->drag.y,
-        p->input.z * p->acceleration_rate * p->drag.z,
+        p->input.x * p->acceleration_rate * world.drag.x,
+        p->input.y * p->acceleration_rate * world.drag.y,
+        p->input.z * p->acceleration_rate * world.drag.z,
     };
 
     drag = (v3f32){
-        p->drag.x * p->velocity.x,
-        p->drag.y * p->velocity.y,
-        p->drag.z * p->velocity.z,
+        world.drag.x * p->velocity.x,
+        world.drag.y * p->velocity.y,
+        world.drag.z * p->velocity.z,
     };
 
     p->acceleration = (v3f32){
@@ -424,7 +424,7 @@ static void player_wrap_coordinates(Player *p)
 void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
 {
     f64 zoom = 0.0, sensitivity = settings.mouse_sensitivity,
-        srol, crol, spch, cpch, syaw, cyaw,
+        SROL, CROL, SPCH, CPCH, SYAW, CYAW,
         lookat_pitch, lookat_yaw;
     v3f64 eye_pos =
     {
@@ -450,24 +450,24 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
             p->yaw += CAMERA_RANGE_MAX;
     }
 
-    srol = sin(p->roll * DEG2RAD);
-    crol = cos(p->roll * DEG2RAD);
-    spch = sin(p->pitch * DEG2RAD);
-    cpch = cos(p->pitch * DEG2RAD);
-    syaw = sin(p->yaw * DEG2RAD);
-    cyaw = cos(p->yaw * DEG2RAD);
-    p->sin_roll = syaw;
-    p->cos_roll = cyaw;
-    p->sin_pitch = spch;
-    p->cos_pitch = cpch;
-    p->sin_yaw = syaw;
-    p->cos_yaw = cyaw;
-    p->camera.sin_roll = srol;
-    p->camera.cos_roll = crol;
-    p->camera.sin_pitch = spch;
-    p->camera.cos_pitch = cpch;
-    p->camera.sin_yaw = syaw;
-    p->camera.cos_yaw = cyaw;
+    SROL = sin(p->roll * DEG2RAD);
+    CROL = cos(p->roll * DEG2RAD);
+    SPCH = sin(p->pitch * DEG2RAD);
+    CPCH = cos(p->pitch * DEG2RAD);
+    SYAW = sin(p->yaw * DEG2RAD);
+    CYAW = cos(p->yaw * DEG2RAD);
+    p->sin_roll = SYAW;
+    p->cos_roll = CYAW;
+    p->sin_pitch = SPCH;
+    p->cos_pitch = CPCH;
+    p->sin_yaw = SYAW;
+    p->cos_yaw = CYAW;
+    p->camera.sin_roll = SROL;
+    p->camera.cos_roll = CROL;
+    p->camera.sin_pitch = SPCH;
+    p->camera.cos_pitch = CPCH;
+    p->camera.sin_yaw = SYAW;
+    p->camera.cos_yaw = CYAW;
 
     switch (p->camera_mode)
     {
@@ -478,17 +478,17 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
             break;
 
         case PLAYER_CAMERA_MODE_3RD_PERSON:
-            p->camera.pos.x = p->pos.x - cyaw * cpch * p->camera_distance;
-            p->camera.pos.y = p->pos.y + syaw * cpch * p->camera_distance;
-            p->camera.pos.z = p->pos.z + p->eye_height + spch * p->camera_distance;
+            p->camera.pos.x = p->pos.x - CYAW * CPCH * p->camera_distance;
+            p->camera.pos.y = p->pos.y + SYAW * CPCH * p->camera_distance;
+            p->camera.pos.z = p->pos.z + p->eye_height + SPCH * p->camera_distance;
             break;
 
         case PLAYER_CAMERA_MODE_3RD_PERSON_FRONT:
-            p->camera.pos.x = p->pos.x + cyaw * cpch * p->camera_distance;
-            p->camera.pos.y = p->pos.y - syaw * cpch * p->camera_distance;
-            p->camera.pos.z = p->pos.z + p->eye_height - spch * p->camera_distance;
+            p->camera.pos.x = p->pos.x + CYAW * CPCH * p->camera_distance;
+            p->camera.pos.y = p->pos.y - SYAW * CPCH * p->camera_distance;
+            p->camera.pos.z = p->pos.z + p->eye_height - SPCH * p->camera_distance;
 
-            p->camera.sin_pitch = -spch;
+            p->camera.sin_pitch = -SPCH;
             p->camera.sin_yaw = sin((p->yaw + CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
             p->camera.cos_yaw = cos((p->yaw + CAMERA_RANGE_MAX / 2.0) * DEG2RAD);
             break;
@@ -513,20 +513,50 @@ void player_camera_movement_update(Player *p, v2f64 mouse_delta, b8 use_mouse)
     p->camera_hud.cos_yaw = p->camera.cos_yaw;
 }
 
+f64 ray_cast(v3f64 pos, v3f64 target)
+{
+    f64 c = distance_v3f64(pos, target);
+    v3f64 delta;
+    delta = (v3f64){
+       fabs(1.0 / target.x),
+       fabs(1.0 / target.y),
+       fabs(1.0 / target.z),
+    };
+    //printf("%f %f %f\n", delta.x, delta.y, delta.z);
+
+    return 1.0;
+}
+
 void player_target_update(Player *p)
 {
-    f64 spch = p->sin_pitch;
-    f64 cpch = p->cos_pitch;
-    f64 syaw = p->sin_yaw;
-    f64 cyaw = p->cos_yaw;
+    f64 SPCH = p->sin_pitch;
+    f64 CPCH = p->cos_pitch;
+    f64 SYAW = p->sin_yaw;
+    f64 CYAW = p->cos_yaw;
+    f64 ray_len;
+    v3f64 eye_pos =
+    {
+        p->pos.x,
+        p->pos.y,
+        p->pos.z + p->eye_height,
+    };
+    v3f64 target =
+    {
+        eye_pos.x + CYAW * CPCH * settings.reach_distance,
+        eye_pos.y - SYAW * CPCH * settings.reach_distance,
+        eye_pos.z - SPCH * settings.reach_distance,
+    };
 
-    p->target.x = p->pos.x + cyaw * cpch * settings.reach_distance;
-    p->target.y = p->pos.y - syaw * cpch * settings.reach_distance;
-    p->target.z = p->pos.z + p->eye_height - spch * settings.reach_distance;
+    ray_len = ray_cast(eye_pos, target);
+
+    p->target.x = target.x * ray_len;
+    p->target.y = target.y * ray_len;
+    p->target.z = target.z * ray_len;
 
     p->target_snapped.x = (i64)floor(p->target.x);
     p->target_snapped.y = (i64)floor(p->target.y);
     p->target_snapped.z = (i64)floor(p->target.z);
+
 }
 
 void set_player_pos(Player *p, f64 x, f64 y, f64 z)

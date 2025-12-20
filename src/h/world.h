@@ -7,13 +7,14 @@ typedef struct WorldInfo
 {
     u64 id;
     str name[NAME_MAX];
+    str path[PATH_MAX];
     u32 type;           /* gamemode set at world creation */
     u64 seed;
     u64 tick;
     u64 days;
 
     f32 gravity;
-    f32 drag;
+    v3f32 drag;
 } WorldInfo;
 
 /*! @brief info of current world loaded.
