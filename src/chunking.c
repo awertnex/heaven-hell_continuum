@@ -956,7 +956,7 @@ static void chunk_generate(Chunk **chunk, u32 rate, Terrain terrain())
                 {
                     _block_place(ch, px, nx, py, ny, pz, nz,
                             chunk_tab_coordinates, x, y, z, terrain_info.block_id);
-                    ch->block[z][y][x] |= (63 << SHIFT_BLOCK_LIGHT);
+                    ch->block[z][y][x] |= terrain_info.block_light;
 
                     if (terrain_info.biome == BIOME_HILLS)
                     {

@@ -1,6 +1,7 @@
-#define FLASHLIGHT_INTENSITY 8.0
-#define SKY_INFLUENCE 8.0
-#define SUN_INFLUENCE 8.0
+#define FLASHLIGHT_INTENSITY 7.0
+#define FLASHLIGHT_DISTANCE 2.0
+#define SKY_INFLUENCE 1.0
+#define SUN_INFLUENCE 3.0
 #define FOG_SOFTNESS 1.0
 
 uniform vec3 sun_rotation;

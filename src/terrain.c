@@ -234,6 +234,9 @@ f32 perlin_noise_3d_ex(v3i32 coordinates, f32 intensity, f32 scale,
 Terrain terrain_land(v3i32 coordinates)
 {
     Terrain terrain = {0};
+    coordinates.x += 7324;
+    coordinates.y -= 7272;
+    coordinates.x -= 30;
     v2i32 coordinates_2d = {coordinates.x, coordinates.y};
 
     f32 mountains,
@@ -306,20 +309,29 @@ Terrain terrain_land(v3i32 coordinates)
         terrain.block_id = BLOCK_STONE;
         if (cave_spaghetti > crush)
             terrain.block_id = 0;
+
+        terrain.block_light = (u32)map_range_f64(
+                    clamp_f64((f64)coordinates.z, -64.0, 0.0),
+                    -64.0, 0.0, 2.0, 63.0) << SHIFT_BLOCK_LIGHT;
     }
+    else
+        terrain.block_light = 63 << SHIFT_BLOCK_LIGHT;
+
     if (final < (f32)coordinates.z || cave_entrances > 0.22f)
         terrain.block_id = 0;
 
     return terrain;
+}
 
-ignore:
+Terrain terrain_cave_test(v3i32 coordinates)
+{
+    Terrain terrain = {0};
+    f32 cave_features = perlin_noise_3d_ex(coordinates, 1.0f, 20.0f, 3, 0.7f, 0.75f, 847234, 275613, 986233);
 
-    //f32 surface_fickle = perlin_noise_2d_ex(coordinates_2d, 92.0f, 150.0f, 3, 0.5f, 0.5f, 3564, -483);
-    //surface_fickle += perlin_noise_2d_ex(coordinates_2d, 20.0f, 47.0f, 3, 0.75f, 0.5f, 937, -123);
-
-    if (cave_final > 0.0f)
+    if (cave_features > 0.0f)
         terrain.block_id = 0;
-    else terrain.block_id = BLOCK_STONE;
+    else
+        terrain.block_id = BLOCK_GRASS;
 
     return terrain;
 }

@@ -29,7 +29,7 @@ u32 world_init(str *name, u64 seed, Player *p)
 
     world.gravity = GRAVITY * 2.0f;
 
-    set_player_spawn(p, 0, 0, 0);
+    set_player_spawn(p, 61, 6, -53);
     player_spawn(p, TRUE);
     player_chunk_update(p);
 
@@ -176,7 +176,7 @@ u32 world_load(WorldInfo *world, const str *world_name, u64 seed)
 
     /* ---- TODO: load the rest of world metadata --------------------------- */
 
-    world->tick_start = 23800;
+    world->tick_start = 23900;
     world->days = 0;
 
     /* ---- other stuff ----------------------------------------------------- */

@@ -220,12 +220,13 @@ struct Uniform
     struct /* voxel */
     {
         GLint mat_perspective;
-        GLint player_position;
+        GLint camera_position;
         GLint sun_rotation;
         GLint sky_color;
         GLint chunk_position;
         GLint color;
         GLint opacity;
+        GLint flashlight_position;
         GLint toggle_flashlight;
         GLint render_distance;
     } voxel;

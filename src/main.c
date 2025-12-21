@@ -171,7 +171,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 8;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -454,8 +454,8 @@ static void bind_shader_uniforms(void)
 
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader[SHADER_VOXEL].id, "mat_perspective");
-    uniform.voxel.player_position =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "player_position");
+    uniform.voxel.camera_position =
+        glGetUniformLocation(shader[SHADER_VOXEL].id, "camera_position");
     uniform.voxel.sun_rotation =
         glGetUniformLocation(shader[SHADER_VOXEL].id, "sun_rotation");
     uniform.voxel.sky_color =
@@ -466,6 +466,8 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader[SHADER_VOXEL].id, "voxel_color");
     uniform.voxel.opacity =
         glGetUniformLocation(shader[SHADER_VOXEL].id, "opacity");
+    uniform.voxel.flashlight_position =
+        glGetUniformLocation(shader[SHADER_VOXEL].id, "flashlight_position");
     uniform.voxel.toggle_flashlight =
         glGetUniformLocation(shader[SHADER_VOXEL].id, "toggle_flashlight");
     uniform.voxel.render_distance =
@@ -696,7 +698,7 @@ static void draw_everything(void)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_SKYBOX].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_data.time = (f32)world.tick / SET_DAY_TICKS_MAX;
+    skybox_data.time = fmodf((f32)world.tick / SET_DAY_TICKS_MAX, 1.0f);
     skybox_data.sun_rotation =
         (v3f32){
             cos(skybox_data.time * PI * 2.0f),
@@ -704,20 +706,22 @@ static void draw_everything(void)
             sin(skybox_data.time * PI * 2.0f),
         };
 
+    f32 skybox_time = clamp_f32(skybox_data.time * 2.0f, 0.0f, 1.0f);
+
     f32 intensity =     0.0039f;
-    f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
+    f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_time * PI)));
 
     f32 pre_burn =      fabsf(sinf(powf(sinf(
-                        (skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
+                        (skybox_time + 0.33f) * PI * 1.2f), 16.0f)));
 
     f32 burn =          fabsf(sinf(1.5f * powf(sinf(
-                        (skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
+                        (skybox_time + 0.124f) * PI * 1.6f), 32.0f)));
 
     f32 burn_boost =    fabsf(powf(sinf(
-                    (skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+                        (skybox_time + 0.212f) * PI * 1.4f), 64.0f));
 
     f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(
-                        skybox_data.time * PI), 3.0f)));
+                        skybox_time * PI), 3.0f)));
 
     skybox_data.color =
         (v3f32){
@@ -842,7 +846,9 @@ static void draw_everything(void)
     glUseProgram(shader[SHADER_VOXEL].id);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&projection_world.perspective);
-    glUniform3f(uniform.voxel.player_position,
+    glUniform3f(uniform.voxel.camera_position,
+            lily.camera.pos.x, lily.camera.pos.y, lily.camera.pos.z);
+    glUniform3f(uniform.voxel.flashlight_position,
             lily.pos.x, lily.pos.y, lily.pos.z + lily.eye_height);
     glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_color, 1, (GLfloat*)&skybox_data.color);

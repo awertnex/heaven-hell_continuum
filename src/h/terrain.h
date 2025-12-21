@@ -22,6 +22,7 @@ typedef struct Terrain
 {
     Biome biome;
     enum BlockID block_id;
+    u32 block_light;
 } Terrain;
 
 /*! @brief random number look-up table.
@@ -123,5 +124,7 @@ f32 perlin_noise_3d_ex(v3i32 coordinates, f32 intensity, f32 scale,
  *  @return terrain info (e.g. block ID at specified coordinates).
  */
 Terrain terrain_land(v3i32 coordinates);
+
+Terrain terrain_cave_test(v3i32 coordinates);
 
 #endif /* GAME_TERRAIN_H */
