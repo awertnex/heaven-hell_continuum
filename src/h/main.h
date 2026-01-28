@@ -1,10 +1,10 @@
 #ifndef HHC_H
 #define HHC_H
 
-#include <engine/h/core.h>
-#include <engine/h/diagnostics.h>
-#include <engine/h/text.h>
-#include <engine/h/types.h>
+#include <deps/fossil/core.h>
+#include <deps/fossil/diagnostics.h>
+#include <deps/fossil/text.h>
+#include <deps/fossil/types.h>
 
 #include "common.h"
 

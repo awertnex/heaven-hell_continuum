@@ -1,8 +1,8 @@
 #ifndef HHC_INPUT_H
 #define HHC_INPUT_H
 
-#include <engine/h/core.h>
-#include <engine/h/types.h>
+#include <deps/fossil/core.h>
+#include <deps/fossil/types.h>
 
 #include "main.h"
 #include "player.h"

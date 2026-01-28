@@ -1,14 +1,9 @@
 #include "deps/buildtool/buildtool.h"
-#include "engine/h/build.h"
+#include "deps/fossil/build.h"
 
 #define DIR_SRC     "src/"
 #define DIR_OUT     "Heaven-Hell Continuum/"
-
-#if PLATFORM_WIN
-#   define STR_OUT  "\""DIR_OUT"hhc"EXE"\""
-#else
-#   define STR_OUT  DIR_OUT"hhc"
-#endif /* PLATFORM */
+#define STR_OUT     DIR_OUT"hhc"
 
 static str str_cflags[][CMD_SIZE] =
 {

@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#include <engine/h/core.h>
-#include <engine/h/memory.h>
-#include <engine/h/shaders.h>
-#include <engine/h/string.h>
+#include <deps/fossil/core.h>
+#include <deps/fossil/memory.h>
+#include <deps/fossil/shaders.h>
+#include <deps/fossil/string.h>
 
 #include "h/assets.h"
 #include "h/dir.h"

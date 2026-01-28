@@ -1,9 +1,9 @@
 #ifndef HHC_DIAGNOSTICS_H
 #define HHC_DIAGNOSTICS_H
 
-#include <engine/h/types.h>
-#include <engine/h/diagnostics.h>
-#include <engine/h/limits.h>
+#include <deps/fossil/types.h>
+#include <deps/fossil/diagnostics.h>
+#include <deps/fossil/limits.h>
 
 #define HHC_ERR_WORLD_EXISTS        513
 #define HHC_ERR_WORLD_CREATION_FAIL 514

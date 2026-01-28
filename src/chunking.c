@@ -3,12 +3,12 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <engine/h/diagnostics.h>
-#include <engine/h/dir.h>
-#include <engine/h/input.h>
-#include <engine/h/memory.h>
-#include <engine/h/math.h>
-#include <engine/h/string.h>
+#include <deps/fossil/diagnostics.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/input.h>
+#include <deps/fossil/memory.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/string.h>
 
 #include "h/assets.h"
 #include "h/chunking.h"

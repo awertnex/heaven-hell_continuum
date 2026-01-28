@@ -1,5 +1,5 @@
-#include <engine/h/math.h>
-#include <engine/h/memory.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/memory.h>
 
 #include "h/chunking.h"
 #include "h/dir.h"

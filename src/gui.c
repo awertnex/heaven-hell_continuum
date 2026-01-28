@@ -2,11 +2,11 @@
 #include <string.h>
 #include <math.h>
 
-#include <engine/h/core.h>
-#include <engine/h/diagnostics.h>
-#include <engine/h/logger.h>
-#include <engine/h/memory.h>
-#include <engine/h/string.h>
+#include <deps/fossil/core.h>
+#include <deps/fossil/diagnostics.h>
+#include <deps/fossil/logger.h>
+#include <deps/fossil/memory.h>
+#include <deps/fossil/string.h>
 
 #include "h/common.h"
 #include "h/main.h"

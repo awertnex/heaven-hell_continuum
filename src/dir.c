@@ -2,12 +2,12 @@
 #include <string.h>
 #include <dirent.h>
 
-#include <engine/h/common.h>
-#include <engine/h/core.h>
-#include <engine/h/dir.h>
-#include <engine/h/math.h>
-#include <engine/h/memory.h>
-#include <engine/h/string.h>
+#include <deps/fossil/common.h>
+#include <deps/fossil/core.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/memory.h>
+#include <deps/fossil/string.h>
 
 #include "h/common.h"
 #include "h/diagnostics.h"

@@ -1,7 +1,7 @@
 #ifndef HHC_COMMON_H
 #define HHC_COMMON_H
 
-#include <engine/h/types.h>
+#include <deps/fossil/types.h>
 
 #include "diagnostics.h"
 

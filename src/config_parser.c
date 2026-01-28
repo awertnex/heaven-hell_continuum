@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include <engine/h/dir.h>
-#include <engine/h/limits.h>
-#include <engine/h/memory.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/limits.h>
+#include <deps/fossil/memory.h>
 
 #include "h/main.h"
 

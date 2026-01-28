@@ -1,7 +1,7 @@
 #ifndef HHC_LOGGER_H
 #define HHC_LOGGER_H
 
-#include <engine/h/logger.h>
+#include <deps/fossil/logger.h>
 
 #include "common.h"
 

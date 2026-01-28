@@ -1,4 +1,4 @@
-#include <engine/h/fossil_engine.h>
+#include <deps/fossil/fossil_engine.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -107,11 +107,12 @@ static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
 
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
+    (void)window;
     (void)scancode;
     (void)mods;
 
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+        fsl_request_engine_close()
 }
 
 static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
@@ -1238,7 +1239,7 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
-    if (fsl_init(argc, argv, GAME_DIR_NAME_LOGS, GAME_TITLE, 1280, 1054, NULL,
+    if (fsl_engine_init(argc, argv, GAME_DIR_NAME_LOGS, GAME_TITLE, 1280, 1054, NULL,
                 GAME_RELEASE_BUILD | FSL_FLAG_LOAD_DEFAULT_SHADERS) != FSL_ERR_SUCCESS ||
             game_init() != FSL_ERR_SUCCESS)
         goto cleanup;
@@ -1336,7 +1337,7 @@ section_world_loaded:
 
     generate_standard_meshes();
 
-    while (fsl_running())
+    while (fsl_engine_running())
     {
         glfwPollEvents();
         fsl_update_mouse_movement();
@@ -1371,6 +1372,6 @@ cleanup:
     for (i = 0; i < SHADER_COUNT; ++i)
         fsl_shader_program_free(&shader[i]);
     rand_free();
-    fsl_close();
+    fsl_engine_close();
     return *GAME_ERR;
 }

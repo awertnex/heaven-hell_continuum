@@ -1,6 +1,6 @@
-#include <engine/h/input.h>
-#include <engine/h/math.h>
-#include <engine/h/time.h>
+#include <deps/fossil/input.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/time.h>
 
 #include "h/assets.h"
 #include "h/chunking.h"

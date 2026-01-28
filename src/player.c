@@ -1,6 +1,6 @@
-#include <engine/h/collision.h>
-#include <engine/h/math.h>
-#include <engine/h/time.h>
+#include <deps/fossil/collision.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/time.h>
 
 #include "h/chunking.h"
 #include "h/common.h"

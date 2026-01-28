@@ -1,8 +1,8 @@
 #ifndef HHC_CHUNKING_H
 #define HHC_CHUNKING_H
 
-#include <engine/h/common.h>
-#include <engine/h/types.h>
+#include <deps/fossil/common.h>
+#include <deps/fossil/types.h>
 
 #include "assets.h"
 #include "main.h"

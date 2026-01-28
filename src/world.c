@@ -1,11 +1,11 @@
 #include <string.h>
 
-#include <engine/h/common.h>
-#include <engine/h/dir.h>
-#include <engine/h/limits.h>
-#include <engine/h/math.h>
-#include <engine/h/string.h>
-#include <engine/h/time.h>
+#include <deps/fossil/common.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/limits.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/string.h>
+#include <deps/fossil/time.h>
 
 #include "h/chunking.h"
 #include "h/common.h"
