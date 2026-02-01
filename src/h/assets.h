@@ -1,13 +1,13 @@
 #ifndef HHC_ASSETS_H
 #define HHC_ASSETS_H
 
+#include "common.h"
+#include "dir.h"
+
 #include <deps/fossil/core.h>
 #include <deps/fossil/limits.h>
 #include <deps/fossil/shaders.h>
 #include <deps/fossil/types.h>
-
-#include "common.h"
-#include "dir.h"
 
 #define FRICTION_BLOCK_SLIPPERY 0.02f
 #define FRICTION_BLOCK_WET      0.1f

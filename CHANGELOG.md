@@ -1,8 +1,9 @@
 # changelog
 
-## v0.4.0-dev
+## v0.4.0-dev (current)
 
 #### changes
+- updated engine version to `fossil_engine v0.5.0-beta`
 - fixed engine build tool not copying required libraries to deployment directory
 - improved logging of commands:
     - chunk boundary toggling commands
@@ -34,6 +35,8 @@
     - I wrongfully assumed since "if (!p)" protected against NULL pointers it protected against un-allocated memory... and then I ate dirt
 - added function 'fsl_shader_free()' to unload individual shaders
 - added mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to scroll)
+- removed the engine, then added the engine back to the repository as a dependency
+- changed buildtool version to `v1.8.1-beta`
 
 #### bugs and flaws
 - segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'

@@ -1,12 +1,3 @@
-#include <string.h>
-
-#include <deps/fossil/common.h>
-#include <deps/fossil/dir.h>
-#include <deps/fossil/limits.h>
-#include <deps/fossil/math.h>
-#include <deps/fossil/string.h>
-#include <deps/fossil/time.h>
-
 #include "h/chunking.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
@@ -15,6 +6,16 @@
 #include "h/logger.h"
 #include "h/main.h"
 #include "h/world.h"
+
+#include <deps/fossil/common.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/limits.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/string.h>
+#include <deps/fossil/time.h>
+
+#include <string.h>
+#include <math.h>
 
 world_info world = {0};
 
@@ -173,7 +174,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
     else
     {
         if (!seed)
-            seed = fsl_rand_u64(fsl_get_time_raw_nsec());
+            seed = fsl_rand_u64(fsl_get_time_raw_nsec()) % FSL_U64_MAX;
 
         fsl_convert_u64_to_str(string[1], NAME_MAX, seed);
         if (fsl_write_file(string[0], 1, strlen(string[1]),

@@ -46,18 +46,22 @@ int main(int argc, char **argv)
     cmd_push(NULL, "-I.");
     cmd_push(NULL, "-std=c99");
     cmd_push(NULL, "-Ofast");
-    cmd_push(NULL, "-Wl,-rpath="RUNTIME_PATH);
-    fsl_link_libs(NULL);
+    fsl_engine_link_libs(NULL);
+    fsl_engine_set_runtime_path(NULL);
     cmd_push(NULL, "-o");
     cmd_push(NULL, STR_OUT);
     cmd_ready(NULL);
 
     if (exec(&_cmd, "main().cmd") != ERR_SUCCESS)
-        cmd_fail();
+        cmd_fail(NULL);
 
-    if (copy_file("LICENSE", DIR_OUT"LICENSE") != ERR_SUCCESS ||
-            copy_dir("assets/", DIR_OUT"assets/", TRUE) != ERR_SUCCESS)
-        cmd_fail();
+    if (
+            copy_file("LICENSE",        DIR_OUT) != ERR_SUCCESS ||
+            copy_dir("assets/",         DIR_OUT, FALSE) != ERR_SUCCESS ||
+            copy_dir("fossil/fossil/",  DIR_OUT, TRUE) != ERR_SUCCESS ||
+            copy_dir("fossil/lib/", ".", FALSE) != ERR_SUCCESS ||
+            copy_dir("fossil/deps/", ".", FALSE) != ERR_SUCCESS)
+        cmd_fail(NULL);
 
     build_err = ERR_SUCCESS;
     return build_err;

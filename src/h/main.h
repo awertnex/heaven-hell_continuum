@@ -1,12 +1,12 @@
 #ifndef HHC_H
 #define HHC_H
 
+#include "common.h"
+
 #include <deps/fossil/core.h>
 #include <deps/fossil/diagnostics.h>
 #include <deps/fossil/text.h>
 #include <deps/fossil/types.h>
-
-#include "common.h"
 
 struct hhc_core
 {

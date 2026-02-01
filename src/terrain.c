@@ -1,11 +1,13 @@
-#include <deps/fossil/math.h>
-#include <deps/fossil/memory.h>
-
 #include "h/chunking.h"
 #include "h/dir.h"
 #include "h/main.h"
 #include "h/terrain.h"
 #include "h/world.h"
+
+#include <deps/fossil/math.h>
+#include <deps/fossil/memory.h>
+
+#include <math.h>
 
 f32 *RAND_TAB = {0};
 

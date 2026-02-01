@@ -1,4 +1,7 @@
-#include "engine/build.c"
+#include "deps/buildtool/buildtool.h"
+
+#define FSL_OMIT_LFOSSIL
+#include "deps/fossil/build.h"
 
 #define DIR_ROOT        "tests/"
 #define DIR_SRC         "src/tests/"

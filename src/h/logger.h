@@ -1,9 +1,9 @@
 #ifndef HHC_LOGGER_H
 #define HHC_LOGGER_H
 
-#include <deps/fossil/logger.h>
-
 #include "common.h"
+
+#include <deps/fossil/logger.h>
 
 #define HHC_LOGFATAL(err, flags, format, ...) \
     _fsl_log_output(err, flags, __BASE_FILE__, __LINE__, FSL_LOG_LEVEL_FATAL, GAME_DIR_NAME_LOGS, format, ##__VA_ARGS__)
@@ -31,7 +31,7 @@
 #define HHC_LOG_MESH_GENERATE(err, mesh_name) \
 { \
     if (err == FSL_ERR_SUCCESS) \
-    HHC_LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE, "Mesh '%s' Generated\n", mesh_name); \
+    HHC_LOGTRACE(FSL_FLAG_LOG_NO_VERBOSE, "Mesh '%s' Generated\n", mesh_name); \
     else if (err == FSL_ERR_MESH_GENERATION_FAIL) \
     HHC_LOGERROR(FSL_ERR_MESH_GENERATION_FAIL, 0, "Failed to Generate Mesh '%s'\n", mesh_name); \
 }

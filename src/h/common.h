@@ -1,9 +1,9 @@
 #ifndef HHC_COMMON_H
 #define HHC_COMMON_H
 
-#include <deps/fossil/types.h>
-
 #include "diagnostics.h"
+
+#include <deps/fossil/types.h>
 
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"

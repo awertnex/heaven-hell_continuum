@@ -1,15 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-
-#include <deps/fossil/diagnostics.h>
-#include <deps/fossil/dir.h>
-#include <deps/fossil/input.h>
-#include <deps/fossil/memory.h>
-#include <deps/fossil/math.h>
-#include <deps/fossil/string.h>
-
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/common.h"
@@ -18,6 +6,19 @@
 #include "h/main.h"
 #include "h/terrain.h"
 #include "h/world.h"
+
+#include <deps/fossil/diagnostics.h>
+#include <deps/fossil/dir.h>
+#include <deps/fossil/input.h>
+#include <deps/fossil/memory.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/string.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <math.h>
 
 u64 CHUNKS_MAX[SET_RENDER_DISTANCE_MAX + 1] = {0};
 

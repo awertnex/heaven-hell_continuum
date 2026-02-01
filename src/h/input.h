@@ -1,11 +1,11 @@
 #ifndef HHC_INPUT_H
 #define HHC_INPUT_H
 
-#include <deps/fossil/core.h>
-#include <deps/fossil/types.h>
-
 #include "main.h"
 #include "player.h"
+
+#include <deps/fossil/core.h>
+#include <deps/fossil/types.h>
 
 /* ---- movement ------------------------------------------------------------ */
 

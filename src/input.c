@@ -1,7 +1,3 @@
-#include <deps/fossil/input.h>
-#include <deps/fossil/math.h>
-#include <deps/fossil/time.h>
-
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/gui.h"
@@ -9,6 +5,12 @@
 #include "h/logger.h"
 #include "h/player.h"
 #include "h/world.h"
+
+#include <deps/fossil/input.h>
+#include <deps/fossil/math.h>
+#include <deps/fossil/time.h>
+
+#include <math.h>
 
 /* ---- movement ------------------------------------------------------------ */
 

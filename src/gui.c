@@ -1,6 +1,7 @@
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include "h/common.h"
+#include "h/main.h"
+#include "h/gui.h"
+#include "h/dir.h"
 
 #include <deps/fossil/core.h>
 #include <deps/fossil/diagnostics.h>
@@ -8,10 +9,9 @@
 #include <deps/fossil/memory.h>
 #include <deps/fossil/string.h>
 
-#include "h/common.h"
-#include "h/main.h"
-#include "h/gui.h"
-#include "h/dir.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
 u16 menu_index_cur;
 u16 menu_layer[5] = {0};

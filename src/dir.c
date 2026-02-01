@@ -1,6 +1,8 @@
-#include <stdio.h>
-#include <string.h>
-#include <dirent.h>
+#include "h/common.h"
+#include "h/diagnostics.h"
+#include "h/dir.h"
+#include "h/logger.h"
+#include "h/main.h"
 
 #include <deps/fossil/common.h>
 #include <deps/fossil/core.h>
@@ -9,11 +11,9 @@
 #include <deps/fossil/memory.h>
 #include <deps/fossil/string.h>
 
-#include "h/common.h"
-#include "h/diagnostics.h"
-#include "h/dir.h"
-#include "h/logger.h"
-#include "h/main.h"
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
 
 str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] =
 {

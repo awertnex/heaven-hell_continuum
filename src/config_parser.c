@@ -1,10 +1,10 @@
-#include <string.h>
+#include "h/main.h"
 
 #include <deps/fossil/dir.h>
 #include <deps/fossil/limits.h>
 #include <deps/fossil/memory.h>
 
-#include "h/main.h"
+#include <string.h>
 
 str allowed_chars[126] =
     "          \n  \r                    \"         "

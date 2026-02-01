@@ -1,7 +1,7 @@
-#include <deps/fossil/types.h>
-
 #include "h/common.h"
 #include "h/player.h"
+
+#include <deps/fossil/types.h>
 
 u32 DEATH_STRINGS_MAX[PLAYER_DEATH_REASON_COUNT] =
 {
