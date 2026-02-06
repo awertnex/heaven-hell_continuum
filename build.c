@@ -24,7 +24,10 @@ int main(int argc, char **argv)
     cmd_push(NULL, COMPILER);
 
     if (find_token("release", argc, argv))
+    {
+        LOGINFO(FALSE, "%s\n", "Building For Release..");
         cmd_push(NULL, "-DHHC_RELEASE_BUILD");
+    }
     else
     {
         cmd_push(NULL, "-Wall");

@@ -1,4 +1,8 @@
-/*  Copyright 2026 Lily Awertnex
+/*  @file memory.h
+ *
+ *  @brief memory management.
+ *
+ *  Copyright 2026 Lily Awertnex
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,15 +17,14 @@
  *  limitations under the License.OFTWARE.
  */
 
-/*  memory.h - memory management
- */
-
 #ifndef FSL_MEMORY_H
 #define FSL_MEMORY_H
 
 #include "common.h"
 #include "limits.h"
 #include "types.h"
+
+/* ---- section: definitions ------------------------------------------------ */
 
 typedef struct fsl_mem_arena
 {
@@ -86,6 +89,8 @@ typedef struct fsl_mem_arena
 #define fsl_mem_unmap_arena(x, name) \
     _fsl_mem_unmap_arena(x, name, __BASE_FILE__, __LINE__)
 
+/* ---- section: declarations ----------------------------------------------- */
+
 /*! -- INTERNAL USE ONLY --;
  *
  *  @brief global page size variable.
@@ -99,6 +104,17 @@ typedef struct fsl_mem_arena
  *      @ref _fsl_mem_push_arena().
  */
 extern u64 FSL_PAGE_SIZE;
+
+/*! -- INTERNAL USE ONLY --;
+ *
+ *  @brief global memory arena, used to manage all heap memory inside and optionally
+ *  outside the engine.
+ *
+ *  initialized once in @ref fsl_engine_init().
+ */
+extern fsl_mem_arena _fsl_memory_arena_internal;
+
+/* ---- section: signatures ------------------------------------------------- */
 
 /*! @brief like @ref fsl_round_up_u64() but only works on powers of two for `size`.
  */
@@ -237,7 +253,7 @@ FSLAPI u32 _fsl_mem_commit(void **x, void *offset, u64 size, const str *name, co
  *  -- IMPLEMENTATION: platform_<PLATFORM>.c --;
  *
  *  @brief remap a block of memory for `*x`.
- *  
+ *
  *  @param size_old old size in bytes.
  *  @param size_new new size in bytes.
  *  @param name pointer name (for logging).

@@ -5,7 +5,7 @@
 #include "assets.h"
 #include "chunking.h"
 
-#include <deps/fossil/types.h>
+#include "deps/fossil/types.h"
 
 #define TERRAIN_SEA_LEVEL           0
 #define TERRAIN_CAVE_LEVEL          (WORLD_RADIUS_VERTICAL / 2)

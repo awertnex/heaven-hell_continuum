@@ -3,7 +3,7 @@
 ## v0.4.0-dev (current)
 
 #### changes
-- updated engine version to `fossil_engine v0.5.0-beta`
+- updated engine version to `fossil_engine v0.6.0-beta`
 - fixed engine build tool not copying required libraries to deployment directory
 - improved logging of commands:
     - chunk boundary toggling commands
@@ -36,7 +36,7 @@
 - added function 'fsl_shader_free()' to unload individual shaders
 - added mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to scroll)
 - removed the engine, then added the engine back to the repository as a dependency
-- changed buildtool version to `v1.8.1-beta`
+- updated buildtool version to `v1.8.1-beta`
 
 #### bugs and flaws
 - segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
@@ -265,7 +265,7 @@
 ## v0.1.3 (03 Apr 2025)
 
 #### changes
-- fixed segfault while placing or breaking blocks in non-allocated chunk area 
+- fixed segfault while placing or breaking blocks in non-allocated chunk area
 - switched to C99 standard
 - changed original resources to avoid copyright
 - made build system more difficult to read but easier to use (not tested on windows)

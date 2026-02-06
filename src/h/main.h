@@ -3,10 +3,10 @@
 
 #include "common.h"
 
-#include <deps/fossil/core.h>
-#include <deps/fossil/diagnostics.h>
-#include <deps/fossil/text.h>
-#include <deps/fossil/types.h>
+#include "deps/fossil/core.h"
+#include "deps/fossil/diagnostics.h"
+#include "deps/fossil/ui.h"
+#include "deps/fossil/types.h"
 
 struct hhc_core
 {

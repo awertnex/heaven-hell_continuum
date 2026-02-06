@@ -1,4 +1,8 @@
-/*  Copyright 2026 Lily Awertnex
+/*  @file core.h
+ *
+ *  @brief engine init, running, close, windowing, opengl loading.
+ *
+ *  Copyright 2026 Lily Awertnex
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -11,9 +15,6 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.OFTWARE.
- */
-
-/*  core.h - engine init, running, close, windowing, opengl loading
  */
 
 #ifndef FSL_CORE_H
@@ -30,6 +31,8 @@
 
 #include <deps/stb_image.h>
 #include <deps/stb_image_write.h>
+
+/* ---- section: definitions ------------------------------------------------ */
 
 typedef struct fsl_render
 {
@@ -70,6 +73,7 @@ typedef struct fsl_fbo
     GLuint fbo;
     GLuint color_buf;
     GLuint rbo;
+    b8 loaded;
 } fsl_fbo;
 
 typedef struct fsl_texture
@@ -126,6 +130,52 @@ typedef struct fsl_projection
     m4f32 perspective;
 } fsl_projection;
 
+typedef struct fsl_core
+{
+    struct /* flag */
+    {
+        u64 active: 1;
+        u64 glfw_initialized: 1;
+        u64 request_screenshot: 1;
+    } flag;
+
+    struct /* ubo */
+    {
+        GLuint ndc_scale;
+    } ubo;
+
+    /*! @brief global fbo for rendering mostly ui elements.
+     *
+     *  @remark initialized in @ref fsl_engine_init().
+     */
+    fsl_fbo fbo;
+
+    /*! @brief global fbo for rendering mostly ui elements, multisampled.
+     *
+     *  @remark initialized in @ref fsl_engine_init().
+     */
+    fsl_fbo fbo_msaa;
+
+    /*! @remark initialized in @ref fsl_engine_init().
+     */
+    void (*fbo_bind)(void);
+
+    /*! @remark initialized in @ref fsl_engine_init().
+     */
+    void (*fbo_blit)(GLuint fbo);
+
+} fsl_core;
+
+/* ---- section: declarations ----------------------------------------------- */
+
+/*! -- INTERNAL USE ONLY --;
+ *
+ *  @brief global core module.
+ *
+ *  @remark declared and initialized internally.
+ */
+extern fsl_core _fsl_core;
+
 /*! -- INTERNAL USE ONLY --;
  *
  *  @brief default render.
@@ -145,6 +195,8 @@ FSLAPI extern fsl_texture fsl_texture_buf[FSL_TEXTURE_INDEX_COUNT];
  *  @remark declared and initialized internally.
  */
 FSLAPI extern fsl_mesh fsl_mesh_unit_quad;
+
+/* ---- section: signatures ------------------------------------------------- */
 
 /*! @brief initialize engine stuff.
  *
@@ -222,7 +274,7 @@ FSLAPI void fsl_engine_close(void);
 /*! @brief get engine-specific string no longer than @ref NAME_MAX bytes.
  *
  *  @param dst pointer to buffer to store string.
- *  
+ *
  *  @return non-zero on failure and @ref fsl_err is set accordingly.
  */
 FSLAPI u32 fsl_engine_get_string(str *dst, enum fsl_string_index type);
@@ -271,7 +323,7 @@ FSLAPI u32 fsl_change_render(fsl_render *_render);
 FSLAPI void fsl_request_screenshot(void);
 
 /*! @remark take screenshot requested by @ref fsl_request_screenshot() and save into dir at `dir_screenshots`.
- *  
+ *
  *  @param dir_screenshots directory to save screenshot to.
  *  @param special_text string appended to file name before extension.
  *
@@ -309,6 +361,10 @@ FSLAPI u32 fsl_fbo_init(fsl_fbo *fbo, fsl_mesh *mesh_fbo, b8 multisample, u32 sa
 /*! @return non-zero on failure and @ref fsl_err is set accordingly.
  */
 FSLAPI u32 fsl_fbo_realloc(fsl_fbo *fbo, b8 multisample, u32 samples);
+
+/*! @brief blit rendered internal fbo (e.g. text, ui elements) onto `fbo`.
+ */
+FSLAPI void fsl_fbo_blit(GLuint fbo);
 
 FSLAPI void fsl_fbo_free(fsl_fbo *fbo);
 
@@ -377,7 +433,7 @@ FSLAPI void fsl_update_camera_movement(fsl_camera *camera, b8 roll);
 FSLAPI void fsl_update_projection_perspective(fsl_camera camera, fsl_projection *projection, b8 roll);
 
 /*! @brief get camera look-at angles from camera position and target position.
- *  
+ *
  *  assign vertical angle to `pitch` and horizontal angle to `yaw`.
  */
 FSLAPI void fsl_get_camera_lookat_angles(v3f64 camera_pos, v3f64 target, f64 *pitch, f64 *yaw);

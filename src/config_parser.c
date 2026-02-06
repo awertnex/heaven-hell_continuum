@@ -1,8 +1,8 @@
 #include "h/main.h"
 
-#include <deps/fossil/dir.h>
-#include <deps/fossil/limits.h>
-#include <deps/fossil/memory.h>
+#include "deps/fossil/dir.h"
+#include "deps/fossil/limits.h"
+#include "deps/fossil/memory.h"
 
 #include <string.h>
 

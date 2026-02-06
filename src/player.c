@@ -4,9 +4,9 @@
 #include "h/player.h"
 #include "h/world.h"
 
-#include <deps/fossil/collision.h>
-#include <deps/fossil/math.h>
-#include <deps/fossil/time.h>
+#include "deps/fossil/collision.h"
+#include "deps/fossil/math.h"
+#include "deps/fossil/time.h"
 
 #include <math.h>
 

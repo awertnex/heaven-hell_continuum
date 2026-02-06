@@ -11,7 +11,7 @@
 #include "h/terrain.h"
 #include "h/world.h"
 
-#include <deps/fossil/fossil_engine.h>
+#include "deps/fossil/fossil_engine.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +20,7 @@
 
 i32 scrool = 0;
 u32 *const GAME_ERR = (u32*)&fsl_err;
+fsl_mem_arena _memory_arena_internal = {0};
 struct hhc_core core = {0};
 struct hhc_settings settings = {0};
 static struct hhc_uniform uniform = {0};
@@ -130,7 +131,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
     }
 
     if (core.flag.super_debug)
-        scrool = fsl_clamp_i32(scrool + (i32)yoffset * SET_CONSOLE_SCROLL_SPEED, 0, fsl_logger_tab_index);
+        scrool = fsl_clamp_i32(scrool + (i32)yoffset * SET_CONSOLE_SCROLL_SPEED, 0, logger_core.cursor);
 }
 
 static u32 settings_init(void)
@@ -1010,13 +1011,10 @@ static void draw_everything(void)
 
     /* ---- draw ui --------------------------------------------------------- */
 
-    fsl_ui_start(NULL, FALSE, TRUE); /* clear ui buffer */
-    fsl_ui_stop();
+    fsl_ui_start(FALSE, TRUE);
 
     if (core.flag.hud)
     {
-        fsl_ui_start(NULL, FALSE, FALSE);
-
         if (!core.flag.debug)
             fsl_ui_draw(&texture[TEXTURE_CROSSHAIR], render->size.x / 2, render->size.y / 2,
                     texture[TEXTURE_CROSSHAIR].size.x,
@@ -1027,7 +1025,6 @@ static void draw_everything(void)
                 texture[TEXTURE_ITEM_BAR].size.x * 2,
                 texture[TEXTURE_ITEM_BAR].size.y * 2,
                 84.5f, 18.0f, 0, 0, 0xffffffff);
-        fsl_ui_stop();
     }
 
     /* ---- draw engine ui -------------------------------------------------- */
@@ -1037,15 +1034,14 @@ static void draw_everything(void)
         /*
         fsl_ui_render();
          */
-        fsl_ui_start(NULL, TRUE, FALSE);
+        fsl_ui_start(TRUE, FALSE);
         fsl_ui_draw_nine_slice(&fsl_texture_buf[FSL_TEXTURE_INDEX_PANEL_ACTIVE],
                 10, 10, 400, render->size.y - 20, 8, 0xffffff5f);
-        fsl_ui_stop();
     }
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, NULL, TRUE);
+    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
     fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
             SET_MARGIN, SET_MARGIN, 0, 0, 0,
@@ -1055,7 +1051,7 @@ static void draw_everything(void)
 
     if (core.flag.hud && core.flag.debug)
     {
-        fsl_text_push(fsl_stringf("\n\n"
+        fsl_text_push(fsl_stringf("\n"
                     "TIME        [%.2lf]\n"
                     "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
@@ -1158,7 +1154,7 @@ static void draw_everything(void)
                 COLOR_TEXT_DEFAULT);
 
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-        fsl_text_start(font[FONT_MONO], FSL_FONT_SIZE_DEFAULT, 0, NULL, FALSE);
+        fsl_text_start(font[FONT_MONO], FSL_FONT_SIZE_DEFAULT, 0, FALSE);
 
         static str temp[NAME_MAX] = {0};
         fsl_engine_get_string(temp, FSL_STR_INDEX_ENGINE_VERSION);
@@ -1177,29 +1173,34 @@ static void draw_everything(void)
                     glGetString(GL_VENDOR),
                     glGetString(GL_RENDERER)),
                 render->size.x - SET_MARGIN, render->size.y - SET_MARGIN,
-                FSL_TEXT_ALIGN_RIGHT, FSL_TEXT_ALIGN_BOTTOM, 0,
+                FSL_TEXT_ALIGN_RIGHT, FSL_TEXT_ALIGN_BOTTOM, render->size.x,
                 FSL_DIAGNOSTIC_COLOR_TRACE);
 
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
     }
 
-    fsl_text_stop();
-
     /* ---- draw logger strings --------------------------------------------- */
 
     if (core.flag.super_debug)
     {
-        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, NULL, FALSE);
         i32 i = 0;
         u32 index = 0;
         i32 logger_panel_height = 400;
-        for (i = 24; i > 0; --i)
+
+        fsl_ui_start(TRUE, FALSE);
+        fsl_ui_draw_nine_slice(&fsl_texture_buf[FSL_TEXTURE_INDEX_PANEL_INACTIVE],
+                10, render->size.y - logger_panel_height - 30,
+                render->size.x - 20, logger_panel_height + 20, 8, 0xffffff5f);
+
+        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+
+        for (i = 20; i > 0; --i)
         {
-            index = fsl_mod_i32(fsl_logger_tab_index - i - scrool, FSL_LOGGER_HISTORY_MAX);
-            fsl_text_push(fsl_stringf("%s\n", fsl_logger_tab[index]),
+            index = fsl_mod_i32(logger_core.cursor - i - scrool, FSL_LOGGER_HISTORY_MAX);
+            fsl_text_push(fsl_stringf("%s\n", logger_core.i[index]),
                     SET_MARGIN * 2, render->size.y - SET_MARGIN * 2,
                     0, 0, render->size.x - SET_MARGIN * 4,
-                    fsl_logger_color[index]);
+                    logger_core.color[index]);
 
             if ((i32)fsl_get_text_height() + SET_MARGIN * 2 >= logger_panel_height)
                 break;
@@ -1208,14 +1209,9 @@ static void draw_everything(void)
         /* align once after all the strings' heights in text batch have accumulated into total text height */
         fsl_text_push("", 0, 0, 0, FSL_TEXT_ALIGN_BOTTOM, 0, 0x00000000);
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-        fsl_text_stop();
-
-        fsl_ui_start(NULL, TRUE, FALSE);
-        fsl_ui_draw_nine_slice(&fsl_texture_buf[FSL_TEXTURE_INDEX_PANEL_INACTIVE],
-                10, render->size.y - logger_panel_height - 30,
-                render->size.x - 20, logger_panel_height + 20, 8, 0xffffff5f);
-        fsl_ui_stop();
     }
+
+    fsl_ui_stop();
 
     /* ---- post processing ------------------------------------------------- */
 
@@ -1229,8 +1225,7 @@ static void draw_everything(void)
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glBindTexture(GL_TEXTURE_2D, fbo[FBO_HUD].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    fsl_ui_fbo_blit(fbo[FBO_POST_PROCESSING].fbo);
-    fsl_text_fbo_blit(fbo[FBO_POST_PROCESSING].fbo);
+    fsl_fbo_blit(fbo[FBO_POST_PROCESSING].fbo);
 
     /* ---- final ----------------------------------------------------------- */
 
@@ -1248,8 +1243,10 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
+    u32 i = 0;
+
     if (fsl_engine_init(argc, argv, GAME_DIR_NAME_LOGS, GAME_TITLE, 1280, 1054, NULL,
-                GAME_RELEASE_BUILD | FSL_FLAG_LOAD_DEFAULT_SHADERS) != FSL_ERR_SUCCESS ||
+                GAME_RELEASE_BUILD | FSL_FLAG_MULTISAMPLE) != FSL_ERR_SUCCESS ||
             game_init() != FSL_ERR_SUCCESS)
         goto cleanup;
 
@@ -1303,10 +1300,7 @@ int main(int argc, char **argv)
             fsl_fbo_init(&fbo[FBO_POST_PROCESSING], NULL, FALSE, 4) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (
-            assets_init() != FSL_ERR_SUCCESS ||
-            fsl_text_init(0, FALSE) != FSL_ERR_SUCCESS ||
-            fsl_ui_init(FALSE) != FSL_ERR_SUCCESS)
+    if (assets_init() != FSL_ERR_SUCCESS)
         goto cleanup;
 
     /*temp off
@@ -1364,7 +1358,6 @@ cleanup:
 
     assets_free();
     chunking_free();
-    u32 i = 0;
     for (i = 0; i < MESH_COUNT; ++i)
         fsl_mesh_free(&mesh[i]);
     for (i = 0; i < FBO_COUNT; ++i)
@@ -1372,6 +1365,9 @@ cleanup:
     for (i = 0; i < SHADER_COUNT; ++i)
         fsl_shader_program_free(&shader[i]);
     rand_free();
+
+    fsl_mem_unmap_arena(&_memory_arena_internal, "main()._memory_arena_internal");
+
     fsl_engine_close();
     return *GAME_ERR;
 }

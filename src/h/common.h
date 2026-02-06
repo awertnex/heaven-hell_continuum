@@ -3,7 +3,8 @@
 
 #include "diagnostics.h"
 
-#include <deps/fossil/types.h>
+#include "deps/fossil/memory.h"
+#include "deps/fossil/types.h"
 
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"
@@ -155,6 +156,15 @@ enum player_death_reason_index
     PLAYER_DEATH_REASON_COLLISION_CEILING,
     PLAYER_DEATH_REASON_COUNT,
 }; /* player_death_reason_index */
+
+/*! -- INTERNAL USE ONLY --;
+ *
+ *  @brief global memory arena, used to manage all heap memory inside and optionally
+ *  outside the engine.
+ *
+ *  initialized once in @ref game_init().
+ */
+extern fsl_mem_arena _memory_arena_internal;
 
 /*! @brief look-up table for @ref str_death_<x> buffer sizes.
  *

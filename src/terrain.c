@@ -4,8 +4,8 @@
 #include "h/terrain.h"
 #include "h/world.h"
 
-#include <deps/fossil/math.h>
-#include <deps/fossil/memory.h>
+#include "deps/fossil/math.h"
+#include "deps/fossil/memory.h"
 
 #include <math.h>
 

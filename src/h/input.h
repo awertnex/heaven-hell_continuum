@@ -4,8 +4,8 @@
 #include "main.h"
 #include "player.h"
 
-#include <deps/fossil/core.h>
-#include <deps/fossil/types.h>
+#include "deps/fossil/core.h"
+#include "deps/fossil/types.h"
 
 /* ---- movement ------------------------------------------------------------ */
 

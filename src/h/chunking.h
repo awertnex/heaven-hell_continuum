@@ -4,8 +4,8 @@
 #include "assets.h"
 #include "main.h"
 
-#include <deps/fossil/common.h>
-#include <deps/fossil/types.h>
+#include "deps/fossil/common.h"
+#include "deps/fossil/types.h"
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)

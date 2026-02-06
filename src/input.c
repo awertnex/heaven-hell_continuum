@@ -6,9 +6,9 @@
 #include "h/player.h"
 #include "h/world.h"
 
-#include <deps/fossil/input.h>
-#include <deps/fossil/math.h>
-#include <deps/fossil/time.h>
+#include "deps/fossil/input.h"
+#include "deps/fossil/math.h"
+#include "deps/fossil/time.h"
 
 #include <math.h>
 
@@ -262,10 +262,10 @@ void input_update(player *p)
 
     /* ---- debug ----------------------------------------------------------- */
 
-#if !GAME_RELEASE_BUILD
+#if !HHC_RELEASE_BUILD
     if (fsl_is_key_press(bind_toggle_super_debug))
         core.flag.super_debug ^= 1;
-#endif /* GAME_RELEASE_BUILD */
+#endif /* HHC_RELEASE_BUILD */
 
     if (fsl_is_key_hold(bind_debug_mod))
     {

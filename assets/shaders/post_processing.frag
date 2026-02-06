@@ -9,7 +9,7 @@ in vec2 vs_tex_coords;
 out vec4 color;
 
 void main()
-{ 
+{
     /* ---- aberration ------------------------------------------------------ */
 
     vec2 aberration = (vs_pos * ABERRATION_NARROWNESS) *

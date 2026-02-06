@@ -3,10 +3,10 @@
 #include "h/logger.h"
 #include "h/main.h"
 
-#include <deps/fossil/core.h>
-#include <deps/fossil/memory.h>
-#include <deps/fossil/shaders.h>
-#include <deps/fossil/string.h>
+#include "deps/fossil/core.h"
+#include "deps/fossil/memory.h"
+#include "deps/fossil/shaders.h"
+#include "deps/fossil/string.h"
 
 #include <stdio.h>
 
@@ -93,9 +93,12 @@ u32 assets_init(void)
     u32 i = 0, j = 0;
 
     if (
-            fsl_mem_map((void*)&block_textures, TEXTURE_BLOCK_COUNT * sizeof(fsl_texture),
+            fsl_mem_push_arena(&_memory_arena_internal, (void*)&block_textures,
+                TEXTURE_BLOCK_COUNT * sizeof(fsl_texture),
                 "assets_init().block_textures") != FSL_ERR_SUCCESS ||
-            fsl_mem_map((void*)&blocks, BLOCK_COUNT * sizeof(block),
+
+            fsl_mem_push_arena(&_memory_arena_internal, (void*)&blocks,
+                BLOCK_COUNT * sizeof(block),
                 "assets_init().blocks") != FSL_ERR_SUCCESS)
         goto cleanup;
 
@@ -252,12 +255,6 @@ void assets_free(void)
     if (texture)
         for (i = 0; i < TEXTURE_COUNT; ++i)
             fsl_texture_free(&texture[i]);
-
-    fsl_mem_unmap((void*)&block_textures, TEXTURE_BLOCK_COUNT * sizeof(fsl_texture),
-            "assets_free().block_textures");
-
-    fsl_mem_unmap((void*)&blocks, BLOCK_COUNT * sizeof(block),
-            "assets_free().blocks");
 
     if (ssbo_texture_indices_id)
         glDeleteBuffers(1, &ssbo_texture_indices_id);
