@@ -56,7 +56,7 @@ static player _player =
     .hotbar_slots[7] = BLOCK_WOOD_CHERRY_LOG,
 };
 
-static struct /* skybox_data */
+static struct skybox_data
 {
     f32 time;
     v3f32 sun_rotation;
@@ -64,7 +64,7 @@ static struct /* skybox_data */
     v3f32 horizon_color;
     v3f32 sky_light;
     v3f32 moon_light;
-} skybox_data;
+} skybox_data = {0};
 
 static void callback_framebuffer_size(i32 size_x, i32 size_y);
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods);
@@ -1041,17 +1041,15 @@ static void draw_everything(void)
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
-
-    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
-            SET_MARGIN, SET_MARGIN, 0, 0, 0,
-            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
-
-    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-
     if (core.flag.hud && core.flag.debug)
     {
-        fsl_text_push(fsl_stringf("\n"
+        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+
+        fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+
+        fsl_text_push(fsl_stringf(
                     "TIME        [%.2lf]\n"
                     "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
@@ -1206,8 +1204,8 @@ static void draw_everything(void)
                 break;
         }
 
-        /* align once after all the strings' heights in text batch have accumulated into total text height */
-        fsl_text_push("", 0, 0, 0, FSL_TEXT_ALIGN_BOTTOM, 0, 0x00000000);
+        /* align once after accumulating all string heights */
+        fsl_text_push("", 0, 0, 0, FSL_TEXT_ALIGN_BOTTOM, 0, 0);
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
     }
 

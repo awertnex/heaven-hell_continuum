@@ -64,7 +64,7 @@ static void _block_break(chunk *ch,
  *  @remark calls @ref chunk_mesh_init() when done generating.
  *  @remark must be called before @ref chunk_mesh_update().
  */
-static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)());
+static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)(v3i32));
 
 /*! -- INTERNAL USE ONLY --;
  *
@@ -77,7 +77,7 @@ static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)());
  *  @remark calls @ref chunk_mesh_init() when done generating.
  *  @remark must be called before @ref chunk_mesh_update().
  */
-static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)());
+static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)(v3i32));
 
 /*! -- INTERNAL USE ONLY --;
  *
@@ -695,6 +695,10 @@ void block_place(u32 index, i32 x, i32 y, i32 z, v3f64 normal, enum block_id blo
 
     if ((*ch)->block[z][y][x] || !block_id) return;
 
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+
     _block_place(*ch, px, nx, py, ny, pz, nz, chunk_tab_coordinates, x, y, z, block_id);
     (*ch)->flag |= FLAG_CHUNK_MODIFIED;
 }
@@ -703,9 +707,6 @@ static void _block_place(chunk *ch,
         chunk *px, chunk *nx, chunk *py, chunk *ny, chunk *pz, chunk *nz,
         v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z, enum block_id block_id)
 {
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
     u32 *block = &ch->block[z][y][x];
     SET_BLOCK_ID(*block, block_id);
 
@@ -828,6 +829,10 @@ void block_break(u32 index, i32 x, i32 y, i32 z)
 
     if (!(*ch)->block[z][y][x]) return;
 
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+
     _block_break(*ch, px, nx, py, ny, pz, nz, chunk_tab_coordinates, x, y, z);
     (*ch)->flag |= FLAG_CHUNK_MODIFIED;
 }
@@ -836,10 +841,6 @@ static void _block_break(chunk *ch,
         chunk *px, chunk *nx, chunk *py, chunk *ny, chunk *pz, chunk *nz,
         v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z)
 {
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
-
     if (x == CHUNK_DIAMETER - 1)
     {
         if (chunk_tab_coordinates.x != settings.chunk_buf_diameter - 1 &&
@@ -916,7 +917,7 @@ static void _block_break(chunk *ch,
     ch->flag |= FLAG_CHUNK_DIRTY;
 }
 
-static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)())
+static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)(v3i32))
 {
     str file_name[PATH_MAX] = {0};
 
@@ -929,26 +930,25 @@ static void chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)())
     _chunk_generate(ch, rate, terrain_func);
 }
 
-static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)())
+static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)(v3i32))
 {
-    u32 index;
-    v3u32 chunk_tab_coordinates;
-    v3i32 coordinates;
-    terrain terrain_info;
+    u32 index = 0;
+    v3u32 chunk_tab_coordinates = {0};
+    v3i32 coordinates = {0};
+    terrain terrain_info = {0};
     chunk *_ch = NULL,
           *px = NULL, *nx = NULL,
           *py = NULL, *ny = NULL,
           *pz = NULL, *nz = NULL;
-    i32 x, y, z;
+    i32 x = 0, y = 0, z = 0;
 
     _ch = *ch;
     index = ch - chunk_tab;
-    chunk_tab_coordinates =
-        (v3u32){
-            index % settings.chunk_buf_diameter,
-            (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
-            index / settings.chunk_buf_layer,
-        };
+    chunk_tab_coordinates = (v3u32){
+        index % settings.chunk_buf_diameter,
+        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
+        index / settings.chunk_buf_layer,
+    };
 
     if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
         px = *(ch + 1);
@@ -972,8 +972,7 @@ static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)())
         {
             for (; x < CHUNK_DIAMETER && rate; ++x)
             {
-                coordinates =
-                (v3i32){
+                coordinates = (v3i32){
                     x + _ch->pos.x * CHUNK_DIAMETER,
                     y + _ch->pos.y * CHUNK_DIAMETER,
                     z + _ch->pos.z * CHUNK_DIAMETER,
