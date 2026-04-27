@@ -1,13 +1,13 @@
-#include "h/common.h"
-#include "h/main.h"
-#include "h/gui.h"
-#include "h/dir.h"
-
 #include "deps/fossil/core.h"
 #include "deps/fossil/diagnostics.h"
 #include "deps/fossil/logger.h"
 #include "deps/fossil/memory.h"
 #include "deps/fossil/string.h"
+
+#include "h/common.h"
+#include "h/main.h"
+#include "h/gui.h"
+#include "h/dir.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,9 +21,11 @@ u8 buttons[BTN_COUNT];
 
 u32 gui_init(void)
 {
-    //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
-    //menu_index_cur = MENU_TITLE;
-    //memset(buttons, 0, BTN_COUNT);
+    /*
+    game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
+    menu_index_cur = MENU_TITLE;
+    memset(buttons, 0, BTN_COUNT);
+    */
     return FSL_ERR_SUCCESS;
 }
 

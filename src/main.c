@@ -1,3 +1,5 @@
+#include "deps/fossil/fossil_engine.h"
+
 #include "h/main.h"
 #include "h/assets.h"
 #include "h/chunking.h"
@@ -10,8 +12,6 @@
 #include "h/player.h"
 #include "h/terrain.h"
 #include "h/world.h"
-
-#include "deps/fossil/fossil_engine.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -56,7 +56,7 @@ static player _player =
     .hotbar_slots[7] = BLOCK_WOOD_CHERRY_LOG,
 };
 
-static struct skybox_data
+static struct /* skybox_data */
 {
     f32 time;
     v3f32 sun_rotation;
@@ -80,14 +80,6 @@ static void generate_standard_meshes(void);
 static u32 settings_init(void);
 
 void settings_update(void);
-
-/*! -- INTERNAL USE ONLY --;
- *
- *  @brief update @ref fsl_render.time, @ref fsl_render.delta of the currently bound `fsl_render`
- *  and cap framerate to @ref settings.target_fps if @ref core.flag.fps_cap is set.
- */
-void time_update(b8 fps_cap, u64 fps_target);
-
 static void draw_everything(void);
 
 static void callback_framebuffer_size(i32 size_x, i32 size_y)
@@ -192,7 +184,7 @@ static u32 settings_init(void)
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
     settings.font_size = 20.0f;
-    settings.target_fps = 3;
+    settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
     settings.anti_aliasing = TRUE;
 
@@ -211,16 +203,6 @@ void settings_update(void)
         time_next += FSL_SEC2NSEC / SET_TEXT_REFRESH_INTERVAL;
         settings.fps = 1 / ((f64)render->time_delta * FSL_NSEC2SEC);
     }
-}
-
-void time_update(b8 fps_cap, u64 fps_target)
-{
-    static u64 time_next = 0;
-    time_next += FSL_SEC2NSEC / fsl_clamp_u64(fps_target, FSL_TARGET_FPS_MIN, FSL_TARGET_FPS_MAX);
-
-    if (fps_cap && render->time < time_next)
-        fsl_sleep_nsec(time_next - render->time);
-    else time_next = render->time;
 }
 
 static void bind_shader_uniforms(void)
@@ -1041,15 +1023,17 @@ static void draw_everything(void)
 
     /* ---- draw debug info ------------------------------------------------- */
 
+    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+
+    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+            SET_MARGIN, SET_MARGIN, 0, 0, 0,
+            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+
+    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+
     if (core.flag.hud && core.flag.debug)
     {
-        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
-
-        fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
-                SET_MARGIN, SET_MARGIN, 0, 0, 0,
-                settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
-
-        fsl_text_push(fsl_stringf(
+        fsl_text_push(fsl_stringf("\n"
                     "TIME        [%.2lf]\n"
                     "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
@@ -1342,8 +1326,8 @@ section_world_loaded:
         world_update(&_player);
         draw_everything();
 
-        time_update(core.flag.fps_cap, settings.target_fps);
         fsl_process_screenshot_request(GAME_DIR_NAME_SCREENSHOTS, world.name);
+        fsl_limit_framerate(settings.target_fps, render->time);
 
         if (!core.flag.world_loaded)
             goto section_menu_title;

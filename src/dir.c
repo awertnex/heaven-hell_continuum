@@ -1,15 +1,15 @@
-#include "h/common.h"
-#include "h/diagnostics.h"
-#include "h/dir.h"
-#include "h/logger.h"
-#include "h/main.h"
-
 #include "deps/fossil/common.h"
 #include "deps/fossil/core.h"
 #include "deps/fossil/dir.h"
 #include "deps/fossil/math.h"
 #include "deps/fossil/memory.h"
 #include "deps/fossil/string.h"
+
+#include "h/common.h"
+#include "h/diagnostics.h"
+#include "h/dir.h"
+#include "h/logger.h"
+#include "h/main.h"
 
 #include <stdio.h>
 #include <string.h>

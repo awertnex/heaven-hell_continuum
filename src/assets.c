@@ -1,85 +1,16 @@
-#include "h/assets.h"
-#include "h/dir.h"
-#include "h/logger.h"
-#include "h/main.h"
-
 #include "deps/fossil/core.h"
 #include "deps/fossil/memory.h"
 #include "deps/fossil/shaders.h"
 #include "deps/fossil/string.h"
 
+#include "h/assets.h"
+#include "h/dir.h"
+#include "h/logger.h"
+#include "h/main.h"
+
 #include <stdio.h>
 
-fsl_shader_program shader[SHADER_COUNT] =
-{
-    [SHADER_DEFAULT] =
-    {
-        .name = "default",
-        .vertex.file_name = "default.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .fragment.file_name = "default.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_SKYBOX] =
-    {
-        .name = "skybox",
-        .vertex.file_name = "skybox.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .fragment.file_name = "skybox.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_GIZMO] =
-    {
-        .name = "gizmo",
-        .vertex.file_name = "gizmo.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .fragment.file_name = "gizmo.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_GIZMO_CHUNK] =
-    {
-        .name = "gizmo_chunk",
-        .vertex.file_name = "gizmo_chunk.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .geometry.file_name = "gizmo_chunk.geom",
-        .geometry.type = GL_GEOMETRY_SHADER,
-        .fragment.file_name = "gizmo_chunk.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_POST_PROCESSING] =
-    {
-        .name = "post_processing",
-        .vertex.file_name = "post_processing.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .fragment.file_name = "post_processing.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_VOXEL] =
-    {
-        .name = "voxel",
-        .vertex.file_name = "voxel.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .geometry.file_name = "voxel.geom",
-        .geometry.type = GL_GEOMETRY_SHADER,
-        .fragment.file_name = "voxel.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-
-    [SHADER_BOUNDING_BOX] =
-    {
-        .name = "bounding_box",
-        .vertex.file_name = "bounding_box.vert",
-        .vertex.type = GL_VERTEX_SHADER,
-        .fragment.file_name = "bounding_box.frag",
-        .fragment.type = GL_FRAGMENT_SHADER,
-    },
-};
-
+fsl_shader_program shader[SHADER_COUNT] = {0};
 fsl_texture texture[TEXTURE_COUNT] = {0};
 block *blocks = NULL;
 static fsl_texture *block_textures = NULL;
@@ -104,6 +35,52 @@ u32 assets_init(void)
 
     /* ---- shaders --------------------------------------------------------- */
 
+     shader[SHADER_DEFAULT].name = "default";
+     shader[SHADER_DEFAULT].vertex.file_name = "default.vert";
+     shader[SHADER_DEFAULT].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_DEFAULT].fragment.file_name = "default.frag";
+     shader[SHADER_DEFAULT].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_SKYBOX].name = "skybox";
+     shader[SHADER_SKYBOX].vertex.file_name = "skybox.vert";
+     shader[SHADER_SKYBOX].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_SKYBOX].fragment.file_name = "skybox.frag";
+     shader[SHADER_SKYBOX].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_GIZMO].name = "gizmo";
+     shader[SHADER_GIZMO].vertex.file_name = "gizmo.vert";
+     shader[SHADER_GIZMO].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_GIZMO].fragment.file_name = "gizmo.frag";
+     shader[SHADER_GIZMO].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_GIZMO_CHUNK].name = "gizmo_chunk";
+     shader[SHADER_GIZMO_CHUNK].vertex.file_name = "gizmo_chunk.vert";
+     shader[SHADER_GIZMO_CHUNK].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_GIZMO_CHUNK].geometry.file_name = "gizmo_chunk.geom";
+     shader[SHADER_GIZMO_CHUNK].geometry.type = GL_GEOMETRY_SHADER;
+     shader[SHADER_GIZMO_CHUNK].fragment.file_name = "gizmo_chunk.frag";
+     shader[SHADER_GIZMO_CHUNK].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_POST_PROCESSING].name = "post_processing";
+     shader[SHADER_POST_PROCESSING].vertex.file_name = "post_processing.vert";
+     shader[SHADER_POST_PROCESSING].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_POST_PROCESSING].fragment.file_name = "post_processing.frag";
+     shader[SHADER_POST_PROCESSING].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_VOXEL].name = "voxel";
+     shader[SHADER_VOXEL].vertex.file_name = "voxel.vert";
+     shader[SHADER_VOXEL].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_VOXEL].geometry.file_name = "voxel.geom";
+     shader[SHADER_VOXEL].geometry.type = GL_GEOMETRY_SHADER;
+     shader[SHADER_VOXEL].fragment.file_name = "voxel.frag";
+     shader[SHADER_VOXEL].fragment.type = GL_FRAGMENT_SHADER;
+ 
+     shader[SHADER_BOUNDING_BOX].name = "bounding_box";
+     shader[SHADER_BOUNDING_BOX].vertex.file_name = "bounding_box.vert";
+     shader[SHADER_BOUNDING_BOX].vertex.type = GL_VERTEX_SHADER;
+     shader[SHADER_BOUNDING_BOX].fragment.file_name = "bounding_box.frag";
+     shader[SHADER_BOUNDING_BOX].fragment.type = GL_FRAGMENT_SHADER;
+ 
     if (
             fsl_shader_program_init(GAME_DIR_NAME_SHADERS, &shader[SHADER_DEFAULT]) != FSL_ERR_SUCCESS ||
             fsl_shader_program_init(GAME_DIR_NAME_SHADERS, &shader[SHADER_GIZMO]) != FSL_ERR_SUCCESS ||
@@ -153,56 +130,23 @@ u32 assets_init(void)
     /* ---- block textures -------------------------------------------------- */
 
     if (
-            block_texture_init(TEXTURE_BLOCK_GRASS_SIDE, (v2i32){16, 16},
-                "grass_side.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_GRASS_TOP, (v2i32){16, 16},
-                "grass_top.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_DIRT, (v2i32){16, 16},
-                "dirt.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_DIRTUP, (v2i32){16, 16},
-                "dirtup.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_STONE, (v2i32){16, 16},
-                "stone.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_SAND, (v2i32){16, 16},
-                "sand.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_GLASS, (v2i32){16, 16},
-                "glass.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_LOG_SIDE, (v2i32){16, 16},
-                    "wood_birch_log_side.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_LOG_TOP, (v2i32){16, 16},
-                    "wood_birch_log_top.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_PLANKS, (v2i32){16, 16},
-                    "wood_birch_planks.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_LOG_SIDE, (v2i32){16, 16},
-                    "wood_cherry_log_side.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_LOG_TOP, (v2i32){16, 16},
-                    "wood_cherry_log_top.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_PLANKS, (v2i32){16, 16},
-                    "wood_cherry_planks.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_LOG_SIDE, (v2i32){16, 16},
-                    "wood_oak_log_side.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_LOG_TOP, (v2i32){16, 16},
-                    "wood_oak_log_top.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_PLANKS, (v2i32){16, 16},
-                    "wood_oak_planks.png") != FSL_ERR_SUCCESS ||
-
-            block_texture_init(TEXTURE_BLOCK_BLOOD, (v2i32){16, 16},
-                "block_blood.png") != FSL_ERR_SUCCESS)
+            block_texture_init(TEXTURE_BLOCK_GRASS_SIDE, "grass_side.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_GRASS_TOP, "grass_top.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_DIRT, "dirt.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_DIRTUP, "dirtup.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_STONE, "stone.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_SAND, "sand.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_GLASS, "glass.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_LOG_SIDE, "wood_birch_log_side.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_LOG_TOP, "wood_birch_log_top.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_BIRCH_PLANKS, "wood_birch_planks.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_LOG_SIDE, "wood_cherry_log_side.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_LOG_TOP, "wood_cherry_log_top.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_CHERRY_PLANKS, "wood_cherry_planks.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_LOG_SIDE, "wood_oak_log_side.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_LOG_TOP, "wood_oak_log_top.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_WOOD_OAK_PLANKS, "wood_oak_planks.png") != FSL_ERR_SUCCESS ||
+            block_texture_init(TEXTURE_BLOCK_BLOOD, "block_blood.png") != FSL_ERR_SUCCESS)
         goto cleanup;
 
     for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
@@ -262,21 +206,18 @@ void assets_free(void)
         glDeleteBuffers(1, &ssbo_texture_handles_id);
 }
 
-u32 block_texture_init(u32 index, v2i32 size, str *name)
+u32 block_texture_init(u32 index, str *name)
 {
     if (!name)
     {
         HHC_LOGERROR(FSL_ERR_POINTER_NULL,
                 FSL_FLAG_LOG_NO_VERBOSE,
-            fsl_logger_stringf("Failed to Initialize Texture [%p], 'name' NULL\n",
+                fsl_logger_stringf("Failed to Initialize Texture [%p], 'name' NULL\n",
                 &block_textures[index]));
         goto cleanup;
     }
 
-    block_textures[index].size = size;
-
-    if (
-            fsl_texture_init(&block_textures[index],
+    if (fsl_texture_init(&block_textures[index],
                 GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                 fsl_stringf("%s%s", DIR_ROOT[DIR_BLOCKS], name)) != FSL_ERR_SUCCESS ||
 

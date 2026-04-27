@@ -1,3 +1,10 @@
+#include "deps/fossil/common.h"
+#include "deps/fossil/dir.h"
+#include "deps/fossil/limits.h"
+#include "deps/fossil/math.h"
+#include "deps/fossil/string.h"
+#include "deps/fossil/time.h"
+
 #include "h/chunking.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
@@ -7,13 +14,7 @@
 #include "h/main.h"
 #include "h/world.h"
 
-#include "deps/fossil/common.h"
-#include "deps/fossil/dir.h"
-#include "deps/fossil/limits.h"
-#include "deps/fossil/math.h"
-#include "deps/fossil/string.h"
-#include "deps/fossil/time.h"
-
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -174,7 +175,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
     else
     {
         if (!seed)
-            seed = fsl_rand_u64(fsl_get_time_raw_nsec()) % FSL_U64_MAX;
+            seed = fsl_rand_u64(fsl_get_time_raw_nsec());
 
         fsl_convert_u64_to_str(string[1], NAME_MAX, seed);
         if (fsl_write_file(string[0], 1, strlen(string[1]),
@@ -205,6 +206,11 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
 void world_update(player *p)
 {
+    /* player camera shouldn't move when a menu is open,
+     * so we pass this to the camera function,
+     */
+    b8 use_mouse = !state_menu_depth && !core.flag.super_debug && !(p->flag & FLAG_PLAYER_DEAD);
+
     world.tick = world.tick_start + (u64)((f64)render->time * FSL_NSEC2SEC * WORLD_TICK_SPEED);
     world.days = world.tick / SET_DAY_TICKS_MAX;
 
@@ -213,7 +219,6 @@ void world_update(player *p)
     else disable_cursor;
 
     player_update(p, 1.0 - exp(-1.0 * (f64)render->time_delta * FSL_NSEC2SEC));
-    b8 use_mouse = !state_menu_depth && !core.flag.super_debug && !(p->flag & FLAG_PLAYER_DEAD);
     player_camera_movement_update(p, render->mouse_delta, use_mouse);
     player_target_update(p);
 

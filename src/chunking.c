@@ -1,3 +1,10 @@
+#include "deps/fossil/diagnostics.h"
+#include "deps/fossil/dir.h"
+#include "deps/fossil/input.h"
+#include "deps/fossil/memory.h"
+#include "deps/fossil/math.h"
+#include "deps/fossil/string.h"
+
 #include "h/assets.h"
 #include "h/chunking.h"
 #include "h/common.h"
@@ -6,13 +13,6 @@
 #include "h/main.h"
 #include "h/terrain.h"
 #include "h/world.h"
-
-#include "deps/fossil/diagnostics.h"
-#include "deps/fossil/dir.h"
-#include "deps/fossil/input.h"
-#include "deps/fossil/memory.h"
-#include "deps/fossil/math.h"
-#include "deps/fossil/string.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -656,6 +656,15 @@ void chunking_free(void)
 
 void block_place(u32 index, i32 x, i32 y, i32 z, v3f64 normal, enum block_id block_id)
 {
+    v3u32 chunk_tab_coordinates = {0};
+    chunk **ch = &chunk_tab[index];
+    chunk *px = NULL;
+    chunk *nx = NULL;
+    chunk *py = NULL;
+    chunk *ny = NULL;
+    chunk *pz = NULL;
+    chunk *nz = NULL;
+
     if (!(normal.x != 0.0f || normal.y != 0.0f || normal.z != 0.0f)) return;
 
     x += (i32)normal.x;
@@ -666,19 +675,9 @@ void block_place(u32 index, i32 x, i32 y, i32 z, v3f64 normal, enum block_id blo
     index += (i32)floorf((f32)z / CHUNK_DIAMETER) * settings.chunk_buf_layer;
     if (index >= settings.chunk_buf_volume) return;
 
-    v3u32 chunk_tab_coordinates =
-    {
-        index % settings.chunk_buf_diameter,
-        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
-        index / settings.chunk_buf_layer,
-    };
-    chunk **ch = &chunk_tab[index];
-    chunk *px = NULL;
-    chunk *nx = NULL;
-    chunk *py = NULL;
-    chunk *ny = NULL;
-    chunk *pz = NULL;
-    chunk *nz = NULL;
+    chunk_tab_coordinates.x = index % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.y = (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.z = index / settings.chunk_buf_layer;
 
     if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
         px = *(ch + 1);
@@ -695,10 +694,6 @@ void block_place(u32 index, i32 x, i32 y, i32 z, v3f64 normal, enum block_id blo
 
     if ((*ch)->block[z][y][x] || !block_id) return;
 
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
-
     _block_place(*ch, px, nx, py, ny, pz, nz, chunk_tab_coordinates, x, y, z, block_id);
     (*ch)->flag |= FLAG_CHUNK_MODIFIED;
 }
@@ -708,6 +703,10 @@ static void _block_place(chunk *ch,
         v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z, enum block_id block_id)
 {
     u32 *block = &ch->block[z][y][x];
+
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
     SET_BLOCK_ID(*block, block_id);
 
     if (x == CHUNK_DIAMETER - 1)
@@ -826,12 +825,7 @@ void block_break(u32 index, i32 x, i32 y, i32 z)
     if (chunk_tab_coordinates.z > 0)
         nz = *(ch - settings.chunk_buf_layer);
 
-
     if (!(*ch)->block[z][y][x]) return;
-
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
 
     _block_break(*ch, px, nx, py, ny, pz, nz, chunk_tab_coordinates, x, y, z);
     (*ch)->flag |= FLAG_CHUNK_MODIFIED;
@@ -841,6 +835,10 @@ static void _block_break(chunk *ch,
         chunk *px, chunk *nx, chunk *py, chunk *ny, chunk *pz, chunk *nz,
         v3u32 chunk_tab_coordinates, i32 x, i32 y, i32 z)
 {
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+
     if (x == CHUNK_DIAMETER - 1)
     {
         if (chunk_tab_coordinates.x != settings.chunk_buf_diameter - 1 &&
@@ -944,11 +942,12 @@ static void _chunk_generate(chunk **ch, u32 rate, terrain (*terrain_func)(v3i32)
 
     _ch = *ch;
     index = ch - chunk_tab;
-    chunk_tab_coordinates = (v3u32){
-        index % settings.chunk_buf_diameter,
-        (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
-        index / settings.chunk_buf_layer,
-    };
+    chunk_tab_coordinates =
+        (v3u32){
+            index % settings.chunk_buf_diameter,
+            (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter,
+            index / settings.chunk_buf_layer,
+        };
 
     if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
         px = *(ch + 1);
