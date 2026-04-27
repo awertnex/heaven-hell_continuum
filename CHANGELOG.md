@@ -3,7 +3,7 @@
 ## v0.4.0-dev (current)
 
 #### changes
-- updated engine version to `fossil_engine v0.6.0-beta`
+- updated engine version to `fossil_engine v0.7.0-beta`
 - fixed engine build tool not copying required libraries to deployment directory
 - improved logging of commands:
     - chunk boundary toggling commands

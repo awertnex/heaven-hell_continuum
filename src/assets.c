@@ -117,31 +117,31 @@ u32 assets_init(void)
     /* ---- textures -------------------------------------------------------- */
 
     if (
-            fsl_texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
+            fsl_texture_init(&texture[TEXTURE_CROSSHAIR],
                 GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                 GAME_DIR_NAME_GUI"crosshair.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
+            fsl_texture_init(&texture[TEXTURE_ITEM_BAR],
                 GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                 GAME_DIR_NAME_GUI"item_bar.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_SKYBOX_VAL], (v2i32){512, 512},
+            fsl_texture_init(&texture[TEXTURE_SKYBOX_VAL],
                 GL_RED, GL_RED, GL_NEAREST, FSL_COLOR_CHANNELS_GRAY, FALSE,
                 GAME_DIR_NAME_ENV"skybox_val.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_SKYBOX_HORIZON], (v2i32){512, 512},
+            fsl_texture_init(&texture[TEXTURE_SKYBOX_HORIZON],
                 GL_RED, GL_RED, GL_NEAREST, FSL_COLOR_CHANNELS_GRAY, FALSE,
                 GAME_DIR_NAME_ENV"skybox_horizon.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){512, 512},
+            fsl_texture_init(&texture[TEXTURE_SKYBOX_STARS],
                 GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                 GAME_DIR_NAME_ENV"skybox_stars.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_SUN], (v2i32){128, 128},
+            fsl_texture_init(&texture[TEXTURE_SUN],
                     GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                     GAME_DIR_NAME_ENV"sun.png") != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture[TEXTURE_MOON], (v2i32){128, 128},
+            fsl_texture_init(&texture[TEXTURE_MOON],
                     GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                     GAME_DIR_NAME_ENV"moon.png") != FSL_ERR_SUCCESS)
         goto cleanup;
@@ -252,9 +252,8 @@ void assets_free(void)
         for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
             fsl_texture_free(&block_textures[i]);
 
-    if (texture)
-        for (i = 0; i < TEXTURE_COUNT; ++i)
-            fsl_texture_free(&texture[i]);
+    for (i = 0; i < TEXTURE_COUNT; ++i)
+        fsl_texture_free(&texture[i]);
 
     if (ssbo_texture_indices_id)
         glDeleteBuffers(1, &ssbo_texture_indices_id);
@@ -269,15 +268,15 @@ u32 block_texture_init(u32 index, v2i32 size, str *name)
     {
         HHC_LOGERROR(FSL_ERR_POINTER_NULL,
                 FSL_FLAG_LOG_NO_VERBOSE,
-                "Failed to Initialize Texture [%p], 'name' NULL\n",
-                &block_textures[index]);
+            fsl_logger_stringf("Failed to Initialize Texture [%p], 'name' NULL\n",
+                &block_textures[index]));
         goto cleanup;
     }
 
     block_textures[index].size = size;
 
     if (
-            fsl_texture_init(&block_textures[index], block_textures[index].size,
+            fsl_texture_init(&block_textures[index],
                 GL_RGBA, GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE,
                 fsl_stringf("%s%s", DIR_ROOT[DIR_BLOCKS], name)) != FSL_ERR_SUCCESS ||
 

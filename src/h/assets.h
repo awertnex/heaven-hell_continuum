@@ -22,7 +22,7 @@ enum /* shader_index */
     SHADER_POST_PROCESSING,
     SHADER_VOXEL,
     SHADER_BOUNDING_BOX,
-    SHADER_COUNT,
+    SHADER_COUNT
 }; /* shader_index */
 
 enum /* texture_index */
@@ -34,7 +34,7 @@ enum /* texture_index */
     TEXTURE_SKYBOX_STARS,
     TEXTURE_SUN,
     TEXTURE_MOON,
-    TEXTURE_COUNT,
+    TEXTURE_COUNT
 }; /* texture_index */
 
 enum /* texture_block_index */
@@ -56,7 +56,7 @@ enum /* texture_block_index */
     TEXTURE_BLOCK_WOOD_OAK_LOG_TOP,
     TEXTURE_BLOCK_WOOD_OAK_PLANKS,
     TEXTURE_BLOCK_BLOOD,
-    TEXTURE_BLOCK_COUNT,
+    TEXTURE_BLOCK_COUNT
 }; /* texture_block_index */
 
 enum block_id
@@ -75,12 +75,12 @@ enum block_id
     BLOCK_WOOD_OAK_LOG,
     BLOCK_WOOD_OAK_PLANKS,
     BLOCK_BLOOD,
-    BLOCK_COUNT,
+    BLOCK_COUNT
 }; /* block_id */
 
 enum block_state
 {
-    BLOCK_STATE_SOLID = 1,
+    BLOCK_STATE_SOLID = 1
 }; /* block_state */
 
 typedef struct block

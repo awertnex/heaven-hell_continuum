@@ -9,12 +9,29 @@ static str str_cflags[][CMD_SIZE] =
 {
     "-Wall",
     "-Wextra",
+    "-Wpedantic",
     "-Wformat-truncation=0",
     "-ggdb",
 };
 
+static str str_files[][CMD_SIZE] =
+{
+    DIR_SRC"main.c",
+    DIR_SRC"assets.c",
+    DIR_SRC"chunking.c",
+    DIR_SRC"common.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"input.c",
+    DIR_SRC"player.c",
+    DIR_SRC"terrain.c",
+    DIR_SRC"world.c",
+};
+
 int main(int argc, char **argv)
 {
+    u32 i = 0;
+
     /* if error, will fail and exit */
     build_init(argc, argv, "build.c", "build"EXE);
 
@@ -29,23 +46,12 @@ int main(int argc, char **argv)
         cmd_push(NULL, "-DHHC_RELEASE_BUILD");
     }
     else
-    {
-        cmd_push(NULL, "-Wall");
-        cmd_push(NULL, "-Wextra");
-        cmd_push(NULL, "-Wformat-truncation=0");
-        cmd_push(NULL, "-ggdb");
-    }
+        for (i = 0; i < arr_len(str_cflags); ++i)
+            cmd_push(NULL, str_cflags[i]);
 
-    cmd_push(NULL, DIR_SRC"main.c");
-    cmd_push(NULL, DIR_SRC"assets.c");
-    cmd_push(NULL, DIR_SRC"chunking.c");
-    cmd_push(NULL, DIR_SRC"common.c");
-    cmd_push(NULL, DIR_SRC"dir.c");
-    cmd_push(NULL, DIR_SRC"gui.c");
-    cmd_push(NULL, DIR_SRC"input.c");
-    cmd_push(NULL, DIR_SRC"player.c");
-    cmd_push(NULL, DIR_SRC"terrain.c");
-    cmd_push(NULL, DIR_SRC"world.c");
+    for (i = 0; i < arr_len(str_files); ++i)
+        cmd_push(NULL, str_files[i]);
+
     cmd_push(NULL, "-I.");
     cmd_push(NULL, "-std=c99");
     cmd_push(NULL, "-Ofast");
@@ -55,7 +61,7 @@ int main(int argc, char **argv)
     cmd_push(NULL, STR_OUT);
     cmd_ready(NULL);
 
-    if (exec(&_cmd, "main().cmd") != ERR_SUCCESS)
+    if (exec(&_cmd, "main()._cmd") != ERR_SUCCESS)
         cmd_fail(NULL);
 
     if (
