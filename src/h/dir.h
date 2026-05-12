@@ -24,7 +24,6 @@ enum directory_index
     DIR_ITEMS,
     DIR_LOGO,
     DIR_CONFIG,
-    DIR_LOGS,
     DIR_SCREENSHOTS,
     DIR_TEXT,
     DIR_WORLDS,

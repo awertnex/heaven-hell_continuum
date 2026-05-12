@@ -26,11 +26,10 @@ extern u32 bind_build_or_use;
 /* ---- inventory ----------------------------------------------------------- */
 
 /* extern u32 bind_drop_item; */
+extern u32 bind_inventory;
 
 /*! @remark two arrays for number keys and numberpad keys */
 extern u32 bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX];
-
-extern u32 bind_inventory;
 
 /* ---- misc ---------------------------------------------------------------- */
 
@@ -44,14 +43,17 @@ extern u32 bind_zoom;
 extern u32 bind_toggle_flashlight;
 /* extern u32 bind_pause; */
 /* extern u32 bind_chat_or_command; */
+extern u32 bind_reload_shaders;
 
 /* ---- debug --------------------------------------------------------------- */
 
-/* TODO: navigate menus with arrow keys */
+/* TODO: navigate menus with arrow keys.
+ */
 /* extern u32 bind_left; */
 /* extern u32 bind_right; */
 /* extern u32 bind_down; */
 /* extern u32 bind_up; */
+
 extern u32 bind_debug_mod;
 extern u32 bind_toggle_super_debug;
 extern u32 bind_toggle_trans_blocks;
@@ -59,6 +61,10 @@ extern u32 bind_toggle_chunk_bounds;
 extern u32 bind_toggle_bounding_boxes;
 extern u32 bind_toggle_chunk_gizmo;
 extern u32 bind_toggle_chunk_queue_visualizer;
+
+/*! @brief setup all key binding values and rules.
+ */
+void input_init(void);
 
 /*! @brief update input from keyboard.
  *

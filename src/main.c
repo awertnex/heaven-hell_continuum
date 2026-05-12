@@ -1305,6 +1305,7 @@ int main(int argc, char **argv)
         .near = FSL_CAMERA_CLIP_NEAR_DEFAULT,
     };
 
+    input_init();
     bind_shader_uniforms();
 
 section_menu_title:
