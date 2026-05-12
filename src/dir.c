@@ -1,50 +1,52 @@
-#include "deps/fossil/common.h"
-#include "deps/fossil/core.h"
-#include "deps/fossil/dir.h"
-#include "deps/fossil/math.h"
-#include "deps/fossil/memory.h"
-#include "deps/fossil/string.h"
+#include "deps/fossil/common/limits.h"
+#include "deps/fossil/common/session.h"
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/memory/memory.h"
+
+#include "deps/fossil/h/core.h"
+#include "deps/fossil/h/dir.h"
+#include "deps/fossil/h/math.h"
+#include "deps/fossil/h/string.h"
 
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
-#include "h/logger.h"
 #include "h/main.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
 
-str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
-str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
+str DIR_ROOT[DIR_ROOT_COUNT][FSL_ID_CAP] = {0};
+str DIR_WORLD[DIR_WORLD_COUNT][FSL_ID_CAP] = {0};
 
 u32 game_init(void)
 {
     u32 i = 0;
 
-    snprintf(DIR_ROOT[DIR_ASSETS], NAME_MAX, "%s", GAME_DIR_NAME_ASSETS);
-    snprintf(DIR_ROOT[DIR_AUDIO], NAME_MAX, "%s", GAME_DIR_NAME_AUDIO);
-    snprintf(DIR_ROOT[DIR_FONTS], NAME_MAX, "%s", GAME_DIR_NAME_FONTS);
-    snprintf(DIR_ROOT[DIR_LOOKUPS], NAME_MAX, "%s", GAME_DIR_NAME_LOOKUPS);
-    snprintf(DIR_ROOT[DIR_MODELS], NAME_MAX, "%s", GAME_DIR_NAME_MODELS);
-    snprintf(DIR_ROOT[DIR_SHADERS], NAME_MAX, "%s", GAME_DIR_NAME_SHADERS);
-    snprintf(DIR_ROOT[DIR_TEXTURES], NAME_MAX, "%s", GAME_DIR_NAME_TEXTURES);
-    snprintf(DIR_ROOT[DIR_BLOCKS], NAME_MAX, "%s", GAME_DIR_NAME_BLOCKS);
-    snprintf(DIR_ROOT[DIR_ENTITIES], NAME_MAX, "%s", GAME_DIR_NAME_ENTITIES);
-    snprintf(DIR_ROOT[DIR_ENV], NAME_MAX, "%s", GAME_DIR_NAME_ENV);
-    snprintf(DIR_ROOT[DIR_GUI], NAME_MAX, "%s", GAME_DIR_NAME_GUI);
-    snprintf(DIR_ROOT[DIR_ITEMS], NAME_MAX, "%s", GAME_DIR_NAME_ITEMS);
-    snprintf(DIR_ROOT[DIR_LOGO], NAME_MAX, "%s", GAME_DIR_NAME_LOGO);
-    snprintf(DIR_ROOT[DIR_CONFIG], NAME_MAX, "%s", GAME_DIR_NAME_CONFIG);
-    snprintf(DIR_ROOT[DIR_SCREENSHOTS], NAME_MAX, "%s", GAME_DIR_NAME_SCREENSHOTS);
-    snprintf(DIR_ROOT[DIR_TEXT], NAME_MAX, "%s", GAME_DIR_NAME_TEXT);
-    snprintf(DIR_ROOT[DIR_WORLDS], NAME_MAX, "%s", GAME_DIR_NAME_WORLDS);
+    snprintf(DIR_ROOT[DIR_ASSETS], FSL_ID_CAP, "%s", GAME_DIR_NAME_ASSETS);
+    snprintf(DIR_ROOT[DIR_AUDIO], FSL_ID_CAP, "%s", GAME_DIR_NAME_AUDIO);
+    snprintf(DIR_ROOT[DIR_FONTS], FSL_ID_CAP, "%s", GAME_DIR_NAME_FONTS);
+    snprintf(DIR_ROOT[DIR_LOOKUPS], FSL_ID_CAP, "%s", GAME_DIR_NAME_LOOKUPS);
+    snprintf(DIR_ROOT[DIR_MODELS], FSL_ID_CAP, "%s", GAME_DIR_NAME_MODELS);
+    snprintf(DIR_ROOT[DIR_SHADERS], FSL_ID_CAP, "%s", GAME_DIR_NAME_SHADERS);
+    snprintf(DIR_ROOT[DIR_TEXTURES], FSL_ID_CAP, "%s", GAME_DIR_NAME_TEXTURES);
+    snprintf(DIR_ROOT[DIR_BLOCKS], FSL_ID_CAP, "%s", GAME_DIR_NAME_BLOCKS);
+    snprintf(DIR_ROOT[DIR_ENTITIES], FSL_ID_CAP, "%s", GAME_DIR_NAME_ENTITIES);
+    snprintf(DIR_ROOT[DIR_ENV], FSL_ID_CAP, "%s", GAME_DIR_NAME_ENV);
+    snprintf(DIR_ROOT[DIR_GUI], FSL_ID_CAP, "%s", GAME_DIR_NAME_GUI);
+    snprintf(DIR_ROOT[DIR_ITEMS], FSL_ID_CAP, "%s", GAME_DIR_NAME_ITEMS);
+    snprintf(DIR_ROOT[DIR_LOGO], FSL_ID_CAP, "%s", GAME_DIR_NAME_LOGO);
+    snprintf(DIR_ROOT[DIR_CONFIG], FSL_ID_CAP, "%s", GAME_DIR_NAME_CONFIG);
+    snprintf(DIR_ROOT[DIR_SCREENSHOTS], FSL_ID_CAP, "%s", GAME_DIR_NAME_SCREENSHOTS);
+    snprintf(DIR_ROOT[DIR_TEXT], FSL_ID_CAP, "%s", GAME_DIR_NAME_TEXT);
+    snprintf(DIR_ROOT[DIR_WORLDS], FSL_ID_CAP, "%s", GAME_DIR_NAME_WORLDS);
 
-    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS], NAME_MAX, "%s", GAME_DIR_WORLD_NAME_CHUNKS);
-    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], NAME_MAX, "%s", GAME_DIR_WORLD_NAME_ENTITIES);
-    snprintf(DIR_WORLD[DIR_WORLD_PLAYER], NAME_MAX, "%s", GAME_DIR_WORLD_NAME_PLAYER);
+    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_CHUNKS);
+    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_ENTITIES);
+    snprintf(DIR_WORLD[DIR_WORLD_PLAYER], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_PLAYER);
 
-    HHC_LOGTRACE(FSL_FLAG_LOG_CMD,
+    LOGTRACE(FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("Creating Main Directories '%s'..\n", FSL_DIR_PROC_ROOT));
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
@@ -55,11 +57,11 @@ u32 game_init(void)
                 return *GAME_ERR;
         }
 
-    HHC_LOGTRACE(FSL_FLAG_LOG_CMD,
+    LOGTRACE(FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("Main Directory Created '%s'\n", FSL_DIR_PROC_ROOT));
 
-    if (fsl_mem_map_arena(&_memory_arena_internal, 1,
-                "engine_init()._fsl_memory_arena_internal") != FSL_ERR_SUCCESS)
+    if (fsl_mem_arena_init(&memory_arena_internal,
+                "game_init().memory_arena_internal") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
     *GAME_ERR = FSL_ERR_SUCCESS;

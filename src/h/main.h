@@ -1,37 +1,39 @@
 #ifndef HHC_H
 #define HHC_H
 
-#include "common.h"
+#include "deps/fossil/common/diagnostics.h"
+#include "deps/fossil/common/types.h"
 
-#include "deps/fossil/core.h"
-#include "deps/fossil/diagnostics.h"
-#include "deps/fossil/ui.h"
-#include "deps/fossil/types.h"
+#include "deps/fossil/h/core.h"
+#include "deps/fossil/h/ui.h"
+
+#include "common.h"
 
 struct hhc_core
 {
     struct /* flag */
     {
-        u32 paused: 1;
-        u32 hud: 1;
-        u32 debug: 1;
-        u32 super_debug: 1;
-        u32 fullscreen: 1;
-        u32 menu_open: 1;
-        u32 fps_cap: 1;
-        u32 parse_target: 1;
-        u32 world_loaded: 1;
-        u32 chunk_buf_dirty: 1;
+        b8 paused;
+        b8 hud;
+        b8 debug;
+        b8 super_debug;
+        b8 fullscreen;
+        b8 menu_open;
+        b8 fps_cap;
+        b8 parse_target;
+        b8 world_loaded;
+        b8 chunk_buf_dirty;
     } flag;
 
     struct /* debug */
     {
-        u32 trans_blocks: 1;
-        u32 chunk_bounds: 1;
-        u32 bounding_boxes: 1;
-        u32 chunk_gizmo: 1;
-        u32 chunk_queue_visualizer: 1;
+        b8 trans_blocks;
+        b8 chunk_bounds;
+        b8 bounding_boxes;
+        b8 chunk_gizmo;
+        b8 chunk_queue_visualizer;
     } debug;
+
 }; /* hhc_core */
 
 struct hhc_settings

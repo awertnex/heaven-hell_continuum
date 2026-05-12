@@ -4,7 +4,7 @@
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 
-#include "deps/fossil/string.h"
+#include "deps/fossil/h/string.h"
 
 #include "h/assets.h"
 #include "h/diagnostics.h"
@@ -58,7 +58,7 @@ u32 assets_init(void)
             fsl_mem_arena_push(&memory_arena_internal, &shader,
                 SHADER_COUNT * sizeof(fsl_shader_program),
                 "assets_init().shader") != FSL_ERR_SUCCESS ||
- 
+
             fsl_mem_arena_push(&memory_arena_internal, &blocks,
                  BLOCK_COUNT * sizeof(block),
                 "assets_init().blocks") != FSL_ERR_SUCCESS ||
@@ -246,7 +246,7 @@ u32 assets_init(void)
             block_texture_init(TEXTURE_BLOCK_WOOD_OAK_PLANKS, "Oak Wood Planks", "wood_oak_planks", "wood_oak_planks.png") != FSL_ERR_SUCCESS ||
             block_texture_init(TEXTURE_BLOCK_BLOOD, "Blood Block", "block_blood", "block_blood.png") != FSL_ERR_SUCCESS)
          goto cleanup;
- 
+
     block_textures_p = fsl_mem_handle_get(fsl_texture, block_textures);
      for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
         ssbo_texture_handles[i] = block_textures_p[i].bindless_handle;
@@ -298,7 +298,7 @@ void assets_free(void)
     fsl_shader_program *shader_p = NULL;
     fsl_texture *block_textures_p = NULL;
     fsl_font *font_p = NULL;
- 
+
     if (block_textures.arena)
     {
         block_textures_p = fsl_mem_handle_get(fsl_texture, block_textures);

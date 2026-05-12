@@ -1,16 +1,18 @@
-#include "deps/fossil/collision.h"
-#include "deps/fossil/math.h"
-#include "deps/fossil/time.h"
+#include "deps/fossil/logger/logger.h"
+
+#include "deps/fossil/h/collision.h"
+#include "deps/fossil/h/math.h"
+#include "deps/fossil/h/time.h"
 
 #include "h/chunking.h"
 #include "h/common.h"
-#include "h/logger.h"
 #include "h/player.h"
 #include "h/world.h"
 
 #include <math.h>
 
-/*! -- INTERNAL USE ONLY --;
+/*!
+ *  @internal
  *
  *  @brief handle player being near or past world edges.
  *
@@ -117,7 +119,8 @@ void player_update(player *p, f64 dt)
 void player_collision_update(player *p, f64 dt)
 {
     chunk *ch = NULL;
-    u32 *block = NULL;
+    block *block_p = fsl_mem_handle_get(block, blocks);
+    u32 *_block = NULL;
     f32 speed;
     v3f32 displacement = {0};
     f32 time = 0.0f;
@@ -182,8 +185,8 @@ void player_collision_update(player *p, f64 dt)
                 {
                     ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
                     if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED)) continue;
-                    block = get_block_resolved(ch, x, y, z);
-                    if (!block || !*block) continue;
+                    _block = get_block_resolved(ch, x, y, z);
+                    if (!_block || !*_block) continue;
 
                     block_box.pos.x = (f64)((i64)ch->pos.x * CHUNK_DIAMETER + fsl_mod_i32(x, CHUNK_DIAMETER));
                     block_box.pos.y = (f64)((i64)ch->pos.y * CHUNK_DIAMETER + fsl_mod_i32(y, CHUNK_DIAMETER));
@@ -225,7 +228,7 @@ void player_collision_update(player *p, f64 dt)
                                 p->flag &= ~FLAG_PLAYER_FLYING;
                             p->flag |= FLAG_PLAYER_CAN_JUMP;
 
-                            friction = blocks[*block & MASK_BLOCK_ID].friction;
+                            friction = block_p[*_block & MASK_BLOCK_ID].friction;
                             p->friction.x = friction;
                             p->friction.y = friction;
                         }
@@ -554,7 +557,7 @@ void player_target_update(player *p)
     v3i32 step = {1, 1, 1};
     b8 hit = FALSE;
     chunk *ch = NULL;
-    u32 *block = NULL;
+    u32 *_block = NULL;
     i32 x = 0;
     i32 y = 0;
     i32 z = 0;
@@ -596,9 +599,9 @@ void player_target_update(player *p)
     }
     else distance.z = (block_pos.z + 1.0 - eye_pos.z) * delta.z;
 
-    while (fsl_min_v3f32((v3f32){distance.x, distance.y, distance.z}) < settings.reach_distance)
+    while (fsl_min_v3f64(distance) < settings.reach_distance)
     {
-        switch (fsl_min_axis_v3f32((v3f32){distance.x, distance.y, distance.z}))
+        switch (fsl_min_axis_v3f64(distance))
         {
             case 1:
                 block_pos.x += step.x;
@@ -630,8 +633,8 @@ void player_target_update(player *p)
         z = block_pos.z - p->ch.z * CHUNK_DIAMETER;
         ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
         if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED)) continue;
-        block = get_block_resolved(ch, x, y, z);
-        if (!block || !*block) continue;
+        _block = get_block_resolved(ch, x, y, z);
+        if (!_block || !*_block) continue;
         hit = TRUE;
         break;
     }
@@ -697,8 +700,11 @@ void player_kill(player *p)
     p->velocity.z = 0.0;
     p->health = 0.0f;
     p->flag |= FLAG_PLAYER_DEAD;
+    p->flag &= ~FLAG_PLAYER_CAN_JUMP;
+    p->flag &= ~FLAG_PLAYER_FLYING;
+    p->flag &= ~FLAG_PLAYER_CINEMATIC_MOTION;
 
-    HHC_LOGINFO(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+    LOGINFO(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("%s %s\n", p->name, get_death_str(p)));
 }
 

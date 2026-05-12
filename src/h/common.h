@@ -1,10 +1,8 @@
 #ifndef HHC_COMMON_H
 #define HHC_COMMON_H
 
-#include "diagnostics.h"
-
-#include "deps/fossil/memory.h"
-#include "deps/fossil/types.h"
+#include "deps/fossil/common/types.h"
+#include "deps/fossil/memory/memory.h"
 
 #define GAME_VERSION_STABLE "-stable"
 #define GAME_VERSION_BETA   "-beta"
@@ -51,7 +49,7 @@
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
-#define SET_TEXT_REFRESH_INTERVAL       10 /* unit: fps */
+#define SET_TEXT_REFRESH_INTERVAL       4 /* unit: fps */
 #define SET_CONSOLE_SCROLL_SPEED        4
 
 #define DEATH_STRING_MAX        128
@@ -85,7 +83,6 @@
 #define GAME_DIR_NAME_ITEMS         "assets/textures/items/"
 #define GAME_DIR_NAME_LOGO          "assets/textures/logo/"
 #define GAME_DIR_NAME_CONFIG        "config/"
-#define GAME_DIR_NAME_LOGS          "logs/"
 #define GAME_DIR_NAME_SCREENSHOTS   "screenshots/"
 #define GAME_DIR_NAME_TEXT          "text/"
 #define GAME_DIR_NAME_WORLDS        "worlds/"
@@ -157,16 +154,17 @@ enum player_death_reason_index
     PLAYER_DEATH_REASON_COUNT
 }; /* player_death_reason_index */
 
-/*! -- INTERNAL USE ONLY --;
+/*!
+ *  @internal
  *
- *  @brief global memory arena, used to manage all heap memory inside and optionally
- *  outside the engine.
+ *  @brief global memory arena, used to manage all heap memory that belongs to the game.
  *
  *  initialized once in @ref game_init().
  */
-extern fsl_mem_arena _memory_arena_internal;
+extern fsl_mem_arena memory_arena_internal;
 
-/*! @brief look-up table for @ref str_death_<x> buffer sizes.
+/*!
+ *  @brief look-up table for @ref str_death_<x> buffer sizes.
  *
  *  @remark read-only, initialized internally in @ref common.c.
  */

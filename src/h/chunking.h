@@ -1,11 +1,11 @@
 #ifndef HHC_CHUNKING_H
 #define HHC_CHUNKING_H
 
+#include "deps/fossil/common/common.h"
+#include "deps/fossil/common/types.h"
+
 #include "assets.h"
 #include "main.h"
-
-#include "deps/fossil/common.h"
-#include "deps/fossil/types.h"
 
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
@@ -34,12 +34,14 @@
 #define CHUNK_QUEUE_3RD_MAX     16384
 #define CHUNK_QUEUES_MAX        3
 
-/*! @brief count of temporary static buffers in internal functions
+/*!
+ *  @brief count of temporary static buffers in internal functions
  *  @ref chunk_mesh_init() and @ref chunk_mesh_update().
  */
 #define BLOCK_BUFFERS_MAX       2
 
-/*! @brief number of chunks to process per frame.
+/*!
+ *  @brief number of chunks to process per frame.
  */
 #define CHUNK_PARSE_RATE_PRIORITY_LOW       64
 #define CHUNK_PARSE_RATE_PRIORITY_MID       128
@@ -51,6 +53,8 @@
 #define CHUNK_COLOR_LOADED  fsl_color_v4_to_hex(0.70f, 0.01f, 0.02f, 0.39f)
 #define CHUNK_COLOR_RENDER  fsl_color_v4_to_hex(0.24f, 0.47f, 0.3f, 1.0f)
 #define CHUNK_COLOR_FACTOR_INFLUENCE 0.1
+
+/* ---- section: block flag ------------------------------------------------- */
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 00000001 00000000 00000000] 00; */
@@ -76,11 +80,14 @@
  *  31 [00000000 00100000 00000000 00000000] 00; */
 #define FLAG_BLOCK_FACE_NZ      0x0000000000200000
 
-/*! @brief run-length encoding, for chunk serialization.
+/*!
+ *  @brief run-length encoding, for chunk serialization.
  *
  *  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 10000000 00000000 00000000] 00; */
-#define FLAG_BLOCK_RLE          0x0000000000800000
+#define FLAG_BLOCK_RLE          0x000000000080000
+
+/* ---- section: block mask ------------------------------------------------- */
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 00000000 00111111 11111111] 00; */
@@ -116,17 +123,20 @@
 
 /*  63 [00000000 00000000 00001111 00000000] 32;
  *  31 [00000000 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_Z            0x00000f0000000000
+#define MASK_BLOCK_Z            0x00000f000000000
 
-#define SHIFT_BLOCK_DATA 0
-#define SHIFT_BLOCK_ID 0
-#define SHIFT_BLOCK_STATE 10
-#define SHIFT_BLOCK_FACES 16
-#define SHIFT_BLOCK_LIGHT 24
-#define SHIFT_BLOCK_COORDINATES 32
-#define SHIFT_BLOCK_X 32
-#define SHIFT_BLOCK_Y 36
-#define SHIFT_BLOCK_Z 40
+enum block_shift
+{
+    SHIFT_BLOCK_DATA =          0,
+    SHIFT_BLOCK_ID =            0,
+    SHIFT_BLOCK_STATE =         10,
+    SHIFT_BLOCK_FACES =         16,
+    SHIFT_BLOCK_LIGHT =         24,
+    SHIFT_BLOCK_COORDINATES =   32,
+    SHIFT_BLOCK_X =             32,
+    SHIFT_BLOCK_Y =             36,
+    SHIFT_BLOCK_Z =             40
+}; /* block_shift */
 
 enum chunk_flag
 {
@@ -137,7 +147,8 @@ enum chunk_flag
     FLAG_CHUNK_RENDER =     0x10,
     FLAG_CHUNK_MODIFIED =   0x20,
 
-    /*! @brief chunk marking for @ref chunk_tab shifting logic.
+    /*!
+     *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
     FLAG_CHUNK_EDGE =       0x40
 }; /* chunk_flag */
@@ -157,7 +168,8 @@ typedef struct chunk
     u8 flag; /* enum: chunk_flag */
     v3i16 pos; /* world position / @ref CHUNK_DIAMETER */
 
-    /*! @brief chunk's unique id derived from its position.
+    /*!
+     *  @brief chunk's unique id derived from its position.
      *
      * format:
      * (pos.x & 0xffff) << 0x00 |
@@ -166,13 +178,15 @@ typedef struct chunk
      */
     u64 id;
 
-    /*! @brief debug color.
+    /*!
+     *  @brief debug color.
      *
      *  format: 0xrrggbbaa.
      */
     u32 color;
 
-    /*! @brief debug color variant.
+    /*!
+     *  @brief debug color variant.
      *
      *  used as offset for 'color'.
      *
@@ -180,13 +194,15 @@ typedef struct chunk
      */
     u32 color_variant;
 
-    /*! @brief block iterator for per-chunk generation progress.
+    /*!
+     *  @brief block iterator for per-chunk generation progress.
      */
     u32 cursor;
 
     GLuint vao;
     GLuint vbo;
     u64 vbo_len;
+
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
 } chunk;
 
@@ -199,13 +215,14 @@ typedef struct chunk_queue
     u32 cursor;         /* parse position */
     u32 rate_chunk;     /* number of chunks to process per frame */
     u32 rate_block;     /* number of blocks to process per chunk per frame */
-    chunk ***queue;
+    fsl_mem_handle queue;
 } chunk_queue;
 
 #define GET_BLOCK_ID(block)     (block & MASK_BLOCK_ID)
 #define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
 
-/*! @brief look-up table to reduce redundant checks of untouched regions of `chunk_buf`.
+/*!
+ *  @brief look-up table to reduce redundant checks of untouched regions of `chunk_buf`.
  *
  *  the sphere of chunks around @ref chunk_tab center are the only chunks that get processed,
  *  and since @ref CHUNK_ORDER is a look-up that orders @ref chunk_tab addresses based on
@@ -219,54 +236,61 @@ typedef struct chunk_queue
  */
 extern u64 CHUNKS_MAX[CHUNK_BUF_RADIUS_MAX + 1];
 
-/*! @brief chunk pointer look-up table that points to `chunk_buf` addresses.
+/*!
+ *  @brief chunk pointer look-up table that points to `chunk_buf` addresses.
  *
  *  `chunk_buf` addresses ordered by their positions in 3d space relative to player position.
  */
-extern chunk **chunk_tab;
+extern fsl_mem_handle chunk_tab;
 
-/*! @brief player relative @ref chunk_tab access.
+/*!
+ *  @brief player-relative @ref chunk_tab access.
  *
  *  @remark declared by the user.
  */
 extern u32 chunk_tab_index;
 
-/*! @brief chunk pointer pointer look-up table that points to @ref chunk_tab addresses.
+/*!
+ *  @brief chunk pointer pointer look-up table that points to @ref chunk_tab addresses.
  *
  *  @ref chunk_tab addresses ordered by distance from @ref chunk_tab center in ascending order.
  *
  *  @remark read-only, initialized internally in @ref chunking_init().
  */
-extern chunk ***CHUNK_ORDER;
+extern fsl_mem_handle CHUNK_ORDER;
 
-/*! @brief queues of chunks to be processed.
+/*!
+ *  @brief queues of chunks to be processed.
  *
  *  @remark read-only, updated internally in @ref chunking_update().
  */
 extern chunk_queue CHUNK_QUEUE[CHUNK_QUEUES_MAX];
 
-/*! @brief chunk gizmo render buffer data for opaque chunk colors.
+/*!
+ *  @brief chunk gizmo render buffer data for opaque chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
  *
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-extern v2u32 *chunk_gizmo_loaded;
+extern fsl_mem_handle chunk_gizmo_loaded;
 
-/*! @brief chunk gizmo render buffer data for transparent chunk colors.
+/*!
+ *  @brief chunk gizmo render buffer data for transparent chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
  *
  *  format: 0xxxyyzz00, 0xrrggbbaa.
  */
-extern v2u32 *chunk_gizmo_render;
+extern fsl_mem_handle chunk_gizmo_render;
 
 extern GLuint chunk_gizmo_loaded_vao;
 extern GLuint chunk_gizmo_loaded_vbo;
 extern GLuint chunk_gizmo_render_vao;
 extern GLuint chunk_gizmo_render_vbo;
 
-/*! @brief initialize chunking resources.
+/*!
+ *  @brief initialize chunking resources.
  *
  *  - allocate @ref chunk_arena and push @ref chunk_buf, @ref chunk_tab, @ref CHUNK_ORDER and
  *  @ref CHUNK_QUEUE[<x>] onto it.
@@ -278,7 +302,8 @@ extern GLuint chunk_gizmo_render_vbo;
  */
 u32 chunking_init(void);
 
-/*! @update everything about chunks during gameplay.
+/*!
+ *  @update everything about chunks during gameplay.
  *
  *  1. load dirty chunks into their priority queues based on their distance from
  *     the player.
@@ -298,33 +323,38 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta);
 
 void chunking_free(void);
 
-/*! @param index = index into global array @ref chunk_tab.
- *  @param normal = face direction to place block onto.
+/*!
+ *  @param index index into global array @ref chunk_tab.
+ *  @param normal face direction to place block onto.
  */
 void block_place(u32 index, i32 x, i32 y, i32 z, v3f64 normal, enum block_id block_id);
 
-/*! @param index = index into global array @ref chunk_tab.
+/*!
+ *  @param index index into global array @ref chunk_tab.
  */
 void block_break(u32 index, i32 x, i32 y, i32 z);
 
-/*! @brief get block relative to chunk.
+/*!
+ *  @brief get block relative to chunk.
  *
  *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and
  *  return the correct block in the neighboring chunk otherwise.
  */
 u32 *get_block_resolved(chunk *ch, i32 x, i32 y, i32 z);
 
-/*! @brief get chunk relative to position.
+/*!
+ *  @brief get chunk relative to position.
  *
  *  @return chunk at index if `x`, `y` and `z` are within chunk bounds and
  *  return the correct neighboring chunk otherwise.
  */
 chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z);
 
-/*! @brief get index of chunk in @ref chunk_tab by world coordinates relative to chunk position.
+/*!
+ *  @brief get index of chunk in @ref chunk_tab by world coordinates relative to chunk position.
  *
- *  @param chunk_pos = chunk position in world coordinates.
- *  @param pos = block position in world coordinates.
+ *  @param chunk_pos chunk position in world coordinates.
+ *  @param pos block position in world coordinates.
  *
  *  @return index into global array @ref chunk_tab.
  *  @return @ref settings.chunk_tab_center if index out of bounds.

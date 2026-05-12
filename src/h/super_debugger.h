@@ -1,9 +1,9 @@
 #ifndef HHC_SUPER_DEBUGGER_H
 #define HHC_SUPER_DEBUGGER_H
 
-#include "gui.h"
+#include "deps/fossil/common/types.h"
 
-#include "deps/fossil/types.h"
+#include "gui.h"
 
 #define SDB_ROW_HEIGHT  22
 #define SDB_BASE_SIZE   5

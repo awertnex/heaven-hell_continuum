@@ -1,5 +1,5 @@
 #include "deps/buildtool/buildtool.h"
-#include "deps/fossil/build.h"
+#include "deps/fossil/h/buildtool_config.h"
 
 #define DIR_SRC     "src/"
 #define DIR_OUT     "Heaven-Hell Continuum/"
@@ -9,16 +9,24 @@ _buf cmd = {0};
 
 static str str_cflags[][CMD_SIZE] =
 {
-    "-Wall",
-    "-Wextra",
     "-std=c89",
-    "-Wpedantic",
-    "-Wformat-truncation=0",
-    "-ggdb",
-    "-I.",
-    "-Ofast"
+    "-Ofast",
+    "-I."
 };
 
+static str str_cflags_debug[][CMD_SIZE] =
+{
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wformat-truncation=0",
+    "-ggdb"
+};
+
+static str str_libs[][CMD_SIZE] =
+{
+    "-lmvec"
+};
 static str str_files[][CMD_SIZE] =
 {
     DIR_SRC"main.c",
@@ -47,18 +55,28 @@ int main(int argc, char **argv)
 
     if (find_token("release", argc, argv))
     {
-        LOGINFO(FALSE, "%s\n", "Building For Release..");
+        LOGINFO(FALSE, "Building For Release..\n");
         cmd_push(&cmd, "-DHHC_RELEASE_BUILD");
     }
     else
-        for (i = 0; i < arr_len(str_cflags); ++i)
-            cmd_push(&cmd, str_cflags[i]);
+    {
+        LOGWARNING(0, FALSE, "Building in Debug Mode..\n");
+        for (i = 0; i < arr_len(str_cflags_debug); ++i)
+            cmd_push(&cmd, str_cflags_debug[i]);
+    }
+
+    for (i = 0; i < arr_len(str_cflags); ++i)
+        cmd_push(&cmd, str_cflags[i]);
+
+    for (i = 0; i < arr_len(str_libs); ++i)
+        cmd_push(&cmd, str_libs[i]);
+
+    fsl_engine_link_libs(&cmd);
+    fsl_engine_set_runtime_path(&cmd);
 
     for (i = 0; i < arr_len(str_files); ++i)
         cmd_push(&cmd, str_files[i]);
 
-    fsl_engine_link_libs(&cmd);
-    fsl_engine_set_runtime_path(&cmd);
     cmd_push(&cmd, "-o");
     cmd_push(&cmd, STR_OUT);
     cmd_ready(&cmd);
@@ -70,8 +88,8 @@ int main(int argc, char **argv)
             copy_file("LICENSE",        DIR_OUT) != ERR_SUCCESS ||
             copy_dir("assets/",         DIR_OUT, FALSE) != ERR_SUCCESS ||
             copy_dir("fossil/fossil/",  DIR_OUT, TRUE) != ERR_SUCCESS ||
-            copy_dir("fossil/lib/", ".", FALSE) != ERR_SUCCESS ||
-            copy_dir("fossil/deps/", ".", FALSE) != ERR_SUCCESS)
+            copy_dir("fossil/lib/",     ".", FALSE) != ERR_SUCCESS ||
+            copy_dir("fossil/deps/",    ".", FALSE) != ERR_SUCCESS)
         cmd_fail(&cmd);
 
     build_err = ERR_SUCCESS;

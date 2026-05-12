@@ -1,8 +1,9 @@
 #ifndef HHC_DIR_H
 #define HHC_DIR_H
 
-#include "deps/fossil/types.h"
-#include "deps/fossil/dir.h"
+#include "deps/fossil/common/types.h"
+
+#include "deps/fossil/h/dir.h"
 
 #define DIR_MAX 128
 
@@ -37,10 +38,11 @@ enum directory_index
     DIR_WORLD_COUNT
 }; /* directory_index */
 
-extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
-extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
+extern str DIR_ROOT[DIR_ROOT_COUNT][FSL_ID_CAP];
+extern str DIR_WORLD[DIR_WORLD_COUNT][FSL_ID_CAP];
 
-/*! @brief initialize game stuff.
+/*!
+ *  @brief initialize game stuff.
  *
  *  @remark will create directories if not found next to the binary.
  *

@@ -1,13 +1,14 @@
 #ifndef HHC_ASSETS_H
 #define HHC_ASSETS_H
 
+#include "deps/fossil/common/types.h"
+#include "deps/fossil/common/limits.h"
+#include "deps/fossil/shaders/shaders.h"
+
+#include "deps/fossil/h/core.h"
+
 #include "common.h"
 #include "dir.h"
-
-#include "deps/fossil/core.h"
-#include "deps/fossil/limits.h"
-#include "deps/fossil/shaders.h"
-#include "deps/fossil/types.h"
 
 #define FRICTION_BLOCK_SLIPPERY 0.02f
 #define FRICTION_BLOCK_WET      0.1f
@@ -85,30 +86,34 @@ enum block_state
 
 typedef struct block
 {
-    str name[NAME_MAX];
-    enum block_state state;
+    fsl_asset asset;
     u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
+    enum block_state state;
     f32 friction;
 } block;
 
-extern fsl_shader_program shader[SHADER_COUNT];
-extern fsl_texture texture[TEXTURE_COUNT];
+extern fsl_mem_handle texture;
+extern fsl_mem_handle fbo;
+extern fsl_mem_handle mesh;
+extern fsl_mem_handle shader;
+extern fsl_mem_handle blocks;
 
-extern block *blocks;
-
-/*! @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+/*!
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 assets_init(void);
 
 void assets_free(void);
 
-/*! @param index = index into @ref block_textures.
+/*!
+ *  @param index index into @ref block_textures.
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 block_texture_init(u32 index, str *name);
+u32 block_texture_init(u32 index, const fsl_name *name, const fsl_name_id *name_id, const fsl_file *file);
 
-/*! @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+/*!
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 void blocks_init(void);
 
