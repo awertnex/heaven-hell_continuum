@@ -1,8 +1,8 @@
 #include "deps/fossil/logger/logger.h"
+#include "deps/fossil/shaders/shader_types.h"
 
 #include "deps/fossil/h/input.h"
 #include "deps/fossil/h/math.h"
-#include "deps/fossil/h/time.h"
 
 #include "h/assets.h"
 #include "h/chunking.h"
@@ -300,13 +300,13 @@ void input_update(player *p)
 
         if (fsl_is_key_press(bind_zoom))
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "Zoom Toggled On"));
+                    "Zoom Toggled On\n");
         if (fsl_is_key_hold(bind_zoom))
             p->flag |= FLAG_PLAYER_ZOOMER;
         if (fsl_is_key_release(bind_zoom))
         {
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "Zoom Toggled Off"));
+                    "Zoom Toggled Off\n");
             p->flag &= ~FLAG_PLAYER_ZOOMER;
         }
 
@@ -316,10 +316,10 @@ void input_update(player *p)
 
             if (p->flag & FLAG_PLAYER_FLASHLIGHT)
                 LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        fsl_logger_stringf("%s\n", "Flashlight Toggled On"));
+                        "Flashlight Toggled On\n");
             else
                 LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        fsl_logger_stringf("%s\n", "Flashlight Toggled Off"));
+                        "Flashlight Toggled Off\n");
         }
 
         if (fsl_is_key_press(bind_toggle_cinematic_motion))
@@ -328,10 +328,10 @@ void input_update(player *p)
 
             if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
                 LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        fsl_logger_stringf("%s\n", "Cinematic Motion On"));
+                        "Cinematic Motion On\n");
             else
                 LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        fsl_logger_stringf("%s\n", "Cinematic Motion Off"));
+                        "Cinematic Motion Off\n");
         }
     }
 
@@ -348,10 +348,10 @@ void input_update(player *p)
 
         if (core.debug.trans_blocks)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Transparent Blocks On"));
+                    "View Transparent Blocks On\n");
         else
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Transparent Blocks Off"));
+                    "View Transparent Blocks Off\n");
     }
 
     if (fsl_is_key_press(bind_toggle_chunk_bounds))
@@ -360,10 +360,10 @@ void input_update(player *p)
 
         if (core.debug.chunk_bounds)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Boundaries On"));
+                    "View Chunk Boundaries On\n");
         else
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Boundaries Off"));
+                    "View Chunk Boundaries Off\n");
     }
 
     if (fsl_is_key_press(bind_toggle_bounding_boxes))
@@ -372,10 +372,10 @@ void input_update(player *p)
 
         if (core.debug.bounding_boxes)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Bounding Boxes On"));
+                    "View Bounding Boxes On\n");
         else
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Bounding Boxes Off"));
+                    "View Bounding Boxes Off\n");
     }
 
     if (fsl_is_key_press(bind_toggle_chunk_gizmo))
@@ -384,10 +384,10 @@ void input_update(player *p)
 
         if (core.debug.chunk_gizmo)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Gizmo On"));
+                    "View Chunk Gizmo On\n");
         else
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Gizmo Off"));
+                    "View Chunk Gizmo Off\n");
     }
 
     if (fsl_is_key_press(bind_toggle_chunk_queue_visualizer))
@@ -396,10 +396,10 @@ void input_update(player *p)
 
         if (core.debug.chunk_queue_visualizer)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Queue Visualizer On"));
+                    "View Chunk Queue Visualizer On\n");
         else
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "View Chunk Queue Visualizer Off"));
+                    "View Chunk Queue Visualizer Off\n");
     }
 
     if (fsl_is_key_press(bind_reload_shaders))
@@ -412,9 +412,9 @@ void input_update(player *p)
 
         if (shader_err == FSL_ERR_SUCCESS)
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    fsl_logger_stringf("%s\n", "Shaders Reloaded!"));
+                    "Shaders Reloaded!\n");
         else
             LOGERROR(shader_err, FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    MSG_ACTION_ERROR("Reloaded Shaders"));
+                    "Failed to Reload Shaders\n");
     }
 }

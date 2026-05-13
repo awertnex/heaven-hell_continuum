@@ -4,11 +4,8 @@
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 
-#include "deps/fossil/h/string.h"
-
 #include "h/assets.h"
 #include "h/diagnostics.h"
-#include "h/dir.h"
 #include "h/main.h"
 
 #include <stdio.h>
