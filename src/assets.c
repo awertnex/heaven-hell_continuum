@@ -57,7 +57,7 @@ u32 assets_init(void)
                 "assets_init().shader") != FSL_ERR_SUCCESS ||
 
             fsl_mem_arena_push(&memory_arena_internal, &blocks,
-                 BLOCK_COUNT * sizeof(block),
+                BLOCK_COUNT * sizeof(block),
                 "assets_init().blocks") != FSL_ERR_SUCCESS ||
 
             fsl_mem_arena_push(&memory_arena_internal, &block_textures,
@@ -77,7 +77,7 @@ u32 assets_init(void)
             fsl_fbo_init(&fbo_p[FBO_POST_PROCESSING], NULL, FALSE, 4) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-        /* ---- shaders --------------------------------------------------------- */
+    /* ---- shaders --------------------------------------------------------- */
 
     shader_p = fsl_mem_handle_get_i(fsl_shader_program, shader, SHADER_DEFAULT);
     if (
@@ -220,7 +220,7 @@ u32 assets_init(void)
             fsl_texture_init(&texture_p[TEXTURE_MOON],
                 "Moon", "moon", "moon.png", GAME_DIR_NAME_ENV,
                 GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS)
-         goto cleanup;
+        goto cleanup;
 
     /* ---- block textures -------------------------------------------------- */
 
@@ -242,10 +242,10 @@ u32 assets_init(void)
             block_texture_init(TEXTURE_BLOCK_WOOD_OAK_LOG_TOP, "Oak Wood Log Top", "wood_oak_log_top", "wood_oak_log_top.png") != FSL_ERR_SUCCESS ||
             block_texture_init(TEXTURE_BLOCK_WOOD_OAK_PLANKS, "Oak Wood Planks", "wood_oak_planks", "wood_oak_planks.png") != FSL_ERR_SUCCESS ||
             block_texture_init(TEXTURE_BLOCK_BLOOD, "Blood Block", "block_blood", "block_blood.png") != FSL_ERR_SUCCESS)
-         goto cleanup;
+        goto cleanup;
 
     block_textures_p = fsl_mem_handle_get(fsl_texture, block_textures);
-     for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
+    for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
         ssbo_texture_handles[i] = block_textures_p[i].bindless_handle;
 
     blocks_init();
