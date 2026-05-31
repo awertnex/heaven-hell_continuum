@@ -1,10 +1,11 @@
 #include "deps/fossil/common/session.h"
 #include "deps/fossil/common/limits.h"
+#include "deps/fossil/assets/assets.h"
 #include "deps/fossil/logger/logger.h"
+#include "deps/fossil/string/string.h"
 
 #include "deps/fossil/h/dir.h"
 #include "deps/fossil/h/math.h"
-#include "deps/fossil/h/string.h"
 #include "deps/fossil/h/time.h"
 
 #include "h/chunking.h"
@@ -16,6 +17,7 @@
 #include "h/world.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -36,7 +38,7 @@ u32 world_init(str *name, u64 seed, player *p)
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    set_player_spawn(p, 0, 0, 30);
+    set_player_spawn(p, 0, 0, 20);
     player_spawn(p, TRUE);
     player_chunk_update(p);
 
@@ -226,6 +228,6 @@ void world_update(player *p)
     chunking_update(p->ch, &p->ch_delta);
     chunk_tab_index = get_chunk_index(p->ch, p->target);
 
-    fsl_update_projection_perspective(p->camera, &projection_world, FALSE);
-    fsl_update_projection_perspective(p->camera_hud, &projection_hud, FALSE);
+    fsl_update_projection_perspective(p->camera, &p->camera.projection, FALSE);
+    fsl_update_projection_perspective(p->camera_hud, &p->camera_hud.projection, FALSE);
 }

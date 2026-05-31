@@ -98,7 +98,7 @@
 
 /* ---- name formats -------------------------------------------------------- */
 
-#define FORMAT_FILE_NAME_HHCC "r.%d.%d.%d.hhcc"
+#define FORMAT_FILE_NAME_HHCC "%d.%d.%d.hhcr"
 
 /* ---- strings: death ------------------------------------------------------ */
 
@@ -121,7 +121,6 @@ enum mesh_index
 {
     MESH_SKYBOX,
     MESH_CUBE_OF_HAPPINESS,
-    MESH_PLAYER,
     MESH_GIZMO,
     MESH_COUNT
 }; /* mesh_index */

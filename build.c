@@ -1,4 +1,4 @@
-#include "deps/buildtool/buildtool.h"
+#include "deps/fossil/external/buildtool/buildtool.h"
 #include "deps/fossil/h/buildtool_config.h"
 
 #define DIR_SRC     "src/"
@@ -51,6 +51,9 @@ int main(int argc, char **argv)
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
         return build_err;
 
+    if (is_dir_exists(DIR_OUT, FALSE) != ERR_SUCCESS)
+        make_dir(DIR_OUT);
+
     cmd_push(&cmd, COMPILER);
 
     if (find_token("release", argc, argv))
@@ -81,15 +84,15 @@ int main(int argc, char **argv)
     cmd_push(&cmd, STR_OUT);
     cmd_ready(&cmd);
 
-    if (exec(&cmd, "main().cmd") != ERR_SUCCESS)
-        cmd_fail(&cmd);
-
     if (
             copy_file("LICENSE",        DIR_OUT) != ERR_SUCCESS ||
             copy_dir("assets/",         DIR_OUT, FALSE) != ERR_SUCCESS ||
             copy_dir("fossil/fossil/",  DIR_OUT, TRUE) != ERR_SUCCESS ||
             copy_dir("fossil/lib/",     ".", FALSE) != ERR_SUCCESS ||
             copy_dir("fossil/deps/",    ".", FALSE) != ERR_SUCCESS)
+        cmd_fail(&cmd);
+
+    if (exec(&cmd, "main().cmd") != ERR_SUCCESS)
         cmd_fail(&cmd);
 
     build_err = ERR_SUCCESS;

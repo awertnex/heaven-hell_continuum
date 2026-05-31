@@ -3,10 +3,8 @@
 
 #include "deps/fossil/common/types.h"
 
-#include "deps/fossil/h/core.h"
-#include "deps/fossil/h/input.h"
+#include "deps/fossil/input/input.h"
 
-#include "main.h"
 #include "player.h"
 
 /* ---- movement ------------------------------------------------------------ */

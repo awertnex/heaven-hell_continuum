@@ -1,6 +1,7 @@
+#include "deps/fossil/assets/assets.h"
 #include "deps/fossil/logger/logger.h"
 
-#include "deps/fossil/h/collision.h"
+#include "deps/fossil/physics/collision.h"
 #include "deps/fossil/h/math.h"
 #include "deps/fossil/h/time.h"
 
@@ -119,7 +120,7 @@ void player_update(player *p, f64 dt)
 void player_collision_update(player *p, f64 dt)
 {
     chunk *ch = NULL;
-    block *block_p = fsl_mem_handle_get(block, blocks);
+    block *block_p = fsl_mem_handle_get(blocks);
     u32 *_block = NULL;
     f32 speed;
     v3f32 displacement = {0};

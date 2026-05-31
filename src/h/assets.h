@@ -2,9 +2,8 @@
 #define HHC_ASSETS_H
 
 #include "deps/fossil/common/types.h"
-#include "deps/fossil/common/limits.h"
+#include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/memory/memory_types.h"
-#include "deps/fossil/h/asset_types.h"
 
 #define FRICTION_BLOCK_SLIPPERY 0.02f
 #define FRICTION_BLOCK_WET      0.1f

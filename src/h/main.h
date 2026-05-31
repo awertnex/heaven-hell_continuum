@@ -3,8 +3,8 @@
 
 #include "deps/fossil/common/diagnostics.h"
 #include "deps/fossil/common/types.h"
+#include "deps/fossil/engine/engine.h"
 
-#include "deps/fossil/h/core.h"
 #include "deps/fossil/h/ui.h"
 
 #include "common.h"
@@ -33,7 +33,6 @@ struct hhc_core
         b8 chunk_gizmo;
         b8 chunk_queue_visualizer;
     } debug;
-
 }; /* hhc_core */
 
 struct hhc_settings
@@ -71,7 +70,7 @@ struct hhc_uniform
 {
     struct /* defaults */
     {
-        GLint offset;
+        GLint location;
         GLint scale;
         GLint mat_rotation;
         GLint mat_perspective;
@@ -150,10 +149,9 @@ struct hhc_uniform
 
 }; /* hhc_uniform */
 
+extern fsl_render *render;
 extern struct hhc_core core;
 extern struct hhc_settings settings;
-extern fsl_projection projection_world;
-extern fsl_projection projection_hud;
 extern fsl_font *font[FONT_COUNT];
 
 #endif /* HHC_MAIN_H */

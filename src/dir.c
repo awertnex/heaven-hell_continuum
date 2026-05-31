@@ -1,21 +1,17 @@
 #include "deps/fossil/common/limits.h"
 #include "deps/fossil/common/session.h"
+#include "deps/fossil/engine/engine.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/memory/memory.h"
 
-#include "deps/fossil/h/core.h"
 #include "deps/fossil/h/dir.h"
-#include "deps/fossil/h/math.h"
-#include "deps/fossil/h/string.h"
 
+#include "h/main.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
-#include "h/main.h"
 
 #include <stdio.h>
-#include <string.h>
-#include <dirent.h>
 
 str DIR_ROOT[DIR_ROOT_COUNT][FSL_ID_CAP] = {0};
 str DIR_WORLD[DIR_WORLD_COUNT][FSL_ID_CAP] = {0};
@@ -63,6 +59,8 @@ u32 game_init(void)
     if (fsl_mem_arena_init(&memory_arena_internal,
                 "game_init().memory_arena_internal") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
+
+    render = fsl_render_get();
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
