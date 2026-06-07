@@ -1,0 +1,194 @@
+Chunking Documentation
+
+DEFINITIONS:
+
+`chunk`:
+    Description:    a structure of metadata to describe a group of blocks in 3d
+                    space.
+
+    - diameter of 16 blocks, volume of 16^3 blocks.
+
+    - has 3d position, each axis being 2-bytes (good enough for the world's size
+      limits).
+
+    - has memory handle to point to a blocks portion in `chunk_buf`.
+
+    - has index: this is its own index in `chunk_tab`, given to it by a push to
+      `chunk_buf`, modified by chunk shifter (see 'Chunk Table'),
+      consumed by chunk schedulers (see 'Chunk Scheduler').
+
+    - has a push cursor to keep progress of block generation, because generation
+      is limited by a 'block parse rate' (how many blocks can be processed per
+      chunk per frame), if that limit is reached, the chunk will stop processing
+      and continue where it left off on next frame.
+
+`chunk_data`:
+    Description:    raw block data.
+
+    - has a flag that tells whether the data is orphaned or not.
+
+Chunk Region `chunk_region`:
+    Description:    area of 32^3 chunks in 3d space.
+
+DATA:
+
+Chunk Metadata `chunk_meta`:
+    Description:    chunk metadata buffer, stores chunk metadata like a stack.
+
+
+Chunk Buffer `chunk_buf`:
+    Description:    raw block data buffer, stores block data like a stack.
+
+    - has a push cursor that searches for the first empty slot.
+    - any index can be popped, but blocks will not be deleted, just overwritten
+      when a new chunk is pushed.
+    - cursor returns to the popped index if it is earlier than cursor position.
+
+Chunk Table `chunk_tab`:
+    Description:    3d look-up table of chunk pointers that point to `chunk_buf`
+                    addresses.
+
+    - it arranges chunks based on their position relative to the player, where
+      player's current chunk is always the center-most index of the table.
+
+    - when a chunk is pushed into `chunk_buf`, its address is given to the
+      corresponding index in `chunk_tab` using the difference between chunk
+      position in world and player position in world.
+
+    - when a player crosses a chunk boundary, all the addresses in `chunk_tab`
+      shift the opposite direction of the boundary crossed, to compensate for
+      player position.
+
+    - the table shifter updates player chunk position cached in player data
+      itself and then diffs it with player chunk position delta, also cached in
+      player data, if they don't match, the table will shift again till the two
+      match, since the player can cross one or more chunk boundaries per frame.
+
+    - when the table shifts, the indices at the furthest position from the
+      player get wrapped around into the new area of chunks the player is moving
+      twoards, reset and re-generated as the new chunks.
+
+Chunk Order `chunk_order`:
+    Description:    3d look-up table of chunk pointer pointers that point to
+                    `chunk_tab` addresses.
+
+    - it arranges `chunk_tab` indices based on their distance from the
+      center-most index.
+
+    - there are a couple chunk order arrangements saved to disk for every render
+      distance setting, the respective lookup will be loaded when
+      render-distance setting changes.
+
+    - if a look-up is not found on disk, it will be generated (the process is
+      taxing).
+
+    - useful for rendering by distance, generating closer chunks first, and
+      dedicating spherical areas of chunks around the player to different
+      parsing schedulers, each with their priority level.
+
+Chunk Limiter `chunks_max`:
+    Description:    array of maximum chunk counts at each render distance
+                    setting, used mainly as an upper-bound to `chunk_order`
+                    traversal.
+
+Chunk Parser `chunk_sched`:
+    desription:     dirty-chunk scheduler, FIFO ring-buffer.
+
+    - processes chunk generation, meshing, modification, importing and
+      exporting.
+    - each scheduler has to wait for the previous one to finish processing in
+      order to start parsing, but all can schedule chunks without waiting for
+      each other, because enqueuing isn't remotely as costly as chunk
+      generation.
+
+    - chunk_sched 1: closest sphere of chunks to player, parses almost
+      instantly, small size.
+
+    - chunk_sched 2: mid-range sphere of chunks, excluding scheduler 1's area, 
+      parses a bit slower, because less urgent, medium size.
+
+    - chunk_sched 3: parses everything visible after scheduler 2's area, slow
+      parser, big size, but parses everything after second scheduler's area
+      (sometimes unused due to render distance being too small to get to that
+      area).
+
+    - chunk_sched 4: region parser and exporter, biggest scheduler, slowest
+      parsing, four responsibilities:
+        1. generate an entire region even if the player has touched a single
+           chunk from it and even after player is no longer in area.
+        2. guarantee generation unless player exits world or player teleports
+           far, these chunks are almost always not visible to the player yet,
+           and therefore, not urgent at all, but they will be generated when a
+           partial chunk file is loaded again.
+        3. wait for other schedulers to finish generation and listen to the
+           requests they send, other schedulers request exporting of chunks
+           they've already generated, in that meantime the exporter only
+           collects positions of regions to export, when all schedulers are
+           done, the exporter will grab what they generated and continue
+           generating the rest.
+        4. compress entire region into one big RLE (run-length encoding) blob
+           and write to disk in '.hhcr' format (see 'Heaven-Hell Continuum
+           Region File Format (hhcr)').
+
+    - all schedulers must check disk for if the specific chunk has been
+      generated, and generate chunks if not found.
+
+    - each scheduler has their own 'chunk parse rate' (how many chunks can be
+      processed per frame), if that limit is reached, the scheduler will
+      stop processing and continue where it left off on next frame.
+
+    - the rate is only spent when generating, not when loading from disk, the
+      limit on loading from disk is the capacity of the scheduler itself.
+
+    - when a visible chunk mid-generation gets out of render distance, it gets
+      discarded and scheduler 4 will take care of it.
+
+    - schedulers can steal jobs from each other; when the player moves closer
+      to a busy chunk in a lower priority scheduler, it will move up in
+      priority in respect to player distance, and will move down when the player
+      moves away.
+
+Chunk Parser Budget:
+    Description:    amount of "work" that can be performed by a chunk scheduler
+                    per frame.
+
+    "Work" Costs per Chunk:
+        - generation: 64 points.
+        - meshing: 16 points.
+        - exporting: 8 points.
+        - importing: 8 points.
+        - scheduling: 4 point.
+        - de-scheduling: 4 point.
+
+    - the budget is consumed by chunks being processed within a scheduler,
+      when the budget is drained, the scheduler skips parsing and continues next
+      frame with a fresh budget.
+
+    - chunk importing will still mesh the chunk afterwards, because meshing is
+      cheap relative to the contrary: use some disk space for mesh data +
+      majorly break RLE compression therefore bloating mesh file size
+      significantly.
+
+DEBUG TOOLS:
+
+Chunk Bounds:
+    Description:    player current chunk's bounding box.
+
+Chunk Gizmo:
+    Description:    tiny 3d representation of `chunk_tab` entries in the form of
+                    cubes.
+
+    - appears with <Alt + G> at the top-right corner of the HUD.
+    - cubes are colored to represent chunk status:
+        brown: generated.
+        green: has non-air blocks.
+
+Chunk Scheduler Visualizer:
+    Description:    shows sceduled status of chunks, coolest thing in the game.
+
+    - appears with <Alt + V>.
+    - shows bounding boxes of sceduled chunks for processing:
+        green: in sceduler 1.
+        orange: in sceduler 2.
+        red: in sceduler 3.
+        purple: in sceduler 4.

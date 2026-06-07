@@ -1,0 +1,127 @@
+#ifndef BUILDTOOL_PLATFORM_LINUX_H
+#define BUILDTOOL_PLATFORM_LINUX_H
+
+/* ---- section: license ---------------------------------------------------- */
+
+/*  MIT License
+ *
+ *  Copyright (c) 2026 Lily Awertnex
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
+#include "common.h"
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
+#include "logger.h"
+#include "memory.h"
+
+/* ---- section: implementation --------------------------------------------- */
+
+u32 get_path_absolute_internal(const str *path, str *path_real)
+{
+    if (!realpath(path, path_real))
+    {
+        build_err = ERR_GET_PATH_ABSOLUTE_FAIL;
+        return build_err;
+    }
+
+    build_err = ERR_SUCCESS;
+    return build_err;
+}
+
+u32 get_path_bin_root_internal(str *path)
+{
+    if (readlink("/proc/self/exe", path, PATH_CAP) < 1)
+    {
+        LOGFATAL(ERR_GET_PATH_BIN_ROOT_FAIL, FALSE,
+                "Failed 'get_path_bin_root()', Process Aborted\n");
+        return build_err;
+    }
+
+    path[strnlen(path, PATH_CAP - 1)] = '\0';
+
+    build_err = ERR_SUCCESS;
+    return build_err;
+}
+
+u32 exec(bt_buf *cmd, str *cmd_name)
+{
+    pid_t pid = fork();
+    int status, exit_code = 0, sig;
+
+    if (pid < 0)
+    {
+        LOGERROR(ERR_PROCESS_FORK_FAIL, TRUE,
+                logger_stringf("Failed to Fork '%s'\n", cmd_name));
+        return build_err;
+    }
+    else if (pid == 0)
+    {
+        execvp((const str*)cmd->i[0], (str *const *)cmd->i);
+        LOGERROR(ERR_EXEC_FAIL, TRUE,
+                logger_stringf("Failed '%s'\n", cmd_name));
+        return build_err;
+    }
+
+    if (waitpid(pid, &status, 0) == -1)
+    {
+        LOGERROR(ERR_WAITPID_FAIL, TRUE,
+                logger_stringf("Failed to Waitpid '%s'\n", cmd_name));
+        return build_err;
+    }
+
+    if (WIFEXITED(status))
+    {
+        exit_code = WEXITSTATUS(status);
+        if (exit_code == 0)
+        {
+            LOGSUCCESS(FALSE,
+                    logger_stringf("'%s' Exit Code: %d\n", cmd_name, exit_code));
+        }
+        else
+        {
+            LOGINFO(TRUE,
+                    logger_stringf("'%s' Exit Code: %d\n", cmd_name, exit_code));
+            build_err = ERR_EXEC_PROCESS_NON_ZERO;
+            return build_err;
+        }
+    }
+    else if (WIFSIGNALED(status))
+    {
+        sig = WTERMSIG(status);
+        LOGFATAL(ERR_EXEC_TERMINATE_BY_SIGNAL, TRUE,
+                logger_stringf("'%s' Terminated by Signal: %d, Process Aborted\n", cmd_name, sig));
+        return build_err;
+    }
+    else
+    {
+        LOGERROR(ERR_EXEC_ABNORMAL_EXIT, TRUE,
+                logger_stringf("'%s' Exited Abnormally\n", cmd_name));
+        return build_err;
+    }
+
+    build_err = ERR_SUCCESS;
+    return build_err;
+}
+
+#endif /* BUILDTOOL_PLATFORM_LINUX_H */

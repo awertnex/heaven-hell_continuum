@@ -1,0 +1,791 @@
+/*  MIT License
+ *
+ *  Copyright (c) 2026 Lily Awertnex
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
+#ifndef BUILDTOOL_H
+#define BUILDTOOL_H
+
+/* ---- section: changelog -------------------------------------------------- */
+
+/*  v1.8.7 (2026 06 07):
+ *      - (2026 06 07): fix version, because I released too quickly to check.
+ */
+
+/*  v1.8.6 (2026 06 07):
+ *      - (2026 06 07): make function `copy_dir()` copy contents or dir itself
+ *                      into destination based on whether destination exists or
+ *                      not, so a directory copied with the same name as a
+ *                      directory inside it won't place it inside that
+ *                      directory.
+ */
+
+/*  v1.8.5 (2026 06 07):
+ *      - (2026 06 07): tidy code-base.
+ *      - (2026 06 07): change all "_<name>" symbol names to "<name>_internal".
+ *      - (2026 06 07): change type `_buf` to `bt_buf`.
+ *      - (2026 06 07): change `printf()` calls to `fprintf()` calls and print
+ *                      everything to `stderr`.
+ *      - (2026 06 07): make function `copy_dir()` copy empty directories.
+ *      - (2026 06 07): remove headers 'limits.h' and 'linux/limits.h',
+ *                      use new limits `NAME_CAP` and `PATH_CAP` instead.
+ *      - (2026 06 07): make function `build_init()` copy all arguments passed
+ *                      so the build command can survive self-rebuild.
+ *      - (2026 06 07): first stable version.
+ */
+
+/*  v1.8.4-beta (2026 04 29):
+ *      - (2026 04 29): Add debug mode for buildtool (via command "btdebug")
+ */
+
+/*  v1.8.3-beta (2026 04 29):
+ *      - (2026 04 29): Add log level 'SUCCESS'
+ *      - (2026 04 29): Add parameter `should_rebuild` to function
+ *                      `self_rebuild()` to enable/disable building software
+ *                      after building self
+ *      - (2026 04 29): Fix C89 pedantic errors:
+ *          - variadic macros (logger macros such as `LOGINFO()` etc..)
+ */
+
+/*  v1.8.2-beta (2026 02 06):
+ *      - (2026 02 06): Add cflag `-Wpedantic` in function `self_rebuild()`
+ *      - (2026 02 06): Add `NULL` termination to function `cmd_exec()`:
+ *          - if `NULL` encountered, no further arguments will be processed
+ *          - if parameter `n` is 0, the function will run till `NULL` is
+ *            encountered
+ */
+
+/*  v1.8.1-beta (2026 01 30):
+ *      - (2026 01 30): Patch dumb error at `copy_file()`: passing
+ *                      `strlen(in_file)` instead of `len`, which made things
+ *                      explode
+ */
+
+/*  v1.8.0-beta (2026 01 30):
+ *      - (2026 01 30): Make functions `cmd_show()` and `cmd_raw()` print only
+ *                      once per build
+ *      - (2026 01 30): Add `show` and `raw` to function `cmd_fail()` to show
+ *                      build command even if failure
+ *      - (2026 01 30): Move functions `make_dir()` and `change_dir()`
+ *                      implementations to file `platform.h`
+ *      - (2026 01 30): Add `bt_mkdir()`, `bt_chdir()`, `bt_stat()` and
+ *                      `bt_chmod()` for platform abstraction
+ *      - (2026 01 30): Treat symlinks as files in function `is_file_exists()`
+ *      - (2026 01 30): Use proper error-handling for function `readlink()` in
+                        function `get_path_bin_root()`
+ *      - (2026 01 30): Truncate string buffer in function `get_path_bin_root()`
+ *      - (2026 01 30): Preserve symlinks when using `copy_file()` and
+ *                      `copy_dir()`
+ *      - (2026 01 29): Add function `get_file_type()`
+ *      - (2026 01 29): Add file `TASKS.md`
+ */
+
+/*  v1.7.0-beta (2026 Jan 29):
+ *      - Change `COMPILER` 'gcc' -> 'cc'
+ *      - Add guards around copying `tv_nsec` in `copy_dir()` and `copy_file()`
+ *      - Improve windows support, just a little bit, it's still shit
+ *      - Initialize all uninitialized values in file 'internal/platform.h'
+ */
+
+/*  v1.6.2 (2026 Jan 28):
+ *      - `copy_dir()` bug fix and new features:
+ *          - Fix parameter `contents_only` not working
+ *          - Copy directory permissions
+ *          - Copy directory access and modification times
+ *      - Add error code `ERR_FILE_STAT_FAIL`
+ *      - New `copy_file()` features:
+ *          - Copy file permissions
+ *          - Copy file access and modification times
+ */
+
+/*  v1.6.1 (2026 Jan 24):
+ *      - Fix segfault when copying file into destination that's a directory without
+ *        specifying the destination file name
+ *      - Add function 'get_base_name()' to get base name of a path
+ */
+
+/*  v1.6 (2026 Jan 24):
+ *      - Remove auto-allocation for '_cmd' in function 'build_init()' so freeing
+ *        it isn't mandatory unless 'cmd_push()' is used
+ *
+ *      - Make function 'cmd_free()' free any cmd, and if NULL, free default cmd
+ *        if allocated
+ *
+ *      - Add example 3: release vs debug builds
+ *      - Move license above ifdef guards
+ */
+
+/*  v1.5 (2026 Jan 23):
+ *      - Make function 'cmd_push()' handle 'NULL' strings safely
+ */
+
+/*  v1.4 (2026 Jan 23):
+ *      - Remove function 'align_up_u64()', not needed
+ *      - Add function 'cmd_init()' that gets called inside 'cmd_push()':
+ *          Checks if cmd is initialized, initializes if not
+ *      - Fix README.md
+ */
+
+/*  v1.3 (2026 Jan 23):
+ *      - Change C standard of build tool 'C99' -> 'C89'
+ */
+
+/*  v1.2 (2026 Jan 23):
+ *      - Add README.md
+ *      - Move buildtool files into a bundle directory
+ *      - Finalize template file 'build.c'
+ */
+
+/*  v1.1 (2026 Jan 23):
+ *      - Add intialization for 'cmd' in function 'cmd_push()' if not already intialized
+ *      - Add examples:
+ *          example1
+ *          example2
+ *      - Fix function 'mem_alloc_buf()' not checking if 'buf' is already allocated
+ */
+
+/*  v1.0 (2026 Jan 23):
+ *      - Initial Commit
+ */
+
+/* ---- section: examples --------------------------------------------------- */
+
+/*  example 1: a single command.
+ *
+ *  - build.c: -----------------------------------------------------------------
+ *      #include "buildtool/buildtool.h"
+ *
+ *      int main(int argc, char **argv)
+ *      {
+ *          if (build_init(argc, argv, "build.c", "build") != 0)
+ *              cmd_fail(NULL); // free resources and return error code
+ *
+ *          cmd_exec(4, // number of arguments, excluding this number (can be 0, but then the final argument must be NULL)
+ *                  "gcc",
+ *                  "examples/example1.c",
+ *                  "-o",
+ *                  "example1",
+ *                  NULL);
+ *
+ *          cmd_free(NULL); // (NULL to free internal resources)
+ *          return 0;
+ *      }
+ *
+ *  - shell: -------------------------------------------------------------------
+ *      gcc build.c -o build
+ *      ./build
+ *
+ *  - or on windows, via mingw:
+ *      gcc.exe build.c -o build.exe
+ *      ./build.exe
+ *
+ *  - output: ------------------------------------------------------------------
+ *      > Hello Example 1
+ */
+
+/*  example 2: load command now, execute later.
+ *
+ *  - build.c: -----------------------------------------------------------------
+ *      #include "buildtool/buildtool.h"
+ *
+ *      int main(int argc, char **argv)
+ *      {
+ *          if (build_init(argc, argv, "build.c", "build") != 0)
+ *              cmd_fail(NULL); // free resources and return error code
+ *
+ *          cmd_push(NULL, // NULL to use internal cmd `cmd_internal`
+ *                  "gcc");
+ *          cmd_push(NULL, "examples/example2_main.c");
+ *          cmd_push(NULL, "examples/example2_util.c");
+ *          cmd_push(NULL, "-o");
+ *          cmd_push(NULL, "example2");
+ *          cmd_ready(NULL); // finalize command (important for configuring based on platform).
+ *
+ *          if (exec(&cmd_internal, "example2_build().cmd_internal") != 0)
+ *              cmd_fail(NULL);
+ *
+ *          cmd_free(NULL); // (NULL to free internal resources)
+ *          return 0;
+ *      }
+ *
+ *  - shell: -------------------------------------------------------------------
+ *      gcc build.c -o build
+ *      ./build
+ *
+ *  - or on windows, via mingw:
+ *      gcc.exe build.c -o build.exe
+ *      ./build.exe
+ *
+ *  - output: ------------------------------------------------------------------
+ *      > Hello Example 2
+ */
+
+/*  example 3: command line arguments (release vs debug builds).
+ *
+ *  - build.c: -----------------------------------------------------------------
+ *      #include "buildtool/buildtool.h"
+ *
+ *      bt_buf cmd = {0}; // the command to execute
+ *
+ *      int main(int argc, char **argv)
+ *      {
+ *          cmd_push(&cmd, COMPILER);
+ *
+ *          if (find_token("release", argc, argv)) // search 'argv' for the argument
+ *              cmd_push(&cmd, "-D_EXAMPLE3_RELEASE_BUILD");
+ *
+ *          cmd_push(&cmd, "examples/example3.c");
+ *          cmd_push(&cmd, "-o");
+ *          cmd_push(&cmd, "example3");
+ *          cmd_ready(&cmd);
+ *
+ *          exec(&cmd, "main().cmd");
+ *          cmd_free(&cmd);
+ *          return 0;
+ *      }
+ *
+ *  - shell: -------------------------------------------------------------------
+ *      gcc build.c -o build
+ *      ./build
+ *
+ *      and:
+ *
+ *      ./build release
+ *
+ *  - or on windows, via mingw:
+ *      gcc.exe build.c -o build.exe
+ *      ./build.exe
+ *
+ *      and:
+ *
+ *      ./build.exe release
+ *
+ *  - output (debug): ----------------------------------------------------------
+ *      > Example 3:
+ *      >     Debug Build
+ *      >     Verbose
+ *      >     Very verbose
+ *      >     Many logs
+ *
+ *  -  output (release):
+ *      > Example 3: Release Build
+ */
+
+#include "internal/common.h"
+#include "internal/platform.h"
+
+/* ---- section: definitions ------------------------------------------------ */
+
+#define BUILDTOOL_VERSION_STABLE    ""
+#define BUILDTOOL_VERSION_BETA      "-beta"
+#define BUILDTOOL_VERSION_ALPHA     "-alpha"
+#define BUILDTOOL_VERSION_DEV       "-dev"
+
+#define BUILDTOOL_VERSION_MAJOR 1
+#define BUILDTOOL_VERSION_MINOR 8
+#define BUILDTOOL_VERSION_PATCH 7
+#define BUILDTOOL_VERSION_BUILD BUILDTOOL_VERSION_STABLE
+
+#define COMPILER "cc"EXE
+#define CMD_MEMB 64
+#define CMD_SIZE 256
+#define ARG_MEMB 64
+#define ARG_SIZE 256
+
+enum build_flag
+{
+    FLAG_CMD_SHOW =         0x0001,
+    FLAG_CMD_RAW =          0x0002,
+    FLAG_SELF_BUILD_DEBUG = 0x0004
+}; /* build_flag */
+
+/* ---- section: declarations ----------------------------------------------- */
+
+/*! @brief project root directory.
+ *
+ *  @remark called from @ref build_init() to change current working dirctory.
+ */
+static str *DIR_BUILDTOOL_BIN_ROOT = NULL;
+
+u32 log_level_max = LOGLEVEL_INFO;
+u32 build_err = ERR_SUCCESS;
+static u32 flag = 0;
+static str str_build_src[CMD_SIZE] = {0};
+static str str_build_bin[CMD_SIZE] = {0};
+static str str_build_bin_new[CMD_SIZE] = {0};
+static str str_build_bin_old[CMD_SIZE] = {0};
+static bt_buf cmd_internal = {0};
+static bt_buf args = {0};
+
+/* ---- section: signatures ------------------------------------------------- */
+
+/*! @brief initialize build.
+ *
+ *  - allocate resources for @ref cmd_internal and other internals.
+ *  - parse commands in `argv`, with no particular order:
+ *      -v, --version   show version and exit.
+ *      help            show help and exit.
+ *      show            show build command in list format.
+ *      raw             show build command in raw format.
+ *      self            build build tool.
+ *  - check if source uses a c-standard other than c89 and re-build with `-std=c89` if true.
+ *  - check if source at `build_bin_name` has changed and rebuild if true.
+ *
+ *  @param argc number of arguments in `argv` if `argv` provided.
+ *  @param argv command line arguments, optional.
+ *
+ *  @oaram build_src_name name of the build source file that's using this header.
+ *  @oaram build_bin_name name of the build binary file that's using this header,
+ *  including extension if needed.
+ *
+ *  @remark must be called before anything in the build tool.
+ *  @remark can force-terminate process.
+ *  @remark return non-zero on failure and @ref build_err is set accordingly.
+ */
+static u32 build_init(int argc, char **argv, const str *build_src_name, const str *build_bin_name);
+
+static u32 is_build_source_changed(void);
+
+/*! @remark can force-terminate process.
+ *
+ *  @param should_rebuild enable/disable re-building application after building self.
+ */
+static void self_rebuild(char **argv, b8 should_rebuild);
+
+/*! @brief allocate, load, execute and free a command as variadic arguments.
+ *
+ *  @param n number of arguments passed.
+ *  @param ... strings to pass into build command.
+ *
+ *  @renark must either have `NULL` as the last argument or `n` be non-zero.
+ *
+ *  @return non-zero on failure and @ref build_err is set accordingly.
+ */
+static u32 cmd_exec(u64 n, ...);
+
+/*! @brief allocate resources for `cmd` if not initialized.
+ *
+ *  @param cmd cmd to initialize, if `NULL`, @ref cmd_internal is used.
+ */
+static void cmd_init(bt_buf *cmd);
+
+/*! @brief push arguments to the build command.
+ *
+ *  @param cmd cmd to push to, if `NULL`, @ref cmd_internal is used.
+ *
+ *  @remark `cmd` will be initialized if it isn't.
+ */
+static void cmd_push(bt_buf *cmd, const str *string);
+
+/*! @brief finalize build command for execution.
+ *
+ *  @param cmd cmd to finalize, if `NULL`, @ref cmd_internal is used.
+ *
+ *  @remark must be called after loading `cmd` with all arguments and before @ref exec().
+ */
+static void cmd_ready(bt_buf *cmd);
+
+static void cmd_free(bt_buf *cmd);
+
+/*! @remark can force-terminate process.
+ *
+ *  @param cmd cmd to show, if `NULL`, @ref cmd_internal is used.
+ */
+static void cmd_fail(bt_buf *cmd);
+
+/*! @brief show build command in list format.
+ *
+ *  @param cmd cmd to show, if `NULL`, @ref cmd_internal is used.
+ */
+static void cmd_show(bt_buf *cmd);
+
+/*! @brief show build command in raw format.
+ *
+ *  @param cmd cmd to show, if `NULL`, @ref cmd_internal is used.
+ */
+static void cmd_raw(bt_buf *cmd);
+
+static void help(void);
+static void print_version(void);
+
+/* ---- section: implementation --------------------------------------------- */
+
+u32 build_init(int argc, char **argv, const str *build_src_name, const str *build_bin_name)
+{
+    u32 i = 0;
+
+    if (find_token("help", argc, argv))
+        help();
+
+    if (
+            find_token("-v", argc, argv) ||
+            find_token("--version", argc, argv))
+        print_version();
+
+    if (!DIR_BUILDTOOL_BIN_ROOT)
+    {
+        DIR_BUILDTOOL_BIN_ROOT = get_path_bin_root();
+        if (!DIR_BUILDTOOL_BIN_ROOT)
+            return build_err;
+        change_dir(DIR_BUILDTOOL_BIN_ROOT);
+    }
+
+    for (i = 0; i < argc; ++i)
+        cmd_push(&args, argv[i]);
+    cmd_ready(&args);
+
+    if (find_token("show", argc, argv))
+        flag |= FLAG_CMD_SHOW;
+
+    if (find_token("raw", argc, argv))
+        flag |= FLAG_CMD_RAW;
+
+    if (find_token("btdebug", argc, argv))
+    {
+        flag |= FLAG_SELF_BUILD_DEBUG;
+        log_level_max = LOGLEVEL_TRACE;
+    }
+
+    snprintf(str_build_src, CMD_SIZE, "%s", build_src_name);
+    posix_slash(str_build_src);
+
+    snprintf(str_build_bin, CMD_SIZE, "%s", build_bin_name);
+    snprintf(str_build_bin_new, CMD_SIZE, "%s_new", build_bin_name);
+    snprintf(str_build_bin_old, CMD_SIZE, "%s_old", build_bin_name);
+
+    if (flag & FLAG_SELF_BUILD_DEBUG || find_token("self", argc, argv))
+    {
+        LOGINFO(FALSE,
+                "Rebuilding Self..\n");
+        self_rebuild((char**)args.i, FALSE);
+    }
+
+    if (STD != 89)
+    {
+        LOGINFO(FALSE,
+                "Rebuilding Self With -std=c89..\n");
+        self_rebuild((char**)args.i, TRUE);
+    }
+
+    if (is_build_source_changed() == ERR_SUCCESS)
+    {
+        LOGINFO(FALSE,
+                "Rebuilding Self..\n");
+        self_rebuild((char**)args.i, TRUE);
+    }
+
+    build_err = ERR_SUCCESS;
+    return build_err;
+}
+
+u32 is_build_source_changed(void)
+{
+    unsigned long mtime_src = 0;
+    unsigned long mtime_bin = 0;
+
+    struct stat stats;
+
+    if (stat(str_build_src, &stats) == 0)
+        mtime_src = stats.st_mtime;
+    else
+    {
+        LOGERROR(ERR_FILE_NOT_FOUND, FALSE,
+                "Build Source File Not Found\n");
+        return build_err;
+    }
+
+    if (stat(str_build_bin, &stats) == 0)
+        mtime_bin = stats.st_mtime;
+    else
+    {
+        LOGERROR(ERR_FILE_NOT_FOUND, FALSE,
+                "File 'build"EXE"' Not Found\n");
+        return build_err;
+    }
+
+    if (mtime_src && mtime_bin && mtime_src > mtime_bin)
+        return ERR_SUCCESS;
+
+    build_err = ERR_SOURCE_NOT_CHANGE;
+    return build_err;
+}
+
+void self_rebuild(char **argv, b8 should_rebuild)
+{
+    cmd_push(&cmd_internal, COMPILER);
+    cmd_push(&cmd_internal, "-std=c89");
+    cmd_push(&cmd_internal, stringf("-ffile-prefix-map=%s=", DIR_BUILDTOOL_BIN_ROOT));
+    if (flag & FLAG_SELF_BUILD_DEBUG)
+    {
+        cmd_push(&cmd_internal, "-Wall");
+        cmd_push(&cmd_internal, "-Wextra");
+        cmd_push(&cmd_internal, "-Wpedantic");
+        cmd_push(&cmd_internal, "-Wformat-truncation=0");
+        cmd_push(&cmd_internal, "-ggdb");
+    }
+    cmd_push(&cmd_internal, str_build_src);
+    cmd_push(&cmd_internal, "-o");
+    cmd_push(&cmd_internal, str_build_bin_new);
+    cmd_ready(&cmd_internal);
+
+    if (exec(&cmd_internal, "self_rebuild()") == ERR_SUCCESS)
+    {
+        LOGSUCCESS(FALSE,
+                "Self Rebuild Success\n");
+        rename(str_build_bin, str_build_bin_old);
+        rename(str_build_bin_new, str_build_bin);
+        remove(str_build_bin_old);
+
+        if (should_rebuild)
+        {
+            execvp(argv[0], (str *const *)argv);
+            LOGFATAL(ERR_EXECVP_FAIL, FALSE,
+                    "'build"EXE"' Failed, Process Aborted\n");
+            cmd_fail(&cmd_internal);
+        }
+        else
+        {
+            cmd_free(&cmd_internal);
+            _exit(ERR_SUCCESS);
+        }
+    }
+
+    LOGFATAL(build_err, FALSE,
+            "Self-Rebuild Failed, Process Aborted\n");
+    cmd_fail(&cmd_internal);
+}
+
+u32 cmd_exec(u64 n, ...)
+{
+    bt_buf cmd = {0};
+    __builtin_va_list va;
+    u64 i = 0;
+    str *temp = NULL;
+
+    cmd_init(&cmd);
+
+    va_start(va, n);
+    if (n)
+    {
+        for (i = 0; i < n; ++i)
+        {
+            temp = va_arg(va, str *);
+            if (temp == NULL) break;
+            cmd_push(&cmd, temp);
+        }
+    }
+    else
+    {
+        for (;;)
+        {
+            temp = va_arg(va, str *);
+            if (temp == NULL) break;
+            cmd_push(&cmd, temp);
+        }
+    }
+    va_end(va);
+
+    cmd_ready(&cmd);
+
+    if (exec(&cmd, "cmd_exec().cmd") != ERR_SUCCESS)
+        goto cleanup;
+
+    mem_free_buf(&cmd, "cmd_exec().cmd");
+
+    build_err = ERR_SUCCESS;
+    return build_err;
+
+cleanup:
+
+    mem_free_buf(&cmd, "cmd_exec().cmd");
+    cmd_fail(&cmd);
+    return build_err;
+}
+
+void cmd_init(bt_buf *cmd)
+{
+    if (!cmd)
+    {
+        LOGFATAL(ERR_POINTER_NULL, TRUE,
+                "Failed to Initialize 'cmd', Pointer NULL, Process Aborted\n");
+        cmd_fail(cmd);
+    }
+
+    if (cmd->loaded)
+        return;
+
+    if (mem_alloc_buf(cmd, CMD_MEMB, CMD_SIZE, "cmd_init().cmd") != ERR_SUCCESS)
+        cmd_fail(cmd);
+}
+
+void cmd_push(bt_buf *cmd, const str *string)
+{
+    bt_buf *cmdp = cmd;
+
+    if (!cmd)
+        cmdp = &cmd_internal;
+
+    cmd_init(cmdp);
+
+    if (!string || !string[0])
+        return;
+
+    if (!cmdp->loaded && mem_alloc_buf(cmdp, CMD_MEMB, CMD_SIZE, "cmd_push().cmdp") != ERR_SUCCESS)
+        cmd_fail(cmdp);
+
+    if (cmdp->cursor >= cmdp->memb)
+    {
+        LOGERROR(ERR_BUFFER_FULL, FALSE,
+                "cmd Full\n");
+        return;
+    }
+
+    if (strlen(string) >= cmdp->size)
+    {
+        LOGERROR(ERR_STRING_TOO_LONG, FALSE,
+                logger_stringf("Failed to Push String '%s' to cmd.i[%"PRIu64"], String Too Long\n", string, cmdp->cursor));
+        return;
+    }
+
+    LOGTRACE(FALSE,
+            logger_stringf("Pushing String '%s' to cmd.i[%"PRIu64"]..\n", string, cmdp->cursor));
+    strncpy(cmdp->i[cmdp->cursor++], string, CMD_SIZE);
+}
+
+void cmd_ready(bt_buf *cmd)
+{
+    bt_buf *cmdp = cmd;
+
+    if (!cmd)
+        cmdp = &cmd_internal;
+
+#if defined(PLATFORM_LINUX)
+    cmdp->i[cmdp->cursor] = NULL;
+#endif
+
+    if (flag & FLAG_CMD_SHOW)
+        cmd_show(cmdp);
+
+    if (flag & FLAG_CMD_RAW)
+        cmd_raw(cmdp);
+}
+
+void cmd_free(bt_buf *cmd)
+{
+    if (!cmd)
+    {
+        mem_free_buf(&cmd_internal, "cmd_free().cmd_internal");
+        mem_free_buf(&args, "cmd_free().args");
+        mem_free((void*)&DIR_BUILDTOOL_BIN_ROOT, CMD_SIZE, "cmd_free().DIR_BUILDTOOL_BIN_ROOT");
+        cmd_internal.cursor = 0;
+        args.cursor = 0;
+    }
+    else
+    {
+        mem_free_buf(cmd, "cmd_free().cmd");
+        cmd->cursor = 0;
+    }
+}
+
+void cmd_fail(bt_buf *cmd)
+{
+    bt_buf *cmdp = cmd;
+
+    if (!cmdp)
+        cmdp = &cmd_internal;
+
+    if (cmdp)
+    {
+        if (flag & FLAG_CMD_SHOW)
+            cmd_show(cmdp);
+
+        if (flag & FLAG_CMD_RAW)
+            cmd_raw(cmdp);
+    }
+
+    cmd_free(cmdp);
+    _exit(build_err);
+}
+
+void cmd_show(bt_buf *cmd)
+{
+    u32 i = 0;
+    bt_buf *cmdp = cmd;
+
+    if (!cmd)
+        cmdp = &cmd_internal;
+
+    flag &= ~FLAG_CMD_SHOW;
+
+    fprintf(stderr, "\nCMD:\n");
+    for (i = 0; i < CMD_MEMB; ++i)
+    {
+        if (!cmdp->i[i]) break;
+        fprintf(stderr, "    %.3d: %s\n", i, (str*)cmdp->i[i]);
+    }
+
+    if (!(flag & FLAG_CMD_RAW))
+        fputc('\n', stderr);
+}
+
+void cmd_raw(bt_buf *cmd)
+{
+    u32 i = 0;
+    bt_buf *cmdp = cmd;
+    if (!cmd)
+        cmdp = &cmd_internal;
+
+    flag &= ~FLAG_CMD_RAW;
+
+    fprintf(stderr, "\nCMD RAW:\n");
+    for (i = 0; i < CMD_MEMB; ++i)
+    {
+        if (!cmdp->i[i]) break;
+        fprintf(stderr, "%s ", (str*)cmdp->i[i]);
+    }
+
+    fprintf(stderr, "%s", "\n\n");
+}
+
+void help(void)
+{
+    fprintf(stderr, "%s",
+            "Usage: ./build [options]...\n"
+            "Options:\n"
+            "    help       print this help\n"
+            "    show       show build command in list format\n"
+            "    raw        show build command in raw format\n"
+            "    self       build build source\n"
+            "    btdebug    build build source in debug mode\n");
+    _exit(ERR_SUCCESS);
+}
+
+void print_version(void)
+{
+    fprintf(stderr, "buildtool - v%u.%u.%u%s\n",
+            BUILDTOOL_VERSION_MAJOR,
+            BUILDTOOL_VERSION_MINOR,
+            BUILDTOOL_VERSION_PATCH,
+            BUILDTOOL_VERSION_BUILD);
+    _exit(ERR_SUCCESS);
+}
+
+#endif /* BUILDTOOL_H */
