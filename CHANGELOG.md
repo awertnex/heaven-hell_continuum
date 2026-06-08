@@ -3,6 +3,14 @@
 - - -
 ## v0.5.0-dev (current)
 
+#### added
+- added inventory container texture.
+- added GUI-scale integration.
+
+#### deprecated
+- deprecated `hhc_chunk.mesh`, now it's `hhc_chunk.mesh_deprecated`,
+  and `hhc_chunk.mesh` is now a mesh pointer.
+
 #### bugs and flaws
 - segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
 - player spawn puts player anywhere, even inside blocks

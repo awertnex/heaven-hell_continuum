@@ -258,8 +258,10 @@ void input_update(hhc_player *p)
                 block_place(p->hit, p->hotbar_slots[p->hotbar_slot_selected]);
             }
 
-            /* TODO: make 'sample_block' (pick block) logic */
-            if (fsl_is_key_press(bind_sample_block)) {}
+            if (fsl_is_key_press(bind_sample_block))
+            {
+                p->hotbar_slots[p->hotbar_slot_selected] = GET_BLOCK_ID(*p->hit.block);
+            }
         }
 
         /* ---- inventory --------------------------------------------------- */

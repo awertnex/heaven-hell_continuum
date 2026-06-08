@@ -4,14 +4,6 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/memory/memory_types.h"
 
-/* ---- settings ------------------------------------------------------------ */
-
-#define MODE_INTERNAL_VSYNC         0
-#define MODE_INTERNAL_LOAD_CHUNKS   1
-#define MODE_INTERNAL_EXPORT_CHUNKS 1
-#define MODE_INTERNAL_IMPORT_CHUNKS 1
-#define MODE_INTERNAL_COLLIDE       1
-
 /* ---- defaults ------------------------------------------------------------ */
 
 #define SET_MARGIN                      10

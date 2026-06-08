@@ -9,6 +9,7 @@
 
 #include "h/game_info.h"
 #include "h/assets.h"
+#include "h/config_internal.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
@@ -147,7 +148,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 16;
+    settings.render_distance = 10;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -324,8 +325,8 @@ static void draw_world(void)
         ch = **cursor;
         if (ch && ch->flag & FLAG_CHUNK_VISIBLE)
         {
-            glBindVertexArray(ch->mesh.vao);
-            glDrawArraysInstanced(GL_POINTS, 0, ch->mesh.vbo_len, 1);
+            glBindVertexArray(ch->mesh_deprecated.vao);
+            glDrawArraysInstanced(GL_POINTS, 0, ch->mesh_deprecated.vbo_len, 1);
         }
     }
 }
@@ -678,6 +679,13 @@ static void draw_everything(void)
                 texture_p[TEXTURE_ITEM_BAR_SELECTED].size.x * 2,
                 texture_p[TEXTURE_ITEM_BAR_SELECTED].size.y * 2,
                 84.5f, 18.0f, 0, 0, 0xffffffff);
+
+        if (state_menu_depth && player.menu_state == STATE_PLAYER_MENU_INVENTORY_SURVIVAL)
+        fsl_ui_draw(&texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL],
+                render->size.x / 2, render->size.y / 2,
+                texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.x * 2,
+                texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.y * 2,
+                177.0f / 2.0f, 177.0f / 2.0f, 0, 0, 0xffffffff);
 
         /* ---- draw item bar items ----------------------------------------- */
 

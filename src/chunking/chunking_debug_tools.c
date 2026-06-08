@@ -77,8 +77,7 @@ u32 chunk_debug_init_internal(fsl_len chunk_count)
 
     glBindVertexArray(chunk_gizmo_loaded.vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_loaded.vbo);
-    glBufferData(GL_ARRAY_BUFFER, settings.chunk_buf_volume * sizeof(v2u32),
-            chunk_gizmo_loaded.p, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, chunk_count * sizeof(v2u32), NULL, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribIPointer(0, 2, GL_UNSIGNED_INT, sizeof(v2u32), (void*)0);
@@ -88,8 +87,7 @@ u32 chunk_debug_init_internal(fsl_len chunk_count)
 
     glBindVertexArray(chunk_gizmo_visible.vao);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_visible.vbo);
-    glBufferData(GL_ARRAY_BUFFER, settings.chunk_buf_volume * sizeof(v2u32),
-            chunk_gizmo_visible.p, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, chunk_count * sizeof(v2u32), NULL, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribIPointer(0, 2, GL_UNSIGNED_INT, sizeof(v2u32), (void*)0);
@@ -104,6 +102,7 @@ u32 chunk_debug_init_internal(fsl_len chunk_count)
     return *GAME_ERR;
 
 cleanup:
+
     chunk_debug_free_internal();
     return *GAME_ERR;
 }
@@ -116,6 +115,7 @@ void chunk_debug_free_internal(void)
         glDeleteBuffers(1, &chunk_gizmo_loaded.vbo);
         glDeleteVertexArrays(1, &chunk_gizmo_loaded.vao);
     }
+
     if (chunk_gizmo_visible.initialized)
     {
         chunk_gizmo_visible.initialized = FALSE;
@@ -163,6 +163,7 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     glUniform3fv(uniform.gizmo_chunk.camera_position, 1, (GLfloat*)&camera_position);
     glUniform1f(uniform.gizmo_chunk.time, render->time);
 
+    glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_BLEND);
     glBindVertexArray(chunk_gizmo_loaded.vao);
     glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);

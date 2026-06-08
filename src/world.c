@@ -11,6 +11,7 @@
 
 #include "chunking/chunking.h"
 
+#include "h/config_internal.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
@@ -191,7 +192,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
     /* ---- TODO: load the rest of world metadata --------------------------- */
 
-    world->tick_start = 7000;
+    world->tick_start = 19000;
     world->days = 0;
     world->drag.x = WORLD_DRAG_AIR;
     world->drag.y = WORLD_DRAG_AIR;

@@ -8,10 +8,10 @@
 
 #include "deps/fossil/h/time.h"
 
-#include "h/main.h"
-
 #include "chunking/chunking.h"
 
+#include "h/main.h"
+#include "h/config_internal.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/player.h"

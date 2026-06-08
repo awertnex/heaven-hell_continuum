@@ -7,6 +7,7 @@
 #include "deps/fossil/h/dir.h"
 
 #include "../h/assets.h"
+#include "../h/config_internal.h"
 #include "../h/common.h"
 #include "../h/diagnostics.h"
 #include "../h/main.h"
@@ -1177,20 +1178,20 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *ch)
         ch->flag |= FLAG_CHUNK_VISIBLE;
         ch->color = CHUNK_GIZMO_COLOR_VISIBLE;
 
-        if (!ch->mesh.initialized)
+        if (!ch->mesh_deprecated.initialized)
         {
-            ch->mesh.initialized = TRUE;
+            ch->mesh_deprecated.initialized = TRUE;
 
             chunk_pos.x = (f32)ch->pos.x * CHUNK_DIAMETER;
             chunk_pos.y = (f32)ch->pos.y * CHUNK_DIAMETER;
             chunk_pos.z = (f32)ch->pos.z * CHUNK_DIAMETER;
 
-            glGenVertexArrays(1, &ch->mesh.vao);
-            glGenBuffers(1, &ch->mesh.vbo);
-            glGenBuffers(1, &ch->mesh.vbo_transform);
+            glGenVertexArrays(1, &ch->mesh_deprecated.vao);
+            glGenBuffers(1, &ch->mesh_deprecated.vbo);
+            glGenBuffers(1, &ch->mesh_deprecated.vbo_transform);
 
-            glBindVertexArray(ch->mesh.vao);
-            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh.vbo);
+            glBindVertexArray(ch->mesh_deprecated.vao);
+            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh_deprecated.vbo);
             glBufferData(GL_ARRAY_BUFFER, (cursor - buf) * sizeof(u64), buf, GL_DYNAMIC_DRAW);
 
             glEnableVertexAttribArray(0);
@@ -1199,7 +1200,7 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *ch)
             glEnableVertexAttribArray(1);
             glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
 
-            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh.vbo_transform);
+            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh_deprecated.vbo_transform);
             glBufferData(GL_ARRAY_BUFFER, sizeof(v3f32), &chunk_pos, GL_STATIC_DRAW);
 
             glEnableVertexAttribArray(2);
@@ -1211,24 +1212,24 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *ch)
         }
         else
         {
-            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh.vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, ch->mesh_deprecated.vbo);
             glBufferData(GL_ARRAY_BUFFER, (cursor - buf) * sizeof(u64), buf, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
-        ch->mesh.vbo_len = cursor - buf;
+        ch->mesh_deprecated.vbo_len = cursor - buf;
     }
     else
     {
         ch->flag &= ~FLAG_CHUNK_VISIBLE;
         ch->color = CHUNK_GIZMO_COLOR_LOADED;
 
-        if (ch->mesh.initialized)
+        if (ch->mesh_deprecated.initialized)
         {
-            ch->mesh.initialized = FALSE;
-            glDeleteBuffers(1, &ch->mesh.vbo_transform);
-            glDeleteBuffers(1, &ch->mesh.vbo);
-            glDeleteVertexArrays(1, &ch->mesh.vao);
+            ch->mesh_deprecated.initialized = FALSE;
+            glDeleteBuffers(1, &ch->mesh_deprecated.vbo_transform);
+            glDeleteBuffers(1, &ch->mesh_deprecated.vbo);
+            glDeleteVertexArrays(1, &ch->mesh_deprecated.vao);
         }
     }
 
@@ -1343,12 +1344,12 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
     {
         if (!(ch->flag & FLAG_CHUNK_LOADED))
         {
-            if (ch->mesh.initialized)
+            if (ch->mesh_deprecated.initialized)
             {
-                ch->mesh.initialized = FALSE;
-                glDeleteBuffers(1, &ch->mesh.vbo_transform);
-                glDeleteBuffers(1, &ch->mesh.vbo);
-                glDeleteVertexArrays(1, &ch->mesh.vao);
+                ch->mesh_deprecated.initialized = FALSE;
+                glDeleteBuffers(1, &ch->mesh_deprecated.vbo_transform);
+                glDeleteBuffers(1, &ch->mesh_deprecated.vbo);
+                glDeleteVertexArrays(1, &ch->mesh_deprecated.vao);
             }
             *ch = nochunk;
 
@@ -1395,19 +1396,19 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 
     LOGERROR(FSL_ERR_BUFFER_FULL,
             FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-            fsl_logger_stringf("'%s'\n", "`chunk_buf` Full"));
+            "Failed to Push to `chunk_buf`, Buffer Full");
 }
 
 void chunk_buf_pop_internal(hhc_chunk *ch)
 {
     u32 index_popped = ch - chunk_buf.p;
 
-    if (ch->mesh.initialized)
+    if (ch->mesh_deprecated.initialized)
     {
-        ch->mesh.initialized = FALSE;
-        glDeleteBuffers(1, &ch->mesh.vbo_transform);
-        glDeleteBuffers(1, &ch->mesh.vbo);
-        glDeleteVertexArrays(1, &ch->mesh.vao);
+        ch->mesh_deprecated.initialized = FALSE;
+        glDeleteBuffers(1, &ch->mesh_deprecated.vbo_transform);
+        glDeleteBuffers(1, &ch->mesh_deprecated.vbo);
+        glDeleteVertexArrays(1, &ch->mesh_deprecated.vao);
     }
 
     ch->flag = 0;

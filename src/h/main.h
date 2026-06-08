@@ -4,8 +4,6 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/engine/engine.h"
 
-#include "common.h"
-
 struct hhc_core
 {
     struct /* flag */
@@ -51,7 +49,7 @@ struct hhc_settings
 
     /* ---- video ----------------------------------------------------------- */
 
-    u32 gui_scale;
+    f32 gui_scale;
     f32 font_size;
     u64 target_fps; /* in nanoseconds */
 
@@ -143,6 +141,5 @@ extern fsl_render *render;
 extern struct hhc_core core;
 extern struct hhc_settings settings;
 extern struct hhc_uniform uniform;
-extern fsl_font *font[FONT_COUNT];
 
 #endif /* HHC_MAIN_H */
