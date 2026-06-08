@@ -1,0 +1,35 @@
+'hhcr' File Format Documentation
+
+Heaven-Hell Continuum Region (.hhcr) File Format:
+    Description:    file format to store chunk data on disk, in regions.
+
+    - each region has one file, it contains 32^3 chunks.
+
+    File Structure:
+
+        [section: main]
+        | - ID                  (4 bytes):  "HHCR"
+        | - version             (4 bytes):  integer value
+
+        [section: chunk offset table]
+        | - ID                  (4 bytes):  "CTAB"
+        | - offset              (4 bytes):  offset of array 'blocks' into file, in bytes
+        | - table hash          (8 bytes):  hash of all entries in table, byte by byte
+        | - table        [32768][8 bytes]:  1-based index of chunks into region
+        |   | - indices are 1-based so that '0' can mean 'not generated'
+
+        [section: raw chunk data]
+        | - ID                  (4 bytes):  "DATA"
+        | - region[32768]:
+        |   | - ID              (8 bytes):  0x0000xxxxyyyyzzzz
+        |   |   | - derived from position in world, in chunk space
+        |   | - size            (4 bytes):  size of entire chunk, in bytes, after compression
+        |   |   | - used to track offset to avoid fragmentation and overwrites of following chunks
+        |   | - blocks [0, 4096][2 bytes]:
+        |   |   | - if none, the chunk wasn't generated
+        |   |   | - if '0x8000 0x1000', the chunk is empty
+        |   |   | - block data:             31 (00000000 00000000 00111111 11111111) 00
+        |   |   | - block ID:               31 (00000000 00000000 00000011 11111111) 00
+        |   |   | - block state:            31 (00000000 00000000 00111100 00000000) 00
+        |   |   | - block RLE:              31 (00000000 00000000 10000000 00000000) 00
+        |   |   |   | - RLE:    (4 bytes):  run length, after the block's bytes

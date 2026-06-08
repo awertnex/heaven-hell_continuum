@@ -1,10 +1,15 @@
 # changelog
 
-## v0.4.0-dev (current)
+- - -
+## v0.5.0-beta (2026 06 08)
 
 #### changes
+- added world-saving (chunks are just dumped to disk and retrieved on
+  world-load, but at least they're compressed using RLE)
+- added inventory item displays (no textures yet)
+- added debug info about targeted block
 - changed c standard from c99 -> c89
-- updated engine version to `fossil_engine v0.7.0-beta`
+- updated engine version to `fossil_engine v0.10.0-beta`
 - fixed engine build tool not copying required libraries to deployment directory
 - improved logging of commands:
     - chunk boundary toggling commands
@@ -37,11 +42,27 @@
 - added function 'fsl_shader_free()' to unload individual shaders
 - added mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to scroll)
 - removed the engine, then added the engine back to the repository as a dependency
-- updated buildtool version to `v1.8.1-beta`
+- updated buildtool version to `v1.8.7`
 
 #### bugs and flaws
 - segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
+- player spawn puts player anywhere, even inside blocks
+- collision is broken:
+    - blocks tug on player
+    - player collides with imaginary blocks near actual blocks
+    - flying at blocks at high speed results in a floating point exception (segfault)
+- physics have been disabled, now the player glides across blocks and flies
+  with no drag except for natural air drag (very annoying)
+- block-breaking is instant, and it's a press-event, not a hold-event,
+  same for block-placement
+- camera mode 'stalker' doesn't pick a block to rest on and follow player,
+  it just becomes stationary, but does follow player
+- camera mode 'spectator' not implemented (it's supposed to exit player and
+  move freely like a drone)
+- 'Sample Block' not implemented
+- block light is hard-coded, for now
 
+- - -
 ## v0.4.0-beta (18 Jan 2026)
 
 #### changes

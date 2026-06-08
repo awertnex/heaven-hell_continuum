@@ -7,6 +7,7 @@
 #include "../h/common.h"
 
 #include "chunk_scheduler.h"
+#include "chunking.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
@@ -121,6 +122,13 @@ u32 chunks_max_init_internal(void);
 u32 chunk_order_init_internal(void);
 
 /*!
+ *  @brief initialize resources required by chunk debug tools.
+ */
+u32 chunk_debug_init_internal(fsl_len chunk_count);
+
+void chunk_debug_free_internal(void);
+
+/*!
  *  @brief get block faces based on neighboring blocks.
  *
  *  @return block with modified faces.
@@ -210,6 +218,6 @@ u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, chunk_scheduler_id
 void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
         b8 should_push, b8 should_pop);
 
-void chunk_gizmo_write_internal(hhc_chunk *ch);
+void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *ch);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */

@@ -1,4 +1,4 @@
-# Heaven/Hell Continuum
+# Heaven/Hell Continuum - v0.5.0-beta
 
 <h1 align="center">
   <img src="assets/textures/logo/128x128.png" alt="Heaven-Hell Continuum">
@@ -10,14 +10,14 @@
 
 \# | Linux x86_64 (latest) | Windows (latest)
 --- | --- | ---
-tar | [v0.3.0-beta-linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.tar.gz)
-zip | [v0.3.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.3.0-beta/heaven-hell_continuum-v0.3.0-beta-linux-x86_64.zip) | not yet available
+tar | [v0.5.0-beta-linux-x86_64.tar.gz](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.5.0-beta/heaven-hell_continuum-v0.5.0-beta-linux-x86_64.tar.gz)
+zip | [v0.5.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_continuum/releases/download/v0.5.0-beta/heaven-hell_continuum-v0.5.0-beta-linux-x86_64.zip) | not yet available
 [All Release Builds](https://github.com/awertnex/heaven-hell_continuum/blob/main/RELEASE_BUILDS.md)
 
 ## Dependencies (already bundled)
 
-- [buildtool v1.7.0-beta](https://github.com/awertnex/buildtool): build tool used to build the game
-- [fossil_engine v0.4.0-beta](https://github.com/awertnex/fossil_engine): engine that originated from this game, now is standalone
+- [buildtool v1.8.7-beta](https://github.com/awertnex/buildtool): build tool used to build the game
+- [fossil_engine v0.10.0-beta](https://github.com/awertnex/fossil_engine): engine that originated from this game, now is standalone
 - [glfw v3.4](https://github.com/glfw/glfw/releases): platform-independent windowing (headers modified)
 - [glad v0.1.36](https://github.com/dav1dde/glad-web): OpenGL function loader (modified)
     - extension: GL_ARB_bindless_texture
@@ -40,7 +40,7 @@ zip | [v0.3.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_con
 
 >**NOTES:**
 >- for release build, pass argument "release" into the build tool.
->- if build successful, you can place the built directory 'Heaven-Hell Continuum' anywhere you wish, that's the entire bundle.
+>- if build successful, you can place the built directory 'Heaven-Hell Continuum' anywhere you wish, that's the entire game.
 
 - - -
 ### for linux x86_64:
@@ -72,6 +72,7 @@ cc build.c -o build
 - `./build raw`: show build command in raw format
 - `./build self`: re-build build tool
 - `./build release`: build as release
+- `./build btdebug`: show debug info for buildtool
 
 - - -
 ### for windows (using any C compiler, a suggestion is "gcc" from "mingw"): (it is very broken)
@@ -106,6 +107,7 @@ cc.exe build.c -o build.exe
 - `./build.exe raw`: show build command in raw format
 - `./build.exe self`: re-build build tool
 - `./build.exe release`: build as release
+- `./build.exe btdebug`: show debug info for buildtool
 
 ## Contributing:
 currently not accepting contributions since the project is in an early stage, but I will be opening contributions soon (saying this as of today: 24 Oct 2025)

@@ -48,10 +48,10 @@ int main(int argc, char **argv)
 {
     u32 i = 0;
 
-    LOGWARNING(0, FALSE, "THIS VERSION SAVES CHUNKS AS SEPARATE FILES ON DISK, VERY DISK-HEAVY AND PERFORMANCE INTENSIVE\n\n");
-
     /* if error, will fail and exit */
     build_init(argc, argv, "build.c", "build"EXE);
+
+    LOGWARNING(0, FALSE, "THIS VERSION SAVES CHUNKS AS SEPARATE FILES ON DISK, VERY DISK-HEAVY AND PERFORMANCE INTENSIVE\n\n");
 
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
         return build_err;
