@@ -15,6 +15,7 @@
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/input.h"
+#include "h/main.h"
 #include "h/player.h"
 #include "h/world.h"
 
@@ -103,11 +104,11 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
             fsl_clamp_f64(player.camera.zoom + yoffset * FSL_CAMERA_ZOOM_SPEED, 0.0f, FSL_CAMERA_ZOOM_MAX);
     else
     {
-        player.hotbar_slot_selected -= (i64)yoffset;
-        if (player.hotbar_slot_selected >= PLAYER_HOTBAR_SLOTS_MAX)
+        player.hotbar_slot_selected += (i64)yoffset;
+        if (player.hotbar_slot_selected >= CONTAINER_HOTBAR_SLOTS_MAX)
             player.hotbar_slot_selected = 0;
         else if (player.hotbar_slot_selected < 0)
-            player.hotbar_slot_selected = PLAYER_HOTBAR_SLOTS_MAX - 1;
+            player.hotbar_slot_selected = CONTAINER_HOTBAR_SLOTS_MAX - 1;
     }
 }
 
@@ -148,7 +149,7 @@ static u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 10;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
@@ -168,7 +169,7 @@ static u32 settings_init(void)
 
     settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
-    settings.gui_scale = SET_GUI_SCALE_DEFAULT;
+    settings.gui_scale = 12;
     settings.font_size = 20.0f;
     settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
@@ -279,16 +280,69 @@ static void bind_shader_uniforms(void)
 static void draw_hotbar_items(void)
 {
     u32 i = 0;
+    f32 scale = settings.gui_scale;
+    f32 item_bar_item_stride = 0.0f;
+    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+
+    if (!core.flag.hud)
+        return;
+
+    if (!core.flag.debug)
+    {
+        /* size is half because texture size is 16 instead of eight, because
+         * we need better resolution for the proper thickness but it should
+         * be eight pixels high at gui-scale of 1.
+         */
+        fsl_ui_draw(&texture_p[TEXTURE_CROSSHAIR], render->size.x / 2, render->size.y / 2,
+                (texture_p[TEXTURE_CROSSHAIR].size.x * scale) / 2,
+                (texture_p[TEXTURE_CROSSHAIR].size.y * scale) / 2,
+                0.0f, 0.0f, -1, -1, 0xffffffff);
+    }
+
+    fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR], render->size.x / 2, render->size.y,
+            texture_p[TEXTURE_ITEM_BAR].size.x * scale,
+            texture_p[TEXTURE_ITEM_BAR].size.y * scale,
+            84.5f, 18.0f, 0, 0, 0xffffffff);
+
+    /* ---- draw item bar items --------------------------------------------- */
+
+    fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR_SELECTED],
+            render->size.x / 2 - settings.gui_scale + player.hotbar_slot_selected * 17 * scale,
+            render->size.y - settings.gui_scale,
+            texture_p[TEXTURE_ITEM_BAR_SELECTED].size.x * scale,
+            texture_p[TEXTURE_ITEM_BAR_SELECTED].size.y * scale,
+            84.5f, 18.0f, 0, 0, 0xffffffff);
 
     gui_start_ui_items();
 
-    for (i = 0; i < PLAYER_HOTBAR_SLOTS_MAX; ++i)
+    for (i = 0; i < CONTAINER_HOTBAR_SLOTS_MAX; ++i)
     {
-        if (player.hotbar_slots[i])
+        if (player.hotbar_slots[i].id)
         {
-            gui_draw_ui_item(player.hotbar_slots[i],
-                    i * 34.0f + (f32)render->size.x / 2.0f - 84.5f * 2.0f,
-                    4.0f);
+            item_bar_item_stride = i * 17.0f * scale + (f32)render->size.x / 2.0f - 84.5f * scale;
+
+            gui_draw_ui_item(player.hotbar_slots[i].id,
+                    item_bar_item_stride, 2.0f * scale);
+        }
+    }
+
+    /* ---- draw menus n whatnot -------------------------------------------- */
+
+    fsl_ui_start(FALSE, FALSE);
+
+    if (state_menu_depth)
+    {
+        /* ---- draw container inventory survival --------------------------- */
+
+        switch (player.menu_state)
+        {
+            case STATE_PLAYER_MENU_INVENTORY_SURVIVAL:
+                fsl_ui_draw(&texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL],
+                        render->size.x / 2, render->size.y / 2,
+                        texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.x * scale,
+                        texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.y * scale,
+                        177.0f / 2.0f, 177.0f / 2.0f, 0, 0, 0xffffffff);
+                break;
         }
     }
 }
@@ -661,36 +715,7 @@ static void draw_everything(void)
 
     fsl_ui_start(FALSE, TRUE);
 
-    if (core.flag.hud)
-    {
-        if (!core.flag.debug)
-            fsl_ui_draw(&texture_p[TEXTURE_CROSSHAIR], render->size.x / 2, render->size.y / 2,
-                    0, 0,
-                    0.0f, 0.0f, -1, -1, 0xffffffff);
-
-        fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR], render->size.x / 2, render->size.y,
-                texture_p[TEXTURE_ITEM_BAR].size.x * 2,
-                texture_p[TEXTURE_ITEM_BAR].size.y * 2,
-                84.5f, 18.0f, 0, 0, 0xffffffff);
-
-        fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR_SELECTED],
-                render->size.x / 2 - 2 + player.hotbar_slot_selected * 34,
-                render->size.y - 2,
-                texture_p[TEXTURE_ITEM_BAR_SELECTED].size.x * 2,
-                texture_p[TEXTURE_ITEM_BAR_SELECTED].size.y * 2,
-                84.5f, 18.0f, 0, 0, 0xffffffff);
-
-        if (state_menu_depth && player.menu_state == STATE_PLAYER_MENU_INVENTORY_SURVIVAL)
-        fsl_ui_draw(&texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL],
-                render->size.x / 2, render->size.y / 2,
-                texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.x * 2,
-                texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.y * 2,
-                177.0f / 2.0f, 177.0f / 2.0f, 0, 0, 0xffffffff);
-
-        /* ---- draw item bar items ----------------------------------------- */
-
-        draw_hotbar_items();
-    }
+    draw_hotbar_items();
 
     /* ---- draw debug info ------------------------------------------------- */
 

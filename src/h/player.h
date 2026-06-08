@@ -8,10 +8,9 @@
 #include "deps/fossil/physics/physics_types.h"
 
 #include "raycast.h"
+#include "container.h"
 
 #define PLAYER_REACH_DISTANCE_MAX   5.0f
-#define PLAYER_HOTBAR_SLOTS_MAX     10
-#define PLAYER_INVENTORY_SLOTS_MAX  (PLAYER_HOTBAR_SLOTS_MAX * 4)
 
 #define PLAYER_EYE_HEIGHT           1.55f
 #define PLAYER_JUMP_HEIGHT          1.5f
@@ -130,8 +129,8 @@ typedef struct hhc_player
      */
     i32 hotbar_slot_selected;
 
-    u32 hotbar_slots[PLAYER_HOTBAR_SLOTS_MAX];
-    u32 inventory_slots[PLAYER_INVENTORY_SLOTS_MAX];
+    hhc_container_slot hotbar_slots[CONTAINER_HOTBAR_SLOTS_MAX];
+    hhc_container_slot inventory_slots[CONTAINER_INVENTORY_SLOTS_MAX];
 
     fsl_bounding_box bbox;
     u32 death; /* enum @ref player_death_reason */

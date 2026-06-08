@@ -5,6 +5,7 @@
 
 #include "deps/fossil/input/input.h"
 
+#include "container.h"
 #include "player.h"
 
 /* ---- movement ------------------------------------------------------------ */
@@ -31,7 +32,7 @@ extern fsl_key_bind bind_inventory;
 /*!
  *  @remark two arrays for number keys and numberpad keys.
  */
-extern fsl_key_bind bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX];
+extern fsl_key_bind bind_hotbar[2][CONTAINER_HOTBAR_SLOTS_MAX];
 
 /* ---- misc ---------------------------------------------------------------- */
 

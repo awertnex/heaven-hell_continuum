@@ -40,7 +40,7 @@ fsl_key_bind bind_build_or_use = {0};
 
 fsl_key_bind bind_drop_item = {0};
 fsl_key_bind bind_inventory = {0};
-fsl_key_bind bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX] = {0};
+fsl_key_bind bind_hotbar[2][CONTAINER_HOTBAR_SLOTS_MAX] = {0};
 
 /* ---- miscellaneous ------------------------------------------------------- */
 
@@ -255,22 +255,21 @@ void input_update(hhc_player *p)
 
             if (fsl_is_mouse_press(bind_build_or_use))
             {
-                block_place(p->hit, p->hotbar_slots[p->hotbar_slot_selected]);
+                block_place(p->hit, p->hotbar_slots[p->hotbar_slot_selected].id);
             }
 
             if (fsl_is_key_press(bind_sample_block))
             {
-                p->hotbar_slots[p->hotbar_slot_selected] = GET_BLOCK_ID(*p->hit.block);
+                p->hotbar_slots[p->hotbar_slot_selected].id = GET_BLOCK_ID(*p->hit.block);
             }
         }
 
         /* ---- inventory --------------------------------------------------- */
 
-        for (i = 0; i < PLAYER_HOTBAR_SLOTS_MAX; ++i)
+        for (i = 0; i < CONTAINER_HOTBAR_SLOTS_MAX; ++i)
         {
             if (fsl_is_key_press(bind_hotbar[0][i]) || fsl_is_key_press(bind_hotbar[1][i]))
-                p->hotbar_slot_selected = 
-                    fsl_mod_i32(i - 1, PLAYER_HOTBAR_SLOTS_MAX);
+                p->hotbar_slot_selected = fsl_mod_i32(i - 1, CONTAINER_HOTBAR_SLOTS_MAX);
         }
 
         if (fsl_is_key_press(bind_inventory))

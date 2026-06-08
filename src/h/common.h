@@ -18,12 +18,12 @@
 #define SET_MOUSE_SENSITIVITY_DEFAULT   100
 #define SET_MOUSE_SENSITIVITY_MIN       10
 #define SET_MOUSE_SENSITIVITY_MAX       200
-#define SET_GUI_SCALE_DEFAULT           2
 #define SET_GUI_SCALE_0                 0 /* TODO: auto gui scale */
 #define SET_GUI_SCALE_1                 1
 #define SET_GUI_SCALE_2                 2
 #define SET_GUI_SCALE_3                 3
 #define SET_GUI_SCALE_4                 4
+#define SET_GUI_SCALE_DEFAULT           SET_GUI_SCALE_2
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f

@@ -50,14 +50,23 @@ u32 player_init(hhc_player *p, const str *name)
     p->camera_distance = SET_CAMERA_DISTANCE_MAX;
 
     p->menu_state = 0;
-    p->hotbar_slots[0] = BLOCK_GRASS;
-    p->hotbar_slots[1] = BLOCK_DIRT;
-    p->hotbar_slots[2] = BLOCK_STONE;
-    p->hotbar_slots[3] = BLOCK_SAND;
-    p->hotbar_slots[4] = BLOCK_GLASS;
-    p->hotbar_slots[5] = BLOCK_WOOD_OAK_LOG;
-    p->hotbar_slots[6] = BLOCK_WOOD_BIRCH_LOG;
-    p->hotbar_slots[7] = BLOCK_WOOD_CHERRY_LOG;
+    p->hotbar_slots[0].id = BLOCK_GRASS;
+    p->hotbar_slots[1].id = BLOCK_DIRT;
+    p->hotbar_slots[2].id = BLOCK_STONE;
+    p->hotbar_slots[3].id = BLOCK_SAND;
+    p->hotbar_slots[4].id = BLOCK_GLASS;
+    p->hotbar_slots[5].id = BLOCK_WOOD_OAK_LOG;
+    p->hotbar_slots[6].id = BLOCK_WOOD_BIRCH_LOG;
+    p->hotbar_slots[7].id = BLOCK_WOOD_CHERRY_LOG;
+
+    p->hotbar_slots[0].count = 1;
+    p->hotbar_slots[1].count = 1;
+    p->hotbar_slots[2].count = 1;
+    p->hotbar_slots[3].count = 1;
+    p->hotbar_slots[4].count = 1;
+    p->hotbar_slots[5].count = 1;
+    p->hotbar_slots[6].count = 1;
+    p->hotbar_slots[7].count = 1;
 
     p->camera.fovy = settings.fov;
     p->camera.fovy_smooth = 0.0f;

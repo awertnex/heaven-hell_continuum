@@ -15,9 +15,9 @@
 #include <string.h>
 #include <math.h>
 
-#define UI_ITEM_PITCH -20.0f
+#define UI_ITEM_PITCH -25.0f
 #define UI_ITEM_YAW 50.0f
-#define UI_ITEM_SCALE 32.0f
+#define UI_ITEM_SCALE 16.0f
 
 struct /* ui_item_data_internal */
 {
@@ -132,16 +132,16 @@ void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y)
     rotation_yaw.a33 = 1.0f;
     rotation_yaw.a44 = 1.0f;
 
-    scale.a11 = 1.0f;
-    scale.a22 = 1.0f;
-    scale.a33 = 1.0f;
+    scale.a11 = settings.gui_scale;
+    scale.a22 = settings.gui_scale;
+    scale.a33 = settings.gui_scale;
     scale.a44 = render->size.y / UI_ITEM_SCALE;
 
     offset.a11 = 1.0f;
     offset.a22 = 1.0f;
     offset.a33 = 1.0f;
-    offset.a41 = ((f32)(-render->size.x + UI_ITEM_SCALE) / 2.0 + pos_x) * render->ndc_scale.x;
-    offset.a42 = ((f32)(-render->size.y + UI_ITEM_SCALE) / 2.0 + pos_y) * render->ndc_scale.y;
+    offset.a41 = ((f32)(-render->size.x + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_x) * render->ndc_scale.x;
+    offset.a42 = ((f32)(-render->size.y + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_y) * render->ndc_scale.y;
     offset.a44 = 1.0f;
 
     /* 3D space */
