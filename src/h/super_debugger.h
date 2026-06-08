@@ -1,7 +1,9 @@
-#ifndef GAME_SUPER_DEBUGGER_H
-#define GAME_SUPER_DEBUGGER_H
+#ifndef HHC_SUPER_DEBUGGER_H
+#define HHC_SUPER_DEBUGGER_H
 
-#include <engine/h/types.h>
+#include "deps/fossil/common/types.h"
+#include "deps/fossil/math/vector.h"
+
 #include "gui.h"
 
 #define SDB_ROW_HEIGHT  22
@@ -33,4 +35,4 @@ void init_super_debugger(v2f32 render_size);
 void free_super_debugger();
 void draw_super_debugger(v2f32 render_size);
 
-#endif /* GAME_SUPER_DEBUGGER_H */
+#endif /* HHC_SUPER_DEBUGGER_H */

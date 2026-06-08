@@ -1,32 +1,61 @@
-#ifndef GAME_ASSETS_H
-#define GAME_ASSETS_H
+#ifndef HHC_ASSETS_H
+#define HHC_ASSETS_H
 
-#include <engine/h/types.h>
-#include <engine/h/limits.h>
-#include "dir.h"
+#include "deps/fossil/common/types.h"
+#include "deps/fossil/assets/asset_types.h"
+#include "deps/fossil/memory/memory_types.h"
 
-enum BlockTexture
+#define FRICTION_BLOCK_SLIPPERY 0.02f
+#define FRICTION_BLOCK_WET      0.1f
+#define FRICTION_BLOCK_HARD     0.6f
+
+enum shader_index
 {
-    BLOCK_TEXTURE_GRASS_SIDE,
-    BLOCK_TEXTURE_GRASS_TOP,
-    BLOCK_TEXTURE_DIRT,
-    BLOCK_TEXTURE_DIRTUP,
-    BLOCK_TEXTURE_STONE,
-    BLOCK_TEXTURE_SAND,
-    BLOCK_TEXTURE_GLASS,
-    BLOCK_TEXTURE_WOOD_BIRCH_LOG_SIDE,
-    BLOCK_TEXTURE_WOOD_BIRCH_LOG_TOP,
-    BLOCK_TEXTURE_WOOD_BIRCH_PLANKS,
-    BLOCK_TEXTURE_WOOD_CHERRY_LOG_SIDE,
-    BLOCK_TEXTURE_WOOD_CHERRY_LOG_TOP,
-    BLOCK_TEXTURE_WOOD_CHERRY_PLANKS,
-    BLOCK_TEXTURE_WOOD_OAK_LOG_SIDE,
-    BLOCK_TEXTURE_WOOD_OAK_LOG_TOP,
-    BLOCK_TEXTURE_WOOD_OAK_PLANKS,
-    BLOCK_TEXTURE_COUNT,
-}; /* BlockTexture */
+    SHADER_SKYBOX,
+    SHADER_GIZMO_AXIS,
+    SHADER_GIZMO_CHUNK,
+    SHADER_POST_PROCESSING,
+    SHADER_VOXEL,
+    SHADER_BOUNDING_BOX,
+    SHADER_COUNT
+}; /* shader_index */
 
-typedef enum BlockID
+enum texture_index
+{
+    TEXTURE_CROSSHAIR,
+    TEXTURE_ITEM_BAR,
+    TEXTURE_ITEM_BAR_SELECTED,
+    TEXTURE_SKYBOX_VAL,
+    TEXTURE_SKYBOX_HORIZON,
+    TEXTURE_SKYBOX_STARS,
+    TEXTURE_SUN,
+    TEXTURE_MOON,
+    TEXTURE_COUNT
+}; /* texture_index */
+
+enum texture_block_index
+{
+    TEXTURE_BLOCK_GRASS_SIDE,
+    TEXTURE_BLOCK_GRASS_TOP,
+    TEXTURE_BLOCK_DIRT,
+    TEXTURE_BLOCK_DIRTUP,
+    TEXTURE_BLOCK_STONE,
+    TEXTURE_BLOCK_SAND,
+    TEXTURE_BLOCK_GLASS,
+    TEXTURE_BLOCK_WOOD_BIRCH_LOG_SIDE,
+    TEXTURE_BLOCK_WOOD_BIRCH_LOG_TOP,
+    TEXTURE_BLOCK_WOOD_BIRCH_PLANKS,
+    TEXTURE_BLOCK_WOOD_CHERRY_LOG_SIDE,
+    TEXTURE_BLOCK_WOOD_CHERRY_LOG_TOP,
+    TEXTURE_BLOCK_WOOD_CHERRY_PLANKS,
+    TEXTURE_BLOCK_WOOD_OAK_LOG_SIDE,
+    TEXTURE_BLOCK_WOOD_OAK_LOG_TOP,
+    TEXTURE_BLOCK_WOOD_OAK_PLANKS,
+    TEXTURE_BLOCK_BLOOD,
+    TEXTURE_BLOCK_COUNT
+}; /* texture_block_index */
+
+enum block_id
 {
     BLOCK_NONE,
     BLOCK_GRASS,
@@ -41,37 +70,46 @@ typedef enum BlockID
     BLOCK_WOOD_CHERRY_PLANKS,
     BLOCK_WOOD_OAK_LOG,
     BLOCK_WOOD_OAK_PLANKS,
-    BLOCK_COUNT,
-} BlockID;
+    BLOCK_BLOOD,
+    BLOCK_COUNT
+}; /* block_id */
 
-typedef enum BlockState
+enum block_state
 {
-    BLOCK_STATE_SOLID = 1,
-} BlockState;
+    BLOCK_STATE_SOLID = 1
+}; /* block_state */
 
-typedef struct Block
+typedef struct block
 {
-    str name[NAME_MAX];
-    BlockState state;
+    fsl_asset asset;
     u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
-} Block;
+    enum block_state state;
+    f32 friction;
+} block;
 
-extern Block *blocks;
+extern fsl_mem_handle texture;
+extern fsl_mem_handle fbo;
+extern fsl_mem_handle mesh;
+extern fsl_mem_handle shader;
+extern fsl_mem_handle blocks;
 
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+/*!
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 assets_init(void);
 
 void assets_free(void);
 
-/*! @param index = index into global array 'block_textures'.
+/*!
+ *  @param index index into @ref block_textures.
  *
- *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 block_texture_init(u32 index, v2i32 size, str *name);
+u32 block_texture_init(u32 index, const fsl_name *name, const fsl_name_id *name_id, const fsl_file *file);
 
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+/*!
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 void blocks_init(void);
 
-#endif /* GAME_ASSETS_H */
+#endif /* HHC_ASSETS_H */

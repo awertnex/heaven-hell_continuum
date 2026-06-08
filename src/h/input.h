@@ -1,58 +1,82 @@
-#ifndef GAME_INPUT_H
-#define GAME_INPUT_H
+#ifndef HHC_INPUT_H
+#define HHC_INPUT_H
 
-#include <engine/h/core.h>
-#include <engine/h/types.h>
-#include "main.h"
+#include "deps/fossil/common/types.h"
+
+#include "deps/fossil/input/input.h"
+
+#include "player.h"
 
 /* ---- movement ------------------------------------------------------------ */
 
-extern u32 bind_walk_forward;
-extern u32 bind_walk_backward;
-extern u32 bind_strafe_left;
-extern u32 bind_strafe_right;
-extern u32 bind_jump;
-extern u32 bind_sprint;
-extern u32 bind_sneak;
+extern fsl_key_bind bind_walk_forward;
+extern fsl_key_bind bind_walk_backward;
+extern fsl_key_bind bind_strafe_left;
+extern fsl_key_bind bind_strafe_right;
+extern fsl_key_bind bind_jump;
+extern fsl_key_bind bind_sprint;
+extern fsl_key_bind bind_sneak;
 
 /* ---- gameplay ------------------------------------------------------------ */
 
-extern u32 bind_attack_or_destroy;
-extern u32 bind_sample_block;
-extern u32 bind_build_or_use;
+extern fsl_key_bind bind_attack_or_destroy;
+extern fsl_key_bind bind_sample_block;
+extern fsl_key_bind bind_build_or_use;
 
 /* ---- inventory ----------------------------------------------------------- */
 
-/* extern u32 bind_drop_item; */
-extern u32 bind_hotbar[SET_HOTBAR_SLOTS_MAX];
-extern u32 bind_hotbar_kp[SET_HOTBAR_SLOTS_MAX];
-extern u32 bind_inventory;
+/* extern fsl_key_bind bind_drop_item; */
+extern fsl_key_bind bind_inventory;
+
+/*!
+ *  @remark two arrays for number keys and numberpad keys.
+ */
+extern fsl_key_bind bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX];
 
 /* ---- misc ---------------------------------------------------------------- */
 
-/* extern u32 bind_take_screenshot; */
-extern u32 bind_toggle_hud;
-extern u32 bind_toggle_debug;
-extern u32 bind_toggle_super_debug;
-/* extern u32 bind_toggle_cinematic_camera; */
-/* extern u32 bind_toggle_fullscreen; */
-extern u32 bind_toggle_perspective;
-extern u32 bind_toggle_zoom;
-/* extern u32 bind_pause; */
-/* extern u32 bind_chat_or_command; */
+extern fsl_key_bind bind_toggle_hud;
+extern fsl_key_bind bind_take_screenshot;
+extern fsl_key_bind bind_toggle_debug;
+extern fsl_key_bind bind_toggle_cinematic_motion;
+extern fsl_key_bind bind_toggle_perspective;
+/* extern fsl_key_bind bind_toggle_fullscreen; */
+extern fsl_key_bind bind_zoom;
+extern fsl_key_bind bind_toggle_flashlight;
+/* extern fsl_key_bind bind_pause; */
+/* extern fsl_key_bind bind_chat_or_command; */
+extern fsl_key_bind bind_reload_shaders;
 
 /* ---- debug --------------------------------------------------------------- */
 
-/* TODO: navigate menus with arrow keys */
-/* extern u32 bind_left; */
-/* extern u32 bind_right; */
-/* extern u32 bind_down; */
-/* extern u32 bind_up; */
-extern u32 bind_debug_mod;
-extern u32 bind_toggle_trans_blocks;
-extern u32 bind_toggle_chunk_bounds;
-extern u32 bind_toggle_bounding_boxes;
-extern u32 bind_toggle_chunk_gizmo;
-extern u32 bind_toggle_chunk_queue_visualizer;
+/* TODO: navigate menus with arrow keys.
+ */
+/* extern fsl_key_bind bind_left; */
+/* extern fsl_key_bind bind_right; */
+/* extern fsl_key_bind bind_down; */
+/* extern fsl_key_bind bind_up; */
 
-#endif /* GAME_INPUT_H */
+extern u32 bind_debug_mod;
+extern fsl_key_bind bind_toggle_super_debug;
+extern fsl_key_bind bind_toggle_trans_blocks;
+extern fsl_key_bind bind_toggle_chunk_bounds;
+extern fsl_key_bind bind_toggle_bounding_boxes;
+extern fsl_key_bind bind_toggle_chunk_gizmo;
+extern fsl_key_bind bind_toggle_chunk_scheduler_visualizer;
+
+/*!
+ *  @brief setup all key binding values and rules.
+ */
+void input_init(void);
+
+/*!
+ *  @brief update input from keyboard.
+ *
+ *  handle all key binds listed above and perform their logic on mostly `p->flag`.
+ *
+ *  @remark only updates player flags, no parameters are updated except for
+ *  `p->input`.
+ */
+void input_update(hhc_player *p);
+
+#endif /* HHC_INPUT_H */

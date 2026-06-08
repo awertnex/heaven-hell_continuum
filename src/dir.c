@@ -1,135 +1,67 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
+#include "deps/fossil/common/limits.h"
+#include "deps/fossil/common/session.h"
+#include "deps/fossil/engine/engine.h"
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/memory/memory.h"
 
-#include <engine/h/core.h>
-#include <engine/h/platform.h>
-#include <engine/h/dir.h>
-#include <engine/h/logger.h>
-#include <engine/h/memory.h>
+#include "deps/fossil/h/dir.h"
+
 #include "h/main.h"
+#include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
 
-str PATH_ROOT[PATH_MAX] = {0};
-str PATH_WORLD[PATH_MAX] = {0};
-str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX] = {0};
-str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX] = {0};
+#include <stdio.h>
 
-u32 paths_init(void)
+str DIR_ROOT[DIR_ROOT_COUNT][FSL_ID_CAP] = {0};
+str DIR_WORLD[DIR_WORLD_COUNT][FSL_ID_CAP] = {0};
+
+u32 game_init(void)
 {
-    str *path_bin_root = NULL;
-    str string[PATH_MAX] = {0};
     u32 i = 0;
 
-    snprintf(DIR_ROOT[DIR_LOGS],            NAME_MAX, "%s", "logs/");
-    snprintf(DIR_ROOT[DIR_ASSETS],          NAME_MAX, "%s", "assets/");
-    snprintf(DIR_ROOT[DIR_AUDIO],           NAME_MAX, "%s", "assets/audio/");
-    snprintf(DIR_ROOT[DIR_FONTS],           NAME_MAX, "%s", "assets/fonts/");
-    snprintf(DIR_ROOT[DIR_LOOKUPS],         NAME_MAX, "%s", "assets/lookups/");
-    snprintf(DIR_ROOT[DIR_MODELS],          NAME_MAX, "%s", "assets/models/");
-    snprintf(DIR_ROOT[DIR_SHADERS],         NAME_MAX, "%s", "assets/shaders/");
-    snprintf(DIR_ROOT[DIR_TEXTURES],        NAME_MAX, "%s", "assets/textures/");
-    snprintf(DIR_ROOT[DIR_BLOCKS],          NAME_MAX, "%s", "assets/textures/blocks/");
-    snprintf(DIR_ROOT[DIR_ENTITIES],        NAME_MAX, "%s", "assets/textures/entities/");
-    snprintf(DIR_ROOT[DIR_GUI],             NAME_MAX, "%s", "assets/textures/gui/");
-    snprintf(DIR_ROOT[DIR_ITEMS],           NAME_MAX, "%s", "assets/textures/items/");
-    snprintf(DIR_ROOT[DIR_LOGO],            NAME_MAX, "%s", "assets/textures/logo/");
-    snprintf(DIR_ROOT[DIR_ENV],             NAME_MAX, "%s", "assets/textures/env/");
-    snprintf(DIR_ROOT[DIR_CONFIG],          NAME_MAX, "%s", "config/");
-    snprintf(DIR_ROOT[DIR_SCREENSHOTS],     NAME_MAX, "%s", "screenshots/");
-    snprintf(DIR_ROOT[DIR_TEXT],            NAME_MAX, "%s", "text/");
-    snprintf(DIR_ROOT[DIR_WORLDS],          NAME_MAX, "%s", "worlds/");
+    snprintf(DIR_ROOT[DIR_ASSETS], FSL_ID_CAP, "%s", GAME_DIR_NAME_ASSETS);
+    snprintf(DIR_ROOT[DIR_AUDIO], FSL_ID_CAP, "%s", GAME_DIR_NAME_AUDIO);
+    snprintf(DIR_ROOT[DIR_FONTS], FSL_ID_CAP, "%s", GAME_DIR_NAME_FONTS);
+    snprintf(DIR_ROOT[DIR_LOOKUPS], FSL_ID_CAP, "%s", GAME_DIR_NAME_LOOKUPS);
+    snprintf(DIR_ROOT[DIR_MODELS], FSL_ID_CAP, "%s", GAME_DIR_NAME_MODELS);
+    snprintf(DIR_ROOT[DIR_SHADERS], FSL_ID_CAP, "%s", GAME_DIR_NAME_SHADERS);
+    snprintf(DIR_ROOT[DIR_TEXTURES], FSL_ID_CAP, "%s", GAME_DIR_NAME_TEXTURES);
+    snprintf(DIR_ROOT[DIR_BLOCKS], FSL_ID_CAP, "%s", GAME_DIR_NAME_BLOCKS);
+    snprintf(DIR_ROOT[DIR_ENTITIES], FSL_ID_CAP, "%s", GAME_DIR_NAME_ENTITIES);
+    snprintf(DIR_ROOT[DIR_ENV], FSL_ID_CAP, "%s", GAME_DIR_NAME_ENV);
+    snprintf(DIR_ROOT[DIR_GUI], FSL_ID_CAP, "%s", GAME_DIR_NAME_GUI);
+    snprintf(DIR_ROOT[DIR_ITEMS], FSL_ID_CAP, "%s", GAME_DIR_NAME_ITEMS);
+    snprintf(DIR_ROOT[DIR_LOGO], FSL_ID_CAP, "%s", GAME_DIR_NAME_LOGO);
+    snprintf(DIR_ROOT[DIR_CONFIG], FSL_ID_CAP, "%s", GAME_DIR_NAME_CONFIG);
+    snprintf(DIR_ROOT[DIR_SCREENSHOTS], FSL_ID_CAP, "%s", GAME_DIR_NAME_SCREENSHOTS);
+    snprintf(DIR_ROOT[DIR_TEXT], FSL_ID_CAP, "%s", GAME_DIR_NAME_TEXT);
+    snprintf(DIR_ROOT[DIR_WORLDS], FSL_ID_CAP, "%s", GAME_DIR_NAME_WORLDS);
 
-    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS],   NAME_MAX, "%s", "chunks/");
-    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], NAME_MAX, "%s", "entities/");
-    snprintf(DIR_WORLD[DIR_WORLD_LOGS],     NAME_MAX, "%s", "logs/");
-    snprintf(DIR_WORLD[DIR_WORLD_PLAYER],   NAME_MAX, "%s", "player/");
+    snprintf(DIR_WORLD[DIR_WORLD_CHUNKS], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_CHUNKS);
+    snprintf(DIR_WORLD[DIR_WORLD_ENTITIES], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_ENTITIES);
+    snprintf(DIR_WORLD[DIR_WORLD_PLAYER], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_PLAYER);
 
-    path_bin_root = get_path_bin_root();
-    if (*GAME_ERR != ERR_SUCCESS)
-        return *GAME_ERR;
-
-    snprintf(PATH_ROOT, PATH_MAX, "%s", path_bin_root);
-    mem_free((void*)&path_bin_root, strlen(path_bin_root),
-            "paths_init().path_bin_root");
-
-    LOGINFO(TRUE, "Creating Main Directories '%s'..\n", PATH_ROOT);
+    LOGTRACE(FSL_FLAG_LOG_CMD,
+            fsl_logger_stringf("Creating Main Directories '%s'..\n", FSL_SESSION.bin_root));
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
-    {
-        snprintf(string, PATH_MAX, "%s%s", PATH_ROOT, DIR_ROOT[i]);
-        check_slash(string);
-        normalize_slash(string);
-        snprintf(DIR_ROOT[i], PATH_MAX, "%s", string);
+        if (fsl_is_dir_exists(DIR_ROOT[i], FALSE) != FSL_ERR_SUCCESS)
+        {
+            fsl_make_dir(DIR_ROOT[i]);
+            if (*GAME_ERR != FSL_ERR_SUCCESS && *GAME_ERR != FSL_ERR_DIR_EXISTS)
+                return *GAME_ERR;
+        }
 
-        if (is_dir_exists(string, FALSE) != ERR_SUCCESS)
-            make_dir(string);
-    }
+    LOGTRACE(FSL_FLAG_LOG_CMD,
+            fsl_logger_stringf("Main Directory Created '%s'\n", FSL_SESSION.bin_root));
 
-    LOGINFO(TRUE, "Checking Main Directories '%s'..\n", PATH_ROOT);
-
-    for (i = 0; i < DIR_ROOT_COUNT; ++i)
-        if (!is_dir_exists(DIR_ROOT[i], TRUE) != ERR_SUCCESS)
-            return *GAME_ERR;
-
-    LOGINFO(TRUE, "Main Directory Created '%s'\n", PATH_ROOT);
-    *GAME_ERR = ERR_SUCCESS;
-    return *GAME_ERR;
-}
-
-u32 world_dir_init(const str *world_name)
-{
-    str string[PATH_MAX] = {0};
-    u32 i = 0;
-
-    if (is_dir_exists(PATH_ROOT, TRUE) != ERR_SUCCESS)
-    {
-        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
-                "World Creation '%s' Failed\n", world_name);
+    if (fsl_mem_arena_init(&memory_arena_internal,
+                "game_init().memory_arena_internal") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
-    }
 
-    if (is_dir_exists(DIR_ROOT[DIR_WORLDS], TRUE) != ERR_SUCCESS)
-    {
-        LOGERROR(FALSE, ERR_WORLD_CREATION_FAIL,
-                "World Creation '%s' Failed\n", world_name);
-        return *GAME_ERR;
-    }
+    render = fsl_render_get();
 
-    snprintf(PATH_WORLD, PATH_MAX, "%s%s", DIR_ROOT[DIR_WORLDS], world_name);
-    check_slash(PATH_WORLD);
-    normalize_slash(PATH_WORLD);
-
-    if (is_dir_exists(PATH_WORLD, FALSE) == ERR_SUCCESS)
-    {
-        LOGERROR(FALSE, ERR_WORLD_EXISTS,
-                "World Already Exists '%s'\n", world_name);
-        return *GAME_ERR;
-    }
-
-    make_dir(PATH_WORLD);
-
-    LOGINFO(FALSE, "Creating World Directories '%s'..\n", PATH_WORLD);
-
-    for (i = 0; i < DIR_WORLD_COUNT; ++i)
-    {
-        snprintf(string, PATH_MAX, "%s%s", PATH_WORLD, DIR_WORLD[i]);
-        check_slash(string);
-        normalize_slash(string);
-        snprintf(DIR_WORLD[i], PATH_MAX, "%s", string);
-
-        make_dir(string);
-    }
-
-    LOGINFO(FALSE, "Checking World Directories '%s'..\n", PATH_WORLD);
-
-    for (i = 0; i < DIR_WORLD_COUNT; ++i)
-        if (is_dir_exists(DIR_WORLD[i], TRUE) != ERR_SUCCESS)
-            return *GAME_ERR;
-
-    LOGINFO(FALSE, "World Created '%s'\n", world_name);
-    *GAME_ERR = ERR_SUCCESS;
+    *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 }

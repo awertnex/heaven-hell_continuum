@@ -1,17 +1,14 @@
-#ifndef GAME_DIR_H
-#define GAME_DIR_H
+#ifndef HHC_DIR_H
+#define HHC_DIR_H
 
-#include <engine/h/types.h>
-#include <engine/h/dir.h>
-#include "main.h"
+#include "deps/fossil/common/types.h"
 
 #define DIR_MAX 128
 
-enum Directories
+enum directory_index
 {
     /* ---- root directories ------------------------------------------------ */
 
-    DIR_LOGS,
     DIR_ASSETS,
     DIR_AUDIO,
     DIR_FONTS,
@@ -21,10 +18,10 @@ enum Directories
     DIR_TEXTURES,
     DIR_BLOCKS,
     DIR_ENTITIES,
+    DIR_ENV,
     DIR_GUI,
     DIR_ITEMS,
     DIR_LOGO,
-    DIR_ENV,
     DIR_CONFIG,
     DIR_SCREENSHOTS,
     DIR_TEXT,
@@ -35,26 +32,20 @@ enum Directories
 
     DIR_WORLD_CHUNKS = 0,
     DIR_WORLD_ENTITIES,
-    DIR_WORLD_LOGS,
     DIR_WORLD_PLAYER,
-    DIR_WORLD_COUNT,
-}; /* Directories */
+    DIR_WORLD_COUNT
+}; /* directory_index */
 
-extern str PATH_ROOT[PATH_MAX];
-extern str PATH_WORLD[PATH_MAX];
-extern str DIR_ROOT[DIR_ROOT_COUNT][NAME_MAX];
-extern str DIR_WORLD[DIR_WORLD_COUNT][NAME_MAX];
+extern str DIR_ROOT[DIR_ROOT_COUNT][FSL_ID_CAP];
+extern str DIR_WORLD[DIR_WORLD_COUNT][FSL_ID_CAP];
 
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
- */
-u32 paths_init(void);
-
-/*! @brief initialize world directory structure.
+/*!
+ *  @brief initialize game stuff.
  *
- *  create world directories needed on disk.
+ *  @remark will create directories if not found next to the binary.
  *
- *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 world_dir_init(const str *world_name);
+u32 game_init(void);
 
-#endif /* GAME_DIR_H */
+#endif /* HHC_DIR_H */

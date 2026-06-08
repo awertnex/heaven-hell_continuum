@@ -1,5 +1,110 @@
 # changelog
 
+- - -
+## v0.5.0-beta (2026 06 08)
+
+#### changes
+- added world-saving (chunks are just dumped to disk and retrieved on
+  world-load, but at least they're compressed using RLE)
+- added inventory item displays (no textures yet)
+- added debug info about targeted block
+- changed c standard from c99 -> c89
+- updated engine version to `fossil_engine v0.10.0-beta`
+- fixed engine build tool not copying required libraries to deployment directory
+- improved logging of commands:
+    - chunk boundary toggling commands
+    - chunk queue visualizer toggling commands
+    - bounding box toggling commands
+    - flashlight toggling commands
+- added function 'engine/dir.c/get_base_name()'
+- fixed misaligned GUI logger strings
+- added engine API exposure definitions in 'engine/h/common.h'
+- changed 'engine/h/platform.h' -> 'engine/h/process.h'
+- added helpful build commands:
+    - self: build build tool
+    - all: build build tool, engine and game
+    - noproject: don't execute the build function passed to 'engine_build()'
+- added memory manamgement stuff:
+    - arena allocators:
+        - function '_mem_map_arena()'
+        - cool function '_mem_push_arena()', grows dynamically and auto-relocates all resident pointers with it
+        - function '_mem_unmap_arena()'
+        - functions '_mem_request_page_size()' and 'mem_request_page_size()' (internal use)
+    - function '_mem_remap()'
+- added page size alignment for 'sys/mman.h' functions
+- added better memory alignment for memory arena pushes but also tight-packing for small pushes:
+    - I made it so that multiple pushes can use the same memory page as long as they're small enough to fit within it,
+      otherwise the overlapping block will be pushed to the next page
+- removed build tool into its own repository and re-introduced as a dependency
+- advanced logger, now logs to console, to screen, to file, and takes flags for custom options
+- fixed very sneaky and annoying segfault:
+    - I wrongfully assumed since "if (!p)" protected against NULL pointers it protected against un-allocated memory... and then I ate dirt
+- added function 'fsl_shader_free()' to unload individual shaders
+- added mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to scroll)
+- removed the engine, then added the engine back to the repository as a dependency
+- updated buildtool version to `v1.8.7`
+
+#### bugs and flaws
+- segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
+- player spawn puts player anywhere, even inside blocks
+- collision is broken:
+    - blocks tug on player
+    - player collides with imaginary blocks near actual blocks
+    - flying at blocks at high speed results in a floating point exception (segfault)
+- physics have been disabled, now the player glides across blocks and flies
+  with no drag except for natural air drag (very annoying)
+- block-breaking is instant, and it's a press-event, not a hold-event,
+  same for block-placement
+- camera mode 'stalker' doesn't pick a block to rest on and follow player,
+  it just becomes stationary, but does follow player
+- camera mode 'spectator' not implemented (it's supposed to exit player and
+  move freely like a drone)
+- 'Sample Block' not implemented
+- block light is hard-coded, for now
+
+- - -
+## v0.4.0-beta (18 Jan 2026)
+
+#### changes
+- added player air control while not flying
+- made movement kinematic (physically-based):
+    - acceleration_rate
+    - input: vector that takes raw keyboard input * acceleration_rate
+    - acceleration: vector that takes 'Player.input'
+    - velocity: vector that accumulates 'Player.acceleration'
+    - 'Player.pos' accumulates 'Player.velocity'
+    - Player.drag: air drag
+- added working collision even at high speeds (see 'bugs and fixes')
+- fixed double click infinite loop when a release state is recorded between
+  a key press and a key hold (when pressing and releasing too quick)
+- added nice color variation to chunk gizmo (Alt + G)
+- added caves, a sand biome, and better terrain in general
+- added multi-block placement (numbers 1..0, or scroll wheel to select)
+- added more blocks
+- fixed texture colors (semi-transparency used to be fully opaque)
+- added camera mode 'stalker':
+    - camera anchors itself to a random block within a certain distance from the
+      player and stalks the player, changes anchor if distance increases,
+      the distance limit is either the closer between max render distance or the
+      hard-coded max anchor distance
+    - mouse movement and keyboard controls still control the player,
+      not the camera
+- added screenshot support
+- added logger buffer, now it draws logs on screen
+- added logger saving to files on disk (see 'bugs and flaws')
+- added command logging (prints only the text to logger buffer, unless error, then prints tag and error code)
+- added player death and some death messages
+- optimized text rendering
+- added coloring per string for text rendering
+- added ui drawing module for engine (see 'bugs and flaws')
+
+#### bugs and flaws
+- extremely high speeds (e.g. 3000 m/s) break collision detection
+- high speeds now segfault
+- if logger can't find log directory, it saves logs to engine log directory, if not found, it saves to current working directory (it should not save at all if so)
+- 'draw_ui_9_slice()' function doesn't work yet
+
+- - -
 ## v0.3.0-beta (10 Dec 2025)
 
 #### changes
@@ -182,7 +287,7 @@
 ## v0.1.3 (03 Apr 2025)
 
 #### changes
-- fixed segfault while placing or breaking blocks in non-allocated chunk area 
+- fixed segfault while placing or breaking blocks in non-allocated chunk area
 - switched to C99 standard
 - changed original resources to avoid copyright
 - made build system more difficult to read but easier to use (not tested on windows)

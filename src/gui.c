@@ -1,17 +1,39 @@
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include "deps/fossil/common/config.h"
+#include "deps/fossil/common/diagnostics.h"
+#include "deps/fossil/assets/asset_types.h"
+#include "deps/fossil/assets/assets.h"
+#include "deps/fossil/assets/mesh/mesh.h"
+#include "deps/fossil/engine/engine.h"
+#include "deps/fossil/engine/engine_assets.h"
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/math/math.h"
+#include "deps/fossil/memory/memory.h"
+#include "deps/fossil/shaders/shaders.h"
+#include "deps/fossil/string/string.h"
 
-#include <engine/h/diagnostics.h>
-#include <engine/h/logger.h>
-#include <engine/h/memory.h>
-#include <engine/h/string.h>
-
+#include "h/common.h"
+#include "h/diagnostics.h"
 #include "h/main.h"
 #include "h/gui.h"
 #include "h/dir.h"
 
-u16 menu_index;
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+#define UI_ITEM_PITCH -20.0f
+#define UI_ITEM_YAW 50.0f
+#define UI_ITEM_SCALE 32.0f
+
+struct /* ui_item_data_internal */
+{
+    fsl_mesh mesh_unit_cube;
+    fsl_shader_program shader;
+    fsl_camera camera;
+    f64 camera_distance;
+} ui_item_data_internal = {0};
+
+u16 menu_index_cur;
 u16 menu_layer[5] = {0};
 u8 state_menu_depth = 0;
 b8 is_menu_ready;
@@ -19,90 +41,119 @@ u8 buttons[BTN_COUNT];
 
 u32 gui_init(void)
 {
-    str *font_path[FONT_COUNT] =
-    {
-        stringf("%s%s", DIR_ROOT[DIR_FONTS],
-                "dejavu-fonts-ttf-2.37/dejavu_sans_ansi.ttf"),
-        stringf("%s%s", DIR_ROOT[DIR_FONTS],
-                "dejavu-fonts-ttf-2.37/dejavu_sans_bold_ansi.ttf"),
-        stringf("%s%s", DIR_ROOT[DIR_FONTS],
-                "dejavu-fonts-ttf-2.37/dejavu_sans_mono_ansi.ttf"),
-        stringf("%s%s", DIR_ROOT[DIR_FONTS],
-                "dejavu-fonts-ttf-2.37/dejavu_sans_mono_bold_ansi.ttf"),
-    };
+    u32 button_count = BTN_COUNT;
 
-    u32 i = 0;
-    for (i = 0; i < FONT_COUNT; ++i)
-    {
-        normalize_slash(font_path[i]);
-        if (font_init(&font[i], FONT_RESOLUTION_DEFAULT,
-                    font_path[i]) != ERR_SUCCESS)
-            goto cleanup;
-    }
+    if (fsl_mesh_load(&ui_item_data_internal.mesh_unit_cube,
+                "Unit Cube", "unit_cube", "unit_cube.obj", GAME_DIR_NAME_MODELS) != FSL_ERR_SUCCESS)
+        return *GAME_ERR;
 
-    if (
-            texture_init(&texture[TEXTURE_CROSSHAIR], (v2i32){16, 16},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI],
-                    "crosshair.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_ITEM_BAR], (v2i32){256, 256},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI],
-                    "item_bar.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SDB_ACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI],
-                    "sdb_active.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SDB_INACTIVE], (v2i32){32, 32},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_GUI],
-                    "sdb_inactive.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SKYBOX_VAL], (v2i32){512, 512},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_ENV],
-                    "skybox_val.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SKYBOX_HORIZON], (v2i32){512, 512},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_ENV],
-                    "skybox_horizon.png")) != ERR_SUCCESS ||
-
-            texture_init(&texture[TEXTURE_SKYBOX_STARS], (v2i32){512, 512},
-                GL_RGBA, GL_RGBA, GL_NEAREST, 4, FALSE,
-                stringf("%s%s", DIR_ROOT[DIR_ENV],
-                    "skybox_stars.png")) != ERR_SUCCESS)
+    if (fsl_shader_program_init_ex(&ui_item_data_internal.shader, "UI Item", "ui_item",
+                "ui_item.vert", NULL, "ui_item.frag", GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    for (i = 0; i < TEXTURE_COUNT; ++i)
-        if (texture_generate(&texture[i], FALSE) != ERR_SUCCESS)
-            goto cleanup;
+    ui_item_data_internal.camera.fovy = 35.0f;
+    ui_item_data_internal.camera.fovy_smooth = 35.0f;
+    ui_item_data_internal.camera.ratio = (f32)render->size.x / render->size.y;
+    ui_item_data_internal.camera.far = FSL_CAMERA_CLIP_FAR_UI;
+    ui_item_data_internal.camera.near = FSL_CAMERA_CLIP_NEAR_DEFAULT;
 
-    //game_menu_pos = setting.render_size.y / 3; /* TODO: figure this out */
-    //menu_index = MENU_TITLE;
-    //memset(buttons, 0, BTN_COUNT);
+    ui_item_data_internal.camera_distance = 3.0;
+
+    /*
+    game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
+    menu_index_cur = MENU_TITLE;
+     */
+
+    while (button_count--)
+        buttons[button_count] = 0;
+
+    *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
+
     gui_free();
     return *GAME_ERR;
 }
 
 void gui_free(void)
 {
-    u32 i = 0;
-    for (i = 0; i < FONT_COUNT; ++i)
-        font_free(&font[i]);
-    for (i = 0; i < TEXTURE_COUNT; ++i)
-        texture_free(&texture[i]);
+    fsl_mesh_free(&ui_item_data_internal.mesh_unit_cube);
+    fsl_shader_program_free(&ui_item_data_internal.shader);
+}
+
+void gui_start_ui_items(void)
+{
+    glUseProgram(ui_item_data_internal.shader.asset.id);
+
+    ui_item_data_internal.camera.ratio = (f32)render->size.x / render->size.y;
+    fsl_camera_movement_update(&ui_item_data_internal.camera,
+            -ui_item_data_internal.camera_distance, 0.0, 0.0,
+            0.0, 0.0, 0.0);
+}
+
+void gui_draw_ui_item(f32 pos_x, f32 pos_y)
+{
+    f32 pitch = UI_ITEM_PITCH;
+    f32 yaw = UI_ITEM_YAW;
+    f32 SPCH = 0.0f, CPCH = 0.0f, SYAW = 0.0f, CYAW = 0.0f;
+    m4f32 transform = {0};
+    m4f32 rotation_pitch = {0};
+    m4f32 rotation_yaw = {0};
+    m4f32 scale = {0};
+    m4f32 offset = {0};
+
+    SPCH = sinf(pitch * FSL_DEG2RAD);
+    CPCH = cosf(pitch * FSL_DEG2RAD);
+    SYAW = sinf(yaw * FSL_DEG2RAD);
+    CYAW = cosf(yaw * FSL_DEG2RAD);
+
+    rotation_pitch.a11 = CPCH;
+    rotation_pitch.a13 = -SPCH;
+    rotation_pitch.a22 = 1.0f;
+    rotation_pitch.a31 = SPCH;
+    rotation_pitch.a33 = CPCH;
+    rotation_pitch.a44 = 1.0f;
+
+    rotation_yaw.a11 = CYAW;
+    rotation_yaw.a12 = -SYAW;
+    rotation_yaw.a21 = SYAW;
+    rotation_yaw.a22 = CYAW;
+    rotation_yaw.a33 = 1.0f;
+    rotation_yaw.a44 = 1.0f;
+
+    scale.a11 = 1.0f;
+    scale.a22 = 1.0f;
+    scale.a33 = 1.0f;
+    scale.a44 = render->size.y / UI_ITEM_SCALE;
+
+    offset.a11 = 1.0f;
+    offset.a22 = 1.0f;
+    offset.a33 = 1.0f;
+    offset.a41 = ((f32)(-render->size.x + UI_ITEM_SCALE) / 2.0 + pos_x) * render->ndc_scale.x;
+    offset.a42 = ((f32)(-render->size.y + UI_ITEM_SCALE) / 2.0 + pos_y) * render->ndc_scale.y;
+    offset.a44 = 1.0f;
+
+    /* 3D space */
+    transform = fsl_matrix_multiply(rotation_yaw, rotation_pitch);
+    transform = fsl_matrix_multiply(transform, ui_item_data_internal.camera.projection.perspective);
+
+    /* UI space */
+    transform = fsl_matrix_multiply(scale, transform);
+    transform = fsl_matrix_multiply(transform, offset);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ui_item_data_internal.mesh_unit_cube.transform_buf.id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(m4f32), &transform, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(ui_item_data_internal.mesh_unit_cube.vao);
+    glDrawElementsInstanced(GL_TRIANGLES, ui_item_data_internal.mesh_unit_cube.index_buf.len,
+        GL_UNSIGNED_INT, NULL, 1);
 }
 
 #ifdef FUCK /* TODO: undef FUCK */
 /*jump*/
-/* 
+/*
  * scale = (source.scale * scl);
  */
 void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
@@ -110,26 +161,26 @@ void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 p
     if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
             || (source.width == 0.0f) || (source.height == 0.0f))
         return;
- 
+
     rlSetTexture(texture.id);
     rlColor4ub(tint.r, tint.g, tint.b, tint.a);
     rlNormal3f(0.0f, 0.0f, 1.0f);
- 
+
     i32 tile_width = source.width * scl.x;
     i32 tile_height = source.height * scl.y;
- 
+
     /* top left */
     rlTexCoord2f(source.x / texture.width, source.y / texture.height);
     rlVertex2f(pos.x, pos.y);
- 
+
     /* bottom left */
     rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x, pos.y + tile_height);
- 
+
     /* bottom right */
     rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y + tile_height);
- 
+
     /* top right */
     rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
     rlVertex2f(pos.x + tile_width, pos.y);
@@ -137,16 +188,16 @@ void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 p
 
 void update_menus(v2f32 render_size)
 {
-    if (!menu_index)
+    if (!menu_index_cur)
         return;
 
-    switch (menu_index)
+    switch (menu_index_cur)
     {
         case MENU_TITLE:
             if (!is_menu_ready)
             {
                 menu_layer[state_menu_depth] = MENU_TITLE;
-                menu_index = MENU_TITLE;
+                menu_index_cur = MENU_TITLE;
                 memset(buttons, 0, BTN_COUNT);
                 buttons[BTN_SINGLEPLAYER] = 1;
                 buttons[BTN_MULTIPLAYER] = 1;
@@ -320,13 +371,13 @@ void draw_hud()
     draw_texture(texture_hud_widgets, hotbar_offhand,
             (v2i16){
             hotbar_pos.x - ((hotbar.width / 2) * setting.gui_scale) - (hotbar.height * 2 * setting.gui_scale),
-            hotbar_pos.y + setting.gui_scale}, 
+            hotbar_pos.y + setting.gui_scale},
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 2, COL_TEXTURE_DEFAULT);
 
     if (!(flag & FLAG_DEBUG))
         draw_texture(texture_hud_widgets, crosshair,
-                crosshair_pos, 
+                crosshair_pos,
                 (v2i16){setting.gui_scale, setting.gui_scale},
                 0, 0, COL_TEXTURE_DEFAULT);
 
@@ -365,7 +416,7 @@ float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
     return result + 4;
 }
 
-/* 
+/*
  * raylib/rtextures.c/DrawTexturePro refactored;
  * scale = (source.scale * scl);
  * align_x = (0 = left, 1 = center, 2 = right);
@@ -425,7 +476,7 @@ void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 
 
 /*jump*/
 /* TODO: make draw_texture_tiled() */
-/* 
+/*
  * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
  */
 void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
@@ -448,7 +499,7 @@ void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i
     // bottom left
     rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
     rlVertex2f(pos.x, pos.y + tile_height);
-    
+
     // bottom right
     rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
     rlVertex2f(pos.x + tile_width, pos.y + tile_height);
@@ -588,7 +639,7 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
                 func();
         }
         else
-            draw_texture(texture, button, pos, 
+            draw_texture(texture, button, pos,
                     (v2i16){setting.gui_scale, setting.gui_scale},
                     0, 0, COL_TEXTURE_DEFAULT);
 
@@ -597,14 +648,14 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 
                     (v2i16){pos.x + ((button.width * setting.gui_scale) / 2), pos.y + ((button.height * setting.gui_scale) / 2)},
                     FONT_SIZE_DEFAULT, 1, align_x, align_y, COL_TEXT_DEFAULT);
 
-    } else draw_texture(texture, button_inactive, pos, 
+    } else draw_texture(texture, button_inactive, pos,
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 0, COL_TEXTURE_DEFAULT);
 }
 
 void btn_func_singleplayer()
 {
-    menu_index = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
+    menu_index_cur = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
     state_menu_depth = 0; /* TODO: set actual value (2) */
     is_menu_ready = 0;
     flag &= ~FLAG_PAUSED; /*temp*/
@@ -614,14 +665,14 @@ void btn_func_singleplayer()
 
 void btn_func_multiplayer()
 {
-    menu_index = MENU_MULTIPLAYER;
+    menu_index_cur = MENU_MULTIPLAYER;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
 
 void btn_func_settings()
 {
-    menu_index = MENU_SETTINGS;
+    menu_index_cur = MENU_SETTINGS;
     state_menu_depth = 2;
     is_menu_ready = 0;
 }
@@ -633,7 +684,7 @@ void btn_func_quit_game()
 
 void btn_func_unpause()
 {
-    menu_index = 0;
+    menu_index_cur = 0;
     state_menu_depth = 0;
     is_menu_ready = 0;
     flag &= ~FLAG_PAUSED;
@@ -643,7 +694,7 @@ void btn_func_unpause()
 
 void btn_func_quit_world()
 {
-    menu_index = MENU_TITLE;
+    menu_index_cur = MENU_TITLE;
     state_menu_depth = 1;
     is_menu_ready = 0;
     /* TODO: save and unload world */
@@ -654,7 +705,7 @@ void btn_func_back()
 {
     menu_layer[state_menu_depth] = 0;
     --state_menu_depth;
-    menu_index = menu_layer[state_menu_depth];
+    menu_index_cur = menu_layer[state_menu_depth];
     is_menu_ready = 0;
 }
 #endif /* TODO: undef FUCK */

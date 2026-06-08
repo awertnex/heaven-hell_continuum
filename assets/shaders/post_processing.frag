@@ -1,6 +1,6 @@
 #version 430 core
 
-#include "h/post_processing.frag.h"
+#include "h/post_processing.glsl"
 
 uniform sampler2D texture_screen;
 uniform uint time;
@@ -9,7 +9,7 @@ in vec2 vs_tex_coords;
 out vec4 color;
 
 void main()
-{ 
+{
     /* ---- aberration ------------------------------------------------------ */
 
     vec2 aberration = (vs_pos * ABERRATION_NARROWNESS) *

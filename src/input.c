@@ -1,63 +1,422 @@
-#include <engine/h/core.h>
-#include <engine/h/types.h>
+#include "deps/fossil/input/input.h"
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/math/math.h"
+#include "deps/fossil/math/trigonometry.h"
+#include "deps/fossil/shaders/shaders.h"
+#include "deps/fossil/shaders/shader_types.h"
+
+#include "chunking/chunking.h"
 
 #include "h/main.h"
+#include "h/assets.h"
+#include "h/gui.h"
 #include "h/input.h"
+#include "h/player.h"
+#include "h/world.h"
+
+#include <math.h>
+
+static fsl_input_context input_context_gameplay = 1;
+static fsl_input_context input_context_menu = 2;
 
 /* ---- movement ------------------------------------------------------------ */
 
-u32 bind_walk_forward =             KEY_W;
-u32 bind_walk_backward =            KEY_S;
-u32 bind_strafe_left =              KEY_A;
-u32 bind_strafe_right =             KEY_D;
-u32 bind_jump =                     KEY_SPACE;
-u32 bind_sprint =                   KEY_LEFT_SHIFT;
-u32 bind_sneak =                    KEY_LEFT_CONTROL;
+fsl_key_bind bind_walk_forward = {0};
+fsl_key_bind bind_walk_backward = {0};
+fsl_key_bind bind_strafe_left = {0};
+fsl_key_bind bind_strafe_right = {0};
+fsl_key_bind bind_jump = {0};
+fsl_key_bind bind_sprint = {0};
+fsl_key_bind bind_sneak = {0};
 
 /* ---- gameplay ------------------------------------------------------------ */
 
-u32 bind_attack_or_destroy =        GLFW_MOUSE_BUTTON_LEFT;
-u32 bind_sample_block =             GLFW_MOUSE_BUTTON_MIDDLE;
-u32 bind_build_or_use =             GLFW_MOUSE_BUTTON_RIGHT;
+fsl_key_bind bind_attack_or_destroy = {0};
+fsl_key_bind bind_sample_block = {0};
+fsl_key_bind bind_build_or_use = {0};
 
 /* ---- inventory ----------------------------------------------------------- */
 
-u32 bind_selected_item =            KEY_Q;
-u32 bind_hotbar[SET_HOTBAR_SLOTS_MAX] =
-{
-    KEY_1, KEY_2, KEY_3, KEY_4, KEY_5,
-    KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
-};
-u32 bind_hotbar_kp[SET_HOTBAR_SLOTS_MAX] =
-{
-    KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5,
-    KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9, KEY_KP_0,
-};
-u32 bind_inventory =                KEY_E;
+fsl_key_bind bind_drop_item = {0};
+fsl_key_bind bind_inventory = {0};
+fsl_key_bind bind_hotbar[2][PLAYER_HOTBAR_SLOTS_MAX] = {0};
 
 /* ---- miscellaneous ------------------------------------------------------- */
 
-u32 bind_toggle_hud =               KEY_F1;
-u32 bind_take_screenshot =          KEY_F2;
-u32 bind_toggle_debug =             KEY_F3;
-u32 bind_toggle_cinematic_camera =  KEY_F4;
-u32 bind_toggle_perspective =       KEY_F5;
-u32 bind_toggle_fullscreen =        KEY_F11;
-u32 bind_toggle_zoom =              KEY_Z;
-u32 bind_pause =                    KEY_ESCAPE;
-u32 bind_chat_or_command =          KEY_SLASH;
+fsl_key_bind bind_toggle_hud = {0};
+fsl_key_bind bind_take_screenshot = {0};
+fsl_key_bind bind_toggle_debug = {0};
+fsl_key_bind bind_toggle_cinematic_camera = {0};
+fsl_key_bind bind_toggle_perspective = {0};
+fsl_key_bind bind_toggle_cinematic_motion = {0};
+fsl_key_bind bind_toggle_fullscreen = {0};
+fsl_key_bind bind_zoom = {0};
+fsl_key_bind bind_toggle_flashlight = {0};
+fsl_key_bind bind_pause = {0};
+fsl_key_bind bind_chat_or_command = {0};
+fsl_key_bind bind_reload_shaders = {0};
 
 /* ---- debug & menu -------------------------------------------------------- */
 
-/* TODO: navigate menus with arrow keys */
-u32 bind_left =                     KEY_LEFT;
-u32 bind_right =                    KEY_RIGHT;
-u32 bind_down =                     KEY_DOWN;
-u32 bind_up =                       KEY_UP;
-u32 bind_debug_mod =                KEY_LEFT_ALT;
-u32 bind_toggle_super_debug =       KEY_TAB;
-u32 bind_toggle_trans_blocks =      KEY_T;
-u32 bind_toggle_chunk_bounds =      KEY_C;
-u32 bind_toggle_bounding_boxes =    KEY_B;
-u32 bind_toggle_chunk_gizmo =       KEY_G;
-u32 bind_toggle_chunk_queue_visualizer = KEY_V;
+/* TODO: navigate menus with arrow keys.
+ */
+fsl_key_bind bind_left = {0};
+fsl_key_bind bind_right = {0};
+fsl_key_bind bind_down = {0};
+fsl_key_bind bind_up = {0};
+
+u32 bind_debug_mod = FSL_ALT_LEFT;
+fsl_key_bind bind_toggle_super_debug = {0};
+fsl_key_bind bind_toggle_trans_blocks = {0};
+fsl_key_bind bind_toggle_chunk_bounds = {0};
+fsl_key_bind bind_toggle_bounding_boxes = {0};
+fsl_key_bind bind_toggle_chunk_gizmo = {0};
+fsl_key_bind bind_toggle_chunk_scheduler_visualizer = {0};
+
+void input_init(void)
+{
+    /* ---- movement -------------------------------------------------------- */
+
+    bind_walk_forward = fsl_key_bind_init(FSL_KEY_W, 0, 0, 0, 0, input_context_gameplay);
+    bind_walk_backward = fsl_key_bind_init(FSL_KEY_S, 0, 0, 0, 0, input_context_gameplay);
+    bind_strafe_left = fsl_key_bind_init(FSL_KEY_A, 0, 0, 0, 0, input_context_gameplay);
+    bind_strafe_right = fsl_key_bind_init(FSL_KEY_D, 0, 0, 0, 0, input_context_gameplay);
+    bind_jump = fsl_key_bind_init(FSL_KEY_SPACE, 0, 0, 0, 0, input_context_gameplay);
+    bind_sprint = fsl_key_bind_init(FSL_KEY_LEFT_SHIFT, 0, 0, 0, 0, input_context_gameplay);
+    bind_sneak = fsl_key_bind_init(FSL_KEY_LEFT_CONTROL, 0, 0, 0, 0, input_context_gameplay);
+
+    /* ---- gameplay -------------------------------------------------------- */
+
+    bind_attack_or_destroy = fsl_key_bind_init(GLFW_MOUSE_BUTTON_LEFT, 0, 0, 0, 0, input_context_gameplay);
+    bind_sample_block = fsl_key_bind_init(GLFW_MOUSE_BUTTON_MIDDLE, 0, 0, 0, 0, input_context_gameplay);
+    bind_build_or_use = fsl_key_bind_init(GLFW_MOUSE_BUTTON_RIGHT, 0, 0, 0, 0, input_context_gameplay);
+
+    /* ---- inventory ------------------------------------------------------- */
+
+    bind_drop_item = fsl_key_bind_init(FSL_KEY_Q, 0, 0, 0, 0, input_context_gameplay);
+    bind_inventory = fsl_key_bind_init(FSL_KEY_E, 0, 0, 0, 0, input_context_gameplay);
+
+    bind_hotbar[0][1] = fsl_key_bind_init(FSL_KEY_1, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][2] = fsl_key_bind_init(FSL_KEY_2, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][3] = fsl_key_bind_init(FSL_KEY_3, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][4] = fsl_key_bind_init(FSL_KEY_4, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][5] = fsl_key_bind_init(FSL_KEY_5, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][6] = fsl_key_bind_init(FSL_KEY_6, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][7] = fsl_key_bind_init(FSL_KEY_7, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][8] = fsl_key_bind_init(FSL_KEY_8, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][9] = fsl_key_bind_init(FSL_KEY_9, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][0] = fsl_key_bind_init(FSL_KEY_0, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][1] = fsl_key_bind_init(FSL_KEY_KP_1, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][2] = fsl_key_bind_init(FSL_KEY_KP_2, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][3] = fsl_key_bind_init(FSL_KEY_KP_3, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][4] = fsl_key_bind_init(FSL_KEY_KP_4, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][5] = fsl_key_bind_init(FSL_KEY_KP_5, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][6] = fsl_key_bind_init(FSL_KEY_KP_6, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][7] = fsl_key_bind_init(FSL_KEY_KP_7, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][8] = fsl_key_bind_init(FSL_KEY_KP_8, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][9] = fsl_key_bind_init(FSL_KEY_KP_9, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[1][0] = fsl_key_bind_init(FSL_KEY_KP_0, 0, 0, 0, 0, input_context_gameplay);
+
+    /* ---- miscellaneous --------------------------------------------------- */
+
+    bind_toggle_hud = fsl_key_bind_init(FSL_KEY_F1, 0, 0, 0, 0, 0);
+    bind_take_screenshot = fsl_key_bind_init(FSL_KEY_F2, 0, 0, 0, 0, 0);
+    bind_toggle_debug = fsl_key_bind_init(FSL_KEY_F3, 0, 0, 0, 0, 0);
+    bind_toggle_cinematic_camera = fsl_key_bind_init(FSL_KEY_F4, 0, 0, 0, 0, 0);
+    bind_toggle_perspective = fsl_key_bind_init(FSL_KEY_F5, 0, 0, 0, 0, 0);
+    bind_toggle_cinematic_motion = fsl_key_bind_init(FSL_KEY_F6, 0, 0, 0, 0, input_context_gameplay);
+    bind_toggle_fullscreen = fsl_key_bind_init(FSL_KEY_F11, 0, 0, 0, 0, 0);
+    bind_zoom = fsl_key_bind_init(FSL_KEY_Z, 0, 0, 0, 0, input_context_gameplay);
+    bind_toggle_flashlight = fsl_key_bind_init(FSL_KEY_F, 0, 0, 0, 0, input_context_gameplay);
+    bind_pause = fsl_key_bind_init(FSL_KEY_ESCAPE, 0, 0, 0, 0, 0);
+    bind_chat_or_command = fsl_key_bind_init(FSL_KEY_SLASH, 0, 0, 0, 0, input_context_gameplay);
+
+    /* ---- debug & menu ---------------------------------------------------- */
+
+    bind_left = fsl_key_bind_init(FSL_KEY_LEFT, 0, 0, 0, 0, input_context_menu);
+    bind_right = fsl_key_bind_init(FSL_KEY_RIGHT, 0, 0, 0, 0, input_context_menu);
+    bind_down = fsl_key_bind_init(FSL_KEY_DOWN, 0, 0, 0, 0, input_context_menu);
+    bind_up = fsl_key_bind_init(FSL_KEY_UP, 0, 0, 0, 0, input_context_menu);
+    bind_toggle_super_debug = fsl_key_bind_init(FSL_KEY_TAB, 0, 0, 0, 0, 0);
+    bind_toggle_trans_blocks = fsl_key_bind_init(FSL_KEY_T, 0, 0, bind_debug_mod, 0, 0);
+    bind_toggle_chunk_bounds = fsl_key_bind_init(FSL_KEY_C, 0, 0, bind_debug_mod, 0, 0);
+    bind_toggle_bounding_boxes = fsl_key_bind_init(FSL_KEY_B, 0, 0, bind_debug_mod, 0, 0);
+    bind_toggle_chunk_gizmo = fsl_key_bind_init(FSL_KEY_G, 0, 0, bind_debug_mod, 0, 0);
+    bind_toggle_chunk_scheduler_visualizer = fsl_key_bind_init(FSL_KEY_V, 0, 0, bind_debug_mod, 0, 0);
+    bind_reload_shaders = fsl_key_bind_init(FSL_KEY_L, 0, FSL_CONTROL_LEFT, 0, 0, 0);
+
+    fsl_input_context_set(input_context_gameplay);
+}
+
+void input_update(hhc_player *p)
+{
+    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    u32 shader_err = FSL_ERR_SUCCESS;
+    u32 i = 0;
+    f32 px = 0.0f;
+    f32 nx = 0.0f;
+    f32 py = 0.0f;
+    f32 ny = 0.0f;
+    f32 pz = 0.0f;
+    f32 nz = 0.0f;
+    f32 spch = sin(p->transform.rot.y * FSL_DEG2RAD);
+    f32 cpch = cos(p->transform.rot.y * FSL_DEG2RAD);
+    f32 syaw = sin(p->transform.rot.z * FSL_DEG2RAD);
+    f32 cyaw = cos(p->transform.rot.z * FSL_DEG2RAD);
+
+    p->input.x = 0.0f;
+    p->input.y = 0.0f;
+    p->input.z = 0.0f;
+
+    if (!(p->flag & FLAG_PLAYER_DEAD))
+    {
+        /* ---- movement ---------------------------------------------------- */
+
+        px += (f32)fsl_is_key_hold(bind_walk_forward);
+        nx += (f32)fsl_is_key_hold(bind_walk_backward);
+        py += (f32)fsl_is_key_hold(bind_strafe_left);
+        ny += (f32)fsl_is_key_hold(bind_strafe_right);
+
+        if (fsl_is_key_press_double(bind_walk_forward))
+            p->flag |= FLAG_PLAYER_SPRINTING;
+
+        /* ---- jumping ----------------------------------------------------- */
+
+        if (fsl_is_key_hold(bind_jump))
+        {
+            if (p->flag & FLAG_PLAYER_FLYING)
+                pz += 1.0f;
+            else if (p->flag & FLAG_PLAYER_CAN_JUMP)
+            {
+                p->velocity.z += sqrtf(2.0f * world.gravity * PLAYER_JUMP_HEIGHT);
+                p->flag &= ~FLAG_PLAYER_CAN_JUMP;
+            }
+        }
+
+        if (fsl_is_key_press_double(bind_jump))
+            p->flag ^= FLAG_PLAYER_FLYING;
+
+        /* ---- sprinting --------------------------------------------------- */
+
+        if (fsl_is_key_hold(bind_sprint) && fsl_is_key_hold(bind_walk_forward))
+            p->flag |= FLAG_PLAYER_SPRINTING;
+        else if (fsl_is_key_release(bind_walk_forward))
+            p->flag &= ~FLAG_PLAYER_SPRINTING;
+
+        /* ---- sneaking ---------------------------------------------------- */
+
+        if (fsl_is_key_hold(bind_sneak))
+        {
+            if (p->flag & FLAG_PLAYER_FLYING)
+                nz += 1.0f;
+            else p->flag |= FLAG_PLAYER_SNEAKING;
+        }
+        else p->flag &= ~FLAG_PLAYER_SNEAKING;
+
+        /* ---- apply input ------------------------------------------------- */
+
+        if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        {
+            p->input.x =
+                (px - nx) * cyaw * cpch +
+                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0) +
+                (pz - nz) * cyaw * spch;
+            p->input.y =
+                (px - nx) * -syaw * cpch +
+                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0) +
+                (pz - nz) * -syaw * spch;
+            p->input.z =
+                (px - nx) * -spch +
+                (pz - nz) * cpch;
+        }
+        else
+        {
+            p->input.x =
+                (px - nx) * cyaw +
+                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0);
+            p->input.y =
+                (px - nx) * -syaw +
+                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0);
+            p->input.z =
+                pz - nz;
+        }
+
+        p->input = fsl_normalize_v3f32(p->input);
+
+        /* ---- gameplay ---------------------------------------------------- */
+
+        if (p->hit.hit)
+        {
+            if (fsl_is_mouse_press(bind_attack_or_destroy))
+            {
+                block_break(p->hit);
+            }
+
+            if (fsl_is_mouse_press(bind_build_or_use))
+            {
+                block_place(p->hit, p->hotbar_slots[p->hotbar_slot_selected]);
+            }
+
+            /* TODO: make 'sample_block' (pick block) logic */
+            if (fsl_is_key_press(bind_sample_block)) {}
+        }
+
+        /* ---- inventory --------------------------------------------------- */
+
+        for (i = 0; i < PLAYER_HOTBAR_SLOTS_MAX; ++i)
+        {
+            if (fsl_is_key_press(bind_hotbar[0][i]) || fsl_is_key_press(bind_hotbar[1][i]))
+                p->hotbar_slot_selected = 
+                    fsl_mod_i32(i - 1, PLAYER_HOTBAR_SLOTS_MAX);
+        }
+
+        if (fsl_is_key_press(bind_inventory))
+        {
+            if ((p->menu_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && state_menu_depth)
+            {
+                state_menu_depth = 0;
+                p->menu_state &= ~STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
+            }
+            else if (!(p->menu_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && !state_menu_depth)
+            {
+                state_menu_depth = 1;
+                p->menu_state |= STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
+            }
+
+            if (!(p->menu_state & STATE_PLAYER_MENU_INVENTORY_SURVIVAL) && state_menu_depth)
+                --state_menu_depth;
+        }
+
+        /* ---- miscellaneous ----------------------------------------------- */
+
+        if (fsl_is_key_press(bind_toggle_hud))
+            core.flag.hud ^= 1;
+        if (fsl_is_key_press(bind_take_screenshot))
+            fsl_request_screenshot();
+
+        if (fsl_is_key_press(bind_toggle_debug))
+            core.flag.debug ^= 1;
+
+        if (fsl_is_key_press(bind_toggle_perspective))
+            p->camera_mode = (p->camera_mode + 1) % PLAYER_CAMERA_MODE_COUNT;
+
+        if (fsl_is_key_press(bind_zoom))
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "Zoom Toggled On\n");
+        if (fsl_is_key_hold(bind_zoom))
+            p->flag |= FLAG_PLAYER_ZOOMER;
+        if (fsl_is_key_release(bind_zoom))
+        {
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "Zoom Toggled Off\n");
+            p->flag &= ~FLAG_PLAYER_ZOOMER;
+        }
+
+        if (fsl_is_key_press(bind_toggle_flashlight))
+        {
+            p->flag ^= FLAG_PLAYER_FLASHLIGHT;
+
+            if (p->flag & FLAG_PLAYER_FLASHLIGHT)
+                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                        "Flashlight Toggled On\n");
+            else
+                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                        "Flashlight Toggled Off\n");
+        }
+
+        if (fsl_is_key_press(bind_toggle_cinematic_motion))
+        {
+            p->flag ^= FLAG_PLAYER_CINEMATIC_MOTION;
+
+            if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                        "Cinematic Motion On\n");
+            else
+                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                        "Cinematic Motion Off\n");
+        }
+    }
+
+    /* ---- debug ----------------------------------------------------------- */
+
+#if !GAME_RELEASE_BUILD
+    if (fsl_is_key_press(bind_toggle_super_debug))
+        core.flag.super_debug ^= 1;
+#endif /* GAME_RELEASE_BUILD */
+
+    if (fsl_is_key_press(bind_toggle_trans_blocks))
+    {
+        core.debug.trans_blocks ^= 1;
+
+        if (core.debug.trans_blocks)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Transparent Blocks On\n");
+        else
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Transparent Blocks Off\n");
+    }
+
+    if (fsl_is_key_press(bind_toggle_chunk_bounds))
+    {
+        core.debug.chunk_bounds ^= 1;
+
+        if (core.debug.chunk_bounds)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Boundaries On\n");
+        else
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Boundaries Off\n");
+    }
+
+    if (fsl_is_key_press(bind_toggle_bounding_boxes))
+    {
+        core.debug.bounding_boxes ^= 1;
+
+        if (core.debug.bounding_boxes)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Bounding Boxes On\n");
+        else
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Bounding Boxes Off\n");
+    }
+
+    if (fsl_is_key_press(bind_toggle_chunk_gizmo))
+    {
+        core.debug.chunk_gizmo ^= 1;
+
+        if (core.debug.chunk_gizmo)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Gizmo On\n");
+        else
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Gizmo Off\n");
+    }
+
+    if (fsl_is_key_press(bind_toggle_chunk_scheduler_visualizer))
+    {
+        core.debug.chunk_scheduler_visualizer ^= 1;
+
+        if (core.debug.chunk_scheduler_visualizer)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Scheduler Visualizer On\n");
+        else
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "View Chunk Scheduler Visualizer Off\n");
+    }
+
+    if (fsl_is_key_press(bind_reload_shaders))
+    {
+        for (i = 0; i < SHADER_COUNT; ++i)
+        {
+            if (fsl_shader_program_init(&shader_p[i]) != FSL_ERR_SUCCESS)
+                shader_err = FSL_ERR_SHADER_COMPILE_FAIL;
+        }
+
+        if (shader_err == FSL_ERR_SUCCESS)
+            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "Shaders Reloaded!\n");
+        else
+            LOGERROR(shader_err, FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                    "Failed to Reload Shaders\n");
+    }
+}

@@ -1,18 +1,18 @@
-#ifndef GAME_DIAGNOSTICS_H
-#define GAME_DIAGNOSTICS_H
+#ifndef HHC_DIAGNOSTICS_H
+#define HHC_DIAGNOSTICS_H
 
-#include <engine/h/types.h>
-#include <engine/h/diagnostics.h>
-#include <engine/h/limits.h>
+#include "deps/fossil/common/diagnostics.h"
+#include "deps/fossil/common/types.h"
 
-#define GAME_ERR_OFFSET 512
+#define HHC_ERR_WORLD_EXISTS        513
+#define HHC_ERR_WORLD_CREATION_FAIL 514
+#define HHC_ERR_COLLISIONS_DISABLED 515
 
-enum GameErrorCodes
-{
-    ERR_MODE_INTERNAL_DEBUG_DISABLE = GAME_ERR_OFFSET,
-    ERR_MODE_INTERNAL_COLLIDE_DISABLE,
-    ERR_WORLD_EXISTS,
-    ERR_WORLD_CREATION_FAIL,
-}; /* GameErrorCodes */
+/*!
+ *  @brief global pointer to error variable.
+ *
+ *  @remark declared and initialized internally in @ref main.c.
+ */
+extern u32 *const GAME_ERR;
 
-#endif /* GAME_DIAGNOSTICS_H */
+#endif /* HHC_DIAGNOSTICS_H */

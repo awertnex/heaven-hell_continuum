@@ -1,95 +1,108 @@
-#include "engine/build.c"
+#include "fossil/deps/fossil/external/buildtool/buildtool.h"
+#include "fossil/deps/fossil/h/buildtool_config.h"
 
-#define DIR_ROOT        "Heaven-Hell Continuum/"
-#define DIR_SRC         "src/"
-#define ASSET_COUNT     3
-#define NEW_DIR_COUNT   1
+#define DIR_SRC     "src/"
+#define DIR_OUT     "Heaven-Hell Continuum/"
+#define STR_OUT     DIR_OUT"hhc"
 
-str str_out_dir[CMD_SIZE] = {0}; /* bundle directory name */
+bt_buf cmd = {0};
 
-#if PLATFORM_LINUX
-    #define STR_OUT     DIR_ROOT"hhc"
-#elif PLATFORM_WIN
-    #define STR_OUT     "\""DIR_ROOT"hhc"EXE"\""
-#endif /* PLATFORM */
+static str str_cflags[][CMD_SIZE] =
+{
+    "-std=c89",
+    "-Ofast",
+    "-I."
+};
+
+static str str_cflags_debug[][CMD_SIZE] =
+{
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wformat-truncation=0",
+    "-ggdb"
+};
+
+static str str_libs[][CMD_SIZE] =
+{
+    "-lmvec"
+};
+
+static str str_files[][CMD_SIZE] =
+{
+    DIR_SRC"main.c",
+    DIR_SRC"chunking/chunking.c",
+    DIR_SRC"chunking/chunking_debug_tools.c",
+    DIR_SRC"terrain/terrain.c",
+    DIR_SRC"terrain/perlin_noise.c",
+    DIR_SRC"assets.c",
+    DIR_SRC"common.c",
+    DIR_SRC"dir.c",
+    DIR_SRC"gui.c",
+    DIR_SRC"input.c",
+    DIR_SRC"player.c",
+    DIR_SRC"world.c"
+};
 
 int main(int argc, char **argv)
 {
+    u32 i = 0;
+
+    /* if error, will fail and exit */
     build_init(argc, argv, "build.c", "build"EXE);
-    if (find_token("engine", argc, argv))
-        engine_build(
-                stringf("%sengine/", str_build_root),
-                stringf("%sengine/lib/"PLATFORM, str_build_root));
+
+    LOGWARNING(0, FALSE, "THIS VERSION SAVES CHUNKS AS SEPARATE FILES ON DISK, VERY DISK-HEAVY AND PERFORMANCE INTENSIVE\n\n");
 
     if (is_dir_exists(DIR_SRC, TRUE) != ERR_SUCCESS)
-        return engine_err;
+        return build_err;
 
-    snprintf(str_out_dir, CMD_SIZE, "%s"DIR_ROOT, str_build_root);
+    if (
+            copy_dir("fossil/deps/",    ".", FALSE) != ERR_SUCCESS ||
+            copy_dir("fossil/lib/",     ".", FALSE) != ERR_SUCCESS)
+        cmd_fail(&cmd);
 
-    u32 i = 0;
-    str temp[CMD_SIZE] = {0};
-    cmd_push(COMPILER);
-    cmd_push(DIR_SRC"main.c");
-    cmd_push(DIR_SRC"assets.c");
-    cmd_push(DIR_SRC"chunking.c");
-    cmd_push(DIR_SRC"dir.c");
-    cmd_push(DIR_SRC"gui.c");
-    cmd_push(DIR_SRC"input.c");
-    cmd_push(DIR_SRC"logic.c");
-    cmd_push(DIR_SRC"terrain.c");
-    cmd_push(stringf("-I%s", str_build_root));
-    cmd_push("-Ofast");
-    cmd_push("-std=c99");
-    cmd_push("-ggdb");
-    cmd_push("-Wall");
-    cmd_push("-Wextra");
-    cmd_push("-fno-builtin");
-    snprintf(temp, CMD_SIZE, "%s", "-Wl,-rpath="RUNTIME_PATH);
-    normalize_slash(temp);
-    cmd_push(temp);
-    engine_link_libs();
-    cmd_push("-o");
-    cmd_push(STR_OUT);
-    cmd_ready();
+    if (is_dir_exists(DIR_OUT, FALSE) != ERR_SUCCESS)
+        make_dir(DIR_OUT);
 
-    str str_mkdir[NEW_DIR_COUNT][CMD_SIZE] = {0};
-    str str_from[ASSET_COUNT][CMD_SIZE] = {0};
-    str str_to[ASSET_COUNT][CMD_SIZE] = {0};
-    snprintf(str_mkdir[0],  CMD_SIZE, "%s", str_out_dir);
-    snprintf(str_from[0],   CMD_SIZE, "%sLICENSE", str_build_root);
-    snprintf(str_from[1],   CMD_SIZE, "%sengine/lib/"PLATFORM, str_build_root);
-    snprintf(str_from[2],   CMD_SIZE, "%sassets/", str_build_root);
-    snprintf(str_to[0],     CMD_SIZE, "%sLICENSE", str_out_dir);
-    snprintf(str_to[1],     CMD_SIZE, "%s", str_out_dir);
-    snprintf(str_to[2],     CMD_SIZE, "%sassets/", str_out_dir);
+    cmd_push(&cmd, COMPILER);
 
-    for (i = 0; i < NEW_DIR_COUNT; ++i)
+    if (find_token("release", argc, argv))
     {
-        normalize_slash(str_mkdir[i]);
-        make_dir(str_mkdir[i]);
+        LOGINFO(FALSE, "Building For Release..\n");
+        cmd_push(&cmd, "-DHHC_RELEASE_BUILD");
+    }
+    else
+    {
+        LOGWARNING(0, FALSE, "Building in Debug Mode..\n");
+        for (i = 0; i < arr_len(str_cflags_debug); ++i)
+            cmd_push(&cmd, str_cflags_debug[i]);
     }
 
-    for (i = 0; i < ASSET_COUNT; ++i)
-    {
-        normalize_slash(str_from[i]);
-        normalize_slash(str_to[i]);
-        if (is_file(str_from[i]) == ERR_SUCCESS)
-            copy_file(str_from[i], str_to[i], "rb", "wb");
-        else copy_dir(str_from[i], str_to[i], TRUE, "rb", "wb");
+    for (i = 0; i < arr_len(str_cflags); ++i)
+        cmd_push(&cmd, str_cflags[i]);
 
-        if (engine_err != ERR_SUCCESS)
-            goto cleanup;
-    }
+    for (i = 0; i < arr_len(str_libs); ++i)
+        cmd_push(&cmd, str_libs[i]);
 
-    if (exec(&cmd, "build") != ERR_SUCCESS)
-        goto cleanup;
+    fsl_engine_link_libs(&cmd);
+    fsl_engine_set_runtime_path(&cmd);
 
-    cmd_free();
-    engine_err = ERR_SUCCESS;
-    return engine_err;
+    for (i = 0; i < arr_len(str_files); ++i)
+        cmd_push(&cmd, str_files[i]);
 
-cleanup:
+    cmd_push(&cmd, "-o");
+    cmd_push(&cmd, STR_OUT);
+    cmd_ready(&cmd);
 
-    cmd_fail();
-    return engine_err;
+    if (
+            copy_file("LICENSE",        DIR_OUT) != ERR_SUCCESS ||
+            copy_dir("assets/",         DIR_OUT, FALSE) != ERR_SUCCESS ||
+            copy_dir("fossil/fossil/",  DIR_OUT, TRUE) != ERR_SUCCESS)
+        cmd_fail(&cmd);
+
+    if (exec(&cmd, "main().cmd") != ERR_SUCCESS)
+        cmd_fail(&cmd);
+
+    build_err = ERR_SUCCESS;
+    return build_err;
 }

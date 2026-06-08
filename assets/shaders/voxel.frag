@@ -2,39 +2,60 @@
 
 #extension GL_ARB_bindless_texture: require
 
-layout(binding = 1, std430) readonly buffer ssbo_textures
+layout(std430, binding = 2) readonly buffer ssbo_textures
 {
     sampler2D textures[];
 };
 
 uniform sampler2D texture_block;
-uniform vec3 player_position;
 uniform float opacity;
-in vec3 position;
+uniform vec3 flashlight_position;
+uniform float toggle_flashlight;
+uniform int render_distance;
+in vec3 vertex_position;
 in vec2 tex_coords;
 in vec3 normal;
 in flat uint face_index;
+in float block_light;
 out vec4 color;
 
-#include "h/defaults.frag.h"
-
-vec3 base_color = vec3(1.0, 0.74, 0.41);
-vec4 base_texture = texture(textures[face_index], tex_coords);
-float distance = length(position - player_position);
-float flashlight = FLASHLIGHT_INTENSITY / (distance * FALLOFF);
+#define USE_SUN_DIRECTION
+#define USE_MATH
+#define USE_FOG
+#define USE_TONE_MAPPING
+#include "h/defaults.glsl"
 
 void main()
 {
-    base_color *= base_texture.rgb;
-    base_color += (sun_direction * SUN_INFLUENCE);
-    base_color *= sky_brightness + flashlight;
-    base_color = mix(base_color.rgb, sky_color.rgb, sky_color_influence);
+    float distance = square_length(vertex_position - flashlight_position);
+    float flashlight_intensity = toggle_flashlight *
+        (FLASHLIGHT_INTENSITY / (distance * FLASHLIGHT_DISTANCE));
+    float sky_brightness = (sky_light.r + sky_light.g + sky_light.b) / 3.0;
+    float moon_brightness = (moon_light.r + moon_light.g + moon_light.b) / 3.0;
 
-    /* reinhard tone mapping */
-    base_color /= base_color + vec3(1.0);
+    vec4 texture_base = texture(textures[face_index], tex_coords);
+    vec3 color_sky_influence = texture_base.rgb * sky_light *
+        SKY_INFLUENCE * block_light * (sky_brightness + moon_brightness);
+    vec3 color_sun_influence = texture_base.rgb * sun_direction *
+        SUN_INFLUENCE * sky_brightness;
+    vec3 color_moon_influence = texture_base.rgb * moon_direction *
+        MOON_INFLUENCE * moon_brightness;
+    vec3 color_block_light = block_light * (color_sun_influence + color_moon_influence);
+    vec3 color_ambient_light = texture_base.rgb * GLOBAL_ILLUMINATION;
+    vec3 color_flashlight = FLASHLIGHT_COLOR * texture_base.rgb * flashlight_intensity;
 
-    /* brightness & contrast */
-    base_color *= BRIGHTNESS;
-    base_color = ((base_color - CONTRAST) * (CONTRAST + 1.0)) + CONTRAST;
-    color = vec4(base_color, 1.0) * base_texture * opacity;
+    vec3 color_composite =
+        color_sky_influence +
+        color_block_light +
+        color_ambient_light +
+        color_flashlight;
+
+    vec3 color_final = mix(color_composite, sky_light,
+            fog_linear(distance / float(render_distance * (1.0 - FOG_SOFTNESS / 1.5)),
+                render_distance - render_distance * FOG_SOFTNESS,
+                render_distance + render_distance * FOG_SOFTNESS));
+
+    color_final = reinhard_tone_mapping(color_final, 30.0);
+
+    color = vec4(color_final, 1.0) * texture_base.a * opacity;
 }

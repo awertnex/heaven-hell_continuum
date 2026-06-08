@@ -1,132 +1,93 @@
-#include <string.h>
-#include <inttypes.h>
-
-#include <engine/h/core.h>
-#include <engine/h/diagnostics.h>
-#include <engine/h/logger.h>
-#include <engine/h/math.h>
-#include <engine/h/platform.h>
-#include <engine/h/string.h>
+#include "deps/fossil/fossil_engine.h"
 
 #include "h/main.h"
+
+#include "chunking/chunking.h"
+#include "chunking/chunking_internal.h"
+#include "chunking/chunking_debug_tools.h"
+#include "terrain/perlin_noise.h"
+
+#include "h/game_info.h"
 #include "h/assets.h"
-#include "h/chunking.h"
+#include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
 #include "h/gui.h"
 #include "h/input.h"
-#include "h/logic.h"
-#include "h/terrain.h"
+#include "h/player.h"
+#include "h/world.h"
 
-u32 *const GAME_ERR = (u32*)&engine_err;
-u32 chunk_tab_index = 0;
+#include <stdio.h>
+#include <string.h>
+#include <inttypes.h>
+#include <math.h>
 
-Render render =
-{
-    .title = GAME_NAME": "GAME_VERSION,
-    .size = {1280, 720},
-};
-
-struct Settings settings = {0};
-u64 flag = 0;
-f64 game_start_time = 0;
-u64 game_tick = 0;
-u64 game_days = 0;
-u8 debug_mode[DEBUG_MODE_COUNT] = {0};
-static ShaderProgram shader[SHADER_COUNT] = {0};
-Texture texture[TEXTURE_COUNT] = {0};
-Font font[FONT_COUNT];
-static Projection projection_world = {0};
-static Projection projection_hud = {0};
-static struct Uniform uniform = {0};
-static Mesh mesh[MESH_COUNT] = {0};
-static FBO fbo[FBO_COUNT] = {0};
-
-static Player lily =
-{
-    .name = "Lily",
-    .size = {0.6f, 0.6f, 1.8f},
-    .eye_height = SET_PLAYER_EYE_HEIGHT,
-    .weight = 2.0f,
-    .camera_mode = MODE_CAMERA_1ST_PERSON,
-    .camera_distance = SET_CAMERA_DISTANCE_MAX,
-
-    .spawn_point = {0},
-    .container_state = 0,
-    .hotbar_slots[0] = BLOCK_GRASS,
-    .hotbar_slots[1] = BLOCK_DIRT,
-    .hotbar_slots[2] = BLOCK_STONE,
-    .hotbar_slots[3] = BLOCK_SAND,
-    .hotbar_slots[4] = BLOCK_GLASS,
-    .hotbar_slots[5] = BLOCK_WOOD_OAK_LOG,
-    .hotbar_slots[6] = BLOCK_WOOD_BIRCH_LOG,
-    .hotbar_slots[7] = BLOCK_WOOD_CHERRY_LOG,
-};
+i32 scrool = 0;
+u32 *const GAME_ERR = (u32*)&fsl_err;
+fsl_mem_arena memory_arena_internal = {0};
+fsl_render *render = NULL;
+struct hhc_core core = {0};
+struct hhc_settings settings = {0};
+struct hhc_uniform uniform = {0};
+static hhc_player player = {0};
 
 static struct /* skybox_data */
 {
     f32 time;
     v3f32 sun_rotation;
-    v3f32 color;
-} skybox_data;
+    v3f32 sky_color;
+    v3f32 horizon_color;
+    v3f32 sky_light;
+    v3f32 moon_light;
+} skybox_data = {0};
 
-static void callback_error(int error, const char* message)
+static struct /* refresh_interval */
 {
-    (void)error;
-    LOGERROR(TRUE, ERR_GLFW, "GLFW: %s\n", message);
-}
+    u64 fps_string;
+} refresh_interval = {0};
 
-static void callback_framebuffer_size(GLFWwindow* window, int width, int height);
+static void callback_framebuffer_size(i32 size_x, i32 size_y);
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods);
 static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset);
 
-static void shaders_init(void);
 static void bind_shader_uniforms(void);
-static void generate_standard_meshes(void);
 
-/*! -- INTERNAL USE ONLY --;
+/*!
+ *  @internal
  *
- *  @return non-zero on failure and '*GAME_ERR' is set accordingly.
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 static u32 settings_init(void);
 
 void settings_update(void);
-static void input_update(Player *player);
-
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
- */
-u32 world_init(str *name);
-
-static void world_update(Player *player);
+static void draw_hotbar_items(void);
+static void draw_world(void);
+static void draw_debug_gizmo_axis(void);
 static void draw_everything(void);
 
-static void callback_framebuffer_size(GLFWwindow* window, int width, int height)
+static void callback_framebuffer_size(i32 size_x, i32 size_y)
 {
-    (void)window;
+    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
 
-    render.size = (v2i32){width, height};
-    lily.camera.ratio = (f32)width / (f32)height;
-    lily.camera_hud.ratio = (f32)width / (f32)height;
-    glViewport(0, 0, render.size.x, render.size.y);
+    player.camera.ratio = (f32)size_x / (f32)size_y;
+    player.camera_hud.ratio = (f32)size_x / (f32)size_y;
 
-    fbo_realloc(&render, &fbo[FBO_SKYBOX], FALSE, 4);
-    fbo_realloc(&render, &fbo[FBO_WORLD], FALSE, 4);
-    fbo_realloc(&render, &fbo[FBO_WORLD_MSAA], TRUE, 4);
-    fbo_realloc(&render, &fbo[FBO_HUD], FALSE, 4);
-    fbo_realloc(&render, &fbo[FBO_HUD_MSAA], TRUE, 4);
-    fbo_realloc(&render, &fbo[FBO_UI], FALSE, 4);
-    fbo_realloc(&render, &fbo[FBO_TEXT], FALSE, 4);
-    fbo_realloc(&render, &fbo[FBO_TEXT_MSAA], TRUE, 4);
-    fbo_realloc(&render, &fbo[FBO_POST_PROCESSING], FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_SKYBOX], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_WORLD], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_WORLD_MSAA], render->size.x, render->size.y, TRUE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_HUD_MSAA], render->size.x, render->size.y, TRUE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 4);
 }
 
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
+    (void)window;
     (void)scancode;
     (void)mods;
 
     if (key == GLFW_KEY_Q && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+        fsl_request_engine_close();
 }
 
 static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
@@ -134,16 +95,18 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
     (void)window;
     (void)xoffset;
 
-    if (lily.flag & FLAG_PLAYER_ZOOMER)
-        lily.camera.zoom =
-            clamp_f64(lily.camera.zoom + yoffset * CAMERA_ZOOM_SPEED, 0.0f, CAMERA_ZOOM_MAX);
+    if (core.flag.super_debug)
+        scrool = fsl_clamp_i32(scrool + (i32)yoffset * SET_CONSOLE_SCROLL_SPEED, 0, logger_core.cursor);
+    else if (player.flag & FLAG_PLAYER_ZOOMER)
+        player.camera.zoom =
+            fsl_clamp_f64(player.camera.zoom + yoffset * FSL_CAMERA_ZOOM_SPEED, 0.0f, FSL_CAMERA_ZOOM_MAX);
     else
     {
-        lily.hotbar_slot_selected += (i64)yoffset;
-        if (lily.hotbar_slot_selected >= SET_HOTBAR_SLOTS_MAX)
-            lily.hotbar_slot_selected = 0;
-        else if (lily.hotbar_slot_selected < 0)
-            lily.hotbar_slot_selected = SET_HOTBAR_SLOTS_MAX - 1;
+        player.hotbar_slot_selected -= (i64)yoffset;
+        if (player.hotbar_slot_selected >= PLAYER_HOTBAR_SLOTS_MAX)
+            player.hotbar_slot_selected = 0;
+        else if (player.hotbar_slot_selected < 0)
+            player.hotbar_slot_selected = PLAYER_HOTBAR_SLOTS_MAX - 1;
     }
 }
 
@@ -156,7 +119,7 @@ static u32 settings_init(void)
         "render_distance",
         "target_fps",
     };
-    str *settings_file_contents = stringf(
+    str *settings_file_contents = fsl_stringf(
             "%s = %d\n"
             "%s = %d\n"
             "%s = %d\n"
@@ -164,34 +127,33 @@ static u32 settings_init(void)
             tokens[0], SET_MOUSE_SENSITIVITY_DEFAULT,
             tokens[1], SET_FOV_DEFAULT,
             tokens[2], SET_RENDER_DISTANCE_DEFAULT,
-            tokens[3], SET_TARGET_FPS_DEFAULT);
+            tokens[3], FSL_TARGET_FPS_DEFAULT);
 
-    if (is_dir_exists(DIR_ROOT[DIR_CONFIG], TRUE) != ERR_SUCCESS)
+    if (fsl_is_dir_exists(GAME_DIR_NAME_CONFIG, TRUE) != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
-    if (is_file_exists(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
-                FALSE) != ERR_SUCCESS)
+    if (fsl_is_file_exists(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS, FALSE) != FSL_ERR_SUCCESS)
     {
-        write_file(stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
-                1, strlen(settings_file_contents),
-                settings_file_contents, "wb", TRUE);
+        fsl_write_file(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS,
+                strlen(settings_file_contents),
+                settings_file_contents, TRUE, TRUE);
     }
 
     settings_file_contents = NULL;
-    get_file_contents(
-            stringf("%s"FILE_NAME_SETTINGS, DIR_ROOT[DIR_CONFIG]),
-            (void*)&settings_file_contents, 1, "rb", TRUE);
-    if (*GAME_ERR != ERR_SUCCESS)
+    fsl_get_file_contents(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS,
+            (void*)&settings_file_contents, TRUE);
+    if (*GAME_ERR != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings.render_distance = 15;
+    settings.render_distance = 16;
     settings.chunk_buf_radius = settings.render_distance;
     settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
 
     settings.chunk_buf_layer =
-        settings.chunk_buf_diameter * settings.chunk_buf_diameter;
+        settings.chunk_buf_diameter *
+        settings.chunk_buf_diameter;
 
     settings.chunk_buf_volume =
         settings.chunk_buf_diameter *
@@ -203,1373 +165,744 @@ static u32 settings_init(void)
         settings.chunk_buf_radius * settings.chunk_buf_diameter +
         settings.chunk_buf_radius * settings.chunk_buf_layer;
 
-    settings.reach_distance = SET_REACH_DISTANCE_MAX;
+    settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
-    settings.fov = SET_FOV_DEFAULT;
-    settings.target_fps = SET_TARGET_FPS_DEFAULT;
     settings.gui_scale = SET_GUI_SCALE_DEFAULT;
+    settings.font_size = 20.0f;
+    settings.target_fps = 0;
+    settings.fov = SET_FOV_DEFAULT;
     settings.anti_aliasing = TRUE;
 
-    mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
+    fsl_mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
             "settings_init().settings_file_contents");
 
-    *GAME_ERR = ERR_SUCCESS;
+    *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
-
-cleanup:
-
-    mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
-            "settings_init().settings_file_contents");
 }
 
 void settings_update(void)
 {
-    settings.ndc_scale = (v2f32){2.0f / render.size.x, 2.0f / render.size.y};
-    settings.fps = 1 / render.frame_delta;
-}
-
-static void shaders_init(void)
-{
-    shader[SHADER_FBO] =
-        (ShaderProgram){
-            .name = "fbo",
-            .vertex.file_name = "fbo.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "fbo.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_DEFAULT] =
-        (ShaderProgram){
-            .name = "default",
-            .vertex.file_name = "default.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "default.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_UI] =
-        (ShaderProgram){
-            .name = "ui",
-            .vertex.file_name = "ui.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "ui.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_UI_9_SLICE] =
-        (ShaderProgram){
-            .name = "ui_9_slice",
-            .vertex.file_name = "ui_9_slice.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .geometry.file_name = "ui_9_slice.geom",
-            .geometry.type = GL_GEOMETRY_SHADER,
-            .fragment.file_name = "ui_9_slice.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_TEXT] =
-        (ShaderProgram){
-            .name = "text",
-            .vertex.file_name = "text.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .geometry.file_name = "text.geom",
-            .geometry.type = GL_GEOMETRY_SHADER,
-            .fragment.file_name = "text.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_SKYBOX] =
-        (ShaderProgram){
-            .name = "skybox",
-            .vertex.file_name = "skybox.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "skybox.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_GIZMO] =
-        (ShaderProgram){
-            .name = "gizmo",
-            .vertex.file_name = "gizmo.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "gizmo.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_GIZMO_CHUNK] =
-        (ShaderProgram){
-            .name = "gizmo_chunk",
-            .vertex.file_name = "gizmo_chunk.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "gizmo_chunk.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_POST_PROCESSING] =
-        (ShaderProgram){
-            .name = "post_processing",
-            .vertex.file_name = "post_processing.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "post_processing.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_VOXEL] =
-        (ShaderProgram){
-            .name = "voxel",
-            .vertex.file_name = "voxel.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .geometry.file_name = "voxel.geom",
-            .geometry.type = GL_GEOMETRY_SHADER,
-            .fragment.file_name = "voxel.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
-    shader[SHADER_BOUNDING_BOX] =
-        (ShaderProgram){
-            .name = "bounding_box",
-            .vertex.file_name = "bounding_box.vert",
-            .vertex.type = GL_VERTEX_SHADER,
-            .fragment.file_name = "bounding_box.frag",
-            .fragment.type = GL_FRAGMENT_SHADER,
-        };
-
+    if (fsl_on_time_interval(&refresh_interval.fps_string,
+                FSL_SEC2NSEC / SET_TEXT_REFRESH_INTERVAL, render->time))
+        settings.fps = 1 / ((f64)render->time_delta * FSL_NSEC2SEC);
 }
 
 static void bind_shader_uniforms(void)
 {
-    uniform.defaults.offset =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "offset");
-    uniform.defaults.scale =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "scale");
-    uniform.defaults.mat_rotation =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "mat_rotation");
-    uniform.defaults.mat_perspective =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "mat_perspective");
-    uniform.defaults.sun_rotation =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "sun_rotation");
-    uniform.defaults.sky_color =
-        glGetUniformLocation(shader[SHADER_DEFAULT].id, "sky_color");
-
-    uniform.ui.ndc_scale =
-        glGetUniformLocation(shader[SHADER_UI].id, "ndc_scale");
-    uniform.ui.position =
-        glGetUniformLocation(shader[SHADER_UI].id, "position");
-    uniform.ui.offset =
-        glGetUniformLocation(shader[SHADER_UI].id, "offset");
-    uniform.ui.texture_size =
-        glGetUniformLocation(shader[SHADER_UI].id, "texture_size");
-    uniform.ui.size =
-        glGetUniformLocation(shader[SHADER_UI].id, "size");
-    uniform.ui.alignment =
-        glGetUniformLocation(shader[SHADER_UI].id, "alignment");
-    uniform.ui.tint =
-        glGetUniformLocation(shader[SHADER_UI].id, "tint");
-
-    uniform.ui_9_slice.ndc_scale =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "ndc_scale");
-    uniform.ui_9_slice.position =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "position");
-    uniform.ui_9_slice.size =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "size");
-    uniform.ui_9_slice.alignment =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "alignment");
-    uniform.ui_9_slice.tint =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "tint");
-    uniform.ui_9_slice.slice =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "slice");
-    uniform.ui_9_slice.slice_size =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "slice_size");
-    uniform.ui_9_slice.texture_size =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "texture_size");
-    uniform.ui_9_slice.sprite_size =
-        glGetUniformLocation(shader[SHADER_UI_9_SLICE].id, "sprite_size");
-
-    uniform.font.char_size =
-        glGetUniformLocation(shader[SHADER_TEXT].id, "char_size");
-    uniform.font.font_size =
-        glGetUniformLocation(shader[SHADER_TEXT].id, "font_size");
-    uniform.font.text_color =
-        glGetUniformLocation(shader[SHADER_TEXT].id, "text_color");
-
-    font[FONT_REG].uniform.char_size = uniform.font.char_size;
-    font[FONT_REG].uniform.font_size = uniform.font.font_size;
-    font[FONT_REG].uniform.text_color = uniform.font.text_color;
-    font[FONT_REG_BOLD].uniform.char_size = uniform.font.char_size;
-    font[FONT_REG_BOLD].uniform.font_size = uniform.font.font_size;
-    font[FONT_REG_BOLD].uniform.text_color = uniform.font.text_color;
-    font[FONT_MONO].uniform.char_size = uniform.font.char_size;
-    font[FONT_MONO].uniform.font_size = uniform.font.font_size;
-    font[FONT_MONO].uniform.text_color = uniform.font.text_color;
-    font[FONT_MONO_BOLD].uniform.char_size = uniform.font.char_size;
-    font[FONT_MONO_BOLD].uniform.font_size = uniform.font.font_size;
-    font[FONT_MONO_BOLD].uniform.text_color = uniform.font.text_color;
-
+    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    uniform.skybox.mat_translation =
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_translation");
     uniform.skybox.mat_rotation =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_rotation");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_rotation");
+    uniform.skybox.mat_sun_rotation =
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_sun_rotation");
     uniform.skybox.mat_orientation =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_orientation");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_orientation");
     uniform.skybox.mat_projection =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "mat_projection");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_projection");
     uniform.skybox.texture_sky =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "texture_sky");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "texture_sky");
     uniform.skybox.texture_horizon =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "texture_horizon");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "texture_horizon");
     uniform.skybox.texture_stars =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "texture_stars");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "texture_stars");
+    uniform.skybox.texture_sun =
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "texture_sun");
     uniform.skybox.sun_rotation =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "sun_rotation");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "sun_rotation");
     uniform.skybox.sky_color =
-        glGetUniformLocation(shader[SHADER_SKYBOX].id, "sky_color");
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "sky_color");
+    uniform.skybox.horizon_color =
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "horizon_color");
+    uniform.skybox.render_layer =
+        glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "render_layer");
 
-    uniform.gizmo.mat_translation =
-        glGetUniformLocation(shader[SHADER_GIZMO].id, "mat_translation");
-    uniform.gizmo.mat_rotation =
-        glGetUniformLocation(shader[SHADER_GIZMO].id, "mat_rotation");
-    uniform.gizmo.mat_orientation =
-        glGetUniformLocation(shader[SHADER_GIZMO].id, "mat_orientation");
-    uniform.gizmo.mat_projection =
-        glGetUniformLocation(shader[SHADER_GIZMO].id, "mat_projection");
     uniform.gizmo.color =
-        glGetUniformLocation(shader[SHADER_GIZMO].id, "gizmo_color");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_AXIS].asset.id, "gizmo_color");
 
+    uniform.gizmo_chunk.gizmo_offset =
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "gizmo_offset");
     uniform.gizmo_chunk.render_size =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "render_size");
-    uniform.gizmo_chunk.render_distance =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "render_distance");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "render_size");
+    uniform.gizmo_chunk.chunk_buf_diameter =
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "chunk_buf_diameter");
     uniform.gizmo_chunk.mat_translation =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_translation");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_translation");
     uniform.gizmo_chunk.mat_rotation =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_rotation");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_rotation");
     uniform.gizmo_chunk.mat_orientation =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_orientation");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_orientation");
     uniform.gizmo_chunk.mat_projection =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "mat_projection");
-    uniform.gizmo_chunk.cursor =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "cursor");
-    uniform.gizmo_chunk.size =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "size");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_projection");
     uniform.gizmo_chunk.camera_position =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "camera_position");
-    uniform.gizmo_chunk.sky_color =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "sky_color");
-    uniform.gizmo_chunk.color =
-        glGetUniformLocation(shader[SHADER_GIZMO_CHUNK].id, "chunk_color");
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "camera_position");
+    uniform.gizmo_chunk.time =
+        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "time");
 
     uniform.post_processing.time =
-        glGetUniformLocation(shader[SHADER_POST_PROCESSING].id, "time");
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "time");
 
     uniform.voxel.mat_perspective =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "mat_perspective");
-    uniform.voxel.player_position =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "player_position");
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_perspective");
+    uniform.voxel.camera_position =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "camera_position");
     uniform.voxel.sun_rotation =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "sun_rotation");
-    uniform.voxel.sky_color =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "sky_color");
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "sun_rotation");
+    uniform.voxel.sky_light =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "sky_light");
+    uniform.voxel.moon_light =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "moon_light");
     uniform.voxel.chunk_position =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "chunk_position");
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "chunk_position");
     uniform.voxel.color =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "voxel_color");
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "voxel_color");
     uniform.voxel.opacity =
-        glGetUniformLocation(shader[SHADER_VOXEL].id, "opacity");
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "opacity");
+    uniform.voxel.flashlight_position =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight_position");
+    uniform.voxel.toggle_flashlight =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "toggle_flashlight");
+    uniform.voxel.render_distance =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "render_distance");
 
     uniform.bounding_box.mat_perspective =
-        glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "mat_perspective");
+        glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "mat_perspective");
     uniform.bounding_box.position =
-        glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "position");
+        glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "position");
     uniform.bounding_box.size =
-        glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "size");
+        glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "size");
     uniform.bounding_box.color =
-        glGetUniformLocation(shader[SHADER_BOUNDING_BOX].id, "box_color");
+        glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "box_color");
 }
 
-static void generate_standard_meshes(void)
+static void draw_hotbar_items(void)
 {
-    const u32 VBO_LEN_SKYBOX    = 120;
-    const u32 EBO_LEN_SKYBOX    = 36;
-    const u32 VBO_LEN_COH       = 24;
-    const u32 EBO_LEN_COH       = 36;
-    const u32 VBO_LEN_PLAYER    = 216;
-    const u32 VBO_LEN_GIZMO     = 51;
-    const u32 EBO_LEN_GIZMO     = 90;
+    u32 i = 0;
 
-    GLfloat vbo_data_skybox[] =
+    gui_start_ui_items();
+
+    for (i = 0; i < PLAYER_HOTBAR_SLOTS_MAX; ++i)
     {
-        -1.0f, -1.0f, -1.0f, 3.0f, 2.0f,
-        -1.0f, -1.0f, 1.0f, 3.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f, 4.0f, 1.0f,
-        -1.0f, 1.0f, -1.0f, 4.0f, 2.0f,
-
-        1.0f, 1.0f, -1.0f, 1.0f, 2.0f,
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, -1.0f, 1.0f, 2.0f, 1.0f,
-        1.0f, -1.0f, -1.0f, 2.0f, 2.0f,
-
-        1.0f, -1.0f, -1.0f, 2.0f, 2.0f,
-        1.0f, -1.0f, 1.0f, 2.0f, 1.0f,
-        -1.0f, -1.0f, 1.0f, 3.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 3.0f, 2.0f,
-
-        -1.0f, 1.0f, -1.0f, 0.0f, 2.0f,
-        -1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, -1.0f, 1.0f, 2.0f,
-
-        -1.0f, 1.0f, -1.0f, 1.0f, 3.0f,
-        1.0f, 1.0f, -1.0f, 1.0f, 2.0f,
-        1.0f, -1.0f, -1.0f, 2.0f, 2.0f,
-        -1.0f, -1.0f, -1.0f, 2.0f, 3.0f,
-
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 1.0f, 2.0f, 0.0f,
-        1.0f, -1.0f, 1.0f, 2.0f, 1.0f,
-    };
-
-    GLuint ebo_data_skybox[] =
-    {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        8, 9, 10, 10, 11, 8,
-        12, 13, 14, 14, 15, 12,
-        16, 17, 18, 18, 19, 16,
-        20, 21, 22, 22, 23, 20,
-    };
-
-    GLfloat vbo_data_coh[] =
-    {
-        0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
-    };
-
-    GLuint ebo_data_coh[] =
-    {
-        0, 4, 5, 5, 1, 0,
-        1, 5, 7, 7, 3, 1,
-        3, 7, 6, 6, 2, 3,
-        2, 6, 4, 4, 0, 2,
-        4, 6, 7, 7, 5, 4,
-        0, 1, 3, 3, 2, 0,
-    };
-
-    GLfloat vbo_data_player[] =
-    {
-        /* pos            normals */
-        1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, /* px */
-        1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-
-        0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, /* nx */
-        0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f,
-
-        0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, /* py */
-        0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-
-        0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, /* ny */
-        1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f,
-        1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-        1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-        0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f,
-
-        0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, /* pz */
-        0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, /* nz */
-        1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-    };
-
-    const GLfloat THIC = 0.06f;
-    GLfloat vbo_data_gizmo[] =
-    {
-        0.0f, 0.0f, 0.0f,
-        THIC, THIC, 0.0f,
-        THIC, 0.0f, THIC,
-        0.0f, THIC, THIC,
-        1.0f, 0.0f, 0.0f,
-        1.0f, THIC, 0.0f,
-        1.0f, 0.0f, THIC,
-        0.0f, 1.0f, 0.0f,
-        THIC, 1.0f, 0.0f,
-        0.0f, 1.0f, THIC,
-        0.0f, 0.0f, 1.0f,
-        THIC, 0.0f, 1.0f,
-        0.0f, THIC, 1.0f,
-        THIC, THIC, THIC,
-        1.0f, THIC, THIC,
-        THIC, 1.0f, THIC,
-        THIC, THIC, 1.0f,
-    };
-
-    GLuint ebo_data_gizmo[] =
-    {
-        0, 2, 6, 6, 4, 0,
-        0, 4, 5, 5, 1, 0,
-        1, 5, 14, 14, 13, 1,
-        2, 13, 14, 14, 6, 2,
-        4, 6, 14, 14, 5, 4,
-
-        0, 7, 9, 9, 3, 0,
-        0, 1, 8, 8, 7, 0,
-        1, 13, 15, 15, 8, 1,
-        3, 9, 15, 15, 13, 3,
-        7, 8, 15, 15, 9, 7,
-
-        0, 3, 12, 12, 10, 0,
-        0, 10, 11, 11, 2, 0,
-        2, 11, 16, 16, 13, 2,
-        13, 16, 12, 12, 3, 13,
-        10, 12, 16, 16, 11, 10,
-    };
-
-    if (mesh_generate(&mesh[MESH_SKYBOX], &attrib_vec3_vec2, GL_STATIC_DRAW,
-                VBO_LEN_SKYBOX, EBO_LEN_SKYBOX,
-                vbo_data_skybox, ebo_data_skybox) != ERR_SUCCESS)
-    {
-        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Skybox");
-        goto cleanup;
-    }
-    LOG_MESH_GENERATE(ERR_SUCCESS, "Skybox");
-
-    if (mesh_generate(&mesh[MESH_CUBE_OF_HAPPINESS], &attrib_vec3, GL_STATIC_DRAW,
-                VBO_LEN_COH, EBO_LEN_COH,
-                vbo_data_coh, ebo_data_coh) != ERR_SUCCESS)
-    {
-        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Cube of Happiness");
-        goto cleanup;
-    }
-    LOG_MESH_GENERATE(ERR_SUCCESS, "Cube of Happiness");
-
-    if (mesh_generate(&mesh[MESH_PLAYER], &attrib_vec3_vec3, GL_STATIC_DRAW,
-                VBO_LEN_PLAYER, 0, vbo_data_player, NULL) != ERR_SUCCESS)
-    {
-        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Player");
-        goto cleanup;
-    }
-    LOG_MESH_GENERATE(ERR_SUCCESS, "Player");
-
-    if (mesh_generate(&mesh[MESH_GIZMO], &attrib_vec3, GL_STATIC_DRAW,
-                VBO_LEN_GIZMO, EBO_LEN_GIZMO,
-                vbo_data_gizmo, ebo_data_gizmo) != ERR_SUCCESS)
-    {
-        LOG_MESH_GENERATE(ERR_MESH_GENERATION_FAIL, "Gizmo");
-        goto cleanup;
-    }
-    LOG_MESH_GENERATE(ERR_SUCCESS, "Gizmo");
-
-    *GAME_ERR = ERR_SUCCESS;
-    return;
-
-cleanup:
-
-    mesh_free(&mesh[MESH_PLAYER]);
-}
-
-static void input_update(Player *player)
-{
-    u32 i;
-    player->movement = (v3f32){0};
-
-    /* ---- movement -------------------------------------------------------- */
-
-    if (is_key_hold(bind_walk_forward))
-    {
-        player->movement.x += player->cos_yaw * player->movement_speed;
-        player->movement.y -= player->sin_yaw * player->movement_speed;
-    }
-    if (is_key_press_double(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
-
-    if (is_key_hold(bind_walk_backward))
-    {
-        player->movement.x -= player->cos_yaw * player->movement_speed;
-        player->movement.y += player->sin_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_strafe_left))
-    {
-        player->movement.x += player->sin_yaw * player->movement_speed;
-        player->movement.y += player->cos_yaw * player->movement_speed;
-    }
-
-    if (is_key_hold(bind_strafe_right))
-    {
-        player->movement.x -= player->sin_yaw * player->movement_speed;
-        player->movement.y -= player->cos_yaw * player->movement_speed;
-    }
-
-    /* ---- jumping --------------------------------------------------------- */
-
-    if (is_key_hold(bind_jump))
-    {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            player->movement.z += player->movement_speed;
-
-        if (player->flag & FLAG_PLAYER_CAN_JUMP)
+        if (player.hotbar_slots[i])
         {
-            player->gravity_influence.z += SET_PLAYER_JUMP_INITIAL_VELOCITY;
-            player->flag &= ~FLAG_PLAYER_CAN_JUMP;
+            gui_draw_ui_item(i * 34.0f +
+                    (f32)render->size.x / 2.0f - 84.5f * 2.0f,
+                    4.0f);
         }
-    }
-    if (is_key_press_double(bind_jump))
-    {
-        player->flag ^= FLAG_PLAYER_FLYING;
-        player->gravity_influence.z = 0.0f;
-    }
-
-    /* ---- sprinting ------------------------------------------------------- */
-
-    if (is_key_hold(bind_sprint) && is_key_hold(bind_walk_forward))
-        player->flag |= FLAG_PLAYER_SPRINTING;
-    else if (is_key_release(bind_walk_forward))
-        player->flag &= ~FLAG_PLAYER_SPRINTING;
-
-    /* ---- sneaking -------------------------------------------------------- */
-
-    if (is_key_hold(bind_sneak))
-    {
-        if (player->flag & FLAG_PLAYER_FLYING)
-            player->movement.z -= player->movement_speed;
-        else player->flag |= FLAG_PLAYER_SNEAKING;
-    }
-    else player->flag &= ~FLAG_PLAYER_SNEAKING;
-
-    /* ---- gameplay -------------------------------------------------------- */
-
-    if (
-            !(flag & FLAG_MAIN_CHUNK_BUF_DIRTY) &&
-            (flag & FLAG_MAIN_PARSE_TARGET) &&
-            chunk_tab[chunk_tab_index])
-    {
-        if (glfwGetMouseButton(render.window, bind_attack_or_destroy) == GLFW_PRESS)
-        {
-            block_break(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER);
-        }
-        if (glfwGetMouseButton(render.window, bind_build_or_use) == GLFW_PRESS)
-        {
-            block_place(chunk_tab_index,
-                    player->target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER,
-                    player->target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER,
-                    player->target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER,
-                    player->hotbar_slots[player->hotbar_slot_selected]);
-        }
-
-        if (is_key_press(bind_sample_block)) {}
-    }
-
-    /* ---- inventory ------------------------------------------------------- */
-
-    for (i = 0; i < SET_HOTBAR_SLOTS_MAX; ++i)
-        if (is_key_press(bind_hotbar[i]) ||
-                is_key_press(bind_hotbar_kp[i]))
-            player->hotbar_slot_selected = i;
-
-    if (is_key_press(bind_inventory))
-    {
-        if ((player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
-        {
-            state_menu_depth = 0;
-            player->container_state &= ~STATE_CONTR_INVENTORY_SURVIVAL;
-        }
-        else if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                !state_menu_depth)
-        {
-            state_menu_depth = 1;
-            player->container_state |= STATE_CONTR_INVENTORY_SURVIVAL;
-        }
-
-        if (!(player->container_state & STATE_CONTR_INVENTORY_SURVIVAL) &&
-                state_menu_depth)
-            --state_menu_depth;
-    }
-
-    /* ---- miscellaneous --------------------------------------------------- */
-
-    if (is_key_press(bind_toggle_hud))
-        flag ^= FLAG_MAIN_HUD;
-
-    if (is_key_press(bind_toggle_debug))
-        flag ^= FLAG_MAIN_DEBUG;
-
-    if (is_key_press(bind_toggle_perspective))
-        player->camera_mode = (player->camera_mode + 1) % MODE_CAMERA_COUNT;
-
-    if (is_key_press(bind_toggle_zoom))
-        player->flag ^= FLAG_PLAYER_ZOOMER;
-
-    /* ---- debug ----------------------------------------------------------- */
-
-#if !GAME_RELEASE_BUILD
-    if (is_key_press(bind_toggle_super_debug))
-        flag ^= FLAG_MAIN_SUPER_DEBUG;
-#endif /* GAME_RELEASE_BUILD */
-
-    if (is_key_hold(bind_debug_mod))
-    {
-        if (is_key_press(bind_toggle_trans_blocks))
-            debug_mode[DEBUG_MODE_TRANS_BLOCKS] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_bounds))
-            debug_mode[DEBUG_MODE_CHUNK_BOUNDS] ^= 1;
-
-        if (is_key_press(bind_toggle_bounding_boxes))
-            debug_mode[DEBUG_MODE_BOUNDING_BOXES] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_gizmo))
-            debug_mode[DEBUG_MODE_CHUNK_GIZMO] ^= 1;
-
-        if (is_key_press(bind_toggle_chunk_queue_visualizer))
-            debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER] ^= 1;
     }
 }
 
-u32 world_init(str *name)
+static void draw_world(void)
 {
-    if (!strlen(name))
+    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    static hhc_chunk ***cursor = NULL;
+    static hhc_chunk *ch = NULL;
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shader_p[SHADER_VOXEL].asset.id);
+    glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
+            (GLfloat*)&player.camera.projection.perspective);
+    glUniform3f(uniform.voxel.camera_position,
+            player.camera.pos.x, player.camera.pos.y, player.camera.pos.z);
+    glUniform3f(uniform.voxel.flashlight_position,
+            player.transform.pos.x, player.transform.pos.y, player.transform.pos.z + player.eye_height);
+    glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.voxel.sky_light, 1, (GLfloat*)&skybox_data.sky_light);
+    glUniform3fv(uniform.voxel.moon_light, 1, (GLfloat*)&skybox_data.moon_light);
+    glUniform1f(uniform.voxel.toggle_flashlight, player.flag & FLAG_PLAYER_FLASHLIGHT ? 1.0f : 0.0f);
+    glUniform1i(uniform.voxel.render_distance, settings.render_distance * CHUNK_DIAMETER);
+
+    if (core.debug.trans_blocks)
+        glUniform1f(uniform.voxel.opacity, 0.7f);
+    else
+        glUniform1f(uniform.voxel.opacity, 1.0f);
+
+    cursor = &chunk_order.p[chunk_order.len[settings.render_distance] - 1];
+    for (; cursor >= chunk_order.p; --cursor)
     {
-        *GAME_ERR = ERR_POINTER_NULL;
-        return *GAME_ERR;
+        ch = **cursor;
+        if (ch && ch->flag & FLAG_CHUNK_VISIBLE)
+        {
+            glBindVertexArray(ch->mesh.vao);
+            glDrawArraysInstanced(GL_POINTS, 0, ch->mesh.vbo_len, 1);
+        }
     }
-
-    world_dir_init(name);
-    if (*GAME_ERR != ERR_SUCCESS && *GAME_ERR != ERR_WORLD_EXISTS)
-        return *GAME_ERR;
-
-    chunking_init();
-    if (*GAME_ERR != ERR_SUCCESS)
-        return *GAME_ERR;
-
-    set_player_spawn(&lily, 0, 0, 0);
-    set_player_block(&lily, 758, -20, 8);
-    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
-            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
-            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    lily.spawn_point =
-        (v3i64){
-            (i64)lily.pos.x,
-            (i64)lily.pos.y,
-            (i64)lily.pos.z
-        };
-    lily.target_snapped =
-        (v3i64){
-            (i64)lily.target.x,
-            (i64)lily.target.y,
-            (i64)lily.target.z,
-        };
-
-    flag |= FLAG_MAIN_HUD | FLAG_MAIN_WORLD_LOADED;
-    lily.flag |= FLAG_PLAYER_ZOOMER;
-    disable_cursor;
-    center_cursor;
-
-    *GAME_ERR = ERR_SUCCESS;
-    return *GAME_ERR;
 }
 
-static void world_update(Player *player)
+static void draw_debug_gizmo_axis(void)
 {
-    game_tick = 8000 + (u64)(render.frame_start * 20.0f) - SET_DAY_TICKS_MAX * game_days;
-    if (game_tick >= SET_DAY_TICKS_MAX)
-        ++game_days;
+    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    m4f32 transform = {0};
 
-    if (state_menu_depth || (flag & FLAG_MAIN_SUPER_DEBUG))
-        show_cursor;
-    else disable_cursor;
+    transform = player.camera_hud.projection.projection;
+    transform = fsl_matrix_multiply(player.camera_hud.projection.orientation, transform);
+    transform = fsl_matrix_multiply(player.camera_hud.projection.rotation, transform);
+    transform = fsl_matrix_multiply(player.camera_hud.projection.target, transform);
 
-    player_state_update(render.frame_delta, &lily, CHUNK_DIAMETER,
-            WORLD_RADIUS, WORLD_RADIUS_VERTICAL,
-            WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL);
-    player_collision_update(render.frame_delta, &lily);
+    glUseProgram(shader_p[SHADER_GIZMO_AXIS].asset.id);
 
-    b8 use_mouse = TRUE;
-    use_mouse = (!state_menu_depth && !(flag & FLAG_MAIN_SUPER_DEBUG));
-    player_camera_movement_update(render.mouse_delta, player, use_mouse);
-    update_camera_perspective(&player->camera, &projection_world);
-    update_camera_perspective(&player->camera_hud, &projection_hud);
-    player_target_update(&lily);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh_p[MESH_GIZMO_AXIS].transform_buf.id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(m4f32), &transform, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    chunking_update(lily.chunk, &lily.chunk_delta);
-
-    chunk_tab_index = get_target_chunk_index(lily.chunk, lily.target_snapped);
-    if (chunk_tab_index >= settings.chunk_buf_volume)
-        chunk_tab_index = settings.chunk_tab_center;
-
-    /* ---- player targeting ------------------------------------------------ */
-
-    if (is_in_volume_i64(
-                lily.target_snapped,
-                (v3i64){
-                -WORLD_DIAMETER * CHUNK_DIAMETER,
-                -WORLD_DIAMETER * CHUNK_DIAMETER,
-                -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER},
-                (v3i64){
-                WORLD_DIAMETER * CHUNK_DIAMETER,
-                WORLD_DIAMETER * CHUNK_DIAMETER,
-                WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER}))
-        flag |= FLAG_MAIN_PARSE_TARGET;
-    else flag &= ~FLAG_MAIN_PARSE_TARGET;
+    glBindVertexArray(mesh_p[MESH_GIZMO_AXIS].vao);
+    glUniform3f(uniform.gizmo.color, 1.0f, 0.0f, 0.0f);
+    glDrawElementsInstanced(GL_TRIANGLES, mesh_p[MESH_GIZMO_AXIS].index_buf.len,
+            GL_UNSIGNED_INT, NULL, 1);
 }
 
 static void draw_everything(void)
 {
+    static str engine_version[FSL_ID_CAP] = {0};
+    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
+    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+    fsl_texture *fsl_texture_p = fsl_mem_handle_get(fsl_texture_buf);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    fsl_mesh *fsl_mesh_p = fsl_mem_handle_get(fsl_mesh_buf);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *fsl_shader_p = fsl_mem_handle_get(fsl_shader_buf);
+    block *blocks_p = fsl_mem_handle_get(blocks);
+    fsl_asset_metadata metadata = {0};
+    u32 block_id = 0;
+
+    f32 delay_in_hours = 6.0f;
+    f32 sun_time = skybox_data.time * FSL_PI;
+    f32 sun_angle = sun_time + 90.0f * FSL_DEG2RAD;
+    f64 mid_day = 0.0f;
+    f64 burn_cold = 0.0f;
+    f64 burn = 0.0f;
+    f64 burn_boost = 0.0f;
+    f64 mid_night = 0.0f;
+
     /* ---- draw skybox ----------------------------------------------------- */
 
     glEnable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_SKYBOX].fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_SKYBOX].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    skybox_data.time = (f32)game_tick / SET_DAY_TICKS_MAX;
-    skybox_data.sun_rotation =
-        (v3f32){
-            cos(skybox_data.time * PI * 2.0f),
-            cos(skybox_data.time * PI * 2.0f) * 0.3f,
-            sin(skybox_data.time * PI * 2.0f),
-        };
+    skybox_data.time = fmodf((f32)world.tick / SET_DAY_TICKS_MAX, 1.0f);
+    skybox_data.time = fmodf(skybox_data.time * 2.0f - delay_in_hours / 12.0f, 2.0f);
+    skybox_data.sun_rotation.x = cos(skybox_data.time * FSL_PI);
+    skybox_data.sun_rotation.y = cos(skybox_data.time * FSL_PI) * 0.3f;
+    skybox_data.sun_rotation.z = sin(skybox_data.time * FSL_PI);
 
-    f32 intensity =     0.0039f;
-    f32 mid_day =       fabsf(sinf(1.5f * sinf(skybox_data.time * PI)));
+    mid_day =       (sin(sun_time) + 1.0) / 2.0;
+    mid_day =       pow(sin((FSL_PI / 2.0) * mid_day), 2.0);
+    mid_day =       pow(sin((FSL_PI / 2.0) * mid_day), 2.0);
 
-    f32 pre_burn =      fabsf(sinf(powf(sinf(
-                        (skybox_data.time + 0.33f) * PI * 1.2f), 16.0f)));
+    burn_cold =     pow((sin((FSL_PI / 2.0) * sin(sun_time + (FSL_PI / 2.0))) + 1.0) / 2.0, 24.0);
+    burn_cold +=    pow((sin((FSL_PI / 2.0) * sin(sun_time - (FSL_PI / 2.0))) + 1.0) / 2.0, 24.0);
 
-    f32 burn =          fabsf(sinf(1.5f * powf(sinf(
-                        (skybox_data.time + 0.124f) * PI * 1.6f), 32.0f)));
+    burn =          pow((sin(sun_time + (FSL_PI / 2.0)) + 1.0) / 2.0, 64.0);
+    burn +=         pow((sin(sun_time - (FSL_PI / 2.0)) + 1.0) / 2.0, 64.0);
 
-    f32 burn_boost =    fabsf(powf(sinf(
-                    (skybox_data.time + 0.212f) * PI * 1.4f), 64.0f));
+    burn_boost =    pow(sin(sun_time + (FSL_PI / 2.0)), 128.0);
+    burn_boost +=   pow(sin(sun_time - (FSL_PI / 2.0)), 128.0);
 
-    f32 mid_night =     fabsf(sinf(powf(2.0f * cosf(
-                        skybox_data.time * PI), 3.0f)));
+    mid_night =     pow((sin((FSL_PI / 2.0) * sin(sun_time + FSL_PI)) + 1.0) / 2.0, 4.0);
 
-    skybox_data.color =
-        (v3f32){
-            (mid_day * 171.0f) + (burn * 85.0f) + (mid_night * 1.0f) +
-                (pre_burn * 13.0f) + (burn_boost * 76.0f),
+    skybox_data.sky_color.x = (mid_day * 171.0f + mid_night * 1.0f + burn_cold * 8.0f) / 0xff;
+    skybox_data.sky_color.y = (mid_day * 229.0f + mid_night * 4.0f + burn_cold * 4.0f) / 0xff;
+    skybox_data.sky_color.z = (mid_day * 255.0f + mid_night * 14.0f + burn_cold * 18.0f) / 0xff;
+    skybox_data.horizon_color.x = (mid_day * 224.0f + mid_night * 1.0f + burn_cold * 8.0f + burn * 92.0f + burn_boost * 116.0f) / 0xff;
+    skybox_data.horizon_color.y = (mid_day * 244.0f + mid_night * 4.0f + burn_cold * 4.0f + burn * 5.0f + burn_boost * 77.0f) / 0xff;
+    skybox_data.horizon_color.z = (mid_day * 255.0f + mid_night * 14.0f + burn_cold * 18.0f) / 0xff;
+    skybox_data.sky_light.x = skybox_data.sky_color.x + skybox_data.horizon_color.x;
+    skybox_data.sky_light.y = skybox_data.sky_color.y + skybox_data.horizon_color.y;
+    skybox_data.sky_light.z = skybox_data.sky_color.z + skybox_data.horizon_color.z;
+    skybox_data.moon_light.x = mid_night;
+    skybox_data.moon_light.y = mid_night;
+    skybox_data.moon_light.z = mid_night;
 
-            (mid_day * 229.0f) + (burn * 42.0f) + (mid_night * 4.0f) +
-                (pre_burn * 7.0f) + (burn_boost * 34.0f),
+    m4f32 translation =
+    {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
 
-            (mid_day * 255.0f) + (burn * 19.0f) + (mid_night * 14.0f) +
-                (pre_burn * 20.0f),
-        };
+    m4f32 rotation =
+    {
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f
+    };
 
-    skybox_data.color =
-        (v3f32){
-            clamp_f32(skybox_data.color.x * intensity, 0.0f, 1.0f),
-            clamp_f32(skybox_data.color.y * intensity, 0.0f, 1.0f),
-            clamp_f32(skybox_data.color.z * intensity, 0.0f, 1.0f),
-        };
+    glUseProgram(shader_p[SHADER_SKYBOX].asset.id);
 
-    glUseProgram(shader[SHADER_SKYBOX].id);
+    glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE, (GLfloat*)&translation);
     glUniformMatrix4fv(uniform.skybox.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection_world.rotation);
+            (GLfloat*)&player.camera.projection.rotation);
+    glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE, (GLfloat*)&rotation);
     glUniformMatrix4fv(uniform.skybox.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection_world.orientation);
+            (GLfloat*)&player.camera.projection.orientation);
     glUniformMatrix4fv(uniform.skybox.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection_world.projection);
-    glUniform3fv(uniform.skybox.sun_rotation, 1,
-            (GLfloat*)&skybox_data.sun_rotation);
-    glUniform3fv(uniform.skybox.sky_color, 1,
-            (GLfloat*)&skybox_data.color);
+            (GLfloat*)&player.camera.projection.projection);
+    glUniform3fv(uniform.skybox.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
+    glUniform3fv(uniform.skybox.sky_color, 1, (GLfloat*)&skybox_data.sky_color);
+    glUniform3fv(uniform.skybox.horizon_color, 1, (GLfloat*)&skybox_data.horizon_color);
+    glUniform1i(uniform.skybox.render_layer, 0);
 
     glUniform1i(uniform.skybox.texture_sky, 0);
     glUniform1i(uniform.skybox.texture_horizon, 1);
     glUniform1i(uniform.skybox.texture_stars, 2);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SKYBOX_VAL].id);
+    glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_SKYBOX_VAL].asset.id);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SKYBOX_HORIZON].id);
+    glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_SKYBOX_HORIZON].asset.id);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SKYBOX_STARS].id);
-    glBindVertexArray(mesh[MESH_SKYBOX].vao);
-    glDrawElements(GL_TRIANGLES, mesh[MESH_SKYBOX].ebo_len, GL_UNSIGNED_INT, 0);
+    glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_SKYBOX_STARS].asset.id);
+    glBindVertexArray(fsl_mesh_p[FSL_MESH_INDEX_SKYBOX].vao);
+    glDrawElements(GL_TRIANGLES, fsl_mesh_p[FSL_MESH_INDEX_SKYBOX].index_buf.len, GL_UNSIGNED_INT, 0);
+
+    /* ---- draw sun -------------------------------------------------------- */
+
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    translation = (m4f32){
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        skybox_data.sun_rotation.x * 2.0f,
+        skybox_data.sun_rotation.y * 2.0f,
+        skybox_data.sun_rotation.z * 2.0f,
+        1.0f,
+    };
+
+    rotation = (m4f32){
+        cosf(FSL_PI / 2.0f), -sinf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        sinf(FSL_PI / 2.0f), cosf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+
+    rotation = fsl_matrix_multiply(rotation,
+            (m4f32){
+            cosf(sun_angle), 0.0f, sinf(sun_angle), 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            -sinf(sun_angle), 0.0f, cosf(sun_angle), 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            });
+
+    glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE, (GLfloat*)&translation);
+    glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE, (GLfloat*)&rotation);
+    glUniform1i(uniform.skybox.render_layer, 1);
+
+    glUniform1i(uniform.skybox.texture_sun, 3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_SUN].asset.id);
+    glBindVertexArray(fsl_mesh_unit_quad.vao);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    translation = (m4f32){
+        1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        -skybox_data.sun_rotation.x * 2.0f,
+        -skybox_data.sun_rotation.y * 2.0f,
+        -skybox_data.sun_rotation.z * 2.0f,
+        1.0f,
+    };
+
+    sun_angle = skybox_data.time * FSL_PI - 90.0f * FSL_DEG2RAD;
+    rotation = (m4f32){
+        cosf(FSL_PI / 2.0f), -sinf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        sinf(FSL_PI / 2.0f), cosf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+
+    rotation = fsl_matrix_multiply(rotation,
+            (m4f32){
+            cosf(sun_angle), 0.0f, sinf(sun_angle), 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            -sinf(sun_angle), 0.0f, cosf(sun_angle), 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            });
+
+    glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE,
+            (GLfloat*)&translation);
+    glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE,
+            (GLfloat*)&rotation);
+    glUniform1i(uniform.skybox.render_layer, 2);
+
+    glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_MOON].asset.id);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);
 
     /* ---- draw world ------------------------------------------------------ */
 
-    if (settings.anti_aliasing)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
-    else
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(shader[SHADER_VOXEL].id);
-    glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection_world.perspective);
-    glUniform3f(uniform.voxel.player_position,
-            lily.pos.x, lily.pos.y, lily.pos.z + lily.eye_height);
-    glUniform3fv(uniform.voxel.sun_rotation, 1,
-            (GLfloat*)&skybox_data.sun_rotation);
-    glUniform3fv(uniform.voxel.sky_color, 1,
-            (GLfloat*)&skybox_data.color);
-
-    f32 opacity = 1.0f;
-    if (debug_mode[DEBUG_MODE_TRANS_BLOCKS])
-        opacity = 0.7f;
-
-    glUniform1f(uniform.voxel.opacity, opacity);
-
-    static Chunk ***cursor = NULL;
-    static Chunk ***end = NULL;
-    static Chunk *chunk = NULL;
-    cursor = CHUNK_ORDER + CHUNKS_MAX[settings.render_distance] - 1;
-    for (; cursor >= CHUNK_ORDER; --cursor)
-    {
-        chunk = **cursor;
-        if (!chunk || !(chunk->flag & FLAG_CHUNK_RENDER))
-                continue;
-
-        glUniform3f(uniform.voxel.chunk_position,
-                (f32)(chunk->pos.x * CHUNK_DIAMETER),
-                (f32)(chunk->pos.y * CHUNK_DIAMETER),
-                (f32)(chunk->pos.z * CHUNK_DIAMETER));
-
-        glBindVertexArray(chunk->vao);
-        glDrawArrays(GL_POINTS, 0, chunk->vbo_len);
-    }
+    draw_world();
 
     /* ---- draw player ----------------------------------------------------- */
 
-    if (lily.camera_mode != MODE_CAMERA_1ST_PERSON)
+    if (player.camera_mode != PLAYER_CAMERA_MODE_1ST_PERSON)
     {
-
-        glUseProgram(shader[SHADER_DEFAULT].id);
-        glUniform3fv(uniform.defaults.scale, 1, (GLfloat*)&lily.size);
-        glUniform3f(uniform.defaults.offset,
-                lily.pos.x, lily.pos.y, lily.pos.z);
-        glUniformMatrix4fv(uniform.defaults.mat_rotation, 1, GL_FALSE,
-                (GLfloat*)(f32[]){
-                lily.cos_yaw, lily.sin_yaw, 0.0f, 0.0f,
-                -lily.sin_yaw, lily.cos_yaw, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f});
-        glUniformMatrix4fv(uniform.defaults.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection_world.perspective);
-        glUniform3fv(uniform.defaults.sun_rotation, 1,
-                (GLfloat*)&skybox_data.sun_rotation);
-        glUniform3fv(uniform.defaults.sky_color, 1,
-                (GLfloat*)&skybox_data.color);
-
-        glBindVertexArray(mesh[MESH_PLAYER].vao);
-        glDrawArrays(GL_TRIANGLES, 0, mesh[MESH_PLAYER].vbo_len);
+        fsl_mesh_draw(&player.mesh, &player.camera,
+                player.transform.pos.x, player.transform.pos.y, player.transform.pos.z,
+                0.0f, 0.0f, player.transform.rot.z,
+                player.transform.scale.x, player.transform.scale.y, player.transform.scale.z);
     }
 
     /* ---- draw player target bounding box --------------------------------- */
 
-    glUseProgram(shader[SHADER_BOUNDING_BOX].id);
+    glUseProgram(shader_p[SHADER_BOUNDING_BOX].asset.id);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-            (GLfloat*)&projection_world.perspective);
+            (GLfloat*)&player.camera.projection.perspective);
 
-    if ((flag & FLAG_MAIN_PARSE_TARGET) && (flag & FLAG_MAIN_HUD) &&
-            chunk_tab[chunk_tab_index] &&
-            chunk_tab[chunk_tab_index]->block
-            [lily.target_snapped.z - chunk_tab[chunk_tab_index]->pos.z * CHUNK_DIAMETER]
-            [lily.target_snapped.y - chunk_tab[chunk_tab_index]->pos.y * CHUNK_DIAMETER]
-            [lily.target_snapped.x - chunk_tab[chunk_tab_index]->pos.x * CHUNK_DIAMETER])
+    if (player.hit.block && core.flag.hud)
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.target_snapped.x,
-                lily.target_snapped.y,
-                lily.target_snapped.z);
+                (f32)player.hit.pos.x,
+                (f32)player.hit.pos.y,
+                (f32)player.hit.pos.z);
         glUniform3f(uniform.bounding_box.size, 1.0f, 1.0f, 1.0f);
         glUniform4f(uniform.bounding_box.color, 0.0f, 0.0f, 0.0f, 1.0f);
 
-        glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+        glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
+     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
+             (GLfloat*)&player.camera.projection.perspective);
+ 
     /* ---- draw player chunk bounding box ---------------------------------- */
 
-    if (debug_mode[DEBUG_MODE_CHUNK_BOUNDS])
+    if (core.debug.chunk_bounds)
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.chunk.x * CHUNK_DIAMETER,
-                lily.chunk.y * CHUNK_DIAMETER,
-                lily.chunk.z * CHUNK_DIAMETER);
+                (f32)player.ch.x * CHUNK_DIAMETER,
+                (f32)player.ch.y * CHUNK_DIAMETER,
+                (f32)player.ch.z * CHUNK_DIAMETER);
         glUniform3f(uniform.bounding_box.size,
                 CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
         glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
 
-        glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+        glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    /* ---- draw player collision check bounding box ------------------------ */
+    /* ---- draw player bounding box ---------------------------------------- */
 
-    if (debug_mode[DEBUG_MODE_BOUNDING_BOXES])
+    if (core.debug.bounding_boxes)
     {
         glUniform3f(uniform.bounding_box.position,
-                lily.collision_check_pos.x,
-                lily.collision_check_pos.y,
-                lily.collision_check_pos.z);
+                player.bbox.pos.x, player.bbox.pos.y, player.bbox.pos.z);
         glUniform3f(uniform.bounding_box.size,
-                lily.collision_check_size.x,
-                lily.collision_check_size.y,
-                lily.collision_check_size.z);
-        glUniform4f(uniform.bounding_box.color, 0.3f, 0.6f, 0.9f, 1.0f);
+                player.bbox.size.x, player.bbox.size.y, player.bbox.size.z);
+        glUniform4f(uniform.bounding_box.color, 1.0f, 0.3f, 0.2f, 1.0f);
 
-        glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
+        glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
     }
 
-    /* ---- draw player chunk queue visualizer ------------------------------ */
+    /* ---- draw chunk scheduler visualizer --------------------------------- */
 
-    if (debug_mode[DEBUG_MODE_CHUNK_QUEUE_VISUALIZER])
-    {
-        glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
-                (GLfloat*)&projection_world.perspective);
-        glUniform3f(uniform.bounding_box.size,
-                CHUNK_DIAMETER, CHUNK_DIAMETER, CHUNK_DIAMETER);
-
-        cursor = CHUNK_ORDER;
-        end = CHUNK_ORDER + CHUNK_QUEUE[0].size;
-        for (; cursor < end; ++cursor)
-        {
-            chunk = **cursor;
-            if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
-            glUniform3f(uniform.bounding_box.position,
-                    chunk->pos.x * CHUNK_DIAMETER,
-                    chunk->pos.y * CHUNK_DIAMETER,
-                    chunk->pos.z * CHUNK_DIAMETER);
-
-            glUniform4f(uniform.bounding_box.color, 0.6f, 0.9f, 0.3f, 1.0f);
-            glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-            glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-        }
-
-        if (CHUNK_QUEUE[1].size)
-        {
-            end += CHUNK_QUEUE[1].size;
-            for (; cursor < end; ++cursor)
-            {
-                chunk = **cursor;
-                if (!(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
-                glUniform3f(uniform.bounding_box.position,
-                        chunk->pos.x * CHUNK_DIAMETER,
-                        chunk->pos.y * CHUNK_DIAMETER,
-                        chunk->pos.z * CHUNK_DIAMETER);
-
-                glUniform4f(uniform.bounding_box.color, 0.9f, 0.6f, 0.3f, 1.0f);
-                glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-            }
-        }
-
-        if (CHUNK_QUEUE[2].size)
-        {
-            end += CHUNK_QUEUE[2].size;
-            for (; cursor < end; ++cursor)
-            {
-                chunk = **cursor;
-                if (!chunk || !(chunk->flag & FLAG_CHUNK_QUEUED)) continue;
-                glUniform3f(uniform.bounding_box.position,
-                        chunk->pos.x * CHUNK_DIAMETER,
-                        chunk->pos.y * CHUNK_DIAMETER,
-                        chunk->pos.z * CHUNK_DIAMETER);
-
-                glUniform4f(uniform.bounding_box.color, 0.9f, 0.3f, 0.3f, 1.0f);
-                glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-                glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
-            }
-        }
-    }
+    if (core.debug.chunk_scheduler_visualizer)
+        chunk_debug_scheduler_visualizer_draw(&player.camera, 0.5f);
 
     if (settings.anti_aliasing)
     {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_WORLD_MSAA].fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_WORLD].fbo);
-        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+        glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
+                render->size.x, render->size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
-    /* ---- draw hud -------------------------------------------------------- */
+    /* ---- draw hud gizmos ------------------------------------------------- */
 
     if (settings.anti_aliasing)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_HUD_MSAA].fbo);
     else
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_HUD].fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_HUD].fbo);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(shader[SHADER_GIZMO].id);
 
-    glUniformMatrix4fv(uniform.gizmo.mat_translation, 1, GL_FALSE,
-            (GLfloat*)&projection_hud.target);
-    glUniformMatrix4fv(uniform.gizmo.mat_rotation, 1, GL_FALSE,
-            (GLfloat*)&projection_hud.rotation);
-    glUniformMatrix4fv(uniform.gizmo.mat_orientation, 1, GL_FALSE,
-            (GLfloat*)&projection_hud.orientation);
-    glUniformMatrix4fv(uniform.gizmo.mat_projection, 1, GL_FALSE,
-            (GLfloat*)&projection_hud.projection);
-
-    glBindVertexArray(mesh[MESH_GIZMO].vao);
-    glUniform3f(uniform.gizmo.color, 1.0f, 0.0f, 0.0f);
-    glDrawElements(GL_TRIANGLES, 30,
-            GL_UNSIGNED_INT, (void*)0);
-    glUniform3f(uniform.gizmo.color, 0.0f, 1.0f, 0.0f);
-    glDrawElements(GL_TRIANGLES, 30,
-            GL_UNSIGNED_INT, (void*)(30 * sizeof(GLuint)));
-    glUniform3f(uniform.gizmo.color, 0.0f, 0.0f, 1.0f);
-    glDrawElements(GL_TRIANGLES, 30,
-            GL_UNSIGNED_INT, (void*)(60 * sizeof(GLuint)));
-
-    if (debug_mode[DEBUG_MODE_CHUNK_GIZMO])
+    if (core.flag.hud)
     {
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glUseProgram(shader[SHADER_GIZMO_CHUNK].id);
+        if (core.flag.debug)
+            draw_debug_gizmo_axis();
 
-        glUniform2iv(uniform.gizmo_chunk.render_size, 1,
-                (GLint*)&render.size);
-        glUniform1i(uniform.gizmo_chunk.render_distance,
-                settings.render_distance);
-
-        glUniformMatrix4fv(uniform.gizmo_chunk.mat_translation,
-                1, GL_FALSE, (GLfloat*)&projection_hud.target);
-
-        glUniformMatrix4fv(uniform.gizmo_chunk.mat_rotation,
-                1, GL_FALSE, (GLfloat*)&projection_hud.rotation);
-
-        glUniformMatrix4fv(uniform.gizmo_chunk.mat_orientation,
-                1, GL_FALSE, (GLfloat*)&projection_hud.orientation);
-
-        glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection,
-                1, GL_FALSE, (GLfloat*)&projection_hud.projection);
-
-        v3f32 camera_position =
+        if (core.debug.chunk_gizmo)
         {
-            -lily.cos_yaw * lily.cos_pitch,
-            lily.sin_yaw * lily.cos_pitch,
-            lily.sin_pitch,
-        };
-
-        glUniform3fv(uniform.gizmo_chunk.camera_position, 1,
-                (GLfloat*)&camera_position);
-
-        glUniform3fv(uniform.gizmo_chunk.sky_color, 1,
-                (GLfloat*)&skybox_data.color);
-
-        cursor = CHUNK_ORDER;
-        for (; **cursor && cursor < end; ++cursor)
-        {
-            chunk = **cursor;
-            u32 i = *cursor - chunk_tab;
-            v3f32 pos =
-            {
-                (f32)(i % settings.chunk_buf_diameter),
-                (f32)((i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter),
-                (f32)i / settings.chunk_buf_layer,
-            };
-            pos = sub_v3f32(pos, (v3f32){
-                    settings.chunk_buf_radius + 0.5f,
-                    settings.chunk_buf_radius + 0.5f,
-                    settings.chunk_buf_radius + 0.5f});
-            glUniform3fv(uniform.gizmo_chunk.cursor, 1,
-                    (GLfloat*)&pos);
-
-            f32 pulse = (sinf((pos.z * 0.3f) -
-                        (render.frame_start * 5.0f)) * 0.1f) + 0.9f;
-            glUniform1f(uniform.gizmo_chunk.size, pulse);
-
-            v4f32 color =
-            {
-                (f32)((chunk->color >> 24) & 0xff) / 0xff,
-                (f32)((chunk->color >> 16) & 0xff) / 0xff,
-                (f32)((chunk->color >> 8) & 0xff) / 0xff,
-                (f32)((chunk->color & 0xff)) / 0xff,
-            };
-            glUniform4fv(uniform.gizmo_chunk.color, 1, (GLfloat*)&color);
-            glBindVertexArray(mesh[MESH_CUBE_OF_HAPPINESS].vao);
-            glDrawElements(GL_TRIANGLES,
-                    mesh[MESH_CUBE_OF_HAPPINESS].ebo_len, GL_UNSIGNED_INT, 0);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            chunk_debug_chunk_gizmo_draw(&player.camera_hud);
         }
     }
 
     if (settings.anti_aliasing)
     {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo[FBO_HUD_MSAA].fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo[FBO_HUD].fbo);
-        glBlitFramebuffer(0, 0, render.size.x, render.size.y, 0, 0,
-                render.size.x, render.size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_p[FBO_HUD_MSAA].fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_HUD].fbo);
+        glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
+                render->size.x, render->size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
-    /* ---- draw overlays --------------------------------------------------- */
+    /* ---- draw ui --------------------------------------------------------- */
 
-    glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_UI].fbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    fsl_ui_start(FALSE, TRUE);
 
-    if (flag & FLAG_MAIN_HUD)
+    if (core.flag.hud)
     {
-        glUseProgram(shader[SHADER_UI].id);
-        glBindVertexArray(mesh[MESH_UNIT].vao);
-        glUniform2fv(uniform.ui.ndc_scale, 1, (GLfloat*)&settings.ndc_scale);
+        if (!core.flag.debug)
+            fsl_ui_draw(&texture_p[TEXTURE_CROSSHAIR], render->size.x / 2, render->size.y / 2,
+                    0, 0,
+                    0.0f, 0.0f, -1, -1, 0xffffffff);
 
-        /* ---- crosshair --------------------------------------------------- */
+        fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR], render->size.x / 2, render->size.y,
+                texture_p[TEXTURE_ITEM_BAR].size.x * 2,
+                texture_p[TEXTURE_ITEM_BAR].size.y * 2,
+                84.5f, 18.0f, 0, 0, 0xffffffff);
 
-        if (!(flag & FLAG_MAIN_DEBUG))
-        {
-            glUniform2i(uniform.ui.position,
-                    render.size.x / 2, render.size.y / 2);
-            glUniform2f(uniform.ui.offset, 0.0f, 0.0f);
-            glUniform2iv(uniform.ui.texture_size, 1,
-                    (GLint*)&texture[TEXTURE_CROSSHAIR].size);
-            glUniform2i(uniform.ui.size, 8, 8);
-            glUniform2i(uniform.ui.alignment, 0, 0);
-            glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
+        fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR_SELECTED],
+                render->size.x / 2 - 2 + player.hotbar_slot_selected * 34,
+                render->size.y - 2,
+                texture_p[TEXTURE_ITEM_BAR_SELECTED].size.x * 2,
+                texture_p[TEXTURE_ITEM_BAR_SELECTED].size.y * 2,
+                84.5f, 18.0f, 0, 0, 0xffffffff);
 
-            glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_CROSSHAIR].id);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
+        /* ---- draw item bar items ----------------------------------------- */
 
-        /* ---- item bar ---------------------------------------------------- */
-
-        glUniform2i(uniform.ui.position, render.size.x / 2, render.size.y);
-        glUniform2f(uniform.ui.offset, 84.5f, 18.0f);
-        glUniform2iv(uniform.ui.texture_size, 1,
-                (GLint*)&texture[TEXTURE_ITEM_BAR].size);
-        glUniform2iv(uniform.ui.size, 1,
-                (GLint*)&texture[TEXTURE_ITEM_BAR].size);
-        glUniform2i(uniform.ui.alignment, 1, 1);
-        glUniform4f(uniform.ui.tint, 1.0f, 1.0f, 1.0f, 1.0f);
-
-        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_ITEM_BAR].id);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        draw_hotbar_items();
     }
-
-    /* ---- draw super debug ------------------------------------------------ */
-
-    if (flag & FLAG_MAIN_SUPER_DEBUG)
-    {
-        glUseProgram(shader[SHADER_UI_9_SLICE].id);
-        glBindVertexArray(mesh[MESH_UNIT].vao);
-
-        glUniform2fv(uniform.ui_9_slice.ndc_scale, 1,
-                (GLfloat*)&settings.ndc_scale);
-
-        glUniform2i(uniform.ui_9_slice.position, SET_MARGIN, SET_MARGIN);
-        glUniform2i(uniform.ui_9_slice.size,
-                400, render.size.y - (SET_MARGIN * 2));
-        glUniform2i(uniform.ui_9_slice.alignment, -1, -1);
-        glUniform4f(uniform.ui_9_slice.tint, 1.0f, 1.0f, 1.0f, 0.7f);
-        glUniform1i(uniform.ui_9_slice.slice, TRUE);
-        glUniform1f(uniform.ui_9_slice.slice_size, 8.0f);
-        glUniform2iv(uniform.ui_9_slice.texture_size, 1,
-                (GLint*)&texture[TEXTURE_SDB_ACTIVE].size);
-        glUniform2i(uniform.ui_9_slice.sprite_size,
-                texture[TEXTURE_SDB_ACTIVE].size.x / 2,
-                texture[TEXTURE_SDB_ACTIVE].size.y / 2);
-
-        glBindTexture(GL_TEXTURE_2D, texture[TEXTURE_SDB_ACTIVE].id);
-        glDrawArrays(GL_POINTS, 0, 1);
-    }
-
-    glEnable(GL_DEPTH_TEST);
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    text_start(0, FONT_SIZE_DEFAULT, &font[FONT_MONO_BOLD], &render,
-            &shader[SHADER_TEXT], &fbo[FBO_TEXT], TRUE);
-    text_push(stringf("FPS               [%d]\n", settings.fps),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render((settings.fps > 60) ?
-            COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR, TRUE);
+    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
-    text_push(stringf("\n"
-                "FRAME TIME        [%.2lf]\n"
-                "FRAME DELTA       [%.5lf]\n"
-                "    TICKS         [%"PRId64"]\n"
-                "    DAYS          [%"PRId64"]\n",
-                render.frame_start,
-                render.frame_delta,
-                game_tick, game_days),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_TEXT_MOSS, TRUE);
+    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+            SET_MARGIN, SET_MARGIN, 0, 0, 0,
+            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
 
-    text_push(stringf("\n\n\n\n\n"
-                "PLAYER NAME       [%s]\n"
-                "PLAYER XYZ        [%.2f %.2f %.2f]\n"
-                "PLAYER BLOCK      [%d %d %d]\n"
-                "PLAYER CHUNK      [%d %d %d]\n"
-                "CURRENT CHUNK     [%d %d %d]\n"
-                "PLAYER PITCH      [%.2f]\n"
-                "PLAYER YAW        [%.2f]\n"
-                "PLAYER VELOCITY   [%5.2f %5.2f %5.2f]\n"
-                "PLAYER SPEED      [%5.2f]\n",
-                lily.name,
-                lily.pos.x, lily.pos.y, lily.pos.z,
-                (i32)floorf(lily.pos.x),
-                (i32)floorf(lily.pos.y),
-                (i32)floorf(lily.pos.z),
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.x : 0,
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.y : 0,
-                (chunk_tab[settings.chunk_tab_center]) ?
-                chunk_tab[settings.chunk_tab_center]->pos.z : 0,
-                lily.chunk.x, lily.chunk.y, lily.chunk.z,
-                lily.pitch, lily.yaw,
-                lily.velocity.x, lily.velocity.y, lily.velocity.z,
-                lily.speed),
-                (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_TEXT_DEFAULT, TRUE);
+    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "PLAYER OVERFLOW X [%s]\n"
-                "PLAYER OVERFLOW Y [%s]\n"
-                "PLAYER OVERFLOW Z [%s]\n",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_X) ?
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ?
-                "        " : "        " : "NONE",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) ?
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ?
-                "        " : "        " : "NONE",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) ?
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
-                "        " : "        " : "NONE"),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_NONE, TRUE);
+    if (core.flag.hud && core.flag.debug)
+    {
+        fsl_text_push(fsl_stringf("\n"
+                    "TIME        [%.2lf]\n"
+                    "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
+                    "DAYS        [%"PRIu64"]\n",
+                    (f64)render->time * FSL_NSEC2SEC,
+                    (world.tick % SET_DAY_TICKS_MAX) / 1000,
+                    ((world.tick * 60) / 1000) % 60,
+                    world.days),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                COLOR_TEXT_MOSS);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                (lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : ""),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(DIAGNOSTIC_COLOR_SUCCESS, TRUE);
+        fsl_text_push(fsl_stringf(
+                    "XYZ         [%5.2lf %5.2lf %5.2lf]\n"
+                    "BLOCK       [%.0lf %.0lf %.0lf]\n"
+                    "CHUNK       [%d %d %d]\n"
+                    "REGION      [%.0f %.0f %.0f]\n"
+                    "PITCH/YAW   [%5.2f][%5.2f]\n"
+                    "ACCELERATION[%5.2f %5.2f %5.2f]\n"
+                    "VELOCITY    [%5.2f %5.2f %5.2f]\n"
+                    "SPEED       [%5.2f]\n",
+                    player.transform.pos.x, player.transform.pos.y, player.transform.pos.z,
+                    floor(player.transform.pos.x),
+                    floor(player.transform.pos.y),
+                    floor(player.transform.pos.z),
+                    player.ch.x, player.ch.y, player.ch.z,
+                    floorf((f32)player.ch.x / CHUNK_REGION_DIAMETER),
+                    floorf((f32)player.ch.y / CHUNK_REGION_DIAMETER),
+                    floorf((f32)player.ch.z / CHUNK_REGION_DIAMETER),
+                    player.transform.rot.y, player.transform.rot.z,
+                    player.acceleration.x, player.acceleration.y, player.acceleration.z,
+                    player.velocity.x, player.velocity.y, player.velocity.z,
+                    player.speed),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                COLOR_TEXT_DEFAULT);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "                   %s\n"
-                "                   %s\n"
-                "                   %s\n",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_X) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Y) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "",
-                (lily.flag & FLAG_PLAYER_OVERFLOW_Z) &&
-                !(lily.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : ""),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_ERROR, TRUE);
+        fsl_text_push(fsl_stringf(
+                    "OVERFLOW    [%s %s %s]\r",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_X) ?
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PX) ?
+                    "        " : "        " : "NONE",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Y) ?
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PY) ?
+                    "        " : "        " : "NONE",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Z) ?
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PZ) ?
+                    "        " : "        " : "NONE"),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                COLOR_DIAGNOSTIC_NONE);
 
-    text_push(stringf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-                "MOUSE XY          [%.2f %.2f]\n"
-                "DELTA XY          [%.2f %.2f]\n"
-                "RENDER RATIO      [%.4f]\n"
-                "SKYBOX TIME       [%.2f]\n"
-                "SKYBOX RGB        [%.2f %.2f %.2f]\n"
-                "SUN ANGLE         [%.2f %.2f %.2f]\n",
-                render.mouse_position.x, render.mouse_position.y,
-                render.mouse_delta.x, render.mouse_delta.y,
-                (f32)render.size.x / render.size.y,
-                skybox_data.time,
-                skybox_data.color.x,
-                skybox_data.color.y,
-                skybox_data.color.z,
-                skybox_data.sun_rotation.x,
-                skybox_data.sun_rotation.y,
-                skybox_data.sun_rotation.z),
-            (v2f32){SET_MARGIN, SET_MARGIN}, 0, 0);
-    text_render(COLOR_DIAGNOSTIC_INFO, TRUE);
+        fsl_text_push(fsl_stringf(
+                    "             %s %s %s\r",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PX) ? "POSITIVE" : "    ",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PY) ? "POSITIVE" : "    ",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                    (player.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "POSITIVE" : "    "),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                FSL_DIAGNOSTIC_COLOR_SUCCESS);
 
-    text_push(stringf(
-                "CHUNK QUEUE 0 [%d/%"PRId64"]\n"
-                "CHUNK QUEUE 1 [%d/%"PRId64"]\n"
-                "CHUNK QUEUE 2 [%d/%"PRId64"]\n"
-                "TOTAL CHUNKS [%"PRId64"]\n",
-                CHUNK_QUEUE[0].count, CHUNK_QUEUE[0].size,
-                CHUNK_QUEUE[1].count, CHUNK_QUEUE[1].size,
-                CHUNK_QUEUE[2].count, CHUNK_QUEUE[2].size,
-                CHUNKS_MAX[settings.render_distance]),
-            (v2f32){render.size.x - SET_MARGIN, SET_MARGIN},
-            TEXT_ALIGN_RIGHT, 0);
-    text_render(COLOR_TEXT_DEFAULT, TRUE);
+        fsl_text_push(fsl_stringf(
+                    "             %s %s %s\n",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_X) &&
+                    !(player.flag & FLAG_PLAYER_OVERFLOW_PX) ? "NEGATIVE" : "    ",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Y) &&
+                    !(player.flag & FLAG_PLAYER_OVERFLOW_PY) ? "NEGATIVE" : "    ",
+                    (player.flag & FLAG_PLAYER_OVERFLOW_Z) &&
+                    !(player.flag & FLAG_PLAYER_OVERFLOW_PZ) ? "NEGATIVE" : "    "),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                FSL_DIAGNOSTIC_COLOR_ERROR);
 
-    text_start(0, FONT_SIZE_DEFAULT,
-            &font[FONT_MONO], &render, &shader[SHADER_TEXT], &fbo[FBO_TEXT], FALSE);
-    text_push(stringf(
-                "Game:     %s v%s\n"
-                "Engine:   %s v%s\n"
-                "Author:   %s\n"
-                "OpenGL:   %s\n"
-                "GLSL:     %s\n"
-                "Vendor:   %s\n"
-                "Renderer: %s\n",
-                GAME_NAME, GAME_VERSION,
-                ENGINE_NAME, ENGINE_VERSION, ENGINE_AUTHOR,
-                glGetString(GL_VERSION),
-                glGetString(GL_SHADING_LANGUAGE_VERSION),
-                glGetString(GL_VENDOR),
-                glGetString(GL_RENDERER)),
-            (v2f32){SET_MARGIN, render.size.y - SET_MARGIN},
-            0, TEXT_ALIGN_BOTTOM);
-    text_render(DIAGNOSTIC_COLOR_TRACE, TRUE);
-    text_stop();
+        fsl_text_push(fsl_stringf(
+                    "RATIO       [%.2f]\n"
+                    "SKYBOX TIME [%.2f]\n"
+                    "SKYBOX RGB  [%.2f %.2f %.2f]\n"
+                    "SUN ANGLE   [%.2f %.2f %.2f]\n",
+                    (f32)render->size.x / render->size.y,
+                    skybox_data.time,
+                    skybox_data.sky_color.x,
+                    skybox_data.sky_color.y,
+                    skybox_data.sky_color.z,
+                    skybox_data.sun_rotation.x,
+                    skybox_data.sun_rotation.y,
+                    skybox_data.sun_rotation.z),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                COLOR_DIAGNOSTIC_INFO);
+
+        if (player.hit.hit)
+        {
+            block_id = GET_BLOCK_ID(*player.hit.block);
+            metadata = fsl_asset_get_metadata(blocks_p[block_id].asset);
+            fsl_text_push(fsl_stringf(
+                        "TARGET      [%u][%s]\n"
+                        "XYZ         [%"PRId64" %"PRId64" %"PRId64"]\n",
+                        block_id,
+                        metadata.name,
+                        player.hit.pos.x, player.hit.pos.y, player.hit.pos.z),
+                    SET_MARGIN, SET_MARGIN,
+                    0, 0, 0,
+                    COLOR_TEXT_DEFAULT);
+        }
+
+        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+
+        fsl_text_push(fsl_stringf(
+                    "CHUNK SCHEDULER 1 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
+                    "CHUNK SCHEDULER 2 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
+                    "CHUNK SCHEDULER 3 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
+                    "TOTAL CHUNKS  [%15"PRIu64"]                           \n",
+                    chunk_sched[0].count, chunk_sched[0].len,
+                    chunk_sched[0].cursor_pop, chunk_sched[0].cursor_push,
+
+                    chunk_sched[1].count, chunk_sched[1].len,
+                    chunk_sched[1].cursor_pop, chunk_sched[1].cursor_push,
+
+                    chunk_sched[2].count, chunk_sched[2].len,
+                    chunk_sched[2].cursor_pop, chunk_sched[2].cursor_push,
+                    chunk_order.len[settings.render_distance]),
+                render->size.x - SET_MARGIN, SET_MARGIN,
+                FSL_TEXT_ALIGN_RIGHT, 0, 0,
+                COLOR_TEXT_DEFAULT);
+
+        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+        fsl_text_start(font[FONT_MONO], FSL_FONT_SIZE_DEFAULT, 0, FALSE);
+
+        fsl_engine_get_string(engine_version, FSL_ENGINE_STR_INDEX_VERSION);
+        fsl_text_push(fsl_stringf(
+                    "Game:     %s %s\n"
+                    "Author:   %s\n"
+                    "Engine:   %s %s\n"
+                    "OpenGL:   %s\n"
+                    "GLSL:     %s\n"
+                    "Vendor:   %s\n"
+                    "Renderer: %s\n",
+                    GAME_NAME, GAME_VERSION,
+                    FSL_ENGINE_AUTHOR,
+                    FSL_ENGINE_NAME, engine_version,
+                    glGetString(GL_VERSION),
+                    glGetString(GL_SHADING_LANGUAGE_VERSION),
+                    glGetString(GL_VENDOR),
+                    glGetString(GL_RENDERER)),
+                SET_MARGIN, render->size.y - SET_MARGIN,
+                0, FSL_TEXT_ALIGN_BOTTOM, render->size.x,
+                FSL_DIAGNOSTIC_COLOR_TRACE);
+
+        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+    }
+
+    /* ---- draw logger strings --------------------------------------------- */
+
+    if (core.flag.super_debug)
+    {
+        i32 i = 0;
+        u32 index = 0;
+        i32 logger_panel_height = 400;
+        fsl_log_entry *log_entry = NULL;
+
+        fsl_ui_start(TRUE, FALSE);
+        fsl_ui_draw_nine_slice(&fsl_texture_p[FSL_TEXTURE_INDEX_PANEL_INACTIVE],
+                10, render->size.y - logger_panel_height - 30,
+                render->size.x - 20, logger_panel_height + 20, 8, 0xffffff5f);
+
+        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+
+        log_entry = fsl_mem_handle_get(logger_core.buf);
+        for (i = 20; i > 0; --i)
+        {
+            index = fsl_mod_i32(logger_core.cursor - i - scrool, FSL_LOGGER_HISTORY_MAX);
+            fsl_text_push(fsl_stringf("%s\n", log_entry[index].message),
+                    SET_MARGIN * 2, render->size.y - SET_MARGIN * 2,
+                    0, 0, render->size.x - SET_MARGIN * 4,
+                    log_entry[index].color);
+
+            if ((i32)fsl_get_text_height() + SET_MARGIN * 2 >= logger_panel_height)
+                break;
+        }
+
+        /* this "useless" function call aligns all the pushed strings correctly once at
+         * the end of the loop, do not touch it. */
+        fsl_text_push("", 0, 0, 0, FSL_TEXT_ALIGN_BOTTOM, 0, 0);
+        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+    }
+
+    fsl_ui_stop();
 
     /* ---- post processing ------------------------------------------------- */
 
     glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo[FBO_POST_PROCESSING].fbo);
-    glUseProgram(shader[SHADER_FBO].id);
-    glBindVertexArray(mesh[MESH_UNIT].vao);
-    glBindTexture(GL_TEXTURE_2D, fbo[FBO_SKYBOX].color_buf);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_POST_PROCESSING].fbo);
+    glUseProgram(fsl_shader_p[FSL_SHADER_INDEX_UNIT_QUAD].asset.id);
+    glBindVertexArray(fsl_mesh_unit_quad.vao);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_SKYBOX].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glBindTexture(GL_TEXTURE_2D, fbo[FBO_WORLD].color_buf);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_WORLD].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    fsl_fbo_blit(fbo_p[FBO_POST_PROCESSING].fbo);
 
-    if ((flag & FLAG_MAIN_DEBUG) && (flag & FLAG_MAIN_HUD))
-    {
-        glBindTexture(GL_TEXTURE_2D, fbo[FBO_HUD].color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glBindTexture(GL_TEXTURE_2D, fbo[FBO_TEXT].color_buf);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    }
-    glBindTexture(GL_TEXTURE_2D, fbo[FBO_UI].color_buf);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    /* ---- everything ------------------------------------------------------ */
+    /* ---- final ----------------------------------------------------------- */
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(shader[SHADER_POST_PROCESSING].id);
+    glUseProgram(shader_p[SHADER_POST_PROCESSING].asset.id);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBindVertexArray(mesh[MESH_UNIT].vao);
-    glUniform1ui(uniform.post_processing.time,
-            ((u32)(render.frame_start * settings.target_fps) & 511) + 1);
-    glBindTexture(GL_TEXTURE_2D, fbo[FBO_POST_PROCESSING].color_buf);
+    glBindVertexArray(fsl_mesh_unit_quad.vao);
+    glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_POST_PROCESSING].color_buf);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
@@ -1578,177 +911,66 @@ static void draw_everything(void)
 
 int main(int argc, char **argv)
 {
-    glfwSetErrorCallback(callback_error);
-    if (logger_init(GAME_RELEASE_BUILD, argc, argv) != ERR_SUCCESS)
-        return *GAME_ERR;
+    if (fsl_engine_init(argc, argv, GAME_TITLE, 1280, 1054,
+                GAME_RELEASE_BUILD | FSL_FLAG_MULTISAMPLE) != FSL_ERR_SUCCESS ||
+            game_init() != FSL_ERR_SUCCESS)
+        goto cleanup;
 
-    if (!GAME_RELEASE_BUILD)
-        LOGDEBUG(FALSE, "%s\n", "DEVELOPMENT BUILD");
+#ifndef HHC_RELEASE_BUILD
+    LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+            "DEBUG BUILD\n");
 
-    if (!MODE_INTERNAL_DEBUG)
-    {
-        LOGWARNING(FALSE, ERR_MODE_INTERNAL_DEBUG_DISABLE,
-                "%s\n", "'MODE_INTERNAL_DEBUG' Disabled");
-    }
-    else LOGDEBUG(FALSE, "%s\n", "Debugging Enabled");
+    glfwSetWindowPos(render->window, 1920 - render->size.x, 24);
+#endif /* HHC_RELEASE_BUILD */
 
     if (!MODE_INTERNAL_COLLIDE)
     {
-        LOGWARNING(FALSE, ERR_MODE_INTERNAL_COLLIDE_DISABLE,
-                "%s\n", "'MODE_INTERNAL_COLLIDE' Disabled");
+        LOGWARNING(HHC_ERR_COLLISIONS_DISABLED,
+                FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "'MODE_INTERNAL_COLLIDE' Disabled\n");
     }
 
-    if (paths_init() != ERR_SUCCESS ||
-            rand_init() != ERR_SUCCESS ||
-            settings_init() != ERR_SUCCESS)
+    if (rand_init() != FSL_ERR_SUCCESS ||
+            settings_init() != FSL_ERR_SUCCESS)
         goto cleanup;
-
-    if (
-            glfw_init(FALSE) != ERR_SUCCESS ||
-            window_init(&render) != ERR_SUCCESS ||
-            glad_init() != ERR_SUCCESS)
-        goto cleanup;
-
-    /*temp*/ glfwSetWindowPos(render.window,
-            (1920 - render.size.x) / 2,
-            (1080 - render.size.y) / 2);
-    /*temp*/ glfwSetWindowSizeLimits(render.window, 512, 288, 3840, 2160);
-
-    flag = FLAG_MAIN_ACTIVE |
-        FLAG_MAIN_PARSE_CURSOR;
 
     /* ---- set mouse input ------------------------------------------------- */
 
-    glfwSetInputMode(render.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     if (glfwRawMouseMotionSupported())
     {
-        glfwSetInputMode(render.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        LOGINFO(FALSE, "%s\n", "GLFW: Raw Mouse Motion Enabled");
+        glfwSetInputMode(render->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "GLFW: Raw Mouse Motion Enabled\n");
     }
-    else LOGERROR(FALSE, ERR_GLFW,
-            "%s\n", "GLFW: Raw Mouse Motion Not Supported");
-    glfwGetCursorPos(render.window,
-            &render.mouse_position.x,
-            &render.mouse_position.y);
+    else LOGERROR(FSL_ERR_GLFW,
+            FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+            "GLFW: Raw Mouse Motion Not Supported\n");
 
     /* ---- set callbacks --------------------------------------------------- */
 
-    glfwSetFramebufferSizeCallback(render.window, callback_framebuffer_size);
-    callback_framebuffer_size(render.window, render.size.x, render.size.y);
+    glfwSetKeyCallback(render->window, callback_key);
+    callback_key(render->window, 0, 0, 0, 0);
 
-    glfwSetKeyCallback(render.window, callback_key);
-    callback_key(render.window, 0, 0, 0, 0);
-
-    glfwSetScrollCallback(render.window, callback_scroll);
-    callback_scroll(render.window, 0.0f, 0.0f);
+    glfwSetScrollCallback(render->window, callback_scroll);
+    callback_scroll(render->window, 0.0f, 0.0f);
 
     /* ---- set graphics ---------------------------------------------------- */
 
-    shaders_init();
-
-    if (
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_FBO]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_DEFAULT]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_UI_9_SLICE]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_TEXT]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_GIZMO_CHUNK]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_SKYBOX]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_POST_PROCESSING]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                &shader[SHADER_VOXEL]) != ERR_SUCCESS ||
-
-            shader_program_init(DIR_ROOT[DIR_SHADERS],
-                    &shader[SHADER_BOUNDING_BOX]) != ERR_SUCCESS)
+    if (assets_init() != FSL_ERR_SUCCESS)
         goto cleanup;
-
-    if(
-            fbo_init(&render,
-                &fbo[FBO_SKYBOX], &mesh[MESH_UNIT], FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_WORLD],       NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_WORLD_MSAA],  NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_HUD],         NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_HUD_MSAA],    NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_UI],          NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_TEXT],        NULL, FALSE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_TEXT_MSAA],   NULL, TRUE, 4) != ERR_SUCCESS ||
-
-            fbo_init(&render,
-                &fbo[FBO_POST_PROCESSING], NULL, FALSE, 4) != ERR_SUCCESS)
-        goto cleanup;
-
-    glfwSwapInterval(MODE_INTERNAL_VSYNC);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_MULTISAMPLE);
-
-    if (
-            gui_init() != ERR_SUCCESS ||
-            assets_init() != ERR_SUCCESS ||
-            text_init(&shader[SHADER_TEXT]) != ERR_SUCCESS)
+    if (gui_init() != FSL_ERR_SUCCESS)
         goto cleanup;
 
     /*temp off
-    init_super_debugger(&render.size);
+    init_super_debugger(render->size);
     */
 
-    lily.camera =
-        (Camera){
-            .fovy = settings.fov,
-            .fovy_smooth = 0.0f,
-            .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = CAMERA_CLIP_FAR_DEFAULT,
-            .near = CAMERA_CLIP_NEAR_DEFAULT,
-        };
+    /* ---- end set graphics ------------------------------------------------ */
 
-    lily.camera_hud =
-        (Camera){
-            .fovy = (f32)SET_FOV_DEFAULT,
-            .fovy_smooth = (f32)SET_FOV_DEFAULT,
-            .ratio = (f32)render.size.x / (f32)render.size.y,
-            .far = CAMERA_CLIP_FAR_DEFAULT,
-            .near = CAMERA_CLIP_NEAR_DEFAULT,
-        };
-
+    player_init(&player, "Lily");
+    input_init();
     bind_shader_uniforms();
-    game_start_time = glfwGetTime();
 
 section_menu_title:
 
@@ -1756,59 +978,34 @@ section_menu_pause:
 
 section_world_loaded:
 
-    if (!(flag & FLAG_MAIN_WORLD_LOADED) &&
-            world_init("Poop Consistency Tester") != ERR_SUCCESS)
+    if (!core.flag.world_loaded &&
+            world_init("Poop Consistency Tester", 0, &player) != FSL_ERR_SUCCESS)
             goto cleanup;
 
-    generate_standard_meshes();
-
-    while (!glfwWindowShouldClose(render.window) && (flag & FLAG_MAIN_ACTIVE))
+    while (fsl_engine_running(&callback_framebuffer_size))
     {
-        render.frame_start = glfwGetTime() - game_start_time;
-        render.frame_delta = render.frame_start - render.frame_last;
-        render.frame_last = render.frame_start;
-
-        /* cursor mode change jitter prevention */
-        if (!(flag & FLAG_MAIN_PARSE_CURSOR))
-        {
-            flag |= FLAG_MAIN_PARSE_CURSOR;
-            render.mouse_delta = (v2f64){0.0f, 0.0f};
-        }
-
-        glfwPollEvents();
-        update_key_states(&render);
-        input_update(&lily);
-
-        update_mouse_movement(&render);
+        input_update(&player);
         settings_update();
-        world_update(&lily);
+        world_update(&player);
         draw_everything();
 
-        glfwSwapBuffers(render.window);
+        fsl_process_screenshot_request(GAME_DIR_NAME_SCREENSHOTS, world.name);
+        fsl_limit_framerate(settings.target_fps, render->time);
 
-        if (!(flag & FLAG_MAIN_WORLD_LOADED))
+        if (!core.flag.world_loaded)
             goto section_menu_title;
 
-        if (flag & FLAG_MAIN_PAUSED)
+        if (core.flag.paused)
             goto section_menu_pause;
     }
 
 cleanup:
 
-    assets_free();
     gui_free();
+    assets_free();
     chunking_free();
-    u32 i = 0;
-    for (i = 0; i < MESH_COUNT; ++i)
-        mesh_free(&mesh[i]);
-    for (i = 0; i < FBO_COUNT; ++i)
-        fbo_free(&fbo[i]);
-    for (i = 0; i < SHADER_COUNT; ++i)
-        shader_program_free(&shader[i]);
-    text_free();
     rand_free();
-    logger_close();
-    glfwDestroyWindow(render.window);
-    glfwTerminate();
+    fsl_mem_arena_free(&memory_arena_internal, "main().memory_arena_internal");
+    fsl_engine_close();
     return *GAME_ERR;
 }

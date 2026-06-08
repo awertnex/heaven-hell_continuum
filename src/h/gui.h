@@ -1,24 +1,18 @@
-#ifndef GAME_GUI_H
-#define GAME_GUI_H
+#ifndef HHC_GUI_H
+#define HHC_GUI_H
 
-#include <engine/h/core.h>
-#include "main.h"
+#include "deps/fossil/common/types.h"
+
+#define show_cursor     glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+#define disable_cursor  glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+#define center_cursor   glfwSetCursorPos(render->window, render->size.x / 2.0f, render->size.y / 2.0f)
 
 #define BTN_COUNT 110
 
 #define COL_TEXT_DEFAULT    0xbcbcbcff
 #define COL_TEXT_HOVER      0xa4ed74ff
-#define COL_X               0xff3232ff
-#define COL_Y               0x32ff32ff
-#define COL_Z               0x3232ffff
 
-extern u16 menu_index;
-extern u16 menu_layer[5];
-extern u8 state_menu_depth;
-extern b8 is_menu_ready;
-extern u8 buttons[BTN_COUNT];
-
-enum MenuNames
+enum menu_index
 {
     MENU_TITLE = 1,
     MENU_SINGLEPLAYER,
@@ -27,11 +21,11 @@ enum MenuNames
     MENU_SETTINGS_AUDIO,
     MENU_SETTINGS_VIDEO,
     MENU_GAME_PAUSE,
-    MENU_DEATH,
+    MENU_DEATH
 
-}; /* MenuNames */
+}; /* menu_index */
 
-enum ButtonNames
+enum button_index
 {
     /* ---- title screen ---------------------------------------------------- */
 
@@ -83,14 +77,31 @@ enum ButtonNames
     /* ---- super debugger (SDB) -------------------------------------------- */
 
     BTN_SDB_ADD,
-    BTN_SDB_SUB,
-}; /* ButtonNames */
+    BTN_SDB_SUB
+}; /* button_index */
 
-/*! @return non-zero on failure and '*GAME_ERR' is set accordingly.
+extern u16 menu_index_cur;
+extern u16 menu_layer[5];
+extern u8 state_menu_depth;
+extern b8 is_menu_ready;
+extern u8 buttons[BTN_COUNT];
+
+/*!
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 gui_init(void);
 
 void gui_free(void);
+
+/*!
+ *  @brief bind correct resources to start drawing UI items.
+ */
+void gui_start_ui_items(void);
+
+/*!
+ *  @brief draw UI item (e.g., hotbar items, container items).
+ */
+void gui_draw_ui_item(f32 pos_x, f32 pos_y);
 
 #if 0 /* TODO: undef */
 void update_menus(v2f32 render_size);
@@ -116,4 +127,4 @@ void btn_func_unpause();
 void btn_func_quit_game();
 void btn_func_quit_world();
 
-#endif /* GAME_GUI_H */
+#endif /* HHC_GUI_H */
