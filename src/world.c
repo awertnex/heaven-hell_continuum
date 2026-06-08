@@ -3,6 +3,7 @@
 #include "deps/fossil/assets/assets.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
+#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/string/string.h"
 
 #include "deps/fossil/h/dir.h"
@@ -40,7 +41,7 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    set_player_spawn(p, 0, 0, -86);
+    player_set_spawn(p, 0, 0, 0);
     player_spawn(p, TRUE);
 
     core.flag.hud = TRUE;

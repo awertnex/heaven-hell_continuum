@@ -1,4 +1,4 @@
-# Heaven/Hell Continuum - v0.5.0-beta
+# Heaven/Hell Continuum - v0.5.0-dev
 
 <h1 align="center">
   <img src="assets/textures/logo/128x128.png" alt="Heaven-Hell Continuum">
@@ -16,7 +16,7 @@ zip | [v0.5.0-beta-linux-x86_64.zip](https://github.com/awertnex/heaven-hell_con
 
 ## Dependencies (already bundled)
 
-- [buildtool v1.8.7-beta](https://github.com/awertnex/buildtool): build tool used to build the game
+- [buildtool v1.8.7](https://github.com/awertnex/buildtool): build tool used to build the game
 - [fossil_engine v0.10.0-beta](https://github.com/awertnex/fossil_engine): engine that originated from this game, now is standalone
 - [glfw v3.4](https://github.com/glfw/glfw/releases): platform-independent windowing (headers modified)
 - [glad v0.1.36](https://github.com/dav1dde/glad-web): OpenGL function loader (modified)

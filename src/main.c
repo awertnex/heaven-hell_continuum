@@ -285,8 +285,8 @@ static void draw_hotbar_items(void)
     {
         if (player.hotbar_slots[i])
         {
-            gui_draw_ui_item(i * 34.0f +
-                    (f32)render->size.x / 2.0f - 84.5f * 2.0f,
+            gui_draw_ui_item(player.hotbar_slots[i],
+                    i * 34.0f + (f32)render->size.x / 2.0f - 84.5f * 2.0f,
                     4.0f);
         }
     }

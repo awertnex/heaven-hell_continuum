@@ -9,7 +9,7 @@
 #define GAME_VERSION_ALPHA  "-alpha"
 #define GAME_VERSION_DEV    "-dev"
 
-#define GAME_VERSION        "0.5.0"GAME_VERSION_BETA
+#define GAME_VERSION        "0.5.0"GAME_VERSION_DEV
 #define GAME_TITLE          GAME_NAME": "GAME_VERSION
 
 #ifdef HHC_RELEASE_BUILD

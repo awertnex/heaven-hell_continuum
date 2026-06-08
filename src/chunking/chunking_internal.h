@@ -91,7 +91,6 @@ struct hhc_chunk_scheduler
     fsl_len len;            /* number of members in `p` */
     u32 cursor_push;        /* push position */
     u32 cursor_pop;         /* pop position */
-    u32 cursor_scan;        /* dirty chunk scanner */
     chunk_scheduler_budget budget;
     fsl_mem_handle schedule;
     hhc_chunk **p;        /* cached pointer from `schedule` */

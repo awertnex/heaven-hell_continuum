@@ -31,6 +31,7 @@ static str str_libs[][CMD_SIZE] =
 static str str_files[][CMD_SIZE] =
 {
     DIR_SRC"main.c",
+    DIR_SRC"chunking/chunk_draw.c",
     DIR_SRC"chunking/chunking.c",
     DIR_SRC"chunking/chunking_debug_tools.c",
     DIR_SRC"terrain/terrain.c",
@@ -96,6 +97,7 @@ int main(int argc, char **argv)
 
     if (
             copy_file("LICENSE",        DIR_OUT) != ERR_SUCCESS ||
+            copy_file("version.txt",    DIR_OUT) != ERR_SUCCESS ||
             copy_dir("assets/",         DIR_OUT, FALSE) != ERR_SUCCESS ||
             copy_dir("fossil/fossil/",  DIR_OUT, TRUE) != ERR_SUCCESS)
         cmd_fail(&cmd);

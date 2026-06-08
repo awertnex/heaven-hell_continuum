@@ -3,6 +3,7 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/math/vector.h"
+#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/physics/collision.h"
 
 #include "deps/fossil/h/time.h"
@@ -612,12 +613,12 @@ void player_target_update(hhc_player *p)
     end.y = start.y - p->yaw.sin * p->pitch.cos;
     end.z = start.z - p->pitch.sin;
 
-    p->hit = block_hit_get(p->transform.pos,
+    p->hit = block_hit_get(origin,
             start.x, start.y, start.z, end.x, end.y, end.z,
             settings.reach_distance);
 }
 
-void set_player_pos(hhc_player *p, f64 x, f64 y, f64 z)
+void player_set_pos(hhc_player *p, f64 x, f64 y, f64 z)
 {
     p->transform.pos.x = x;
     p->transform.pos.y = y;
@@ -628,7 +629,7 @@ void set_player_pos(hhc_player *p, f64 x, f64 y, f64 z)
     p->transform_last.pos = p->transform.pos;
 }
 
-void set_player_block(hhc_player *p, i64 x, i64 y, i64 z)
+void player_set_block(hhc_player *p, i64 x, i64 y, i64 z)
 {
     p->transform.pos.x = (f64)x + 0.5f;
     p->transform.pos.y = (f64)y + 0.5f;
@@ -636,7 +637,7 @@ void set_player_block(hhc_player *p, i64 x, i64 y, i64 z)
     p->transform_last.pos = p->transform.pos;
 }
 
-void set_player_spawn(hhc_player *p, i64 x, i64 y, i64 z)
+void player_set_spawn(hhc_player *p, i64 x, i64 y, i64 z)
 {
     p->spawn.x = x;
     p->spawn.y = y;
@@ -645,7 +646,7 @@ void set_player_spawn(hhc_player *p, i64 x, i64 y, i64 z)
 
 void player_spawn(hhc_player *p, b8 hard)
 {
-    set_player_pos(p,
+    player_set_pos(p,
             p->spawn.x + 0.5f,
             p->spawn.y + 0.5f,
             p->spawn.z + 0.5f);

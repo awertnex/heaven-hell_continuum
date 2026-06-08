@@ -34,7 +34,7 @@ typedef enum chunk_scheduler_radius
 typedef enum chunk_scheduler_budget
 {
     CHUNK_SCHEDULER_BUDGET_PRIORITY_LOW = 10000000,
-    CHUNK_SCHEDULER_BUDGET_PRIORITY_MID = 15000000,
+    CHUNK_SCHEDULER_BUDGET_PRIORITY_MID = 20000000,
     CHUNK_SCHEDULER_BUDGET_PRIORITY_HIGH = 30000000
 } chunk_scheduler_budget;
 

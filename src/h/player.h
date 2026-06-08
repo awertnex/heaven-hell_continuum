@@ -179,13 +179,13 @@ fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f32 velo
 void player_camera_movement_update(hhc_player *p, v2f64 mouse_delta, b8 use_mouse);
 
 void player_target_update(hhc_player *p);
-void set_player_pos(hhc_player *p, f64 x, f64 y, f64 z);
-void set_player_block(hhc_player *p, i64 x, i64 y, i64 z);
+void player_set_pos(hhc_player *p, f64 x, f64 y, f64 z);
+void player_set_block(hhc_player *p, i64 x, i64 y, i64 z);
 
 /*!
  *  @brief set player spawn point.
  */
-void set_player_spawn(hhc_player *p, i64 x, i64 y, i64 z);
+void player_set_spawn(hhc_player *p, i64 x, i64 y, i64 z);
 
 /*!
  *  @brief re-spawn player.

@@ -34,7 +34,6 @@ static hhc_chunk_buffer chunk_buf = {0};
 hhc_chunk_table chunk_tab = {0};
 hhc_chunk_order chunk_order = {0};
 hhc_chunk_scheduler chunk_sched[CHUNK_SCHEDULERS_MAX] = {0};
-hhc_chunk_draw chunk_draw[CHUNK_SCHEDULERS_MAX] = {0};
 
 /* ---- section: implementation --------------------------------------------- */
 
@@ -1013,8 +1012,10 @@ chunk_work_cost chunk_load_internal(hhc_chunk *ch, chunk_scheduler_budget budget
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
             world.path, ch->pos.x, ch->pos.y, ch->pos.z);
 
+#if MODE_INTERNAL_IMPORT_CHUNKS
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
         cost += chunk_import_internal(path, ch);
+#endif /* MODE_INTERNAL_IMPORT_CHUNKS */
     cost += chunk_generate_internal(ch, budget);
     return cost;
 }
@@ -1440,11 +1441,11 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
         b8 should_push, b8 should_pop)
 {
     hhc_chunk ***start = NULL;
+    hhc_chunk ***end = NULL;
     hhc_chunk *ch = NULL;
     u32 sched_len = sched->len;
     u32 push = sched->cursor_push;
     u32 pop = sched->cursor_pop;
-    u32 scan = sched->cursor_scan;
     i32 budget = sched->budget;
     u32 i = 0;
 
@@ -1452,11 +1453,12 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
         goto pop;
 
     start = &chunk_order.p[sched->offset];
-    for (i = 0; sched->count < sched_len && budget > 0 && i < sched_len; ++i)
+    end = chunk_order.p + len;
+    for (; sched->count < sched_len && budget > 0 && start < end; ++start)
     {
-        if (*start[scan])
+        if (**start)
         {
-            ch = *start[scan];
+            ch = **start;
             if (ch->flag & FLAG_CHUNK_DIRTY &&
                     ch->sched_id != sched->id &&
                     !sched->p[push])
@@ -1470,15 +1472,10 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
                 budget -= CHUNK_WORK_COST_PUSH;
             }
         }
-
-        ++scan;
-        if (scan >= sched_len)
-            scan = 0;
         budget -= CHUNK_WORK_COST_SCAN;
     }
 
     sched->cursor_push = push;
-    sched->cursor_scan = scan;
 
 pop:
 
@@ -1509,8 +1506,10 @@ pop:
 
             if (!(ch->flag & FLAG_CHUNK_DIRTY))
             {
+#if MODE_INTERNAL_EXPORT_CHUNKS
                 if (!(ch->flag & FLAG_CHUNK_IMPORTED))
                     chunk_export_internal(ch);
+#endif /* MODE_INTERNAL_EXPORT_CHUNKS */
 
                 ch->flag &= ~FLAG_CHUNK_IMPORTED;
                 ch->sched_id = 0;
@@ -1532,14 +1531,6 @@ pop:
     }
 
     sched->cursor_pop = pop;
-}
-
-void chunk_draw_update_internal(hhc_chunk_draw *draw)
-{
-    hhc_chunk **start = NULL;
-    u32 draw_len = draw->len;
-    u32 scan = draw->cursor_scan;
-    u32 i = 0;
 }
 
 u32 *get_block_resolved(hhc_chunk *ch, i32 x, i32 y, i32 z)

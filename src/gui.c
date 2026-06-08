@@ -3,19 +3,13 @@
 #include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/assets/assets.h"
 #include "deps/fossil/assets/mesh/mesh.h"
-#include "deps/fossil/engine/engine.h"
-#include "deps/fossil/engine/engine_assets.h"
-#include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
-#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
-#include "deps/fossil/string/string.h"
 
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/main.h"
 #include "h/gui.h"
-#include "h/dir.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +22,7 @@
 struct /* ui_item_data_internal */
 {
     fsl_mesh mesh_unit_cube;
+    fsl_vbo item_id_buf;
     fsl_shader_program shader;
     fsl_camera camera;
     f64 camera_distance;
@@ -46,6 +41,21 @@ u32 gui_init(void)
     if (fsl_mesh_load(&ui_item_data_internal.mesh_unit_cube,
                 "Unit Cube", "unit_cube", "unit_cube.obj", GAME_DIR_NAME_MODELS) != FSL_ERR_SUCCESS)
         return *GAME_ERR;
+
+    glBindVertexArray(ui_item_data_internal.mesh_unit_cube.vao);
+
+    if (fsl_vbo_init(&ui_item_data_internal.item_id_buf, 1, sizeof(GLuint), NULL,
+                GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW) != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    glBindBuffer(GL_ARRAY_BUFFER, ui_item_data_internal.item_id_buf.id);
+
+    glEnableVertexAttribArray(7);
+    glVertexAttribIPointer(7, 1, GL_UNSIGNED_INT, sizeof(GLuint), (void*)0);
+    glVertexAttribDivisor(7, 1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     if (fsl_shader_program_init_ex(&ui_item_data_internal.shader, "UI Item", "ui_item",
                 "ui_item.vert", NULL, "ui_item.frag", GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
@@ -92,7 +102,7 @@ void gui_start_ui_items(void)
             0.0, 0.0, 0.0);
 }
 
-void gui_draw_ui_item(f32 pos_x, f32 pos_y)
+void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y)
 {
     f32 pitch = UI_ITEM_PITCH;
     f32 yaw = UI_ITEM_YAW;
@@ -144,6 +154,9 @@ void gui_draw_ui_item(f32 pos_x, f32 pos_y)
 
     glBindBuffer(GL_ARRAY_BUFFER, ui_item_data_internal.mesh_unit_cube.transform_buf.id);
     glBufferData(GL_ARRAY_BUFFER, sizeof(m4f32), &transform, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ui_item_data_internal.item_id_buf.id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint), &item_id, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glBindVertexArray(ui_item_data_internal.mesh_unit_cube.vao);

@@ -1,7 +1,8 @@
+#include "deps/fossil/common/diagnostics.h"
 #include "deps/fossil/input/input.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
-#include "deps/fossil/math/trigonometry.h"
+#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 #include "deps/fossil/shaders/shader_types.h"
 
