@@ -222,7 +222,6 @@ void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *ch)
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_loaded.vbo);
     glBufferSubData(GL_ARRAY_BUFFER, ch->index * sizeof(v2u32), sizeof(v2u32),
             &chunk_gizmo_loaded.p[ch->index]);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo_visible.vbo);
     glBufferSubData(GL_ARRAY_BUFFER, ch->index * sizeof(v2u32), sizeof(v2u32),
             &chunk_gizmo_visible.p[ch->index]);
