@@ -3,31 +3,38 @@
 - - -
 ## v0.5.0-dev (current)
 
-#### added
+#### changes
+- updated engine version to v0.11.0-beta.
+
+#### fixes
+- fixed chunk gizmo's alpha background not showing up.
+
+#### additions
 - added inventory container texture.
 - added GUI-scale integration.
 
-#### deprecated
+#### deprecations
 - deprecated `hhc_chunk.mesh`, now it's `hhc_chunk.mesh_deprecated`,
-  and `hhc_chunk.mesh` is now a mesh pointer.
+  and `hhc_chunk.mesh` is now a mesh pointer (so it can be managed by a
+  chunk_draw).
 
 #### bugs and flaws
-- segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
-- player spawn puts player anywhere, even inside blocks
+- player spawn puts player anywhere, even inside blocks.
 - collision is broken:
-    - blocks tug on player
-    - player collides with imaginary blocks near actual blocks
-    - flying at blocks at high speed results in a floating point exception (segfault)
+    - blocks tug on player.
+    - player collides with imaginary blocks near actual blocks.
+    - flying at blocks at high speed results in a floating point exception
+      (segfault).
 - physics have been disabled, now the player glides across blocks and flies
-  with no drag except for natural air drag (very annoying)
+  with no drag except for natural air drag (very annoying).
 - block-breaking is instant, and it's a press-event, not a hold-event,
-  same for block-placement
+  same for block-placement.
 - camera mode 'stalker' doesn't pick a block to rest on and follow player,
-  it just becomes stationary, but does follow player
+  it just becomes stationary, but does follow player.
 - camera mode 'spectator' not implemented (it's supposed to exit player and
-  move freely like a drone)
-- 'Sample Block' not implemented
-- block light is hard-coded, for now
+  move freely like a drone).
+- 'Sample Block' not implemented.
+- block light is hard-coded, for now.
 
 - - -
 ## v0.5.0-beta (2026 06 08)

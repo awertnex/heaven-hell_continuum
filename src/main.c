@@ -5,6 +5,7 @@
 #include "chunking/chunking.h"
 #include "chunking/chunking_internal.h"
 #include "chunking/chunking_debug_tools.h"
+#include "settings/settings.h"
 #include "terrain/perlin_noise.h"
 
 #include "h/game_info.h"
@@ -29,7 +30,6 @@ u32 *const GAME_ERR = (u32*)&fsl_err;
 fsl_mem_arena memory_arena_internal = {0};
 fsl_render *render = NULL;
 struct hhc_core core = {0};
-struct hhc_settings settings = {0};
 struct hhc_uniform uniform = {0};
 static hhc_player player = {0};
 
@@ -53,16 +53,7 @@ static void callback_key(GLFWwindow *window, int key, int scancode, int action, 
 static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset);
 
 static void bind_shader_uniforms(void);
-
-/*!
- *  @internal
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-static u32 settings_init(void);
-
-void settings_update(void);
-static void draw_hotbar_items(void);
+static void ui_hud_draw(void);
 static void draw_world(void);
 static void draw_debug_gizmo_axis(void);
 static void draw_everything(void);
@@ -110,83 +101,6 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
         else if (player.hotbar_slot_selected < 0)
             player.hotbar_slot_selected = CONTAINER_HOTBAR_SLOTS_MAX - 1;
     }
-}
-
-static u32 settings_init(void)
-{
-    str tokens[4][24] =
-    {
-        "mouse_sensitivity",
-        "field_of_view",
-        "render_distance",
-        "target_fps",
-    };
-    str *settings_file_contents = fsl_stringf(
-            "%s = %d\n"
-            "%s = %d\n"
-            "%s = %d\n"
-            "%s = %d\n",
-            tokens[0], SET_MOUSE_SENSITIVITY_DEFAULT,
-            tokens[1], SET_FOV_DEFAULT,
-            tokens[2], SET_RENDER_DISTANCE_DEFAULT,
-            tokens[3], FSL_TARGET_FPS_DEFAULT);
-
-    if (fsl_is_dir_exists(GAME_DIR_NAME_CONFIG, TRUE) != FSL_ERR_SUCCESS)
-        return *GAME_ERR;
-
-    if (fsl_is_file_exists(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS, FALSE) != FSL_ERR_SUCCESS)
-    {
-        fsl_write_file(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS,
-                strlen(settings_file_contents),
-                settings_file_contents, TRUE, TRUE);
-    }
-
-    settings_file_contents = NULL;
-    fsl_get_file_contents(GAME_DIR_NAME_CONFIG GAME_FILE_NAME_SETTINGS,
-            (void*)&settings_file_contents, TRUE);
-    if (*GAME_ERR != FSL_ERR_SUCCESS)
-        return *GAME_ERR;
-
-    settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
-
-    settings.render_distance = 16;
-    settings.chunk_buf_radius = settings.render_distance;
-    settings.chunk_buf_diameter = settings.chunk_buf_radius * 2 + 1;
-
-    settings.chunk_buf_layer =
-        settings.chunk_buf_diameter *
-        settings.chunk_buf_diameter;
-
-    settings.chunk_buf_volume =
-        settings.chunk_buf_diameter *
-        settings.chunk_buf_diameter *
-        settings.chunk_buf_diameter;
-
-    settings.chunk_tab_center =
-        settings.chunk_buf_radius +
-        settings.chunk_buf_radius * settings.chunk_buf_diameter +
-        settings.chunk_buf_radius * settings.chunk_buf_layer;
-
-    settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
-    settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
-    settings.gui_scale = 12;
-    settings.font_size = 20.0f;
-    settings.target_fps = 0;
-    settings.fov = SET_FOV_DEFAULT;
-    settings.anti_aliasing = TRUE;
-
-    fsl_mem_free((void*)&settings_file_contents, strlen(settings_file_contents),
-            "settings_init().settings_file_contents");
-
-    *GAME_ERR = FSL_ERR_SUCCESS;
-    return *GAME_ERR;
-}
-
-void settings_update(void)
-{
-    if (fsl_on_time_interval(&refresh_interval.fps_string,
-                FSL_SEC2NSEC / SET_TEXT_REFRESH_INTERVAL, render->time))
-        settings.fps = 1 / ((f64)render->time_delta * FSL_NSEC2SEC);
 }
 
 static void bind_shader_uniforms(void)
@@ -277,41 +191,24 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "box_color");
 }
 
-static void draw_hotbar_items(void)
+static void ui_hud_draw(void)
 {
     u32 i = 0;
     f32 scale = settings.gui_scale;
     f32 item_bar_item_stride = 0.0f;
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+
+    if (fsl_on_time_interval(&refresh_interval.fps_string,
+                FSL_SEC2NSEC / SET_TEXT_REFRESH_INTERVAL, render->time))
+        settings.fps = 1 / ((f64)render->time_delta * FSL_NSEC2SEC);
 
     if (!core.flag.hud)
         return;
 
     if (!core.flag.debug)
-    {
-        /* size is half because texture size is 16 instead of eight, because
-         * we need better resolution for the proper thickness but it should
-         * be eight pixels high at gui-scale of 1.
-         */
-        fsl_ui_draw(&texture_p[TEXTURE_CROSSHAIR], render->size.x / 2, render->size.y / 2,
-                (texture_p[TEXTURE_CROSSHAIR].size.x * scale) / 2,
-                (texture_p[TEXTURE_CROSSHAIR].size.y * scale) / 2,
-                0.0f, 0.0f, -1, -1, 0xffffffff);
-    }
+        fsl_ui_element_draw(&ui_element[UI_ELEMENT_CROSSHAIR]);
 
-    fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR], render->size.x / 2, render->size.y,
-            texture_p[TEXTURE_ITEM_BAR].size.x * scale,
-            texture_p[TEXTURE_ITEM_BAR].size.y * scale,
-            84.5f, 18.0f, 0, 0, 0xffffffff);
-
-    /* ---- draw item bar items --------------------------------------------- */
-
-    fsl_ui_draw(&texture_p[TEXTURE_ITEM_BAR_SELECTED],
-            render->size.x / 2 - settings.gui_scale + player.hotbar_slot_selected * 17 * scale,
-            render->size.y - settings.gui_scale,
-            texture_p[TEXTURE_ITEM_BAR_SELECTED].size.x * scale,
-            texture_p[TEXTURE_ITEM_BAR_SELECTED].size.y * scale,
-            84.5f, 18.0f, 0, 0, 0xffffffff);
+    fsl_ui_element_draw(&ui_element[UI_ELEMENT_HOTBAR]);
+    fsl_ui_element_draw(&ui_element[UI_ELEMENT_HOTBAR_SELECTED]);
 
     gui_start_ui_items();
 
@@ -322,7 +219,7 @@ static void draw_hotbar_items(void)
             item_bar_item_stride = i * 17.0f * scale + (f32)render->size.x / 2.0f - 84.5f * scale;
 
             gui_draw_ui_item(player.hotbar_slots[i].id,
-                    item_bar_item_stride, 2.0f * scale);
+                    item_bar_item_stride, 4.0f * scale);
         }
     }
 
@@ -337,11 +234,7 @@ static void draw_hotbar_items(void)
         switch (player.menu_state)
         {
             case STATE_PLAYER_MENU_INVENTORY_SURVIVAL:
-                fsl_ui_draw(&texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL],
-                        render->size.x / 2, render->size.y / 2,
-                        texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.x * scale,
-                        texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL].size.y * scale,
-                        177.0f / 2.0f, 177.0f / 2.0f, 0, 0, 0xffffffff);
+                fsl_ui_element_draw(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL]);
                 break;
         }
     }
@@ -715,7 +608,7 @@ static void draw_everything(void)
 
     fsl_ui_start(FALSE, TRUE);
 
-    draw_hotbar_items();
+    ui_hud_draw();
 
     /* ---- draw debug info ------------------------------------------------- */
 
@@ -1004,6 +897,7 @@ int main(int argc, char **argv)
     player_init(&player, "Lily");
     input_init();
     bind_shader_uniforms();
+    settings_update(&player);
 
 section_menu_title:
 
@@ -1018,7 +912,7 @@ section_world_loaded:
     while (fsl_engine_running(&callback_framebuffer_size))
     {
         input_update(&player);
-        settings_update();
+        settings_update(&player);
         world_update(&player);
         draw_everything();
 

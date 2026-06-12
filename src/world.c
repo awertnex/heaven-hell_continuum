@@ -42,7 +42,7 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    player_set_spawn(p, 0, 0, 0);
+    player_set_spawn(p, -7, 34, -2);
     player_spawn(p, TRUE);
 
     core.flag.hud = TRUE;
@@ -168,7 +168,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
     /* ---- world seed ------------------------------------------------------ */
 
-    snprintf(string[0], FSL_PATH_CAP, GAME_DIR_NAME_WORLDS"%s/"GAME_FILE_NAME_WORLD_SEED, world_name);
+    snprintf(string[0], FSL_PATH_CAP, GAME_DIR_NAME_WORLDS"%s/"GAME_FILE_NAME_WORLD_METADATA, world_name);
     if (fsl_is_file_exists(string[0], FALSE) == FSL_ERR_SUCCESS)
     {
         file_len = fsl_get_file_contents(string[0], (void*)&file_contents, TRUE);

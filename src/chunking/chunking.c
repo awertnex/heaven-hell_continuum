@@ -6,6 +6,8 @@
 
 #include "deps/fossil/h/dir.h"
 
+#include "../settings/settings.h"
+
 #include "../h/assets.h"
 #include "../h/config_internal.h"
 #include "../h/common.h"

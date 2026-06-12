@@ -153,6 +153,7 @@ u32 player_init(hhc_player *p, const str *name);
  */
 void player_update(hhc_player *p, f64 dt);
 
+void player_hotbar_selected_set(hhc_player *p, u32 index);
 void player_collision_update(hhc_player *p, f64 dt);
 void player_bounding_box_update(hhc_player *p);
 

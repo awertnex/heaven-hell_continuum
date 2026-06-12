@@ -6,6 +6,8 @@
 
 #include "deps/fossil/external/glad/glad.h"
 
+#include "../settings/settings.h"
+
 #include "../h/common.h"
 #include "../h/assets.h"
 #include "../h/diagnostics.h"

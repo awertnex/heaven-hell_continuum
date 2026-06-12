@@ -198,12 +198,8 @@ u32 assets_init(void)
                 "Crosshair", "crosshair", "crosshair.png", GAME_DIR_NAME_GUI,
                 GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS ||
 
-            fsl_texture_init(&texture_p[TEXTURE_ITEM_BAR],
-                "Item Bar", "item_bar", "item_bar.png", GAME_DIR_NAME_GUI,
-                GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS ||
-
-            fsl_texture_init(&texture_p[TEXTURE_ITEM_BAR_SELECTED],
-                "Item Bar Selected", "item_bar_selected", "item_bar_selected.png", GAME_DIR_NAME_GUI,
+            fsl_texture_init(&texture_p[TEXTURE_HOTBAR],
+                "Hotbar", "hotbar", "hotbar.png", GAME_DIR_NAME_GUI,
                 GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS ||
 
             fsl_texture_init(&texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL],

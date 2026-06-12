@@ -269,7 +269,7 @@ void input_update(hhc_player *p)
         for (i = 0; i < CONTAINER_HOTBAR_SLOTS_MAX; ++i)
         {
             if (fsl_is_key_press(bind_hotbar[0][i]) || fsl_is_key_press(bind_hotbar[1][i]))
-                p->hotbar_slot_selected = fsl_mod_i32(i - 1, CONTAINER_HOTBAR_SLOTS_MAX);
+                player_hotbar_selected_set(p, fsl_mod_i32(i - 1, CONTAINER_HOTBAR_SLOTS_MAX));
         }
 
         if (fsl_is_key_press(bind_inventory))

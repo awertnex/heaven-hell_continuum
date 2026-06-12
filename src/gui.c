@@ -6,6 +6,8 @@
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/shaders/shaders.h"
 
+#include "settings/settings.h"
+
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/main.h"
@@ -33,6 +35,7 @@ u16 menu_layer[5] = {0};
 u8 state_menu_depth = 0;
 b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
+fsl_ui_element ui_element[UI_ELEMENT_COUNT] = {0};
 
 u32 gui_init(void)
 {
@@ -165,40 +168,6 @@ void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y)
 }
 
 #ifdef FUCK /* TODO: undef FUCK */
-/*jump*/
-/*
- * scale = (source.scale * scl);
- */
-void draw_texture_a(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
-{
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
-            || (source.width == 0.0f) || (source.height == 0.0f))
-        return;
-
-    rlSetTexture(texture.id);
-    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0.0f, 0.0f, 1.0f);
-
-    i32 tile_width = source.width * scl.x;
-    i32 tile_height = source.height * scl.y;
-
-    /* top left */
-    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
-    rlVertex2f(pos.x, pos.y);
-
-    /* bottom left */
-    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
-    rlVertex2f(pos.x, pos.y + tile_height);
-
-    /* bottom right */
-    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
-
-    /* top right */
-    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y);
-}
-
 void update_menus(v2f32 render_size)
 {
     if (!menu_index_cur)
@@ -365,255 +334,10 @@ void update_menus(v2f32 render_size)
     }
 }
 
-void draw_hud()
-{
-    rlBegin(RL_QUADS);
-
-    draw_texture(texture_hud_widgets, hotbar,
-            hotbar_pos,
-            (v2i16){setting.gui_scale, setting.gui_scale},
-            1, 2, COL_TEXTURE_DEFAULT);
-
-    draw_texture(texture_hud_widgets, hotbar_selected,
-            (v2i16){
-            hotbar_pos.x - 2 - ((hotbar.width / 2) * setting.gui_scale) + ((hotbar.height - 2) * setting.gui_scale * (hotbar_slot_selected - 1)),
-            hotbar_pos.y + setting.gui_scale}, /* TODO: revise gui_scale mod of selected hotbar position Y */
-            (v2i16){setting.gui_scale, setting.gui_scale},
-            0, 2, COL_TEXTURE_DEFAULT);
-
-    draw_texture(texture_hud_widgets, hotbar_offhand,
-            (v2i16){
-            hotbar_pos.x - ((hotbar.width / 2) * setting.gui_scale) - (hotbar.height * 2 * setting.gui_scale),
-            hotbar_pos.y + setting.gui_scale},
-            (v2i16){setting.gui_scale, setting.gui_scale},
-            0, 2, COL_TEXTURE_DEFAULT);
-
-    if (!(flag & FLAG_DEBUG))
-        draw_texture(texture_hud_widgets, crosshair,
-                crosshair_pos,
-                (v2i16){setting.gui_scale, setting.gui_scale},
-                0, 0, COL_TEXTURE_DEFAULT);
-
-    rlEnd();
-    rlSetTexture(0);
-}
-
-float get_str_width(Font font, const str* str, f32 font_size, f32 spacing)
-{
-    f32 result = 0;
-    f32 text_offset_x = 0.0f;
-    f32 scale_factor = font_size / font.baseSize;
-    for (u16 i = 0; i < TextLength(str);)
-    {
-        i32 codepoint_byte_count = 0;
-        u16 codepoint = GetCodepointNext(&str[i], &codepoint_byte_count);
-        u8 index = GetGlyphIndex(font, codepoint);
-
-        if (codepoint == '\n')
-            text_offset_x = 0.0f;
-        else
-        {
-            if (font.glyphs[index].advanceX == 0)
-            {
-                result += font.recs[index].width * scale_factor + spacing;
-                text_offset_x += ((f32)font.recs[index].width * scale_factor + spacing);
-            }
-            else
-            {
-                result += font.glyphs[index].advanceX * scale_factor + spacing;
-                text_offset_x += ((f32)font.glyphs[index].advanceX * scale_factor + spacing);
-            }
-        }
-        i += codepoint_byte_count;
-    }
-    return result + 4;
-}
-
-/*
- * raylib/rtextures.c/DrawTexturePro refactored;
- * scale = (source.scale * scl);
- * align_x = (0 = left, 1 = center, 2 = right);
- * align_y = (0 = top, 1 = center, 2 = bottom);
- */
-void draw_texture(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, u8 align_x, u8 align_y, Color tint)
-{
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
-            || (source.width == 0.0f) || (source.height == 0.0f))
-        return;
-
-    switch (align_x)
-    {
-        case 1:
-            pos.x -= ((source.width * scl.x) / 2);
-            break;
-
-        case 2:
-            pos.x -= (source.width * scl.x);
-            break;
-    };
-
-    switch (align_y)
-    {
-        case 1:
-            pos.y -= ((source.height * scl.y) / 2);
-            break;
-
-        case 2:
-            pos.y -= (source.height * scl.y);
-            break;
-    };
-
-    rlSetTexture(texture.id);
-    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
-
-    i32 tile_width = source.width * scl.x;
-    i32 tile_height = source.height * scl.y;
-
-    /* top left */
-    rlTexCoord2f(source.x / texture.width, source.y / texture.height);
-    rlVertex2f(pos.x, pos.y);
-
-    /* bottom left */
-    rlTexCoord2f(source.x / texture.width, (source.y + source.height) / texture.height);
-    rlVertex2f(pos.x, pos.y + tile_height);
-
-    /* bottom right */
-    rlTexCoord2f((source.x + source.width) / texture.width, (source.y + source.height) / texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
-
-    /* top right */
-    rlTexCoord2f((source.x + source.width) / texture.width, source.y / texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y);
-}
-
-/*jump*/
-/* TODO: make draw_texture_tiled() */
-/*
- * raylib/examples/textures/textures_draw_tiled.c/DrawTextureTiled refactored;
- */
-void draw_texture_tiled(Texture2D texture, Rectangle source, Rectangle dest, v2i16 pos, v2i16 scl, Color tint)
-{
-    if ((texture.id <= 0) || (scl.x <= 0.0f) || (scl.y <= 0.0f)
-            || (source.width == 0.0f) || (source.height == 0.0f))
-        return;
-
-    rlSetTexture(texture.id);
-    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0, 0, 1);
-
-    i32 tile_width = source.width*scl.x;
-    i32 tile_height = source.height*scl.y;
-
-    // top left
-    rlTexCoord2f(source.x/texture.width, source.y/texture.height);
-    rlVertex2f(pos.x, pos.y);
-
-    // bottom left
-    rlTexCoord2f(source.x/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x, pos.y + tile_height);
-
-    // bottom right
-    rlTexCoord2f((source.x + source.width)/texture.width, (source.y + source.height)/texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y + tile_height);
-
-    // top right
-    rlTexCoord2f((source.x + source.width)/texture.width, source.y/texture.height);
-    rlVertex2f(pos.x + tile_width, pos.y);
-
-
-    if ((dest.width < tile_width) && (dest.height < tile_height))
-    {
-        DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, ((float)dest.height/tile_height)*source.height},
-                    (Rectangle){dest.x, dest.y, dest.width, dest.height}, origin, rotation, tint);
-    }
-    else if (dest.width <= tile_width)
-    {
-        // Tiled vertically (one column)
-        int dy = 0;
-        for (;dy+tile_height < dest.height; dy += tile_height)
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, source.height}, (Rectangle){dest.x, dest.y + dy, dest.width, (float)tile_height}, origin, rotation, tint);
-
-        // Fit last tile
-        if (dy < dest.height)
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)dest.width/tile_width)*source.width, ((float)(dest.height - dy)/tile_height)*source.height},
-                        (Rectangle){dest.x, dest.y + dy, dest.width, dest.height - dy}, origin, rotation, tint);
-
-    }
-    else if (dest.height <= tile_height)
-    {
-        // Tiled horizontally (one row)
-        int dx = 0;
-        for (;dx+tile_width < dest.width; dx += tile_width)
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)dest.height/tile_height)*source.height}, (Rectangle){dest.x + dx, dest.y, (float)tile_width, dest.height}, origin, rotation, tint);
-
-        // Fit last tile
-        if (dx < dest.width)
-        {
-            DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, ((float)dest.height/tile_height)*source.height},
-                        (Rectangle){dest.x + dx, dest.y, dest.width - dx, dest.height}, origin, rotation, tint);
-        }
-    }
-    else
-    {
-        // Tiled both horizontally and vertically (rows and columns)
-        int dx = 0;
-        for (;dx+tile_width < dest.width; dx += tile_width)
-        {
-            int dy = 0;
-            for (;dy+tile_height < dest.height; dy += tile_height)
-                DrawTexturePro(texture, source, (Rectangle){dest.x + dx, dest.y + dy, (float)tile_width, (float)tile_height}, origin, rotation, tint);
-
-            if (dy < dest.height)
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, source.width, ((float)(dest.height - dy)/tile_height)*source.height},
-                    (Rectangle){dest.x + dx, dest.y + dy, (float)tile_width, dest.height - dy}, origin, rotation, tint);
-        }
-
-        // Fit last column of tiles
-        if (dx < dest.width)
-        {
-            int dy = 0;
-            for (;dy+tile_height < dest.height; dy += tile_height)
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, source.height},
-                        (Rectangle){dest.x + dx, dest.y + dy, dest.width - dx, (float)tile_height}, origin, rotation, tint);
-
-            // Draw final tile in the bottom right corner
-            if (dy < dest.height)
-                DrawTexturePro(texture, (Rectangle){source.x, source.y, ((float)(dest.width - dx)/tile_width)*source.width, ((float)(dest.height - dy)/tile_height)*source.height},
-                    (Rectangle){dest.x + dx, dest.y + dy, dest.width - dx, dest.height - dy}, origin, rotation, tint);
-        }
-    }
-}
-*/
-
-/* raylib/rtextures.c/DrawTexturePro refactored;
-   scale = (scl); */
-void draw_texture_simple(Texture2D texture, Rectangle source, v2i16 pos, v2i16 scl, Color tint)
-{
-    if (texture.id <= 0) return;
-    f32 width = (f32)texture.width;
-    f32 height = (f32)texture.height;
-
-    Vector2 top_left =       (Vector2){pos.x,            pos.y};
-    Vector2 bottom_right =   (Vector2){pos.x + scl.x,    pos.y + scl.y};
-
-    rlSetTexture(texture.id);
-    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
-    rlNormal3f(0.0f, 0.0f, 1.0f);
-
-    rlTexCoord2f(source.x / width, source.y / height);
-    rlVertex2f(top_left.x, top_left.y);
-    rlTexCoord2f(source.x / width, (source.y + source.height) / height);
-    rlVertex2f(top_left.x, bottom_right.y);
-    rlTexCoord2f((source.x + source.width) / width, (source.y + source.height) / height);
-    rlVertex2f(bottom_right.x, bottom_right.y);
-    rlTexCoord2f((source.x + source.width) / width, source.y / height);
-    rlVertex2f(bottom_right.x, top_left.y);
-}
-
 /* align_x = (0 = left, 1 = center, 2 = right);
    align_y = (0 = top, 1 = center, 2 = bottom); */
-void draw_button(Texture2D texture, Rectangle button, v2i16 pos, u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
+void draw_button(Texture2D texture, Rectangle button, v2i16 pos,
+        u8 align_x, u8 align_y, u8 btn_state, void (*func)(), const str *str)
 {
     switch (align_x)
     {

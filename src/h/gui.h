@@ -2,6 +2,7 @@
 #define HHC_GUI_H
 
 #include "deps/fossil/common/types.h"
+#include "deps/fossil/ui/ui_types.h"
 
 #define show_cursor     glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
 #define disable_cursor  glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
@@ -12,9 +13,19 @@
 #define COL_TEXT_DEFAULT    0xbcbcbcff
 #define COL_TEXT_HOVER      0xa4ed74ff
 
+enum ui_element_index
+{
+    UI_ELEMENT_CROSSHAIR,
+    UI_ELEMENT_HOTBAR,
+    UI_ELEMENT_HOTBAR_SELECTED,
+    UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL,
+    UI_ELEMENT_COUNT
+}; /* ui_element_index */
+
 enum menu_index
 {
-    MENU_TITLE = 1,
+    MENU_NONE,
+    MENU_TITLE,
     MENU_SINGLEPLAYER,
     MENU_MULTIPLAYER,
     MENU_SETTINGS,
@@ -85,6 +96,7 @@ extern u16 menu_layer[5];
 extern u8 state_menu_depth;
 extern b8 is_menu_ready;
 extern u8 buttons[BTN_COUNT];
+extern fsl_ui_element ui_element[UI_ELEMENT_COUNT];
 
 /*!
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.

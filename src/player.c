@@ -5,15 +5,19 @@
 #include "deps/fossil/math/vector.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/physics/collision.h"
+#include "deps/fossil/ui/ui.h"
 
 #include "deps/fossil/h/time.h"
 
 #include "chunking/chunking.h"
+#include "settings/settings.h"
 
 #include "h/main.h"
 #include "h/config_internal.h"
+#include "h/container.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
+#include "h/gui.h"
 #include "h/player.h"
 #include "h/world.h"
 
@@ -181,6 +185,15 @@ void player_update(hhc_player *p, f64 dt)
     p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
     p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
     p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
+}
+
+void player_hotbar_selected_set(hhc_player *p, u32 index)
+{
+    p->hotbar_slot_selected = index;
+
+    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
+            render->size.x / 2, render->size.y, 0, 0,
+            (-169 / 2) - 1 + index * 17, -3);
 }
 
 void player_collision_update(hhc_player *p, f64 dt)

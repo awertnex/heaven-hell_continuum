@@ -29,37 +29,6 @@ struct hhc_core
     } debug;
 }; /* hhc_core */
 
-struct hhc_settings
-{
-    /* ---- internal -------------------------------------------------------- */
-
-    u32 fps;
-    f32 lerp_speed;
-    u32 chunk_buf_radius;
-    u32 chunk_buf_diameter;
-    u32 chunk_buf_layer;
-    u32 chunk_buf_volume;
-    u32 chunk_tab_center;
-
-    f64 reach_distance; /* player reach (arm length) */
-
-    /* ---- controls -------------------------------------------------------- */
-
-    f32 mouse_sensitivity;
-
-    /* ---- video ----------------------------------------------------------- */
-
-    f32 gui_scale;
-    f32 font_size;
-    u64 target_fps; /* in nanoseconds */
-
-    /* ---- graphics -------------------------------------------------------- */
-
-    f32 fov;
-    u32 render_distance;
-    b8 anti_aliasing;
-}; /* hhc_settings */
-
 struct hhc_uniform
 {
     struct /* defaults */
@@ -139,7 +108,6 @@ struct hhc_uniform
 
 extern fsl_render *render;
 extern struct hhc_core core;
-extern struct hhc_settings settings;
 extern struct hhc_uniform uniform;
 
 #endif /* HHC_MAIN_H */
