@@ -35,6 +35,7 @@ static str str_files[][CMD_SIZE] =
     DIR_SRC"chunking/chunking.c",
     DIR_SRC"chunking/chunking_debug_tools.c",
     DIR_SRC"settings/settings.c",
+    DIR_SRC"super_debugger/super_debugger.c",
     DIR_SRC"terrain/terrain.c",
     DIR_SRC"terrain/perlin_noise.c",
     DIR_SRC"assets.c",

@@ -12,6 +12,11 @@
 #### additions
 - added inventory container texture.
 - added GUI-scale integration.
+- added back 'super debugger'.
+
+#### deletions
+- since 'super debugger' is back, deleted debug key bindings, now <Tab> shows
+  'super debugger' with those options as buttons (currently without labels).
 
 #### deprecations
 - deprecated `hhc_chunk.mesh`, now it's `hhc_chunk.mesh_deprecated`,

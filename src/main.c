@@ -6,6 +6,7 @@
 #include "chunking/chunking_internal.h"
 #include "chunking/chunking_debug_tools.h"
 #include "settings/settings.h"
+#include "super_debugger/super_debugger.h"
 #include "terrain/perlin_noise.h"
 
 #include "h/game_info.h"
@@ -25,7 +26,6 @@
 #include <inttypes.h>
 #include <math.h>
 
-i32 scrool = 0;
 u32 *const GAME_ERR = (u32*)&fsl_err;
 fsl_mem_arena memory_arena_internal = {0};
 fsl_render *render = NULL;
@@ -71,6 +71,9 @@ static void callback_framebuffer_size(i32 size_x, i32 size_y)
     fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 4);
     fsl_fbo_realloc(&fbo_p[FBO_HUD_MSAA], render->size.x, render->size.y, TRUE, 4);
     fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 4);
+
+    gui_update(render->size);
+    super_debugger_update(render->size);
 }
 
 static void callback_key(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -89,7 +92,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
     (void)xoffset;
 
     if (core.flag.super_debug)
-        scrool = fsl_clamp_i32(scrool + (i32)yoffset * SET_CONSOLE_SCROLL_SPEED, 0, logger_core.cursor);
+        super_debugger_logger_scroll((i32)yoffset);
     else if (player.flag & FLAG_PLAYER_ZOOMER)
         player.camera.zoom =
             fsl_clamp_f64(player.camera.zoom + yoffset * FSL_CAMERA_ZOOM_SPEED, 0.0f, FSL_CAMERA_ZOOM_MAX);
@@ -210,7 +213,7 @@ static void ui_hud_draw(void)
     fsl_ui_element_draw(&ui_element[UI_ELEMENT_HOTBAR]);
     fsl_ui_element_draw(&ui_element[UI_ELEMENT_HOTBAR_SELECTED]);
 
-    gui_start_ui_items();
+    gui_start_ui_items(render->size);
 
     for (i = 0; i < CONTAINER_HOTBAR_SLOTS_MAX; ++i)
     {
@@ -219,7 +222,7 @@ static void ui_hud_draw(void)
             item_bar_item_stride = i * 17.0f * scale + (f32)render->size.x / 2.0f - 84.5f * scale;
 
             gui_draw_ui_item(player.hotbar_slots[i].id,
-                    item_bar_item_stride, 4.0f * scale);
+                    item_bar_item_stride, 4.0f * scale, render->size);
         }
     }
 
@@ -773,37 +776,7 @@ static void draw_everything(void)
     /* ---- draw logger strings --------------------------------------------- */
 
     if (core.flag.super_debug)
-    {
-        i32 i = 0;
-        u32 index = 0;
-        i32 logger_panel_height = 400;
-        fsl_log_entry *log_entry = NULL;
-
-        fsl_ui_start(TRUE, FALSE);
-        fsl_ui_draw_nine_slice(&fsl_texture_p[FSL_TEXTURE_INDEX_PANEL_INACTIVE],
-                10, render->size.y - logger_panel_height - 30,
-                render->size.x - 20, logger_panel_height + 20, 8, 0xffffff5f);
-
-        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
-
-        log_entry = fsl_mem_handle_get(logger_core.buf);
-        for (i = 20; i > 0; --i)
-        {
-            index = fsl_mod_i32(logger_core.cursor - i - scrool, FSL_LOGGER_HISTORY_MAX);
-            fsl_text_push(fsl_stringf("%s\n", log_entry[index].message),
-                    SET_MARGIN * 2, render->size.y - SET_MARGIN * 2,
-                    0, 0, render->size.x - SET_MARGIN * 4,
-                    log_entry[index].color);
-
-            if ((i32)fsl_get_text_height() + SET_MARGIN * 2 >= logger_panel_height)
-                break;
-        }
-
-        /* this "useless" function call aligns all the pushed strings correctly once at
-         * the end of the loop, do not touch it. */
-        fsl_text_push("", 0, 0, 0, FSL_TEXT_ALIGN_BOTTOM, 0, 0);
-        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-    }
+        super_debugger_draw(render->size);
 
     fsl_ui_stop();
 
@@ -885,19 +858,17 @@ int main(int argc, char **argv)
 
     if (assets_init() != FSL_ERR_SUCCESS)
         goto cleanup;
-    if (gui_init() != FSL_ERR_SUCCESS)
+
+    if (gui_init(render->size) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    /*temp off
-    init_super_debugger(render->size);
-    */
+    super_debugger_init(render->size);
 
     /* ---- end set graphics ------------------------------------------------ */
 
     player_init(&player, "Lily");
     input_init();
     bind_shader_uniforms();
-    settings_update(&player);
 
 section_menu_title:
 
@@ -912,7 +883,7 @@ section_world_loaded:
     while (fsl_engine_running(&callback_framebuffer_size))
     {
         input_update(&player);
-        settings_update(&player);
+        settings_gui_scale_set(SET_GUI_SCALE_3);
         world_update(&player);
         draw_everything();
 

@@ -1,16 +1,14 @@
 #include "deps/fossil/common/diagnostics.h"
 #include "deps/fossil/common/config.h"
-#include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/memory/memory.h"
-#include "deps/fossil/ui/ui.h"
 
 #include "deps/fossil/h/dir.h"
 
+#include "../super_debugger/super_debugger.h"
+
 #include "../h/common.h"
-#include "../h/assets.h"
 #include "../h/diagnostics.h"
 #include "../h/gui.h"
-#include "../h/main.h"
 #include "../h/player.h"
 
 #include "settings.h"
@@ -111,69 +109,14 @@ cleanup:
     return *GAME_ERR;
 }
 
-void settings_update(hhc_player *p)
-{
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
-
-    /* element: crosshair */
-    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_CROSSHAIR], &texture_p[TEXTURE_CROSSHAIR]);
-    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0, 16, 16);
-    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_CROSSHAIR],
-            render->size.x / 2, render->size.y / 2, 0, 0, 0, 0);
-    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0, 8, 8);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CROSSHAIR],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0);
-
-    /* element: hotbar */
-    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_HOTBAR], &texture_p[TEXTURE_HOTBAR]);
-    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_HOTBAR], 0, 0, 169, 16);
-    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR],
-            render->size.x / 2, render->size.y, 0, 0, 0, -4);
-    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_HOTBAR], 0, 0,
-            ui_element[UI_ELEMENT_HOTBAR].texture->size.x,
-            ui_element[UI_ELEMENT_HOTBAR].texture->size.y);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_HOTBAR], 0, 1);
-
-    /* element: hotbar selected */
-    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
-            &texture_p[TEXTURE_HOTBAR]);
-    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], 0, 16, 18, 18);
-    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
-            render->size.x / 2, render->size.y, 0, 0,
-            (-169 / 2) - 1 + p->hotbar_slot_selected * 17, -3);
-    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], 0, 0,
-            ui_element[UI_ELEMENT_HOTBAR_SELECTED].texture->size.x,
-            ui_element[UI_ELEMENT_HOTBAR_SELECTED].texture->size.y);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], -1, 1);
-
-    /* element: container inventory survival */
-    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
-            &texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL]);
-    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], 0, 0, 177, 177);
-    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
-            render->size.x / 2, render->size.y / 2, 0, 0, 0, 0);
-    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], 0, 0,
-            ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL].texture->size.x,
-            ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL].texture->size.y);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
-            settings.gui_scale, settings.gui_scale);
-}
-
 void settings_gui_scale_set(f32 scale)
 {
     settings.gui_scale = scale;
 
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CROSSHAIR],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
-            settings.gui_scale, settings.gui_scale);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CROSSHAIR], scale, scale);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR], scale, scale);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], scale, scale);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], scale, scale);
+
+    super_debugger_gui_scale_set(scale);
 }

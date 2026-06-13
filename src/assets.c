@@ -194,6 +194,10 @@ u32 assets_init(void)
                 "Moon", "moon", "moon.png", GAME_DIR_NAME_ENV,
                 GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS ||
 
+            fsl_texture_init(&texture_p[TEXTURE_BUTTON],
+                "Button", "button", "button.png", GAME_DIR_NAME_GUI,
+                GL_RGB, GL_NEAREST, FSL_COLOR_CHANNELS_RGB, FALSE, FALSE) != FSL_ERR_SUCCESS ||
+
             fsl_texture_init(&texture_p[TEXTURE_CROSSHAIR],
                 "Crosshair", "crosshair", "crosshair.png", GAME_DIR_NAME_GUI,
                 GL_RGBA, GL_NEAREST, FSL_COLOR_CHANNELS_RGBA, FALSE, FALSE) != FSL_ERR_SUCCESS ||

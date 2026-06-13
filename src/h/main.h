@@ -22,8 +22,8 @@ struct hhc_core
     struct /* debug */
     {
         b8 trans_blocks;
-        b8 chunk_bounds;
         b8 bounding_boxes;
+        b8 chunk_bounds;
         b8 chunk_gizmo;
         b8 chunk_scheduler_visualizer;
     } debug;

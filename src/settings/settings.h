@@ -3,8 +3,6 @@
 
 #include "deps/fossil/common/types.h"
 
-#include "../h/player.h"
-
 typedef struct hhc_settings
 {
     /* ---- internal -------------------------------------------------------- */
@@ -43,7 +41,6 @@ extern hhc_settings settings;
  */
 u32 settings_init(void);
 
-void settings_update(hhc_player *p);
 void settings_gui_scale_set(f32 scale);
 
 #endif /* HHC_SETTINGS_H */

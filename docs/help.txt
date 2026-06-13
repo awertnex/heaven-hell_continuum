@@ -41,8 +41,3 @@ Key Binding Defaults:
 
     Debug Mod:                          Left-Alt
     Toggle Super Debug:                 Tab
-    Toggle Transparent Blocks:          <Debug Mod> + T
-    Toggle Chunk Bounds:                <Debug Mod> + C
-    Toggle Bounding Boxes:              <Debug Mod> + B
-    Toggle Chunk Gizmo:                 <Debug Mod> + G
-    Toggle Chunk Scheduler Visualizer:  <Debug Mod> + V

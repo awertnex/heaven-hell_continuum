@@ -3,12 +3,15 @@
 #include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/assets/assets.h"
 #include "deps/fossil/assets/mesh/mesh.h"
+#include "deps/fossil/engine/engine_assets.h"
 #include "deps/fossil/math/math.h"
+#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 
 #include "settings/settings.h"
 
 #include "h/common.h"
+#include "h/assets.h"
 #include "h/diagnostics.h"
 #include "h/main.h"
 #include "h/gui.h"
@@ -37,7 +40,7 @@ b8 is_menu_ready;
 u8 buttons[BTN_COUNT];
 fsl_ui_element ui_element[UI_ELEMENT_COUNT] = {0};
 
-u32 gui_init(void)
+u32 gui_init(v2i32 render_size)
 {
     u32 button_count = BTN_COUNT;
 
@@ -66,7 +69,7 @@ u32 gui_init(void)
 
     ui_item_data_internal.camera.fovy = 35.0f;
     ui_item_data_internal.camera.fovy_smooth = 35.0f;
-    ui_item_data_internal.camera.ratio = (f32)render->size.x / render->size.y;
+    ui_item_data_internal.camera.ratio = (f32)render_size.x / render_size.y;
     ui_item_data_internal.camera.far = FSL_CAMERA_CLIP_FAR_UI;
     ui_item_data_internal.camera.near = FSL_CAMERA_CLIP_NEAR_DEFAULT;
 
@@ -80,6 +83,8 @@ u32 gui_init(void)
     while (button_count--)
         buttons[button_count] = 0;
 
+    gui_update(render_size);
+
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 
@@ -89,23 +94,68 @@ cleanup:
     return *GAME_ERR;
 }
 
+void gui_update(v2i32 render_size)
+{
+    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+
+    /* element: crosshair */
+    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_CROSSHAIR], &texture_p[TEXTURE_CROSSHAIR]);
+    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0, 16, 16);
+    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_CROSSHAIR],
+            render_size.x / 2, render_size.y / 2, 0, 0, 0, 0);
+    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0, 8, 8);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CROSSHAIR],
+            settings.gui_scale, settings.gui_scale);
+    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_CROSSHAIR], 0, 0);
+
+    /* element: hotbar */
+    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_HOTBAR], &texture_p[TEXTURE_HOTBAR]);
+    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_HOTBAR], 0, 0, 169, 16);
+    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR],
+            render_size.x / 2, render_size.y, 0, 0, 0, -4);
+    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_HOTBAR], 0, 0, 169, 16);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR],
+            settings.gui_scale, settings.gui_scale);
+    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_HOTBAR], 0, 1);
+
+    /* element: hotbar selected */
+    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], &texture_p[TEXTURE_HOTBAR]);
+    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], 0, 16, 18, 18);
+    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], 0, 0, 0, 0, -1, -1);
+    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], 0, 0, 18, 18);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
+            settings.gui_scale, settings.gui_scale);
+    fsl_ui_element_set_alignment(&ui_element[UI_ELEMENT_HOTBAR_SELECTED], -1, -1);
+    fsl_ui_element_attach(&ui_element[UI_ELEMENT_HOTBAR], &ui_element[UI_ELEMENT_HOTBAR_SELECTED]);
+
+    /* element: container inventory survival */
+    fsl_ui_element_set_texture(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
+            &texture_p[TEXTURE_CONTAINER_INVENTORY_SURVIVAL]);
+    fsl_ui_element_set_uv(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], 0, 0, 177, 177);
+    fsl_ui_element_set_position(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
+            render_size.x / 2, render_size.y / 2, 0, 0, 0, 0);
+    fsl_ui_element_set_size(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], 0, 0, 177, 177);
+    fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
+            settings.gui_scale, settings.gui_scale);
+}
+
 void gui_free(void)
 {
     fsl_mesh_free(&ui_item_data_internal.mesh_unit_cube);
     fsl_shader_program_free(&ui_item_data_internal.shader);
 }
 
-void gui_start_ui_items(void)
+void gui_start_ui_items(v2i32 render_size)
 {
     glUseProgram(ui_item_data_internal.shader.asset.id);
 
-    ui_item_data_internal.camera.ratio = (f32)render->size.x / render->size.y;
+    ui_item_data_internal.camera.ratio = (f32)render_size.x / render_size.y;
     fsl_camera_movement_update(&ui_item_data_internal.camera,
             -ui_item_data_internal.camera_distance, 0.0, 0.0,
             0.0, 0.0, 0.0);
 }
 
-void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y)
+void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y, v2i32 render_size)
 {
     f32 pitch = UI_ITEM_PITCH;
     f32 yaw = UI_ITEM_YAW;
@@ -138,13 +188,13 @@ void gui_draw_ui_item(u32 item_id, f32 pos_x, f32 pos_y)
     scale.a11 = settings.gui_scale;
     scale.a22 = settings.gui_scale;
     scale.a33 = settings.gui_scale;
-    scale.a44 = render->size.y / UI_ITEM_SCALE;
+    scale.a44 = render_size.y / UI_ITEM_SCALE;
 
     offset.a11 = 1.0f;
     offset.a22 = 1.0f;
     offset.a33 = 1.0f;
-    offset.a41 = ((f32)(-render->size.x + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_x) * render->ndc_scale.x;
-    offset.a42 = ((f32)(-render->size.y + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_y) * render->ndc_scale.y;
+    offset.a41 = ((f32)(-render_size.x + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_x) * render->ndc_scale.x;
+    offset.a42 = ((f32)(-render_size.y + UI_ITEM_SCALE * settings.gui_scale) / 2.0 + pos_y) * render->ndc_scale.y;
     offset.a44 = 1.0f;
 
     /* 3D space */

@@ -192,8 +192,7 @@ void player_hotbar_selected_set(hhc_player *p, u32 index)
     p->hotbar_slot_selected = index;
 
     fsl_ui_element_set_position(&ui_element[UI_ELEMENT_HOTBAR_SELECTED],
-            render->size.x / 2, render->size.y, 0, 0,
-            (-169 / 2) - 1 + index * 17, -3);
+            0, 0, 0, 0, p->hotbar_slot_selected * 17 - 1, -1);
 }
 
 void player_collision_update(hhc_player *p, f64 dt)

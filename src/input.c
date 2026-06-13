@@ -17,9 +17,6 @@
 
 #include <math.h>
 
-static fsl_input_context input_context_gameplay = 1;
-static fsl_input_context input_context_menu = 2;
-
 /* ---- movement ------------------------------------------------------------ */
 
 fsl_key_bind bind_walk_forward = {0};
@@ -68,55 +65,50 @@ fsl_key_bind bind_up = {0};
 
 u32 bind_debug_mod = FSL_ALT_LEFT;
 fsl_key_bind bind_toggle_super_debug = {0};
-fsl_key_bind bind_toggle_trans_blocks = {0};
-fsl_key_bind bind_toggle_chunk_bounds = {0};
-fsl_key_bind bind_toggle_bounding_boxes = {0};
-fsl_key_bind bind_toggle_chunk_gizmo = {0};
-fsl_key_bind bind_toggle_chunk_scheduler_visualizer = {0};
 
 void input_init(void)
 {
     /* ---- movement -------------------------------------------------------- */
 
-    bind_walk_forward = fsl_key_bind_init(FSL_KEY_W, 0, 0, 0, 0, input_context_gameplay);
-    bind_walk_backward = fsl_key_bind_init(FSL_KEY_S, 0, 0, 0, 0, input_context_gameplay);
-    bind_strafe_left = fsl_key_bind_init(FSL_KEY_A, 0, 0, 0, 0, input_context_gameplay);
-    bind_strafe_right = fsl_key_bind_init(FSL_KEY_D, 0, 0, 0, 0, input_context_gameplay);
-    bind_jump = fsl_key_bind_init(FSL_KEY_SPACE, 0, 0, 0, 0, input_context_gameplay);
-    bind_sprint = fsl_key_bind_init(FSL_KEY_LEFT_SHIFT, 0, 0, 0, 0, input_context_gameplay);
-    bind_sneak = fsl_key_bind_init(FSL_KEY_LEFT_CONTROL, 0, 0, 0, 0, input_context_gameplay);
+    bind_walk_forward = fsl_key_bind_init(FSL_KEY_W, 0, 0, 0, 0, 0);
+    bind_walk_backward = fsl_key_bind_init(FSL_KEY_S, 0, 0, 0, 0, 0);
+    bind_strafe_left = fsl_key_bind_init(FSL_KEY_A, 0, 0, 0, 0, 0);
+    bind_strafe_right = fsl_key_bind_init(FSL_KEY_D, 0, 0, 0, 0, 0);
+    bind_jump = fsl_key_bind_init(FSL_KEY_SPACE, 0, 0, 0, 0, 0);
+    bind_sprint = fsl_key_bind_init(FSL_KEY_LEFT_SHIFT, 0, 0, 0, 0, 0);
+    bind_sneak = fsl_key_bind_init(FSL_KEY_LEFT_CONTROL, 0, 0, 0, 0, 0);
 
     /* ---- gameplay -------------------------------------------------------- */
 
-    bind_attack_or_destroy = fsl_key_bind_init(GLFW_MOUSE_BUTTON_LEFT, 0, 0, 0, 0, input_context_gameplay);
-    bind_sample_block = fsl_key_bind_init(GLFW_MOUSE_BUTTON_MIDDLE, 0, 0, 0, 0, input_context_gameplay);
-    bind_build_or_use = fsl_key_bind_init(GLFW_MOUSE_BUTTON_RIGHT, 0, 0, 0, 0, input_context_gameplay);
+    bind_attack_or_destroy = fsl_key_bind_init(GLFW_MOUSE_BUTTON_LEFT, 0, 0, 0, 0, 0);
+    bind_sample_block = fsl_key_bind_init(GLFW_MOUSE_BUTTON_MIDDLE, 0, 0, 0, 0, 0);
+    bind_build_or_use = fsl_key_bind_init(GLFW_MOUSE_BUTTON_RIGHT, 0, 0, 0, 0, 0);
 
     /* ---- inventory ------------------------------------------------------- */
 
-    bind_drop_item = fsl_key_bind_init(FSL_KEY_Q, 0, 0, 0, 0, input_context_gameplay);
-    bind_inventory = fsl_key_bind_init(FSL_KEY_E, 0, 0, 0, 0, input_context_gameplay);
+    bind_drop_item = fsl_key_bind_init(FSL_KEY_Q, 0, 0, 0, 0, 0);
+    bind_inventory = fsl_key_bind_init(FSL_KEY_E, 0, 0, 0, 0, 0);
 
-    bind_hotbar[0][1] = fsl_key_bind_init(FSL_KEY_1, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][2] = fsl_key_bind_init(FSL_KEY_2, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][3] = fsl_key_bind_init(FSL_KEY_3, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][4] = fsl_key_bind_init(FSL_KEY_4, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][5] = fsl_key_bind_init(FSL_KEY_5, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][6] = fsl_key_bind_init(FSL_KEY_6, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][7] = fsl_key_bind_init(FSL_KEY_7, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][8] = fsl_key_bind_init(FSL_KEY_8, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][9] = fsl_key_bind_init(FSL_KEY_9, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[0][0] = fsl_key_bind_init(FSL_KEY_0, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][1] = fsl_key_bind_init(FSL_KEY_KP_1, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][2] = fsl_key_bind_init(FSL_KEY_KP_2, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][3] = fsl_key_bind_init(FSL_KEY_KP_3, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][4] = fsl_key_bind_init(FSL_KEY_KP_4, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][5] = fsl_key_bind_init(FSL_KEY_KP_5, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][6] = fsl_key_bind_init(FSL_KEY_KP_6, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][7] = fsl_key_bind_init(FSL_KEY_KP_7, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][8] = fsl_key_bind_init(FSL_KEY_KP_8, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][9] = fsl_key_bind_init(FSL_KEY_KP_9, 0, 0, 0, 0, input_context_gameplay);
-    bind_hotbar[1][0] = fsl_key_bind_init(FSL_KEY_KP_0, 0, 0, 0, 0, input_context_gameplay);
+    bind_hotbar[0][1] = fsl_key_bind_init(FSL_KEY_1, 0, 0, 0, 0, 0);
+    bind_hotbar[0][2] = fsl_key_bind_init(FSL_KEY_2, 0, 0, 0, 0, 0);
+    bind_hotbar[0][3] = fsl_key_bind_init(FSL_KEY_3, 0, 0, 0, 0, 0);
+    bind_hotbar[0][4] = fsl_key_bind_init(FSL_KEY_4, 0, 0, 0, 0, 0);
+    bind_hotbar[0][5] = fsl_key_bind_init(FSL_KEY_5, 0, 0, 0, 0, 0);
+    bind_hotbar[0][6] = fsl_key_bind_init(FSL_KEY_6, 0, 0, 0, 0, 0);
+    bind_hotbar[0][7] = fsl_key_bind_init(FSL_KEY_7, 0, 0, 0, 0, 0);
+    bind_hotbar[0][8] = fsl_key_bind_init(FSL_KEY_8, 0, 0, 0, 0, 0);
+    bind_hotbar[0][9] = fsl_key_bind_init(FSL_KEY_9, 0, 0, 0, 0, 0);
+    bind_hotbar[0][0] = fsl_key_bind_init(FSL_KEY_0, 0, 0, 0, 0, 0);
+    bind_hotbar[1][1] = fsl_key_bind_init(FSL_KEY_KP_1, 0, 0, 0, 0, 0);
+    bind_hotbar[1][2] = fsl_key_bind_init(FSL_KEY_KP_2, 0, 0, 0, 0, 0);
+    bind_hotbar[1][3] = fsl_key_bind_init(FSL_KEY_KP_3, 0, 0, 0, 0, 0);
+    bind_hotbar[1][4] = fsl_key_bind_init(FSL_KEY_KP_4, 0, 0, 0, 0, 0);
+    bind_hotbar[1][5] = fsl_key_bind_init(FSL_KEY_KP_5, 0, 0, 0, 0, 0);
+    bind_hotbar[1][6] = fsl_key_bind_init(FSL_KEY_KP_6, 0, 0, 0, 0, 0);
+    bind_hotbar[1][7] = fsl_key_bind_init(FSL_KEY_KP_7, 0, 0, 0, 0, 0);
+    bind_hotbar[1][8] = fsl_key_bind_init(FSL_KEY_KP_8, 0, 0, 0, 0, 0);
+    bind_hotbar[1][9] = fsl_key_bind_init(FSL_KEY_KP_9, 0, 0, 0, 0, 0);
+    bind_hotbar[1][0] = fsl_key_bind_init(FSL_KEY_KP_0, 0, 0, 0, 0, 0);
 
     /* ---- miscellaneous --------------------------------------------------- */
 
@@ -125,28 +117,21 @@ void input_init(void)
     bind_toggle_debug = fsl_key_bind_init(FSL_KEY_F3, 0, 0, 0, 0, 0);
     bind_toggle_cinematic_camera = fsl_key_bind_init(FSL_KEY_F4, 0, 0, 0, 0, 0);
     bind_toggle_perspective = fsl_key_bind_init(FSL_KEY_F5, 0, 0, 0, 0, 0);
-    bind_toggle_cinematic_motion = fsl_key_bind_init(FSL_KEY_F6, 0, 0, 0, 0, input_context_gameplay);
+    bind_toggle_cinematic_motion = fsl_key_bind_init(FSL_KEY_F6, 0, 0, 0, 0, 0);
     bind_toggle_fullscreen = fsl_key_bind_init(FSL_KEY_F11, 0, 0, 0, 0, 0);
-    bind_zoom = fsl_key_bind_init(FSL_KEY_Z, 0, 0, 0, 0, input_context_gameplay);
-    bind_toggle_flashlight = fsl_key_bind_init(FSL_KEY_F, 0, 0, 0, 0, input_context_gameplay);
+    bind_zoom = fsl_key_bind_init(FSL_KEY_Z, 0, 0, 0, 0, 0);
+    bind_toggle_flashlight = fsl_key_bind_init(FSL_KEY_F, 0, 0, 0, 0, 0);
     bind_pause = fsl_key_bind_init(FSL_KEY_ESCAPE, 0, 0, 0, 0, 0);
-    bind_chat_or_command = fsl_key_bind_init(FSL_KEY_SLASH, 0, 0, 0, 0, input_context_gameplay);
+    bind_chat_or_command = fsl_key_bind_init(FSL_KEY_SLASH, 0, 0, 0, 0, 0);
 
     /* ---- debug & menu ---------------------------------------------------- */
 
-    bind_left = fsl_key_bind_init(FSL_KEY_LEFT, 0, 0, 0, 0, input_context_menu);
-    bind_right = fsl_key_bind_init(FSL_KEY_RIGHT, 0, 0, 0, 0, input_context_menu);
-    bind_down = fsl_key_bind_init(FSL_KEY_DOWN, 0, 0, 0, 0, input_context_menu);
-    bind_up = fsl_key_bind_init(FSL_KEY_UP, 0, 0, 0, 0, input_context_menu);
+    bind_left = fsl_key_bind_init(FSL_KEY_LEFT, 0, 0, 0, 0, 0);
+    bind_right = fsl_key_bind_init(FSL_KEY_RIGHT, 0, 0, 0, 0, 0);
+    bind_down = fsl_key_bind_init(FSL_KEY_DOWN, 0, 0, 0, 0, 0);
+    bind_up = fsl_key_bind_init(FSL_KEY_UP, 0, 0, 0, 0, 0);
     bind_toggle_super_debug = fsl_key_bind_init(FSL_KEY_TAB, 0, 0, 0, 0, 0);
-    bind_toggle_trans_blocks = fsl_key_bind_init(FSL_KEY_T, 0, 0, bind_debug_mod, 0, 0);
-    bind_toggle_chunk_bounds = fsl_key_bind_init(FSL_KEY_C, 0, 0, bind_debug_mod, 0, 0);
-    bind_toggle_bounding_boxes = fsl_key_bind_init(FSL_KEY_B, 0, 0, bind_debug_mod, 0, 0);
-    bind_toggle_chunk_gizmo = fsl_key_bind_init(FSL_KEY_G, 0, 0, bind_debug_mod, 0, 0);
-    bind_toggle_chunk_scheduler_visualizer = fsl_key_bind_init(FSL_KEY_V, 0, 0, bind_debug_mod, 0, 0);
     bind_reload_shaders = fsl_key_bind_init(FSL_KEY_L, 0, FSL_CONTROL_LEFT, 0, 0, 0);
-
-    fsl_input_context_set(input_context_gameplay);
 }
 
 void input_update(hhc_player *p)
@@ -341,70 +326,8 @@ void input_update(hhc_player *p)
 
     /* ---- debug ----------------------------------------------------------- */
 
-#if !GAME_RELEASE_BUILD
     if (fsl_is_key_press(bind_toggle_super_debug))
         core.flag.super_debug ^= 1;
-#endif /* GAME_RELEASE_BUILD */
-
-    if (fsl_is_key_press(bind_toggle_trans_blocks))
-    {
-        core.debug.trans_blocks ^= 1;
-
-        if (core.debug.trans_blocks)
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Transparent Blocks On\n");
-        else
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Transparent Blocks Off\n");
-    }
-
-    if (fsl_is_key_press(bind_toggle_chunk_bounds))
-    {
-        core.debug.chunk_bounds ^= 1;
-
-        if (core.debug.chunk_bounds)
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Boundaries On\n");
-        else
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Boundaries Off\n");
-    }
-
-    if (fsl_is_key_press(bind_toggle_bounding_boxes))
-    {
-        core.debug.bounding_boxes ^= 1;
-
-        if (core.debug.bounding_boxes)
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Bounding Boxes On\n");
-        else
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Bounding Boxes Off\n");
-    }
-
-    if (fsl_is_key_press(bind_toggle_chunk_gizmo))
-    {
-        core.debug.chunk_gizmo ^= 1;
-
-        if (core.debug.chunk_gizmo)
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Gizmo On\n");
-        else
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Gizmo Off\n");
-    }
-
-    if (fsl_is_key_press(bind_toggle_chunk_scheduler_visualizer))
-    {
-        core.debug.chunk_scheduler_visualizer ^= 1;
-
-        if (core.debug.chunk_scheduler_visualizer)
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Scheduler Visualizer On\n");
-        else
-            LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                    "View Chunk Scheduler Visualizer Off\n");
-    }
 
     if (fsl_is_key_press(bind_reload_shaders))
     {

@@ -200,8 +200,6 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
     /* ---- other stuff ----------------------------------------------------- */
 
-    core.debug.chunk_gizmo = TRUE;
-
     LOGINFO(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("World Loaded '%s'\n", world_name));
 

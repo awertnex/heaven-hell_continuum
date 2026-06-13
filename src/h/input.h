@@ -59,11 +59,6 @@ extern fsl_key_bind bind_reload_shaders;
 
 extern u32 bind_debug_mod;
 extern fsl_key_bind bind_toggle_super_debug;
-extern fsl_key_bind bind_toggle_trans_blocks;
-extern fsl_key_bind bind_toggle_chunk_bounds;
-extern fsl_key_bind bind_toggle_bounding_boxes;
-extern fsl_key_bind bind_toggle_chunk_gizmo;
-extern fsl_key_bind bind_toggle_chunk_scheduler_visualizer;
 
 /*!
  *  @brief setup all key binding values and rules.
