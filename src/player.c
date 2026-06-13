@@ -10,6 +10,7 @@
 #include "deps/fossil/h/time.h"
 
 #include "chunking/chunking.h"
+#include "gui/gui.h"
 #include "settings/settings.h"
 
 #include "h/main.h"
@@ -17,7 +18,6 @@
 #include "h/container.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
-#include "h/gui.h"
 #include "h/player.h"
 #include "h/world.h"
 
@@ -693,10 +693,12 @@ void player_kill(hhc_player *p)
 
 str *get_death_str(hhc_player *p)
 {
-    u64 index = fsl_rand_u64(fsl_get_time_raw_usec()) % DEATH_STRINGS_MAX[p->death];
+    u64 index = fsl_rand_u32(fsl_get_time_raw_usec());
+    index %= DEATH_STRINGS_MAX[p->death];
 
     switch (p->death)
     {
+        case PLAYER_DEATH_REASON_NONE:
         case PLAYER_DEATH_REASON_COLLISION_WALL:
             return str_death_collision_wall[index];
             break;

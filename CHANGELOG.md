@@ -8,6 +8,10 @@
 
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.
+- fixed segfault when player flies at blocks at high speed:
+    - it's not collision, it's an out-of-bounds access when player dies, the
+      problem is that modulo (%) was being used on a big number, which resulted
+      in a floating point exception.
 
 #### additions
 - added inventory container texture.
@@ -28,8 +32,6 @@
 - collision is broken:
     - blocks tug on player.
     - player collides with imaginary blocks near actual blocks.
-    - flying at blocks at high speed results in a floating point exception
-      (segfault).
 - physics have been disabled, now the player glides across blocks and flies
   with no drag except for natural air drag (very annoying).
 - block-breaking is instant, and it's a press-event, not a hold-event,
@@ -38,7 +40,6 @@
   it just becomes stationary, but does follow player.
 - camera mode 'spectator' not implemented (it's supposed to exit player and
   move freely like a drone).
-- 'Sample Block' not implemented.
 - block light is hard-coded, for now.
 
 - - -

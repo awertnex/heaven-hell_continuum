@@ -16,9 +16,9 @@ STATUS  DONE DATE       TASK
 - [x]   (2025 03 29):   fix funky chunk states shifting away by 1 unit each chunk
 - [x]   (2025 04 14):   change chunk_buff allocation from stack to heap
 - [ ]   (          ):   navigate menus with arrow keys
-- [ ]   (          ):   compress chunk block state files
+- [x]   (2026 05 XX):   compress chunk block state files
 - [x]   (2025 05 26):   figure out why the button "Back to Game" is inactive
-- [ ]   (          ):   rewrite entire gui
+- [x]   (2026 06 13):   rewrite entire gui
 - [ ]   (          ):   make gameTick stop when game is paused, and save state
                         on quit-to-title
 - [x]   (2025 05 10):   fix fullscreen, still not going back to original size
@@ -48,9 +48,8 @@ quirks:
 - [x]   (2025 11 XX):   make mem_unmap() for windows
 - [x]   (2025 12 09):   fix overhead from function 'chunk_tab_shift()'
 - [ ]   (          ):   possibly fix overhead from bubble-sorting in function
-                        'chunking_init()'
+                        `chunk_order_init()`
 - [ ]   (          ):   put blocks in a contiguous array and bind it all to an
-                        SSBO, and bind
-                        chunk pointers to their addresses
+                        SSBO, and bind chunk pointers to their addresses
 - [ ]   (          ):   fix segfault when allocating smaller than 256 bytes for
                         'size' parameter of function 'mem_alloc_buf()'

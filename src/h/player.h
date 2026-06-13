@@ -25,6 +25,24 @@
 #define PLAYER_FRICTION_FLYING      4.0f
 #define PLAYER_FRICTION_FLYING_V    13.0f
 #define PLAYER_COLLISION_DAMAGE_THRESHOLD 15.0f
+#define PLAYER_DEATH_STRING_CAP     128
+
+/* ---- strings: death ------------------------------------------------------ */
+
+#define DEATH_STRING_COLLISION_WALL_0           "died by headbutting a wall"
+#define DEATH_STRING_COLLISION_WALL_1           "rammed a wall at high speed"
+#define DEATH_STRING_COLLISION_WALL_2           "splat on a wall"
+#define DEATH_STRING_COLLISION_WALL_COUNT       3
+
+#define DEATH_STRING_COLLISION_FLOOR_0          "jumped off a cliff"
+#define DEATH_STRING_COLLISION_FLOOR_1          "fell to their death"
+#define DEATH_STRING_COLLISION_FLOOR_2          "splat on the ground"
+#define DEATH_STRING_COLLISION_FLOOR_COUNT      3
+
+#define DEATH_STRING_COLLISION_CEILING_0        "cracked their skull at a ceiling"
+#define DEATH_STRING_COLLISION_CEILING_1        "flew into a ceiling"
+#define DEATH_STRING_COLLISION_CEILING_2        "splat on a ceiling"
+#define DEATH_STRING_COLLISION_CEILING_COUNT    3
 
 enum player_flag
 {
@@ -53,7 +71,7 @@ enum player_flag
     FLAG_PLAYER_OVERFLOW_PZ =       0x00008000
 }; /* player_flag */
 
-enum player_camera_mode
+typedef enum hhc_player_camera_mode
 {
     PLAYER_CAMERA_MODE_1ST_PERSON,
     PLAYER_CAMERA_MODE_3RD_PERSON,
@@ -61,7 +79,16 @@ enum player_camera_mode
     PLAYER_CAMERA_MODE_STALKER,
     PLAYER_CAMERA_MODE_SPECTATOR,
     PLAYER_CAMERA_MODE_COUNT
-}; /* player_camera_mode */
+} hhc_player_camera_mode;
+
+typedef enum hhc_player_death_reason
+{
+    PLAYER_DEATH_REASON_NONE,
+    PLAYER_DEATH_REASON_COLLISION_WALL,
+    PLAYER_DEATH_REASON_COLLISION_FLOOR,
+    PLAYER_DEATH_REASON_COLLISION_CEILING,
+    PLAYER_DEATH_REASON_COUNT
+} hhc_player_death_reason;
 
 enum player_menu_state
 {
@@ -109,7 +136,7 @@ typedef struct hhc_player
     fsl_camera camera_ui;
 
     f32 camera_distance;            /* for camera collision detection */
-    u8 camera_mode;                 /* enum @ref player_camera_mode */
+    hhc_player_camera_mode camera_mode;
 
     /*!
      *  @brief player at world edge, enum @ref player_flag.
@@ -133,8 +160,19 @@ typedef struct hhc_player
     hhc_container_slot inventory_slots[CONTAINER_INVENTORY_SLOTS_MAX];
 
     fsl_bounding_box bbox;
-    u32 death; /* enum @ref player_death_reason */
+    hhc_player_death_reason death;
 } hhc_player;
+
+/*!
+ *  @brief look-up table for @ref str_death_<x> buffer sizes.
+ *
+ *  @remark read-only, initialized internally in @ref common.c.
+ */
+extern u32 DEATH_STRINGS_MAX[PLAYER_DEATH_REASON_COUNT];
+
+extern str str_death_collision_wall[DEATH_STRING_COLLISION_WALL_COUNT][PLAYER_DEATH_STRING_CAP];
+extern str str_death_collision_floor[DEATH_STRING_COLLISION_FLOOR_COUNT][PLAYER_DEATH_STRING_CAP];
+extern str str_death_collision_ceiling[DEATH_STRING_COLLISION_CEILING_COUNT][PLAYER_DEATH_STRING_CAP];
 
 u32 player_init(hhc_player *p, const str *name);
 

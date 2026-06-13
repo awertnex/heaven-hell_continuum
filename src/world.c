@@ -10,12 +10,12 @@
 #include "deps/fossil/h/time.h"
 
 #include "chunking/chunking.h"
+#include "gui/gui.h"
 
 #include "h/config_internal.h"
 #include "h/common.h"
 #include "h/diagnostics.h"
 #include "h/dir.h"
-#include "h/gui.h"
 #include "h/main.h"
 #include "h/world.h"
 

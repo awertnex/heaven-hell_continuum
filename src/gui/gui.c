@@ -3,21 +3,20 @@
 #include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/assets/assets.h"
 #include "deps/fossil/assets/mesh/mesh.h"
-#include "deps/fossil/engine/engine_assets.h"
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 
-#include "settings/settings.h"
+#include "../settings/settings.h"
 
-#include "h/common.h"
-#include "h/assets.h"
-#include "h/diagnostics.h"
-#include "h/main.h"
-#include "h/gui.h"
+#include "../h/common.h"
+#include "../h/assets.h"
+#include "../h/diagnostics.h"
+#include "../h/main.h"
+
+#include "gui.h"
 
 #include <stdio.h>
-#include <string.h>
 #include <math.h>
 
 #define UI_ITEM_PITCH -25.0f

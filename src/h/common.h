@@ -30,8 +30,6 @@
 #define SET_TEXT_REFRESH_INTERVAL       4 /* unit: fps */
 #define SET_CONSOLE_SCROLL_SPEED        4
 
-#define DEATH_STRING_MAX        128
-
 #define COLOR_TEXT_DEFAULT      FSL_DIAGNOSTIC_COLOR_DEBUG
 #define COLOR_TEXT_BRIGHT       FSL_DIAGNOSTIC_COLOR_DEFAULT
 #define COLOR_TEXT_MOSS         0x6f9f3fff
@@ -81,23 +79,6 @@
 
 #define FORMAT_FILE_NAME_HHCC "%d.%d.%d.hhcr"
 
-/* ---- strings: death ------------------------------------------------------ */
-
-#define DEATH_STRING_COLLISION_WALL_0           "died by headbutting a wall"
-#define DEATH_STRING_COLLISION_WALL_1           "rammed a wall at high speed"
-#define DEATH_STRING_COLLISION_WALL_2           "splat on a wall"
-#define DEATH_STRING_COLLISION_WALL_COUNT       3
-
-#define DEATH_STRING_COLLISION_FLOOR_0          "jumped off a cliff"
-#define DEATH_STRING_COLLISION_FLOOR_1          "fell to their death"
-#define DEATH_STRING_COLLISION_FLOOR_2          "splat on the ground"
-#define DEATH_STRING_COLLISION_FLOOR_COUNT      3
-
-#define DEATH_STRING_COLLISION_CEILING_0        "cracked their skull at a ceiling"
-#define DEATH_STRING_COLLISION_CEILING_1        "flew into a ceiling"
-#define DEATH_STRING_COLLISION_CEILING_2        "splat on a ceiling"
-#define DEATH_STRING_COLLISION_CEILING_COUNT    3
-
 enum mesh_index
 {
     MESH_CUBE_OF_HAPPINESS,
@@ -125,14 +106,6 @@ enum font_index
     FONT_COUNT
 }; /* font_index */
 
-enum player_death_reason_index
-{
-    PLAYER_DEATH_REASON_COLLISION_WALL = 1,
-    PLAYER_DEATH_REASON_COLLISION_FLOOR,
-    PLAYER_DEATH_REASON_COLLISION_CEILING,
-    PLAYER_DEATH_REASON_COUNT
-}; /* player_death_reason_index */
-
 /*!
  *  @internal
  *
@@ -141,16 +114,5 @@ enum player_death_reason_index
  *  initialized once in @ref game_init().
  */
 extern fsl_mem_arena memory_arena_internal;
-
-/*!
- *  @brief look-up table for @ref str_death_<x> buffer sizes.
- *
- *  @remark read-only, initialized internally in @ref common.c.
- */
-extern u32 DEATH_STRINGS_MAX[PLAYER_DEATH_REASON_COUNT];
-
-extern str str_death_collision_wall[DEATH_STRING_COLLISION_WALL_COUNT][DEATH_STRING_MAX];
-extern str str_death_collision_floor[DEATH_STRING_COLLISION_FLOOR_COUNT][DEATH_STRING_MAX];
-extern str str_death_collision_ceiling[DEATH_STRING_COLLISION_CEILING_COUNT][DEATH_STRING_MAX];
 
 #endif /* HHC_COMMON_H */

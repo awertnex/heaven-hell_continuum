@@ -4,11 +4,11 @@
 
 #include "deps/fossil/h/dir.h"
 
+#include "../gui/gui.h"
 #include "../super_debugger/super_debugger.h"
 
 #include "../h/common.h"
 #include "../h/diagnostics.h"
-#include "../h/gui.h"
 #include "../h/player.h"
 
 #include "settings.h"

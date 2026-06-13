@@ -7,10 +7,10 @@
 #include "deps/fossil/shaders/shader_types.h"
 
 #include "chunking/chunking.h"
+#include "gui/gui.h"
 
 #include "h/main.h"
 #include "h/assets.h"
-#include "h/gui.h"
 #include "h/input.h"
 #include "h/player.h"
 #include "h/world.h"
