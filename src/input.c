@@ -200,11 +200,11 @@ void input_update(hhc_player *p)
         {
             p->input.x =
                 (px - nx) * cyaw * cpch +
-                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0) +
+                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_HALF_PI) +
                 (pz - nz) * cyaw * spch;
             p->input.y =
                 (px - nx) * -syaw * cpch +
-                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0) +
+                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_HALF_PI) +
                 (pz - nz) * -syaw * spch;
             p->input.z =
                 (px - nx) * -spch +
@@ -214,10 +214,10 @@ void input_update(hhc_player *p)
         {
             p->input.x =
                 (px - nx) * cyaw +
-                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0);
+                (py - ny) * -cos(p->transform.rot.z * FSL_DEG2RAD + FSL_HALF_PI);
             p->input.y =
                 (px - nx) * -syaw +
-                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_PI / 2.0);
+                (py - ny) * sin(p->transform.rot.z * FSL_DEG2RAD + FSL_HALF_PI);
             p->input.z =
                 pz - nz;
         }
@@ -252,15 +252,18 @@ void input_update(hhc_player *p)
 
         if (fsl_is_key_press(bind_inventory))
         {
-            if (p->menu_state == STATE_PLAYER_MENU_INVENTORY_SURVIVAL && state_menu_depth)
+            if (p->menu_state == STATE_PLAYER_MENU_INVENTORY_SURVIVAL && state_menu_depth == 1)
             {
                 state_menu_depth = 0;
                 p->menu_state = 0;
+                disable_cursor;
+                center_cursor;
             }
             else if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && !state_menu_depth)
             {
                 state_menu_depth = 1;
                 p->menu_state = STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
+                enable_cursor;
             }
 
             if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && state_menu_depth)
@@ -282,6 +285,12 @@ void input_update(hhc_player *p)
             }
             else
                 --state_menu_depth;
+
+            if (!state_menu_depth)
+            {
+                disable_cursor;
+                center_cursor;
+            }
         }
 
         if (fsl_is_key_press(bind_toggle_hud))
@@ -370,5 +379,15 @@ void input_update(hhc_player *p)
     }
 
     if (fsl_is_key_press(bind_toggle_super_debug))
+    {
         core.flag.super_debug ^= 1;
+
+        if (core.flag.super_debug)
+            enable_cursor;
+        else
+        {
+            disable_cursor;
+            center_cursor;
+        }
+    }
 }

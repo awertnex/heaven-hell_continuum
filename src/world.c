@@ -194,7 +194,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
     /* ---- TODO: load the rest of world metadata --------------------------- */
 
-    world->tick_start = 19000;
+    world->tick_start = 4500;
     world->days = 0;
     world->drag.x = WORLD_DRAG_AIR;
     world->drag.y = WORLD_DRAG_AIR;
@@ -218,10 +218,6 @@ void world_update(hhc_player *p)
 
     world.tick = world.tick_start + (u64)((f64)render->time * FSL_NSEC2SEC * WORLD_TICK_SPEED);
     world.days = world.tick / SET_DAY_TICKS_MAX;
-
-    if (state_menu_depth || core.flag.super_debug)
-        enable_cursor;
-    else disable_cursor;
 
     player_update(p, 1.0 - exp(-1.0 * (f64)render->time_delta * FSL_NSEC2SEC));
     player_camera_movement_update(p, render->mouse_delta, should_the_mouse_move_the_3d_camera);

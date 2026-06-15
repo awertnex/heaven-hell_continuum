@@ -22,8 +22,7 @@
 #include "h/player.h"
 #include "h/world.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <stddef.h>
 #include <inttypes.h>
 #include <math.h>
 
@@ -340,19 +339,19 @@ static void world_draw(void)
     skybox_data.sun_rotation.z = sin(skybox_data.time * FSL_PI);
 
     mid_day =       (sin(sun_time) + 1.0) / 2.0;
-    mid_day =       pow(sin((FSL_PI / 2.0) * mid_day), 2.0);
-    mid_day =       pow(sin((FSL_PI / 2.0) * mid_day), 2.0);
+    mid_day =       pow(sin(FSL_HALF_PI * mid_day), 2.0);
+    mid_day =       pow(sin(FSL_HALF_PI * mid_day), 2.0);
 
-    burn_cold =     pow((sin((FSL_PI / 2.0) * sin(sun_time + (FSL_PI / 2.0))) + 1.0) / 2.0, 24.0);
-    burn_cold +=    pow((sin((FSL_PI / 2.0) * sin(sun_time - (FSL_PI / 2.0))) + 1.0) / 2.0, 24.0);
+    burn_cold =     pow((sin(FSL_HALF_PI * sin(sun_time + FSL_HALF_PI)) + 1.0) / 2.0, 24.0);
+    burn_cold +=    pow((sin(FSL_HALF_PI * sin(sun_time - FSL_HALF_PI)) + 1.0) / 2.0, 24.0);
 
-    burn =          pow((sin(sun_time + (FSL_PI / 2.0)) + 1.0) / 2.0, 64.0);
-    burn +=         pow((sin(sun_time - (FSL_PI / 2.0)) + 1.0) / 2.0, 64.0);
+    burn =          pow((sin(sun_time + FSL_HALF_PI) + 1.0) / 2.0, 64.0);
+    burn +=         pow((sin(sun_time - FSL_HALF_PI) + 1.0) / 2.0, 64.0);
 
-    burn_boost =    pow(sin(sun_time + (FSL_PI / 2.0)), 128.0);
-    burn_boost +=   pow(sin(sun_time - (FSL_PI / 2.0)), 128.0);
+    burn_boost =    pow(sin(sun_time + FSL_HALF_PI), 128.0);
+    burn_boost +=   pow(sin(sun_time - FSL_HALF_PI), 128.0);
 
-    mid_night =     pow((sin((FSL_PI / 2.0) * sin(sun_time + FSL_PI)) + 1.0) / 2.0, 4.0);
+    mid_night =     pow((sin(FSL_HALF_PI * sin(sun_time + FSL_PI)) + 1.0) / 2.0, 4.0);
 
     skybox_data.sky_color.x = (mid_day * 171.0f + mid_night * 1.0f + burn_cold * 8.0f) / 0xff;
     skybox_data.sky_color.y = (mid_day * 229.0f + mid_night * 4.0f + burn_cold * 4.0f) / 0xff;
@@ -430,8 +429,8 @@ static void world_draw(void)
     };
 
     rotation = (m4f32){
-        cosf(FSL_PI / 2.0f), -sinf(FSL_PI / 2.0f), 0.0f, 0.0f,
-        sinf(FSL_PI / 2.0f), cosf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        cosf(FSL_HALF_PI), -sinf(FSL_HALF_PI), 0.0f, 0.0f,
+        sinf(FSL_HALF_PI), cosf(FSL_HALF_PI), 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f,
     };
@@ -464,10 +463,10 @@ static void world_draw(void)
         1.0f,
     };
 
-    sun_angle = skybox_data.time * FSL_PI - 90.0f * FSL_DEG2RAD;
+    sun_angle = skybox_data.time * FSL_PI - FSL_HALF_PI;
     rotation = (m4f32){
-        cosf(FSL_PI / 2.0f), -sinf(FSL_PI / 2.0f), 0.0f, 0.0f,
-        sinf(FSL_PI / 2.0f), cosf(FSL_PI / 2.0f), 0.0f, 0.0f,
+        cosf(FSL_HALF_PI), -sinf(FSL_HALF_PI), 0.0f, 0.0f,
+        sinf(FSL_HALF_PI), cosf(FSL_HALF_PI), 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f,
     };
@@ -895,6 +894,7 @@ section_menu_title:
         {
             core.request.world_load = FALSE;
             disable_cursor;
+            center_cursor;
             goto section_gameplay;
         }
     }
@@ -922,7 +922,6 @@ section_menu_pause:
             enable_cursor;
             goto section_gameplay;
         }
-        printf("mouse_pos: %f %f\n", render->mouse_pos.x, render->mouse_pos.y);
     }
 
 section_gameplay:
@@ -936,7 +935,6 @@ section_gameplay:
         input_update(&player);
         world_update(&player);
         world_draw();
-        printf("mouse_pos: %f %f\n", render->mouse_pos.x, render->mouse_pos.y);
 
         fsl_process_screenshot_request(GAME_DIR_NAME_SCREENSHOTS, world.name);
         fsl_limit_framerate(settings.target_fps, render->time);

@@ -5,9 +5,14 @@
 #include "deps/fossil/math/vector.h"
 #include "deps/fossil/ui/ui_element.h"
 
-#define enable_cursor   glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL)
-#define disable_cursor  glfwSetInputMode(render->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
-#define center_cursor   glfwSetCursorPos(render->window, render->size.x / 2.0f, render->size.y / 2.0f)
+#define enable_cursor   glfwSetInputMode(render->window, \
+        GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+
+#define disable_cursor  glfwSetInputMode(render->window, \
+        GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+
+#define center_cursor   glfwSetCursorPos(render->window, \
+        render->size.x / 2.0f, render->size.y / 2.0f)
 
 #define BTN_COUNT 110
 
