@@ -15,6 +15,7 @@
 #include "../h/main.h"
 
 #include "gui.h"
+#include "gui_menus.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -32,11 +33,11 @@ struct /* ui_item_data_internal */
     f64 camera_distance;
 } ui_item_data_internal = {0};
 
-u16 menu_index_cur;
-u16 menu_layer[5] = {0};
-u8 state_menu_depth = 0;
+u32 menu_index_curr = 0;
+u32 menu_layer[5] = {0};
+u32 state_menu_depth = 0;
 b8 is_menu_ready;
-u8 buttons[BTN_COUNT];
+u32 buttons[BTN_COUNT];
 fsl_ui_element ui_element[UI_ELEMENT_COUNT] = {0};
 
 u32 gui_init(v2i32 render_size)
@@ -76,13 +77,14 @@ u32 gui_init(v2i32 render_size)
 
     /*
     game_menu_pos = setting.render_size.y / 3; // TODO: figure this out
-    menu_index_cur = MENU_TITLE;
+    menu_index_curr = MENU_TITLE;
      */
 
     while (button_count--)
         buttons[button_count] = 0;
 
     gui_update(render_size);
+    gui_menus_init(render_size);
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -136,6 +138,8 @@ void gui_update(v2i32 render_size)
     fsl_ui_element_set_size(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL], 0, 0, 177, 177);
     fsl_ui_element_set_scale(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL],
             settings.gui_scale, settings.gui_scale);
+
+    gui_menu_title_update(render_size);
 }
 
 void gui_free(void)
@@ -437,35 +441,6 @@ void draw_button(Texture2D texture, Rectangle button, v2i16 pos,
     } else draw_texture(texture, button_inactive, pos,
             (v2i16){setting.gui_scale, setting.gui_scale},
             0, 0, COL_TEXTURE_DEFAULT);
-}
-
-void btn_func_singleplayer()
-{
-    menu_index_cur = 0; /* TODO: set actual value (MENU_SINGLEPLAYER) */
-    state_menu_depth = 0; /* TODO: set actual value (2) */
-    is_menu_ready = 0;
-    flag &= ~FLAG_PAUSED; /*temp*/
-
-    init_world("Poop Consistency Tester"); /*temp*/
-}
-
-void btn_func_multiplayer()
-{
-    menu_index_cur = MENU_MULTIPLAYER;
-    state_menu_depth = 2;
-    is_menu_ready = 0;
-}
-
-void btn_func_settings()
-{
-    menu_index_cur = MENU_SETTINGS;
-    state_menu_depth = 2;
-    is_menu_ready = 0;
-}
-
-void btn_func_quit_game()
-{
-    flag &= ~FLAG_ACTIVE;
 }
 
 void btn_func_unpause()

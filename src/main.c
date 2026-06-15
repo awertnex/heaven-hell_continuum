@@ -6,6 +6,7 @@
 #include "chunking/chunking_internal.h"
 #include "chunking/chunking_debug_tools.h"
 #include "gui/gui.h"
+#include "gui/gui_menus.h"
 #include "settings/settings.h"
 #include "super_debugger/super_debugger.h"
 #include "terrain/perlin_noise.h"
@@ -27,7 +28,6 @@
 #include <math.h>
 
 u32 *const GAME_ERR = (u32*)&fsl_err;
-fsl_mem_arena memory_arena_internal = {0};
 fsl_render *render = NULL;
 struct hhc_core core = {0};
 struct hhc_uniform uniform = {0};
@@ -56,7 +56,7 @@ static void bind_shader_uniforms(void);
 static void ui_hud_draw(void);
 static void draw_world(void);
 static void draw_debug_gizmo_axis(void);
-static void draw_everything(void);
+static void world_draw(void);
 
 static void callback_framebuffer_size(i32 size_x, i32 size_y)
 {
@@ -228,7 +228,7 @@ static void ui_hud_draw(void)
 
     /* ---- draw menus n whatnot -------------------------------------------- */
 
-    fsl_ui_start(FALSE, FALSE);
+    fsl_ui_start(FALSE);
 
     if (state_menu_depth)
     {
@@ -304,7 +304,7 @@ static void draw_debug_gizmo_axis(void)
             GL_UNSIGNED_INT, NULL, 1);
 }
 
-static void draw_everything(void)
+static void world_draw(void)
 {
     static str engine_version[FSL_ID_CAP] = {0};
     fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
@@ -534,7 +534,7 @@ static void draw_everything(void)
 
      glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
              (GLfloat*)&player.camera.projection.perspective);
- 
+
     /* ---- draw player chunk bounding box ---------------------------------- */
 
     if (core.debug.chunk_bounds)
@@ -609,7 +609,7 @@ static void draw_everything(void)
 
     /* ---- draw ui --------------------------------------------------------- */
 
-    fsl_ui_start(FALSE, TRUE);
+    fsl_ui_start(TRUE);
 
     ui_hud_draw();
 
@@ -773,7 +773,7 @@ static void draw_everything(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
     }
 
-    /* ---- draw logger strings --------------------------------------------- */
+    /* ---- draw super debugger --------------------------------------------- */
 
     if (core.flag.super_debug)
         super_debugger_draw(render->size);
@@ -870,11 +870,62 @@ int main(int argc, char **argv)
     input_init();
     bind_shader_uniforms();
 
+#if MODE_INTERNAL_SKIP_TITLE_MENU
+    goto section_gameplay;
+#endif /* MODE_INTERNAL_SKIP_TITLE_MENU */
+
 section_menu_title:
+
+    enable_cursor;
+
+    while (fsl_engine_running(&callback_framebuffer_size))
+    {
+        input_update(&player);
+        fsl_ui_start(TRUE);
+
+        gui_menu_title_draw();
+
+        if (core.flag.super_debug)
+            super_debugger_draw(render->size);
+
+        fsl_ui_stop();
+        fsl_fbo_blit(0);
+
+        if (core.request.world_load)
+        {
+            core.request.world_load = FALSE;
+            disable_cursor;
+            goto section_gameplay;
+        }
+    }
 
 section_menu_pause:
 
-section_world_loaded:
+    while (fsl_engine_running(&callback_framebuffer_size))
+    {
+        input_update(&player);
+        fsl_ui_start(TRUE);
+
+        gui_menu_pause_draw();
+
+        if (core.flag.super_debug)
+            super_debugger_draw(render->size);
+
+        fsl_ui_stop();
+        fsl_fbo_blit(0);
+
+        if (core.request.menu_back)
+        {
+            core.request.menu_back = FALSE;
+            core.flag.paused = FALSE;
+            center_cursor;
+            enable_cursor;
+            goto section_gameplay;
+        }
+        printf("mouse_pos: %f %f\n", render->mouse_pos.x, render->mouse_pos.y);
+    }
+
+section_gameplay:
 
     if (!core.flag.world_loaded &&
             world_init("Poop Consistency Tester", 0, &player) != FSL_ERR_SUCCESS)
@@ -883,9 +934,9 @@ section_world_loaded:
     while (fsl_engine_running(&callback_framebuffer_size))
     {
         input_update(&player);
-        settings_gui_scale_set(SET_GUI_SCALE_3);
         world_update(&player);
-        draw_everything();
+        world_draw();
+        printf("mouse_pos: %f %f\n", render->mouse_pos.x, render->mouse_pos.y);
 
         fsl_process_screenshot_request(GAME_DIR_NAME_SCREENSHOTS, world.name);
         fsl_limit_framerate(settings.target_fps, render->time);
@@ -893,8 +944,12 @@ section_world_loaded:
         if (!core.flag.world_loaded)
             goto section_menu_title;
 
-        if (core.flag.paused)
+        if (core.request.menu_back)
+        {
+            core.request.menu_back = FALSE;
+            core.flag.paused = TRUE;
             goto section_menu_pause;
+        }
     }
 
 cleanup:
@@ -903,7 +958,6 @@ cleanup:
     assets_free();
     chunking_free();
     rand_free();
-    fsl_mem_arena_free(&memory_arena_internal, "main().memory_arena_internal");
     fsl_engine_close();
     return *GAME_ERR;
 }

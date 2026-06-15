@@ -1,0 +1,13 @@
+[ ] make block_nature function or module thing (determines if a block should
+    remove a neighboring block's faces or not based on its nature (e.g., glass can
+    remove a face of its own if there's a block touching that face but can't
+    remove that block's face if the block isn't glass).
+[ ] make the chunk mesher (it's supposed to mesh a group of 4 chunks into one
+    mesh).
+[ ] explore perlin-noise caching.
+[ ] make text drawing simpler to prepare for label rendering and button labels,
+    and most importantly, text boxes.
+[ ] implement the "buffer lines" thing: before rendering text, count lines in
+    string, determine how many lines can fit in line count requested, bake just
+    those lines
+[ ] implement world-saving.

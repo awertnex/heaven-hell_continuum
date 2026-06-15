@@ -14,6 +14,20 @@
 #include <stdio.h>
 #include <math.h>
 
+#define RAND_CONST_0 234
+#define RAND_CONST_1 672
+#define RAND_CONST_2 862
+#define RAND_CONST_3 895
+#define RAND_CONST_4 790
+#define RAND_CONST_5 677
+#define RAND_CONST_6 354
+#define RAND_CONST_7 523
+#define RAND_CONST_8 343
+#define RAND_CONST_9 437
+#define RAND_CONST_10 118
+#define RAND_CONST_11 853
+#define RAND_CONST_12 956
+
 f32 *RAND_TAB = {0};
 
 u32 rand_init(void)
@@ -43,7 +57,6 @@ u32 rand_init(void)
     }
     else
     {
-
         for (i = 0; i < RAND_TAB_VOLUME; ++i)
             RAND_TAB[i] = sin((f64)fsl_rand_u64(i));
 
@@ -54,7 +67,6 @@ u32 rand_init(void)
         LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
                 fsl_logger_stringf("`RAND_TAB` Lookup '%s' Exported\n", path));
     }
-
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -122,17 +134,17 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed)
 f32 gradient_2d(f32 vx, f32 vy, i32 x, i32 y, u64 seed)
 {
     v3f32 sample = {0};
-    sample.x = RAND_TAB[(seed + (234 + x) * (672 + y)) % RAND_TAB_VOLUME];
-    sample.y = RAND_TAB[(seed + (862 + y) * (873 + x)) % RAND_TAB_VOLUME];
+    sample.x = RAND_TAB[(seed + (RAND_CONST_0 + x) * (RAND_CONST_1 + y)) % RAND_TAB_VOLUME];
+    sample.y = RAND_TAB[(seed + (RAND_CONST_2 + y) * (RAND_CONST_3 + x)) % RAND_TAB_VOLUME];
     return (vx - x) * sample.x + (vy - y) * sample.y;
 }
 
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, i32 x, i32 y, i32 z, u64 seed)
 {
     v3f32 sample = {0};
-    sample.x = RAND_TAB[(seed + (834 + x) * (677 + y) * (834 + z)) % RAND_TAB_VOLUME];
-    sample.y = RAND_TAB[(seed + (523 + y) * (343 + z) * (328 + x)) % RAND_TAB_VOLUME];
-    sample.z = RAND_TAB[(seed + (118 + z) * (853 + x) * (953 + y)) % RAND_TAB_VOLUME];
+    sample.x = RAND_TAB[(seed + (RAND_CONST_4 + x) * (RAND_CONST_5 + y) * (RAND_CONST_6 + z)) % RAND_TAB_VOLUME];
+    sample.y = RAND_TAB[(seed + (RAND_CONST_7 + y) * (RAND_CONST_8 + z) * (RAND_CONST_9 + x)) % RAND_TAB_VOLUME];
+    sample.z = RAND_TAB[(seed + (RAND_CONST_10 + z) * (RAND_CONST_11 + x) * (RAND_CONST_12 + y)) % RAND_TAB_VOLUME];
     return (vx - x) * sample.x + (vy - y) * sample.y + (vz - z) * sample.z;
 }
 

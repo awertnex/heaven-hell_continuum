@@ -88,7 +88,7 @@ u32 settings_init(void)
     settings.fov = SET_FOV_DEFAULT;
     settings.anti_aliasing = TRUE;
 
-    settings_gui_scale_set(SET_GUI_SCALE_3);
+    settings_gui_scale_set(SET_GUI_SCALE_DEFAULT);
 
     fsl_mem_free((void*)&file_contents_out, SETTINGS_FILE_SIZE_MAX,
             "settings_init().file_contents_out");

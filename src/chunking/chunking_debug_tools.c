@@ -165,8 +165,8 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     glUniform3fv(uniform.gizmo_chunk.camera_position, 1, (GLfloat*)&camera_position);
     glUniform1f(uniform.gizmo_chunk.time, render->time);
 
-    glClear(GL_DEPTH_BUFFER_BIT);
     glDisable(GL_BLEND);
+    glClear(GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(chunk_gizmo_loaded.vao);
     glDrawArrays(GL_POINTS, 0, settings.chunk_buf_volume);
     glClear(GL_DEPTH_BUFFER_BIT);

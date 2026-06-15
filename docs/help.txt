@@ -30,14 +30,13 @@ Key Binding Defaults:
     Toggle HUD:                         F1
     Take Screenshot:                    F2
     Toggle Debug:                       F3
-    Toggle Cinematic Camera:            F4
+    Toggle Cinematic Motion:            F4
     Toggle Perspective:                 F5
-    Toggle Cinematic Motion:            F6
     Toggle Fullscreen:                  F11
     Zoom:                               Z
     Toggle Flashlight:                  F
     Pause:                              Escape
-    Chat/Command:                       Slash
+    Command Line:                       Slash
 
     Debug Mod:                          Left-Alt
     Toggle Super Debug:                 Tab

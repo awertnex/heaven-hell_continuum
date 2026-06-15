@@ -13,20 +13,13 @@
 #include "../h/main.h"
 
 #include "super_debugger.h"
+#include "super_debugger_callbacks.h"
 
 static i32 logger_scroll_pos = 0;
 fsl_ui_element ui_element_sdb[UI_ELEMENT_SDB_COUNT] = {0};
 
-static void ui_button_debug_toggle_trans_blocks_click_func(fsl_ui_event event, void *data);
-static void ui_button_debug_toggle_bounding_boxes_click_func(fsl_ui_event event, void *data);
-static void ui_button_debug_toggle_chunk_bounds_click_func(fsl_ui_event event, void *data);
-static void ui_button_debug_toggle_chunk_gizmo_click_func(fsl_ui_event event, void *data);
-static void ui_button_debug_toggle_chunk_scheduler_visualizer_click_func(fsl_ui_event event,
-        void *data);
-
 void super_debugger_init(v2i32 render_size)
 {
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
     fsl_texture *fsl_texture_p = fsl_mem_handle_get(fsl_texture_buf);
 
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
@@ -34,15 +27,15 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER],
             &fsl_texture_p[FSL_TEXTURE_INDEX_PANEL_INACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
-            &texture_p[TEXTURE_BUTTON]);
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
-            &texture_p[TEXTURE_BUTTON]);
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
-            &texture_p[TEXTURE_BUTTON]);
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
-            &texture_p[TEXTURE_BUTTON]);
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            &texture_p[TEXTURE_BUTTON]);
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
 
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_PANEL], 0, 0, 16, 16);
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER], 0, 0, 16, 16);
@@ -55,54 +48,65 @@ void super_debugger_init(v2i32 render_size)
 
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_PANEL], TRUE, 8);
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER], TRUE, 8);
-    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS], FALSE, 8);
-    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES], FALSE, 8);
-    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS], FALSE, 8);
-    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], FALSE, 8);
+    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS], TRUE, 8);
+    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES], TRUE, 8);
+    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS], TRUE, 8);
+    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], TRUE, 8);
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            FALSE, 8);
+            TRUE, 8);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
-            FSL_UI_EVENT_TYPE_ENTER, ui_panel_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_panel_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER],
-            FSL_UI_EVENT_TYPE_ENTER, ui_panel_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_panel_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
-            FSL_UI_EVENT_TYPE_ENTER, ui_button_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
-            FSL_UI_EVENT_TYPE_ENTER, ui_button_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
-            FSL_UI_EVENT_TYPE_ENTER, ui_button_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
-            FSL_UI_EVENT_TYPE_ENTER, ui_button_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            FSL_UI_EVENT_TYPE_ENTER, ui_button_enter_func, NULL);
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_panel_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_panel_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_panel_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_panel_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_button_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_button_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_button_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_button_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            FSL_UI_EVENT_TYPE_LEAVE, ui_button_leave_func, NULL);
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
-            FSL_UI_EVENT_TYPE_CLICK, ui_button_debug_toggle_trans_blocks_click_func, NULL);
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_trans_blocks, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
-            FSL_UI_EVENT_TYPE_CLICK, ui_button_debug_toggle_bounding_boxes_click_func, NULL);
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_bounding_boxes, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
-            FSL_UI_EVENT_TYPE_CLICK, ui_button_debug_toggle_chunk_bounds_click_func, NULL);
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_chunk_bounds, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
-            FSL_UI_EVENT_TYPE_CLICK, ui_button_debug_toggle_chunk_gizmo_click_func, NULL);
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_chunk_gizmo, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            FSL_UI_EVENT_TYPE_CLICK, ui_button_debug_toggle_chunk_scheduler_visualizer_click_func,
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_chunk_scheduler_visualizer,
             NULL);
+
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
 
     fsl_ui_element_attach(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
             &ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS]);
@@ -183,7 +187,7 @@ void super_debugger_draw(v2i32 render_size)
         ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER].transform.size_baked.y - SET_MARGIN * 2;
     fsl_log_entry *log_entry = NULL;
 
-    fsl_ui_start(TRUE, FALSE);
+    fsl_ui_start(FALSE);
 
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_PANEL]);
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS]);
@@ -235,107 +239,4 @@ void super_debugger_logger_scroll(i32 delta)
 {
     logger_scroll_pos =
         fsl_clamp_i32(logger_scroll_pos + delta * SET_CONSOLE_SCROLL_SPEED, 0, logger_core.cursor);
-}
-
-void ui_panel_enter_func(fsl_ui_event event, void *data)
-{
-    fsl_texture *fsl_texture_p = fsl_mem_handle_get(fsl_texture_buf);
-    fsl_ui_element_set_texture(event.caller, &fsl_texture_p[FSL_TEXTURE_INDEX_PANEL_ACTIVE]);
-}
-
-void ui_panel_leave_func(fsl_ui_event event, void *data)
-{
-    fsl_texture *fsl_texture_p = fsl_mem_handle_get(fsl_texture_buf);
-    fsl_ui_element_set_texture(event.caller, &fsl_texture_p[FSL_TEXTURE_INDEX_PANEL_INACTIVE]);
-}
-
-void ui_button_enter_func(fsl_ui_event event, void *data)
-{
-    fsl_ui_element_set_uv(event.caller, 0, 16, 16, 16);
-}
-
-void ui_button_leave_func(fsl_ui_event event, void *data)
-{
-    fsl_ui_element_set_uv(event.caller, 0, 0, 16, 16);
-}
-
-void ui_button_click_func(fsl_ui_event event, void *data)
-{
-    fsl_ui_element_set_uv(event.caller, 16, 0, 16, 16);
-}
-
-void ui_button_release_func(fsl_ui_event event, void *data)
-{
-    ui_button_enter_func(event, data);
-}
-
-static void ui_button_debug_toggle_trans_blocks_click_func(fsl_ui_event event, void *data)
-{
-    ui_button_click_func(event, data);
-
-    core.debug.trans_blocks ^= 1;
-
-    if (core.debug.trans_blocks)
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Transparent Blocks On\n");
-    else
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Transparent Blocks Off\n");
-}
-
-static void ui_button_debug_toggle_bounding_boxes_click_func(fsl_ui_event event, void *data)
-{
-    ui_button_click_func(event, data);
-
-    core.debug.bounding_boxes ^= 1;
-
-    if (core.debug.bounding_boxes)
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Bounding Boxes On\n");
-    else
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Bounding Boxes Off\n");
-}
-
-static void ui_button_debug_toggle_chunk_bounds_click_func(fsl_ui_event event, void *data)
-{
-    ui_button_click_func(event, data);
-
-    core.debug.chunk_bounds ^= 1;
-
-    if (core.debug.chunk_bounds)
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Boundaries On\n");
-    else
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Boundaries Off\n");
-}
-
-static void ui_button_debug_toggle_chunk_gizmo_click_func(fsl_ui_event event, void *data)
-{
-    ui_button_click_func(event, data);
-
-    core.debug.chunk_gizmo ^= 1;
-
-    if (core.debug.chunk_gizmo)
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Gizmo On\n");
-    else
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Gizmo Off\n");
-}
-
-static void ui_button_debug_toggle_chunk_scheduler_visualizer_click_func(fsl_ui_event event,
-        void *data)
-{
-    ui_button_click_func(event, data);
-
-    core.debug.chunk_scheduler_visualizer ^= 1;
-
-    if (core.debug.chunk_scheduler_visualizer)
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Scheduler Visualizer On\n");
-    else
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "View Chunk Scheduler Visualizer Off\n");
 }

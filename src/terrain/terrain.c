@@ -10,11 +10,11 @@
 
 #include <math.h>
 
+#define TERRAIN_SEED_DEFAULT 0
+
 #define TERRAIN_SEA_LEVEL           0
 #define TERRAIN_CAVE_LEVEL          (WORLD_RADIUS_VERTICAL / 2)
 #define TERRAIN_SQUISH_MAGNITUDE    0.03f
-
-#define TERRAIN_SEED_DEFAULT 0
 
 terrain terrain_land(v3i32 coordinates)
 {
@@ -105,6 +105,7 @@ terrain terrain_land(v3i32 coordinates)
     if (land_final < (f32)coordinates.z || cave_entrances > 0.22f)
         result.block_id = 0;
 
+    result.value = land_final;
     return result;
 }
 
@@ -156,6 +157,7 @@ terrain terrain_decaying_lands(v3i32 coordinates)
         result.block_id = 0;
 
     result.cost = CHUNK_WORK_COST_GENERATE_NON_AIR;
+    result.value = land_final;
     return result;
 }
 

@@ -1,5 +1,5 @@
 #include "fossil/deps/fossil/external/buildtool/buildtool.h"
-#include "fossil/deps/fossil/h/buildtool_config.h"
+#include "fossil/deps/fossil/buildtool_config.h"
 
 #define DIR_SRC     "src/"
 #define DIR_OUT     "Heaven-Hell Continuum/"
@@ -35,8 +35,11 @@ static str str_files[][CMD_SIZE] =
     DIR_SRC"chunking/chunking.c",
     DIR_SRC"chunking/chunking_debug_tools.c",
     DIR_SRC"gui/gui.c",
+    DIR_SRC"gui/gui_callbacks.c",
+    DIR_SRC"gui/gui_menus.c",
     DIR_SRC"settings/settings.c",
     DIR_SRC"super_debugger/super_debugger.c",
+    DIR_SRC"super_debugger/super_debugger_callbacks.c",
     DIR_SRC"terrain/terrain.c",
     DIR_SRC"terrain/perlin_noise.c",
     DIR_SRC"assets.c",

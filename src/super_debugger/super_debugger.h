@@ -3,7 +3,6 @@
 
 #include "deps/fossil/math/vector.h"
 #include "deps/fossil/ui/ui_element.h"
-#include "deps/fossil/ui/ui_types.h"
 
 enum ui_element_sdb_index
 {
@@ -24,13 +23,5 @@ void super_debugger_update(v2i32 render_size);
 void super_debugger_draw(v2i32 render_size);
 void super_debugger_logger_scroll(i32 delta);
 void super_debugger_gui_scale_set(f32 scale);
-
-void ui_panel_enter_func(fsl_ui_event event, void *data);
-void ui_panel_leave_func(fsl_ui_event event, void *data);
-void ui_button_enter_func(fsl_ui_event event, void *data);
-void ui_button_leave_func(fsl_ui_event event, void *data);
-void ui_button_click_func(fsl_ui_event event, void *data);
-void ui_button_release_func(fsl_ui_event event, void *data);
-void ui_button_debug_toggle_click_func(fsl_ui_event event, void *data);
 
 #endif /* HHC_SUPER_DEBUGGER_H */
