@@ -308,7 +308,6 @@ static void world_draw(void)
     static str engine_version[FSL_ID_CAP] = {0};
     fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
     fsl_texture *texture_p = fsl_mem_handle_get(texture);
-    fsl_texture *fsl_texture_p = fsl_mem_handle_get(fsl_texture_buf);
     fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
     fsl_mesh *fsl_mesh_p = fsl_mem_handle_get(fsl_mesh_buf);
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);

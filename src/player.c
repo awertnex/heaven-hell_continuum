@@ -606,6 +606,9 @@ void player_camera_movement_update(hhc_player *p, v2f64 mouse_delta, b8 use_mous
             /* TODO: make the spectator camera mode */
         case PLAYER_CAMERA_MODE_SPECTATOR:
             break;
+
+        default:
+            break;
     }
 
     p->camera_hud.pitch.sin = p->camera.pitch.sin;

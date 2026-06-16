@@ -34,12 +34,12 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed);
 /*!
  *  @brief get a gradient value between two 1D points.
  *
- *  get a random number from global array @ref RAND_TAB for `a`,
- *  index is seeded by `seed`, `a` and some magic constant.
+ *  get a random number from global array @ref RAND_TAB for `x`,
+ *  index is seeded by `seed`, `x` and some magic constant.
  *
  *  @return the dot product of `v - a` and the sampled random point.
  */
-f32 gradient_1d(f32 v, i32 a, u64 seed);
+f32 gradient_1d(f32 v, i32 x, u64 seed);
 
 /*!
  *  @brief get a gradient value between two 2D points.
@@ -62,39 +62,41 @@ f32 gradient_2d(f32 vx, f32 vy, i32 x, i32 y, u64 seed);
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, i32 x, i32 y, i32 z, u64 seed);
 
 /*!
- *  @param coordinate point in 1D space to sample at.
+ *  @param x point in 1D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_1d(i32 coordinate, f32 amplitude, f32 frequency, u64 seed);
+f32 perlin_noise_1d(i32 x, f32 amplitude, f32 frequency, u64 seed);
 
 /*!
  *  @brief calls @ref perlin_noise_1d() for as many `octaves`.
  *
- *  @param coordinate point in 1D space to sample at.
+ *  @param x point in 1D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_1d_ex(i32 coordinate, f32 amplitude, f32 frequency,
+f32 perlin_noise_1d_ex(i32 x, f32 amplitude, f32 frequency,
         u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed);
 
 /*!
- *  @param coordinates point in 2D space to sample at.
+ *  @param x x coordinate of point in 2D space to sample at.
+ *  @param y y coordinate of point in 2D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_2d(v2i32 coordinates, f32 amplitude, f32 frequency, u64 seed);
+f32 perlin_noise_2d(i32 x, i32 y, f32 amplitude, f32 frequency, u64 seed);
 
 /*!
  *  @brief calls @ref perlin_noise_2d() for as many `octaves`.
  *
- *  @param coordinates point in 2D space to sample at.
+ *  @param x x coordinate of point in 2D space to sample at.
+ *  @param y y coordinate of point in 2D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *  @param octaves number of noise iterations.
@@ -103,22 +105,26 @@ f32 perlin_noise_2d(v2i32 coordinates, f32 amplitude, f32 frequency, u64 seed);
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_2d_ex(v2i32 coordinates, f32 amplitude, f32 frequency,
+f32 perlin_noise_2d_ex(i32 x, i32 y, f32 amplitude, f32 frequency,
         u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed);
 
 /*!
- *  @param coordinates point in 3D space to sample at.
+ *  @param x x coordinate of point in 3D space to sample at.
+ *  @param y y coordinate of point in 3D space to sample at.
+ *  @param z z coordinate of point in 3D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency, u64 seed);
+f32 perlin_noise_3d(i32 x, i32 y, i32 z, f32 amplitude, f32 frequency, u64 seed);
 
 /*!
  *  @brief calls @ref perlin_noise_3d() for as many `octaves`.
  *
- *  @param coordinates point in 3D space to sample at.
+ *  @param x x coordinate of point in 3D space to sample at.
+ *  @param y y coordinate of point in 3D space to sample at.
+ *  @param z z coordinate of point in 3D space to sample at.
  *  @param amplitude height, or contrast of the noise.
  *  @param frequency frequency of the noise.
  *  @param octaves number of noise iterations.
@@ -127,7 +133,7 @@ f32 perlin_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency, u64 seed);
  *
  *  @return a value between [amplitude / 2, -amplitude / 2].
  */
-f32 perlin_noise_3d_ex(v3i32 coordinates, f32 amplitude, f32 frequency,
+f32 perlin_noise_3d_ex(i32 x, i32 y, i32 z, f32 amplitude, f32 frequency,
         u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed);
 
 #endif /* HHC_PERLIN_NOISE_H */
