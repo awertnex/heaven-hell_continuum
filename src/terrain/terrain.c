@@ -136,6 +136,12 @@ terrain terrain_decaying_lands(v3i32 coordinates)
     gathering = perlin_noise_2d(coordinates_2d, 0.2f, 22.5f, world.seed + 75489);
 
     mountains = perlin_noise_2d_ex(coordinates_2d, 170.0f, 255.0f, 3, 0.8f, 0.8f, world.seed + 9584);
+    mountains = perlin_noise_1d(coordinates.x, 170.0f, 255.0f, world.seed + 9584);
+    if (mountains > coordinates.z)
+        result.block_id = BLOCK_STONE;
+    result.cost = 500;
+    return result;
+
     ridges = perlin_noise_2d(coordinates_2d, 3.0f, 19.0f + gathering, world.seed - 5873956);
 
     cave_frequency = perlin_noise_3d_ex(coordinates, 1.0f, 208.0f, 2, 0.8f, 0.8f, world.seed + 57394);

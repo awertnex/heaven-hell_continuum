@@ -27,6 +27,7 @@
 #define RAND_CONST_10 118
 #define RAND_CONST_11 853
 #define RAND_CONST_12 956
+#define RAND_CONST_13 362
 
 f32 *RAND_TAB = {0};
 
@@ -131,21 +132,51 @@ v3f32 random_3d(i32 x, i32 y, i32 z, u64 seed)
 
 #pragma GCC diagnostic pop /* ignored "-Wshift-count-overflow" */
 
+f32 gradient_1d(f32 v, i32 a, u64 seed)
+{
+    f32 sample = RAND_TAB[(seed + RAND_CONST_0 + a) % RAND_TAB_VOLUME];
+    return (v - a) * sample;
+}
+
 f32 gradient_2d(f32 vx, f32 vy, i32 x, i32 y, u64 seed)
 {
     v3f32 sample = {0};
-    sample.x = RAND_TAB[(seed + (RAND_CONST_0 + x) * (RAND_CONST_1 + y)) % RAND_TAB_VOLUME];
-    sample.y = RAND_TAB[(seed + (RAND_CONST_2 + y) * (RAND_CONST_3 + x)) % RAND_TAB_VOLUME];
+    sample.x = RAND_TAB[(seed + (RAND_CONST_1 + x) * (RAND_CONST_2 + y)) % RAND_TAB_VOLUME];
+    sample.y = RAND_TAB[(seed + (RAND_CONST_3 + y) * (RAND_CONST_4 + x)) % RAND_TAB_VOLUME];
     return (vx - x) * sample.x + (vy - y) * sample.y;
 }
 
 f32 gradient_3d(f32 vx, f32 vy, f32 vz, i32 x, i32 y, i32 z, u64 seed)
 {
     v3f32 sample = {0};
-    sample.x = RAND_TAB[(seed + (RAND_CONST_4 + x) * (RAND_CONST_5 + y) * (RAND_CONST_6 + z)) % RAND_TAB_VOLUME];
-    sample.y = RAND_TAB[(seed + (RAND_CONST_7 + y) * (RAND_CONST_8 + z) * (RAND_CONST_9 + x)) % RAND_TAB_VOLUME];
-    sample.z = RAND_TAB[(seed + (RAND_CONST_10 + z) * (RAND_CONST_11 + x) * (RAND_CONST_12 + y)) % RAND_TAB_VOLUME];
+    sample.x = RAND_TAB[(seed + (RAND_CONST_5 + x) * (RAND_CONST_6 + y) * (RAND_CONST_7 + z)) % RAND_TAB_VOLUME];
+    sample.y = RAND_TAB[(seed + (RAND_CONST_8 + y) * (RAND_CONST_9 + z) * (RAND_CONST_10 + x)) % RAND_TAB_VOLUME];
+    sample.z = RAND_TAB[(seed + (RAND_CONST_11 + z) * (RAND_CONST_12 + x) * (RAND_CONST_13 + y)) % RAND_TAB_VOLUME];
     return (vx - x) * sample.x + (vy - y) * sample.y + (vz - z) * sample.z;
+}
+
+f32 perlin_noise_1d(i32 coordinate, f32 amplitude, f32 frequency, u64 seed)
+{
+    f32 v = (f32)coordinate / frequency;
+    i32 a = (i32)floorf(v);
+    i32 b = a + 1;
+    f32 d = v - (f32)a;
+    f32 g0 = gradient_1d(v, a, seed);
+    f32 g1 = gradient_1d(v, b, seed);
+    return fsl_lerp_cubic_f32(g0, g1, d) * amplitude;
+}
+
+f32 perlin_noise_1d_ex(i32 coordinate, f32 amplitude, f32 frequency,
+        u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed)
+{
+    f32 result = 0.0f;
+    while (octaves--)
+    {
+        result += perlin_noise_1d(coordinate, amplitude, frequency, seed);
+        amplitude *= amplitude_persistence;
+        frequency *= frequency_persistence;
+    }
+    return result;
 }
 
 f32 perlin_noise_2d(v2i32 coordinates, f32 amplitude, f32 frequency, u64 seed)
@@ -171,24 +202,24 @@ f32 perlin_noise_2d(v2i32 coordinates, f32 amplitude, f32 frequency, u64 seed)
     return fsl_lerp_cubic_f32(l0, l1, dy) * amplitude;
 }
 
-f32 perlin_noise_2d_ex(v2i32 coordinates, f32 intensity, f32 scale,
-        u32 octaves, f32 intensity_persistence, f32 scale_persistence, u64 seed)
+f32 perlin_noise_2d_ex(v2i32 coordinates, f32 amplitude, f32 frequency,
+        u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed)
 {
     f32 result = 0.0f;
     while (octaves--)
     {
-        result += perlin_noise_2d(coordinates, intensity, scale, seed);
-        intensity *= intensity_persistence;
-        scale *= scale_persistence;
+        result += perlin_noise_2d(coordinates, amplitude, frequency, seed);
+        amplitude *= amplitude_persistence;
+        frequency *= frequency_persistence;
     }
     return result;
 }
 
-f32 perlin_noise_3d(v3i32 coordinates, f32 intensity, f32 scale, u64 seed)
+f32 perlin_noise_3d(v3i32 coordinates, f32 amplitude, f32 frequency, u64 seed)
 {
-    f32 vx = (f32)coordinates.x / scale;
-    f32 vy = (f32)coordinates.y / scale;
-    f32 vz = (f32)coordinates.z / scale;
+    f32 vx = (f32)coordinates.x / frequency;
+    f32 vy = (f32)coordinates.y / frequency;
+    f32 vz = (f32)coordinates.z / frequency;
     i32 ax = (i32)floorf(vx);
     i32 ay = (i32)floorf(vy);
     i32 az = (i32)floorf(vz);
@@ -222,18 +253,18 @@ f32 perlin_noise_3d(v3i32 coordinates, f32 intensity, f32 scale, u64 seed)
 
     ll1 = fsl_lerp_cubic_f32(l0, l1, dy);
 
-    return fsl_lerp_cubic_f32(ll0, ll1, dz) * intensity;
+    return fsl_lerp_cubic_f32(ll0, ll1, dz) * amplitude;
 }
 
-f32 perlin_noise_3d_ex(v3i32 coordinates, f32 intensity, f32 scale,
-        u32 octaves, f32 intensity_persistence, f32 scale_persistence, u64 seed)
+f32 perlin_noise_3d_ex(v3i32 coordinates, f32 amplitude, f32 frequency,
+        u32 octaves, f32 amplitude_persistence, f32 frequency_persistence, u64 seed)
 {
     f32 result = 0.0f;
     while (octaves--)
     {
-        result += perlin_noise_3d(coordinates, intensity, scale, seed);
-        intensity *= intensity_persistence;
-        scale *= scale_persistence;
+        result += perlin_noise_3d(coordinates, amplitude, frequency, seed);
+        amplitude *= amplitude_persistence;
+        frequency *= frequency_persistence;
     }
     return result;
 }
