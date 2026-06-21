@@ -11,8 +11,11 @@
 #define disable_cursor  glfwSetInputMode(render->window, \
         GLFW_CURSOR, GLFW_CURSOR_DISABLED)
 
-#define center_cursor   glfwSetCursorPos(render->window, \
-        render->size.x / 2.0f, render->size.y / 2.0f)
+#define center_cursor \
+    do { \
+        glfwSetCursorPos(render->window, render->size.x / 2.0f, render->size.y / 2.0f); \
+        fsl_request_skip_mouse_delta(); \
+    } while (0)
 
 #define BTN_COUNT 110
 

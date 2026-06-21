@@ -38,11 +38,12 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
     if (chunking_init() != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
-    world.terrain_func = terrain_decaying_lands;
+    world.terrain_noise_func = terrain_noise_make;
+    world.terrain_func = terrain_shape;
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    player_set_spawn(p, -7, 34, -2);
+    player_set_spawn(p, -7, 32250, 70);
     player_spawn(p, TRUE);
 
     core.flag.hud = TRUE;
@@ -158,6 +159,8 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
                 fsl_logger_stringf("Failed to Load World '%s', World Not Found\n", world_name));
         return *GAME_ERR;
     }
+
+    terrain_init();
 
     /* ---- metadata i'll get back to, TODO: load other world metadata ------ */
 

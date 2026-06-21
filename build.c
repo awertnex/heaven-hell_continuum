@@ -41,7 +41,6 @@ static str str_files[][CMD_SIZE] =
     DIR_SRC"super_debugger/super_debugger.c",
     DIR_SRC"super_debugger/super_debugger_callbacks.c",
     DIR_SRC"terrain/terrain.c",
-    DIR_SRC"terrain/perlin_noise.c",
     DIR_SRC"assets.c",
     DIR_SRC"common.c",
     DIR_SRC"dir.c",

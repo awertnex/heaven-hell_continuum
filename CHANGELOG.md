@@ -3,8 +3,12 @@
 - - -
 ## v0.5.0-dev (current)
 
+#### achievements
+- first working version of the continuum (complete).
+
 #### changes
-- updated engine version to v0.11.0-beta.
+- updated engine version to v0.13.0-beta.
+- fix mouse garbage-delta when centering on screen.
 
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.
