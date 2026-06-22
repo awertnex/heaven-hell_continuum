@@ -819,13 +819,6 @@ int main(int argc, char **argv)
     glfwSetWindowPos(render->window, 1920 - render->size.x, 24);
 #endif /* HHC_RELEASE_BUILD */
 
-    if (!MODE_INTERNAL_COLLIDE)
-    {
-        LOGWARNING(HHC_ERR_COLLISIONS_DISABLED,
-                FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                "'MODE_INTERNAL_COLLIDE' Disabled\n");
-    }
-
     if (settings_init() != FSL_ERR_SUCCESS)
         goto cleanup;
 

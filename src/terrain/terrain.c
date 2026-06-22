@@ -1,5 +1,4 @@
 #include "deps/fossil/common/limits.h"
-
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/math/noise.h"
 #include "deps/fossil/math/vector.h"
@@ -22,11 +21,11 @@
 #define FREQ_DETAIL         (1.0f / 16.0f)
 
 /* terrain modifiers (and/or biome selection) */
-#define FREQ_TEMPERATURE    (1.0f / 1326.0f)
-#define FREQ_HUMIDITY       (1.0f / 1726.0f)
+#define FREQ_TEMPERATURE    (1.0f / 326.0f)
+#define FREQ_HUMIDITY       (1.0f / 726.0f)
 #define FREQ_EXTREMITY      (1.0f / 953.34f)
-#define FREQ_ROUGHNESS      (1.0f / 1368.2f)
-#define FREQ_LIFE           (1.0f / 2043.04f)
+#define FREQ_ROUGHNESS      (1.0f / 368.2f)
+#define FREQ_LIFE           (1.0f / 443.04f)
 
 #define TERRAIN_SEA_LEVEL           0
 #define TERRAIN_CAVE_LEVEL          ((WORLD_RADIUS_VERTICAL / 2) * CHUNK_DIAMETER)
@@ -34,17 +33,42 @@
 
 static hhc_biome biome_buf[BIOME_COUNT] = {0};
 
+#define TERRAIN_NOISE_COUNT 6
+
 static hhc_biome biome_init(str *name, f32 temperature, f32 humidity, f32 extremity,
-    f32 roughness, f32 depth, f32 life)
+    f32 roughness, f32 depth, f32 life, f32 chance)
 {
     hhc_biome biome = {0};
+    f64 param[TERRAIN_NOISE_COUNT] = {0};
+    static u32 seed = 490537;
+    u32 max = 1000000;
+    f64 sum = 0.0;
+    u32 i = 0;
+
     snprintf(biome.name, FSL_ID_CAP, "%s", name);
+
+    for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
+    {
+        param[i] = (f64)(fsl_rand_u32(seed++) % max) / max;
+        sum += param[i];
+    }
+    for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
+        param[i] /= sum;
+
     biome.temperature = temperature;
     biome.humidity = humidity;
     biome.extremity = extremity;
     biome.roughness = roughness;
     biome.depth = depth;
     biome.life = life;
+
+    biome.temperature = param[0];
+    biome.humidity = param[1];
+    biome.extremity = param[2];
+    biome.roughness = param[3];
+    biome.depth = param[4];
+    biome.life = param[5];
+
     return biome;
 }
 
@@ -69,26 +93,22 @@ f32 biome_score_get(hhc_biome a, hhc_biome b)
 
 void terrain_init(void)
 {
-    biome_buf[BIOME_STONE] =
-        biome_init("Stone", 0.35f, 0.0f, 0.334f, 0.3f, 0.0f, 0.0f);
+    i32 i = 0;
 
-    biome_buf[BIOME_HILLS] =
-        biome_init("Hills", 0.39f, 0.1f, 0.6f, 0.5f, 70.0f, 50.0f);
+    biome_buf[BIOME_STONE] = biome_init("Stone",
+            0.350f, 0.000f, 0.334f, 0.300f, 0.000f, 0.000f, 0.0f);
 
-    biome_buf[BIOME_SANDSTORM] =
-        biome_init("Sandstorm", 0.557f, 0.0f, 0.1f, 0.2f, 0.0f, 0.3f);
+    biome_buf[BIOME_HILLS] = biome_init("Hills",
+            0.390f, 0.100f, 0.600f, 0.500f, 70.000f, 50.000f, 0.0f);
 
-    biome_buf[BIOME_DECAYING_LANDS] =
-        biome_init("Decaying Lands", 0.163f, 0.04f, 0.9f, 0.953f, 0.0f, 7.0f);
+    biome_buf[BIOME_SANDSTORM] = biome_init("Sandstorm",
+            0.557f, 0.000f, 0.100f, 0.200f, 0.000f, 0.300f, 0.0f);
 
-    biome_buf[BIOME_JUNGLE] =
-        biome_init("Jungle", 0.27f, 0.59f, 0.43f, 0.78f, 3.0f, 260.0f);
+    biome_buf[BIOME_DECAYING_LANDS] = biome_init("Decaying Lands",
+            0.163f, 0.040f, 0.900f, 0.953f, 0.000f, 7.000f, 0.0f);
 
-    biome_buf[BIOME_STONE].block = BLOCK_STONE;
-    biome_buf[BIOME_HILLS].block = BLOCK_GRASS;
-    biome_buf[BIOME_SANDSTORM].block = BLOCK_SAND;
-    biome_buf[BIOME_DECAYING_LANDS].block = BLOCK_BLOOD;
-    biome_buf[BIOME_JUNGLE].block = BLOCK_DIRTUP;
+    biome_buf[BIOME_JUNGLE] = biome_init("Jungle",
+            0.270f, 0.290f, 0.430f, 0.780f, 3.000f, 260.000f, 1.0f);
 }
 
 hhc_terrain_noise terrain_noise_make(v3i32 coordinates)
@@ -123,17 +143,18 @@ hhc_terrain_noise terrain_noise_make(v3i32 coordinates)
 hhc_terrain_noise terrain_noise_lerp(const hhc_terrain_noise *a, const hhc_terrain_noise *b, f32 t)
 {
     hhc_terrain_noise noise = {0};
+    t = t * t * t * (t * (6.0f * t - 15.0f) + 10.0f);
 
-    noise.continental = fsl_smoothstep_f32(a->continental, b->continental, t);
-    noise.regional = fsl_smoothstep_f32(a->regional, b->regional, t);
-    noise.local = fsl_smoothstep_f32(a->local, b->local, t);
-    noise.detail = fsl_smoothstep_f32(a->detail, b->detail, t);
+    noise.continental = a->continental + (b->continental - a->continental) * t;
+    noise.regional = a->regional + (b->regional - a->regional) * t;
+    noise.local = a->local + (b->local - a->local) * t;
+    noise.detail = a->detail + (b->detail - a->detail) * t;
 
-    noise.temperature = fsl_smoothstep_f32(a->temperature, b->temperature, t);
-    noise.humidity = fsl_smoothstep_f32(a->humidity, b->humidity, t);
-    noise.extremity = fsl_smoothstep_f32(a->extremity, b->extremity, t);
-    noise.roughness = fsl_smoothstep_f32(a->roughness, b->roughness, t);
-    noise.life = fsl_smoothstep_f32(a->life, b->life, t);
+    noise.temperature = a->temperature + (b->temperature - a->temperature) * t;
+    noise.humidity = a->humidity + (b->humidity - a->humidity) * t;
+    noise.extremity = a->extremity + (b->extremity - a->extremity) * t;
+    noise.roughness = a->roughness + (b->roughness - a->roughness) * t;
+    noise.life = a->life + (b->life - a->life) * t;
 
     noise.cost = CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE;
     return noise;
@@ -191,7 +212,7 @@ hhc_terrain terrain_shape(v3i32 coordinates, const hhc_terrain_noise *noise)
 
     if ((f32)coordinates.z < terrain.value)
     {
-        terrain.block_id = biome_buf[biome_best_index].block;
+        terrain.block_id = biome_best_index + 1;
     }
 
     return terrain;

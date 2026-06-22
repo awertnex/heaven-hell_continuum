@@ -274,7 +274,7 @@ u32 chunk_order_init_internal(void)
 
         for (j = 0; j < chunk_count; ++j)
         {
-            for (k = 0; k < chunk_count; ++k)
+            for (k = j + 1; k < chunk_count; ++k)
             {
                 if (distance_buf[j] < distance_buf[k])
                 {
@@ -1085,6 +1085,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *ch, chunk_scheduler_budget bu
     hhc_terrain terrain_info = {0};
     v3u8 blend_world_margin = {0};
     v3f32 blend_factor = {0};
+    f32 blend_factor_scale = 1.0f / (WORLD_MARGIN * CHUNK_DIAMETER * 2);
     v3f32 overflow_offset = {0};
     v3f32 overflow_edge = {0};
     v3f32 overflow_sign = {0};
@@ -1199,11 +1200,11 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *ch, chunk_scheduler_budget bu
                     coordinates[3].z = coordinates[0].z;
 
                     blend_factor.x = 0.5f -
-                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) /
-                        (WORLD_MARGIN * CHUNK_DIAMETER * 2);
+                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) *
+                        blend_factor_scale;
                     blend_factor.y = 0.5f -
-                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) /
-                        (WORLD_MARGIN * CHUNK_DIAMETER * 2);
+                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) *
+                        blend_factor_scale;
 
                     terrain_noise[1] = world.terrain_noise_func(coordinates[1]);
                     terrain_noise[2] = world.terrain_noise_func(coordinates[2]);
@@ -1221,8 +1222,8 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *ch, chunk_scheduler_budget bu
                 else if (blend_world_margin.x)
                 {
                     blend_factor.x = 0.5f -
-                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) /
-                        (WORLD_MARGIN * CHUNK_DIAMETER * 2);
+                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) *
+                        blend_factor_scale;
 
                     terrain_noise[1] = world.terrain_noise_func(coordinates[1]);
                     terrain_noise[0] =
@@ -1234,8 +1235,8 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *ch, chunk_scheduler_budget bu
                 else if (blend_world_margin.y)
                 {
                     blend_factor.y = 0.5f -
-                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) /
-                        (WORLD_MARGIN * CHUNK_DIAMETER * 2);
+                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) *
+                        blend_factor_scale;
 
                     terrain_noise[1] = world.terrain_noise_func(coordinates[2]);
                     terrain_noise[0] =

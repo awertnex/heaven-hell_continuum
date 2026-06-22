@@ -27,7 +27,6 @@ typedef struct hhc_biome
     f32 roughness;  /* small detail height */
     f32 depth;
     f32 life;
-    enum block_id block;
 } hhc_biome;
 
 typedef struct hhc_terrain_noise
