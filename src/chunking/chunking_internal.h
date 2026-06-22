@@ -161,6 +161,12 @@ void block_evaluate_internal(hhc_chunk *ch,
         i32 x, i32 y, i32 z, enum block_id block_id);
 
 /*!
+ *  @brief set new chunk position.
+ */
+void chunk_pos_set_internal(hhc_chunk *chunk,
+        v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates);
+
+/*!
  *  @brief generate chunk blocks.
  *
  *  @remark calls @ref chunk_mesh_update_internal() when done generating.

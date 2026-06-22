@@ -16,17 +16,17 @@
 #define TERRAIN_SEED_DEFAULT 0
 
 /* terrain shape */
-#define FREQ_CONTINENTAL    1033.0f
-#define FREQ_REGIONAL       250.0f
-#define FREQ_LOCAL          109.0f
-#define FREQ_DETAIL         16.0f
+#define FREQ_CONTINENTAL    (1.0f / 1033.0f)
+#define FREQ_REGIONAL       (1.0f / 250.0f)
+#define FREQ_LOCAL          (1.0f / 109.0f)
+#define FREQ_DETAIL         (1.0f / 16.0f)
 
 /* terrain modifiers (and/or biome selection) */
-#define FREQ_TEMPERATURE    1326.0f
-#define FREQ_HUMIDITY       1726.0f
-#define FREQ_EXTREMITY      953.34f
-#define FREQ_ROUGHNESS      1368.2f
-#define FREQ_LIFE           2043.04f
+#define FREQ_TEMPERATURE    (1.0f / 1326.0f)
+#define FREQ_HUMIDITY       (1.0f / 1726.0f)
+#define FREQ_EXTREMITY      (1.0f / 953.34f)
+#define FREQ_ROUGHNESS      (1.0f / 1368.2f)
+#define FREQ_LIFE           (1.0f / 2043.04f)
 
 #define TERRAIN_SEA_LEVEL           0
 #define TERRAIN_CAVE_LEVEL          ((WORLD_RADIUS_VERTICAL / 2) * CHUNK_DIAMETER)
@@ -124,19 +124,39 @@ hhc_terrain_noise terrain_noise_lerp(const hhc_terrain_noise *a, const hhc_terra
 {
     hhc_terrain_noise noise = {0};
 
-    noise.continental = fsl_lerp_cubic_f32(a->continental, b->continental, t);
-    noise.regional = fsl_lerp_cubic_f32(a->regional, b->regional, t);
-    noise.local = fsl_lerp_cubic_f32(a->local, b->local, t);
-    noise.detail = fsl_lerp_cubic_f32(a->detail, b->detail, t);
+    noise.continental = fsl_smoothstep_f32(a->continental, b->continental, t);
+    noise.regional = fsl_smoothstep_f32(a->regional, b->regional, t);
+    noise.local = fsl_smoothstep_f32(a->local, b->local, t);
+    noise.detail = fsl_smoothstep_f32(a->detail, b->detail, t);
 
-    noise.temperature = fsl_lerp_cubic_f32(a->temperature, b->temperature, t);
-    noise.humidity = fsl_lerp_cubic_f32(a->humidity, b->humidity, t);
-    noise.extremity = fsl_lerp_cubic_f32(a->extremity, b->extremity, t);
-    noise.roughness = fsl_lerp_cubic_f32(a->roughness, b->roughness, t);
-    noise.life = fsl_lerp_cubic_f32(a->life, b->life, t);
+    noise.temperature = fsl_smoothstep_f32(a->temperature, b->temperature, t);
+    noise.humidity = fsl_smoothstep_f32(a->humidity, b->humidity, t);
+    noise.extremity = fsl_smoothstep_f32(a->extremity, b->extremity, t);
+    noise.roughness = fsl_smoothstep_f32(a->roughness, b->roughness, t);
+    noise.life = fsl_smoothstep_f32(a->life, b->life, t);
 
     noise.cost = CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE;
     return noise;
+}
+
+hhc_terrain_noise terrain_noise_bilerp(
+        const hhc_terrain_noise *a, const hhc_terrain_noise *b,
+        const hhc_terrain_noise *c, const hhc_terrain_noise *d,
+        f32 tx, f32 ty)
+{
+    hhc_terrain_noise noise[2] = {0};
+    chunk_work_cost cost = 0;
+
+    noise[0] = terrain_noise_lerp(a, b, tx);
+    cost += noise[0].cost;
+
+    noise[1] = terrain_noise_lerp(c, d, tx);
+    cost += noise[1].cost;
+
+    noise[0] = terrain_noise_lerp(&noise[0], &noise[1], ty);
+    cost += noise[0].cost;
+
+    return noise[0];
 }
 
 hhc_terrain terrain_shape(v3i32 coordinates, const hhc_terrain_noise *noise)

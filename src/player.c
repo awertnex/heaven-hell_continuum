@@ -25,11 +25,14 @@
 /*!
  *  @internal
  *
- *  @brief handle player being near or past world edges.
+ *  @brief handle player being near or past a world edge.
  *
- *  teleport player to the other side of the world if they cross a world edge.
+ *  - teleport player to the other side of the world if they cross a world edge.
+ *  - adjust player chunk delta so it looks natural to the chunking system,
+ *    since if player chunk delta is too big, the chunk system will dump all
+ *    chunks and parse them again.
  */
-static void player_wrap_coordinates(hhc_player *p);
+static void player_world_overflow_update(hhc_player *p);
 
 u32 player_init(hhc_player *p, const str *name)
 {
@@ -179,7 +182,7 @@ void player_update(hhc_player *p, f64 dt)
     player_bounding_box_update(p);
     if (MODE_INTERNAL_COLLIDE)
         player_collision_update(p, dt);
-    player_wrap_coordinates(p);
+    player_world_overflow_update(p);
     p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
     p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
     p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
@@ -432,7 +435,7 @@ fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f32 velo
     return result;
 }
 
-static void player_wrap_coordinates(hhc_player *p)
+static void player_world_overflow_update(hhc_player *p)
 {
     i64 diameter = WORLD_DIAMETER * CHUNK_DIAMETER;
     i64 diameter_v = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
@@ -491,31 +494,43 @@ static void player_wrap_coordinates(hhc_player *p)
     {
         p->transform.pos.x -= diameter;
         p->transform_last.pos.x -= diameter;
+        p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
+        p->ch_delta.x = p->ch.x - 1;
     }
     if (p->transform.pos.x < -overflow_edge)
     {
         p->transform.pos.x += diameter;
         p->transform_last.pos.x += diameter;
+        p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
+        p->ch_delta.x = p->ch.x + 1;
     }
     if (p->transform.pos.y > overflow_edge)
     {
         p->transform.pos.y -= diameter;
         p->transform_last.pos.y -= diameter;
+        p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
+        p->ch_delta.y = p->ch.y - 1;
     }
     if (p->transform.pos.y < -overflow_edge)
     {
         p->transform.pos.y += diameter;
         p->transform_last.pos.y += diameter;
+        p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
+        p->ch_delta.y = p->ch.y + 1;
     }
     if (p->transform.pos.z > overflow_edge_v)
     {
         p->transform.pos.z -= diameter_v;
         p->transform_last.pos.z -= diameter_v;
+        p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
+        p->ch_delta.z = p->ch.z - 1;
     }
     if (p->transform.pos.z < -overflow_edge_v)
     {
         p->transform.pos.z += diameter_v;
         p->transform_last.pos.z += diameter_v;
+        p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
+        p->ch_delta.z = p->ch.z + 1;
     }
 }
 

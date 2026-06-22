@@ -84,6 +84,16 @@ hhc_terrain_noise terrain_noise_make(v3i32 coordinates);
 hhc_terrain_noise terrain_noise_lerp(const hhc_terrain_noise *a, const hhc_terrain_noise *b, f32 t);
 
 /*!
+ *  @brief interpolate all noises in `a`, `b`, `c` and `d` using bi-cubic interpolation.
+ *
+ *  @return interpolated terrain noise.
+ */
+hhc_terrain_noise terrain_noise_bilerp(
+        const hhc_terrain_noise *a, const hhc_terrain_noise *b,
+        const hhc_terrain_noise *c, const hhc_terrain_noise *d,
+        f32 tx, f32 ty);
+
+/*!
  *  @brief default terrain shape.
  *
  *  @return terrain info (e.g., biome) from specified coordinates and noises.
