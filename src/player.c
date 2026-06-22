@@ -183,9 +183,6 @@ void player_update(hhc_player *p, f64 dt)
     if (MODE_INTERNAL_COLLIDE)
         player_collision_update(p, dt);
     player_world_overflow_update(p);
-    p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
-    p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
-    p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
 }
 
 void player_hotbar_selected_set(hhc_player *p, u32 index)
@@ -438,11 +435,11 @@ fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f32 velo
 static void player_world_overflow_update(hhc_player *p)
 {
     i64 diameter = WORLD_DIAMETER * CHUNK_DIAMETER;
-    i64 diameter_v = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
-    i64 world_margin = WORLD_RADIUS * CHUNK_DIAMETER - WORLD_MARGIN * CHUNK_DIAMETER;
-    i64 world_margin_v = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER - WORLD_MARGIN * CHUNK_DIAMETER;
-    i64 overflow_edge = WORLD_RADIUS * CHUNK_DIAMETER + CHUNK_DIAMETER;
-    i64 overflow_edge_v = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER + CHUNK_DIAMETER;
+    i64 diamerer_v = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
+    i64 margin = WORLD_RADIUS * CHUNK_DIAMETER - WORLD_MARGIN * CHUNK_DIAMETER;
+    i64 margin_v = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER - WORLD_MARGIN * CHUNK_DIAMETER;
+    i64 edge = WORLD_RADIUS * CHUNK_DIAMETER + CHUNK_DIAMETER;
+    i64 edge_v = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER + CHUNK_DIAMETER;
     v3f64 world_volume_min =
     {
         -(f64)(WORLD_DIAMETER * CHUNK_DIAMETER),
@@ -461,27 +458,27 @@ static void player_world_overflow_update(hhc_player *p)
 
     /* ---- world margin ---------------------------------------------------- */
 
-    if (p->transform.pos.x > world_margin)
+    if (p->transform.pos.x > margin)
         p->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
-    else if (p->transform.pos.x < -world_margin)
+    else if (p->transform.pos.x < -margin)
     {
         p->flag |= FLAG_PLAYER_OVERFLOW_X;
         p->flag &= ~FLAG_PLAYER_OVERFLOW_PX;
     }
     else p->flag &= ~(FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX);
 
-    if (p->transform.pos.y > world_margin)
+    if (p->transform.pos.y > margin)
         p->flag |= FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY;
-    else if (p->transform.pos.y < -world_margin)
+    else if (p->transform.pos.y < -margin)
     {
         p->flag |= FLAG_PLAYER_OVERFLOW_Y;
         p->flag &= ~FLAG_PLAYER_OVERFLOW_PY;
     }
     else p->flag &= ~(FLAG_PLAYER_OVERFLOW_Y | FLAG_PLAYER_OVERFLOW_PY);
 
-    if (p->transform.pos.z > world_margin_v)
+    if (p->transform.pos.z > margin_v)
         p->flag |= FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ;
-    else if (p->transform.pos.z < -world_margin_v)
+    else if (p->transform.pos.z < -margin_v)
     {
         p->flag |= FLAG_PLAYER_OVERFLOW_Z;
         p->flag &= ~FLAG_PLAYER_OVERFLOW_PZ;
@@ -490,48 +487,46 @@ static void player_world_overflow_update(hhc_player *p)
 
     /* ---- overflow edge --------------------------------------------------- */
 
-    if (p->transform.pos.x > overflow_edge)
+    if (p->transform.pos.x > edge)
     {
         p->transform.pos.x -= diameter;
         p->transform_last.pos.x -= diameter;
-        p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
-        p->ch_delta.x = p->ch.x - 1;
+        p->ch_delta.x -= WORLD_DIAMETER;
     }
-    if (p->transform.pos.x < -overflow_edge)
+    if (p->transform.pos.x < -edge)
     {
         p->transform.pos.x += diameter;
         p->transform_last.pos.x += diameter;
-        p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
-        p->ch_delta.x = p->ch.x + 1;
+        p->ch_delta.x += WORLD_DIAMETER;
     }
-    if (p->transform.pos.y > overflow_edge)
+    if (p->transform.pos.y > edge)
     {
         p->transform.pos.y -= diameter;
         p->transform_last.pos.y -= diameter;
-        p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
-        p->ch_delta.y = p->ch.y - 1;
+        p->ch_delta.y -= WORLD_DIAMETER;
     }
-    if (p->transform.pos.y < -overflow_edge)
+    if (p->transform.pos.y < -edge)
     {
         p->transform.pos.y += diameter;
         p->transform_last.pos.y += diameter;
-        p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
-        p->ch_delta.y = p->ch.y + 1;
+        p->ch_delta.y += WORLD_DIAMETER;
     }
-    if (p->transform.pos.z > overflow_edge_v)
+    if (p->transform.pos.z > edge_v)
     {
-        p->transform.pos.z -= diameter_v;
-        p->transform_last.pos.z -= diameter_v;
-        p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
-        p->ch_delta.z = p->ch.z - 1;
+        p->transform.pos.z -= diamerer_v;
+        p->transform_last.pos.z -= diamerer_v;
+        p->ch_delta.z -= WORLD_DIAMETER_VERTICAL;
     }
-    if (p->transform.pos.z < -overflow_edge_v)
+    if (p->transform.pos.z < -edge_v)
     {
-        p->transform.pos.z += diameter_v;
-        p->transform_last.pos.z += diameter_v;
-        p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
-        p->ch_delta.z = p->ch.z + 1;
+        p->transform.pos.z += diamerer_v;
+        p->transform_last.pos.z += diamerer_v;
+        p->ch_delta.z += WORLD_DIAMETER_VERTICAL;
     }
+
+    p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
+    p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
+    p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
 }
 
 void player_camera_movement_update(hhc_player *p, v2f64 mouse_delta, b8 use_mouse)
