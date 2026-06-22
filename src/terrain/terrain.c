@@ -40,8 +40,7 @@ static hhc_biome biome_init(str *name, f32 temperature, f32 humidity, f32 extrem
 {
     hhc_biome biome = {0};
     f64 param[TERRAIN_NOISE_COUNT] = {0};
-    static u32 seed = 490537;
-    u32 max = 1000000;
+    static u32 seed = 4911577;
     f64 sum = 0.0;
     u32 i = 0;
 
@@ -49,7 +48,7 @@ static hhc_biome biome_init(str *name, f32 temperature, f32 humidity, f32 extrem
 
     for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
     {
-        param[i] = (f64)(fsl_rand_u32(seed++) % max) / max;
+        param[i] = (f64)fsl_rand_u32(seed++) / (f64)FSL_U32_MAX;
         sum += param[i];
     }
     for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
