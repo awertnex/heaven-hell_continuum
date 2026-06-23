@@ -244,8 +244,8 @@ static void ui_hud_draw(void)
 static void draw_world(void)
 {
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
-    static hhc_chunk ***cursor = NULL;
-    static hhc_chunk *ch = NULL;
+    hhc_chunk *chunk = NULL;
+    i32 i = 0;
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -267,14 +267,13 @@ static void draw_world(void)
     else
         glUniform1f(uniform.voxel.opacity, 1.0f);
 
-    cursor = &chunk_order.p[chunk_order.chunks_max - 1];
-    for (; cursor >= chunk_order.p; --cursor)
+    for (i = chunk_order.chunks_max - 1; i >= 0; --i)
     {
-        ch = **cursor;
-        if (ch && ch->flag & FLAG_CHUNK_VISIBLE)
+        chunk = chunk_tab.p[chunk_order.p[i]];
+        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE)
         {
-            glBindVertexArray(ch->mesh_deprecated.vao);
-            glDrawArraysInstanced(GL_POINTS, 0, ch->mesh_deprecated.vbo_len, 1);
+            glBindVertexArray(chunk->mesh_deprecated.vao);
+            glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.vbo_len, 1);
         }
     }
 }

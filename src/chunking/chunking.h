@@ -173,7 +173,7 @@ typedef struct hhc_chunk
 typedef struct hhc_chunk_table
 {
     fsl_mem_handle handle;
-    hhc_chunk **p;          /* cached pointer from `handle` */
+    hhc_chunk **p; /* cached pointer from `handle` */
 
     /*!
      *  @brief player-relative `p` access.
@@ -190,7 +190,7 @@ typedef struct hhc_chunk_table
 typedef struct hhc_chunk_order
 {
     fsl_mem_handle handle;
-    hhc_chunk ***p;         /* cached pointer from `handle` */
+    u32 *p; /* cached pointer from `handle` */
 
     /*!
      *  @brief look-up table to reduce redundant checking of untouched indices of @ref chunk_tab
@@ -202,10 +202,10 @@ typedef struct hhc_chunk_order
      *  get processed, and since @ref chunk_order is a look-up that orders @ref chunk_tab
      *  addresses by their distance from that table's center, it becomes easy to iterate
      *  from @ref chunk_order.p[0] to @ref chunk_order.p[chunk_order.len[render_distance]]
-     *  and get exactly that sphere.
+     *  (or @ref chunk_order.chunks_max) and get exactly that sphere.
      *
      *  @remark index 0 of this array is always 0 since render distance of 0 is not
-     *  possible (it's possible, but goofy).
+     *  possible (it is possible, but goofy).
      *
      *  @remark read-only, initialized internally in @ref chunking_init().
      */
@@ -258,8 +258,6 @@ extern hhc_chunk_order chunk_order;
  *    @ref chunk_order and @ref chunk_sched[<x>] onto it.
  *  - load necessary look-ups from disk if found and build them if not.
  *
- *  @remark building the look-ups is very taxing currently.
- *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 chunking_init(v3i32 *player_chunk_delta);
@@ -273,13 +271,12 @@ u32 chunking_init(v3i32 *player_chunk_delta);
  *  2. if @ref core.flag.chunk_buf_dirty, shift @ref chunk_tab to compensate for
  *     player crossing a chunk boundary.
  *
- *  3. check if player has crossed on more than one axis and go back to shift
- *     along that axis if true.
+ *  3. check if player has crossed multiple axes and shift for each one.
  *
  *  4. find empty chunk slots within @ref settings.render_distance distance, push chunks onto
  *     @ref chunk_buf and return the address to the respective index to @ref chunk_tab.
  *
- *  5. remove @ref core.flag.chunk_buf_dirty when no further processing is required.
+ *  5. un-dirty @ref core.flag.chunk_buf_dirty when done.
  */
 void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hit);
 
