@@ -156,7 +156,7 @@ hhc_terrain_noise terrain_noise_bilerp(
     cost += noise[1].cost;
 
     noise[0] = terrain_noise_lerp(&noise[0], &noise[1], ty);
-    cost += noise[0].cost;
+    noise[0].cost += cost;
 
     return noise[0];
 }
