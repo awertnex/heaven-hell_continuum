@@ -262,7 +262,7 @@ extern hhc_chunk_order chunk_order;
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 chunking_init(void);
+u32 chunking_init(v3i32 *player_chunk_delta);
 
 /*!
  *  @update everything about chunks during gameplay.

@@ -16,11 +16,6 @@
  */
 #define BLOCK_BUFFERS_MAX 2
 
-/*!
- *  @remark an entry for each render distance, one u32 for offset and one for size.
- */
-#define CHUNK_ORDER_LOOKUP_OFFSET_TABLE_SIZE ((SET_RENDER_DISTANCE_MAX + 1) * sizeof(u32) * 2)
-
 /* ---- section: block flag ------------------------------------------------- */
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
@@ -132,9 +127,11 @@ u32 chunk_order_build_internal(void);
  *
  *  can be called again when changing render distance.
  *
+ *  @param render_distance current render distance to use in index-adjustment.
+ *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 chunk_order_load_internal(void);
+u32 chunk_order_load_internal(u32 render_distance);
 
 /*!
  *  @brief initialize resources required by chunk debug tools.
@@ -223,6 +220,7 @@ chunk_work_cost chunk_export_internal(hhc_chunk *ch);
  */
 chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *ch);
 
+void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
 void chunk_buf_pop_internal(hhc_chunk *ch);
 

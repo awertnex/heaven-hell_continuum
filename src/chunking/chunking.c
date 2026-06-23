@@ -40,7 +40,7 @@ hhc_chunk_scheduler chunk_sched[CHUNK_SCHEDULERS_MAX] = {0};
 
 /* ---- section: implementation --------------------------------------------- */
 
-u32 chunking_init(void)
+u32 chunking_init(v3i32 *player_chunk_delta)
 {
     if (core.flag.chunks_initialized)
         return FSL_ERR_SUCCESS;
@@ -104,6 +104,8 @@ u32 chunking_init(void)
     chunk_sched[2].p = fsl_mem_handle_get(chunk_sched[2].schedule);
 
     core.flag.chunks_initialized = TRUE;
+
+    chunk_buf_update_internal(player_chunk_delta);
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -206,7 +208,7 @@ u32 chunk_order_init_internal(void)
             return *GAME_ERR;
     }
 
-    if (chunk_order_load_internal() != FSL_ERR_SUCCESS)
+    if (chunk_order_load_internal(settings.render_distance) != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
     return *GAME_ERR;
@@ -216,147 +218,123 @@ u32 chunk_order_build_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
-    u32 *offset_tab = NULL;
-    u32 offset_tab_index = 0;
-    fsl_array data = {0};
-    u32 distance_cache = 0;
     u32 *distance_buf = NULL;
-    u32 *index_buf = NULL;
+    u32 distance_cache = 0;
+    v3i8 *pos_buf = NULL;
 
-    u32 entry_count = SET_RENDER_DISTANCE_MAX + 1;
-    v3i32 center = {0};
-    v3i32 coordinates = {0};
-    u32 diameter = 0;
-    u32 volume = 0;
-    u32 chunk_sphere_radius = 0;
+    v3i32 center =
+    {
+        CHUNK_BUF_RADIUS_MAX,
+        CHUNK_BUF_RADIUS_MAX,
+        CHUNK_BUF_RADIUS_MAX
+    };
+    v3i32 pos = {0};
+    u32 radius = CHUNK_BUF_RADIUS_MAX * CHUNK_BUF_RADIUS_MAX + 2;
     u32 chunk_count = 0;
+    u32 x = 0;
+    u32 y = 0;
+    u32 z = 0;
     u32 i = 0;
     u32 j = 0;
-    u32 k = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
 
-    if (
-            fsl_mem_map((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-                "chunk_order_build_internal().offset_tab") != FSL_ERR_SUCCESS ||
-
-            fsl_mem_array_init(&data) != FSL_ERR_SUCCESS ||
-
-            fsl_mem_map((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-                "chunk_order_build_internal().distance_buf") != FSL_ERR_SUCCESS ||
-
-            fsl_mem_map((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-                "chunk_order_build_internal().index_buf") != FSL_ERR_SUCCESS)
+    if (fsl_mem_map((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+                "chunk_order_build_internal().distance_buf") != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    fsl_mem_array_push(&data, NULL,
-            entry_count * entry_count * (2 * entry_count * entry_count - 1) * sizeof(u32));
-    data.cursor = 0;
+    if (fsl_mem_map((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
+                "chunk_order_build_internal().pos_buf") != FSL_ERR_SUCCESS)
+        goto cleanup;
 
-    for (i = 0; i < entry_count; ++i)
+    /* ---- calculate distances --------------------------------------------- */
+
+    LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+            "Building `chunk_order` Look-up..\n");
+
+    for (pos.z = 0; pos.z < CHUNK_BUF_DIAMETER_MAX; ++pos.z)
     {
-        diameter = i * 2 + 1;
-        volume = diameter * diameter * diameter;
-        chunk_sphere_radius = i * i + 2;
-        center.x = i;
-        center.y = i;
-        center.z = i;
-
-        /* ---- calculate distances ----------------------------------------- */
-
-        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                fsl_logger_stringf("Building `chunk_order` Look-up [radius: %u/%u][%03u%%]..\n",
-                    i, entry_count, (i * i * 100) / (entry_count * entry_count)));
-
-        for (j = 0, chunk_count = 0; j < volume; ++j)
+        for (pos.y = 0; pos.y < CHUNK_BUF_DIAMETER_MAX; ++pos.y)
         {
-            coordinates.x = j % diameter;
-            coordinates.y = (j / diameter) % diameter;
-            coordinates.z = j / (diameter * diameter);
-            distance_cache = fsl_distance_v3i32(coordinates, center);
-            if (distance_cache < chunk_sphere_radius)
+            for (pos.x = 0; pos.x < CHUNK_BUF_DIAMETER_MAX; ++pos.x)
             {
-                distance_buf[chunk_count] = distance_cache;
-                index_buf[chunk_count] = j;
-                ++chunk_count;
-            }
-        }
-
-        /* ---- sort entries ------------------------------------------------ */
-
-        LOGTRACE(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                fsl_logger_stringf("Sorting `chunk_order` Look-up [radius: %u/%u][%03u%%]..\n",
-                    i, entry_count, (i * i * 100) / (entry_count * entry_count)));
-
-        for (j = 0; j < chunk_count; ++j)
-        {
-            for (k = j + 1; k < chunk_count; ++k)
-            {
-                if (distance_buf[j] > distance_buf[k])
+                distance_cache = fsl_distance_v3i32(pos, center);
+                if (distance_cache < radius)
                 {
-                    fsl_swap_bits_u32(&distance_buf[j], &distance_buf[k]);
-                    fsl_swap_bits_u32(&index_buf[j], &index_buf[k]);
+                    distance_buf[chunk_count] = distance_cache;
+                    pos_buf[chunk_count].x = pos.x - CHUNK_BUF_RADIUS_MAX;
+                    pos_buf[chunk_count].y = pos.y - CHUNK_BUF_RADIUS_MAX;
+                    pos_buf[chunk_count].z = pos.z - CHUNK_BUF_RADIUS_MAX;
+                    ++chunk_count;
                 }
             }
         }
-
-        for (j = 0; j < chunk_count; ++j)
-            *((u32*)data.buf + data.cursor + j) = index_buf[j];
-        offset_tab[offset_tab_index++] =
-            CHUNK_ORDER_LOOKUP_OFFSET_TABLE_SIZE + data.cursor * sizeof(u32);
-        offset_tab[offset_tab_index++] = chunk_count * sizeof(u32);
-        data.cursor += chunk_count;
     }
 
-    /* ---- export lookups -------------------------------------------------- */
+    /* ---- sort positions using distances ---------------------------------- */
 
-    if (fsl_write_file(path, CHUNK_ORDER_LOOKUP_OFFSET_TABLE_SIZE,
-                offset_tab, TRUE, FALSE) != FSL_ERR_SUCCESS)
-        goto cleanup;
+    LOGTRACE(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+            "Sorting `chunk_order` Look-up..\n");
 
-    if (fsl_append_file(path, data.cursor * sizeof(u32), data.buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
+    for (i = 0; i < chunk_count; ++i)
+    {
+        for (j = i + 1; j < chunk_count; ++j)
+        {
+            if (distance_buf[j] < distance_buf[i])
+            {
+                fsl_swap_bits_u32(&distance_buf[i], &distance_buf[j]);
+                fsl_swap_bits_u8((u8*)&pos_buf[i].x, (u8*)&pos_buf[j].x);
+                fsl_swap_bits_u8((u8*)&pos_buf[i].y, (u8*)&pos_buf[j].y);
+                fsl_swap_bits_u8((u8*)&pos_buf[i].z, (u8*)&pos_buf[j].z);
+            }
+        }
+
+        j = i + 1;
+        while (j < chunk_count && distance_buf[i] == distance_buf[j])
+            ++j;
+
+        i = j - 1;
+    }
+
+    /* ---- export lookup --------------------------------------------------- */
+
+    if (fsl_write_file(path, chunk_count * sizeof(v3i8),
+                pos_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
         goto cleanup;
 
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunk_order` Look-up '%s' Exported\n", path));
 
-    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-            "chunk_order_build_internal().offset_tab");
-    data.cursor *= sizeof(u32);
-    fsl_mem_array_free(&data);
     fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunk_order_build_internal().distance_buf");
-    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_build_internal().index_buf");
+    fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
+            "chunk_order_build_internal().pos_buf");
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
 
-    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-            "chunk_order_build_internal().offset_tab");
-    data.cursor *= sizeof(u32);
-    fsl_mem_array_free(&data);
     fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunk_order_build_internal().distance_buf");
-    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_build_internal().index_buf");
+    fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            "chunk_order_build_internal().pos_buf");
     fsl_mem_arena_pop(&chunk_order.handle, "chunk_order_build_internal().chunk_order.handle");
     chunk_order.p = NULL;
     return *GAME_ERR;
 }
 
-u32 chunk_order_load_internal(void)
+u32 chunk_order_load_internal(u32 render_distance)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
-    u32 *file_contents = NULL;
-    u32 *file_contents_temp = NULL;
+    v3i8 *file_contents = NULL;
     u64 file_len = 0;
-    u32 data_offset_cache = 0;
-    u32 data_len_cache = 0;
+    u32 radius = render_distance;
+    u32 diameter = radius * 2 + 1;
+    u32 layer = diameter * diameter;
     u32 i = 0;
+    u32 index = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
 
@@ -364,19 +342,14 @@ u32 chunk_order_load_internal(void)
     if (file_contents == NULL)
         goto cleanup;
 
-    if (file_len <= CHUNK_ORDER_LOOKUP_OFFSET_TABLE_SIZE)
+    for (i = 0; i < chunk_order.chunks_max; ++i)
     {
-        LOGERROR(FSL_ERR_FILE_DATA_CORRUPT, FSL_FLAG_LOG_NO_VERBOSE,
-                fsl_logger_stringf("Failed to Load `chunk_order` Look-up '%s', File Incomplete\n", path));
-        goto cleanup;
+        index =
+            file_contents[i].x + radius +
+            (file_contents[i].y + radius) * diameter +
+            (file_contents[i].z + radius) * layer;
+        chunk_order.p[i] = &chunk_tab.p[index];
     }
-
-    data_offset_cache = *(file_contents + settings.render_distance * 2 + 0);
-    data_len_cache = *(file_contents + settings.render_distance * 2 + 1) / sizeof(u32);
-    file_contents_temp = file_contents + data_offset_cache / sizeof(u32);
-
-    for (i = 0; i < data_len_cache; ++i)
-        chunk_order.p[i] = &chunk_tab.p[file_contents_temp[i]];
 
     fsl_mem_free((void*)&file_contents, file_len,
             "chunk_order_init_internal().file_contents");
@@ -414,8 +387,8 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     if (settings.flag.render_distance_dirty)
     {
         settings.flag.render_distance_dirty = FALSE;
-        chunk_order_load_internal();
         chunk_order.chunks_max = chunk_order.len[settings.render_distance];
+        chunk_order_load_internal(settings.render_distance);
     }
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
@@ -650,15 +623,7 @@ chunk_tab_shift:
 
 chunk_buf_push:
 
-    end = chunk_order.chunks_max;
-    for (i = 0; i < end; ++i)
-    {
-        if (!*chunk_order.p[i])
-        {
-            chunk_push_index = chunk_order.p[i] - chunk_tab.p;
-            chunk_buf_push_internal(chunk_push_index, *player_chunk_delta);
-        }
-    }
+    chunk_buf_update_internal(player_chunk_delta);
 }
 
 void chunking_free(void)
@@ -1529,6 +1494,22 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *ch)
     ch->cursor = j;
 
     return CHUNK_WORK_COST_IMPORT_NON_AIR;
+}
+
+void chunk_buf_update_internal(v3i32 *player_chunk_delta)
+{
+    i32 i = 0;
+    i32 end = chunk_order.chunks_max;
+    u32 index = 0;
+
+    for (; i < end; ++i)
+    {
+        if (!*chunk_order.p[i])
+        {
+            index = chunk_order.p[i] - chunk_tab.p;
+            chunk_buf_push_internal(index, *player_chunk_delta);
+        }
+    }
 }
 
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)

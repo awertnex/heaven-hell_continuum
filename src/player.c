@@ -691,13 +691,6 @@ void player_spawn(hhc_player *p, b8 hard)
             p->spawn.y + 0.5f,
             p->spawn.z + 0.5f);
 
-    p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
-    p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
-    p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
-    p->ch_delta.x = p->ch.x - 1; /* subtract 1 so to trigger chunk parsing */
-    p->ch_delta.y = p->ch.y;
-    p->ch_delta.z = p->ch.z;
-
     if (hard)
     {
         p->health = 100.0f;
