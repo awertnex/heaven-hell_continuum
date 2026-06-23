@@ -8,8 +8,6 @@
 #include "../h/common.h"
 #include "../h/raycast.h"
 
-#include "chunk_scheduler.h"
-
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_DIAMETER * CHUNK_DIAMETER * CHUNK_DIAMETER)
@@ -92,11 +90,12 @@ enum chunk_flag
     FLAG_CHUNK_GENERATED =  (1 << 2),
     FLAG_CHUNK_VISIBLE =    (1 << 3),
     FLAG_CHUNK_IMPORTED =   (1 << 4),
+    FLAG_CHUNK_QUEUED =     (1 << 5),
 
     /*!
      *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
-    FLAG_CHUNK_EDGE =       (1 << 5)
+    FLAG_CHUNK_EDGE =       (1 << 6)
 }; /* chunk_flag */
 
 typedef struct hhc_chunk_mesh
@@ -146,14 +145,14 @@ typedef struct hhc_chunk
     u32 cursor;
 
     /*!
-     *  @brief chunk's own index in @ref chunk_table.p.
+     *  @brief chunk's own index in @ref chunk_table.p (Chunk-Tab Index).
      */
-    u32 index;
+    u32 cti;
 
     /*!
-     *  @brief ID of @ref hhc_chunk_scheduler that scheduled this chunk.
+     *  @brief chunk's own index in @ref chunk_order.p (Chunk-Order Index).
      */
-    chunk_scheduler_id sched_id;
+    u32 coi;
 
     hhc_chunk_mesh mesh_deprecated;
 
@@ -304,7 +303,7 @@ void block_break(block_hit hit);
  *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and
  *  return the correct block in the neighboring chunk otherwise.
  */
-u32 *get_block_resolved(hhc_chunk *ch, i32 x, i32 y, i32 z);
+u32 *get_block_resolved(hhc_chunk *chunk, i32 x, i32 y, i32 z);
 
 /*!
  *  @brief get chunk relative to position.

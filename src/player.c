@@ -94,7 +94,6 @@ void player_update(hhc_player *p, f64 dt)
     v3f32 gravity = {0};
     v3f32 drag = {0};
     v3f32 damping = {0};
-    v3f32 air_control = {0};
     v3f32 nov3f32 = {0};
 
     p->flag &= ~FLAG_PLAYER_CAN_JUMP;
@@ -135,9 +134,6 @@ void player_update(hhc_player *p, f64 dt)
         drag.x = PLAYER_FRICTION_DEFAULT;
         drag.y = PLAYER_FRICTION_DEFAULT;
         drag.z = PLAYER_FRICTION_DEFAULT;
-
-        air_control.x = p->input.x * p->acceleration_rate * drag.x * (1.0f - p->friction.x);
-        air_control.y = p->input.y * p->acceleration_rate * drag.y * (1.0f - p->friction.y);
 
         if (p->flag & FLAG_PLAYER_SNEAKING)
             p->acceleration_rate = PLAYER_ACCELERATION_SNEAK;
@@ -635,14 +631,10 @@ void player_camera_movement_update(hhc_player *p, v2f64 mouse_delta, b8 use_mous
 
 void player_target_update(hhc_player *p)
 {
-    v3f64 delta = {0}; /* important to compensate for `chunk_tab` shifting */
     v3f64 origin = {0};
     v3f64 start = {0};
     v3f64 end = {0};
 
-    delta.x = (p->ch_delta.x - p->ch.x) * CHUNK_DIAMETER;
-    delta.y = (p->ch_delta.y - p->ch.y) * CHUNK_DIAMETER;
-    delta.z = (p->ch_delta.z - p->ch.z) * CHUNK_DIAMETER;
     origin.x = p->transform.pos.x;
     origin.y = p->transform.pos.y;
     origin.z = p->transform.pos.z;
@@ -719,7 +711,6 @@ str *get_death_str(hhc_player *p)
 
     switch (p->death)
     {
-        case PLAYER_DEATH_REASON_NONE:
         case PLAYER_DEATH_REASON_COLLISION_WALL:
             return str_death_collision_wall[index];
             break;
@@ -730,6 +721,9 @@ str *get_death_str(hhc_player *p)
 
         case PLAYER_DEATH_REASON_COLLISION_CEILING:
             return str_death_collision_ceiling[index];
+            break;
+
+        default:
             break;
     }
 

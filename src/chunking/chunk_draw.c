@@ -16,8 +16,4 @@ void chunk_draw_push(hhc_chunk_scheduler *sched)
 
 void chunk_draw_update_internal(hhc_chunk_draw *draw)
 {
-    hhc_chunk **start = NULL;
-    u32 draw_len = draw->len;
-    u32 scan = draw->cursor_scan;
-    u32 i = 0;
 }

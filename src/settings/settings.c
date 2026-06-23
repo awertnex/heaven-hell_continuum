@@ -63,7 +63,7 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings_render_distance_set(17);
+    settings_render_distance_set(18);
     settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
     settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
     settings.font_size = 20.0f;

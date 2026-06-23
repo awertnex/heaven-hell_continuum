@@ -1,9 +1,6 @@
 #ifndef HHC_COMMON_H
 #define HHC_COMMON_H
 
-#include "deps/fossil/common/types.h"
-#include "deps/fossil/memory/memory_types.h"
-
 /* ---- defaults ------------------------------------------------------------ */
 
 #define SET_MARGIN                      10

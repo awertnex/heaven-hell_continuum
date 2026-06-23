@@ -4,8 +4,6 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/math/vector.h"
 
-#include "../h/common.h"
-
 #include "chunk_scheduler.h"
 #include "chunking.h"
 
@@ -69,7 +67,7 @@ typedef struct hhc_chunk_buffer
     /*!
      *  @brief position of first empty slot in `p`.
      */
-    u64 cursor;
+    u32 cursor;
 
     fsl_mem_handle handle;
     hhc_chunk *p;           /* cached pointer from `handle` */
@@ -82,8 +80,17 @@ struct hhc_chunk_scheduler
 {
     chunk_scheduler_id id;  /* scheduler ID */
     fsl_len count;          /* number of chunks scheduled */
-    u32 offset;             /* offset of scheduler into @ref chunk_order.p */
-    fsl_len len;            /* number of members in `p` */
+
+    /*
+     * @brief inner sphere radius of chunks from @ref chunk_order.p to parse after.
+     */
+    u32 radius_start;
+
+    /*
+     * @brief outer sphere radius of chunks from @ref chunk_order.p to parse.
+     */
+    u32 radius_end;
+
     u32 cursor_push;        /* push position */
     u32 cursor_pop;         /* pop position */
     chunk_scheduler_budget budget;
@@ -145,19 +152,19 @@ void chunk_debug_free_internal(void);
  *
  *  @return block with modified faces.
  */
-u32 block_get_faces_internal(const hhc_chunk *ch,
+u32 block_get_faces_internal(const hhc_chunk *chunk,
         const hhc_chunk *px, const hhc_chunk *nx,
         const hhc_chunk *py, const hhc_chunk *ny,
         const hhc_chunk *pz, const hhc_chunk *nz,
         i32 x, i32 y, i32 z);
 
-void block_add_internal(hhc_chunk *ch,
+void block_add_internal(hhc_chunk *chunk,
         hhc_chunk *px, hhc_chunk *nx,
         hhc_chunk *py, hhc_chunk *ny,
         hhc_chunk *pz, hhc_chunk *nz,
         i32 x, i32 y, i32 z, enum block_id block_id);
 
-void block_remove_internal(hhc_chunk *ch,
+void block_remove_internal(hhc_chunk *chunk,
         hhc_chunk *px, hhc_chunk *nx,
         hhc_chunk *py, hhc_chunk *ny,
         hhc_chunk *pz, hhc_chunk *nz,
@@ -167,11 +174,16 @@ void block_remove_internal(hhc_chunk *ch,
  *  @brief execute block logic on the block based on its ID (e.g., make grass
  *  turn to dirt when under another block).
  */
-void block_evaluate_internal(hhc_chunk *ch,
+void block_evaluate_internal(hhc_chunk *chunk,
         hhc_chunk *px, hhc_chunk *nx,
         hhc_chunk *py, hhc_chunk *ny,
         hhc_chunk *pz, hhc_chunk *nz,
         i32 x, i32 y, i32 z, enum block_id block_id);
+
+/*!
+ *  @brief get radius of sphere squared as per internal conventions.
+ */
+u32 chunk_sphere_radius_get_internal(u32 radius);
 
 /*!
  *  @brief set new chunk position.
@@ -187,7 +199,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_load_internal(hhc_chunk *ch, chunk_scheduler_budget budget);
+chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_scheduler_budget budget);
 
 /*!
  *  @brief generate chunk blocks.
@@ -199,30 +211,30 @@ chunk_work_cost chunk_load_internal(hhc_chunk *ch, chunk_scheduler_budget budget
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_generate_internal(hhc_chunk *ch, chunk_scheduler_budget budget);
+chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_scheduler_budget budget);
 
 /*!
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_mesh_update_internal(hhc_chunk *ch);
+chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk);
 
 /*!
  *  @brief write chunk into disk.
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_export_internal(hhc_chunk *ch);
+chunk_work_cost chunk_export_internal(hhc_chunk *chunk);
 
 /*!
  *  @brief read chunk from disk.
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *ch);
+chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk);
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
-void chunk_buf_pop_internal(hhc_chunk *ch);
+void chunk_buf_pop_internal(hhc_chunk *chunk);
 
 /*!
  *  @brief initialize chunk scheduler resources.
@@ -230,13 +242,14 @@ void chunk_buf_pop_internal(hhc_chunk *ch);
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, chunk_scheduler_id id,
-        u64 offset, chunk_scheduler_radius radius, chunk_scheduler_budget budget);
+        chunk_scheduler_radius radius_start, chunk_scheduler_radius radius_end,
+        chunk_scheduler_budget budget);
 /*!
  *  @param len number of chunks from @ref chunk_order.p this scheduler is allowed to parse.
  */
-void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
+void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, u32 start, u32 end,
         b8 should_push, b8 should_pop);
 
-void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *ch);
+void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */

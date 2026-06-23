@@ -237,6 +237,9 @@ static void ui_hud_draw(void)
             case STATE_PLAYER_MENU_INVENTORY_SURVIVAL:
                 fsl_ui_element_draw(&ui_element[UI_ELEMENT_CONTAINER_INVENTORY_SURVIVAL]);
                 break;
+
+            default:
+                break;
         }
     }
 }
@@ -730,13 +733,19 @@ static void world_draw(void)
                     "CHUNK SCHEDULER 2 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
                     "CHUNK SCHEDULER 3 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
                     "TOTAL CHUNKS  [%15"PRIu64"]                           \n",
-                    chunk_sched[0].count, chunk_sched[0].len,
+                    chunk_sched[0].count,
+                    chunk_order.len[chunk_sched[0].radius_end] -
+                    chunk_order.len[chunk_sched[0].radius_start],
                     chunk_sched[0].cursor_pop, chunk_sched[0].cursor_push,
 
-                    chunk_sched[1].count, chunk_sched[1].len,
+                    chunk_sched[1].count,
+                    chunk_order.len[chunk_sched[1].radius_end] -
+                    chunk_order.len[chunk_sched[1].radius_start],
                     chunk_sched[1].cursor_pop, chunk_sched[1].cursor_push,
 
-                    chunk_sched[2].count, chunk_sched[2].len,
+                    chunk_sched[2].count,
+                    chunk_order.len[chunk_sched[2].radius_end] -
+                    chunk_order.len[chunk_sched[2].radius_start],
                     chunk_sched[2].cursor_pop, chunk_sched[2].cursor_push,
                     chunk_order.chunks_max),
                 render->size.x - SET_MARGIN, SET_MARGIN,
