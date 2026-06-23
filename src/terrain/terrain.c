@@ -33,26 +33,23 @@
 
 static hhc_biome biome_buf[BIOME_COUNT] = {0};
 
-#define TERRAIN_NOISE_COUNT 6
-
 static hhc_biome biome_init(str *name, f32 temperature, f32 humidity, f32 extremity,
     f32 roughness, f32 depth, f32 life, f32 chance)
 {
     hhc_biome biome = {0};
-    f64 param[TERRAIN_NOISE_COUNT] = {0};
     static u32 seed = 4911577;
     f64 sum = 0.0;
     u32 i = 0;
 
     snprintf(biome.name, FSL_ID_CAP, "%s", name);
 
-    for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
+    for (i = 0; i < BIOME_PARAM_COUNT; ++i)
     {
-        param[i] = (f64)fsl_rand_u32(seed++) / (f64)FSL_U32_MAX;
-        sum += param[i];
+        biome.param[i] = (f64)fsl_rand_u32(seed++) / (f64)FSL_U32_MAX;
+        sum += biome.param[i];
     }
-    for (i = 0; i < TERRAIN_NOISE_COUNT; ++i)
-        param[i] /= sum;
+    for (i = 0; i < BIOME_PARAM_COUNT; ++i)
+        biome.param[i] /= sum;
 
     biome.temperature = temperature;
     biome.humidity = humidity;
@@ -61,39 +58,24 @@ static hhc_biome biome_init(str *name, f32 temperature, f32 humidity, f32 extrem
     biome.depth = depth;
     biome.life = life;
 
-    biome.temperature = param[0];
-    biome.humidity = param[1];
-    biome.extremity = param[2];
-    biome.roughness = param[3];
-    biome.depth = param[4];
-    biome.life = param[5];
-
     return biome;
 }
 
 f32 biome_score_get(hhc_biome a, hhc_biome b)
 {
-    b.temperature -= a.temperature;
-    b.humidity -= a.humidity;
-    b.extremity -= a.extremity;
-    b.roughness -= a.roughness;
-
-    b.temperature *= b.temperature;
-    b.humidity *= b.humidity;
-    b.extremity *= b.extremity;
-    b.roughness *= b.roughness;
-
-    return
-        b.temperature +
-        b.humidity +
-        b.extremity +
-        b.roughness;
+    i32 i = 0;
+    f32 sum = 0.0f;
+    for (; i < BIOME_PARAM_COUNT; ++i)
+    {
+        b.param[i] -= a.param[i];
+        b.param[i] *= b.param[i];
+        sum += b.param[i];
+    }
+    return sum;
 }
 
 void terrain_init(void)
 {
-    i32 i = 0;
-
     biome_buf[BIOME_STONE] = biome_init("Stone",
             0.350f, 0.000f, 0.334f, 0.300f, 0.000f, 0.000f, 0.0f);
 
@@ -116,7 +98,7 @@ hhc_terrain_noise terrain_noise_make(v3i32 coordinates)
     f32 x = (f32)(coordinates.x + 1324);
     f32 y = (f32)(coordinates.y - 3272);
     f32 z = (f32)(coordinates.z - 50);
-    f32 coef = 0.6f;
+    f32 coef = 2.0f / 3.0f;
 
     noise.continental = fsl_perlin_noise_2d(x, y, 1000.0f, FREQ_CONTINENTAL, world.seed);
     noise.regional = fsl_perlin_noise_2d(x, y, 200.0f, FREQ_REGIONAL, world.seed + 10);
@@ -193,6 +175,12 @@ hhc_terrain terrain_shape(v3i32 coordinates, const hhc_terrain_noise *noise)
     biome.extremity = noise->extremity;
     biome.roughness = noise->roughness;
     biome.life = noise->life;
+
+    biome.param[BIOME_PARAM_TEMPERATURE] = noise->temperature;
+    biome.param[BIOME_PARAM_HUMIDITY] = noise->humidity;
+    biome.param[BIOME_PARAM_EXTREMITY] = noise->extremity;
+    biome.param[BIOME_PARAM_ROUGHNESS] = noise->roughness;
+    biome.param[BIOME_PARAM_LIFE] = noise->life;
 
     while (i--)
     {

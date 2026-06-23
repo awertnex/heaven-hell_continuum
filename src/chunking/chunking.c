@@ -48,6 +48,12 @@ u32 chunking_init(void)
     if (chunks_max_init_internal() != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
+    if (settings.flag.render_distance_dirty)
+    {
+        settings.flag.render_distance_dirty = FALSE;
+        chunk_order.chunks_max = chunk_order.len[settings.render_distance];
+    }
+
     if (fsl_mem_arena_init(&memory_arena_chunking_internal,
                 "chunking_init().memory_arena_chunking_internal") != FSL_ERR_SUCCESS ||
 
@@ -181,15 +187,38 @@ cleanup:
 u32 chunk_order_init_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
-    u32 *file_contents = NULL;
-    u32 *file_contents_temp = NULL;
-    u64 file_len = 0;
+
+    snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
+    chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
+    chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
+
+    if (!chunk_tab.p)
+    {
+        LOGERROR(FSL_ERR_POINTER_NULL,
+                FSL_FLAG_LOG_NO_VERBOSE,
+                "Failed to Initialize `chunk_order` Look-up, `chunk_tab.p` `NULL`\n");
+        return *GAME_ERR;
+    }
+
+    if (fsl_is_file_exists(path, FALSE) != FSL_ERR_SUCCESS)
+    {
+        if (chunk_order_build_internal() != FSL_ERR_SUCCESS)
+            return *GAME_ERR;
+    }
+
+    if (chunk_order_load_internal() != FSL_ERR_SUCCESS)
+        return *GAME_ERR;
+
+    return *GAME_ERR;
+}
+
+u32 chunk_order_build_internal(void)
+{
+    fsl_fs_path path[FSL_PATH_CAP] = {0};
 
     u32 *offset_tab = NULL;
     u32 offset_tab_index = 0;
     fsl_array data = {0};
-    u32 data_offset_cache = 0;
-    u32 data_len_cache = 0;
     u32 distance_cache = 0;
     u32 *distance_buf = NULL;
     u32 *index_buf = NULL;
@@ -206,36 +235,23 @@ u32 chunk_order_init_internal(void)
     u32 k = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
-    chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
-    chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
-
-    if (!chunk_tab.p)
-    {
-        LOGERROR(FSL_ERR_POINTER_NULL,
-                FSL_FLAG_LOG_NO_VERBOSE,
-                "Failed to Initialize `chunk_order` Look-up, `chunk_tab.p` `NULL`\n");
-        return *GAME_ERR;
-    }
 
     if (
             fsl_mem_map((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-                "chunk_order_init_internal().offset_tab") != FSL_ERR_SUCCESS ||
+                "chunk_order_build_internal().offset_tab") != FSL_ERR_SUCCESS ||
 
             fsl_mem_array_init(&data) != FSL_ERR_SUCCESS ||
 
             fsl_mem_map((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-                "chunk_order_init_internal().distance_buf") != FSL_ERR_SUCCESS ||
+                "chunk_order_build_internal().distance_buf") != FSL_ERR_SUCCESS ||
 
             fsl_mem_map((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-                "chunk_order_init_internal().index_buf") != FSL_ERR_SUCCESS)
+                "chunk_order_build_internal().index_buf") != FSL_ERR_SUCCESS)
         goto cleanup;
 
     fsl_mem_array_push(&data, NULL,
             entry_count * entry_count * (2 * entry_count * entry_count - 1) * sizeof(u32));
     data.cursor = 0;
-
-    if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
-        goto load_from_disk;
 
     for (i = 0; i < entry_count; ++i)
     {
@@ -276,7 +292,7 @@ u32 chunk_order_init_internal(void)
         {
             for (k = j + 1; k < chunk_count; ++k)
             {
-                if (distance_buf[j] < distance_buf[k])
+                if (distance_buf[j] > distance_buf[k])
                 {
                     fsl_swap_bits_u32(&distance_buf[j], &distance_buf[k]);
                     fsl_swap_bits_u32(&index_buf[j], &index_buf[k]);
@@ -304,7 +320,45 @@ u32 chunk_order_init_internal(void)
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunk_order` Look-up '%s' Exported\n", path));
 
-load_from_disk:
+    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
+            "chunk_order_build_internal().offset_tab");
+    data.cursor *= sizeof(u32);
+    fsl_mem_array_free(&data);
+    fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            "chunk_order_build_internal().distance_buf");
+    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            "chunk_order_build_internal().index_buf");
+
+    *GAME_ERR = FSL_ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+
+    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
+            "chunk_order_build_internal().offset_tab");
+    data.cursor *= sizeof(u32);
+    fsl_mem_array_free(&data);
+    fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            "chunk_order_build_internal().distance_buf");
+    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+            "chunk_order_build_internal().index_buf");
+    fsl_mem_arena_pop(&chunk_order.handle, "chunk_order_build_internal().chunk_order.handle");
+    chunk_order.p = NULL;
+    return *GAME_ERR;
+}
+
+u32 chunk_order_load_internal(void)
+{
+    fsl_fs_path path[FSL_PATH_CAP] = {0};
+
+    u32 *file_contents = NULL;
+    u32 *file_contents_temp = NULL;
+    u64 file_len = 0;
+    u32 data_offset_cache = 0;
+    u32 data_len_cache = 0;
+    u32 i = 0;
+
+    snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
 
     file_len = fsl_get_file_contents(path, (void*)&file_contents, FALSE);
     if (file_contents == NULL)
@@ -313,7 +367,7 @@ load_from_disk:
     if (file_len <= CHUNK_ORDER_LOOKUP_OFFSET_TABLE_SIZE)
     {
         LOGERROR(FSL_ERR_FILE_DATA_CORRUPT, FSL_FLAG_LOG_NO_VERBOSE,
-                fsl_logger_stringf("Failed to Load `chunk_order` Look-up '%s', File Incomplete\n, path"));
+                fsl_logger_stringf("Failed to Load `chunk_order` Look-up '%s', File Incomplete\n", path));
         goto cleanup;
     }
 
@@ -326,30 +380,14 @@ load_from_disk:
 
     fsl_mem_free((void*)&file_contents, file_len,
             "chunk_order_init_internal().file_contents");
-    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-            "chunk_order_init_internal().offset_tab");
-    data.cursor *= sizeof(u32);
-    fsl_mem_array_free(&data);
-    fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_init_internal().distance_buf");
-    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_init_internal().index_buf");
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
 
-    fsl_mem_unmap((void*)&offset_tab, entry_count * sizeof(u32) * 2,
-            "chunk_order_init_internal().offset_tab");
-    data.cursor *= sizeof(u32);
-    fsl_mem_array_free(&data);
-    fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_init_internal().distance_buf");
-    fsl_mem_unmap((void*)&index_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
-            "chunk_order_init_internal().index_buf");
-    fsl_mem_arena_pop(&chunk_order.handle, "chunk_order_init_internal().chunk_order.handle");
-    chunk_order.p = NULL;
+    fsl_mem_free((void*)&file_contents, file_len,
+            "chunk_order_init_internal().file_contents");
     return *GAME_ERR;
 }
 
@@ -363,8 +401,8 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     u32 target_index = 0;
     u8 is_on_edge = 0;
     v3u8 _is_on_edge = {0};
-    i64 i = 0;
-    i64 end = 0;
+    u32 i = 0;
+    u32 end = 0;
     v3i32 DELTA = {0};
     u8 AXIS = 0;
     i8 INCREMENT = 0;
@@ -372,6 +410,13 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     i32 RENDER_DISTANCE = 0;
     u32 chunk_push_index = 0;
     v3u32 chunk_tab_coordinates = {0};
+
+    if (settings.flag.render_distance_dirty)
+    {
+        settings.flag.render_distance_dirty = FALSE;
+        chunk_order_load_internal();
+        chunk_order.chunks_max = chunk_order.len[settings.render_distance];
+    }
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
 
@@ -384,7 +429,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
             TRUE, !chunk_sched[0].count && chunk_sched[1].len);
 
     chunk_scheduler_update_internal(&chunk_sched[2],
-            chunk_order.len[settings.render_distance],
+            chunk_order.chunks_max,
             TRUE, !chunk_sched[1].count && chunk_sched[2].len);
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
@@ -412,7 +457,7 @@ chunk_tab_shift:
 
     if ((i32)fsl_len_v3f32(DISTANCE) > RENDER_DISTANCE)
     {
-        cursor = &chunk_order.p[chunk_order.len[settings.render_distance] - 1];
+        cursor = &chunk_order.p[chunk_order.chunks_max - 1];
         for (; cursor >= chunk_order.p; --cursor)
         {
             if (**cursor)
@@ -422,9 +467,6 @@ chunk_tab_shift:
         *player_chunk_delta = player_chunk;
         goto chunk_buf_push;
     }
-
-    /* this prevents `chunk_buf` from exploding when shifting `chunk_tab` */
-    chunk_buf.cursor = 0;
 
     switch (AXIS)
     {
@@ -519,7 +561,7 @@ chunk_tab_shift:
 
     i = (INCREMENT == 1) ? 0 : settings.chunk_buf_volume - 1;
     end = settings.chunk_buf_volume;
-    for (; i < end && i >= 0; i += INCREMENT)
+    for (; i < end; i += INCREMENT)
     {
         if (!chunk_tab.p[i])
             continue;
@@ -608,7 +650,7 @@ chunk_tab_shift:
 
 chunk_buf_push:
 
-    end = chunk_order.len[settings.render_distance];
+    end = chunk_order.chunks_max;
     for (i = 0; i < end; ++i)
     {
         if (!*chunk_order.p[i])
@@ -1492,34 +1534,33 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *ch)
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 {
     hhc_chunk nochunk = {0};
-    hhc_chunk *ch = NULL;
-    hhc_chunk *end = NULL;
     v3u32 chunk_tab_coordinates = {0};
+    hhc_chunk *chunk = NULL;
     v3u64 seed;
     v3u8 color_variant;
+    u64 start = chunk_buf.cursor;
 
     chunk_tab_coordinates.x = index % settings.chunk_buf_diameter;
     chunk_tab_coordinates.y = (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
     chunk_tab_coordinates.z = index / settings.chunk_buf_layer;
 
-    ch = &chunk_buf.p[chunk_buf.cursor];
-    end = &chunk_buf.p[chunk_order.len[settings.render_distance]];
-    while (ch < end)
+    do
     {
-        if (!(ch->flag & FLAG_CHUNK_LOADED))
+        if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED))
         {
-            if (ch->mesh_deprecated.initialized)
+            chunk = &chunk_buf.p[chunk_buf.cursor];
+            if (chunk->mesh_deprecated.initialized)
             {
-                ch->mesh_deprecated.initialized = FALSE;
-                glDeleteBuffers(1, &ch->mesh_deprecated.vbo_transform);
-                glDeleteBuffers(1, &ch->mesh_deprecated.vbo);
-                glDeleteVertexArrays(1, &ch->mesh_deprecated.vao);
+                chunk->mesh_deprecated.initialized = FALSE;
+                glDeleteBuffers(1, &chunk->mesh_deprecated.vbo_transform);
+                glDeleteBuffers(1, &chunk->mesh_deprecated.vbo);
+                glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
             }
-            *ch = nochunk;
+            *chunk = nochunk;
 
-            chunk_pos_set_internal(ch, player_chunk_delta, chunk_tab_coordinates);
+            chunk_pos_set_internal(chunk, player_chunk_delta, chunk_tab_coordinates);
 
-            ch->color = CHUNK_GIZMO_COLOR_LOADED;
+            chunk->color = CHUNK_GIZMO_COLOR_LOADED;
 
             seed.x = chunk_tab_coordinates.x * index + player_chunk_delta.z;
             seed.y = chunk_tab_coordinates.y * index + player_chunk_delta.x;
@@ -1534,26 +1575,31 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
                 (u8)(fsl_map_range_f64((f64)(fsl_rand_u64(seed.z) % 0xff), 0.0, 0xff,
                             1.0 - CHUNK_GIZMO_COLOR_FACTOR_INFLUENCE, 1.0) * 0xff);
 
-            ch->color_variant = 0 |
+            chunk->color_variant = 0 |
                 (color_variant.x << 0x18) |
                 (color_variant.y << 0x10) |
                 (color_variant.z << 0x08);
 
-            ch->index = index;
+            chunk->index = index;
 
-            ch->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
-            chunk_tab.p[index] = ch;
+            chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
+            chunk_tab.p[index] = chunk;
+            chunk_debug_chunk_gizmo_write_internal(chunk);
+
             ++chunk_buf.cursor;
-
-            chunk_debug_chunk_gizmo_write_internal(ch);
+            if (chunk_buf.cursor >= chunk_order.chunks_max)
+                chunk_buf.cursor = 0;
             return;
         }
-        ch++;
-    }
+
+        ++chunk_buf.cursor;
+        if (chunk_buf.cursor >= chunk_order.chunks_max)
+            chunk_buf.cursor = 0;
+    } while (chunk_buf.cursor != start);
 
     LOGERROR(FSL_ERR_BUFFER_FULL,
             FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-            "Failed to Push to `chunk_buf`, Buffer Full");
+            "Failed to Push to `chunk_buf`, Buffer Full\n");
 }
 
 void chunk_buf_pop_internal(hhc_chunk *ch)
@@ -1586,8 +1632,7 @@ u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, chunk_scheduler_id
 
     sched->id = id;
     sched->offset = offset;
-    sched->len = (u64)fsl_clamp_i64(chunk_order.len[settings.render_distance] - offset,
-            0, chunk_order.len[radius]);
+    sched->len = (u64)fsl_clamp_i64(chunk_order.chunks_max - offset, 0, chunk_order.len[radius]);
     sched->budget = budget;
     sched->p = fsl_mem_handle_get(sched->schedule);
 
@@ -1600,33 +1645,38 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
 {
     hhc_chunk ***start = NULL;
     hhc_chunk ***end = NULL;
-    hhc_chunk *ch = NULL;
+    hhc_chunk *chunk = NULL;
     u32 sched_len = sched->len;
     u32 push = sched->cursor_push;
     u32 pop = sched->cursor_pop;
     i32 budget = sched->budget;
-    u32 i = 0;
 
-    if (!should_push)
+    if (!should_push || sched->count >= sched->len)
         goto pop;
+
+    if (budget <= 0)
+        return;
 
     start = &chunk_order.p[sched->offset];
     end = chunk_order.p + len;
-    for (; sched->count < sched_len && budget > 0 && start < end; ++start)
+
+    for (; start < end && budget > 0; ++start)
     {
         if (**start)
         {
-            ch = **start;
-            if (ch->flag & FLAG_CHUNK_DIRTY &&
-                    ch->sched_id != sched->id &&
+            chunk = **start;
+            if (chunk->flag & FLAG_CHUNK_DIRTY &&
+                    chunk->sched_id != sched->id &&
                     !sched->p[push])
             {
-                ch->sched_id = sched->id;
-                sched->p[push] = ch;
-                ++sched->count;
+                chunk->sched_id = sched->id;
+                sched->p[push] = chunk;
                 ++push;
                 if (push >= sched_len)
                     push = 0;
+                ++sched->count;
+                if (sched->count >= sched->len)
+                    break;
                 budget -= CHUNK_WORK_COST_PUSH;
             }
         }
@@ -1637,16 +1687,17 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, fsl_len len,
 
 pop:
 
-    if (!should_pop)
+    if (!should_pop || !sched->count || budget <= 0)
         return;
 
-    for (i = 0; sched->count && budget > 0 && i < sched_len; ++i)
+    do
     {
         if (sched->p[pop])
         {
-            ch = sched->p[pop];
+            chunk = sched->p[pop];
 
-            if (ch->sched_id != sched->id || !(ch->flag & FLAG_CHUNK_LOADED))
+            if (chunk->sched_id != sched->id ||
+                    !(chunk->flag & FLAG_CHUNK_LOADED))
             {
                 sched->p[pop] = NULL;
                 --sched->count;
@@ -1657,20 +1708,20 @@ pop:
                 continue;
             }
 
-            if (ch->flag & FLAG_CHUNK_GENERATED)
-                budget -= chunk_mesh_update_internal(ch);
+            if (chunk->flag & FLAG_CHUNK_GENERATED)
+                budget -= chunk_mesh_update_internal(chunk);
             else
-                budget -= chunk_load_internal(ch, budget);
+                budget -= chunk_load_internal(chunk, budget);
 
-            if (!(ch->flag & FLAG_CHUNK_DIRTY))
+            if (!(chunk->flag & FLAG_CHUNK_DIRTY))
             {
 #if MODE_INTERNAL_EXPORT_CHUNKS
-                if (!(ch->flag & FLAG_CHUNK_IMPORTED))
-                    chunk_export_internal(ch);
+                if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
+                    chunk_export_internal(chunk);
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
 
-                ch->flag &= ~FLAG_CHUNK_IMPORTED;
-                ch->sched_id = 0;
+                chunk->flag &= ~FLAG_CHUNK_IMPORTED;
+                chunk->sched_id = 0;
                 sched->p[pop] = NULL;
                 --sched->count;
                 ++pop;
@@ -1686,7 +1737,7 @@ pop:
                 pop = 0;
             budget -= CHUNK_WORK_COST_POP;
         }
-    }
+    } while (pop != push && sched->count && budget > 0);
 
     sched->cursor_pop = pop;
 }

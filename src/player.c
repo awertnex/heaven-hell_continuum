@@ -690,21 +690,30 @@ void player_spawn(hhc_player *p, b8 hard)
             p->spawn.x + 0.5f,
             p->spawn.y + 0.5f,
             p->spawn.z + 0.5f);
-    p->health = 100.0f;
-    if (!hard) return;
-    p->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_HUNGRY | FLAG_PLAYER_DEAD);
+
+    p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
+    p->ch.y = floorf((f32)p->transform.pos.y / CHUNK_DIAMETER);
+    p->ch.z = floorf((f32)p->transform.pos.z / CHUNK_DIAMETER);
+    p->ch_delta.x = p->ch.x - 1; /* subtract 1 so to trigger chunk parsing */
+    p->ch_delta.y = p->ch.y;
+    p->ch_delta.z = p->ch.z;
+
+    if (hard)
+    {
+        p->health = 100.0f;
+        p->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_HUNGRY | FLAG_PLAYER_DEAD);
+    }
 }
 
 void player_kill(hhc_player *p)
 {
-    p->velocity.x = 0.0;
-    p->velocity.y = 0.0;
-    p->velocity.z = 0.0;
     p->health = 0.0f;
     p->flag |= FLAG_PLAYER_DEAD;
     p->flag &= ~FLAG_PLAYER_CAN_JUMP;
     p->flag &= ~FLAG_PLAYER_FLYING;
     p->flag &= ~FLAG_PLAYER_CINEMATIC_MOTION;
+
+    player_spawn(p, TRUE);
 
     LOGINFO(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("%s %s\n", p->name, get_death_str(p)));

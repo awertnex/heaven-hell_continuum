@@ -109,6 +109,13 @@ u32 chunks_max_init_internal(void);
  *
  *  write lookup to disk, and load if exists.
  *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+u32 chunk_order_init_internal(void);
+
+/*!
+ *  @brief build @ref chunk_order look-up and write to disk.
+ *
  *  format:
  *      offset-table:   offset of each lookup into file, after compression, in bytes,
  *      |               size of table is "(SET_RENDER_DISTANCE_MAX + 1) * 4 bytes * 2".
@@ -118,7 +125,16 @@ u32 chunks_max_init_internal(void);
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 chunk_order_init_internal(void);
+u32 chunk_order_build_internal(void);
+
+/*!
+ *  @brief load @ref chunk_order look-up from disk.
+ *
+ *  can be called again when changing render distance.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+u32 chunk_order_load_internal(void);
 
 /*!
  *  @brief initialize resources required by chunk debug tools.

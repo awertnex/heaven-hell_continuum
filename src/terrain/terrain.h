@@ -18,9 +18,21 @@ enum hhc_biome_index
     BIOME_COUNT
 }; /* hhc_biome_index */
 
+enum hhc_biome_param_index
+{
+    BIOME_PARAM_TEMPERATURE,
+    BIOME_PARAM_HUMIDITY,
+    BIOME_PARAM_EXTREMITY,
+    BIOME_PARAM_ROUGHNESS,
+    BIOME_PARAM_DEPTH,
+    BIOME_PARAM_LIFE,
+    BIOME_PARAM_COUNT
+}; /* hhc_biome_param_index */
+
 typedef struct hhc_biome
 {
     str name[FSL_ID_CAP];
+    f32 param[BIOME_PARAM_COUNT];
     f32 temperature;
     f32 humidity;
     f32 extremity;  /* big detail height */

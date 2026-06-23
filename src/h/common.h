@@ -71,8 +71,8 @@
 
 #define GAME_FILE_NAME_SETTINGS         "settings.conf"
 #define GAME_FILE_NAME_WORLD_METADATA   "metadata.conf"
-#define GAME_FILE_NAME_LOOKUP_CHUNK_ORDER "lookup_chunk_order.bin"
-#define GAME_FILE_NAME_LOOKUP_CHUNKS_MAX "lookup_chunks_max.bin"
+#define GAME_FILE_NAME_LOOKUP_CHUNK_ORDER "chunk_order.lut"
+#define GAME_FILE_NAME_LOOKUP_CHUNKS_MAX "chunks_max.lut"
 
 /* ---- name formats -------------------------------------------------------- */
 

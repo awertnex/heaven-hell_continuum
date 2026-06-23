@@ -267,7 +267,7 @@ static void draw_world(void)
     else
         glUniform1f(uniform.voxel.opacity, 1.0f);
 
-    cursor = &chunk_order.p[chunk_order.len[settings.render_distance] - 1];
+    cursor = &chunk_order.p[chunk_order.chunks_max - 1];
     for (; cursor >= chunk_order.p; --cursor)
     {
         ch = **cursor;
@@ -739,7 +739,7 @@ static void world_draw(void)
 
                     chunk_sched[2].count, chunk_sched[2].len,
                     chunk_sched[2].cursor_pop, chunk_sched[2].cursor_push,
-                    chunk_order.len[settings.render_distance]),
+                    chunk_order.chunks_max),
                 render->size.x - SET_MARGIN, SET_MARGIN,
                 FSL_TEXT_ALIGN_RIGHT, 0, 0,
                 COLOR_TEXT_DEFAULT);

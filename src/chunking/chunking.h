@@ -172,13 +172,14 @@ typedef struct hhc_chunk
  */
 typedef struct hhc_chunk_table
 {
+    fsl_mem_handle handle;
+    hhc_chunk **p;          /* cached pointer from `handle` */
+
     /*!
      *  @brief player-relative `p` access.
      */
     u32 index;
 
-    fsl_mem_handle handle;
-    hhc_chunk **p;          /* cached pointer from `handle` */
 } hhc_chunk_table;
 
 /*!
@@ -189,7 +190,7 @@ typedef struct hhc_chunk_table
 typedef struct hhc_chunk_order
 {
     fsl_mem_handle handle;
-    hhc_chunk ***p;
+    hhc_chunk ***p;         /* cached pointer from `handle` */
 
     /*!
      *  @brief look-up table to reduce redundant checking of untouched indices of @ref chunk_tab
@@ -209,6 +210,16 @@ typedef struct hhc_chunk_order
      *  @remark read-only, initialized internally in @ref chunking_init().
      */
     u32 len[SET_RENDER_DISTANCE_MAX + 1];
+
+    /*!
+     *  @brief max number of chunks for current render distance setting,
+     *  cached from `len`.
+     *
+     *  @remark read-only, initialized internally in @ref chunking_init() and
+     *  updated in @ref setting_render_distance_set().
+     */
+    u32 chunks_max;
+
 } hhc_chunk_order;
 
 /*!
