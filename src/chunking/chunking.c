@@ -36,7 +36,7 @@ static fsl_mem_arena memory_arena_chunking_internal = {0};
 static hhc_chunk_buffer chunk_buf = {0};
 hhc_chunk_table chunk_tab = {0};
 hhc_chunk_order chunk_order = {0};
-hhc_chunk_scheduler chunk_sched[CHUNK_SCHEDULERS_MAX] = {0};
+hhc_chunk_scheduler chunk_sched[3] = {0};
 
 /* ---- section: implementation --------------------------------------------- */
 

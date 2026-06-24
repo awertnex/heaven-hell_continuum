@@ -3,9 +3,9 @@
 
 #include "deps/fossil/common/types.h"
 
-typedef i64 chunk_work_budget;
+#define CHUNK_WORK_BUDGET_DEFAULT 30000000
 
-#define CHUNK_SCHEDULERS_MAX 3
+typedef i64 chunk_work_budget;
 
 /*!
  *  @brief cost of work requested by chunks in a @ref hhc_chunk_scheduler.

@@ -100,7 +100,7 @@ typedef struct hhc_chunk_scheduler
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern hhc_chunk_scheduler chunk_sched[CHUNK_SCHEDULERS_MAX];
+extern hhc_chunk_scheduler chunk_sched[3];
 
 /* ---- section: signatures ------------------------------------------------- */
 
