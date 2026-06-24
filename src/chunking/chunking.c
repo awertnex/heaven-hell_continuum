@@ -16,7 +16,7 @@
 #include "../terrain/terrain.h"
 #include "../h/world.h"
 
-#include "chunk_scheduler.h"
+#include "chunk_work.h"
 #include "chunking.h"
 #include "chunking_debug_tools.h"
 #include "chunking_internal.h"
@@ -78,22 +78,22 @@ u32 chunking_init(v3i32 *player_chunk_delta)
 
     /* ---- init chunk parsing priority schedulers -------------------------- */
 
-    if (chunk_scheduler_init_internal(&chunk_sched[0], CHUNK_SCHEDULER_ID_1ST,
+    if (chunk_scheduler_init_internal(&chunk_sched[0], 1,
                 0,
-                CHUNK_SCHEDULER_RADIUS_1ST,
-                CHUNK_SCHEDULER_BUDGET_PRIORITY_HIGH) != FSL_ERR_SUCCESS)
+                4,
+                30000000) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (chunk_scheduler_init_internal(&chunk_sched[1], CHUNK_SCHEDULER_ID_2ND,
-                CHUNK_SCHEDULER_RADIUS_1ST,
-                CHUNK_SCHEDULER_RADIUS_2ND,
-                CHUNK_SCHEDULER_BUDGET_PRIORITY_MID) != FSL_ERR_SUCCESS)
+    if (chunk_scheduler_init_internal(&chunk_sched[1], 2,
+                4,
+                12,
+                15000000) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (chunk_scheduler_init_internal(&chunk_sched[2], CHUNK_SCHEDULER_ID_3RD,
-                CHUNK_SCHEDULER_RADIUS_2ND,
-                CHUNK_SCHEDULER_RADIUS_3RD,
-                CHUNK_SCHEDULER_BUDGET_PRIORITY_LOW) != FSL_ERR_SUCCESS)
+    if (chunk_scheduler_init_internal(&chunk_sched[2], 3,
+                12,
+                16,
+                10000000) != FSL_ERR_SUCCESS)
         goto cleanup;
 
     chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
@@ -1073,7 +1073,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
     }
 }
 
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_scheduler_budget budget)
+chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -1093,7 +1093,7 @@ chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_scheduler_budget bud
     return cost;
 }
 
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_scheduler_budget budget)
+chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget)
 {
     chunk_work_cost cost = 0;
     hhc_chunk *px = NULL;
@@ -1619,9 +1619,8 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     chunk_tab.p[chunk->cti] = NULL;
 }
 
-u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, chunk_scheduler_id id,
-        chunk_scheduler_radius radius_start, chunk_scheduler_radius radius_end,
-        chunk_scheduler_budget budget)
+u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, i32 id,
+        u32 radius_start, u32 radius_end, chunk_work_budget budget)
 {
     if (fsl_mem_arena_push(&memory_arena_chunking_internal, &sched->schedule,
                 (chunk_order.len[radius_end] - chunk_order.len[radius_start]) * sizeof(hhc_chunk*),

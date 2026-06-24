@@ -4,7 +4,7 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/math/vector.h"
 
-#include "chunk_scheduler.h"
+#include "chunk_work.h"
 #include "chunking.h"
 
 /* ---- section: definitions ------------------------------------------------ */
@@ -76,9 +76,9 @@ typedef struct hhc_chunk_buffer
 /*!
  *  @brief schedule of chunks to be processed.
  */
-struct hhc_chunk_scheduler
+typedef struct hhc_chunk_scheduler
 {
-    chunk_scheduler_id id;  /* scheduler ID */
+    i32 id;                 /* scheduler ID */
     fsl_len count;          /* number of chunks scheduled */
 
     /*
@@ -93,10 +93,10 @@ struct hhc_chunk_scheduler
 
     u32 cursor_push;        /* push position */
     u32 cursor_pop;         /* pop position */
-    chunk_scheduler_budget budget;
+    chunk_work_budget budget;
     fsl_mem_handle schedule;
     hhc_chunk **p;        /* cached pointer from `schedule` */
-}; /* hhc_chunk_scheduler */
+} hhc_chunk_scheduler;
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -199,7 +199,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_scheduler_budget budget);
+chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget);
 
 /*!
  *  @brief generate chunk blocks.
@@ -211,7 +211,7 @@ chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_scheduler_budget bud
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_scheduler_budget budget);
+chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget);
 
 /*!
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
@@ -241,9 +241,8 @@ void chunk_buf_pop_internal(hhc_chunk *chunk);
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, chunk_scheduler_id id,
-        chunk_scheduler_radius radius_start, chunk_scheduler_radius radius_end,
-        chunk_scheduler_budget budget);
+u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, i32 id,
+        u32 radius_start, u32 radius_end, chunk_work_budget budget);
 /*!
  *  @param len number of chunks from @ref chunk_order.p this scheduler is allowed to parse.
  */

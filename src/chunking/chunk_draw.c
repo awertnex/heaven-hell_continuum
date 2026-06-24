@@ -1,7 +1,6 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/memory/memory.h"
 
-#include "chunk_scheduler.h"
 #include "chunking.h"
 #include "chunking_internal.h"
 

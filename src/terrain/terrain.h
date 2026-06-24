@@ -4,7 +4,7 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/common/limits.h"
 
-#include "../chunking/chunk_scheduler.h"
+#include "../chunking/chunk_work.h"
 
 #include "../h/assets.h"
 
