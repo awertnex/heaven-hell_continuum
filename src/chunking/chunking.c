@@ -1648,6 +1648,7 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, u32 start, u32 
     u32 sched_len = chunk_order.len[sched->radius_end] - chunk_order.len[sched->radius_start];
     u32 radius_start = 0;
     u32 radius_end = 0;
+    i32 i = 0;
 
     radius_start = chunk_sphere_radius_get_internal(sched->radius_start);
     radius_end = chunk_sphere_radius_get_internal(sched->radius_end);
@@ -1658,7 +1659,7 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, u32 start, u32 
     if (budget <= 0)
         return;
 
-    for (; start < end && sched->count < sched_len && budget > 0; ++start)
+    for (; i < sched_len && start < end && sched->count < sched_len && budget > 0; ++i, ++start)
     {
         chunk = chunk_tab.p[chunk_order.p[start]];
         if (chunk)
