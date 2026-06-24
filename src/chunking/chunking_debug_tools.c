@@ -51,8 +51,7 @@ hhc_chunk_gizmo chunk_gizmo_visible = {0};
 
 /* ---- section: signatures ------------------------------------------------- */
 
-static void chunk_debug_scheduler_visualizer_draw_internal(const hhc_chunk_scheduler *sched,
-        const fsl_mesh *mesh_bounding_box, const fsl_camera *camera,
+static void chunk_debug_scheduler_visualizer_draw_internal(const fsl_camera *camera,
         f32 color_r, f32 color_g, f32 color_b, f32 color_a);
 
 /* ---- section: implementation --------------------------------------------- */
@@ -232,27 +231,19 @@ void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk)
 
 void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera, f32 opacity)
 {
-    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
-
-    glClear(GL_DEPTH_BUFFER_BIT);
-    chunk_debug_scheduler_visualizer_draw_internal(&chunk_sched[2],
-            &mesh_p[MESH_CUBE_OF_HAPPINESS], camera, 0.9f, 0.3f, 0.3f, opacity);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    chunk_debug_scheduler_visualizer_draw_internal(&chunk_sched[1],
-            &mesh_p[MESH_CUBE_OF_HAPPINESS], camera, 0.9f, 0.6f, 0.3f, opacity);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    chunk_debug_scheduler_visualizer_draw_internal(&chunk_sched[0],
-            &mesh_p[MESH_CUBE_OF_HAPPINESS], camera, 0.9f, 0.6f, 0.3f, opacity);
+    chunk_debug_scheduler_visualizer_draw_internal(camera, 0.9f, 0.6f, 0.3f, opacity);
 }
 
-static void chunk_debug_scheduler_visualizer_draw_internal(const hhc_chunk_scheduler *sched,
-        const fsl_mesh *mesh_bounding_box, const fsl_camera *camera,
+static void chunk_debug_scheduler_visualizer_draw_internal(const fsl_camera *camera,
         f32 color_r, f32 color_g, f32 color_b, f32 color_a)
 {
-    u32 pop = sched->cursor_pop;
-    u32 count = sched->count;
-    u32 len = chunk_order.len[sched->radius_end] - chunk_order.len[sched->radius_start];
+    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    hhc_chunk *chunk = NULL;
+    u32 pop = chunk_sched.cursor_pop;
+    u32 count = chunk_sched.count;
+    u32 len = chunk_order.chunks_max;
 
+    glClear(GL_DEPTH_BUFFER_BIT);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&camera->projection.perspective);
     glUniform3f(uniform.bounding_box.size,
@@ -260,13 +251,15 @@ static void chunk_debug_scheduler_visualizer_draw_internal(const hhc_chunk_sched
 
     while (count--)
     {
+        chunk = chunk_sched.p[pop];
+
         glUniform3f(uniform.bounding_box.position,
-                (f32)(sched->p[pop]->pos_world.x * CHUNK_DIAMETER),
-                (f32)(sched->p[pop]->pos_world.y * CHUNK_DIAMETER),
-                (f32)(sched->p[pop]->pos_world.z * CHUNK_DIAMETER));
+                (f32)(chunk->pos_world.x * CHUNK_DIAMETER),
+                (f32)(chunk->pos_world.y * CHUNK_DIAMETER),
+                (f32)(chunk->pos_world.z * CHUNK_DIAMETER));
 
         glUniform4f(uniform.bounding_box.color, color_r, color_g, color_b, color_a);
-        glBindVertexArray(mesh_bounding_box->vao);
+        glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
         glDrawElements(GL_LINE_STRIP, 24, GL_UNSIGNED_INT, 0);
 
         ++pop;

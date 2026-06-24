@@ -729,25 +729,10 @@ static void world_draw(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
 
         fsl_text_push(fsl_stringf(
-                    "CHUNK SCHEDULER 1 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
-                    "CHUNK SCHEDULER 2 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
-                    "CHUNK SCHEDULER 3 [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
-                    "TOTAL CHUNKS  [%15"PRIu64"]                           \n",
-                    chunk_sched[0].count,
-                    chunk_order.len[chunk_sched[0].radius_end] -
-                    chunk_order.len[chunk_sched[0].radius_start],
-                    chunk_sched[0].cursor_pop, chunk_sched[0].cursor_push,
-
-                    chunk_sched[1].count,
-                    chunk_order.len[chunk_sched[1].radius_end] -
-                    chunk_order.len[chunk_sched[1].radius_start],
-                    chunk_sched[1].cursor_pop, chunk_sched[1].cursor_push,
-
-                    chunk_sched[2].count,
-                    chunk_order.len[chunk_sched[2].radius_end] -
-                    chunk_order.len[chunk_sched[2].radius_start],
-                    chunk_sched[2].cursor_pop, chunk_sched[2].cursor_push,
-                    chunk_order.chunks_max),
+                    "CHUNK SCHEDULER [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n",
+                    chunk_sched.count,
+                    chunk_order.chunks_max,
+                    chunk_sched.cursor_pop, chunk_sched.cursor_push),
                 render->size.x - SET_MARGIN, SET_MARGIN,
                 FSL_TEXT_ALIGN_RIGHT, 0, 0,
                 COLOR_TEXT_DEFAULT);

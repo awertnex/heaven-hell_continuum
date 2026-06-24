@@ -36,7 +36,7 @@ static fsl_mem_arena memory_arena_chunking_internal = {0};
 static hhc_chunk_buffer chunk_buf = {0};
 hhc_chunk_table chunk_tab = {0};
 hhc_chunk_order chunk_order = {0};
-hhc_chunk_scheduler chunk_sched[3] = {0};
+hhc_chunk_scheduler chunk_sched = {0};
 
 /* ---- section: implementation --------------------------------------------- */
 
@@ -78,30 +78,14 @@ u32 chunking_init(v3i32 *player_chunk_delta)
 
     /* ---- init chunk parsing priority schedulers -------------------------- */
 
-    if (chunk_scheduler_init_internal(&chunk_sched[0], 1,
-                0,
-                4,
-                30000000) != FSL_ERR_SUCCESS)
-        goto cleanup;
-
-    if (chunk_scheduler_init_internal(&chunk_sched[1], 2,
-                4,
-                12,
-                15000000) != FSL_ERR_SUCCESS)
-        goto cleanup;
-
-    if (chunk_scheduler_init_internal(&chunk_sched[2], 3,
-                12,
-                16,
-                10000000) != FSL_ERR_SUCCESS)
+    if (chunk_scheduler_init_internal(&chunk_sched, 1, 0, 32, 30000000) != FSL_ERR_SUCCESS)
         goto cleanup;
 
     chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
     chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
     chunk_buf.p = fsl_mem_handle_get(chunk_buf.handle);
-    chunk_sched[0].p = fsl_mem_handle_get(chunk_sched[0].schedule);
-    chunk_sched[1].p = fsl_mem_handle_get(chunk_sched[1].schedule);
-    chunk_sched[2].p = fsl_mem_handle_get(chunk_sched[2].schedule);
+    chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
+    chunk_sched.bucket = fsl_mem_handle_get(chunk_sched.handle_bucket);
 
     core.flag.chunks_initialized = TRUE;
 
@@ -392,20 +376,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
 
-    chunk_scheduler_update_internal(&chunk_sched[0],
-            chunk_order.len[chunk_sched[0].radius_start],
-            chunk_order.len[chunk_sched[0].radius_end],
-            TRUE, TRUE);
-
-    chunk_scheduler_update_internal(&chunk_sched[1],
-            chunk_order.len[chunk_sched[1].radius_start],
-            chunk_order.len[chunk_sched[1].radius_end],
-            TRUE, !chunk_sched[0].count && chunk_sched[1].radius_end);
-
-    chunk_scheduler_update_internal(&chunk_sched[2],
-            chunk_order.len[chunk_sched[2].radius_start],
-            chunk_order.chunks_max,
-            TRUE, !chunk_sched[1].count && chunk_sched[2].radius_end);
+    chunk_scheduler_update_internal(&chunk_sched, 0, chunk_order.len[SET_RENDER_DISTANCE_MAX], TRUE, TRUE);
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
     DELTA.y = player_chunk.y - player_chunk_delta->y;
@@ -1622,16 +1593,14 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
 u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, i32 id,
         u32 radius_start, u32 radius_end, chunk_work_budget budget)
 {
-    if (fsl_mem_arena_push(&memory_arena_chunking_internal, &sched->schedule,
-                (chunk_order.len[radius_end] - chunk_order.len[radius_start]) * sizeof(hhc_chunk*),
-                "chunk_scheduler_init_internal().sched->schedule") != FSL_ERR_SUCCESS)
+    if (fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_sched.handle_p,
+                chunk_order.chunks_max * sizeof(hhc_chunk*),
+                "chunk_scheduler_init_internal().chunk_sched.handle_p") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
-    sched->id = id;
-    sched->radius_start = radius_start;
-    sched->radius_end = fsl_clamp_u32(SET_RENDER_DISTANCE_MAX, 0, radius_end);
-    sched->budget = budget;
-    sched->p = fsl_mem_handle_get(sched->schedule);
+    chunk_sched.budget = CHUNK_WORK_BUDGET_DEFAULT;
+    chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
+    chunk_sched.bucket = fsl_mem_handle_get(chunk_sched.handle_bucket);
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -1641,38 +1610,31 @@ void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, u32 start, u32 
         b8 should_push, b8 should_pop)
 {
     hhc_chunk *chunk = NULL;
-    u32 push = sched->cursor_push;
-    u32 pop = sched->cursor_pop;
+    static u32 push = 0;
+    static u32 pop = 0;
     i32 budget = sched->budget;
-    u32 sched_len = chunk_order.len[sched->radius_end] - chunk_order.len[sched->radius_start];
-    u32 radius_start = 0;
-    u32 radius_end = 0;
     i32 i = 0;
+    u32 len = chunk_order.chunks_max;
 
-    radius_start = chunk_sphere_radius_get_internal(sched->radius_start);
-    radius_end = chunk_sphere_radius_get_internal(sched->radius_end);
-
-    if (!should_push || sched->count >= sched_len)
+    if (!should_push || sched->count >= len)
         goto pop;
 
     if (budget <= 0)
         return;
 
-    for (; i < sched_len && start < end && sched->count < sched_len && budget > 0; ++i, ++start)
+    for (; i < len && sched->count < len && budget > 0; ++i)
     {
-        chunk = chunk_tab.p[chunk_order.p[start]];
+        chunk = chunk_tab.p[chunk_order.p[i]];
         if (chunk)
         {
             if (chunk->flag & FLAG_CHUNK_DIRTY &&
-                    !sched->p[push] &&
-                    ((!(chunk->flag & FLAG_CHUNK_QUEUED) &&
-                    (chunk->coi >= radius_start && chunk->coi < radius_end)) ||
-                    (chunk->coi >= radius_start && chunk->coi < radius_end)))
+                    !(chunk->flag & FLAG_CHUNK_QUEUED) &&
+                    !sched->p[push])
             {
                 chunk->flag |= FLAG_CHUNK_QUEUED;
                 sched->p[push] = chunk;
                 ++push;
-                if (push >= sched_len)
+                if (push >= len)
                     push = 0;
                 ++sched->count;
                 budget -= CHUNK_WORK_COST_PUSH;
@@ -1688,21 +1650,19 @@ pop:
     if (!should_pop || !sched->count || budget <= 0)
         return;
 
-    for (start = 0, end = sched_len; start < end && sched->count && budget > 0; ++start)
+    for (i = 0; i < len && sched->count && budget > 0; ++i)
     {
         if (sched->p[pop])
         {
             chunk = sched->p[pop];
 
-            if (!(chunk->flag & FLAG_CHUNK_LOADED) ||
-                    chunk->coi < radius_start ||
-                    chunk->coi >= radius_end)
+            if (!(chunk->flag & FLAG_CHUNK_LOADED))
             {
                 chunk->flag &= ~FLAG_CHUNK_QUEUED;
                 sched->p[pop] = NULL;
                 --sched->count;
                 ++pop;
-                if (pop >= sched_len)
+                if (pop >= len)
                     pop = 0;
                 budget -= CHUNK_WORK_COST_POP;
                 continue;
@@ -1724,7 +1684,7 @@ pop:
                 sched->p[pop] = NULL;
                 --sched->count;
                 ++pop;
-                if (pop >= sched_len)
+                if (pop >= len)
                     pop = 0;
                 budget -= CHUNK_WORK_COST_POP;
             }
@@ -1732,7 +1692,7 @@ pop:
         else
         {
             ++pop;
-            if (pop >= sched_len)
+            if (pop >= len)
                 pop = 0;
             budget -= CHUNK_WORK_COST_POP;
         }

@@ -74,11 +74,20 @@ typedef struct hhc_chunk_buffer
 } hhc_chunk_buffer;
 
 /*!
+ *  @brief chunk-scheduler bucket for a unique distance away from @ref chunk_tab center index.
+ */
+typedef struct hhc_chunk_bucket
+{
+    u32 count;  /* number of chunks scheduled */
+    u32 pos;    /* start position of bucket into @ref chunk_order.p */
+    u32 len;    /* total number of slots in bucket */
+} hhc_chunk_bucket;
+
+/*!
  *  @brief schedule of chunks to be processed.
  */
 typedef struct hhc_chunk_scheduler
 {
-    i32 id;                 /* scheduler ID */
     fsl_len count;          /* number of chunks scheduled */
 
     /*
@@ -94,13 +103,15 @@ typedef struct hhc_chunk_scheduler
     u32 cursor_push;        /* push position */
     u32 cursor_pop;         /* pop position */
     chunk_work_budget budget;
-    fsl_mem_handle schedule;
-    hhc_chunk **p;        /* cached pointer from `schedule` */
+    fsl_mem_handle handle_p;
+    fsl_mem_handle handle_bucket;
+    hhc_chunk **p;          /* cached pointer from `schedule` */
+    hhc_chunk_bucket *bucket; /* cached pointer from `schedule` */
 } hhc_chunk_scheduler;
 
 /* ---- section: declarations ----------------------------------------------- */
 
-extern hhc_chunk_scheduler chunk_sched[3];
+extern hhc_chunk_scheduler chunk_sched;
 
 /* ---- section: signatures ------------------------------------------------- */
 
