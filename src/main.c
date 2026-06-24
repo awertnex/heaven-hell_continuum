@@ -729,10 +729,12 @@ static void world_draw(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
 
         fsl_text_push(fsl_stringf(
-                    "CHUNK SCHEDULER [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n",
+                    "CHUNK SCHEDULER [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
+                    "RENDER DISTANCE [%2d]\n",
                     chunk_sched.count,
                     chunk_order.chunks_max,
-                    chunk_sched.cursor_pop, chunk_sched.cursor_push),
+                    chunk_sched.cursor_pop, chunk_sched.cursor_push,
+                settings.render_distance),
                 render->size.x - SET_MARGIN, SET_MARGIN,
                 FSL_TEXT_ALIGN_RIGHT, 0, 0,
                 COLOR_TEXT_DEFAULT);

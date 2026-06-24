@@ -90,23 +90,13 @@ typedef struct hhc_chunk_scheduler
 {
     fsl_len count;          /* number of chunks scheduled */
 
-    /*
-     * @brief inner sphere radius of chunks from @ref chunk_order.p to parse after.
-     */
-    u32 radius_start;
-
-    /*
-     * @brief outer sphere radius of chunks from @ref chunk_order.p to parse.
-     */
-    u32 radius_end;
-
     u32 cursor_push;        /* push position */
     u32 cursor_pop;         /* pop position */
-    chunk_work_budget budget;
     fsl_mem_handle handle_p;
     fsl_mem_handle handle_bucket;
     hhc_chunk **p;          /* cached pointer from `schedule` */
     hhc_chunk_bucket *bucket; /* cached pointer from `schedule` */
+    u32 buckets_max;        /* total number of members in `bucket` */
 } hhc_chunk_scheduler;
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -150,6 +140,13 @@ u32 chunk_order_build_internal(void);
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 chunk_order_load_internal(u32 render_distance);
+
+/*!
+ *  @brief load @ref chunk_sched.bucket look-up from disk.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+u32 chunk_bucket_load_internal(void);
 
 /*!
  *  @brief initialize resources required by chunk debug tools.
@@ -246,19 +243,9 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
 void chunk_buf_pop_internal(hhc_chunk *chunk);
-
-/*!
- *  @brief initialize chunk scheduler resources.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 chunk_scheduler_init_internal(hhc_chunk_scheduler *sched, i32 id,
-        u32 radius_start, u32 radius_end, chunk_work_budget budget);
-/*!
- *  @param len number of chunks from @ref chunk_order.p this scheduler is allowed to parse.
- */
-void chunk_scheduler_update_internal(hhc_chunk_scheduler *sched, u32 start, u32 end,
-        b8 should_push, b8 should_pop);
+void chunk_scheduler_update_internal(void);
+chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
+chunk_work_cost chunk_scheduler_pop_internal(u32 index);
 
 void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
 
