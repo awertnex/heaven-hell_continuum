@@ -93,11 +93,6 @@ chunk_work_cost terrain_noise_axis_init_3d(hhc_terrain_noise *noise, u32 axis, f
 chunk_work_cost terrain_noise_make_2d(hhc_terrain_noise *noise);
 
 /*!
- *  @brief finalize and bake all pre-defined 3D terrain noises.
- */
-chunk_work_cost terrain_noise_make_3d(hhc_terrain_noise *noise);
-
-/*!
  *  @brief make base noise maps for terrain.
  */
 chunk_work_cost terrain_noise_make(hhc_terrain_noise *noise, f32 x, f32 y, f32 z);

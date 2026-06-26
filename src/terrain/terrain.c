@@ -139,12 +139,6 @@ chunk_work_cost terrain_noise_make_2d(hhc_terrain_noise *noise)
     return cost;
 }
 
-chunk_work_cost terrain_noise_make_3d(hhc_terrain_noise *noise)
-{
-    chunk_work_cost cost = 0;
-    return cost;
-}
-
 chunk_work_cost terrain_noise_make(hhc_terrain_noise *noise, f32 x, f32 y, f32 z)
 {
     f32 coef = 0.6f;

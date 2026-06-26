@@ -59,6 +59,14 @@ enum chunk_shift_state
     STATE_CHUNK_SHIFT_NZ = 6
 }; /* chunk_shift_state */
 
+enum chunk_blend_type
+{
+    CHUNK_BLEND_TYPE_NONE,
+    CHUNK_BLEND_TYPE_FACE,
+    CHUNK_BLEND_TYPE_EDGE,
+    CHUNK_BLEND_TYPE_CORNER
+}; /* chunk_blend_type */
+
 /*!
  *  @brief chunk buffer, raw chunk data.
  */

@@ -28,15 +28,16 @@
 
 struct hhc_chunk_sampler
 {
+    v3i32 base_block_offset; /* offset, from chunk space to world space */
     i8 sign[3];             /* x, y, z */
     f32 radius[3];          /* x, y, z */
     v3f32 diameter;
+    v3i32 pos_tab[2];       /* world sampling position table */
+    i32 *pos[8][3];         /* world sampling positions */
+    hhc_terrain_noise noise[9]; /* 8 corners, and one final result */
     f32 t[3];               /* blend_factor */
     f32 t_scale;            /* blend factor scale */
     hhc_terrain terrain;    /* final block info */
-    hhc_terrain_noise noise[9]; /* 8 corners, and one final result */
-    v3i32 pos[8];           /* world sampling positions */
-    v3i32 base_block_offset; /* offset, from chunk space to world space */
 }; /* hhc_chunk_sampler */
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -1116,11 +1117,12 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     hhc_terrain terrain_info = {0};
     hhc_chunk_sampler s = {0};
     v3i32 pos = {0};
-    v3i8 axis_active = {0};
     u32 blend_type = 0;
     u32 blend_axis_count = 0;
     u32 blend_index[3] = {0};
+    i8 axis_active[3] = {0};
     u8 axis[3] = {0};
+    u32 i = 0;
 
     s.t_scale = 1.0f / (WORLD_MARGIN * CHUNK_DIAMETER * 2);
 
@@ -1138,74 +1140,84 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     /* ---- section: setup world margin noise blending ---------------------- */
 
     if (chunk->pos_world.x >= WORLD_RADIUS - WORLD_MARGIN)
-    {
         s.sign[0] = 1;
-        axis_active.x = 1;
-    }
     else if (chunk->pos_world.x < -WORLD_RADIUS + WORLD_MARGIN)
-    {
         s.sign[0] = -1;
-        axis_active.x = 1;
-    }
 
     if (chunk->pos_world.y >= WORLD_RADIUS - WORLD_MARGIN)
-    {
         s.sign[1] = 1;
-        axis_active.y = 1;
-    }
     else if (chunk->pos_world.y < -WORLD_RADIUS + WORLD_MARGIN)
-    {
         s.sign[1] = -1;
-        axis_active.y = 1;
-    }
 
     if (chunk->pos_world.z >= WORLD_RADIUS_VERTICAL - WORLD_MARGIN)
-    {
         s.sign[2] = 1;
-        axis_active.z = 1;
-    }
     else if (chunk->pos_world.z < -WORLD_RADIUS_VERTICAL + WORLD_MARGIN)
-    {
         s.sign[2] = -1;
-        axis_active.z = 1;
-    }
 
-    blend_type = axis_active.x + axis_active.y * 2 + axis_active.z * 4;
-    blend_axis_count = axis_active.x + axis_active.y + axis_active.z;
+    axis_active[0] = s.sign[0] * s.sign[0];
+    axis_active[1] = s.sign[1] * s.sign[1];
+    axis_active[2] = s.sign[2] * s.sign[2];
+
+    blend_type = axis_active[0] | (axis_active[1] << 1) | (axis_active[2] << 2);
+    blend_axis_count = axis_active[0] + axis_active[1] + axis_active[2];
+    for (i = 0; i < 8; ++i)
+    {
+        s.pos[i][0] = &s.pos_tab[(i >> 0) & 1].x;
+        s.pos[i][1] = &s.pos_tab[(i >> 1) & 1].y;
+        s.pos[i][2] = &s.pos_tab[(i >> 2) & 1].z;
+    }
 
     switch (blend_type)
     {
-        case 0:
+        case 1:     /* x */
+            axis[0] = 0;
+            axis[1] = 0;
+            axis[2] = 0;
             break;
 
-        case 1:
+        case 2:     /* y */
+            axis[0] = 1;
+            axis[1] = 0;
+            axis[2] = 0;
             break;
 
-        case 2:
+        case 3:     /* xy */
+            axis[0] = 0;
+            axis[1] = 1;
+            axis[2] = 0;
             break;
 
-        case 3:
+        case 4:     /* z */
+            axis[0] = 2;
+            axis[1] = 0;
+            axis[2] = 0;
             break;
 
-        case 4:
+        case 5:     /* xz */
+            axis[0] = 0;
+            axis[1] = 2;
+            axis[2] = 0;
             break;
 
-        case 5:
+        case 6:     /* yz */
+            axis[0] = 1;
+            axis[1] = 2;
+            axis[2] = 0;
             break;
 
-        case 6:
-            break;
-
-        case 7:
+        case 7:     /* xyz */
+            axis[0] = 0;
+            axis[1] = 1;
+            axis[2] = 2;
             break;
     }
 
-    s.diameter.x = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[0];
-    s.diameter.y = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[1];
-    s.diameter.z = -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER * s.sign[2];
     s.radius[0] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[0];
     s.radius[1] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[1];
     s.radius[2] = -WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER * s.sign[2];
+    s.diameter.x = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[0];
+    s.diameter.y = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[1];
+    s.diameter.z = -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER * s.sign[2];
 
     /* ---- end section: setup world margin noise blending ------------------ */
 
@@ -1232,63 +1244,67 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 
     /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
      * should first pick up from where `chunk->cursor` left off last time. */
-    s.pos[0].z = pos.z + s.base_block_offset.z;
-    s.pos[1].z = s.pos[0].z + s.diameter.z;
-    for (; pos.z < CHUNK_DIAMETER; ++pos.z, ++s.pos[0].z)
+    s.pos_tab[0].z = pos.z + s.base_block_offset.z;
+    s.pos_tab[1].z = s.pos_tab[0].z + s.diameter.z;
+    for (; pos.z < CHUNK_DIAMETER; ++pos.z, ++s.pos_tab[0].z, ++s.pos_tab[1].z)
     {
-        s.pos[0].y = pos.y + s.base_block_offset.y;
-        s.pos[1].y = s.pos[0].y + s.diameter.y;
-        for (; pos.y < CHUNK_DIAMETER; ++pos.y, ++s.pos[0].y)
+        s.t[2] = 0.5f - (s.radius[axis[2]] - (f32)*s.pos[4][axis[2]]) *
+            s.sign[axis[2]] * s.t_scale;
+        s.t[2] = s.t[2] * s.t[2] * s.t[2] * (s.t[2] * (s.t[2] * 6.0f - 15.0f) + 10.0f);
+
+        s.pos_tab[0].y = pos.y + s.base_block_offset.y;
+        s.pos_tab[1].y = s.pos_tab[0].y + s.diameter.y;
+        for (; pos.y < CHUNK_DIAMETER; ++pos.y, ++s.pos_tab[0].y, ++s.pos_tab[1].y)
         {
-            s.pos[0].x = pos.x + s.base_block_offset.x;
-            s.pos[1].x = s.pos[0].x + s.diameter.x;
-            for (; pos.x < CHUNK_DIAMETER; ++pos.x, ++s.pos[0].x)
+            s.t[1] = 0.5f - (s.radius[axis[1]] - (f32)*s.pos[2][axis[1]]) *
+                s.sign[axis[1]] * s.t_scale;
+            s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
+
+            s.pos_tab[0].x = pos.x + s.base_block_offset.x;
+            s.pos_tab[1].x = s.pos_tab[0].x + s.diameter.x;
+            for (; pos.x < CHUNK_DIAMETER; ++pos.x, ++s.pos_tab[0].x, ++s.pos_tab[1].x)
             {
-                cost += terrain_noise_make(&s.noise[0], s.pos[0].x, s.pos[0].y, s.pos[0].z);
+                s.t[0] = 0.5f - (s.radius[axis[0]] - (f32)*s.pos[1][axis[0]]) *
+                    s.sign[axis[0]] * s.t_scale;
+                s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
 
-                s.pos[1].x = s.pos[0].x + s.diameter.x;
-                s.pos[1].y = s.pos[0].y;
-                s.pos[1].z = s.pos[0].z;
-                s.pos[2].x = s.pos[0].x;
-                s.pos[2].y = s.pos[0].y + s.diameter.y;
-                s.pos[2].z = s.pos[0].z;
+                cost += terrain_noise_make(&s.noise[0], *s.pos[0][0], *s.pos[0][1], *s.pos[0][2]);
 
-                if (s.sign[0] && s.sign[1])
+                switch (blend_axis_count)
                 {
-                    s.pos[3].x = s.pos[1].x;
-                    s.pos[3].y = s.pos[2].y;
-                    s.pos[3].z = s.pos[0].z;
+                    case CHUNK_BLEND_TYPE_FACE:
+                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
+                        cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[axis[0]]);
+                        break;
 
-                    s.t[0] = 0.5f - ((s.radius[0] - (f32)s.pos[3].x) * s.sign[0]) * s.t_scale;
-                    s.t[1] = 0.5f - ((s.radius[1] - (f32)s.pos[3].y) * s.sign[1]) * s.t_scale;
-                    s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
-                    s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
+                    case CHUNK_BLEND_TYPE_EDGE:
+                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
+                        cost += terrain_noise_make(&s.noise[2], *s.pos[2][0], *s.pos[2][1], *s.pos[2][2]);
+                        cost += terrain_noise_make(&s.noise[3], *s.pos[3][0], *s.pos[3][1], *s.pos[3][2]);
+                        cost += terrain_noise_bilerp(&s.noise[0],
+                                &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3], s.t[axis[0]], s.t[axis[1]]);
+                        break;
 
-                    cost += terrain_noise_make(&s.noise[1], s.pos[1].x, s.pos[1].y, s.pos[1].z);
-                    cost += terrain_noise_make(&s.noise[2], s.pos[2].x, s.pos[2].y, s.pos[2].z);
-                    cost += terrain_noise_make(&s.noise[3], s.pos[3].x, s.pos[3].y, s.pos[3].z);
-                    cost += terrain_noise_bilerp(&s.noise[0],
-                            &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3], s.t[0], s.t[1]);
-                }
-                else if (s.sign[0])
-                {
-                    s.t[0] = 0.5f - ((s.radius[0] - (f32)s.pos[1].x) * s.sign[0]) * s.t_scale;
-                    s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
+                    case CHUNK_BLEND_TYPE_CORNER:
+                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
+                        cost += terrain_noise_make(&s.noise[2], *s.pos[2][0], *s.pos[2][1], *s.pos[2][2]);
+                        cost += terrain_noise_make(&s.noise[3], *s.pos[3][0], *s.pos[3][1], *s.pos[3][2]);
+                        cost += terrain_noise_make(&s.noise[4], *s.pos[4][0], *s.pos[4][1], *s.pos[4][2]);
+                        cost += terrain_noise_make(&s.noise[5], *s.pos[5][0], *s.pos[5][1], *s.pos[5][2]);
+                        cost += terrain_noise_make(&s.noise[6], *s.pos[6][0], *s.pos[6][1], *s.pos[6][2]);
+                        cost += terrain_noise_make(&s.noise[7], *s.pos[7][0], *s.pos[7][1], *s.pos[7][2]);
+                        cost += terrain_noise_trilerp(&s.noise[0],
+                                &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3],
+                                &s.noise[4], &s.noise[5], &s.noise[6], &s.noise[7],
+                                s.t[axis[0]], s.t[axis[1]], s.t[axis[2]]);
+                        break;
 
-                    cost += terrain_noise_make(&s.noise[1], s.pos[1].x, s.pos[1].y, s.pos[1].z);
-                    cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[0]);
-                }
-                else if (s.sign[1])
-                {
-                    s.t[1] = 0.5f - ((s.radius[1] - (f32)s.pos[2].y) * s.sign[1]) * s.t_scale;
-                    s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
+                    default:
+                        break;
 
-                    cost += terrain_noise_make(&s.noise[1], s.pos[2].x, s.pos[2].y, s.pos[2].z);
-                    cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[1]);
                 }
 
-                terrain_info = terrain_shape(s.pos[0].x, s.pos[0].y, s.pos[0].z,
-                        &s.noise[0]);
+                terrain_info = terrain_shape(*s.pos[0][0], *s.pos[0][1], *s.pos[0][2], &s.noise[0]);
 
                 if (terrain_info.block_id)
                 {
