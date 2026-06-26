@@ -24,6 +24,21 @@
 #include <stdio.h>
 #include <math.h>
 
+/* ---- section: definitions ------------------------------------------------ */
+
+struct hhc_chunk_sampler
+{
+    i8 sign[3];             /* x, y, z */
+    f32 radius[3];          /* x, y, z */
+    v3f32 diameter;
+    f32 t[3];               /* blend_factor */
+    f32 t_scale;            /* blend factor scale */
+    hhc_terrain terrain;    /* final block info */
+    hhc_terrain_noise noise[9]; /* 8 corners, and one final result */
+    v3i32 pos[8];           /* world sampling positions */
+    v3i32 base_block_offset; /* offset, from chunk space to world space */
+}; /* hhc_chunk_sampler */
+
 /* ---- section: declarations ----------------------------------------------- */
 
 /*!
@@ -394,7 +409,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     u8 AXIS = 0;
     i8 INCREMENT = 0;
     v3f32 DISTANCE = {0};
-    i32 RENDER_DISTANCE = 0;
+    u32 RENDER_DISTANCE = 0;
     v3u32 chunk_tab_coordinates = {0};
 
     if (settings.flag.render_distance_dirty)
@@ -406,7 +421,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
 
-    chunk_scheduler_update_internal();
+    chunk_scheduler_update_internal_deprecated();
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
     DELTA.y = player_chunk.y - player_chunk_delta->y;
@@ -431,7 +446,7 @@ chunk_tab_shift:
     DISTANCE.z = DELTA.z;
     RENDER_DISTANCE = chunk_sphere_radius_get_internal(settings.render_distance);
 
-    if ((i32)fsl_len_v3f32(DISTANCE) > RENDER_DISTANCE)
+    if ((u32)fsl_len_v3f32(DISTANCE) > RENDER_DISTANCE)
     {
         for (i = 0; i < chunk_order.chunks_max; ++i)
         {
@@ -599,8 +614,6 @@ chunk_tab_shift:
         chunk_tab.p[i] = chunk_tab.p[target_index];
         if (chunk_tab.p[i])
         {
-            chunk_tab.p[i]->cti = i;
-
             chunk_tab_coordinates.x = i % settings.chunk_buf_diameter;
             chunk_tab_coordinates.y = (i / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
             chunk_tab_coordinates.z = i / settings.chunk_buf_layer;
@@ -708,8 +721,6 @@ u32 block_get_faces_internal(const hhc_chunk *chunk,
 block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
         f64 end_x, f64 end_y, f64 end_z, f64 distance_max)
 {
-    v3i64 world_volume_min = {-WORLD_DIAMETER, -WORLD_DIAMETER, -WORLD_DIAMETER_VERTICAL};
-    v3i64 world_volume_max = {WORLD_DIAMETER, WORLD_DIAMETER, WORLD_DIAMETER_VERTICAL};
     block_hit hit = {0};
     v3f64 delta = {0};
     v3f64 direction = {0};
@@ -805,9 +816,6 @@ block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
         if (!chunk->block[z][y][x])
             continue;
 
-        if (!fsl_is_in_volume_i64(hit.pos, world_volume_min, world_volume_max))
-            break;
-
         hit.block = &chunk->block[z][y][x];
         hit.hit = TRUE;
         break;
@@ -832,9 +840,9 @@ void block_place(block_hit hit, enum block_id block_id)
         return;
 
     /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos.z * CHUNK_DIAMETER;
+    hit.pos.x -= chunk_tab.p[index]->pos_wrap.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_wrap.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_wrap.z * CHUNK_DIAMETER;
 
     /* get block position at normal direction */
     hit.pos.x += (i32)hit.normal.x;
@@ -923,9 +931,9 @@ void block_break(block_hit hit)
         return;
 
     /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos.z * CHUNK_DIAMETER;
+    hit.pos.x -= chunk_tab.p[index]->pos_wrap.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_wrap.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_wrap.z * CHUNK_DIAMETER;
 
     /* get the chunk the new block index is in and make sure it's within bounds */
     index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
@@ -1048,21 +1056,21 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
     chunk->pos_world.y = player_chunk_delta.y + chunk_tab_coordinates.y - settings.chunk_buf_radius;
     chunk->pos_world.z = player_chunk_delta.z + chunk_tab_coordinates.z - settings.chunk_buf_radius;
 
-    chunk->pos.x = fsl_mod_i32(chunk->pos_world.x + WORLD_RADIUS, WORLD_DIAMETER) - WORLD_RADIUS;
-    chunk->pos.y = fsl_mod_i32(chunk->pos_world.y + WORLD_RADIUS, WORLD_DIAMETER) - WORLD_RADIUS;
-    chunk->pos.z = fsl_mod_i32(chunk->pos_world.z + WORLD_RADIUS_VERTICAL,
+    chunk->pos_wrap.x = fsl_mod_i32(chunk->pos_world.x + WORLD_RADIUS, WORLD_DIAMETER) - WORLD_RADIUS;
+    chunk->pos_wrap.y = fsl_mod_i32(chunk->pos_world.y + WORLD_RADIUS, WORLD_DIAMETER) - WORLD_RADIUS;
+    chunk->pos_wrap.z = fsl_mod_i32(chunk->pos_world.z + WORLD_RADIUS_VERTICAL,
             WORLD_DIAMETER_VERTICAL) - WORLD_RADIUS_VERTICAL;
 
     chunk->cti =
         chunk_tab_coordinates.x +
         chunk_tab_coordinates.y * settings.chunk_buf_diameter +
         chunk_tab_coordinates.z * settings.chunk_buf_layer;
-    chunk->coi = fsl_distance_v3i32(pos, center);
+    chunk->cpi = fsl_distance_v3i32(pos, center);
 
     chunk->id =
-        (u64)(chunk->pos.x & 0xffff) << 0x00 |
-        (u64)(chunk->pos.y & 0xffff) << 0x10 |
-        (u64)(chunk->pos.z & 0xffff) << 0x20;
+        (u64)(chunk->pos_wrap.x & 0xffff) << 0x00 |
+        (u64)(chunk->pos_wrap.y & 0xffff) << 0x10 |
+        (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
 
     if (chunk->mesh_deprecated.initialized)
     {
@@ -1085,7 +1093,7 @@ chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget)
 
     snprintf(path, FSL_PATH_CAP,
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
-            world.path, chunk->pos.x, chunk->pos.y, chunk->pos.z);
+            world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
 #if MODE_INTERNAL_IMPORT_CHUNKS
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
@@ -1105,22 +1113,16 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     hhc_chunk *pz = NULL;
     hhc_chunk *nz = NULL;
     v3u32 chunk_tab_coordinates = {0};
-
-    /* one for terrain, four for world overflow sampling */
-    v3i32 coordinates[4] = {0};
-
-    /* one for terrain, four for world overflow sampling */
-    hhc_terrain_noise terrain_noise[4] = {0};
-
-    v3i32 world_pos_from_chunk_pos = {0};
     hhc_terrain terrain_info = {0};
-    v3u8 blend_world_margin = {0};
-    v3f32 blend_factor = {0};
-    f32 blend_factor_scale = 1.0f / (WORLD_MARGIN * CHUNK_DIAMETER * 2);
-    v3f32 overflow_offset = {0};
-    v3f32 overflow_edge = {0};
-    v3f32 overflow_sign = {0};
-    i32 x = 0, y = 0, z = 0;
+    hhc_chunk_sampler s = {0};
+    v3i32 pos = {0};
+    v3i8 axis_active = {0};
+    u32 blend_type = 0;
+    u32 blend_axis_count = 0;
+    u32 blend_index[3] = {0};
+    u8 axis[3] = {0};
+
+    s.t_scale = 1.0f / (WORLD_MARGIN * CHUNK_DIAMETER * 2);
 
     if (chunk->cursor == CHUNK_VOLUME)
     {
@@ -1129,56 +1131,81 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
         return cost;
     }
 
-    world_pos_from_chunk_pos.x = chunk->pos_world.x * CHUNK_DIAMETER;
-    world_pos_from_chunk_pos.y = chunk->pos_world.y * CHUNK_DIAMETER;
-    world_pos_from_chunk_pos.z = chunk->pos_world.z * CHUNK_DIAMETER;
+    s.base_block_offset.x = chunk->pos_world.x * CHUNK_DIAMETER;
+    s.base_block_offset.y = chunk->pos_world.y * CHUNK_DIAMETER;
+    s.base_block_offset.z = chunk->pos_world.z * CHUNK_DIAMETER;
 
     /* ---- section: setup world margin noise blending ---------------------- */
 
     if (chunk->pos_world.x >= WORLD_RADIUS - WORLD_MARGIN)
     {
-        blend_world_margin.x = 1;
-        overflow_offset.x = -WORLD_DIAMETER * CHUNK_DIAMETER;
-        overflow_edge.x = -WORLD_RADIUS * CHUNK_DIAMETER;
-        overflow_sign.x = 1.0f;
+        s.sign[0] = 1;
+        axis_active.x = 1;
     }
     else if (chunk->pos_world.x < -WORLD_RADIUS + WORLD_MARGIN)
     {
-        blend_world_margin.x = 1;
-        overflow_offset.x = WORLD_DIAMETER * CHUNK_DIAMETER;
-        overflow_edge.x = WORLD_RADIUS * CHUNK_DIAMETER;
-        overflow_sign.x = -1.0f;
+        s.sign[0] = -1;
+        axis_active.x = 1;
     }
 
     if (chunk->pos_world.y >= WORLD_RADIUS - WORLD_MARGIN)
     {
-        blend_world_margin.y = 1;
-        overflow_offset.y = -WORLD_DIAMETER * CHUNK_DIAMETER;
-        overflow_edge.y = -WORLD_RADIUS * CHUNK_DIAMETER;
-        overflow_sign.y = 1.0f;
+        s.sign[1] = 1;
+        axis_active.y = 1;
     }
     else if (chunk->pos_world.y < -WORLD_RADIUS + WORLD_MARGIN)
     {
-        blend_world_margin.y = 1;
-        overflow_offset.y = WORLD_DIAMETER * CHUNK_DIAMETER;
-        overflow_edge.y = WORLD_RADIUS * CHUNK_DIAMETER;
-        overflow_sign.y = -1.0f;
+        s.sign[1] = -1;
+        axis_active.y = 1;
     }
 
     if (chunk->pos_world.z >= WORLD_RADIUS_VERTICAL - WORLD_MARGIN)
     {
-        blend_world_margin.z = 1;
-        overflow_offset.z = -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
-        overflow_edge.z = -WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER;
-        overflow_sign.z = 1.0f;
+        s.sign[2] = 1;
+        axis_active.z = 1;
     }
     else if (chunk->pos_world.z < -WORLD_RADIUS_VERTICAL + WORLD_MARGIN)
     {
-        blend_world_margin.z = 1;
-        overflow_offset.z = WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER;
-        overflow_edge.z = WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER;
-        overflow_sign.z = -1.0f;
+        s.sign[2] = -1;
+        axis_active.z = 1;
     }
+
+    blend_type = axis_active.x + axis_active.y * 2 + axis_active.z * 4;
+    blend_axis_count = axis_active.x + axis_active.y + axis_active.z;
+
+    switch (blend_type)
+    {
+        case 0:
+            break;
+
+        case 1:
+            break;
+
+        case 2:
+            break;
+
+        case 3:
+            break;
+
+        case 4:
+            break;
+
+        case 5:
+            break;
+
+        case 6:
+            break;
+
+        case 7:
+            break;
+    }
+
+    s.diameter.x = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[0];
+    s.diameter.y = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[1];
+    s.diameter.z = -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER * s.sign[2];
+    s.radius[0] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[0];
+    s.radius[1] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[1];
+    s.radius[2] = -WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER * s.sign[2];
 
     /* ---- end section: setup world margin noise blending ------------------ */
 
@@ -1199,102 +1226,86 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     if (chunk_tab_coordinates.z > 0)
         nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
 
-    x = chunk->cursor % CHUNK_DIAMETER;
-    y = (chunk->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
-    z = chunk->cursor / CHUNK_LAYER;
+    pos.x = chunk->cursor % CHUNK_DIAMETER;
+    pos.y = (chunk->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
+    pos.z = chunk->cursor / CHUNK_LAYER;
 
-    /* `x`, `y` and `z` reset at the end of their loops because they should first pick up from
-     * where `chunk->cursor` left off last time. */
-    coordinates[0].z = z + world_pos_from_chunk_pos.z;
-    for (; z < CHUNK_DIAMETER; ++z, ++coordinates[0].z)
+    /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
+     * should first pick up from where `chunk->cursor` left off last time. */
+    s.pos[0].z = pos.z + s.base_block_offset.z;
+    s.pos[1].z = s.pos[0].z + s.diameter.z;
+    for (; pos.z < CHUNK_DIAMETER; ++pos.z, ++s.pos[0].z)
     {
-        coordinates[0].y = y + world_pos_from_chunk_pos.y;
-        for (; y < CHUNK_DIAMETER; ++y, ++coordinates[0].y)
+        s.pos[0].y = pos.y + s.base_block_offset.y;
+        s.pos[1].y = s.pos[0].y + s.diameter.y;
+        for (; pos.y < CHUNK_DIAMETER; ++pos.y, ++s.pos[0].y)
         {
-            coordinates[0].x = x + world_pos_from_chunk_pos.x;
-            for (; x < CHUNK_DIAMETER; ++x, ++coordinates[0].x)
+            s.pos[0].x = pos.x + s.base_block_offset.x;
+            s.pos[1].x = s.pos[0].x + s.diameter.x;
+            for (; pos.x < CHUNK_DIAMETER; ++pos.x, ++s.pos[0].x)
             {
-                terrain_noise[0] = world.terrain_noise_func(coordinates[0]);
-                cost += terrain_noise[0].cost;
+                cost += terrain_noise_make(&s.noise[0], s.pos[0].x, s.pos[0].y, s.pos[0].z);
 
-                coordinates[1].x = coordinates[0].x + overflow_offset.x;
-                coordinates[1].y = coordinates[0].y;
-                coordinates[1].z = coordinates[0].z;
-                coordinates[2].x = coordinates[0].x;
-                coordinates[2].y = coordinates[0].y + overflow_offset.y;
-                coordinates[2].z = coordinates[0].z;
+                s.pos[1].x = s.pos[0].x + s.diameter.x;
+                s.pos[1].y = s.pos[0].y;
+                s.pos[1].z = s.pos[0].z;
+                s.pos[2].x = s.pos[0].x;
+                s.pos[2].y = s.pos[0].y + s.diameter.y;
+                s.pos[2].z = s.pos[0].z;
 
-                if (blend_world_margin.x && blend_world_margin.y)
+                if (s.sign[0] && s.sign[1])
                 {
-                    coordinates[3].x = coordinates[1].x;
-                    coordinates[3].y = coordinates[2].y;
-                    coordinates[3].z = coordinates[0].z;
+                    s.pos[3].x = s.pos[1].x;
+                    s.pos[3].y = s.pos[2].y;
+                    s.pos[3].z = s.pos[0].z;
 
-                    blend_factor.x = 0.5f -
-                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) *
-                        blend_factor_scale;
-                    blend_factor.y = 0.5f -
-                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) *
-                        blend_factor_scale;
+                    s.t[0] = 0.5f - ((s.radius[0] - (f32)s.pos[3].x) * s.sign[0]) * s.t_scale;
+                    s.t[1] = 0.5f - ((s.radius[1] - (f32)s.pos[3].y) * s.sign[1]) * s.t_scale;
+                    s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
+                    s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
 
-                    terrain_noise[1] = world.terrain_noise_func(coordinates[1]);
-                    terrain_noise[2] = world.terrain_noise_func(coordinates[2]);
-                    terrain_noise[3] = world.terrain_noise_func(coordinates[3]);
-                    terrain_noise[0] = terrain_noise_bilerp(
-                            &terrain_noise[0], &terrain_noise[1],
-                            &terrain_noise[2], &terrain_noise[3],
-                            blend_factor.x, blend_factor.y);
-
-                    cost += terrain_noise[0].cost;
-                    cost += terrain_noise[1].cost;
-                    cost += terrain_noise[2].cost;
-                    cost += terrain_noise[3].cost;
+                    cost += terrain_noise_make(&s.noise[1], s.pos[1].x, s.pos[1].y, s.pos[1].z);
+                    cost += terrain_noise_make(&s.noise[2], s.pos[2].x, s.pos[2].y, s.pos[2].z);
+                    cost += terrain_noise_make(&s.noise[3], s.pos[3].x, s.pos[3].y, s.pos[3].z);
+                    cost += terrain_noise_bilerp(&s.noise[0],
+                            &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3], s.t[0], s.t[1]);
                 }
-                else if (blend_world_margin.x)
+                else if (s.sign[0])
                 {
-                    blend_factor.x = 0.5f -
-                        ((overflow_edge.x - (f32)coordinates[1].x) * overflow_sign.x) *
-                        blend_factor_scale;
+                    s.t[0] = 0.5f - ((s.radius[0] - (f32)s.pos[1].x) * s.sign[0]) * s.t_scale;
+                    s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
 
-                    terrain_noise[1] = world.terrain_noise_func(coordinates[1]);
-                    terrain_noise[0] =
-                        terrain_noise_lerp(&terrain_noise[0], &terrain_noise[1], blend_factor.x);
-
-                    cost += terrain_noise[0].cost;
-                    cost += terrain_noise[1].cost;
+                    cost += terrain_noise_make(&s.noise[1], s.pos[1].x, s.pos[1].y, s.pos[1].z);
+                    cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[0]);
                 }
-                else if (blend_world_margin.y)
+                else if (s.sign[1])
                 {
-                    blend_factor.y = 0.5f -
-                        ((overflow_edge.y - (f32)coordinates[2].y) * overflow_sign.y) *
-                        blend_factor_scale;
+                    s.t[1] = 0.5f - ((s.radius[1] - (f32)s.pos[2].y) * s.sign[1]) * s.t_scale;
+                    s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
 
-                    terrain_noise[1] = world.terrain_noise_func(coordinates[2]);
-                    terrain_noise[0] =
-                        terrain_noise_lerp(&terrain_noise[0], &terrain_noise[1], blend_factor.y);
-
-                    cost += terrain_noise[0].cost;
-                    cost += terrain_noise[1].cost;
+                    cost += terrain_noise_make(&s.noise[1], s.pos[2].x, s.pos[2].y, s.pos[2].z);
+                    cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[1]);
                 }
 
-                terrain_info = world.terrain_func(coordinates[0], &terrain_noise[0]);
+                terrain_info = terrain_shape(s.pos[0].x, s.pos[0].y, s.pos[0].z,
+                        &s.noise[0]);
 
                 if (terrain_info.block_id)
                 {
-                    block_add_internal(chunk, px, nx, py, ny, pz, nz, x, y, z, terrain_info.block_id);
+                    block_add_internal(chunk, px, nx, py, ny, pz, nz, pos.x, pos.y, pos.z, terrain_info.block_id);
                 }
 
                 if (cost >= (u32)budget)
                     goto finish_generation;
             }
-            x = 0;
+            pos.x = 0;
         }
-        y = 0;
+        pos.y = 0;
     }
 
 finish_generation:
 
-    chunk->cursor = x + y * CHUNK_DIAMETER + z * CHUNK_LAYER;
+    chunk->cursor = pos.x + pos.y * CHUNK_DIAMETER + pos.z * CHUNK_LAYER;
     return cost;
 }
 
@@ -1445,7 +1456,7 @@ chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
 
     snprintf(path, FSL_PATH_CAP,
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
-            world.path, chunk->pos.x, chunk->pos.y, chunk->pos.z);
+            world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
     for (; i < CHUNK_VOLUME; ++j, i += rle, blocks += rle)
     {
@@ -1487,9 +1498,9 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
     }
 
     chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_IMPORTED | FLAG_CHUNK_DIRTY;
-    chunk->pos.x = pos_cache[0];
-    chunk->pos.y = pos_cache[1];
-    chunk->pos.z = pos_cache[2];
+    chunk->pos_wrap.x = pos_cache[0];
+    chunk->pos_wrap.y = pos_cache[1];
+    chunk->pos_wrap.z = pos_cache[2];
 
     file = fopen(path, "rb");
     fseek(file, 0, SEEK_END);
@@ -1621,16 +1632,14 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     chunk_tab.p[chunk->cti] = NULL;
 }
 
-void chunk_scheduler_update_internal(void)
+void chunk_scheduler_update_internal_deprecated(void)
 {
     hhc_chunk *chunk = NULL;
     static u32 push = 0;
     static u32 pop = 0;
     chunk_work_budget budget = CHUNK_WORK_BUDGET_DEFAULT;
     u32 i = 0;
-    u32 j = 0;
     u32 end = chunk_order.chunks_max;
-    u32 index = 0;
 
     if (chunk_sched.count >= end)
         goto pop;
@@ -1715,6 +1724,98 @@ pop:
     }
 
     chunk_sched.cursor_pop = pop;
+}
+
+void chunk_scheduler_update_internal(void)
+{
+    hhc_chunk *chunk = NULL;
+    static u32 push = 0;
+    static u32 pop = 0;
+    chunk_work_budget budget = CHUNK_WORK_BUDGET_DEFAULT;
+    u32 i = 0;
+    u32 j = 0;
+    u32 end = chunk_sched.buckets_max;
+    u32 index = 0;
+
+    if (chunk_sched.count >= end)
+        goto pop;
+
+    if (budget <= 0)
+        return;
+
+    for (; i < end && chunk_sched.count < end && budget > 0; ++i)
+    {
+        chunk = chunk_tab.p[chunk_order.p[i]];
+        if (chunk)
+        {
+            if (chunk->flag & FLAG_CHUNK_DIRTY &&
+                    !(chunk->flag & FLAG_CHUNK_QUEUED) &&
+                    !chunk_sched.p[push])
+            {
+                chunk->flag |= FLAG_CHUNK_QUEUED;
+                chunk_sched.p[push] = chunk;
+                ++push;
+                if (push >= end)
+                    push = 0;
+                ++chunk_sched.count;
+                budget -= CHUNK_WORK_COST_PUSH;
+            }
+        }
+        budget -= CHUNK_WORK_COST_SCAN;
+    }
+
+pop:
+
+    if (!chunk_sched.count || budget <= 0)
+        return;
+
+    for (i = 0; i < end && chunk_sched.count && budget > 0; ++i)
+    {
+        if (chunk_sched.p[pop])
+        {
+            chunk = chunk_sched.p[pop];
+
+            if (!(chunk->flag & FLAG_CHUNK_LOADED))
+            {
+                chunk->flag &= ~FLAG_CHUNK_QUEUED;
+                chunk_sched.p[pop] = NULL;
+                --chunk_sched.count;
+                ++pop;
+                if (pop >= end)
+                    pop = 0;
+                budget -= CHUNK_WORK_COST_POP;
+                continue;
+            }
+
+            if (chunk->flag & FLAG_CHUNK_GENERATED)
+                budget -= chunk_mesh_update_internal(chunk);
+            else
+                budget -= chunk_load_internal(chunk, budget);
+
+            if (!(chunk->flag & FLAG_CHUNK_DIRTY))
+            {
+#if MODE_INTERNAL_EXPORT_CHUNKS
+                if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
+                    chunk_export_internal(chunk);
+#endif /* MODE_INTERNAL_EXPORT_CHUNKS */
+
+                chunk->flag &= ~(FLAG_CHUNK_QUEUED | FLAG_CHUNK_IMPORTED);
+                chunk_sched.p[pop] = NULL;
+                --chunk_sched.count;
+                ++pop;
+                if (pop >= end)
+                    pop = 0;
+                budget -= CHUNK_WORK_COST_POP;
+            }
+        }
+        else
+        {
+            ++pop;
+            if (pop >= end)
+                pop = 0;
+            budget -= CHUNK_WORK_COST_POP;
+        }
+    }
 }
 
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)

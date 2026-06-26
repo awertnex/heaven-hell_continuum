@@ -97,7 +97,15 @@ typedef struct hhc_chunk_scheduler
     hhc_chunk **p;          /* cached pointer from `schedule` */
     hhc_chunk_bucket *bucket; /* cached pointer from `schedule` */
     u32 buckets_max;        /* total number of members in `bucket` */
+    u32 priority;           /* current parsing priority */
 } hhc_chunk_scheduler;
+
+/*!
+ *  @brief one sample in chunk generation.
+ *
+ *  @remark defined internally in @ref chunking.c.
+ */
+typedef struct hhc_chunk_sampler hhc_chunk_sampler;
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -195,6 +203,9 @@ u32 chunk_sphere_radius_get_internal(u32 radius);
 
 /*!
  *  @brief set new chunk position.
+ *
+ *  set chunk position and wrapped position.
+ *  set chunk ID, cti and cpi.
  */
 void chunk_pos_set_internal(hhc_chunk *chunk,
         v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates);
@@ -243,6 +254,7 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
 void chunk_buf_pop_internal(hhc_chunk *chunk);
+void chunk_scheduler_update_internal_deprecated(void);
 void chunk_scheduler_update_internal(void);
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
 chunk_work_cost chunk_scheduler_pop_internal(u32 index);

@@ -8,6 +8,8 @@
 
 #include "../h/assets.h"
 
+#include "noise.h"
+
 enum hhc_biome_index
 {
     BIOME_STONE,
@@ -43,22 +45,16 @@ typedef struct hhc_biome
 
 typedef struct hhc_terrain_noise
 {
-    f32 continental;
-    f32 regional;
-    f32 local;
-    f32 detail;
+    hhc_noise_sample continental;
+    hhc_noise_sample regional;
+    hhc_noise_sample local;
+    hhc_noise_sample detail;
 
-    f32 temperature;
-    f32 humidity;
-    f32 extremity;
-    f32 roughness;
-    f32 life;
-
-    /*!
-     *  @brief cost of noise work.
-     */
-    chunk_work_cost cost;
-
+    hhc_noise_sample temperature;
+    hhc_noise_sample humidity;
+    hhc_noise_sample extremity;
+    hhc_noise_sample roughness;
+    hhc_noise_sample life;
 } hhc_terrain_noise;
 
 typedef struct hhc_terrain
@@ -72,44 +68,71 @@ typedef struct hhc_terrain
     f32 value;
 } hhc_terrain;
 
-typedef hhc_terrain_noise (*hhc_terrain_noise_func)(v3i32 coordinates);
-typedef hhc_terrain (*hhc_terrain_func)(v3i32 coordinates, const hhc_terrain_noise *noise);
-
 /*!
  *  @brief initialize default terrain settings and biome parameters.
  */
 void terrain_init(void);
 
 /*!
+ *  @brief initialize a single axis of pre-defined 2D terrain noises.
+ *
+ *  @param x position along specified axis.
+ */
+chunk_work_cost terrain_noise_axis_init_2d(hhc_terrain_noise *noise, u32 axis, f32 x);
+
+/*!
+ *  @brief initialize a single axis of pre-defined 3D terrain noises.
+ *
+ *  @param x position along specified axis.
+ */
+chunk_work_cost terrain_noise_axis_init_3d(hhc_terrain_noise *noise, u32 axis, f32 x);
+
+/*!
+ *  @brief finalize and bake all pre-defined 2D terrain noises.
+ */
+chunk_work_cost terrain_noise_make_2d(hhc_terrain_noise *noise);
+
+/*!
+ *  @brief finalize and bake all pre-defined 3D terrain noises.
+ */
+chunk_work_cost terrain_noise_make_3d(hhc_terrain_noise *noise);
+
+/*!
  *  @brief make base noise maps for terrain.
- *
- *  @return terrain noises.
  */
-hhc_terrain_noise terrain_noise_make(v3i32 coordinates);
+chunk_work_cost terrain_noise_make(hhc_terrain_noise *noise, f32 x, f32 y, f32 z);
 
 /*!
- *  @brief interpolate all noises in `a` and `b` using cubic interpolation.
- *
- *  @return interpolated terrain noise.
+ *  @brief interpolate all noises in `a` and `b` using linear interpolation.
  */
-hhc_terrain_noise terrain_noise_lerp(const hhc_terrain_noise *a, const hhc_terrain_noise *b, f32 t);
+chunk_work_cost terrain_noise_lerp(hhc_terrain_noise *dst,
+        const hhc_terrain_noise *a, const hhc_terrain_noise *b, f32 t);
 
 /*!
- *  @brief interpolate all noises in `a`, `b`, `c` and `d` using bi-cubic interpolation.
- *
- *  @return interpolated terrain noise.
+ *  @brief interpolate all noises in `a`, `b`, `c` and `d` using bi-linear interpolation.
  */
-hhc_terrain_noise terrain_noise_bilerp(
+chunk_work_cost terrain_noise_bilerp(hhc_terrain_noise *dst,
         const hhc_terrain_noise *a, const hhc_terrain_noise *b,
         const hhc_terrain_noise *c, const hhc_terrain_noise *d,
         f32 tx, f32 ty);
+
+/*!
+ *  @brief interpolate all noises in `a`, `b`, `c`, `d`, `e`, `f`, `g` and `h`
+ *  using tri-linear interpolation.
+ */
+chunk_work_cost terrain_noise_trilerp(hhc_terrain_noise *dst,
+        const hhc_terrain_noise *a, const hhc_terrain_noise *b,
+        const hhc_terrain_noise *c, const hhc_terrain_noise *d,
+        const hhc_terrain_noise *e, const hhc_terrain_noise *f,
+        const hhc_terrain_noise *g, const hhc_terrain_noise *h,
+        f32 tx, f32 ty, f32 tz);
 
 /*!
  *  @brief default terrain shape.
  *
  *  @return terrain info (e.g., biome) from specified coordinates and noises.
  */
-hhc_terrain terrain_shape(v3i32 coordinates, const hhc_terrain_noise *noise);
+hhc_terrain terrain_shape(i32 x, i32 y, i32 z, const hhc_terrain_noise *noise);
 
 /*!
  *  @brief compare likelihood of biomes `a` and `b` matching.

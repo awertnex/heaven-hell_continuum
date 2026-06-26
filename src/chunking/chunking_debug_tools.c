@@ -252,6 +252,8 @@ static void chunk_debug_scheduler_visualizer_draw_internal(const fsl_camera *cam
     while (count--)
     {
         chunk = chunk_sched.p[pop];
+        if (!chunk)
+            continue;
 
         glUniform3f(uniform.bounding_box.position,
                 (f32)(chunk->pos_world.x * CHUNK_DIAMETER),

@@ -111,15 +111,15 @@ typedef struct hhc_chunk
 {
     u8 flag; /* enum: chunk_flag */
     v3i16 pos_world;    /* world position, in chunk-space (for rendering) */
-    v3i16 pos;          /* canonical position, in chunk-space (for serialization) */
+    v3i16 pos_wrap;     /* canonical position, in chunk-space (for serialization) */
 
     /*!
      *  @brief chunk's unique id derived from its position.
      *
      * format:
-     * (pos.x & 0xffff) << 0x00 |
-     * (pos.y & 0xffff) << 0x10 |
-     * (pos.z & 0xffff) << 0x20.
+     * (pos_world.x & 0xffff) << 0x00 |
+     * (pos_world.y & 0xffff) << 0x10 |
+     * (pos_world.z & 0xffff) << 0x20.
      */
     u64 id;
 
@@ -150,9 +150,10 @@ typedef struct hhc_chunk
     u32 cti;
 
     /*!
-     *  @brief chunk's own index in @ref chunk_order.p (Chunk-Order Index).
+     *  @brief chunk's priority index (Chunk Priority Index), it's chunk's distance
+     *  away from center index of @ref chunk_table.p.
      */
-    u32 coi;
+    u32 cpi;
 
     hhc_chunk_mesh mesh_deprecated;
 

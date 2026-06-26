@@ -274,7 +274,7 @@ void player_collision_update(hhc_player *p, f64 dt)
 
                     time = fsl_get_swept_aabb(p->bbox, block_box, displacement, &normal);
 
-                    if (fsl_is_in_range_f32(time, 0.0f, 1.0f) ||
+                    if (/* fsl_is_in_range_f32(time, 0.0f, 1.0f) || */
                             fsl_is_intersect_aabb(p->bbox, block_box))
                     {
                         /* ---- resolution ---------------------------------- */
@@ -319,6 +319,7 @@ void player_collision_update(hhc_player *p, f64 dt)
 
                         speed = p->speed;
                         p->speed = sqrtf(fsl_len_v3f32(p->velocity));
+#if MODE_INTERNAL_DIE
                         if (speed - p->speed > PLAYER_COLLISION_DAMAGE_THRESHOLD)
                         {
                             p->health -= (speed - p->speed);
@@ -339,6 +340,7 @@ void player_collision_update(hhc_player *p, f64 dt)
                                 player_kill(p);
                             }
                         }
+#endif /* MODE_INTERNAL_DIE */
 
                         resolved = TRUE;
                     }
