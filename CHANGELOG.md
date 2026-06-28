@@ -5,10 +5,12 @@
 
 #### achievements
 - first working version of the continuum (complete).
+- new seamless-tiling noise sampler.
 
 #### changes
 - updated engine version to v0.13.0-beta.
 - fix mouse garbage-delta when centering on screen.
+- changed terrain noise sampling to be cached per axis.
 
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.
@@ -16,6 +18,7 @@
     - it's not collision, it's an out-of-bounds access when player dies, the
       problem is that modulo (%) was being used on a big number, which resulted
       in a floating point exception.
+- player can now interact with blocks beyond world edge.
 
 #### additions
 - added inventory container texture.

@@ -59,14 +59,6 @@ enum chunk_shift_state
     STATE_CHUNK_SHIFT_NZ = 6
 }; /* chunk_shift_state */
 
-enum chunk_blend_type
-{
-    CHUNK_BLEND_TYPE_NONE,
-    CHUNK_BLEND_TYPE_FACE,
-    CHUNK_BLEND_TYPE_EDGE,
-    CHUNK_BLEND_TYPE_CORNER
-}; /* chunk_blend_type */
-
 /*!
  *  @brief chunk buffer, raw chunk data.
  */
@@ -80,6 +72,14 @@ typedef struct hhc_chunk_buffer
     fsl_mem_handle handle;
     hhc_chunk *p;           /* cached pointer from `handle` */
 } hhc_chunk_buffer;
+
+/*!
+ *  @brief a chunk and all six neighbors surrounding it.
+ */
+typedef struct hhc_chunk_neighbors
+{
+    hhc_chunk *ch, *px, *nx, *py, *ny, *pz, *nz;
+} hhc_chunk_neighbors;
 
 /*!
  *  @brief chunk-scheduler bucket for a unique distance away from @ref chunk_tab center index.
@@ -107,13 +107,6 @@ typedef struct hhc_chunk_scheduler
     u32 buckets_max;        /* total number of members in `bucket` */
     u32 priority;           /* current parsing priority */
 } hhc_chunk_scheduler;
-
-/*!
- *  @brief one sample in chunk generation.
- *
- *  @remark defined internally in @ref chunking.c.
- */
-typedef struct hhc_chunk_sampler hhc_chunk_sampler;
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -176,32 +169,18 @@ void chunk_debug_free_internal(void);
  *
  *  @return block with modified faces.
  */
-u32 block_get_faces_internal(const hhc_chunk *chunk,
-        const hhc_chunk *px, const hhc_chunk *nx,
-        const hhc_chunk *py, const hhc_chunk *ny,
-        const hhc_chunk *pz, const hhc_chunk *nz,
-        i32 x, i32 y, i32 z);
+u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
 
-void block_add_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
-        i32 x, i32 y, i32 z, enum block_id block_id);
+void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
+        enum block_id block_id);
 
-void block_remove_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
-        i32 x, i32 y, i32 z);
+void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
 
 /*!
  *  @brief execute block logic on the block based on its ID (e.g., make grass
  *  turn to dirt when under another block).
  */
-void block_evaluate_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
+void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id);
 
 /*!
@@ -227,6 +206,8 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
 chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget);
+
+hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
 
 /*!
  *  @brief generate chunk blocks.

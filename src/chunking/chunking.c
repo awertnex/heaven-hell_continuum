@@ -1,19 +1,21 @@
 #include "deps/fossil/common/limits.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
+#include "deps/fossil/math/noise.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/string/string.h"
 
 #include "deps/fossil/h/dir.h"
 
 #include "../settings/settings.h"
+#include "../terrain/terrain.h"
+#include "../terrain/noise_sampler.h"
 
 #include "../h/assets.h"
 #include "../h/config_internal.h"
 #include "../h/common.h"
 #include "../h/diagnostics.h"
 #include "../h/main.h"
-#include "../terrain/terrain.h"
 #include "../h/world.h"
 
 #include "chunk_work.h"
@@ -23,22 +25,6 @@
 
 #include <stdio.h>
 #include <math.h>
-
-/* ---- section: definitions ------------------------------------------------ */
-
-struct hhc_chunk_sampler
-{
-    v3i32 base_block_offset; /* offset, from chunk space to world space */
-    i8 sign[3];             /* x, y, z */
-    f32 radius[3];          /* x, y, z */
-    v3f32 diameter;
-    v3i32 pos_tab[2];       /* world sampling position table */
-    i32 *pos[8][3];         /* world sampling positions */
-    hhc_terrain_noise noise[9]; /* 8 corners, and one final result */
-    f32 t[3];               /* blend_factor */
-    f32 t_scale;            /* blend factor scale */
-    hhc_terrain terrain;    /* final block info */
-}; /* hhc_chunk_sampler */
 
 /* ---- section: declarations ----------------------------------------------- */
 
@@ -53,6 +39,7 @@ static hhc_chunk_buffer chunk_buf = {0};
 hhc_chunk_table chunk_tab = {0};
 hhc_chunk_order chunk_order = {0};
 hhc_chunk_scheduler chunk_sched = {0};
+static hhc_noise_sampler chunk_sampler = {0};
 
 /* ---- section: implementation --------------------------------------------- */
 
@@ -63,6 +50,17 @@ u32 chunking_init(v3i32 *player_chunk_delta)
 
     if (chunks_max_init_internal() != FSL_ERR_SUCCESS)
         return *GAME_ERR;
+
+    chunk_sampler = noise_sampler_init(
+            (f64)(WORLD_RADIUS * CHUNK_DIAMETER),
+            (f64)(WORLD_RADIUS * CHUNK_DIAMETER),
+            (f64)(WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER),
+            (f64)(WORLD_DIAMETER * CHUNK_DIAMETER),
+            (f64)(WORLD_DIAMETER * CHUNK_DIAMETER),
+            (f64)(WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER),
+            (f64)(WORLD_MARGIN * CHUNK_DIAMETER),
+            (f64)(WORLD_MARGIN * CHUNK_DIAMETER),
+            (f64)(WORLD_MARGIN * CHUNK_DIAMETER));
 
     chunk_sched.buckets_max = chunk_sphere_radius_get_internal(SET_RENDER_DISTANCE_MAX);
 
@@ -660,60 +658,58 @@ void chunking_free(void)
             "chunking_free().memory_arena_chunking_internal");
 }
 
-u32 block_get_faces_internal(const hhc_chunk *chunk,
-        const hhc_chunk *px, const hhc_chunk *nx,
-        const hhc_chunk *py, const hhc_chunk *ny,
-        const hhc_chunk *pz, const hhc_chunk *nz,
-        i32 x, i32 y, i32 z)
+u32 block_get_faces_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
 {
-    u32 block = GET_BLOCK_ID(chunk->block[z][y][x]);
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+
+    u32 block = GET_BLOCK_ID(cn->ch->block[z][y][x]);
 
     if (x == CHUNK_DIAMETER - 1)
     {
-        if (!px || !px->block[z][y][0])
+        if (!cn->px || !cn->px->block[z][y][0])
             block |= FLAG_BLOCK_FACE_PX;
     }
-    else if (!chunk->block[z][y][x + 1])
+    else if (!cn->ch->block[z][y][x + 1])
         block |= FLAG_BLOCK_FACE_PX;
 
     if (x == 0)
     {
-        if (!nx || !nx->block[z][y][CHUNK_DIAMETER - 1])
+        if (!cn->nx || !cn->nx->block[z][y][CHUNK_DIAMETER - 1])
             block |= FLAG_BLOCK_FACE_NX;
     }
-    else if (!chunk->block[z][y][x - 1])
+    else if (!cn->ch->block[z][y][x - 1])
         block |= FLAG_BLOCK_FACE_NX;
 
     if (y == CHUNK_DIAMETER - 1)
     {
-        if (!py || !py->block[z][0][x])
+        if (!cn->py || !cn->py->block[z][0][x])
             block |= FLAG_BLOCK_FACE_PY;
     }
-    else if (!chunk->block[z][y + 1][x])
+    else if (!cn->ch->block[z][y + 1][x])
         block |= FLAG_BLOCK_FACE_PY;
 
     if (y == 0)
     {
-        if (!ny || !ny->block[z][CHUNK_DIAMETER - 1][x])
+        if (!cn->ny || !cn->ny->block[z][CHUNK_DIAMETER - 1][x])
             block |= FLAG_BLOCK_FACE_NY;
     }
-    else if (!chunk->block[z][y - 1][x])
+    else if (!cn->ch->block[z][y - 1][x])
         block |= FLAG_BLOCK_FACE_NY;
 
     if (z == CHUNK_DIAMETER - 1)
     {
-        if (!pz || !pz->block[0][y][x])
+        if (!cn->pz || !cn->pz->block[0][y][x])
             block |= FLAG_BLOCK_FACE_PZ;
     }
-    else if (!chunk->block[z + 1][y][x])
+    else if (!cn->ch->block[z + 1][y][x])
         block |= FLAG_BLOCK_FACE_PZ;
 
     if (z == 0)
     {
-        if (!nz || !nz->block[CHUNK_DIAMETER - 1][y][x])
+        if (!cn->nz || !cn->nz->block[CHUNK_DIAMETER - 1][y][x])
             block |= FLAG_BLOCK_FACE_NZ;
     }
-    else if (!chunk->block[z - 1][y][x])
+    else if (!cn->ch->block[z - 1][y][x])
         block |= FLAG_BLOCK_FACE_NZ;
 
     return block;
@@ -828,22 +824,15 @@ block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
 void block_place(block_hit hit, enum block_id block_id)
 {
     u32 index = chunk_tab.index;
-    hhc_chunk **chunk = NULL;
-    hhc_chunk *px = NULL;
-    hhc_chunk *nx = NULL;
-    hhc_chunk *py = NULL;
-    hhc_chunk *ny = NULL;
-    hhc_chunk *pz = NULL;
-    hhc_chunk *nz = NULL;
-    v3u32 chunk_tab_coordinates = {0};
+    hhc_chunk_neighbors cn = {0};
 
     if (!hit.hit || (hit.normal.x == 0.0f && hit.normal.y == 0.0f && hit.normal.z == 0.0f))
         return;
 
     /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos_wrap.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos_wrap.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos_wrap.z * CHUNK_DIAMETER;
+    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
 
     /* get block position at normal direction */
     hit.pos.x += (i32)hit.normal.x;
@@ -861,80 +850,52 @@ void block_place(block_hit hit, enum block_id block_id)
     hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
     hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
 
-    chunk = &chunk_tab.p[index];
-    if ((*chunk)->block[hit.pos.z][hit.pos.y][hit.pos.x] || !block_id)
+    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
+    if (cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x] || !block_id)
         return;
 
-    chunk_tab_coordinates.x = index % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.y = (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.z = index / settings.chunk_buf_layer;
-
-    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
-        px = *(chunk + 1);
-    if (chunk_tab_coordinates.x > 0)
-        nx = *(chunk - 1);
-    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
-        py = *(chunk + settings.chunk_buf_diameter);
-    if (chunk_tab_coordinates.y > 0)
-        ny = *(chunk - settings.chunk_buf_diameter);
-    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
-        pz = *(chunk + settings.chunk_buf_layer);
-    if (chunk_tab_coordinates.z > 0)
-        nz = *(chunk - settings.chunk_buf_layer);
-
-    block_add_internal(*chunk, px, nx, py, ny, pz, nz, hit.pos.x, hit.pos.y, hit.pos.z, block_id);
+    block_add_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z, block_id);
 }
 
-void block_add_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
+void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id)
 {
-    chunk->flag |= FLAG_CHUNK_DIRTY;
-    SET_BLOCK_ID(chunk->block[z][y][x], block_id);
-    chunk->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
+    hhc_chunk_neighbors *cn = chunk_neighbors;
 
-    if (x == CHUNK_DIAMETER - 1 && px && px->block[z][y][0])
-        px->flag |= FLAG_CHUNK_DIRTY;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY;
+    SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
+    cn->ch->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
 
-    if (x == 0 && nx && nx->block[z][y][CHUNK_DIAMETER - 1])
-        nx->flag |= FLAG_CHUNK_DIRTY;
+    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
+        cn->px->flag |= FLAG_CHUNK_DIRTY;
+    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+        cn->nx->flag |= FLAG_CHUNK_DIRTY;
 
-    if (y == CHUNK_DIAMETER - 1 && py && py->block[z][0][x])
-        py->flag |= FLAG_CHUNK_DIRTY;
+    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
+        cn->py->flag |= FLAG_CHUNK_DIRTY;
+    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+        cn->ny->flag |= FLAG_CHUNK_DIRTY;
 
-    if (y == 0 && ny && ny->block[z][CHUNK_DIAMETER - 1][x])
-        ny->flag |= FLAG_CHUNK_DIRTY;
+    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
+        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+        cn->nz->flag |= FLAG_CHUNK_DIRTY;
 
-    if (z == CHUNK_DIAMETER - 1 && pz && pz->block[0][y][x])
-        pz->flag |= FLAG_CHUNK_DIRTY;
-
-    if (z == 0 && nz && nz->block[CHUNK_DIAMETER - 1][y][x])
-        nz->flag |= FLAG_CHUNK_DIRTY;
-
-    block_evaluate_internal(chunk, px, nx, py, ny, pz, nz, x, y, z, block_id);
+    block_evaluate_internal(cn, x, y, z, block_id);
 }
 
 void block_break(block_hit hit)
 {
     u32 index = chunk_tab.index;
-    hhc_chunk **chunk = NULL;
-    hhc_chunk *px = NULL;
-    hhc_chunk *nx = NULL;
-    hhc_chunk *py = NULL;
-    hhc_chunk *ny = NULL;
-    hhc_chunk *pz = NULL;
-    hhc_chunk *nz = NULL;
-    v3u32 chunk_tab_coordinates = {0};
+    hhc_chunk_neighbors cn = {0};
 
     if (!hit.hit)
         return;
 
     /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos_wrap.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos_wrap.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos_wrap.z * CHUNK_DIAMETER;
+    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
 
     /* get the chunk the new block index is in and make sure it's within bounds */
     index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
@@ -947,90 +908,67 @@ void block_break(block_hit hit)
     hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
     hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
 
-    chunk = &chunk_tab.p[index];
-    if (!(*chunk)->block[hit.pos.z][hit.pos.y][hit.pos.x])
+    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
+    if (!cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x])
         return;
 
-    chunk_tab_coordinates.x = index % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.y = (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.z = index / settings.chunk_buf_layer;
-
-    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
-        px = *(chunk + 1);
-    if (chunk_tab_coordinates.x > 0)
-        nx = *(chunk - 1);
-    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
-        py = *(chunk + settings.chunk_buf_diameter);
-    if (chunk_tab_coordinates.y > 0)
-        ny = *(chunk - settings.chunk_buf_diameter);
-    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
-        pz = *(chunk + settings.chunk_buf_layer);
-    if (chunk_tab_coordinates.z > 0)
-        nz = *(chunk - settings.chunk_buf_layer);
-
-    block_remove_internal(*chunk, px, nx, py, ny, pz, nz, hit.pos.x, hit.pos.y, hit.pos.z);
+    block_remove_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z);
 }
 
-void block_remove_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
+void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z)
 {
-    chunk->flag |= FLAG_CHUNK_DIRTY;
-    chunk->block[z][y][x] = 0;
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY;
+    cn->ch->block[z][y][x] = 0;
 
-    if (x == CHUNK_DIAMETER - 1 && px && px->block[z][y][0])
-        px->flag |= FLAG_CHUNK_DIRTY;
+    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
+        cn->px->flag |= FLAG_CHUNK_DIRTY;
+    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+        cn->nx->flag |= FLAG_CHUNK_DIRTY;
 
-    if (x == 0 && nx && nx->block[z][y][CHUNK_DIAMETER - 1])
-        nx->flag |= FLAG_CHUNK_DIRTY;
+    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
+        cn->py->flag |= FLAG_CHUNK_DIRTY;
+    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+        cn->ny->flag |= FLAG_CHUNK_DIRTY;
 
-    if (y == CHUNK_DIAMETER - 1 && py && py->block[z][0][x])
-        py->flag |= FLAG_CHUNK_DIRTY;
-
-    if (y == 0 && ny && ny->block[z][CHUNK_DIAMETER - 1][x])
-        ny->flag |= FLAG_CHUNK_DIRTY;
-
-    if (z == CHUNK_DIAMETER - 1 && pz && pz->block[0][y][x])
-        pz->flag |= FLAG_CHUNK_DIRTY;
-
-    if (z == 0 && nz && nz->block[CHUNK_DIAMETER - 1][y][x])
-        nz->flag |= FLAG_CHUNK_DIRTY;
+    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
+        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+        cn->nz->flag |= FLAG_CHUNK_DIRTY;
 }
 
-void block_evaluate_internal(hhc_chunk *chunk,
-        hhc_chunk *px, hhc_chunk *nx,
-        hhc_chunk *py, hhc_chunk *ny,
-        hhc_chunk *pz, hhc_chunk *nz,
+void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id)
 {
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+
     if (z == CHUNK_DIAMETER - 1)
     {
-        if (pz && pz->block[0][y][x])
+        if (cn->pz && cn->pz->block[0][y][x])
         {
-            pz->flag |= FLAG_CHUNK_DIRTY;
+            cn->pz->flag |= FLAG_CHUNK_DIRTY;
 
-            if (GET_BLOCK_ID(chunk->block[z][y][x]) == BLOCK_GRASS)
-                SET_BLOCK_ID(chunk->block[z][y][x], BLOCK_DIRT);
+            if (GET_BLOCK_ID(cn->ch->block[z][y][x]) == BLOCK_GRASS)
+                SET_BLOCK_ID(cn->ch->block[z][y][x], BLOCK_DIRT);
         }
     }
 
     if (z == 0)
     {
-        if (nz && nz->block[CHUNK_DIAMETER - 1][y][x])
+        if (cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
         {
-            nz->flag |= FLAG_CHUNK_DIRTY;
+            cn->nz->flag |= FLAG_CHUNK_DIRTY;
 
-            if (GET_BLOCK_ID(nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
-                SET_BLOCK_ID(nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
+            if (GET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
+                SET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
         }
     }
-    else if (GET_BLOCK_ID(chunk->block[z - 1][y][x]) == BLOCK_GRASS)
+    else if (GET_BLOCK_ID(cn->ch->block[z - 1][y][x]) == BLOCK_GRASS)
     {
-        chunk->flag |= FLAG_CHUNK_DIRTY;
+        cn->ch->flag |= FLAG_CHUNK_DIRTY;
 
-        SET_BLOCK_ID(chunk->block[z - 1][y][x], BLOCK_DIRT);
+        SET_BLOCK_ID(cn->ch->block[z - 1][y][x], BLOCK_DIRT);
     }
 }
 
@@ -1104,27 +1042,42 @@ chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget)
     return cost;
 }
 
+hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
+{
+    hhc_chunk_neighbors neighbors = {0};
+    v3u32 chunk_tab_coordinates = {0};
+
+    chunk_tab_coordinates.x = chunk->cti % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.z = chunk->cti / settings.chunk_buf_layer;
+
+    neighbors.ch = chunk;
+
+    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
+        neighbors.px = chunk_tab.p[chunk->cti + 1];
+    if (chunk_tab_coordinates.x > 0)
+        neighbors.nx = chunk_tab.p[chunk->cti - 1];
+    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
+        neighbors.py = chunk_tab.p[chunk->cti + settings.chunk_buf_diameter];
+    if (chunk_tab_coordinates.y > 0)
+        neighbors.ny = chunk_tab.p[chunk->cti - settings.chunk_buf_diameter];
+    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
+        neighbors.pz = chunk_tab.p[chunk->cti + settings.chunk_buf_layer];
+    if (chunk_tab_coordinates.z > 0)
+        neighbors.nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
+
+    return neighbors;
+}
+
 chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget)
 {
     chunk_work_cost cost = 0;
-    hhc_chunk *px = NULL;
-    hhc_chunk *nx = NULL;
-    hhc_chunk *py = NULL;
-    hhc_chunk *ny = NULL;
-    hhc_chunk *pz = NULL;
-    hhc_chunk *nz = NULL;
-    v3u32 chunk_tab_coordinates = {0};
-    hhc_terrain terrain_info = {0};
-    hhc_chunk_sampler s = {0};
+    hhc_chunk_neighbors chunk_neighbors = {0};
+    hhc_noise_sampler_context s = {0};
+    hhc_terrain terrain = {0};
     v3i32 pos = {0};
-    u32 blend_type = 0;
-    u32 blend_axis_count = 0;
-    u32 blend_index[3] = {0};
-    i8 axis_active[3] = {0};
-    u8 axis[3] = {0};
     u32 i = 0;
-
-    s.t_scale = 1.0f / (WORLD_MARGIN * CHUNK_DIAMETER * 2);
+    f32 n = 0.0f;
 
     if (chunk->cursor == CHUNK_VOLUME)
     {
@@ -1133,110 +1086,11 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
         return cost;
     }
 
-    s.base_block_offset.x = chunk->pos_world.x * CHUNK_DIAMETER;
-    s.base_block_offset.y = chunk->pos_world.y * CHUNK_DIAMETER;
-    s.base_block_offset.z = chunk->pos_world.z * CHUNK_DIAMETER;
-
-    /* ---- section: setup world margin noise blending ---------------------- */
-
-    if (chunk->pos_world.x >= WORLD_RADIUS - WORLD_MARGIN)
-        s.sign[0] = 1;
-    else if (chunk->pos_world.x < -WORLD_RADIUS + WORLD_MARGIN)
-        s.sign[0] = -1;
-
-    if (chunk->pos_world.y >= WORLD_RADIUS - WORLD_MARGIN)
-        s.sign[1] = 1;
-    else if (chunk->pos_world.y < -WORLD_RADIUS + WORLD_MARGIN)
-        s.sign[1] = -1;
-
-    if (chunk->pos_world.z >= WORLD_RADIUS_VERTICAL - WORLD_MARGIN)
-        s.sign[2] = 1;
-    else if (chunk->pos_world.z < -WORLD_RADIUS_VERTICAL + WORLD_MARGIN)
-        s.sign[2] = -1;
-
-    axis_active[0] = s.sign[0] * s.sign[0];
-    axis_active[1] = s.sign[1] * s.sign[1];
-    axis_active[2] = s.sign[2] * s.sign[2];
-
-    blend_type = axis_active[0] | (axis_active[1] << 1) | (axis_active[2] << 2);
-    blend_axis_count = axis_active[0] + axis_active[1] + axis_active[2];
-    for (i = 0; i < 8; ++i)
-    {
-        s.pos[i][0] = &s.pos_tab[(i >> 0) & 1].x;
-        s.pos[i][1] = &s.pos_tab[(i >> 1) & 1].y;
-        s.pos[i][2] = &s.pos_tab[(i >> 2) & 1].z;
-    }
-
-    switch (blend_type)
-    {
-        case 1:     /* x */
-            axis[0] = 0;
-            axis[1] = 0;
-            axis[2] = 0;
-            break;
-
-        case 2:     /* y */
-            axis[0] = 1;
-            axis[1] = 0;
-            axis[2] = 0;
-            break;
-
-        case 3:     /* xy */
-            axis[0] = 0;
-            axis[1] = 1;
-            axis[2] = 0;
-            break;
-
-        case 4:     /* z */
-            axis[0] = 2;
-            axis[1] = 0;
-            axis[2] = 0;
-            break;
-
-        case 5:     /* xz */
-            axis[0] = 0;
-            axis[1] = 2;
-            axis[2] = 0;
-            break;
-
-        case 6:     /* yz */
-            axis[0] = 1;
-            axis[1] = 2;
-            axis[2] = 0;
-            break;
-
-        case 7:     /* xyz */
-            axis[0] = 0;
-            axis[1] = 1;
-            axis[2] = 2;
-            break;
-    }
-
-    s.radius[0] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[0];
-    s.radius[1] = -WORLD_RADIUS * CHUNK_DIAMETER * s.sign[1];
-    s.radius[2] = -WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER * s.sign[2];
-    s.diameter.x = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[0];
-    s.diameter.y = -WORLD_DIAMETER * CHUNK_DIAMETER * s.sign[1];
-    s.diameter.z = -WORLD_DIAMETER_VERTICAL * CHUNK_DIAMETER * s.sign[2];
-
-    /* ---- end section: setup world margin noise blending ------------------ */
-
-    chunk_tab_coordinates.x = chunk->cti % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.z = chunk->cti / settings.chunk_buf_layer;
-
-    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
-        px = chunk_tab.p[chunk->cti + 1];
-    if (chunk_tab_coordinates.x > 0)
-        nx = chunk_tab.p[chunk->cti - 1];
-    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
-        py = chunk_tab.p[chunk->cti + settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.y > 0)
-        ny = chunk_tab.p[chunk->cti - settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
-        pz = chunk_tab.p[chunk->cti + settings.chunk_buf_layer];
-    if (chunk_tab_coordinates.z > 0)
-        nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
+    chunk_neighbors = chunk_neighbors_get_internal(chunk);
+    noise_sampler_context_init(&chunk_sampler, &s,
+            (f64)(chunk->pos_world.x * CHUNK_DIAMETER),
+            (f64)(chunk->pos_world.y * CHUNK_DIAMETER),
+            (f64)(chunk->pos_world.z * CHUNK_DIAMETER));
 
     pos.x = chunk->cursor % CHUNK_DIAMETER;
     pos.y = (chunk->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
@@ -1244,75 +1098,26 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 
     /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
      * should first pick up from where `chunk->cursor` left off last time. */
-    s.pos_tab[0].z = pos.z + s.base_block_offset.z;
-    s.pos_tab[1].z = s.pos_tab[0].z + s.diameter.z;
-    for (; pos.z < CHUNK_DIAMETER; ++pos.z, ++s.pos_tab[0].z, ++s.pos_tab[1].z)
+    sampler_axis_init(&s, 2, pos.z);
+    for (; pos.z < CHUNK_DIAMETER; ++pos.z, sampler_axis_update(&s, 2))
     {
-        s.t[2] = 0.5f - (s.radius[axis[2]] - (f32)*s.pos[4][axis[2]]) *
-            s.sign[axis[2]] * s.t_scale;
-        s.t[2] = s.t[2] * s.t[2] * s.t[2] * (s.t[2] * (s.t[2] * 6.0f - 15.0f) + 10.0f);
-
-        s.pos_tab[0].y = pos.y + s.base_block_offset.y;
-        s.pos_tab[1].y = s.pos_tab[0].y + s.diameter.y;
-        for (; pos.y < CHUNK_DIAMETER; ++pos.y, ++s.pos_tab[0].y, ++s.pos_tab[1].y)
+        sampler_axis_init(&s, 1, pos.y);
+        for (; pos.y < CHUNK_DIAMETER; ++pos.y, sampler_axis_update(&s, 1))
         {
-            s.t[1] = 0.5f - (s.radius[axis[1]] - (f32)*s.pos[2][axis[1]]) *
-                s.sign[axis[1]] * s.t_scale;
-            s.t[1] = s.t[1] * s.t[1] * s.t[1] * (s.t[1] * (s.t[1] * 6.0f - 15.0f) + 10.0f);
+            cost += sampler_noise_axis_update_2d(&s, 1);
 
-            s.pos_tab[0].x = pos.x + s.base_block_offset.x;
-            s.pos_tab[1].x = s.pos_tab[0].x + s.diameter.x;
-            for (; pos.x < CHUNK_DIAMETER; ++pos.x, ++s.pos_tab[0].x, ++s.pos_tab[1].x)
+            sampler_axis_init(&s, 0, pos.x);
+            for (; pos.x < CHUNK_DIAMETER; ++pos.x, sampler_axis_update(&s, 0))
             {
-                s.t[0] = 0.5f - (s.radius[axis[0]] - (f32)*s.pos[1][axis[0]]) *
-                    s.sign[axis[0]] * s.t_scale;
-                s.t[0] = s.t[0] * s.t[0] * s.t[0] * (s.t[0] * (s.t[0] * 6.0f - 15.0f) + 10.0f);
+                cost += sampler_noise_axis_update_2d(&s, 0);
 
-                cost += terrain_noise_make(&s.noise[0], *s.pos[0][0], *s.pos[0][1], *s.pos[0][2]);
+                cost += sampler_noise_bake(&s);
+                cost += terrain_shape(&terrain, &s);
 
-                switch (blend_axis_count)
+                if (terrain.block_id)
                 {
-                    case CHUNK_BLEND_TYPE_FACE:
-                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
-                        cost += terrain_noise_lerp(&s.noise[0], &s.noise[0], &s.noise[1], s.t[axis[0]]);
-                        break;
-
-                    case CHUNK_BLEND_TYPE_EDGE:
-                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
-                        cost += terrain_noise_make(&s.noise[2], *s.pos[2][0], *s.pos[2][1], *s.pos[2][2]);
-                        cost += terrain_noise_make(&s.noise[3], *s.pos[3][0], *s.pos[3][1], *s.pos[3][2]);
-                        cost += terrain_noise_bilerp(&s.noise[0],
-                                &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3], s.t[axis[0]], s.t[axis[1]]);
-                        break;
-
-                    case CHUNK_BLEND_TYPE_CORNER:
-                        cost += terrain_noise_make(&s.noise[1], *s.pos[1][0], *s.pos[1][1], *s.pos[1][2]);
-                        cost += terrain_noise_make(&s.noise[2], *s.pos[2][0], *s.pos[2][1], *s.pos[2][2]);
-                        cost += terrain_noise_make(&s.noise[3], *s.pos[3][0], *s.pos[3][1], *s.pos[3][2]);
-                        cost += terrain_noise_make(&s.noise[4], *s.pos[4][0], *s.pos[4][1], *s.pos[4][2]);
-                        cost += terrain_noise_make(&s.noise[5], *s.pos[5][0], *s.pos[5][1], *s.pos[5][2]);
-                        cost += terrain_noise_make(&s.noise[6], *s.pos[6][0], *s.pos[6][1], *s.pos[6][2]);
-                        cost += terrain_noise_make(&s.noise[7], *s.pos[7][0], *s.pos[7][1], *s.pos[7][2]);
-                        cost += terrain_noise_trilerp(&s.noise[0],
-                                &s.noise[0], &s.noise[1], &s.noise[2], &s.noise[3],
-                                &s.noise[4], &s.noise[5], &s.noise[6], &s.noise[7],
-                                s.t[axis[0]], s.t[axis[1]], s.t[axis[2]]);
-                        break;
-
-                    default:
-                        break;
-
+                    block_add_internal(&chunk_neighbors, pos.x, pos.y, pos.z, terrain.block_id);
                 }
-
-                terrain_info = terrain_shape(*s.pos[0][0], *s.pos[0][1], *s.pos[0][2], &s.noise[0]);
-
-                if (terrain_info.block_id)
-                {
-                    block_add_internal(chunk, px, nx, py, ny, pz, nz, pos.x, pos.y, pos.z, terrain_info.block_id);
-                }
-
-                if (cost >= (u32)budget)
-                    goto finish_generation;
             }
             pos.x = 0;
         }
@@ -1331,13 +1136,6 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
 
-    hhc_chunk *px = NULL;
-    hhc_chunk *nx = NULL;
-    hhc_chunk *py = NULL;
-    hhc_chunk *ny = NULL;
-    hhc_chunk *pz = NULL;
-    hhc_chunk *nz = NULL;
-    v3u32 chunk_tab_coordinates = {0};
     v3f32 chunk_pos = {0};
 
     u64 *buf = &buffer[cur_buf][0];
@@ -1347,25 +1145,11 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
     u32 *curr = start;
     u64 block_index = 0;
     u32 block_cache = 0;
+    hhc_chunk_neighbors chunk_neighbors = {0};
     v3u64 pos = {0};
     b8 should_render = FALSE;
 
-    chunk_tab_coordinates.x = chunk->cti % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.z = chunk->cti / settings.chunk_buf_layer;
-
-    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
-        px = chunk_tab.p[chunk->cti + 1];
-    if (chunk_tab_coordinates.x > 0)
-        nx = chunk_tab.p[chunk->cti - 1];
-    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
-        py = chunk_tab.p[chunk->cti + settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.y > 0)
-        ny = chunk_tab.p[chunk->cti - settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
-        pz = chunk_tab.p[chunk->cti + settings.chunk_buf_layer];
-    if (chunk_tab_coordinates.z > 0)
-        nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
+    chunk_neighbors = chunk_neighbors_get_internal(chunk);
 
     for (; curr < end; ++curr)
     {
@@ -1375,7 +1159,7 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
             pos.x = block_index % CHUNK_DIAMETER;
             pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
             pos.z = block_index / CHUNK_LAYER;
-            block_cache = block_get_faces_internal(chunk, px, nx, py, ny, pz, nz, pos.x, pos.y, pos.z);
+            block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
             if (block_cache & MASK_BLOCK_FACES)
             {
                 should_render = TRUE;
@@ -1590,9 +1374,13 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 
             chunk->color = CHUNK_GIZMO_COLOR_LOADED;
 
-            seed.x = chunk_tab_coordinates.x * index + player_chunk_delta.z;
-            seed.y = chunk_tab_coordinates.y * index + player_chunk_delta.x;
-            seed.z = chunk_tab_coordinates.z * index + player_chunk_delta.y;
+            seed.x = chunk_tab_coordinates.x ^ (index * player_chunk_delta.z);
+            seed.y = chunk_tab_coordinates.y ^ (index * player_chunk_delta.x);
+            seed.z = chunk_tab_coordinates.z ^ (index * player_chunk_delta.y);
+            seed.x = fsl_hash_fnv1a_u64(&seed.x, sizeof(u64));
+            seed.y = fsl_hash_fnv1a_u64(&seed.y, sizeof(u64));
+            seed.z = fsl_hash_fnv1a_u64(&seed.z, sizeof(u64));
+
             color_variant.x =
                 (u8)(fsl_map_range_f64((f64)(fsl_rand_u64(seed.x) % 0xff), 0.0, 0xff,
                             1.0 - CHUNK_GIZMO_COLOR_FACTOR_INFLUENCE, 1.0) * 0xff);
