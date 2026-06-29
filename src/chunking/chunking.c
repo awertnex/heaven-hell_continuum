@@ -1099,16 +1099,21 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
      * should first pick up from where `chunk->cursor` left off last time. */
     sampler_axis_init(&s, 2, pos.z);
-    for (; pos.z < CHUNK_DIAMETER; ++pos.z, sampler_axis_update(&s, 2))
+    for (; pos.z < CHUNK_DIAMETER; ++pos.z, sampler_axis_post_update(&s, 2))
     {
+        sampler_axis_pre_update(&s, 2);
+        cost += sampler_noise_axis_update_2d(&s, 2);
+
         sampler_axis_init(&s, 1, pos.y);
-        for (; pos.y < CHUNK_DIAMETER; ++pos.y, sampler_axis_update(&s, 1))
+        for (; pos.y < CHUNK_DIAMETER; ++pos.y, sampler_axis_post_update(&s, 1))
         {
+            sampler_axis_pre_update(&s, 1);
             cost += sampler_noise_axis_update_2d(&s, 1);
 
             sampler_axis_init(&s, 0, pos.x);
-            for (; pos.x < CHUNK_DIAMETER; ++pos.x, sampler_axis_update(&s, 0))
+            for (; pos.x < CHUNK_DIAMETER; ++pos.x, sampler_axis_post_update(&s, 0))
             {
+                sampler_axis_pre_update(&s, 0);
                 cost += sampler_noise_axis_update_2d(&s, 0);
 
                 cost += sampler_noise_bake(&s);
@@ -1118,6 +1123,9 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
                 {
                     block_add_internal(&chunk_neighbors, pos.x, pos.y, pos.z, terrain.block_id);
                 }
+
+                if (cost >= (u32)budget)
+                    goto finish_generation;
             }
             pos.x = 0;
         }

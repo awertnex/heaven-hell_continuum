@@ -25,18 +25,18 @@
 #define RAND_CONST_12 904023
 #define RAND_CONST_13 371769
 
-f64 nolerp_f64(f64 *n, f64 *t)
+f64 nolerp_f64(const f64 *n, const f64 *t)
 {
     (void)t;
     return n[0];
 }
 
-f64 lerp_f64(f64 *n, f64 *t)
+f64 lerp_f64(const f64 *n, const f64 *t)
 {
     return n[0] + (n[1] - n[0]) * t[0];
 }
 
-f64 bilerp_f64(f64 *n, f64 *t)
+f64 bilerp_f64(const f64 *n, const f64 *t)
 {
     f64 w[2] = {0};
     w[0] = 1.0 - t[0];
@@ -48,7 +48,7 @@ f64 bilerp_f64(f64 *n, f64 *t)
         n[3] * t[0] * t[1];
 }
 
-f64 trilerp_f64(f64 *n, f64 *t)
+f64 trilerp_f64(const f64 *n, const f64 *t)
 {
     f64 w[3] = {0};
     w[0] = 1.0 - t[0];
@@ -114,8 +114,10 @@ chunk_work_cost noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f6
 
 chunk_work_cost noise_sample_make_2d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed)
 {
-    const f64 *d = s->dv;
-    const f64 *w = s->dw;
+    const f64 dx = s->dv[0];
+    const f64 dy = s->dv[1];
+    const f64 wx = s->dw[0];
+    const f64 wy = s->dw[1];
     f64 n[4] = {0};
     v2f64 g[4] = {0};
 
@@ -130,17 +132,21 @@ chunk_work_cost noise_sample_make_2d(const hhc_noise_sample *s, f64 *dst, f64 am
     n[3] = s->db[0] * g[3].x + s->db[1] * g[3].y;
 
     *dst =
-        (n[0] * w[0] * w[1] +
-         n[1] * d[0] * w[1] +
-         n[2] * w[0] * d[1] +
-         n[3] * d[0] * d[1]) * amplitude;
+        (n[0] * wx * wy +
+         n[1] * dx * wy +
+         n[2] * wx * dy +
+         n[3] * dx * dy) * amplitude;
     return CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE_2D;
 }
 
 chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed)
 {
-    const f64 *d = s->dv;
-    const f64 *w = s->dw;
+    const f64 dx = s->dv[0];
+    const f64 dy = s->dv[1];
+    const f64 dz = s->dv[2];
+    const f64 wx = s->dw[0];
+    const f64 wy = s->dw[1];
+    const f64 wz = s->dw[2];
     f64 n[8] = {0};
     v3f64 g[8] = {0};
 
@@ -163,13 +169,13 @@ chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 am
     n[7] = s->db[0] * g[7].x + s->db[1] * g[7].y + s->db[2] * g[7].z;
 
     *dst =
-        (n[0] * w[0] * w[1] * w[2] +
-         n[1] * d[0] * w[1] * w[2] +
-         n[2] * w[0] * d[1] * w[2] +
-         n[3] * d[0] * d[1] * w[2] +
-         n[4] * w[0] * w[1] * d[2] +
-         n[5] * d[0] * w[1] * d[2] +
-         n[6] * w[0] * d[1] * d[2] +
-         n[7] * d[0] * d[1] * d[2]) * amplitude;
+        (n[0] * wx * wy * wz +
+         n[1] * dx * wy * wz +
+         n[2] * wx * dy * wz +
+         n[3] * dx * dy * wz +
+         n[4] * wx * wy * dz +
+         n[5] * dx * wy * dz +
+         n[6] * wx * dy * dz +
+         n[7] * dx * dy * dz) * amplitude;
     return CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE_3D;
 }

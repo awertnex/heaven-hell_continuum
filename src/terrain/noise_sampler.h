@@ -52,9 +52,16 @@ typedef struct hhc_noise_sampler_context
      */
     f64 *pos[8][3];
 
-    u8 axis[3];             /* axis selector for blend types (e.g., XY, YZ) */
+    u8 blend_index[3];      /* axis selector for blend types (e.g., XY, YZ) */
+    b8 axis_active[3];      /* axis participation in blending */
     f64 t[3];               /* blend factor for each axis */
     f64 t_scale[3];         /* blend factor scalar */
+
+    /*!
+     *  @brief sample indices to re-map from `sample_buf` into `sample_value`
+     *  for proper interpolation based on blend-type.
+     */
+    u32 sample_index[8];
 
     /*!
      *  @brief number of samples to sample and interpolate.
@@ -109,8 +116,15 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
 void sampler_axis_init(hhc_noise_sampler_context *context, u8 axis, f64 pos);
 
 /*!
- *  @brief iterate relevant parameters of a single axis for a given noise sampler context.
+ *  @brief iterate relevant parameters of a single axis for a given noise sampler
+ *  context at the beginning of its loop.
  */
-void sampler_axis_update(hhc_noise_sampler_context *context, u8 axis);
+void sampler_axis_pre_update(hhc_noise_sampler_context *context, u8 axis);
+
+/*!
+ *  @brief iterate relevant parameters of a single axis for a given noise sampler
+ *  context at the end of its loop.
+ */
+void sampler_axis_post_update(hhc_noise_sampler_context *context, u8 axis);
 
 #endif /* HHC_NOISE_SAMPLER_H */

@@ -17,12 +17,12 @@ typedef struct hhc_noise_sample
     f64 db[3];  /* `b` delta */
 } hhc_noise_sample;
 
-typedef f64 (*hhc_noise_sample_lerp_func)(f64 *n, f64 *t);
+typedef f64 (*hhc_noise_sample_lerp_func)(const f64 *n, const f64 *t);
 
-f64 nolerp_f64(f64 *n, f64 *t);
-f64 lerp_f64(f64 *n, f64 *t);
-f64 bilerp_f64(f64 *n, f64 *t);
-f64 trilerp_f64(f64 *n, f64 *t);
+f64 nolerp_f64(const f64 *n, const f64 *t);
+f64 lerp_f64(const f64 *n, const f64 *t);
+f64 bilerp_f64(const f64 *n, const f64 *t);
+f64 trilerp_f64(const f64 *n, const f64 *t);
 v2f64 gradient_2d(i32 x, i32 y, u64 seed);
 v3f64 gradient_3d(i32 x, i32 y, i32 z, u64 seed);
 

@@ -454,7 +454,7 @@ static void player_world_overflow_update(hhc_player *p)
     if (!fsl_is_in_volume_f64(p->transform.pos, world_volume_min, world_volume_max))
         player_spawn(p, FALSE);
 
-    /* ---- world margin ---------------------------------------------------- */
+    /* ---- world margin tagging -------------------------------------------- */
 
     if (p->transform.pos.x > margin)
         p->flag |= FLAG_PLAYER_OVERFLOW_X | FLAG_PLAYER_OVERFLOW_PX;
@@ -483,7 +483,7 @@ static void player_world_overflow_update(hhc_player *p)
     }
     else p->flag &= ~(FLAG_PLAYER_OVERFLOW_Z | FLAG_PLAYER_OVERFLOW_PZ);
 
-    /* ---- overflow edge --------------------------------------------------- */
+    /* ---- overflow edge teleportation ------------------------------------- */
 
     if (p->transform.pos.x > edge)
     {
@@ -513,13 +513,13 @@ static void player_world_overflow_update(hhc_player *p)
     {
         p->transform.pos.z -= diamerer_v;
         p->transform_last.pos.z -= diamerer_v;
-        p->ch_delta.z -= WORLD_DIAMETER_VERTICAL;
+        p->ch_delta.z -= WORLD_DIAMETER;
     }
     if (p->transform.pos.z < -edge_v)
     {
         p->transform.pos.z += diamerer_v;
         p->transform_last.pos.z += diamerer_v;
-        p->ch_delta.z += WORLD_DIAMETER_VERTICAL;
+        p->ch_delta.z += WORLD_DIAMETER;
     }
 
     p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);

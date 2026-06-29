@@ -36,7 +36,6 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
         f64 base_x, f64 base_y, f64 base_z)
 {
     hhc_noise_sampler_context nocontext = {0};
-    u8 axis_active[3] = {0};
     enum hhc_sampler_blend_type blend_type = 0;
     u8 blend_mask = 0;
     u32 i = 0;
@@ -49,9 +48,6 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
     context->margin[0] = sampler->margin[0];
     context->margin[1] = sampler->margin[1];
     context->margin[2] = sampler->margin[2];
-    context->t_scale[0] = sampler->t_scale[0];
-    context->t_scale[1] = sampler->t_scale[1];
-    context->t_scale[2] = sampler->t_scale[2];
 
     if (base_x >= sampler->radius[0] - sampler->margin[0])
         context->sign[0] = 1;
@@ -74,15 +70,20 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
     context->diameter[0] = sampler->diameter[0] * -context->sign[0];
     context->diameter[1] = sampler->diameter[1] * -context->sign[1];
     context->diameter[2] = sampler->diameter[2] * -context->sign[2];
-
-    axis_active[0] = context->sign[0] != 0;
-    axis_active[1] = context->sign[1] != 0;
-    axis_active[2] = context->sign[2] != 0;
-    blend_type = axis_active[0] + axis_active[1] + axis_active[2];
+    context->t_scale[0] = sampler->t_scale[0] * context->sign[0];
+    context->t_scale[1] = sampler->t_scale[1] * context->sign[1];
+    context->t_scale[2] = sampler->t_scale[2] * context->sign[2];
+    context->axis_active[0] = context->sign[0] != 0;
+    context->axis_active[1] = context->sign[1] != 0;
+    context->axis_active[2] = context->sign[2] != 0;
+    blend_type =
+        context->axis_active[0] +
+        context->axis_active[1] +
+        context->axis_active[2];
     blend_mask =
-        (axis_active[0] << 0) |
-        (axis_active[1] << 1) |
-        (axis_active[2] << 2);
+        (context->axis_active[0] << 0) |
+        (context->axis_active[1] << 1) |
+        (context->axis_active[2] << 2);
 
     switch (blend_type)
     {
@@ -110,59 +111,73 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
     switch (blend_mask)
     {
         case 0: /* none */
-            context->axis[0] = 0;
-            context->axis[1] = 1;
-            context->axis[2] = 2;
             break;
 
         case 1: /* x */
-            context->axis[0] = 0;
-            context->axis[1] = 1;
-            context->axis[2] = 2;
+            context->blend_index[0] = 0;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 1;
             break;
 
         case 2: /* y */
-            context->axis[0] = 1;
-            context->axis[1] = 0;
-            context->axis[2] = 2;
+            context->blend_index[1] = 0;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 2;
             break;
 
         case 3: /* xy */
-            context->axis[0] = 0;
-            context->axis[1] = 1;
-            context->axis[2] = 2;
+            context->blend_index[0] = 0;
+            context->blend_index[1] = 1;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 1;
+            context->sample_index[2] = 2;
+            context->sample_index[3] = 3;
             break;
 
         case 4: /* z */
-            context->axis[0] = 2;
-            context->axis[1] = 0;
-            context->axis[2] = 1;
+            context->blend_index[2] = 0;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 4;
             break;
 
         case 5: /* xz */
-            context->axis[0] = 0;
-            context->axis[1] = 2;
-            context->axis[2] = 1;
+            context->blend_index[0] = 0;
+            context->blend_index[2] = 1;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 1;
+            context->sample_index[2] = 4;
+            context->sample_index[3] = 5;
             break;
 
         case 6: /* yz */
-            context->axis[0] = 1;
-            context->axis[1] = 2;
-            context->axis[2] = 0;
+            context->blend_index[1] = 0;
+            context->blend_index[2] = 1;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 2;
+            context->sample_index[2] = 4;
+            context->sample_index[3] = 6;
             break;
 
         case 7: /* xyz */
-            context->axis[0] = 0;
-            context->axis[1] = 1;
-            context->axis[2] = 2;
+            context->blend_index[0] = 0;
+            context->blend_index[1] = 1;
+            context->blend_index[2] = 2;
+            context->sample_index[0] = 0;
+            context->sample_index[1] = 1;
+            context->sample_index[2] = 2;
+            context->sample_index[3] = 3;
+            context->sample_index[4] = 4;
+            context->sample_index[5] = 5;
+            context->sample_index[6] = 6;
+            context->sample_index[7] = 7;
             break;
     }
 
     for (i = 0; i < context->sample_count; ++i)
     {
-        context->pos[i][0] = &context->pos_tab[(i >> 0) & 1][0];
-        context->pos[i][1] = &context->pos_tab[(i >> 1) & 1][1];
-        context->pos[i][2] = &context->pos_tab[(i >> 2) & 1][2];
+        context->pos[i][0] = &context->pos_tab[(context->sample_index[i] >> 0) & 1][0];
+        context->pos[i][1] = &context->pos_tab[(context->sample_index[i] >> 1) & 1][1];
+        context->pos[i][2] = &context->pos_tab[(context->sample_index[i] >> 2) & 1][2];
     }
 }
 
@@ -172,17 +187,20 @@ void sampler_axis_init(hhc_noise_sampler_context *context, u8 axis, f64 pos)
     context->pos_tab[1][axis] = context->pos_tab[0][axis] + context->diameter[axis];
 }
 
-void sampler_axis_update(hhc_noise_sampler_context *context, u8 axis)
+void sampler_axis_pre_update(hhc_noise_sampler_context *context, u8 axis)
 {
     f64 t = 0.0;
 
+    if (context->axis_active[axis])
+    {
+        t = 0.5 - (context->radius[axis] - context->pos_tab[1][axis]) * context->t_scale[axis];
+        t = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+        context->t[context->blend_index[axis]] = t;
+    }
+}
+
+void sampler_axis_post_update(hhc_noise_sampler_context *context, u8 axis)
+{
     ++context->pos_tab[0][axis];
     ++context->pos_tab[1][axis];
-
-    t = 0.5 - (context->radius[axis] - context->pos_tab[1][axis]) *
-        context->sign[axis] * context->t_scale[axis];
-    t = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-
-    context->t[axis] = t;
-
 }
