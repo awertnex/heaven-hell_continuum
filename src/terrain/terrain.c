@@ -138,7 +138,7 @@ chunk_work_cost sampler_noise_bake(hhc_noise_sampler_context *ctx)
         dst = ctx->sample_value[i];
         for (j = 0; j < end; ++j)
         {
-            cost += noise_sample_make_3d(&sample[j], &dst[j], terrain_spec.amp[i],
+            cost += noise_sample_make_2d(&sample[j], &dst[j], terrain_spec.amp[i],
                     world.seed + TERRAIN_SEED_DEFAULT + i * 10);
         }
 
@@ -182,9 +182,9 @@ chunk_work_cost terrain_shape(hhc_terrain *terrain, hhc_noise_sampler_context *c
         ctx->n[2]) * ctx->n[6] +
         ctx->n[3] * ctx->n[7];
 
-    if (ctx->n[3] > 0.0f)
+    if (terrain->value > ctx->pos_tab[0][2])
     {
-        terrain->block_id = biome_best_index + 1;
+        terrain->block_id = BLOCK_GRASS;
     }
 
     return cost;
