@@ -138,7 +138,7 @@ chunk_work_cost sampler_noise_bake(hhc_noise_sampler_context *ctx)
         dst = ctx->sample_value[i];
         for (j = 0; j < end; ++j)
         {
-            cost += noise_sample_make_2d(&sample[j], &dst[j], terrain_spec.amp[i],
+            cost += noise_sample_make_3d(&sample[j], &dst[j], terrain_spec.amp[i],
                     world.seed + TERRAIN_SEED_DEFAULT + i * 10);
         }
 
@@ -155,7 +155,7 @@ chunk_work_cost terrain_shape(hhc_terrain *terrain, hhc_noise_sampler_context *c
     chunk_work_cost cost = 0;
     hhc_terrain noterrain = {0};
     hhc_biome biome = {0};
-    f64 biome_score[BIOME_COUNT] = {0};
+    f64 biome_score = 0.0;
     f64 biome_best_score = 10000.0;
     i32 biome_best_index = 0;
     i32 i = 0;
@@ -168,10 +168,10 @@ chunk_work_cost terrain_shape(hhc_terrain *terrain, hhc_noise_sampler_context *c
     i = BIOME_COUNT;
     while (i--)
     {
-        biome_score[i] = biome_score_get(biome, terrain_spec.biome[i]);
-        if (biome_score[i] < biome_best_score)
+        biome_score = biome_score_get(biome, terrain_spec.biome[i]);
+        if (biome_score < biome_best_score)
         {
-            biome_best_score = biome_score[i];
+            biome_best_score = biome_score;
             biome_best_index = i;
         }
     }
@@ -182,7 +182,7 @@ chunk_work_cost terrain_shape(hhc_terrain *terrain, hhc_noise_sampler_context *c
         ctx->n[2]) * ctx->n[6] +
         ctx->n[3] * ctx->n[7];
 
-    if (terrain->value > ctx->pos_tab[0][2])
+    if (ctx->n[3] > 0.0f)
     {
         terrain->block_id = biome_best_index + 1;
     }

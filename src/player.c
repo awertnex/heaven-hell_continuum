@@ -513,13 +513,13 @@ static void player_world_overflow_update(hhc_player *p)
     {
         p->transform.pos.z -= diamerer_v;
         p->transform_last.pos.z -= diamerer_v;
-        p->ch_delta.z -= WORLD_DIAMETER;
+        p->ch_delta.z -= WORLD_DIAMETER_VERTICAL;
     }
     if (p->transform.pos.z < -edge_v)
     {
         p->transform.pos.z += diamerer_v;
         p->transform_last.pos.z += diamerer_v;
-        p->ch_delta.z += WORLD_DIAMETER;
+        p->ch_delta.z += WORLD_DIAMETER_VERTICAL;
     }
 
     p->ch.x = floorf((f32)p->transform.pos.x / CHUNK_DIAMETER);
