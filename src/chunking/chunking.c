@@ -1076,8 +1076,6 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     hhc_noise_sampler_context s = {0};
     hhc_terrain terrain = {0};
     v3i32 pos = {0};
-    u32 i = 0;
-    f32 n = 0.0f;
 
     if (chunk->cursor == CHUNK_VOLUME)
     {
