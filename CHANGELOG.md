@@ -11,6 +11,8 @@
 - updated engine version to v0.13.0-beta.
 - fix mouse garbage-delta when centering on screen.
 - changed terrain noise sampling to be cached per axis.
+- put skybox drawing in its own function (as oppose to being part of the giant
+  function `world_draw()`.
 
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.

@@ -1,9 +1,5 @@
 # Heaven/Hell Continuum - v0.5.0-dev
 
-<h1 align="center">
-  <img src="assets/textures/logo/128x128.png" alt="Heaven-Hell Continuum">
-</h1>
-
 **a voxel game/engine in C99, with minimal dependencies if any.**
 
 ## Download (unzip and launch)

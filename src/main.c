@@ -1,4 +1,22 @@
-#include "deps/fossil/fossil_engine.h"
+#include "deps/fossil/common/common_values.h"
+#include "deps/fossil/common/config.h"
+#include "deps/fossil/common/diagnostics.h"
+#include "deps/fossil/common/engine_info.h"
+#include "deps/fossil/common/limits.h"
+#include "deps/fossil/common/types.h"
+#include "deps/fossil/assets/assets.h"
+#include "deps/fossil/engine/engine.h"
+#include "deps/fossil/engine/engine_assets.h"
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/math/math.h"
+#include "deps/fossil/math/matrix.h"
+#include "deps/fossil/math/vector.h"
+#include "deps/fossil/memory/memory.h"
+#include "deps/fossil/shaders/shader_types.h"
+#include "deps/fossil/string/string.h"
+#include "deps/fossil/ui/ui.h"
+
+#include "deps/fossil/h/time.h"
 
 #include "h/main.h"
 
