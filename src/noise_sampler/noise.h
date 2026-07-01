@@ -4,8 +4,6 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/math/vector.h"
 
-#include "../chunking/chunk_work.h"
-
 typedef struct hhc_noise_sample
 {
     f64 v[3];   /* position */
@@ -26,8 +24,8 @@ f64 trilerp_f64(const f64 *n, const f64 *t);
 v2f64 gradient_2d(i32 x, i32 y, u64 seed);
 v3f64 gradient_3d(i32 x, i32 y, i32 z, u64 seed);
 
-chunk_work_cost noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f64 frequency);
-chunk_work_cost noise_sample_make_2d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed);
-chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed);
+void noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f64 frequency);
+f64 noise_sample_make_2d(const hhc_noise_sample *s, f64 amplitude, u64 seed);
+f64 noise_sample_make_3d(const hhc_noise_sample *s, f64 amplitude, u64 seed);
 
 #endif /* HHC_TERRAIN_NOISE_H */

@@ -5,10 +5,10 @@
 #include "deps/fossil/common/limits.h"
 
 #include "../chunking/chunk_work.h"
+#include "../noise_sampler/noise_sampler.h"
 
 #include "../h/assets.h"
 
-#include "noise_sampler.h"
 #include "terrain_common.h"
 
 typedef struct hhc_biome

@@ -4,7 +4,34 @@
 #include "deps/fossil/common/types.h"
 
 #include "noise.h"
-#include "terrain_common.h"
+
+typedef struct hhc_noise_buffer
+{
+    u64 noise_len;  /* number of noise maps per sampler context */
+    u64 sample_len; /* number of samples per noise */
+
+    /*!
+     *  @brief sample base data per noise type.
+     *
+     *  @remark entry count = `noise_len` * `sample_len`.
+     */
+
+    hhc_noise_sample *sample_src_buf;
+    /*!
+     *  @brief final sample values per noise type, after gradient interpolation,
+     *  before sample interpolation.
+     *
+     *  @remark entry count = `noise_len` * `sample_len`.
+     */
+    f64 *sample_dst_buf;
+
+    /*!
+     *  @brief final noise values, after sample interpolation, ready for terrain generation.
+     *
+     *  @remark entry count = `noise_len`.
+     */
+    f64 *noise_dst_buf;
+} hhc_noise_buffer;
 
 /*!
  *  @brief base sampler parameters for noise sampling, persistent as long as map
@@ -22,6 +49,14 @@ typedef struct hhc_noise_sampler
     f64 margin[3];
 
     f64 t_scale[3];     /* blend factor scalar */
+
+    /*!
+     *  @brief buffers of noise data.
+     */
+    hhc_noise_buffer noise_buf;
+
+    b8 initialized;
+
 } hhc_noise_sampler;
 
 /*!
@@ -29,6 +64,11 @@ typedef struct hhc_noise_sampler
  */
 typedef struct hhc_noise_sampler_context
 {
+    /*!
+     *  @brief current sampler being used for this context.
+     */
+    hhc_noise_sampler *sampler;
+
     f64 sample_offset[3];   /* sampler base offset, in world-space */
     f64 radius[3];          /* map radius, copied from @ref hhc_noise_sampler */
     f64 diameter[3];        /* map diameter, copied from @ref hhc_noise_sampler */
@@ -58,8 +98,8 @@ typedef struct hhc_noise_sampler_context
     f64 t_scale[3];         /* blend factor scalar */
 
     /*!
-     *  @brief sample indices to re-map from `sample_buf` into `sample_value`
-     *  for proper interpolation based on blend-type.
+     *  @brief sample indices to re-map sample source to destination in a @ref
+     *  hhc_noise_buffer for proper interpolation based on blend-type.
      */
     u32 sample_index[8];
 
@@ -68,31 +108,24 @@ typedef struct hhc_noise_sampler_context
      */
     u32 sample_count;
 
-    /*!
-     *  @brief sample base data per noise type.
-     */
-    hhc_noise_sample sample_buf[TERRAIN_NOISE_COUNT][8];
-
-    /*!
-     *  @brief final sample values per noise type, after gradient interpolation,
-     *  before sample interpolation.
-     */
-    f64 sample_value[TERRAIN_NOISE_COUNT][8];
-
-    /*!
-     *  @brief final noise values, after sample interpolation, ready for terrain generation.
-     */
-    f64 n[TERRAIN_NOISE_COUNT];
-
     hhc_noise_sample_lerp_func noise_sample_lerp_func;
 } hhc_noise_sampler_context;
 
 /*!
  *  @brief initialize noise sampler static parameters.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
-hhc_noise_sampler noise_sampler_init(f64 map_radius_x, f64 map_radius_y, f64 map_radius_z,
+u32 noise_sampler_init(hhc_noise_sampler *sampler,
+        u64 noise_count, u64 sample_count,
+        f64 map_radius_x, f64 map_radius_y, f64 map_radius_z,
         f64 map_diameter_x, f64 map_diameter_y, f64 map_diameter_z,
         f64 map_margin_x, f64 map_margin_y, f64 map_margin_z);
+
+/*!
+ *  @brief free noise sampler buffers.
+ */
+void noise_sampler_free(hhc_noise_sampler *sampler);
 
 /*!
  *  @brief initialize noise sampler context for a given sampler.

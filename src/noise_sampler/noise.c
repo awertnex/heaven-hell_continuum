@@ -94,7 +94,7 @@ v3f64 gradient_3d(i32 x, i32 y, i32 z, u64 seed)
     return v;
 }
 
-chunk_work_cost noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f64 frequency)
+void noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f64 frequency)
 {
     f64 v = pos * frequency;
     i64 a = (i64)floorf(v);
@@ -109,10 +109,9 @@ chunk_work_cost noise_sample_axis_init(hhc_noise_sample *s, u8 axis, f64 pos, f6
     s->dw[axis] = 1.0 - d;
     s->da[axis] = v - (f64)a;
     s->db[axis] = v - (f64)b;
-    return CHUNK_WORK_COST_GENERATE_NOISE_INIT;
 }
 
-chunk_work_cost noise_sample_make_2d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed)
+f64 noise_sample_make_2d(const hhc_noise_sample *s, f64 amplitude, u64 seed)
 {
     const f64 dx = s->dv[0];
     const f64 dy = s->dv[1];
@@ -131,15 +130,14 @@ chunk_work_cost noise_sample_make_2d(const hhc_noise_sample *s, f64 *dst, f64 am
     n[2] = s->da[0] * g[2].x + s->db[1] * g[2].y;
     n[3] = s->db[0] * g[3].x + s->db[1] * g[3].y;
 
-    *dst =
+    return
         (n[0] * wx * wy +
          n[1] * dx * wy +
          n[2] * wx * dy +
          n[3] * dx * dy) * amplitude;
-    return CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE_2D;
 }
 
-chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 amplitude, u64 seed)
+f64 noise_sample_make_3d(const hhc_noise_sample *s, f64 amplitude, u64 seed)
 {
     const f64 dx = s->dv[0];
     const f64 dy = s->dv[1];
@@ -168,7 +166,7 @@ chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 am
     n[6] = s->da[0] * g[6].x + s->db[1] * g[6].y + s->db[2] * g[6].z;
     n[7] = s->db[0] * g[7].x + s->db[1] * g[7].y + s->db[2] * g[7].z;
 
-    *dst =
+    return
         (n[0] * wx * wy * wz +
          n[1] * dx * wy * wz +
          n[2] * wx * dy * wz +
@@ -177,5 +175,4 @@ chunk_work_cost noise_sample_make_3d(const hhc_noise_sample *s, f64 *dst, f64 am
          n[5] * dx * wy * dz +
          n[6] * wx * dy * dz +
          n[7] * dx * dy * dz) * amplitude;
-    return CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE_3D;
 }

@@ -1,5 +1,13 @@
+#include "deps/fossil/logger/logger.h"
+#include "deps/fossil/memory/memory.h"
+
+#include "../h/diagnostics.h"
+
 #include "noise.h"
 #include "noise_sampler.h"
+
+#include <stddef.h>
+#include <inttypes.h>
 
 enum hhc_sampler_blend_type
 {
@@ -9,26 +17,97 @@ enum hhc_sampler_blend_type
     SAMPLER_BLEND_TYPE_CORNER
 }; /* hhc_sampler_blend_type */
 
-hhc_noise_sampler noise_sampler_init(f64 map_radius_x, f64 map_radius_y, f64 map_radius_z,
+u32 noise_sampler_init(hhc_noise_sampler *sampler,
+        u64 noise_count, u64 sample_count,
+        f64 map_radius_x, f64 map_radius_y, f64 map_radius_z,
         f64 map_diameter_x, f64 map_diameter_y, f64 map_diameter_z,
         f64 map_margin_x, f64 map_margin_y, f64 map_margin_z)
 {
-    hhc_noise_sampler sampler = {0};
+    hhc_noise_buffer *noise_buf = NULL;
 
-    sampler.radius[0] = map_radius_x;
-    sampler.radius[1] = map_radius_y;
-    sampler.radius[2] = map_radius_z;
-    sampler.diameter[0] = map_diameter_x;
-    sampler.diameter[1] = map_diameter_y;
-    sampler.diameter[2] = map_diameter_z;
-    sampler.margin[0] = map_margin_x;
-    sampler.margin[1] = map_margin_y;
-    sampler.margin[2] = map_margin_z;
-    sampler.t_scale[0] = 1.0 / (map_margin_x * 2.0);
-    sampler.t_scale[1] = 1.0 / (map_margin_y * 2.0);
-    sampler.t_scale[2] = 1.0 / (map_margin_z * 2.0);
+    if (!sampler)
+    {
+        LOGERROR(FSL_ERR_POINTER_NULL, FSL_FLAG_LOG_NO_VERBOSE,
+                "Failed to Initialize Noise Sampler, Pointer `NULL`\n");
+        return *GAME_ERR;
+    }
 
-    return sampler;
+    if (sampler->initialized)
+    {
+        *GAME_ERR = FSL_ERR_SUCCESS;
+        return *GAME_ERR;
+    }
+
+    noise_sampler_free(sampler);
+
+    noise_buf = &sampler->noise_buf;
+
+    if (fsl_mem_map((void*)&noise_buf->sample_src_buf,
+            noise_count * sample_count * sizeof(hhc_noise_sample),
+            "noise_sampler_init().noise_buf->sample_src_buf") != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    if (fsl_mem_map((void*)&noise_buf->sample_dst_buf,
+            noise_count * sample_count * sizeof(f64),
+            "noise_sampler_init().noise_buf->sample_dst_buf") != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    if (fsl_mem_map((void*)&noise_buf->noise_dst_buf,
+                noise_count * sizeof(f64),
+            "noise_sampler_init().noise_buf->noise_dst_buf") != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    sampler->radius[0] = map_radius_x;
+    sampler->radius[1] = map_radius_y;
+    sampler->radius[2] = map_radius_z;
+    sampler->diameter[0] = map_diameter_x;
+    sampler->diameter[1] = map_diameter_y;
+    sampler->diameter[2] = map_diameter_z;
+    sampler->margin[0] = map_margin_x;
+    sampler->margin[1] = map_margin_y;
+    sampler->margin[2] = map_margin_z;
+    sampler->t_scale[0] = 1.0 / (map_margin_x * 2.0);
+    sampler->t_scale[1] = 1.0 / (map_margin_y * 2.0);
+    sampler->t_scale[2] = 1.0 / (map_margin_z * 2.0);
+
+    sampler->noise_buf.noise_len = noise_count;
+    sampler->noise_buf.sample_len = sample_count;
+
+    sampler->initialized = TRUE;
+    LOGTRACE(FSL_FLAG_LOG_NO_VERBOSE,
+            fsl_logger_stringf("Sampler Initialized [noise_count: %"PRIu64"][sample_count: %"PRIu64"]\n", noise_count, sample_count));
+
+    *GAME_ERR = FSL_ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+
+    noise_sampler_free(sampler);
+    return *GAME_ERR;
+}
+
+void noise_sampler_free(hhc_noise_sampler *sampler)
+{
+    hhc_noise_sampler nosampler = {0};
+    hhc_noise_buffer *noise_buf = NULL;
+
+    if (!sampler || sampler->initialized)
+        return;
+
+    sampler->initialized = FALSE;
+    noise_buf = &sampler->noise_buf;
+
+    fsl_mem_unmap((void*)&noise_buf->sample_src_buf,
+            noise_buf->noise_len * noise_buf->sample_len * sizeof(hhc_noise_sample),
+            "noise_sampler_free().noise_buf->sample_src_buf");
+    fsl_mem_unmap((void*)&noise_buf->sample_dst_buf,
+            noise_buf->noise_len * noise_buf->sample_len * sizeof(f64),
+            "noise_sampler_free().noise_buf->sample_dst_buf");
+    fsl_mem_unmap((void*)&noise_buf->noise_dst_buf,
+            noise_buf->noise_len * sizeof(f64),
+            "noise_sampler_free().noise_buf->noise_dst_buf");
+
+    *sampler = nosampler;
 }
 
 void noise_sampler_context_init(hhc_noise_sampler *sampler,
@@ -42,6 +121,7 @@ void noise_sampler_context_init(hhc_noise_sampler *sampler,
 
     *context = nocontext;
 
+    context->sampler = sampler;
     context->sample_offset[0] = base_x;
     context->sample_offset[1] = base_y;
     context->sample_offset[2] = base_z;

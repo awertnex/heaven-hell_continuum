@@ -15,6 +15,8 @@ typedef enum hhc_terrain_noise_index
     TERRAIN_NOISE_COUNT
 } hhc_terrain_noise_index;
 
+#define BIOME_NOISE_OFFSET  TERRAIN_NOISE_TEMPERATURE
+
 typedef enum hhc_biome_index
 {
     BIOME_STONE,
