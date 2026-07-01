@@ -3,7 +3,7 @@
 
 #include "deps/fossil/common/types.h"
 
-#define CHUNK_WORK_BUDGET_DEFAULT 30000000
+#define CHUNK_WORK_BUDGET_DEFAULT 50000000
 
 typedef i64 chunk_work_budget;
 

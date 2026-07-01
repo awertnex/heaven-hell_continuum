@@ -230,6 +230,8 @@ u32 chunk_order_build_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
+    hhc_chunk_bucket_format *bucket_buf = NULL;
+    u32 buckets_max = chunk_sched.buckets_max;
     u32 *distance_buf = NULL;
     u32 distance_cache = 0;
     v3i8 *pos_buf = NULL;
@@ -244,6 +246,10 @@ u32 chunk_order_build_internal(void)
     v3i32 pos = {0};
     u32 chunk_count = 0;
     u32 i = 0;
+
+    if (fsl_mem_map((void*)&bucket_buf, buckets_max * sizeof(hhc_chunk_bucket_format),
+                "chunk_order_build_internal().bucket_buf") != FSL_ERR_SUCCESS)
+        goto cleanup;
 
     if (fsl_mem_map((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
                 "chunk_order_build_internal().distance_buf") != FSL_ERR_SUCCESS)
@@ -269,10 +275,10 @@ u32 chunk_order_build_internal(void)
             for (pos.x = 0; pos.x < CHUNK_BUF_DIAMETER_MAX; ++pos.x)
             {
                 distance_cache = fsl_distance_v3i32(pos, center);
-                if (distance_cache < chunk_sched.buckets_max)
+                if (distance_cache < buckets_max)
                 {
-                    ++chunk_sched.bucket[distance_cache].len;
-                    ++chunk_sched.bucket[distance_cache].pos;
+                    ++bucket_buf[distance_cache].len;
+                    ++bucket_buf[distance_cache].pos;
                     distance_buf[chunk_count] = distance_cache;
                     pos_buf[chunk_count].x = pos.x - SET_RENDER_DISTANCE_MAX;
                     pos_buf[chunk_count].y = pos.y - SET_RENDER_DISTANCE_MAX;
@@ -283,11 +289,11 @@ u32 chunk_order_build_internal(void)
         }
     }
 
-    for (i = 1; i < chunk_sched.buckets_max; ++i)
-        chunk_sched.bucket[i].pos += chunk_sched.bucket[i - 1].pos;
+    for (i = 1; i < buckets_max; ++i)
+        bucket_buf[i].pos += bucket_buf[i - 1].pos;
 
     for (i = 0; i < chunk_count; ++i)
-        data_buf[--chunk_sched.bucket[distance_buf[i]].pos] = pos_buf[i];
+        data_buf[--bucket_buf[distance_buf[i]].pos] = pos_buf[i];
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
     if (fsl_write_file(path, chunk_count * sizeof(v3i8), data_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
@@ -296,11 +302,13 @@ u32 chunk_order_build_internal(void)
             fsl_logger_stringf("`chunk_order` Look-up '%s' Exported\n", path));
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_BUCKET);
-    if (fsl_write_file(path, chunk_sched.buckets_max * sizeof(hhc_chunk_bucket), chunk_sched.bucket, TRUE, FALSE) != FSL_ERR_SUCCESS)
+    if (fsl_write_file(path, buckets_max * sizeof(hhc_chunk_bucket_format), bucket_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
         goto cleanup;
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunk_sched` Look-up '%s' Exported\n", path));
 
+    fsl_mem_unmap((void*)&bucket_buf, buckets_max * sizeof(hhc_chunk_bucket_format),
+            "chunk_order_build_internal().bucket_buf");
     fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunk_order_build_internal().distance_buf");
     fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
@@ -313,6 +321,8 @@ u32 chunk_order_build_internal(void)
 
 cleanup:
 
+    fsl_mem_unmap((void*)&bucket_buf, buckets_max * sizeof(hhc_chunk_bucket_format),
+            "chunk_order_build_internal().bucket_buf");
     fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunk_order_build_internal().distance_buf");
     fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
@@ -367,7 +377,7 @@ u32 chunk_bucket_load_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
-    hhc_chunk_bucket *file_contents = NULL;
+    hhc_chunk_bucket_format *file_contents = NULL;
     u64 file_len = 0;
     u32 i = 0;
 
@@ -380,6 +390,8 @@ u32 chunk_bucket_load_internal(void)
     {
         chunk_sched.bucket[i].pos = file_contents[i].pos;
         chunk_sched.bucket[i].len = file_contents[i].len;
+        chunk_sched.bucket[i].push = file_contents[i].pos;
+        chunk_sched.bucket[i].pop = file_contents[i].pos;
     }
 
     fsl_mem_free((void*)&file_contents, file_len,
@@ -412,12 +424,6 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     v3f32 DISTANCE = {0};
     u32 RENDER_DISTANCE = 0;
     v3u32 chunk_tab_coordinates = {0};
-    v3i32 overflow_diameter =
-    {
-        WORLD_DIAMETER + CHUNK_DIAMETER,
-        WORLD_DIAMETER + CHUNK_DIAMETER,
-        WORLD_DIAMETER_VERTICAL + CHUNK_DIAMETER,
-    };
 
     if (settings.flag.render_distance_dirty)
     {
@@ -429,7 +435,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
 
-    chunk_scheduler_update_internal_deprecated();
+    chunk_scheduler_update_internal();
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
     DELTA.y = player_chunk.y - player_chunk_delta->y;
@@ -985,9 +991,9 @@ u32 chunk_sphere_radius_get_internal(u32 radius)
 void chunk_pos_set_internal(hhc_chunk *chunk,
         v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
 {
-    v3f32 chunk_pos = {0};
     v3i32 center = {0};
     v3i32 pos = {0};
+    v3f32 chunk_pos = {0};
 
     center.x = settings.render_distance;
     center.y = settings.render_distance;
@@ -1367,6 +1373,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
     v3u64 seed;
     v3u8 color_variant;
     u32 end = chunk_buf.cursor;
+    b8 pushed = FALSE;
 
     chunk_tab_coordinates.x = index % settings.chunk_buf_diameter;
     chunk_tab_coordinates.y = (index / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
@@ -1415,16 +1422,15 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
             chunk_tab.p[index] = chunk;
             chunk_debug_chunk_gizmo_write_internal(chunk);
-
-            ++chunk_buf.cursor;
-            if (chunk_buf.cursor >= chunk_order.chunks_max)
-                chunk_buf.cursor = 0;
-            return;
+            pushed = TRUE;
         }
 
         ++chunk_buf.cursor;
         if (chunk_buf.cursor >= chunk_order.chunks_max)
             chunk_buf.cursor = 0;
+
+        if (pushed)
+            return;
     } while (chunk_buf.cursor != end);
 
     LOGWARNING(FSL_ERR_BUFFER_FULL,
@@ -1562,16 +1568,19 @@ pop:
     chunk_sched.cursor_pop = pop;
 }
 
+#include <assert.h>
 void chunk_scheduler_update_internal(void)
 {
     hhc_chunk *chunk = NULL;
-    static u32 push = 0;
-    static u32 pop = 0;
     chunk_work_budget budget = CHUNK_WORK_BUDGET_DEFAULT;
+    chunk_work_cost cost = 0;
     u32 i = 0;
     u32 j = 0;
-    u32 end = chunk_sched.buckets_max;
+    u32 end = chunk_order.chunks_max;
     u32 index = 0;
+    hhc_chunk_bucket *bucket = NULL;
+    u32 bucket_end = 0;
+    b8 skip_bucket = FALSE;
 
     if (chunk_sched.count >= end)
         goto pop;
@@ -1579,22 +1588,17 @@ void chunk_scheduler_update_internal(void)
     if (budget <= 0)
         return;
 
-    for (; i < end && chunk_sched.count < end && budget > 0; ++i)
+    for (i = 0; i < end && chunk_sched.count < end && budget > 0; ++i)
     {
         chunk = chunk_tab.p[chunk_order.p[i]];
         if (chunk)
         {
+            bucket = &chunk_sched.bucket[chunk->cpi];
+
             if (chunk->flag & FLAG_CHUNK_DIRTY &&
-                    !(chunk->flag & FLAG_CHUNK_QUEUED) &&
-                    !chunk_sched.p[push])
+                    !chunk_sched.p[bucket->push])
             {
-                chunk->flag |= FLAG_CHUNK_QUEUED;
-                chunk_sched.p[push] = chunk;
-                ++push;
-                if (push >= end)
-                    push = 0;
-                ++chunk_sched.count;
-                budget -= CHUNK_WORK_COST_PUSH;
+                budget -= chunk_scheduler_push_internal(chunk);
             }
         }
         budget -= CHUNK_WORK_COST_SCAN;
@@ -1605,61 +1609,123 @@ pop:
     if (!chunk_sched.count || budget <= 0)
         return;
 
+    end = chunk_sched.buckets_max;
     for (i = 0; i < end && chunk_sched.count && budget > 0; ++i)
     {
-        if (chunk_sched.p[pop])
+        if (skip_bucket)
         {
-            chunk = chunk_sched.p[pop];
+            skip_bucket = FALSE;
+            continue;
+        }
 
-            if (!(chunk->flag & FLAG_CHUNK_LOADED))
+        bucket = &chunk_sched.bucket[chunk_sched.priority];
+        bucket_end = bucket->pos + bucket->len;
+
+        if (bucket->count <= bucket_end)
+        {
+            do
             {
-                chunk->flag &= ~FLAG_CHUNK_QUEUED;
-                chunk_sched.p[pop] = NULL;
-                --chunk_sched.count;
-                ++pop;
-                if (pop >= end)
-                    pop = 0;
-                budget -= CHUNK_WORK_COST_POP;
-                continue;
-            }
+                if (chunk_sched.p[bucket->pop])
+                {
+                    chunk = chunk_sched.p[bucket->pop];
 
-            if (chunk->flag & FLAG_CHUNK_GENERATED)
-                budget -= chunk_mesh_update_internal(chunk);
-            else
-                budget -= chunk_load_internal(chunk, budget);
+                    if (chunk->cpi != chunk_sched.priority ||
+                            !(chunk->flag & FLAG_CHUNK_QUEUED))
+                    {
+                        chunk->flag &= ~FLAG_CHUNK_QUEUED;
+                        chunk_sched.p[bucket->pop] = NULL;
+                        --chunk_sched.count;
+                        --bucket->count;
+                        ++bucket->pop;
+                        if (bucket->pop >= bucket_end)
+                            bucket->pop = bucket->pos;
+                        continue;
+                    }
 
-            if (!(chunk->flag & FLAG_CHUNK_DIRTY))
-            {
+                    if (!(chunk->flag & FLAG_CHUNK_LOADED))
+                    {
+                        chunk_scheduler_pop_internal(chunk);
+                        continue;
+                    }
+
+                    if (chunk->flag & FLAG_CHUNK_GENERATED)
+                        cost += chunk_mesh_update_internal(chunk);
+                    else
+                        cost += chunk_load_internal(chunk, budget);
+
+                    if (!(chunk->flag & FLAG_CHUNK_DIRTY))
+                    {
 #if MODE_INTERNAL_EXPORT_CHUNKS
-                if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-                    chunk_export_internal(chunk);
+                        if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
+                            cost += chunk_export_internal(chunk);
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
 
-                chunk->flag &= ~(FLAG_CHUNK_QUEUED | FLAG_CHUNK_IMPORTED);
-                chunk_sched.p[pop] = NULL;
-                --chunk_sched.count;
-                ++pop;
-                if (pop >= end)
-                    pop = 0;
-                budget -= CHUNK_WORK_COST_POP;
-            }
+                        chunk->flag &= ~FLAG_CHUNK_IMPORTED;
+                        chunk_scheduler_pop_internal(chunk);
+                    }
+
+                    budget -= chunk_work_cost_tax_get_internal(&cost, chunk->cpi);
+
+                    if (chunk_sched.priority < chunk->cpi)
+                    {
+                        skip_bucket = TRUE;
+                        break;
+                    }
+                }
+                else
+                {
+                    --bucket->count;
+                    ++bucket->pop;
+                    if (bucket->pop >= bucket_end)
+                        bucket->pop = bucket->pos;
+                    budget -= CHUNK_WORK_COST_POP;
+                }
+
+            } while (bucket->pop != bucket->push && budget > 0);
         }
-        else
-        {
-            ++pop;
-            if (pop >= end)
-                pop = 0;
-            budget -= CHUNK_WORK_COST_POP;
-        }
+
+        ++chunk_sched.priority;
+        if (chunk_sched.priority >= chunk_sched.buckets_max)
+            chunk_sched.priority = 0;
+        continue;
     }
 }
 
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
 {
+    hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
+    u32 bucket_end = bucket->pos + bucket->len;
+    chunk->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_QUEUED;
+    chunk_sched.p[bucket->push] = chunk;
+    ++chunk_sched.count;
+    ++bucket->count;
+    ++bucket->push;
+    if (bucket->push >= bucket_end)
+        bucket->push = bucket->pos;
+    if (chunk->cpi < chunk_sched.priority)
+        chunk_sched.priority = chunk->cpi;
+    return CHUNK_WORK_COST_PUSH;
 }
 
-chunk_work_cost chunk_scheduler_pop_internal(u32 index)
+chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 {
+    hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
+    u32 bucket_end = bucket->pos + bucket->len;
+    chunk->flag &= ~(FLAG_CHUNK_DIRTY | FLAG_CHUNK_QUEUED);
+    chunk_sched.p[bucket->pop] = NULL;
+    --chunk_sched.count;
+    --bucket->count;
+    ++bucket->pop;
+    if (bucket->pop >= bucket_end)
+        bucket->pop = bucket->pos;
+    return CHUNK_WORK_COST_POP;
+}
+
+chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost *cost, u32 chunk_cpi)
+{
+    chunk_work_cost total = *cost + chunk_cpi;
+    *cost = 0;
+    return total;
 }
 
 u32 *get_block_resolved(hhc_chunk *chunk, i32 x, i32 y, i32 z)

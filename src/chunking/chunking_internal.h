@@ -90,7 +90,18 @@ typedef struct hhc_chunk_bucket
     u32 count;  /* number of chunks scheduled */
     u32 pos;    /* start position of bucket into @ref chunk_order.p */
     u32 len;    /* total number of slots in bucket */
+    u32 push;   /* push position within bucket */
+    u32 pop;    /* pop position within bucket */
 } hhc_chunk_bucket;
+
+/*!
+ *  @brief chunk_bucket look-up file format struct.
+ */
+typedef struct hhc_chunk_bucket_format
+{
+    u32 pos;    /* start position of bucket into @ref chunk_order.p */
+    u32 len;    /* total number of slots in bucket */
+} hhc_chunk_bucket_format;
 
 /*!
  *  @brief schedule of chunks to be processed.
@@ -254,7 +265,8 @@ void chunk_buf_dump_internal(void);
 void chunk_scheduler_update_internal_deprecated(void);
 void chunk_scheduler_update_internal(void);
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
-chunk_work_cost chunk_scheduler_pop_internal(u32 index);
+chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
+chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost *cost, u32 chunk_cpi);
 
 void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
 
