@@ -17,9 +17,7 @@
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.
 - fixed segfault when player flies at blocks at high speed:
-    - it's not collision, it's an out-of-bounds access when player dies, the
-      problem is that modulo (%) was being used on a big number, which resulted
-      in a floating point exception.
+    - it's not collision, it's an out-of-bounds access when player dies.
 - player can now interact with blocks beyond world edge.
 
 #### additions
