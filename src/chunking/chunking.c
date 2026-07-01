@@ -2,11 +2,11 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/memory/memory.h"
+#include "deps/fossil/plugins/fsl_native/noise_sampler/noise_sampler.h"
 #include "deps/fossil/string/string.h"
 
 #include "deps/fossil/h/dir.h"
 
-#include "../noise_sampler/noise_sampler.h"
 #include "../settings/settings.h"
 #include "../terrain/terrain.h"
 
@@ -55,6 +55,7 @@ u32 chunking_init(v3i32 *player_chunk_delta)
     if (settings.flag.render_distance_dirty)
     {
         settings.flag.render_distance_dirty = FALSE;
+        chunk_buf_dump_internal();
         chunk_order.chunks_max = chunk_order.len[settings.render_distance];
     }
 
@@ -97,7 +98,7 @@ u32 chunking_init(v3i32 *player_chunk_delta)
     if (chunk_bucket_load_internal() != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (noise_sampler_init(
+    if (fsl_noise_sampler_init(
             &chunk_sampler.sampler,
             TERRAIN_NOISE_COUNT, 8,
             (f64)(WORLD_RADIUS * CHUNK_DIAMETER),
@@ -396,7 +397,6 @@ cleanup:
 
 void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hit)
 {
-    hhc_chunk **cursor = NULL;
     v3u32 _coordinates = {0};
     v3u32 _mirror_index = {0};
     v3u32 _target_index = {0};
@@ -422,6 +422,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     if (settings.flag.render_distance_dirty)
     {
         settings.flag.render_distance_dirty = FALSE;
+        chunk_buf_dump_internal();
         chunk_order.chunks_max = chunk_order.len[settings.render_distance];
         chunk_order_load_internal(settings.render_distance);
     }
@@ -430,13 +431,9 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
     chunk_scheduler_update_internal_deprecated();
 
-    DELTA.x = player_chunk_delta->x - player_chunk.x;
-    DELTA.y = player_chunk_delta->y - player_chunk.y;
-    DELTA.z = player_chunk_delta->z - player_chunk.z;
-
-    DELTA.x -= (i32)(roundf((f32)DELTA.x / overflow_diameter.x) * overflow_diameter.x);
-    DELTA.y -= (i32)(roundf((f32)DELTA.y / overflow_diameter.y) * overflow_diameter.y);
-    DELTA.z -= (i32)(roundf((f32)DELTA.z / overflow_diameter.z) * overflow_diameter.z);
+    DELTA.x = player_chunk.x - player_chunk_delta->x;
+    DELTA.y = player_chunk.y - player_chunk_delta->y;
+    DELTA.z = player_chunk.z - player_chunk_delta->z;
 
     if (!(DELTA.x || DELTA.y || DELTA.z))
         return;
@@ -444,12 +441,12 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 chunk_tab_shift:
 
     AXIS =
-        DELTA.x < 0 ? STATE_CHUNK_SHIFT_PX :
-        DELTA.x > 0 ? STATE_CHUNK_SHIFT_NX :
-        DELTA.y < 0 ? STATE_CHUNK_SHIFT_PY :
-        DELTA.y > 0 ? STATE_CHUNK_SHIFT_NY :
-        DELTA.z < 0 ? STATE_CHUNK_SHIFT_PZ :
-        DELTA.z > 0 ? STATE_CHUNK_SHIFT_NZ : 0;
+        DELTA.x > 0 ? STATE_CHUNK_SHIFT_PX :
+        DELTA.x < 0 ? STATE_CHUNK_SHIFT_NX :
+        DELTA.y > 0 ? STATE_CHUNK_SHIFT_PY :
+        DELTA.y < 0 ? STATE_CHUNK_SHIFT_NY :
+        DELTA.z > 0 ? STATE_CHUNK_SHIFT_PZ :
+        DELTA.z < 0 ? STATE_CHUNK_SHIFT_NZ : 0;
 
     INCREMENT = (AXIS % 2 == 1) - (AXIS %2 == 0);
     DISTANCE.x = DELTA.x;
@@ -459,13 +456,7 @@ chunk_tab_shift:
 
     if ((u32)fsl_len_v3f32(DISTANCE) > RENDER_DISTANCE)
     {
-        for (i = 0; i < chunk_order.chunks_max; ++i)
-        {
-            cursor = &chunk_tab.p[chunk_order.p[i]];
-            if (*cursor)
-                chunk_buf_pop_internal(*cursor);
-        }
-
+        chunk_buf_dump_internal();
         *player_chunk_delta = player_chunk;
         goto chunk_buf_push;
     }
@@ -657,7 +648,7 @@ void chunking_free(void)
 {
     u32 i = 0;
 
-    noise_sampler_free(&chunk_sampler.sampler);
+    fsl_noise_sampler_free(&chunk_sampler.sampler);
 
     if (chunk_tab.p)
     {
@@ -876,7 +867,7 @@ void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
 
-    cn->ch->flag |= FLAG_CHUNK_DIRTY;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_NON_AIR;
     SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
     cn->ch->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
 
@@ -1098,7 +1089,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     }
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
-    noise_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
+    fsl_noise_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
             (f64)(chunk->pos_world.x * CHUNK_DIAMETER),
             (f64)(chunk->pos_world.y * CHUNK_DIAMETER),
             (f64)(chunk->pos_world.z * CHUNK_DIAMETER));
@@ -1109,22 +1100,21 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 
     /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
      * should first pick up from where `chunk->cursor` left off last time. */
-    sampler_axis_init(&chunk_sampler.context, 2, pos.z);
-    for (; pos.z < CHUNK_DIAMETER; ++pos.z, sampler_axis_post_update(&chunk_sampler.context, 2))
+    fsl_noise_sampler_axis_init(&chunk_sampler.context, 2, pos.z);
+    for (; pos.z < CHUNK_DIAMETER; ++pos.z, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 2))
     {
-        sampler_axis_pre_update(&chunk_sampler.context, 2);
-        cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 2);
+        fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 2);
 
-        sampler_axis_init(&chunk_sampler.context, 1, pos.y);
-        for (; pos.y < CHUNK_DIAMETER; ++pos.y, sampler_axis_post_update(&chunk_sampler.context, 1))
+        fsl_noise_sampler_axis_init(&chunk_sampler.context, 1, pos.y);
+        for (; pos.y < CHUNK_DIAMETER; ++pos.y, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 1))
         {
-            sampler_axis_pre_update(&chunk_sampler.context, 1);
+            fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 1);
             cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 1);
 
-            sampler_axis_init(&chunk_sampler.context, 0, pos.x);
-            for (; pos.x < CHUNK_DIAMETER; ++pos.x, sampler_axis_post_update(&chunk_sampler.context, 0))
+            fsl_noise_sampler_axis_init(&chunk_sampler.context, 0, pos.x);
+            for (; pos.x < CHUNK_DIAMETER; ++pos.x, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 0))
             {
-                sampler_axis_pre_update(&chunk_sampler.context, 0);
+                fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 0);
                 cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 0);
 
                 cost += sampler_noise_bake(&chunk_sampler.context);
@@ -1170,33 +1160,40 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
 
-    for (; curr < end; ++curr)
+    if (chunk->flag & FLAG_CHUNK_NON_AIR)
     {
-        if (*curr & MASK_BLOCK_ID)
+        for (; curr < end; ++curr)
         {
-            block_index = curr - start;
-            pos.x = block_index % CHUNK_DIAMETER;
-            pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
-            pos.z = block_index / CHUNK_LAYER;
-            block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
-            if (block_cache & MASK_BLOCK_FACES)
+            if (*curr & MASK_BLOCK_ID)
             {
-                should_render = TRUE;
-                SET_BLOCK_LIGHT(block_cache, 63);
-                *(cursor++) = block_cache |
-                    (pos.x & 0xf) << SHIFT_BLOCK_X |
-                    (pos.y & 0xf) << SHIFT_BLOCK_Y |
-                    (pos.z & 0xf) << SHIFT_BLOCK_Z;
+                block_index = curr - start;
+                pos.x = block_index % CHUNK_DIAMETER;
+                pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
+                pos.z = block_index / CHUNK_LAYER;
+                block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
+                if (block_cache & MASK_BLOCK_FACES)
+                {
+                    should_render = TRUE;
+                    SET_BLOCK_LIGHT(block_cache, 63);
+                    *(cursor++) = block_cache |
+                        (pos.x & 0xf) << SHIFT_BLOCK_X |
+                        (pos.y & 0xf) << SHIFT_BLOCK_Y |
+                        (pos.z & 0xf) << SHIFT_BLOCK_Z;
+                }
             }
-            cost += CHUNK_WORK_COST_MESH_NON_AIR;
         }
-        else
-            cost += CHUNK_WORK_COST_MESH_AIR;
-    }
 
-    ++cur_buf;
-    if (cur_buf >= BLOCK_BUFFERS_MAX)
-        cur_buf = 0;
+        ++cur_buf;
+        if (cur_buf >= BLOCK_BUFFERS_MAX)
+            cur_buf = 0;
+
+        cost = CHUNK_WORK_COST_MESH_NON_AIR;
+    }
+    else
+    {
+        cost = CHUNK_WORK_COST_MESH_AIR;
+        should_render = FALSE;
+    }
 
     if (should_render)
     {
@@ -1430,7 +1427,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             chunk_buf.cursor = 0;
     } while (chunk_buf.cursor != end);
 
-    LOGERROR(FSL_ERR_BUFFER_FULL,
+    LOGWARNING(FSL_ERR_BUFFER_FULL,
             FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "Failed to Push to `chunk_buf`, Buffer Full\n");
 }
@@ -1453,6 +1450,22 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     if (chunk_buf.cursor > index_popped)
         chunk_buf.cursor = index_popped;
     chunk_tab.p[chunk->cti] = NULL;
+}
+
+void chunk_buf_dump_internal(void)
+{
+    hhc_chunk **chunk = NULL;
+    u32 i = 0;
+
+    if (!chunk_tab.p)
+        return;
+
+    for (; i < chunk_order.chunks_max; ++i)
+    {
+        chunk = &chunk_tab.p[chunk_order.p[i]];
+        if (*chunk)
+            chunk_buf_pop_internal(*chunk);
+    }
 }
 
 void chunk_scheduler_update_internal_deprecated(void)

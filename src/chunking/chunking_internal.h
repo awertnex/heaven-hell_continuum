@@ -3,8 +3,7 @@
 
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/math/vector.h"
-
-#include "../noise_sampler/noise_sampler.h"
+#include "deps/fossil/plugins/fsl_native/noise_sampler/noise_sampler.h"
 
 #include "chunk_work.h"
 #include "chunking.h"
@@ -112,8 +111,8 @@ typedef struct hhc_chunk_scheduler
 
 typedef struct hhc_chunk_sampler
 {
-    hhc_noise_sampler sampler;
-    hhc_noise_sampler_context context;
+    fsl_noise_sampler sampler;
+    fsl_noise_sampler_context context;
 } hhc_chunk_sampler;
 
 /* ---- section: declarations ----------------------------------------------- */
@@ -251,6 +250,7 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
 void chunk_buf_pop_internal(hhc_chunk *chunk);
+void chunk_buf_dump_internal(void);
 void chunk_scheduler_update_internal_deprecated(void);
 void chunk_scheduler_update_internal(void);
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);

@@ -5,10 +5,10 @@
 
 #### achievements
 - first working version of the continuum (complete).
-- new seamless-tiling noise sampler.
+- new seamless-tiling noise sampler (moved to engine as plug-in).
 
 #### changes
-- updated engine version to v0.13.0-beta.
+- updated engine version to v0.15.0-beta.
 - fix mouse garbage-delta when centering on screen.
 - changed terrain noise sampling to be cached per axis.
 - put skybox drawing in its own function (as oppose to being part of the giant
@@ -36,7 +36,7 @@
   and `hhc_chunk.mesh` is now a mesh pointer (so it can be managed by a
   chunk_draw).
 
-#### bugs and flaws
+#### known bugs and flaws
 - player spawn puts player anywhere, even inside blocks.
 - collision is broken:
     - blocks tug on player.

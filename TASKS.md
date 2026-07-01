@@ -47,9 +47,11 @@ quirks:
 - [x]   (2025 11 XX):   make mem_commit() for windows
 - [x]   (2025 11 XX):   make mem_unmap() for windows
 - [x]   (2025 12 09):   fix overhead from function 'chunk_tab_shift()'
-- [ ]   (          ):   possibly fix overhead from bubble-sorting in function
+- [x]   (2026 06 23):   possibly fix overhead from bubble-sorting in function
                         `chunk_order_init()`
 - [ ]   (          ):   put blocks in a contiguous array and bind it all to an
                         SSBO, and bind chunk pointers to their addresses
 - [ ]   (          ):   fix segfault when allocating smaller than 256 bytes for
                         'size' parameter of function 'mem_alloc_buf()'
+- [x]   (2026 07 01):   fix that "`chunk_buf` Full" rare bug, and find out why
+                        it happen

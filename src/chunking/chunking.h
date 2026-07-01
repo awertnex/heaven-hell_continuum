@@ -87,16 +87,17 @@ enum block_shift
 enum chunk_flag
 {
     FLAG_CHUNK_LOADED =     (1 << 0),
-    FLAG_CHUNK_DIRTY =      (1 << 1),
-    FLAG_CHUNK_GENERATED =  (1 << 2),
-    FLAG_CHUNK_VISIBLE =    (1 << 3),
-    FLAG_CHUNK_IMPORTED =   (1 << 4),
-    FLAG_CHUNK_QUEUED =     (1 << 5),
+    FLAG_CHUNK_IMPORTED =   (1 << 1),
+    FLAG_CHUNK_DIRTY =      (1 << 2),
+    FLAG_CHUNK_QUEUED =     (1 << 3),
+    FLAG_CHUNK_NON_AIR =    (1 << 4),
+    FLAG_CHUNK_GENERATED =  (1 << 5),
+    FLAG_CHUNK_VISIBLE =    (1 << 6),
 
     /*!
      *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
-    FLAG_CHUNK_EDGE =       (1 << 6)
+    FLAG_CHUNK_EDGE =       (1 << 7)
 }; /* chunk_flag */
 
 typedef struct hhc_chunk_mesh
