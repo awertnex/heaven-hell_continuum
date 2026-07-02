@@ -116,7 +116,7 @@ chunk_work_cost sampler_noise_axis_update_2d(fsl_noise_sampler_context *ctx, u8 
         }
     }
 
-    return CHUNK_WORK_COST_GENERATE_NOISE_INIT * i * j;
+    return CHUNK_WORK_COST_GENERATE_NOISE_INIT * noise_count * sample_count;
 }
 
 chunk_work_cost sampler_noise_bake(fsl_noise_sampler_context *ctx)
@@ -150,7 +150,7 @@ chunk_work_cost sampler_noise_bake(fsl_noise_sampler_context *ctx)
                 terrain_spec.post_offset[i], 0.0, 1.0);
     }
 
-    return CHUNK_WORK_COST_GENERATE_NOISE_INTERPOLATE_2D * ctx->sample_count;
+    return CHUNK_WORK_COST_GENERATE_NOISE_SAMPLE_2D * noise_count * sample_count;
 }
 
 chunk_work_cost terrain_shape(hhc_terrain *terrain, fsl_noise_sampler_context *ctx)

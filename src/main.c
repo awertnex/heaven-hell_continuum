@@ -577,7 +577,7 @@ static void world_draw(void)
     /* ---- draw chunk scheduler visualizer --------------------------------- */
 
     if (core.debug.chunk_scheduler_visualizer && core.flag.hud)
-        chunk_debug_scheduler_visualizer_draw(&player.camera, 0.5f);
+        chunk_debug_scheduler_visualizer_draw(&player.camera);
 
     if (settings.anti_aliasing)
     {

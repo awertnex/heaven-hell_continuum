@@ -264,9 +264,23 @@ void chunk_buf_pop_internal(hhc_chunk *chunk);
 void chunk_buf_dump_internal(void);
 void chunk_scheduler_update_internal_deprecated(void);
 void chunk_scheduler_update_internal(void);
+
+/*
+ *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ */
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
+
+/*
+ *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ */
 chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
-chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost *cost, u32 chunk_cpi);
+
+/*!
+ *  @brief apply tax to total cost of work done on a chunk in @ref chunk_sched.
+ *
+ *  @return cost of operation after tax (used in @ref chunk_scheduler_update_internal()).
+ */
+chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost cost, u32 chunk_cpi);
 
 void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
 
