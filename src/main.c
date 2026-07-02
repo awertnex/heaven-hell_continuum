@@ -620,15 +620,13 @@ static void world_draw(void)
 
     fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
-    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
-            SET_MARGIN, SET_MARGIN, 0, 0, 0,
-            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
-
-    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-
     if (core.flag.hud && core.flag.debug)
     {
-        fsl_text_push(fsl_stringf("\n"
+        fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+
+        fsl_text_push(fsl_stringf(
                     "TIME        [%.2lf]\n"
                     "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",

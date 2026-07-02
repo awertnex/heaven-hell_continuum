@@ -161,16 +161,20 @@ chunk_work_cost terrain_shape(hhc_terrain_sample *terrain, fsl_noise_sampler_con
 
     t = 1.0 - noise_dst_buf[TERRAIN_NOISE_COUNT + BIOME_NOISE_TEMPERATURE];
     t = t * t * t * (t * (t * 6.0 - 15.0) + 10);
-    terrain->value +=
-        (noise_dst_buf[TERRAIN_NOISE_CONTINENTAL] +
-        terrain_spec.amp[TERRAIN_NOISE_CONTINENTAL] / 2.0 +
-        noise_dst_buf[TERRAIN_NOISE_REGIONAL]) * t;
+    terrain->value += noise_dst_buf[TERRAIN_NOISE_REGIONAL] * t;
+
+    t = noise_dst_buf[TERRAIN_NOISE_CONTINENTAL] / 1000.0 + 0.5;
+    t = t * t * t * (t * (t * 6.0 - 15.0) + 10);
+    terrain->value += noise_dst_buf[TERRAIN_NOISE_CONTINENTAL] * t;
+
+    t = noise_dst_buf[TERRAIN_NOISE_LOCAL] / 50.0 + 0.5;
+    t = t * t * t * (t * (t * 6.0 - 15.0) + 10);
+    terrain->value += (noise_dst_buf[TERRAIN_NOISE_LOCAL] + 25.0) * t;
+    terrain->value -= 25.0;
 
     t = noise_dst_buf[TERRAIN_NOISE_COUNT + BIOME_NOISE_ROUGHNESS];
     t = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-    terrain->value +=
-        noise_dst_buf[TERRAIN_NOISE_LOCAL] +
-        noise_dst_buf[TERRAIN_NOISE_DETAIL] * t;
+    terrain->value += noise_dst_buf[TERRAIN_NOISE_DETAIL] * t;
 
     if (ctx->pos_tab[0][2] < terrain->value)
     {

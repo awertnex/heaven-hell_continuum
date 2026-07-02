@@ -83,7 +83,7 @@ u32 chunking_init(v3i32 *player_chunk_delta)
                 "chunking_init().chunk_buf.handle") != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (chunk_debug_init_internal(chunk_order.len[SET_RENDER_DISTANCE_MAX]) != FSL_ERR_SUCCESS)
+    if (chunk_debug_init_internal(CHUNK_BUF_VOLUME_MAX) != FSL_ERR_SUCCESS)
         goto cleanup;
 
     if (chunk_order_init_internal() != FSL_ERR_SUCCESS)
@@ -1086,6 +1086,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     hhc_chunk_neighbors chunk_neighbors = {0};
     hhc_terrain_sample terrain = {0};
     v3i32 pos = {0};
+    b8 non_air = FALSE;
 
     if (chunk->cursor == CHUNK_VOLUME)
     {
@@ -1096,6 +1097,14 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     }
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
+    if (chunk_neighbors.nz && chunk_neighbors.nz->flag & FLAG_CHUNK_GENERATED &&
+            !(chunk_neighbors.nz->flag & FLAG_CHUNK_NON_AIR))
+    {
+        chunk->flag |= FLAG_CHUNK_GENERATED;
+        chunk->cursor = 0;
+        return cost;
+    }
+
     fsl_noise_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
             (f64)(chunk->pos_world.x * CHUNK_DIAMETER),
             (f64)(chunk->pos_world.y * CHUNK_DIAMETER),
@@ -1130,6 +1139,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
                 if (terrain.block_id)
                 {
                     block_add_internal(&chunk_neighbors, pos.x, pos.y, pos.z, terrain.block_id);
+                    non_air = TRUE;
                 }
 
                 if (cost >= (u32)budget)
@@ -1137,6 +1147,14 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
             }
             pos.x = 0;
         }
+
+        if (!non_air)
+        {
+            chunk->flag |= FLAG_CHUNK_GENERATED;
+            chunk->cursor = 0;
+            return cost;
+        }
+
         pos.y = 0;
     }
 
