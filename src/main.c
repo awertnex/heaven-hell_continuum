@@ -114,13 +114,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
         player.camera.zoom =
             fsl_clamp_f64(player.camera.zoom + yoffset * FSL_CAMERA_ZOOM_SPEED, 0.0f, FSL_CAMERA_ZOOM_MAX);
     else
-    {
-        player.hotbar_slot_selected += (i64)yoffset;
-        if (player.hotbar_slot_selected >= CONTAINER_HOTBAR_SLOTS_MAX)
-            player.hotbar_slot_selected = 0;
-        else if (player.hotbar_slot_selected < 0)
-            player.hotbar_slot_selected = CONTAINER_HOTBAR_SLOTS_MAX - 1;
-    }
+        player_hotbar_selected_advance(&player, (i64)-yoffset);
 }
 
 static void bind_shader_uniforms(void)

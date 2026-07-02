@@ -100,7 +100,7 @@ u32 chunking_init(v3i32 *player_chunk_delta)
 
     if (fsl_noise_sampler_init(
             &chunk_sampler.sampler,
-            TERRAIN_NOISE_COUNT, 8,
+            TERRAIN_NOISE_COUNT + BIOME_NOISE_COUNT, 8,
             (f64)(WORLD_RADIUS * CHUNK_DIAMETER),
             (f64)(WORLD_RADIUS * CHUNK_DIAMETER),
             (f64)(WORLD_RADIUS_VERTICAL * CHUNK_DIAMETER),
@@ -1084,12 +1084,13 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 {
     chunk_work_cost cost = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
-    hhc_terrain terrain = {0};
+    hhc_terrain_sample terrain = {0};
     v3i32 pos = {0};
 
     if (chunk->cursor == CHUNK_VOLUME)
     {
         chunk->flag |= FLAG_CHUNK_GENERATED;
+        chunk->cursor = 0;
         cost = chunk_mesh_update_internal(chunk);
         return cost;
     }
@@ -1111,13 +1112,13 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     {
         fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 2);
 
-        fsl_noise_sampler_axis_init(&chunk_sampler.context, 1, pos.y);
+        fsl_noise_sampler_axis_init(&chunk_sampler.context, 1, pos.y - 7922);
         for (; pos.y < CHUNK_DIAMETER; ++pos.y, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 1))
         {
             fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 1);
             cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 1);
 
-            fsl_noise_sampler_axis_init(&chunk_sampler.context, 0, pos.x);
+            fsl_noise_sampler_axis_init(&chunk_sampler.context, 0, pos.x + 8671);
             for (; pos.x < CHUNK_DIAMETER; ++pos.x, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 0))
             {
                 fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 0);
@@ -1472,6 +1473,8 @@ void chunk_buf_dump_internal(void)
         if (*chunk)
             chunk_buf_pop_internal(*chunk);
     }
+
+    chunk_sched.priority = 0;
 }
 
 void chunk_scheduler_update_internal(void)

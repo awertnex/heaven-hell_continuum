@@ -7,17 +7,29 @@ layout(std430, binding = 2) readonly buffer ssbo_textures
     sampler2D textures[];
 };
 
+struct hhc_spotlight
+{
+    vec3 pos;
+    vec3 direction;
+    vec3 spot_dir;
+    float full_angle;
+    float half_angle;
+};
+
 uniform sampler2D texture_block;
 uniform float opacity;
 uniform vec3 flashlight_position;
 uniform float toggle_flashlight;
 uniform int render_distance;
-in vec3 vertex_position;
-in vec2 tex_coords;
+in vec3 pos;
+in vec2 uv;
 in vec3 normal;
 in flat uint face_index;
 in float block_light;
 out vec4 color;
+struct hhc_spotlight flashlight;
+
+float theta = dot(flashlight.spot_dir, normalize(-flashlight.direction));
 
 #define USE_SUN_DIRECTION
 #define USE_MATH
@@ -27,13 +39,13 @@ out vec4 color;
 
 void main()
 {
-    float distance = square_length(vertex_position - flashlight_position);
+    float distance = square_length(pos - flashlight_position);
     float flashlight_intensity = toggle_flashlight *
         (FLASHLIGHT_INTENSITY / (distance * FLASHLIGHT_DISTANCE));
     float sky_brightness = (sky_light.r + sky_light.g + sky_light.b) / 3.0;
     float moon_brightness = (moon_light.r + moon_light.g + moon_light.b) / 3.0;
 
-    vec4 texture_base = texture(textures[face_index], tex_coords);
+    vec4 texture_base = texture(textures[face_index], uv);
     vec3 color_sky_influence = texture_base.rgb * sky_light *
         SKY_INFLUENCE * block_light * (sky_brightness + moon_brightness);
     vec3 color_sun_influence = texture_base.rgb * sun_direction *

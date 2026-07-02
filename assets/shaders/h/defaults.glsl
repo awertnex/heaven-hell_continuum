@@ -47,7 +47,7 @@ float fog_linear(float distance, float min, float max)
 vec3 reinhard_tone_mapping(vec3 color, float w)
 {
     color = (color * (1.0 + color / (w * w))) / (1.0 + color);
-    return pow(color, vec3(2.0));
+    return color * color;
 }
 
 #endif /* USE_TONE_MAPPING */

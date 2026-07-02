@@ -189,6 +189,19 @@ void player_hotbar_selected_set(hhc_player *p, u32 index)
             0, 0, 0, 0, p->hotbar_slot_selected * 17 - 1, -1);
 }
 
+void player_hotbar_selected_advance(hhc_player *p, i32 delta)
+{
+    i32 index = p->hotbar_slot_selected + delta;
+
+    if (index >= CONTAINER_HOTBAR_SLOTS_MAX)
+        index = 0;
+    else if (index < 0)
+        index = CONTAINER_HOTBAR_SLOTS_MAX - 1;
+
+    player_hotbar_selected_set(p, index);
+}
+
+
 void player_collision_update(hhc_player *p, f64 dt)
 {
     hhc_chunk *ch = NULL;
@@ -352,26 +365,12 @@ void player_collision_update(hhc_player *p, f64 dt)
 
 void player_bounding_box_update(hhc_player *p)
 {
-    if (p->flag & FLAG_PLAYER_FLYING && p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
-    {
-        p->bbox.pos.x = p->transform.pos.x - p->size.x * 0.5f;
-        p->bbox.pos.y = p->transform.pos.y - p->size.x * 0.5f; /* `size.x` here to link 'x' and 'y' to one size */
-        p->bbox.pos.z = p->transform.pos.z + p->eye_height - p->size.x * 0.5f;
-
-        /* size for all axes is `size.x` intentionally because we want cube bbox */
-        p->bbox.size.x = p->size.x;
-        p->bbox.size.y = p->size.x;
-        p->bbox.size.z = p->size.x;
-    }
-    else
-    {
-        p->bbox.pos.x = p->transform.pos.x - p->size.x * 0.5f;
-        p->bbox.pos.y = p->transform.pos.y - p->size.y * 0.5f;
-        p->bbox.pos.z = p->transform.pos.z;
-        p->bbox.size.x = p->size.x;
-        p->bbox.size.y = p->size.y;
-        p->bbox.size.z = p->size.z;
-    }
+    p->bbox.pos.x = p->transform.pos.x - p->size.x * 0.5f;
+    p->bbox.pos.y = p->transform.pos.y - p->size.y * 0.5f;
+    p->bbox.pos.z = p->transform.pos.z;
+    p->bbox.size.x = p->size.x;
+    p->bbox.size.y = p->size.y;
+    p->bbox.size.z = p->size.z;
 }
 
 fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f32 velocity)
@@ -689,6 +688,57 @@ void player_spawn(hhc_player *p, b8 hard)
     {
         p->health = 100.0f;
         p->flag &= ~(FLAG_PLAYER_FLYING | FLAG_PLAYER_HUNGRY | FLAG_PLAYER_DEAD);
+    }
+}
+
+void player_toggle_flying(hhc_player *p)
+{
+    p->flag ^= FLAG_PLAYER_FLYING;
+
+    if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+    {
+        if (p->flag & FLAG_PLAYER_FLYING)
+        {
+            p->transform.pos.z += PLAYER_EYE_HEIGHT - p->size.x / 2.0f;
+            p->size.z = p->size.x;
+            p->eye_height = p->size.x / 2.0f;
+        }
+        else
+        {
+            p->transform.pos.z -= PLAYER_EYE_HEIGHT - p->size.x / 2.0f;
+            p->size.z = 1.8f;
+            p->eye_height = PLAYER_EYE_HEIGHT;
+        }
+        p->transform.scale.z = p->size.z / 1.8f;
+    }
+}
+
+void player_toggle_cinematic_motion(hhc_player *p)
+{
+    p->flag ^= FLAG_PLAYER_CINEMATIC_MOTION;
+
+    if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Cinematic Motion Toggled On\n");
+    else
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Cinematic Motion Toggled Off\n");
+
+    if (p->flag & FLAG_PLAYER_FLYING)
+    {
+        if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        {
+            p->transform.pos.z += PLAYER_EYE_HEIGHT - p->size.x / 2.0f;
+            p->size.z = p->size.x;
+            p->eye_height = p->size.x / 2.0f;
+        }
+        else
+        {
+            p->transform.pos.z -= PLAYER_EYE_HEIGHT - p->size.x / 2.0f;
+            p->size.z = 1.8f;
+            p->eye_height = PLAYER_EYE_HEIGHT;
+        }
+        p->transform.scale.z = p->size.z / 1.8f;
     }
 }
 

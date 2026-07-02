@@ -115,6 +115,15 @@ struct hhc_uniform
 
 }; /* hhc_uniform */
 
+typedef struct hhc_spotlight
+{
+    v3f32 pos;
+    v3f32 direction;
+    v3f32 spot_dir;
+    f32 full_angle;
+    f32 half_angle;
+} hhc_spotlight;
+
 extern fsl_render *render;
 extern struct hhc_core core;
 extern struct hhc_uniform uniform;

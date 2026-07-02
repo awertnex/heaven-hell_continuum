@@ -46,29 +46,29 @@
 
 enum player_flag
 {
-    FLAG_PLAYER_CAN_JUMP =          0x00000001,
-    FLAG_PLAYER_SNEAKING =          0x00000002,
-    FLAG_PLAYER_SPRINTING =         0x00000004,
-    FLAG_PLAYER_FLYING =            0x00000008,
-    FLAG_PLAYER_SWIMMING =          0x00000010,
-    FLAG_PLAYER_HUNGRY =            0x00000020,
-    FLAG_PLAYER_DEAD =              0x00000040,
-    FLAG_PLAYER_ZOOMER =            0x00000080,
-    FLAG_PLAYER_CINEMATIC_MOTION =  0x00000100,
-    FLAG_PLAYER_FLASHLIGHT =        0x00000200,
+    FLAG_PLAYER_CAN_JUMP =          1 << 0,
+    FLAG_PLAYER_SNEAKING =          1 << 1,
+    FLAG_PLAYER_SPRINTING =         1 << 2,
+    FLAG_PLAYER_FLYING =            1 << 3,
+    FLAG_PLAYER_SWIMMING =          1 << 4,
+    FLAG_PLAYER_HUNGRY =            1 << 5,
+    FLAG_PLAYER_DEAD =              1 << 6,
+    FLAG_PLAYER_ZOOMER =            1 << 7,
+    FLAG_PLAYER_CINEMATIC_MOTION =  1 << 8,
+    FLAG_PLAYER_FLASHLIGHT =        1 << 9,
 
-    FLAG_PLAYER_OVERFLOW_X =        0x00000400,
-    FLAG_PLAYER_OVERFLOW_Y =        0x00000800,
-    FLAG_PLAYER_OVERFLOW_Z =        0x00001000,
+    FLAG_PLAYER_OVERFLOW_X =        1 << 10,
+    FLAG_PLAYER_OVERFLOW_Y =        1 << 11,
+    FLAG_PLAYER_OVERFLOW_Z =        1 << 12,
 
     /*!
      *  @brief positive overflow direction flags.
      *
      *  @remark default is 0 for negative overflow (underflow).
      */
-    FLAG_PLAYER_OVERFLOW_PX =       0x00002000,
-    FLAG_PLAYER_OVERFLOW_PY =       0x00004000,
-    FLAG_PLAYER_OVERFLOW_PZ =       0x00008000
+    FLAG_PLAYER_OVERFLOW_PX =       1 << 13,
+    FLAG_PLAYER_OVERFLOW_PY =       1 << 14,
+    FLAG_PLAYER_OVERFLOW_PZ =       1 << 15
 }; /* player_flag */
 
 typedef enum hhc_player_camera_mode
@@ -146,12 +146,7 @@ typedef struct hhc_player
     v3i64 spawn;                    /* spawn point */
     hhc_player_menu_state menu_state;
 
-    /*!
-     *  @remark signed instead of unsigned so it's possible to navigate `hotbar_slots`
-     *  when using mousewheel, used for wrapping around when out of range.
-     */
-    i32 hotbar_slot_selected;
-
+    u32 hotbar_slot_selected;
     hhc_container_slot hotbar_slots[CONTAINER_HOTBAR_SLOTS_MAX];
     hhc_container_slot inventory_slots[CONTAINER_INVENTORY_SLOTS_MAX];
 
@@ -188,6 +183,7 @@ u32 player_init(hhc_player *p, const str *name);
 void player_update(hhc_player *p, f64 dt);
 
 void player_hotbar_selected_set(hhc_player *p, u32 index);
+void player_hotbar_selected_advance(hhc_player *p, i32 offset);
 void player_collision_update(hhc_player *p, f64 dt);
 void player_bounding_box_update(hhc_player *p);
 
@@ -227,6 +223,16 @@ void player_set_spawn(hhc_player *p, i64 x, i64 y, i64 z);
  *  @param hard `TRUE` will reset all player stats, `FALSE` will only teleport to spawn.
  */
 void player_spawn(hhc_player *p, b8 hard);
+
+/*!
+ *  @brief enable/disable flying for a player.
+ */
+void player_toggle_flying(hhc_player *p);
+
+/*!
+ *  @brief enable/disable cinematic motion for a player (only seem while flying).
+ */
+void player_toggle_cinematic_motion(hhc_player *p);
 
 void player_kill(hhc_player *p);
 

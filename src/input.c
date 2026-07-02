@@ -175,7 +175,7 @@ void input_update(hhc_player *p)
         }
 
         if (fsl_is_key_press_double(bind_jump))
-            p->flag ^= FLAG_PLAYER_FLYING;
+            player_toggle_flying(p);
 
         /* ---- sprinting --------------------------------------------------- */
 
@@ -300,16 +300,7 @@ void input_update(hhc_player *p)
             core.flag.debug ^= 1;
 
         if (fsl_is_key_press(bind_toggle_cinematic_motion))
-        {
-            p->flag ^= FLAG_PLAYER_CINEMATIC_MOTION;
-
-            if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
-                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        "Cinematic Motion Toggled On\n");
-            else
-                LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
-                        "Cinematic Motion Toggled Off\n");
-        }
+            player_toggle_cinematic_motion(p);
 
         if (fsl_is_key_press(bind_toggle_perspective))
             p->camera_mode = (p->camera_mode + 1) % PLAYER_CAMERA_MODE_COUNT;
