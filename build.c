@@ -37,6 +37,7 @@ static str str_files[][CMD_SIZE] =
     DIR_SRC"gui/gui.c",
     DIR_SRC"gui/gui_callbacks.c",
     DIR_SRC"gui/gui_menus.c",
+    DIR_SRC"plugins/big_num_separator/big_num_separator.c",
     DIR_SRC"settings/settings.c",
     DIR_SRC"super_debugger/super_debugger.c",
     DIR_SRC"super_debugger/super_debugger_callbacks.c",

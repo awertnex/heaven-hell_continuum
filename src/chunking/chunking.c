@@ -1086,33 +1086,32 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     hhc_chunk_neighbors chunk_neighbors = {0};
     hhc_terrain_sample terrain = {0};
     v3i32 pos = {0};
+    v2i32 pos_cheap_check = {0};
     b8 non_air = FALSE;
 
-    if (chunk->cursor == CHUNK_VOLUME)
-    {
-        chunk->flag |= FLAG_CHUNK_GENERATED;
-        chunk->cursor = 0;
-        cost = chunk_mesh_update_internal(chunk);
-        return cost;
-    }
-
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
-    if (chunk_neighbors.nz && chunk_neighbors.nz->flag & FLAG_CHUNK_GENERATED &&
-            !(chunk_neighbors.nz->flag & FLAG_CHUNK_NON_AIR))
-    {
-        chunk->flag |= FLAG_CHUNK_GENERATED;
-        chunk->cursor = 0;
-        return cost;
-    }
 
     fsl_noise_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
-            (f64)(chunk->pos_world.x * CHUNK_DIAMETER),
-            (f64)(chunk->pos_world.y * CHUNK_DIAMETER),
-            (f64)(chunk->pos_world.z * CHUNK_DIAMETER));
+            (f64)(chunk->pos_wrap.x * CHUNK_DIAMETER),
+            (f64)(chunk->pos_wrap.y * CHUNK_DIAMETER),
+            (f64)(chunk->pos_wrap.z * CHUNK_DIAMETER));
 
     pos.x = chunk->cursor % CHUNK_DIAMETER;
     pos.y = (chunk->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
     pos.z = chunk->cursor / CHUNK_LAYER;
+
+    for (pos_cheap_check.y = 0; pos_cheap_check.y <= pos.y; ++pos_cheap_check.y)
+        for (pos_cheap_check.x = 0; pos_cheap_check.x < CHUNK_DIAMETER; ++pos_cheap_check.x)
+        {
+            cost += CHUNK_WORK_COST_CHEAP_CHECK;
+            if (chunk->block[pos.z][pos_cheap_check.y][pos_cheap_check.x])
+            {
+                non_air = TRUE;
+                goto begin_generation;
+            }
+        }
+
+begin_generation:
 
     /* `pos.x`, `pos.y` and `pos.z` reset at the end of their loops because they
      * should first pick up from where `chunk->cursor` left off last time. */
@@ -1121,13 +1120,13 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     {
         fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 2);
 
-        fsl_noise_sampler_axis_init(&chunk_sampler.context, 1, pos.y - 7922);
+        fsl_noise_sampler_axis_init(&chunk_sampler.context, 1, pos.y);
         for (; pos.y < CHUNK_DIAMETER; ++pos.y, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 1))
         {
             fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 1);
             cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 1);
 
-            fsl_noise_sampler_axis_init(&chunk_sampler.context, 0, pos.x + 8671);
+            fsl_noise_sampler_axis_init(&chunk_sampler.context, 0, pos.x);
             for (; pos.x < CHUNK_DIAMETER; ++pos.x, fsl_noise_sampler_axis_post_update(&chunk_sampler.context, 0))
             {
                 fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 0);
@@ -1161,6 +1160,11 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 finish_generation:
 
     chunk->cursor = pos.x + pos.y * CHUNK_DIAMETER + pos.z * CHUNK_LAYER;
+    if (chunk->cursor >= CHUNK_VOLUME)
+    {
+        chunk->flag |= FLAG_CHUNK_GENERATED;
+        chunk->cursor = 0;
+    }
     return cost;
 }
 
@@ -1288,6 +1292,7 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
 
 chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
 {
+    chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
     static u16 buf[CHUNK_VOLUME] = {0};
     u32 *blocks = (u32*)chunk->block;
@@ -1298,6 +1303,15 @@ chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
     snprintf(path, FSL_PATH_CAP,
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
             world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
+
+    if (!(chunk->flag & FLAG_CHUNK_NON_AIR))
+    {
+        buf[0] = 0 | FLAG_BLOCK_RLE;
+        buf[1] = CHUNK_VOLUME;
+        j = 2;
+        cost = CHUNK_WORK_COST_EXPORT_AIR;
+        goto finish_export;
+    }
 
     for (; i < CHUNK_VOLUME; ++j, i += rle, blocks += rle)
     {
@@ -1310,9 +1324,12 @@ chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
         }
     }
 
-    fsl_write_file(path, j * sizeof(u16), buf, TRUE, FALSE);
+    cost = CHUNK_WORK_COST_EXPORT_NON_AIR;
 
-    return CHUNK_WORK_COST_EXPORT;
+finish_export:
+
+    fsl_write_file(path, j * sizeof(u16), buf, TRUE, FALSE);
+    return cost;
 }
 
 chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
@@ -1350,8 +1367,13 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
     fread(buf, 1, i, file);
     fclose(file);
 
-    if (i == 8 && buf[0] & FLAG_BLOCK_RLE && !buf[1])
+    if (i == 2 * sizeof(u16) && buf[0] & FLAG_BLOCK_RLE && !buf[1])
+    {
+        chunk->flag |= FLAG_CHUNK_GENERATED;
         return CHUNK_WORK_COST_IMPORT_AIR;
+    }
+
+    chunk->flag |= FLAG_CHUNK_NON_AIR;
 
     for (i = 0; i < CHUNK_VOLUME && j < CHUNK_VOLUME; ++i)
     {
@@ -1366,8 +1388,6 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
         else
             blocks[j++] = buf[i];
     }
-
-    chunk->cursor = j;
 
     return CHUNK_WORK_COST_IMPORT_NON_AIR;
 }
@@ -1521,8 +1541,7 @@ void chunk_scheduler_update_internal(void)
             if (chunk->flag & FLAG_CHUNK_DIRTY &&
                     !chunk_sched.p[bucket->push])
             {
-                cost = chunk_scheduler_push_internal(chunk);
-                budget -= chunk_work_cost_tax_get_internal(cost, chunk->cpi);
+                budget -= chunk_scheduler_push_internal(chunk);
             }
         }
         budget -= CHUNK_WORK_COST_SCAN;
@@ -1580,7 +1599,9 @@ pop:
                     budget -= chunk_scheduler_pop_internal(chunk);
                 }
 
-                budget -= chunk_work_cost_tax_get_internal(cost, chunk->cpi);
+                cost = chunk_work_cost_tax_get_internal(cost, chunk->cpi);
+                chunk->cost += cost;
+                budget -= cost;
                 cost = 0;
             } while (bucket->pop != bucket->push && bucket->count && budget > 0);
         }

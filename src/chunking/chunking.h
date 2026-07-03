@@ -8,6 +8,8 @@
 #include "../h/common.h"
 #include "../h/raycast.h"
 
+#include "chunk_work.h"
+
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_LAYER * CHUNK_DIAMETER)
@@ -165,6 +167,15 @@ typedef struct hhc_chunk
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+
+    /*!
+     *  @brief cost of work done on generating, meshing, importing and/or exporting
+     *  this chunk.
+     *
+     *  @remark only assigned by chunk scheduler @ref chunk_sched.
+     */
+    chunk_work_cost cost;
+
 } hhc_chunk;
 
 /*!

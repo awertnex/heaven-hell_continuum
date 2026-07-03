@@ -25,6 +25,7 @@
 #include "chunking/chunking_debug_tools.h"
 #include "gui/gui.h"
 #include "gui/gui_menus.h"
+#include "plugins/big_num_separator/big_num_separator.h"
 #include "settings/settings.h"
 #include "super_debugger/super_debugger.h"
 
@@ -645,7 +646,7 @@ static void world_draw(void)
                     "PITCH/YAW   [%5.2f][%5.2f]\n"
                     "ACCELERATION[%5.2f %5.2f %5.2f]\n"
                     "VELOCITY    [%5.2f %5.2f %5.2f]\n"
-                    "SPEED       [%5.2f]\n",
+                    "SPEED       [%5.2f]\n\n",
                     player.transform.pos.x, player.transform.pos.y, player.transform.pos.z,
                     floor(player.transform.pos.x),
                     floor(player.transform.pos.y),
@@ -698,7 +699,7 @@ static void world_draw(void)
                 FSL_DIAGNOSTIC_COLOR_ERROR);
 
         fsl_text_push(fsl_stringf(
-                    "RATIO       [%.2f]\n"
+                    "FRAME RATIO [%.2f]\n"
                     "SKYBOX TIME [%.2f]\n"
                     "SKYBOX RGB  [%.2f %.2f %.2f]\n"
                     "SUN ANGLE   [%.2f %.2f %.2f]\n",
@@ -712,6 +713,13 @@ static void world_draw(void)
                     skybox_data.sun_rotation.z),
                 SET_MARGIN, SET_MARGIN, 0, 0, 0,
                 COLOR_DIAGNOSTIC_INFO);
+
+        fsl_text_push(fsl_stringf(
+                    "Chunk Receipt:\n"
+                    "\tGeneration  $%s\n",
+                    big_num_separator_i64(chunk_tab.p[settings.chunk_tab_center]->cost)),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                COLOR_TEXT_ECONOMIC);
 
         if (player.hit.hit)
         {

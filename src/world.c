@@ -40,7 +40,7 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    player_set_spawn(p, 8, 8, 8);
+    player_set_spawn(p, 32250, 32250, 50);
     player_spawn(p, TRUE);
 
     core.flag.hud = TRUE;
