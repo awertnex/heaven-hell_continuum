@@ -434,6 +434,8 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     }
 
     chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
+    chunk_receipt_print(&chunk_tab.p[settings.chunk_tab_center]->receipt,
+            &chunk_tab.receipt_center);
 
     chunk_scheduler_update_internal();
 
@@ -1033,9 +1035,9 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
     }
 }
 
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget)
+chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
 {
-    chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
     if (!chunk || chunk->flag & FLAG_CHUNK_GENERATED)
@@ -1047,10 +1049,11 @@ chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget)
 
 #if MODE_INTERNAL_IMPORT_CHUNKS
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
-        cost += chunk_import_internal(path, chunk);
+        chunk_import_internal(path, chunk, receipt);
+    else
 #endif /* MODE_INTERNAL_IMPORT_CHUNKS */
-    cost += chunk_generate_internal(chunk, budget);
-    return cost;
+        chunk_generate_internal(chunk, budget, receipt);
+    return 0;
 }
 
 hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
@@ -1080,7 +1083,8 @@ hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
     return neighbors;
 }
 
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget)
+chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
@@ -1131,7 +1135,6 @@ begin_generation:
             {
                 fsl_noise_sampler_axis_pre_update(&chunk_sampler.context, 0);
                 cost += sampler_noise_axis_update_2d(&chunk_sampler.context, 0);
-
                 cost += sampler_noise_bake(&chunk_sampler.context);
                 cost += terrain_shape(&terrain, &chunk_sampler.context);
 
@@ -1151,6 +1154,8 @@ begin_generation:
         {
             chunk->flag |= FLAG_CHUNK_GENERATED;
             chunk->cursor = 0;
+            receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
+            chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
             return cost;
         }
 
@@ -1165,10 +1170,13 @@ finish_generation:
         chunk->flag |= FLAG_CHUNK_GENERATED;
         chunk->cursor = 0;
     }
+
+    receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
     return cost;
 }
 
-chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
+chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
@@ -1189,40 +1197,41 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
 
-    if (chunk->flag & FLAG_CHUNK_NON_AIR)
+    if (!(chunk->flag & FLAG_CHUNK_NON_AIR))
     {
-        for (; curr < end; ++curr)
+        should_render = FALSE;
+        cost = CHUNK_WORK_COST_MESH_AIR;
+        goto finish_meshing;
+    }
+
+    for (; curr < end; ++curr)
+    {
+        if (*curr & MASK_BLOCK_ID)
         {
-            if (*curr & MASK_BLOCK_ID)
+            block_index = curr - start;
+            pos.x = block_index % CHUNK_DIAMETER;
+            pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
+            pos.z = block_index / CHUNK_LAYER;
+            block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
+            if (block_cache & MASK_BLOCK_FACES)
             {
-                block_index = curr - start;
-                pos.x = block_index % CHUNK_DIAMETER;
-                pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
-                pos.z = block_index / CHUNK_LAYER;
-                block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
-                if (block_cache & MASK_BLOCK_FACES)
-                {
-                    should_render = TRUE;
-                    SET_BLOCK_LIGHT(block_cache, 63);
-                    *(cursor++) = block_cache |
-                        (pos.x & 0xf) << SHIFT_BLOCK_X |
-                        (pos.y & 0xf) << SHIFT_BLOCK_Y |
-                        (pos.z & 0xf) << SHIFT_BLOCK_Z;
-                }
+                should_render = TRUE;
+                SET_BLOCK_LIGHT(block_cache, 63);
+                *(cursor++) = block_cache |
+                    (pos.x & 0xf) << SHIFT_BLOCK_X |
+                    (pos.y & 0xf) << SHIFT_BLOCK_Y |
+                    (pos.z & 0xf) << SHIFT_BLOCK_Z;
             }
         }
-
-        ++cur_buf;
-        if (cur_buf >= BLOCK_BUFFERS_MAX)
-            cur_buf = 0;
-
-        cost = CHUNK_WORK_COST_MESH_NON_AIR;
     }
-    else
-    {
-        cost = CHUNK_WORK_COST_MESH_AIR;
-        should_render = FALSE;
-    }
+
+    ++cur_buf;
+    if (cur_buf >= BLOCK_BUFFERS_MAX)
+        cur_buf = 0;
+
+    cost = CHUNK_WORK_COST_MESH_NON_AIR;
+
+finish_meshing:
 
     if (should_render)
     {
@@ -1287,10 +1296,12 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk)
     chunk->flag &= ~FLAG_CHUNK_DIRTY;
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
+    receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
     return cost;
 }
 
-chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
+chunk_work_cost chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -1328,12 +1339,17 @@ chunk_work_cost chunk_export_internal(hhc_chunk *chunk)
 
 finish_export:
 
+    receipt->cost[CHUNK_RECEIPT_ITEM_EXPORT] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_EXPORT] += cost;
+
     fsl_write_file(path, j * sizeof(u16), buf, TRUE, FALSE);
     return cost;
 }
 
-chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
+chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+        hhc_chunk_receipt *receipt)
 {
+    chunk_work_cost cost = 0;
     FILE *file = NULL;
     str file_name[FSL_ID_CAP] = {0};
     str *cursor = file_name;
@@ -1355,7 +1371,7 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
             break;
     }
 
-    chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_IMPORTED | FLAG_CHUNK_DIRTY;
+    chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_IMPORTED | FLAG_CHUNK_DIRTY | FLAG_CHUNK_GENERATED;
     chunk->pos_wrap.x = pos_cache[0];
     chunk->pos_wrap.y = pos_cache[1];
     chunk->pos_wrap.z = pos_cache[2];
@@ -1369,8 +1385,8 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
 
     if (i == 2 * sizeof(u16) && buf[0] & FLAG_BLOCK_RLE && !buf[1])
     {
-        chunk->flag |= FLAG_CHUNK_GENERATED;
-        return CHUNK_WORK_COST_IMPORT_AIR;
+        cost = CHUNK_WORK_COST_IMPORT_AIR;
+        goto finish_import;
     }
 
     chunk->flag |= FLAG_CHUNK_NON_AIR;
@@ -1389,7 +1405,13 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk)
             blocks[j++] = buf[i];
     }
 
-    return CHUNK_WORK_COST_IMPORT_NON_AIR;
+    cost = CHUNK_WORK_COST_IMPORT_NON_AIR;
+
+finish_import:
+
+    receipt->cost[CHUNK_RECEIPT_ITEM_IMPORT] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_IMPORT] += cost;
+    return cost;
 }
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta)
@@ -1518,7 +1540,8 @@ void chunk_buf_dump_internal(void)
 void chunk_scheduler_update_internal(void)
 {
     chunk_work_budget budget = settings.frame_budget;
-    chunk_work_cost cost = 0;
+    hhc_chunk_receipt noreceipt = {0};
+    hhc_chunk_receipt receipt = {0};
     u32 i = 0;
     u32 end = chunk_order.chunks_max;
     hhc_chunk *chunk = NULL;
@@ -1584,25 +1607,25 @@ pop:
                 }
 
                 if (chunk->flag & FLAG_CHUNK_GENERATED)
-                    cost += chunk_mesh_update_internal(chunk);
+                    chunk_mesh_update_internal(chunk, &receipt);
                 else
-                    cost += chunk_load_internal(chunk, budget);
+                    chunk_load_internal(chunk, budget, &receipt);
 
                 if (!(chunk->flag & FLAG_CHUNK_DIRTY))
                 {
 #if MODE_INTERNAL_EXPORT_CHUNKS
                     if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-                        cost += chunk_export_internal(chunk);
+                        chunk_export_internal(chunk, &receipt);
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
 
                     chunk->flag &= ~FLAG_CHUNK_IMPORTED;
                     budget -= chunk_scheduler_pop_internal(chunk);
                 }
 
-                cost = chunk_work_cost_tax_get_internal(cost, chunk->cpi);
-                chunk->cost += cost;
-                budget -= cost;
-                cost = 0;
+                chunk_receipt_evaluate(&receipt, chunk->cpi);
+                chunk_receipt_evaluate(&chunk->receipt, chunk->cpi);
+                budget -= receipt.total;
+                receipt = noreceipt;
             } while (bucket->pop != bucket->push && bucket->count && budget > 0);
         }
 
@@ -1641,11 +1664,6 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
     if (bucket->pop >= bucket_end)
         bucket->pop = bucket->pos;
     return CHUNK_WORK_COST_POP;
-}
-
-chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost cost, u32 chunk_cpi)
-{
-    return cost * (u32)sqrtf((f32)chunk_cpi);
 }
 
 u32 *get_block_resolved(hhc_chunk *chunk, i32 x, i32 y, i32 z)

@@ -32,6 +32,7 @@ static str str_files[][CMD_SIZE] =
 {
     DIR_SRC"main.c",
     DIR_SRC"chunking/chunk_draw.c",
+    DIR_SRC"chunking/chunk_work_receipt.c",
     DIR_SRC"chunking/chunking.c",
     DIR_SRC"chunking/chunking_debug_tools.c",
     DIR_SRC"gui/gui.c",

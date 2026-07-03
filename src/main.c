@@ -714,10 +714,7 @@ static void world_draw(void)
                 SET_MARGIN, SET_MARGIN, 0, 0, 0,
                 COLOR_DIAGNOSTIC_INFO);
 
-        fsl_text_push(fsl_stringf(
-                    "Chunk Receipt:\n"
-                    "\tGeneration  $%s\n",
-                    big_num_separator_i64(chunk_tab.p[settings.chunk_tab_center]->cost)),
+        fsl_text_push(fsl_stringf("%s", chunk_tab.receipt_center.printed),
                 SET_MARGIN, SET_MARGIN, 0, 0, 0,
                 COLOR_TEXT_ECONOMIC);
 

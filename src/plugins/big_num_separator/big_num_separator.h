@@ -2,7 +2,7 @@
  *  @file big_num_separator.h
  *  @author Lily Awertnex
  *
- *  big number separator - v3 - Sep 2025
+ *  big number separator - v4 - Jul 2026
  *
  *  separating numbers with four or more decimal places with commas.
  */

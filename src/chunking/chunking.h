@@ -174,7 +174,7 @@ typedef struct hhc_chunk
      *
      *  @remark only assigned by chunk scheduler @ref chunk_sched.
      */
-    chunk_work_cost cost;
+    hhc_chunk_receipt receipt;
 
 } hhc_chunk;
 
@@ -193,6 +193,7 @@ typedef struct hhc_chunk_table
      */
     u32 index;
 
+    hhc_chunk_receipt_printed receipt_center; /* receipt info of center-most chunk */
 } hhc_chunk_table;
 
 /*!

@@ -223,7 +223,8 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget);
+chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
 
 hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
 
@@ -237,26 +238,28 @@ hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget);
+chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
 
 /*!
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk);
+chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief write chunk into disk.
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_export_internal(hhc_chunk *chunk);
+chunk_work_cost chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief read chunk from disk.
  *
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk);
+chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+        hhc_chunk_receipt *receipt);
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);
 void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
@@ -274,13 +277,6 @@ chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
 chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
-
-/*!
- *  @brief apply tax to total cost of work done on a chunk in @ref chunk_sched.
- *
- *  @return cost of operation after tax (used in @ref chunk_scheduler_update_internal()).
- */
-chunk_work_cost chunk_work_cost_tax_get_internal(chunk_work_cost cost, u32 chunk_cpi);
 
 void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
 

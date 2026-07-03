@@ -2,7 +2,7 @@
  *  @file big_num_separator.c
  *  @author Lily Awertnex
  *
- *  big number separator - v3 - Sep 2025
+ *  big number separator - v4 - Jul 2026
  *
  *  separating numbers with four or more decimal places with commas.
  */
@@ -13,56 +13,41 @@
 #include "big_num_separator.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <inttypes.h>
-
-i64 begin_count_offset(i64 len)
-{
-    i64 incr = 0;
-    i64 offset = 0;
-    for (incr = 0; incr < len; incr++)
-    {
-        offset++;
-        if (offset == 4)
-            offset = 1;
-    }
-    return offset;
-}
 
 str *big_num_separator_i64(i64 n)
 {
-    str container[FSL_ID_CAP];
-    static str result[FSL_ID_CAP];
+    str src[FSL_ID_CAP] = {0};
+    static char dst[FSL_ID_CAP] = {0};
+    str *result = dst;
+    i64 i = 0;
+    i64 j = 0;
     i64 len = 0;
-    i64 lengthen = 0;
-    i64 incr = 0;
-    i64 reset = 0;
-    i64 offset = 0;
+    i64 commas = 0;
 
-    snprintf(container, FSL_ID_CAP, "%"PRId64, n);
+    memset(dst, 0, 256);
+    len = snprintf(src, 256, "%ld", n);
 
-    while (n > 0)
+    while (n)
     {
         n /= 10;
-        len++;
+        ++commas;
     }
+    commas /= 3;
 
-    lengthen = 0;
-    reset = begin_count_offset(len);
-    offset = 0;
-    for (incr = 0; incr <= len + lengthen; incr++)
+    for (i = 1, j = 1; i <= len && j <= len + commas; ++i, ++j)
     {
-        result[incr] = container[incr - offset];
-        if (reset == 1 && incr < len)
+        dst[(len + commas) - j] = src[len - i];
+        if (i % 3 == 0)
         {
-            incr++;
-            result[incr] = ',';
-            offset++;
-            reset = 4;
-            lengthen++;
+            ++j;
+            if (i < len)
+                dst[(len + commas) - j] = ',';
+            else
+                ++result;
         }
-        reset--;
     }
-    result[len + lengthen] = 0;
 
     return result;
 }
