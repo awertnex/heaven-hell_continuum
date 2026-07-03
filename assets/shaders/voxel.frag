@@ -11,25 +11,21 @@ struct hhc_spotlight
 {
     vec3 pos;
     vec3 direction;
-    vec3 spot_dir;
-    float full_angle;
-    float half_angle;
+    float cutoff;
+    float feather_factor;
+    float intensity;
 };
 
 uniform sampler2D texture_block;
 uniform float opacity;
-uniform vec3 flashlight_position;
-uniform float toggle_flashlight;
 uniform int render_distance;
+uniform hhc_spotlight flashlight;
 in vec3 pos;
 in vec2 uv;
 in vec3 normal;
 in flat uint face_index;
 in float block_light;
 out vec4 color;
-struct hhc_spotlight flashlight;
-
-float theta = dot(flashlight.spot_dir, normalize(-flashlight.direction));
 
 #define USE_SUN_DIRECTION
 #define USE_MATH
@@ -37,11 +33,20 @@ float theta = dot(flashlight.spot_dir, normalize(-flashlight.direction));
 #define USE_TONE_MAPPING
 #include "h/defaults.glsl"
 
+float spotlight_get(hhc_spotlight spotlight, vec3 normal)
+{
+    vec3 frag_pos = normalize(pos - spotlight.pos);
+    float spot_factor = dot(frag_pos, flashlight.direction);
+    float epsilon = spotlight.cutoff - (1.0 - spotlight.feather_factor) * spotlight.cutoff;
+    float value = clamp((spot_factor - spotlight.cutoff) / epsilon, 0.0, 1.0);
+
+    return value * value * value * (value * (value * 6.0 - 15.0) + 10.0);
+}
+
 void main()
 {
-    float distance = square_length(pos - flashlight_position);
-    float flashlight_intensity = toggle_flashlight *
-        (FLASHLIGHT_INTENSITY / (distance * FLASHLIGHT_DISTANCE));
+    float distance = square_length(pos - flashlight.pos);
+    float flashlight_intensity = flashlight.intensity / pow(sqrt(distance), 1.0 / FLASHLIGHT_DISTANCE);
     float sky_brightness = (sky_light.r + sky_light.g + sky_light.b) / 3.0;
     float moon_brightness = (moon_light.r + moon_light.g + moon_light.b) / 3.0;
 
@@ -54,7 +59,8 @@ void main()
         MOON_INFLUENCE * moon_brightness;
     vec3 color_block_light = block_light * (color_sun_influence + color_moon_influence);
     vec3 color_ambient_light = texture_base.rgb * GLOBAL_ILLUMINATION;
-    vec3 color_flashlight = FLASHLIGHT_COLOR * texture_base.rgb * flashlight_intensity;
+    vec3 color_flashlight = FLASHLIGHT_COLOR * texture_base.rgb *
+        flashlight_intensity * spotlight_get(flashlight, normal);
 
     vec3 color_composite =
         color_sky_influence +

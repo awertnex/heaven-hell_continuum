@@ -40,7 +40,7 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
 
     world.gravity = FSL_GRAVITY * 3.0f;
 
-    player_set_spawn(p, 32250, 32250, 50);
+    player_set_spawn(p, 8, 8, 8);
     player_spawn(p, TRUE);
 
     core.flag.hud = TRUE;
@@ -194,7 +194,7 @@ u32 world_load(world_info *world, const str *world_name, u64 seed)
 
     /* ---- TODO: load the rest of world metadata --------------------------- */
 
-    world->tick_start = 9500;
+    world->tick_start = 1000;
     world->days = 0;
     world->drag.x = WORLD_DRAG_AIR;
     world->drag.y = WORLD_DRAG_AIR;

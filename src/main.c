@@ -189,12 +189,18 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "voxel_color");
     uniform.voxel.opacity =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "opacity");
-    uniform.voxel.flashlight_position =
-        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight_position");
-    uniform.voxel.toggle_flashlight =
-        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "toggle_flashlight");
     uniform.voxel.render_distance =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "render_distance");
+    uniform.voxel.spotlight.pos =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight.pos");
+    uniform.voxel.spotlight.direction =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight.direction");
+    uniform.voxel.spotlight.cutoff =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight.cutoff");
+    uniform.voxel.spotlight.feather_factor =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight.feather_factor");
+    uniform.voxel.spotlight.intensity =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "flashlight.intensity");
 
     uniform.bounding_box.mat_perspective =
         glGetUniformLocation(shader_p[SHADER_BOUNDING_BOX].asset.id, "mat_perspective");
@@ -429,7 +435,50 @@ static void draw_world(void)
 {
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
     hhc_chunk *chunk = NULL;
+    static hhc_spotlight flashlight = {0};
+    static hhc_spotlight flashlight_last = {0};
     i32 i = 0;
+    f32 lerp_speed_pos = 0.3f;
+    f32 lerp_speed_rot = 0.2f;
+    f32 k = 1.0f - (f64)render->time_delta * FSL_NSEC2SEC;
+
+    flashlight.pos.x = player.transform.pos.x - player.yaw.sin * 0.3f;
+    flashlight.pos.y = player.transform.pos.y - player.yaw.cos * 0.3f;
+    flashlight.pos.z = player.transform.pos.z + player.eye_height - 0.3f;
+    flashlight.direction.x = player.yaw.cos * player.pitch.cos;
+    flashlight.direction.y = -player.yaw.sin * player.pitch.cos;
+    flashlight.direction.z = -player.pitch.sin;
+
+    if (player.flag & FLAG_PLAYER_FLASHLIGHT)
+        flashlight.cutoff = cosf(35.0f * FSL_DEG2RAD);
+    else
+        flashlight.cutoff = 1.0f;
+
+    flashlight.feather_factor = 0.2f;
+    flashlight.intensity = 20.0f;
+
+    flashlight_last.pos.x = fsl_lerp_exp_f32(flashlight_last.pos.x, flashlight.pos.x,
+            k, lerp_speed_pos);
+
+    flashlight_last.pos.y = fsl_lerp_exp_f32(flashlight_last.pos.y, flashlight.pos.y,
+            k, lerp_speed_pos);
+
+    flashlight_last.pos.z = fsl_lerp_exp_f32(flashlight_last.pos.z, flashlight.pos.z,
+            k, lerp_speed_pos);
+
+    flashlight_last.direction.x = fsl_lerp_exp_f32(flashlight_last.direction.x,
+            flashlight.direction.x, k, lerp_speed_rot);
+
+    flashlight_last.direction.y = fsl_lerp_exp_f32(flashlight_last.direction.y,
+            flashlight.direction.y, k, lerp_speed_rot);
+
+    flashlight_last.direction.z = fsl_lerp_exp_f32(flashlight_last.direction.z,
+            flashlight.direction.z, k, lerp_speed_rot);
+
+    flashlight_last.direction = fsl_normalize_v3f32(flashlight_last.direction);
+    flashlight_last.cutoff = flashlight.cutoff;
+    flashlight_last.feather_factor = flashlight.feather_factor;
+    flashlight_last.intensity = flashlight.intensity;
 
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -438,16 +487,19 @@ static void draw_world(void)
             (GLfloat*)&player.camera.projection.perspective);
     glUniform3f(uniform.voxel.camera_position,
             player.camera.pos.x, player.camera.pos.y, player.camera.pos.z);
-    glUniform3f(uniform.voxel.flashlight_position,
-            player.transform.pos.x, player.transform.pos.y, player.transform.pos.z + player.eye_height);
     glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_light, 1, (GLfloat*)&skybox_data.sky_light);
     glUniform3fv(uniform.voxel.moon_light, 1, (GLfloat*)&skybox_data.moon_light);
-    glUniform1f(uniform.voxel.toggle_flashlight, player.flag & FLAG_PLAYER_FLASHLIGHT ? 1.0f : 0.0f);
     glUniform1i(uniform.voxel.render_distance, settings.render_distance * CHUNK_DIAMETER);
 
+    glUniform3fv(uniform.voxel.spotlight.pos, 1, (GLfloat*)&flashlight_last.pos);
+    glUniform3fv(uniform.voxel.spotlight.direction, 1, (GLfloat*)&flashlight_last.direction);
+    glUniform1f(uniform.voxel.spotlight.cutoff, flashlight_last.cutoff);
+    glUniform1f(uniform.voxel.spotlight.feather_factor, flashlight_last.feather_factor);
+    glUniform1f(uniform.voxel.spotlight.intensity, flashlight_last.intensity);
+
     if (core.debug.trans_blocks)
-        glUniform1f(uniform.voxel.opacity, 0.7f);
+        glUniform1f(uniform.voxel.opacity, 0.6f);
     else
         glUniform1f(uniform.voxel.opacity, 1.0f);
 

@@ -100,9 +100,17 @@ struct hhc_uniform
         GLint chunk_position;
         GLint color;
         GLint opacity;
-        GLint flashlight_position;
-        GLint toggle_flashlight;
         GLint render_distance;
+
+        struct /* spotlight */
+        {
+            GLint pos;
+            GLint direction;
+            GLint cutoff;
+            GLint feather_factor;
+            GLint intensity;
+        } spotlight;
+
     } voxel;
 
     struct /* bounding_box */
@@ -119,9 +127,9 @@ typedef struct hhc_spotlight
 {
     v3f32 pos;
     v3f32 direction;
-    v3f32 spot_dir;
-    f32 full_angle;
-    f32 half_angle;
+    f32 cutoff;
+    f32 feather_factor;
+    f32 intensity;
 } hhc_spotlight;
 
 extern fsl_render *render;

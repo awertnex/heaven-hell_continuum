@@ -13,6 +13,7 @@
 - changed terrain noise sampling to be cached per axis.
 - put skybox drawing in its own function (as oppose to being part of the giant
   function `world_draw()`.
+- made flashlight an actual spotlight and added smooth motion to it.
 
 #### fixes
 - fixed chunk gizmo's alpha background not showing up.
