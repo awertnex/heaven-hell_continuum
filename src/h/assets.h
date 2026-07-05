@@ -60,6 +60,21 @@ enum texture_block_index
     TEXTURE_BLOCK_COUNT
 }; /* texture_block_index */
 
+typedef struct hhc_g_buffer
+{
+    fsl_fbo fbo;
+    GLuint color_buf_pos;
+    GLuint color_buf_normal;
+    GLuint color_buf_albedo_specular;
+    GLuint color_buf_ambient_occlusion;
+    b8 initialized;
+} hhc_g_buffer;
+
+typedef struct hhc_ssao
+{
+    v3f32 sample[64];
+} hhc_ssao;
+
 enum block_id
 {
     BLOCK_NONE,
@@ -105,6 +120,8 @@ extern fsl_mem_arena memory_arena_assets_internal;
 
 extern fsl_mem_handle texture;
 extern fsl_mem_handle fbo;
+extern hhc_g_buffer g_buf;
+extern hhc_ssao ssao_buf;
 extern fsl_mem_handle mesh;
 extern fsl_mem_handle shader;
 extern fsl_mem_handle blocks;
@@ -118,6 +135,24 @@ extern fsl_font *font[FONT_COUNT];
 u32 assets_init(void);
 
 void assets_free(void);
+
+/*!
+ *  @brief initialize a rendering G-buffer.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples);
+
+/*!
+ *  @brief re-allocate a rendering G-buffer.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples);
+
+void g_buffer_free(hhc_g_buffer *buf);
+void ssao_init(hhc_ssao *ssao);
+void ssao_free(hhc_ssao *ssao);
 
 /*!
  *  @param index index into @ref block_textures.

@@ -29,6 +29,7 @@
 - new plug-in 'big_num_separator' for an economic representation of numbers
   (I wrote this thing back in 2021 thinking I will never use it for anything,
   so, I brought it back, with its original name).
+- added screen-space ambient occlusion (SSAO).
 
 #### deletions
 - since 'super debugger' is back, deleted debug key bindings, now <Tab> shows

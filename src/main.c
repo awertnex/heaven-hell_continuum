@@ -10,6 +10,7 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/math/matrix.h"
+#include "deps/fossil/math/noise.h"
 #include "deps/fossil/math/vector.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shader_types.h"
@@ -83,12 +84,13 @@ static void callback_framebuffer_size(i32 size_x, i32 size_y)
     player.camera.ratio = (f32)size_x / (f32)size_y;
     player.camera_hud.ratio = (f32)size_x / (f32)size_y;
 
-    fsl_fbo_realloc(&fbo_p[FBO_SKYBOX], render->size.x, render->size.y, FALSE, 4);
-    fsl_fbo_realloc(&fbo_p[FBO_WORLD], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_SKYBOX], render->size.x, render->size.y, FALSE, 0);
+    fsl_fbo_realloc(&fbo_p[FBO_WORLD], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_WORLD_MSAA], render->size.x, render->size.y, TRUE, 4);
-    fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_HUD_MSAA], render->size.x, render->size.y, TRUE, 4);
-    fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 4);
+    fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 0);
+    g_buffer_realloc(&g_buf, render->size.x, render->size.y, FALSE, 0);
 
     gui_update(render->size);
     super_debugger_update(render->size);
@@ -170,9 +172,27 @@ static void bind_shader_uniforms(void)
     uniform.gizmo_chunk.time =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "time");
 
+    uniform.post_processing.texture_skybox =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_skybox");
+    uniform.post_processing.texture_world_pos =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_pos");
+    uniform.post_processing.texture_world_normal =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_normal");
+    uniform.post_processing.texture_world_albedo_specular =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_albedo_specular");
+    uniform.post_processing.texture_ambient_occlusion =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_ambient_occlusion");
+    uniform.post_processing.texture_hud =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_hud");
     uniform.post_processing.time =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "time");
+    uniform.post_processing.ssao_sample =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "ssao_sample");
+    uniform.post_processing.mat_projection =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "mat_projection");
 
+    uniform.voxel.mat_view =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_view");
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_perspective");
     uniform.voxel.camera_position =
@@ -368,15 +388,14 @@ static void skybox_draw(void)
     glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_MOON].asset.id);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE3);
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static void ui_hud_draw(void)
@@ -433,13 +452,14 @@ static void ui_hud_draw(void)
 
 static void draw_world(void)
 {
+    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
     hhc_chunk *chunk = NULL;
     static hhc_spotlight flashlight = {0};
     static hhc_spotlight flashlight_last = {0};
     i32 i = 0;
-    f32 lerp_speed_pos = 0.3f;
-    f32 lerp_speed_rot = 0.2f;
+    f32 lerp_speed = 0.2f;
+    f32 lerp_speed_toggle = 0.3f;
     f32 k = 1.0f - (f64)render->time_delta * FSL_NSEC2SEC;
 
     flashlight.pos.x = player.transform.pos.x - player.yaw.sin * 0.3f;
@@ -448,48 +468,58 @@ static void draw_world(void)
     flashlight.direction.x = player.yaw.cos * player.pitch.cos;
     flashlight.direction.y = -player.yaw.sin * player.pitch.cos;
     flashlight.direction.z = -player.pitch.sin;
+    flashlight.cutoff = cosf(35.0f * FSL_DEG2RAD);
+    flashlight.feather_factor = 0.2f;
 
     if (player.flag & FLAG_PLAYER_FLASHLIGHT)
-        flashlight.cutoff = cosf(35.0f * FSL_DEG2RAD);
+    {
+        flashlight.intensity =
+            fsl_perlin_noise_1d((f32)render->time * FSL_NSEC2SEC, 4.0f, 4.0f, 0) +
+            fsl_perlin_noise_1d((f32)render->time * FSL_NSEC2SEC, 2.0f, 15.0f, 0);
+        flashlight.intensity *= flashlight.intensity;
+        flashlight.intensity += 20.0f;
+    }
     else
-        flashlight.cutoff = 1.0f;
-
-    flashlight.feather_factor = 0.2f;
-    flashlight.intensity = 20.0f;
+        flashlight.intensity = 0.0f;
 
     flashlight_last.pos.x = fsl_lerp_exp_f32(flashlight_last.pos.x, flashlight.pos.x,
-            k, lerp_speed_pos);
-
+            k, lerp_speed);
     flashlight_last.pos.y = fsl_lerp_exp_f32(flashlight_last.pos.y, flashlight.pos.y,
-            k, lerp_speed_pos);
-
+            k, lerp_speed);
     flashlight_last.pos.z = fsl_lerp_exp_f32(flashlight_last.pos.z, flashlight.pos.z,
-            k, lerp_speed_pos);
+            k, lerp_speed);
 
     flashlight_last.direction.x = fsl_lerp_exp_f32(flashlight_last.direction.x,
-            flashlight.direction.x, k, lerp_speed_rot);
-
+            flashlight.direction.x, k, lerp_speed);
     flashlight_last.direction.y = fsl_lerp_exp_f32(flashlight_last.direction.y,
-            flashlight.direction.y, k, lerp_speed_rot);
-
+            flashlight.direction.y, k, lerp_speed);
     flashlight_last.direction.z = fsl_lerp_exp_f32(flashlight_last.direction.z,
-            flashlight.direction.z, k, lerp_speed_rot);
+            flashlight.direction.z, k, lerp_speed);
 
     flashlight_last.direction = fsl_normalize_v3f32(flashlight_last.direction);
     flashlight_last.cutoff = flashlight.cutoff;
     flashlight_last.feather_factor = flashlight.feather_factor;
-    flashlight_last.intensity = flashlight.intensity;
+    flashlight_last.intensity = fsl_lerp_exp_f32(flashlight_last.intensity,
+            flashlight.intensity, k, lerp_speed_toggle);
 
-    glClear(GL_DEPTH_BUFFER_BIT);
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, g_buf.fbo.fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_p[SHADER_VOXEL].asset.id);
+    glUniformMatrix4fv(uniform.voxel.mat_view, 1, GL_FALSE,
+            (GLfloat*)&player.camera.projection.view);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&player.camera.projection.perspective);
-    glUniform3f(uniform.voxel.camera_position,
-            player.camera.pos.x, player.camera.pos.y, player.camera.pos.z);
     glUniform3fv(uniform.voxel.sun_rotation, 1, (GLfloat*)&skybox_data.sun_rotation);
     glUniform3fv(uniform.voxel.sky_light, 1, (GLfloat*)&skybox_data.sky_light);
     glUniform3fv(uniform.voxel.moon_light, 1, (GLfloat*)&skybox_data.moon_light);
+    glUniform3f(uniform.voxel.camera_position,
+            player.camera.pos.x, player.camera.pos.y, player.camera.pos.z);
     glUniform1i(uniform.voxel.render_distance, settings.render_distance * CHUNK_DIAMETER);
 
     glUniform3fv(uniform.voxel.spotlight.pos, 1, (GLfloat*)&flashlight_last.pos);
@@ -543,12 +573,12 @@ static void world_draw(void)
     fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
     fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
-    fsl_shader_program *fsl_shader_p = fsl_mem_handle_get(fsl_shader_buf);
     hhc_block *blocks_p = fsl_mem_handle_get(blocks);
     fsl_asset_metadata metadata = {0};
     u32 block_id = 0;
 
     skybox_draw();
+    draw_world();
 
     if (settings.anti_aliasing)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
@@ -556,8 +586,6 @@ static void world_draw(void)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    draw_world();
 
     /* ---- draw player ----------------------------------------------------- */
 
@@ -673,13 +701,15 @@ static void world_draw(void)
 
     fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
+    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+            SET_MARGIN, SET_MARGIN, 0, 0, 0,
+            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+
+    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+
     if (core.flag.hud && core.flag.debug)
     {
-        fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
-                SET_MARGIN, SET_MARGIN, 0, 0, 0,
-                settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
-
-        fsl_text_push(fsl_stringf(
+        fsl_text_push(fsl_stringf("\n"
                     "TIME        [%.2lf]\n"
                     "CLOCK       [%02"PRIu64":%02"PRIu64"]\n"
                     "DAYS        [%"PRIu64"]\n",
@@ -824,38 +854,60 @@ static void world_draw(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
     }
 
+    fsl_fbo_blit(fbo_p[FBO_HUD].fbo);
+    fsl_ui_stop();
+
     /* ---- draw super debugger --------------------------------------------- */
 
     if (core.flag.super_debug)
-        super_debugger_draw(render->size);
-
-    fsl_ui_stop();
+        super_debugger_draw(render->size, fbo_p[FBO_HUD].fbo);
 
     /* ---- post processing ------------------------------------------------- */
 
     glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_POST_PROCESSING].fbo);
-    glUseProgram(fsl_shader_p[FSL_SHADER_INDEX_UNIT_QUAD].asset.id);
-    glBindVertexArray(fsl_mesh_unit_quad.vao);
-    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_SKYBOX].color_buf);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_WORLD].color_buf);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    fsl_fbo_blit(fbo_p[FBO_POST_PROCESSING].fbo);
-
-    /* ---- final ----------------------------------------------------------- */
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shader_p[SHADER_POST_PROCESSING].asset.id);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBindVertexArray(fsl_mesh_unit_quad.vao);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_SKYBOX].color_buf);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_pos);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_normal);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, g_buf.fbo.color_buf);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_ambient_occlusion);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
+
+    glUniform1i(uniform.post_processing.texture_skybox, 0);
+    glUniform1i(uniform.post_processing.texture_world_pos, 1);
+    glUniform1i(uniform.post_processing.texture_world_normal, 2);
+    glUniform1i(uniform.post_processing.texture_world_albedo_specular, 3);
+    glUniform1i(uniform.post_processing.texture_ambient_occlusion, 4);
+    glUniform1i(uniform.post_processing.texture_hud, 5);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
-    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_POST_PROCESSING].color_buf);
+    glUniform3fv(uniform.post_processing.ssao_sample, 64,
+            (GLfloat*)ssao_buf.sample);
+    glUniformMatrix4fv(uniform.post_processing.mat_projection, 1, GL_FALSE,
+            (GLfloat*)&player.camera.projection.projection);
+
+    glBindVertexArray(fsl_mesh_unit_quad.vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -929,10 +981,9 @@ section_menu_title:
         gui_menu_title_draw();
 
         if (core.flag.super_debug)
-            super_debugger_draw(render->size);
+            super_debugger_draw(render->size, 0);
 
         fsl_ui_stop();
-        fsl_fbo_blit(0);
 
         if (core.request.world_load)
         {
@@ -951,10 +1002,9 @@ section_menu_pause:
         gui_menu_pause_draw();
 
         if (core.flag.super_debug)
-            super_debugger_draw(render->size);
+            super_debugger_draw(render->size, 0);
 
         fsl_ui_stop();
-        fsl_fbo_blit(0);
 
         if (core.request.menu_title_enter)
         {

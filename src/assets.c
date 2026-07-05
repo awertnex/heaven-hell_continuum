@@ -3,6 +3,8 @@
 #include "deps/fossil/assets/assets.h"
 #include "deps/fossil/engine/engine_assets.h"
 #include "deps/fossil/logger/logger.h"
+#include "deps/fossil/math/math.h"
+#include "deps/fossil/math/vector.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/shaders/shaders.h"
 
@@ -14,6 +16,8 @@
 
 fsl_mem_arena memory_arena_assets_internal = {0};
 fsl_mem_handle fbo = {0};
+hhc_g_buffer g_buf = {0};
+hhc_ssao ssao_buf = {0};
 fsl_mem_handle texture = {0};
 fsl_mem_handle mesh = {0};
 fsl_mem_handle shader = {0};
@@ -125,6 +129,11 @@ u32 assets_init(void)
             fsl_fbo_init(&fbo_p[FBO_POST_PROCESSING],
                 render->size.x, render->size.y, NULL, FALSE, 0) != FSL_ERR_SUCCESS)
         goto cleanup;
+
+    if (g_buffer_init(&g_buf, render->size.x, render->size.y, FALSE, 0) != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    ssao_init(&ssao_buf);
 
     /* ---- shaders --------------------------------------------------------- */
 
@@ -317,6 +326,8 @@ void assets_free(void)
             fsl_fbo_free(&fbo_p[i]);
     }
 
+    g_buffer_free(&g_buf);
+
     if (ssbo_texture_indices_id)
         glDeleteBuffers(1, &ssbo_texture_indices_id);
 
@@ -324,6 +335,174 @@ void assets_free(void)
         glDeleteBuffers(1, &ssbo_texture_handles_id);
 
     fsl_mem_arena_free(&memory_arena_assets_internal, "assets_free().memory_arena_assets_internal");
+}
+
+u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples)
+{
+    GLuint status = 0;
+    GLuint attachments[5] =
+    {
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT1,
+        GL_COLOR_ATTACHMENT2,
+        GL_COLOR_ATTACHMENT3,
+        GL_COLOR_ATTACHMENT4
+    };
+
+    if (fsl_fbo_init(&buf->fbo, size_x, size_y, NULL, multisample, samples) != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo.fbo);
+
+    glGenTextures(1, &buf->color_buf_pos);
+    glGenTextures(1, &buf->color_buf_normal);
+    glGenTextures(1, &buf->color_buf_albedo_specular);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_pos);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+            buf->color_buf_pos, 0);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_normal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+            buf->color_buf_normal, 0);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+            buf->color_buf_albedo_specular, 0);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_ambient_occlusion);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size_x, size_y, 0, GL_RED, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D,
+            buf->color_buf_ambient_occlusion, 0);
+
+    glDrawBuffers(5, attachments);
+
+    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        LOGFATAL(FSL_ERR_FBO_REALLOC_FAIL,
+                FSL_FLAG_LOG_NO_VERBOSE,
+                fsl_logger_stringf("Failed to Initialize G-Buffer[%u], Status[%u]\n", buf->fbo.fbo, status));
+        goto cleanup;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    buf->initialized = TRUE;
+    *GAME_ERR = FSL_ERR_SUCCESS;
+    return *GAME_ERR;
+
+cleanup:
+
+    g_buffer_free(buf);
+    return *GAME_ERR;
+}
+
+u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples)
+{
+    GLuint status = 0;
+
+    if (fsl_fbo_realloc(&buf->fbo, size_x, size_y, multisample, samples) != FSL_ERR_SUCCESS)
+    {
+        fsl_fbo_free(&buf->fbo);
+        return *GAME_ERR;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo.fbo);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_pos);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_normal);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, buf->color_buf_ambient_occlusion);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size_x, size_y, 0, GL_RED, GL_FLOAT, NULL);
+
+    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        LOGFATAL(FSL_ERR_FBO_REALLOC_FAIL,
+                FSL_FLAG_LOG_NO_VERBOSE,
+                fsl_logger_stringf("Failed to Reallocate G-Buffer[%u], Status[%u]\n", buf->fbo.fbo, status));
+        g_buffer_free(buf);
+        return *GAME_ERR;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    buf->fbo.asset.initialized = TRUE;
+    buf->initialized = TRUE;
+    *GAME_ERR = FSL_ERR_SUCCESS;
+    return *GAME_ERR;
+}
+
+void g_buffer_free(hhc_g_buffer *buf)
+{
+    hhc_g_buffer nogbuf = {0};
+
+    if (!buf)
+        return;
+
+    fsl_fbo_free(&buf->fbo);
+
+    if (buf->initialized)
+    {
+        buf->initialized = FALSE;
+        glDeleteTextures(1, &buf->color_buf_pos);
+        glDeleteTextures(1, &buf->color_buf_normal);
+        glDeleteTextures(1, &buf->color_buf_albedo_specular);
+    }
+
+    *buf = nogbuf;
+}
+
+void ssao_init(hhc_ssao *ssao)
+{
+    u32 i = 0;
+    f32 scale = 0.0f;
+    static u32 seed = 0;
+
+    for (; i < 64; ++i)
+    {
+        scale = (f32)i / 64.0f;
+        scale = fsl_lerp_f32(0.1f, 1.0f, scale * scale);
+
+        ssao->sample[i].x = ((f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX) * 2.0f - 1.0f;
+        ssao->sample[i].y = ((f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX) * 2.0f - 1.0f;
+        ssao->sample[i].z = (f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX;
+
+        ssao->sample[i] = fsl_normalize_v3f32(ssao->sample[i]);
+
+        ssao->sample[i].x *= (f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX;
+        ssao->sample[i].y *= (f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX;
+        ssao->sample[i].z *= (f32)fsl_rand_u32((u32)render->time + (seed++) + i) / FSL_U32_MAX;
+        ssao->sample[i].x *= scale;
+        ssao->sample[i].y *= scale;
+        ssao->sample[i].z *= scale;
+    }
 }
 
 u32 block_texture_init(u32 index, const fsl_name *name, const fsl_name_id *name_id, const fsl_file *file)

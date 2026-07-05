@@ -87,19 +87,28 @@ struct hhc_uniform
 
     struct /* post_processing */
     {
+        GLint texture_skybox;
+        GLint texture_world_pos;
+        GLint texture_world_normal;
+        GLint texture_world_albedo_specular;
+        GLint texture_ambient_occlusion;
+        GLint texture_hud;
         GLint time;
+        GLint ssao_sample;
+        GLint mat_projection;
     } post_processing;
 
     struct /* voxel */
     {
+        GLint mat_view;
         GLint mat_perspective;
-        GLint camera_position;
         GLint sun_rotation;
         GLint sky_light;
         GLint moon_light;
         GLint chunk_position;
         GLint color;
         GLint opacity;
+        GLint camera_position;
         GLint render_distance;
 
         struct /* spotlight */

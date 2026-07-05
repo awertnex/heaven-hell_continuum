@@ -747,8 +747,12 @@ void player_kill(hhc_player *p)
     p->health = 0.0f;
     p->flag |= FLAG_PLAYER_DEAD;
     p->flag &= ~FLAG_PLAYER_CAN_JUMP;
-    p->flag &= ~FLAG_PLAYER_FLYING;
-    p->flag &= ~FLAG_PLAYER_CINEMATIC_MOTION;
+
+    if (p->flag & FLAG_PLAYER_FLYING)
+        player_toggle_cinematic_motion(p);
+
+    if (p->flag & FLAG_PLAYER_CINEMATIC_MOTION)
+        player_toggle_cinematic_motion(p);
 
     player_spawn(p, TRUE);
 
