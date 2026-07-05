@@ -884,7 +884,6 @@ static void world_draw(void)
     glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_normal);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_albedo_specular);
-    glBindTexture(GL_TEXTURE_2D, g_buf.fbo.color_buf);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
 

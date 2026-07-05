@@ -18,10 +18,14 @@ in vec2 vs_uv;
 out vec4 color;
 const float occlusion_scale = 1.0 / 64.0;
 
+/* ---- settings ------------------------------------------------------------ */
+
 float setting_saturation = 1.0;
 float setting_vignette_color_richness = 2.0;
-float setting_grain_intensity = 0.3;
+float setting_grain_intensity = 0.2;
 float setting_color_richness = 0.75;
+
+/* ---- implementation ------------------------------------------------------ */
 
 vec3 saturation_get(vec3 color_src, float saturation)
 {
@@ -117,13 +121,16 @@ void main()
 
     /* ---- final ----------------------------------------------------------- */
 
-    color.rgb *= grain;
     color.rgb -= vignette;
     color.rgb = mix(color_albedo.rgb, color_albedo.rgb * setting_vignette_color_richness, vignette);
 
     color_rich = color.rgb * color.rgb * color.rgb * (color.rgb * (color.rgb * 6.0 - 15.0) + 10.0);
     color.rgb = mix(color.rgb, color_rich, setting_color_richness);
 
-    color.rgb = mix(color.rgb, color_ui.rgb * grain, color_ui.a);
+    color.rgb = mix(color.rgb, color_ui.rgb, color_ui.a);
+
+    color.rgb *= grain;
+
     color.rgb = saturation_get(color.rgb, setting_saturation);
+    color.rgb = color_albedo.rgb;
 }

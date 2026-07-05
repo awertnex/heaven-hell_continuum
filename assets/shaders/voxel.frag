@@ -85,5 +85,6 @@ void main()
     g_color = vec4(color_final, opacity) * albedo.a * opacity;
     g_pos = pos_view;
     g_normal = vec4(normalize(normal_view.xyz), 1.0);
+    g_albedo_specular = g_color;
     g_albedo_specular = albedo;
 }
