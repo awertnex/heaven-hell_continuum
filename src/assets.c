@@ -345,8 +345,7 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32
         GL_COLOR_ATTACHMENT0,
         GL_COLOR_ATTACHMENT1,
         GL_COLOR_ATTACHMENT2,
-        GL_COLOR_ATTACHMENT3,
-        GL_COLOR_ATTACHMENT4
+        GL_COLOR_ATTACHMENT3
     };
 
     if (fsl_fbo_init(&buf->fbo, size_x, size_y, NULL, multisample, samples) != FSL_ERR_SUCCESS)
@@ -385,16 +384,7 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
             buf->color_buf_albedo_specular, 0);
 
-    glBindTexture(GL_TEXTURE_2D, buf->color_buf_ambient_occlusion);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size_x, size_y, 0, GL_RED, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D,
-            buf->color_buf_ambient_occlusion, 0);
-
-    glDrawBuffers(5, attachments);
+    glDrawBuffers(4, attachments);
 
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -437,9 +427,6 @@ u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, 
 
     glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-    glBindTexture(GL_TEXTURE_2D, buf->color_buf_ambient_occlusion);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, size_x, size_y, 0, GL_RED, GL_FLOAT, NULL);
 
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)

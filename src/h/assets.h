@@ -66,7 +66,6 @@ typedef struct hhc_g_buffer
     GLuint color_buf_pos;
     GLuint color_buf_normal;
     GLuint color_buf_albedo_specular;
-    GLuint color_buf_ambient_occlusion;
     b8 initialized;
 } hhc_g_buffer;
 

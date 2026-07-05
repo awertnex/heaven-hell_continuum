@@ -180,8 +180,6 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_normal");
     uniform.post_processing.texture_world_albedo_specular =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_albedo_specular");
-    uniform.post_processing.texture_ambient_occlusion =
-        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_ambient_occlusion");
     uniform.post_processing.texture_hud =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_hud");
     uniform.post_processing.time =
@@ -457,9 +455,12 @@ static void draw_world(void)
     hhc_chunk *chunk = NULL;
     static hhc_spotlight flashlight = {0};
     static hhc_spotlight flashlight_last = {0};
+    f32 flashlight_flicker = 0.0f;
+    f32 flashlight_flicker_intensity = 2.0f;
+    f32 flashlight_flicker_gathering = 0.8f;
     i32 i = 0;
     f32 lerp_speed = 0.2f;
-    f32 lerp_speed_toggle = 0.3f;
+    f32 lerp_speed_toggle = 0.5f;
     f32 k = 1.0f - (f64)render->time_delta * FSL_NSEC2SEC;
 
     flashlight.pos.x = player.transform.pos.x - player.yaw.sin * 0.3f;
@@ -473,11 +474,18 @@ static void draw_world(void)
 
     if (player.flag & FLAG_PLAYER_FLASHLIGHT)
     {
-        flashlight.intensity =
-            fsl_perlin_noise_1d((f32)render->time * FSL_NSEC2SEC, 4.0f, 4.0f, 0) +
+        flashlight_flicker =
+            fsl_perlin_noise_1d((f32)render->time * FSL_NSEC2SEC, 2.0f, 4.0f, 0) +
             fsl_perlin_noise_1d((f32)render->time * FSL_NSEC2SEC, 2.0f, 15.0f, 0);
-        flashlight.intensity *= flashlight.intensity;
-        flashlight.intensity += 20.0f;
+
+        if (flashlight_flicker >= flashlight_flicker_gathering)
+            flashlight_flicker = flashlight_flicker_intensity;
+        else if (flashlight_flicker <= -flashlight_flicker_gathering)
+            flashlight_flicker = -flashlight_flicker_intensity;
+        else
+            flashlight_flicker = 0.0f;
+
+        flashlight.intensity = 20.0f + flashlight_flicker;
     }
     else
         flashlight.intensity = 0.0f;
@@ -875,18 +883,16 @@ static void world_draw(void)
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_normal);
     glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_albedo_specular);
     glBindTexture(GL_TEXTURE_2D, g_buf.fbo.color_buf);
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_ambient_occlusion);
-    glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
 
     glUniform1i(uniform.post_processing.texture_skybox, 0);
     glUniform1i(uniform.post_processing.texture_world_pos, 1);
     glUniform1i(uniform.post_processing.texture_world_normal, 2);
     glUniform1i(uniform.post_processing.texture_world_albedo_specular, 3);
-    glUniform1i(uniform.post_processing.texture_ambient_occlusion, 4);
-    glUniform1i(uniform.post_processing.texture_hud, 5);
+    glUniform1i(uniform.post_processing.texture_hud, 4);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
     glUniform3fv(uniform.post_processing.ssao_sample, 64,
             (GLfloat*)ssao_buf.sample);
@@ -897,8 +903,6 @@ static void world_draw(void)
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE3);

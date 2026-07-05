@@ -91,7 +91,6 @@ struct hhc_uniform
         GLint texture_world_pos;
         GLint texture_world_normal;
         GLint texture_world_albedo_specular;
-        GLint texture_ambient_occlusion;
         GLint texture_hud;
         GLint time;
         GLint ssao_sample;
