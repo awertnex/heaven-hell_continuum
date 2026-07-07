@@ -12,7 +12,7 @@
 #extension GL_ARB_bindless_texture: require
 
 layout(location = 0) out vec4 g_pos;
-layout(location = 1) out vec4 g_normal;
+layout(location = 1) out vec4 g_normal_depth;
 layout(location = 2) out vec4 g_albedo_specular;
 
 layout(std430, binding = 2) readonly buffer ssbo_textures
@@ -32,6 +32,8 @@ struct hhc_spotlight
 uniform sampler2D texture_block;
 uniform float opacity;
 uniform vec3 camera_position;
+uniform float camera_far;
+uniform float camera_near;
 uniform int render_distance;
 uniform vec3 sun_rotation;
 uniform vec3 sky_light;
@@ -41,7 +43,7 @@ in vec4 pos;
 in vec4 pos_view;
 in vec2 uv;
 in vec3 normal;
-in vec4 normal_view;
+in vec3 normal_view;
 in flat uint face_index;
 in float block_light;
 
@@ -107,6 +109,6 @@ void main()
     color_final = reinhard_tone_mapping(color_final, WHITE_POINT);
 
     g_pos = pos_view;
-    g_normal = vec4(normalize(normal_view.xyz), 1.0);
-    g_albedo_specular = vec4(color_final, opacity) * albedo.a * opacity;
+    g_normal_depth = vec4(normalize(normal_view), 1.0);
+    g_albedo_specular = vec4(color_final, albedo.a * opacity);
 }

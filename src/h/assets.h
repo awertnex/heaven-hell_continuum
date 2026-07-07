@@ -143,16 +143,8 @@ void assets_free(void);
  */
 u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y);
 
-/*!
- *  @brief re-allocate a rendering G-buffer.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y);
-
 void g_buffer_free(hhc_g_buffer *buf);
 void ssao_init(hhc_ssao *ssao);
-void ssao_free(hhc_ssao *ssao);
 
 /*!
  *  @param index index into @ref block_textures.

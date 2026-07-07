@@ -9,7 +9,7 @@ layout(triangle_strip, max_vertices = VERTICES_MAX) out;
 
 layout(std430, binding = 1) readonly buffer ssbo_texture_indices
 {
-    uint texture_indices[];
+    uint texture_buf[];
 };
 
 #define MASK_BLOCK_ID   0x000003ff
@@ -29,7 +29,7 @@ out vec4 pos;
 out vec4 pos_view;
 out vec2 uv;
 out vec3 normal;
-out vec4 normal_view;
+out vec3 normal_view;
 out flat uint face_index;
 out float block_light;
 
@@ -41,7 +41,7 @@ void voxel_make()
     uint block_faces = vs_data[0] >> 16;
     block_light = ((vs_data[0] >> 0x18) & MASK_BLOCK_LIGHT) / float(MASK_BLOCK_LIGHT);
 
-    vec3 vbo_pos[8] =
+    vec3 vertex_buf[8] =
         vec3[](
                 vec3(0.0, 0.0, 0.0),
                 vec3(1.0, 0.0, 0.0),
@@ -52,7 +52,7 @@ void voxel_make()
                 vec3(0.0, 1.0, 1.0),
                 vec3(1.0, 1.0, 1.0));
 
-    vec3 vbo_normal[6] =
+    vec3 normal_buf[6] =
         vec3[](
                 vec3(1.0, 0.0, 0.0),
                 vec3(-1.0, 0.0, 0.0),
@@ -61,7 +61,7 @@ void voxel_make()
                 vec3(0.0, 0.0, 1.0),
                 vec3(0.0, 0.0, -1.0));
 
-    int ebo[VERTICES_MAX] =
+    int index_buf[VERTICES_MAX] =
         int[](
                 1, 5, 7, 7, 3, 1,
                 2, 6, 4, 4, 0, 2,
@@ -77,25 +77,25 @@ void voxel_make()
                 vec2(1.0, 0.0),
                 vec2(1.0, 1.0));
 
-    int ebo_uv[FACE_VERTICES] =
+    int index_buf_uv[FACE_VERTICES] =
         int[](0, 1, 2, 2, 3, 0);
 
     int ebo_uv_top[FACE_VERTICES] =
         int[](3, 0, 1, 1, 2, 3);
 
-    mat4 mat_view_transpose = transpose(inverse(mat_view));
+    mat3 mat_view_transpose = transpose(inverse(mat3(mat_view)));
 
     for (i = 0; i < FACES_MAX; ++i)
     {
         if (bool(block_faces & (1 << i)))
             for (j = 0; j < FACE_VERTICES; ++j)
             {
-                pos = vec4(vs_pos[0] + vbo_pos[ebo[j + FACE_VERTICES * i]], 1.0);
+                pos = vec4(vs_pos[0] + vertex_buf[index_buf[j + FACE_VERTICES * i]], 1.0);
                 pos_view = mat_view * pos;
-                uv = gs_uv[ebo_uv[j]];
-                face_index = texture_indices[block_id * 6 + i];
-                normal = vbo_normal[i];
-                normal_view = mat_view_transpose * vec4(normal, 1.0);
+                uv = gs_uv[index_buf_uv[j]];
+                face_index = texture_buf[block_id * 6 + i];
+                normal = normal_buf[i];
+                normal_view = mat_view_transpose * normal;
 
                 gl_Position = mat_perspective * pos;
                 EmitVertex();

@@ -348,52 +348,69 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y)
     };
 
     if (!buf->asset.initialized)
+    {
         buf->asset.type = FSL_ASSET_FBO;
 
-    glGenFramebuffers(1, &buf->fbo);
+        glGenFramebuffers(1, &buf->fbo);
+        glGenTextures(1, &buf->color_buf_pos);
+        glGenTextures(1, &buf->color_buf_normal);
+        glGenTextures(1, &buf->color_buf_albedo_specular);
+        glGenRenderbuffers(1, &buf->rbo);
+        buf->asset.initialized = TRUE;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo);
+
+        /* ---- color buffers ----------------------------------------------- */
+
+        glBindTexture(GL_TEXTURE_2D, buf->color_buf_pos);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                buf->color_buf_pos, 0);
+
+        glBindTexture(GL_TEXTURE_2D, buf->color_buf_normal);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                buf->color_buf_normal, 0);
+
+        glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                buf->color_buf_albedo_specular, 0);
+
+        glDrawBuffers(3, attachments);
+
+        /* ---- render buffer ----------------------------------------------- */
+
+        glBindRenderbuffer(GL_RENDERBUFFER, buf->rbo);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buf->rbo);
+    }
+
     glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo);
 
     /* ---- color buffers --------------------------------------------------- */
 
-    glGenTextures(1, &buf->color_buf_pos);
-    glGenTextures(1, &buf->color_buf_normal);
-    glGenTextures(1, &buf->color_buf_albedo_specular);
-    glGenRenderbuffers(1, &buf->rbo);
-
     glBindTexture(GL_TEXTURE_2D, buf->color_buf_pos);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-            buf->color_buf_pos, 0);
 
     glBindTexture(GL_TEXTURE_2D, buf->color_buf_normal);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-            buf->color_buf_normal, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, size_x, size_y, 0, GL_RGB, GL_FLOAT, NULL);
 
     glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
-            buf->color_buf_albedo_specular, 0);
-
-    glDrawBuffers(3, attachments);
 
     /* ---- render buffer --------------------------------------------------- */
 
     glBindRenderbuffer(GL_RENDERBUFFER, buf->rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size_x, size_y);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buf->rbo);
 
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -405,49 +422,15 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-    buf->asset.initialized = TRUE;
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 
 cleanup:
 
     g_buffer_free(buf);
-    return *GAME_ERR;
-}
-
-u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y)
-{
-    GLuint status = 0;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo);
-
-    glBindTexture(GL_TEXTURE_2D, buf->color_buf_pos);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
-
-    glBindTexture(GL_TEXTURE_2D, buf->color_buf_normal);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, size_x, size_y, 0, GL_RGBA, GL_FLOAT, NULL);
-
-    glBindTexture(GL_TEXTURE_2D, buf->color_buf_albedo_specular);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_x, size_y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, buf->rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size_x, size_y);
-
-    status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        LOGFATAL(FSL_ERR_FBO_REALLOC_FAIL,
-                FSL_FLAG_LOG_NO_VERBOSE,
-                fsl_logger_stringf("Failed to Reallocate G-Buffer[%u], Status[%u]\n", buf->fbo, status));
-        g_buffer_free(buf);
-        return *GAME_ERR;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    buf->asset.initialized = TRUE;
-    *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
 }
 

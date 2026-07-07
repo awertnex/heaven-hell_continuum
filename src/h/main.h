@@ -110,6 +110,8 @@ struct hhc_uniform
         GLint color;
         GLint opacity;
         GLint camera_position;
+        GLint camera_far;
+        GLint camera_near;
         GLint render_distance;
 
         struct /* spotlight */

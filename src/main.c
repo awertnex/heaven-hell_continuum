@@ -90,7 +90,7 @@ static void callback_framebuffer_size(i32 size_x, i32 size_y)
     fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_HUD_MSAA], render->size.x, render->size.y, TRUE, 4);
     fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 0);
-    g_buffer_realloc(&g_buf, render->size.x, render->size.y);
+    g_buffer_init(&g_buf, render->size.x, render->size.y);
 
     gui_update(render->size);
     super_debugger_update(render->size);
@@ -199,6 +199,10 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_perspective");
     uniform.voxel.camera_position =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "camera_position");
+    uniform.voxel.camera_far =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "camera_far");
+    uniform.voxel.camera_near =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "camera_near");
     uniform.voxel.sun_rotation =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "sun_rotation");
     uniform.voxel.sky_light =
@@ -533,6 +537,8 @@ static void draw_world(void)
     glUniform3fv(uniform.voxel.moon_light, 1, (GLfloat*)&skybox_data.moon_light);
     glUniform3f(uniform.voxel.camera_position,
             player.camera.pos.x, player.camera.pos.y, player.camera.pos.z);
+    glUniform1f(uniform.voxel.camera_far, player.camera.far);
+    glUniform1f(uniform.voxel.camera_near, player.camera.near);
     glUniform1i(uniform.voxel.render_distance, settings.render_distance * CHUNK_DIAMETER);
 
     glUniform3fv(uniform.voxel.spotlight.pos, 1, (GLfloat*)&flashlight_last.pos);
