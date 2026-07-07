@@ -93,10 +93,10 @@ struct hhc_uniform
         GLint texture_world_albedo_specular;
         GLint texture_hud;
         GLint time;
-        GLint ssao_sample;
         GLint mat_projection;
         GLint camera_far;
         GLint camera_near;
+        GLint ssao_sample;
     } post_processing;
 
     struct /* voxel */

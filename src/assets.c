@@ -130,7 +130,7 @@ u32 assets_init(void)
                 render->size.x, render->size.y, NULL, FALSE, 0) != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    if (g_buffer_init(&g_buf, render->size.x, render->size.y, FALSE, 0) != FSL_ERR_SUCCESS)
+    if (g_buffer_init(&g_buf, render->size.x, render->size.y) != FSL_ERR_SUCCESS)
         goto cleanup;
 
     ssao_init(&ssao_buf);
@@ -337,7 +337,7 @@ void assets_free(void)
     fsl_mem_arena_free(&memory_arena_assets_internal, "assets_free().memory_arena_assets_internal");
 }
 
-u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples)
+u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y)
 {
     GLuint status = 0;
     GLuint attachments[3] =
@@ -352,13 +352,6 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32
 
     glGenFramebuffers(1, &buf->fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, buf->fbo);
-
-    if (multisample)
-    {
-    }
-    else
-    {
-    }
 
     /* ---- color buffers --------------------------------------------------- */
 
@@ -394,13 +387,13 @@ u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
             buf->color_buf_albedo_specular, 0);
 
+    glDrawBuffers(3, attachments);
+
     /* ---- render buffer --------------------------------------------------- */
 
     glBindRenderbuffer(GL_RENDERBUFFER, buf->rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size_x, size_y);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buf->rbo);
-
-    glDrawBuffers(3, attachments);
 
     status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -423,7 +416,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y, b8 multisample, u32 samples)
+u32 g_buffer_realloc(hhc_g_buffer *buf, i32 size_x, i32 size_y)
 {
     GLuint status = 0;
 
@@ -480,6 +473,7 @@ void ssao_init(hhc_ssao *ssao)
 {
     u32 kernel_size = 64;
     f32 scale = 0.0f;
+    f32 rand_scale = 1.0f / FSL_U32_MAX;
     static u32 seed = 0;
     u32 i = 0;
 
@@ -488,14 +482,14 @@ void ssao_init(hhc_ssao *ssao)
         scale = (f32)i / kernel_size;
         scale = fsl_lerp_f32(0.1f, 1.0f, scale * scale);
 
-        ssao->sample[i].x = ((f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX) * 2.0f - 1.0f;
-        ssao->sample[i].y = ((f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX) * 2.0f - 1.0f;
-        ssao->sample[i].z = (f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX;
+        ssao->sample[i].x = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
+        ssao->sample[i].y = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
+        ssao->sample[i].z = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
         ssao->sample[i] = fsl_normalize_v3f32(ssao->sample[i]);
 
-        ssao->sample[i].x *= (f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX;
-        ssao->sample[i].y *= (f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX;
-        ssao->sample[i].z *= (f32)fsl_rand_u32((u32)render->time + seed++) / FSL_U32_MAX;
+        ssao->sample[i].x *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        ssao->sample[i].y *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        ssao->sample[i].z *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
         ssao->sample[i].x *= scale;
         ssao->sample[i].y *= scale;
         ssao->sample[i].z *= scale;

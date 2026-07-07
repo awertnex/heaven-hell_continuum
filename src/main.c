@@ -90,7 +90,7 @@ static void callback_framebuffer_size(i32 size_x, i32 size_y)
     fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_HUD_MSAA], render->size.x, render->size.y, TRUE, 4);
     fsl_fbo_realloc(&fbo_p[FBO_POST_PROCESSING], render->size.x, render->size.y, FALSE, 0);
-    g_buffer_realloc(&g_buf, render->size.x, render->size.y, FALSE, 0);
+    g_buffer_realloc(&g_buf, render->size.x, render->size.y);
 
     gui_update(render->size);
     super_debugger_update(render->size);
@@ -184,14 +184,14 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_hud");
     uniform.post_processing.time =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "time");
-    uniform.post_processing.ssao_sample =
-        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "ssao_sample");
     uniform.post_processing.mat_projection =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "mat_projection");
     uniform.post_processing.camera_far =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "camera_far");
     uniform.post_processing.camera_near =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "camera_near");
+    uniform.post_processing.ssao_sample =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "ssao_sample");
 
     uniform.voxel.mat_view =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_view");
@@ -898,11 +898,11 @@ static void world_draw(void)
     glUniform1i(uniform.post_processing.texture_world_albedo_specular, 3);
     glUniform1i(uniform.post_processing.texture_hud, 4);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
-    glUniform3fv(uniform.post_processing.ssao_sample, 64, (GLfloat*)ssao_buf.sample);
     glUniformMatrix4fv(uniform.post_processing.mat_projection, 1, GL_FALSE,
             (GLfloat*)&player.camera.projection.projection);
     glUniform1f(uniform.post_processing.camera_far, player.camera.far);
     glUniform1f(uniform.post_processing.camera_near, player.camera.near);
+    glUniform3fv(uniform.post_processing.ssao_sample, 64, (GLfloat*)ssao_buf.sample);
 
     glBindVertexArray(fsl_mesh_unit_quad.vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

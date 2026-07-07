@@ -1,10 +1,10 @@
 #version 430 core
 
-#define GLOBAL_ILLUMINATION 0.6
-#define SKY_INFLUENCE 1.0
-#define SUN_INFLUENCE 3.0
+#define GLOBAL_ILLUMINATION 0.5
+#define SKY_INFLUENCE 1.5
+#define SUN_INFLUENCE 1.7
 #define MOON_INFLUENCE 0.4
-#define FLASHLIGHT_DISTANCE 0.7
+#define FLASHLIGHT_DISTANCE 0.8
 #define FLASHLIGHT_COLOR vec3(1.0, 0.8, 0.5)
 #define FOG_SOFTNESS 1.0
 #define WHITE_POINT 30.0
@@ -14,7 +14,6 @@
 layout(location = 0) out vec4 g_pos;
 layout(location = 1) out vec4 g_normal;
 layout(location = 2) out vec4 g_albedo_specular;
-layout(location = 3) out float g_depth;
 
 layout(std430, binding = 2) readonly buffer ssbo_textures
 {
@@ -101,7 +100,7 @@ void main()
          color_flashlight);
 
     vec3 color_final = fog_linear(color_composite, sky_light,
-            distance / float(render_distance * (1.0 - FOG_SOFTNESS / 1.5)),
+            distance / (float(render_distance) * (1.0 - FOG_SOFTNESS / 1.5)),
             render_distance - render_distance * FOG_SOFTNESS,
             render_distance + render_distance * FOG_SOFTNESS);
 
@@ -109,7 +108,5 @@ void main()
 
     g_pos = pos_view;
     g_normal = vec4(normalize(normal_view.xyz), 1.0);
-    g_albedo_specular = albedo;
     g_albedo_specular = vec4(color_final, opacity) * albedo.a * opacity;
-    g_depth = g_pos.r;
 }
