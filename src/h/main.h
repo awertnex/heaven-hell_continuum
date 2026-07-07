@@ -95,6 +95,8 @@ struct hhc_uniform
         GLint time;
         GLint ssao_sample;
         GLint mat_projection;
+        GLint camera_far;
+        GLint camera_near;
     } post_processing;
 
     struct /* voxel */

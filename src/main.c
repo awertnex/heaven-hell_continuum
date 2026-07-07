@@ -188,6 +188,10 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "ssao_sample");
     uniform.post_processing.mat_projection =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "mat_projection");
+    uniform.post_processing.camera_far =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "camera_far");
+    uniform.post_processing.camera_near =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "camera_near");
 
     uniform.voxel.mat_view =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_view");
@@ -515,10 +519,11 @@ static void draw_world(void)
     else
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, g_buf.fbo.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_buf.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_p[SHADER_VOXEL].asset.id);
+
     glUniformMatrix4fv(uniform.voxel.mat_view, 1, GL_FALSE,
             (GLfloat*)&player.camera.projection.view);
     glUniformMatrix4fv(uniform.voxel.mat_perspective, 1, GL_FALSE,
@@ -893,10 +898,11 @@ static void world_draw(void)
     glUniform1i(uniform.post_processing.texture_world_albedo_specular, 3);
     glUniform1i(uniform.post_processing.texture_hud, 4);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
-    glUniform3fv(uniform.post_processing.ssao_sample, 64,
-            (GLfloat*)ssao_buf.sample);
+    glUniform3fv(uniform.post_processing.ssao_sample, 64, (GLfloat*)ssao_buf.sample);
     glUniformMatrix4fv(uniform.post_processing.mat_projection, 1, GL_FALSE,
             (GLfloat*)&player.camera.projection.projection);
+    glUniform1f(uniform.post_processing.camera_far, player.camera.far);
+    glUniform1f(uniform.post_processing.camera_near, player.camera.near);
 
     glBindVertexArray(fsl_mesh_unit_quad.vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);

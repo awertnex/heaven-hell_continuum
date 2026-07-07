@@ -13,6 +13,8 @@ uniform sampler2D texture_hud;
 uniform uint time;
 uniform vec3 ssao_sample[64];
 uniform mat4 mat_projection;
+uniform float camera_far;
+uniform float camera_near;
 in vec2 vs_pos;
 in vec2 vs_uv;
 out vec4 color;
@@ -23,7 +25,7 @@ const float occlusion_scale = 1.0 / 64.0;
 float setting_saturation = 1.0;
 float setting_vignette_color_richness = 2.0;
 float setting_grain_intensity = 0.2;
-float setting_color_richness = 0.75;
+float setting_color_richness = 0.6;
 
 /* ---- implementation ------------------------------------------------------ */
 
@@ -58,39 +60,50 @@ vec3 grain_get(vec2 frag_pos, uint seed, float intensity, float chroma)
     return mix(vec3(grain.r), grain, chroma) * intensity;
 }
 
-float ambient_occlusion_get(sampler2D sampler_pos, sampler2D sampler_normal,
-        vec2 frag_pos, vec2 frag_uv, float intensity_factor)
+float depth_linearize(float depth, float far, float near)
 {
-    vec3 pos_vec = texture(sampler_pos, frag_uv).rgb;
-    vec3 normal_vec = texture(sampler_normal, frag_uv).rgb;
+    depth = depth * 2.0 - 1.0;
+    return (2.0 * near * far) / (far + near - depth * (far - near));
+}
+
+float ambient_occlusion_get(sampler2D sampler_pos, sampler2D sampler_normal,
+        vec2 frag_pos, vec2 frag_uv, float intensity)
+{
+    vec4 pos_vec = texture(sampler_pos, frag_uv);
+    vec3 normal_vec = texture(sampler_normal, frag_uv).xyz;
     vec3 random_vec = grain_get(frag_pos, time, 1.0, 1.0);
+    vec4 depth_vec = vec4(0.0);
 
     vec3 tangent = normalize(random_vec - normal_vec * dot(random_vec, normal_vec));
-    vec3 bitangent = cross(normal_vec, tangent);
+    vec3 bitangent = normalize(cross(normal_vec, tangent));
     mat3 tbn = mat3(tangent, bitangent, normal_vec);
-    float occlusion = 0.0;
-    float radius = 0.5;
+
+    vec3 kernel_sample = vec3(0.0);
+    float radius = 2.0;
     float bias = 0.025;
-    vec3 sample_curr = vec3(0.0);
     vec4 offset = vec4(0.0);
-    float sample_depth = 0.0;
+    float depth_a = mix(camera_far, pos_vec.z, pos_vec.w);
+    float depth_b = 0.0;
     float range_check = 0.0;
+    float distance = 0.0;
+    float occlusion = 0.0;
+    float accumulatte = 0.0;
     int i = 0;
 
     for(; i < 64; ++i)
     {
-        sample_curr = pos_vec + tbn * ssao_sample[i] * radius;
-        offset = vec4(sample_curr, 1.0);
-        offset = mat_projection * offset;
-        offset.xyz /= offset.w;
-        offset.xyz = clamp(offset.xyz * 0.5 + 0.5, 0.0, 1.0);
-        sample_depth = texture(sampler_pos, offset.xy).z;
+        kernel_sample = pos_vec.xyz + tbn * ssao_sample[i] * radius;
+        offset = mat_projection * vec4(kernel_sample, 1.0);
+        offset.xy /= offset.w;
+        offset.xy = offset.xy * 0.5 + 0.5;
+        depth_vec = texture(sampler_pos, offset.xy);
+        depth_b = mix(camera_far, depth_vec.z, depth_vec.w);
 
-        range_check = smoothstep(0.0, 1.0, radius / abs(pos_vec.z - sample_depth));
-        occlusion += (sample_depth >= sample_curr.z + bias ? occlusion_scale : 0.0) * range_check;
+        range_check = smoothstep(0.0, 1.0, radius / length(depth_a - depth_b));
+        accumulatte += (depth_b >= kernel_sample.z + bias ? occlusion_scale : 0.0) * range_check;
     }
 
-    return occlusion * intensity_factor;
+    return 1.0 - clamp(accumulatte * intensity, 0.0, 1.0);
 }
 
 void main()
@@ -101,7 +114,8 @@ void main()
             ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
     vec4 color_albedo = aberration_get(texture_world_albedo_specular, vs_pos, vs_uv,
             ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
-    vec3 color_albedo_cubed = color_albedo.rgb * color_albedo.rgb * color_albedo.rgb;
+    color_skybox = clamp(color_skybox, vec4(0.0), vec4(1.0));
+    color_albedo = clamp(color_albedo, vec4(0.0), vec4(1.0));
     vec3 global_illumination = color_albedo.rgb;
     vec4 color_ui = texture(texture_hud, vs_uv);
 
@@ -109,13 +123,13 @@ void main()
 
     vec3 color_rich = vec3(0.0);
     vec3 grain = 1.0 + grain_get(vs_pos, time, setting_grain_intensity, 1.0);
-    float ambient_occlusion = ambient_occlusion_get(texture_world_pos, texture_world_normal, vs_pos, vs_uv, 1.0);
+    float ambient_occlusion = ambient_occlusion_get(texture_world_pos, texture_world_normal, vs_pos, vs_uv, 0.5);
     float vignette = pow(length(vs_pos) * VIGNETTE_NARROWNESS, 3.0);
     vignette = clamp(vignette, 0.0, 1.0) * VIGNETTE_INTENSITY;
 
     /* ---- layering -------------------------------------------------------- */
 
-    color_albedo.rgb = mix(color_albedo.rgb, color_albedo_cubed, ambient_occlusion);
+    color_albedo.rgb *= ambient_occlusion;
     color_albedo = mix(color_skybox, vec4(color_albedo.rgb, 1.0), color_albedo.a);
     global_illumination = color_albedo.rgb;
 
@@ -132,5 +146,4 @@ void main()
     color.rgb *= grain;
 
     color.rgb = saturation_get(color.rgb, setting_saturation);
-    color.rgb = color_albedo.rgb;
 }

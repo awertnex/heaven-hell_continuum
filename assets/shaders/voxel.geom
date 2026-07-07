@@ -83,6 +83,8 @@ void voxel_make()
     int ebo_uv_top[FACE_VERTICES] =
         int[](3, 0, 1, 1, 2, 3);
 
+    mat4 mat_view_transpose = transpose(inverse(mat_view));
+
     for (i = 0; i < FACES_MAX; ++i)
     {
         if (bool(block_faces & (1 << i)))
@@ -93,7 +95,7 @@ void voxel_make()
                 uv = gs_uv[ebo_uv[j]];
                 face_index = texture_indices[block_id * 6 + i];
                 normal = vbo_normal[i];
-                normal_view = mat_view * vec4(normal, 1.0);
+                normal_view = mat_view_transpose * vec4(normal, 1.0);
 
                 gl_Position = mat_perspective * pos;
                 EmitVertex();

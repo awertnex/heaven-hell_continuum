@@ -62,16 +62,19 @@ enum texture_block_index
 
 typedef struct hhc_g_buffer
 {
-    fsl_fbo fbo;
+    fsl_asset asset;
+    GLuint fbo;
     GLuint color_buf_pos;
     GLuint color_buf_normal;
     GLuint color_buf_albedo_specular;
-    b8 initialized;
+    GLuint rbo;
 } hhc_g_buffer;
 
 typedef struct hhc_ssao
 {
     v3f32 sample[64];
+    GLuint texture_noise;
+    b8 initialized;
 } hhc_ssao;
 
 enum block_id
