@@ -108,7 +108,8 @@ void main()
 
     color_final = reinhard_tone_mapping(color_final, WHITE_POINT);
 
-    g_pos = pos_view;
-    g_normal_depth = vec4(normalize(normal_view), 1.0);
-    g_albedo_specular = vec4(color_final, albedo.a * opacity);
+    float mix_factor = floor(albedo.a);
+    g_pos = mix(g_pos, pos_view, mix_factor);
+    g_normal_depth = mix(g_normal_depth, vec4(normalize(normal_view), 1.0), mix_factor);
+    g_albedo_specular = vec4(color_final * albedo.a * opacity, albedo.a * opacity);
 }

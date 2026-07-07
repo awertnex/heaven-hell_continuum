@@ -140,7 +140,7 @@ void main()
 
     /* ---- final ----------------------------------------------------------- */
 
-    color.rgb = color_albedo.rgb * ambient_occlusion;
+    color.rgb = color_albedo.rgb * ambient_occlusion * color_albedo.a;
     color = mix(color_skybox, vec4(color.rgb, 1.0), color_albedo.a);
 
     color.rgb = vignette_get(vs_pos, color.rgb, VIGNETTE_NARROWNESS, VIGNETTE_INTENSITY, VIGNETTE_RICHNESS);
