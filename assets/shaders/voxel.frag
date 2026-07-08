@@ -80,6 +80,17 @@ float spotlight_get(hhc_spotlight spotlight, vec3 normal)
     return value * value * value * (value * (value * 6.0 - 15.0) + 10.0) * spotlight.intensity;
 }
 
+float bimix(vec4 v, vec2 t)
+{
+    t = smoothstep(0.0, 1.0, t);
+    vec2 w = 1.0 - t;
+    return
+        v.x * w.x * w.y +
+        v.y * t.x * w.y +
+        v.z * w.x * t.y +
+        v.w * t.x * t.y;
+}
+
 void main()
 {
     float distance = square_length(pos.xyz - flashlight.pos);
