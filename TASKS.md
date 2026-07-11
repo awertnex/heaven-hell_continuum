@@ -1,8 +1,7 @@
-TASKS: [x] = done, [!] = cancelled
+TASKS: [x] = done, [!] = cancelled, 'X' = unknown
 DONE DATE: (YYYY MM DD)
 
 STATUS  DONE DATE       TASK
-
 - [x]   (XXXX XX XX):   display Chunk coordinates
 - [x]   (XXXX XX XX):   detect targeted block
 - [x]   (2025 XX XX):   place blocks
@@ -26,6 +25,13 @@ STATUS  DONE DATE       TASK
 - [x]   (2025 05 10):   fix fullscreen affecting mouse delta
 - [x]   (2025 05 22):   fix hollow states at top of chunk
 - [x]   (2025 05 21):   fix remove_block block_parse_limit math
+- [ ]   (          ):   put blocks in a contiguous array and bind it all to an
+                        SSBO, and bind chunk pointers to their addresses
+- [ ]   (          ):   bake ambient occlusion flags into block data and send
+                        to GPU
+- [ ]   (          ):   possibly reduce the two loops in function
+                        `chunking_update()` for marking chunks on edge and
+                        shifting chunks to just one loop
 
 quirks:
 - [x]   (2025 09 27):   fix haloing (black traces when drawing an RGB texture
@@ -40,7 +46,6 @@ quirks:
 
 - [x]   (2026 01 10):   limit framerate
 - [x]   (2025 12 19):   add camera look-at
-- [ ]   (          ):   fix double press for windows
 - [x]   (2025 10 13):   fix chunk queue sort
 - [x]   (2025 10 09):   make the chunk generation count per frame
 - [x]   (2025 11 XX):   make mem_map() for windows
@@ -49,9 +54,5 @@ quirks:
 - [x]   (2025 12 09):   fix overhead from function 'chunk_tab_shift()'
 - [x]   (2026 06 23):   possibly fix overhead from bubble-sorting in function
                         `chunk_order_init()`
-- [ ]   (          ):   put blocks in a contiguous array and bind it all to an
-                        SSBO, and bind chunk pointers to their addresses
-- [ ]   (          ):   fix segfault when allocating smaller than 256 bytes for
-                        'size' parameter of function 'mem_alloc_buf()'
 - [x]   (2026 07 01):   fix that "`chunk_buf` Full" rare bug, and find out why
                         it happen

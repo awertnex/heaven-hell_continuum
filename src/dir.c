@@ -2,7 +2,6 @@
 #include "deps/fossil/common/session.h"
 #include "deps/fossil/engine/engine.h"
 #include "deps/fossil/logger/logger.h"
-#include "deps/fossil/memory/memory.h"
 
 #include "deps/fossil/h/dir.h"
 
@@ -43,15 +42,17 @@ u32 game_init(void)
     snprintf(DIR_WORLD[DIR_WORLD_PLAYER], FSL_ID_CAP, "%s", GAME_DIR_WORLD_NAME_PLAYER);
 
     LOGTRACE(FSL_FLAG_LOG_CMD,
-            fsl_logger_stringf("Creating Main Directories '%s'..\n", FSL_SESSION.bin_root));
+            fsl_logger_stringf("Checking/Building Main Directories '%s'..\n", FSL_SESSION.bin_root));
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
+    {
         if (fsl_is_dir_exists(DIR_ROOT[i], FALSE) != FSL_ERR_SUCCESS)
         {
             fsl_make_dir(DIR_ROOT[i]);
             if (*GAME_ERR != FSL_ERR_SUCCESS && *GAME_ERR != FSL_ERR_DIR_EXISTS)
                 return *GAME_ERR;
         }
+    }
 
     LOGTRACE(FSL_FLAG_LOG_CMD,
             fsl_logger_stringf("Main Directory Created '%s'\n", FSL_SESSION.bin_root));
