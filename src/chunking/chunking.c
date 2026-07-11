@@ -421,8 +421,8 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     v3i32 DELTA = {0};
     u8 AXIS = 0;
     i8 INCREMENT = 0;
-    v3f32 DISTANCE = {0};
-    u32 RENDER_DISTANCE = 0;
+    v3i32 DISTANCE = {0};
+    i32 RENDER_DISTANCE = 0;
     v3u32 chunk_tab_coordinates = {0};
 
     if (settings.flag.render_distance_dirty)
@@ -462,7 +462,7 @@ chunk_tab_shift:
     DISTANCE.z = DELTA.z;
     RENDER_DISTANCE = chunk_sphere_radius_get_internal(settings.render_distance);
 
-    if ((u32)fsl_len_v3f32(DISTANCE) > RENDER_DISTANCE)
+    if (fsl_len_v3i32(DISTANCE) > RENDER_DISTANCE)
     {
         chunk_buf_dump_internal();
         *player_chunk_delta = player_chunk;
