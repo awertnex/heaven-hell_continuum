@@ -133,8 +133,8 @@ u32 chunks_max_init_internal(void)
     u32 i = 0;
     u32 j = 0;
     u32 chunk_sphere_radius = 0;
-    v3i32 center = {0};
-    v3i32 coordinates = {0};
+    v3u32 center = {0};
+    v3u32 coordinates = {0};
     u32 chunk_buf_diameter = 0;
     u32 chunk_buf_volume = 0;
     u32 chunk_count = 0;
@@ -162,7 +162,7 @@ u32 chunks_max_init_internal(void)
             coordinates.x = j % chunk_buf_diameter;
             coordinates.y = (j / chunk_buf_diameter) % chunk_buf_diameter;
             coordinates.z = j / (chunk_buf_diameter * chunk_buf_diameter);
-            if (fsl_distance_v3i32(coordinates, center) < chunk_sphere_radius)
+            if (fsl_distance_v3u32(coordinates, center) < chunk_sphere_radius)
                 ++chunk_count;
         }
         chunk_order.len[i] = chunk_count;
@@ -237,13 +237,13 @@ u32 chunk_order_build_internal(void)
     v3i8 *pos_buf = NULL;
     v3i8 *data_buf = NULL;
 
-    v3i32 center =
+    v3u32 center =
     {
         CHUNK_BUF_RADIUS_MAX,
         CHUNK_BUF_RADIUS_MAX,
         CHUNK_BUF_RADIUS_MAX
     };
-    v3i32 pos = {0};
+    v3u32 pos = {0};
     u32 chunk_count = 0;
     u32 i = 0;
 
@@ -274,7 +274,7 @@ u32 chunk_order_build_internal(void)
         {
             for (pos.x = 0; pos.x < CHUNK_BUF_DIAMETER_MAX; ++pos.x)
             {
-                distance_cache = fsl_distance_v3i32(pos, center);
+                distance_cache = fsl_distance_v3u32(pos, center);
                 if (distance_cache < buckets_max)
                 {
                     ++bucket_buf[distance_cache].len;
@@ -993,8 +993,8 @@ u32 chunk_sphere_radius_get_internal(u32 radius)
 void chunk_pos_set_internal(hhc_chunk *chunk,
         v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
 {
-    v3i32 center = {0};
-    v3i32 pos = {0};
+    v3u32 center = {0};
+    v3u32 pos = {0};
     v3f32 chunk_pos = {0};
 
     center.x = settings.render_distance;
@@ -1017,7 +1017,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk,
         chunk_tab_coordinates.x +
         chunk_tab_coordinates.y * settings.chunk_buf_diameter +
         chunk_tab_coordinates.z * settings.chunk_buf_layer;
-    chunk->cpi = fsl_distance_v3i32(pos, center);
+    chunk->cpi = fsl_distance_v3u32(pos, center);
 
     chunk->id =
         (u64)(chunk->pos_wrap.x & 0xffff) << 0x00 |

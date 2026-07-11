@@ -4,14 +4,15 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/assets/asset_types.h"
 #include "deps/fossil/memory/memory_types.h"
+#include "deps/fossil/physics/physics_types.h"
 
 #include "common.h"
 
 /* ---- section: definitions ------------------------------------------------ */
 
-#define FRICTION_BLOCK_SLIPPERY 0.02f
-#define FRICTION_BLOCK_WET      0.1f
-#define FRICTION_BLOCK_HARD     0.6f
+#define FRICTION_BLOCK_SLIPPERY 0.02
+#define FRICTION_BLOCK_WET      0.1
+#define FRICTION_BLOCK_HARD     0.6
 
 enum shader_index
 {
@@ -104,7 +105,7 @@ typedef struct hhc_block
     fsl_asset asset;
     u32 texture_index[6]; /* px, nx, py, ny, pz, nz */
     enum block_state state;
-    f32 friction;
+    fsl_physics_material physics_material;
 } hhc_block;
 
 /* ---- section: declarations ----------------------------------------------- */

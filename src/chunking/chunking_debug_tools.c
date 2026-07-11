@@ -131,9 +131,9 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     v3f32 camera_position = {0};
 
     transform = camera->projection.projection;
-    transform = fsl_matrix_multiply(camera->projection.orientation, transform);
-    transform = fsl_matrix_multiply(camera->projection.rotation, transform);
-    transform = fsl_matrix_multiply(camera->projection.target, transform);
+    transform = fsl_multiply_m4f32(camera->projection.orientation, transform);
+    transform = fsl_multiply_m4f32(camera->projection.rotation, transform);
+    transform = fsl_multiply_m4f32(camera->projection.target, transform);
 
     glUseProgram(shader_p[SHADER_GIZMO_CHUNK].asset.id);
 

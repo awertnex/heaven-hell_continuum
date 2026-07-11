@@ -10,21 +10,22 @@
 #include "raycast.h"
 #include "container.h"
 
-#define PLAYER_REACH_DISTANCE_MAX   5.0f
+#define PLAYER_REACH_DISTANCE_MAX   5.0
 
-#define PLAYER_EYE_HEIGHT           1.55f
-#define PLAYER_JUMP_HEIGHT          1.5f
-#define PLAYER_ACCELERATION_SNEAK   2.5f
-#define PLAYER_ACCELERATION_WALK    4.0f
-#define PLAYER_ACCELERATION_SPRINT  6.0f
-#define PLAYER_ACCELERATION_FLY     9.0f
-#define PLAYER_ACCELERATION_FLY_FAST 20.0f
-#define PLAYER_ACCELERATION_MAX     100.0f
-#define PLAYER_FRICTION_DEFAULT     1.0f
-#define PLAYER_FRICTION_FLY_NATURAL 1.0f
-#define PLAYER_FRICTION_FLYING      4.0f
-#define PLAYER_FRICTION_FLYING_V    13.0f
-#define PLAYER_COLLISION_DAMAGE_THRESHOLD 15.0f
+#define PLAYER_EYE_HEIGHT           1.55
+#define PLAYER_JUMP_HEIGHT          1.5
+#define PLAYER_ACCELERATION_SNEAK   0.6
+#define PLAYER_ACCELERATION_WALK    1.4
+#define PLAYER_ACCELERATION_SPRINT  2.2
+#define PLAYER_ACCELERATION_FLY     5.0
+#define PLAYER_ACCELERATION_FLY_FAST 16.0
+#define PLAYER_ACCELERATION_MAX     20.0
+#define PLAYER_DRAG_DEFAULT         40.0
+#define PLAYER_DRAG_FLY_NATURAL     5.0
+#define PLAYER_DRAG_FLYING          20.0
+#define PLAYER_DRAG_FLYING_V        30.0
+#define PLAYER_FRICTION_DEFAULT     0.0
+#define PLAYER_COLLISION_DAMAGE_THRESHOLD 15.0
 #define PLAYER_DEATH_STRING_CAP     128
 
 /* ---- strings: death ------------------------------------------------------ */
@@ -101,12 +102,19 @@ typedef enum hhc_player_menu_state
     STATE_PLAYER_MENU_COUNT
 } hhc_player_menu_state;
 
+enum entity_kinematics_index
+{
+    ENTITY_KINEMATICS_CONTROL,
+    ENTITY_KINEMATICS_ENV,
+    ENTITY_KINEMATICS_COUNT
+}; /* entity_kinematica_index */
+
 typedef struct hhc_player
 {
     str name[64];                   /* in-game name */
     u64 flag;                       /* enum @ref player_flag */
-    transform_v3f64 transform;
-    transform_v3f64 transform_last;
+    fsl_transform_v3f64 transform;
+    fsl_transform_v3f64 transform_last;
     v3f32 size;                     /* size (for collision detection) */
     v3f64 target;                   /* arm */
 
@@ -114,13 +122,13 @@ typedef struct hhc_player
     f32 eye_height;                 /* eye-level (camera height) */
     fsl_mesh mesh;
 
-    v3f32 input;                    /* raw user input */
-    v3f32 acceleration;
-    v3f32 velocity;
-    v3f32 friction;
-    f32 acceleration_rate;          /* scalar for `acceleration` */
-    f32 speed;                      /* derived from `velocity` */
-    f32 health;
+    fsl_physics_material physics_material;
+    fsl_physics_force force;        /* raw input signal */
+    f64 acceleration_rate;
+    fsl_kinematics kn_forces[ENTITY_KINEMATICS_COUNT]; /* forces kinematics */
+    fsl_kinematics kn;              /* final calculated kinematics */
+    fsl_collision_info collision_info;
+    f64 health;
 
     fsl_camera camera;
 
@@ -198,7 +206,7 @@ void player_bounding_box_update(hhc_player *p);
  *  @remark collision capsule position is in chunk-relative coordinates, not world
  *  coordinates.
  */
-fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f32 velocity);
+fsl_bounding_box make_collision_capsule(fsl_bounding_box b, v3i32 ch, v3f64 velocity);
 
 /*!
  *  @brief calculate camera rotations and mechanics based on `p->camera_mode`.

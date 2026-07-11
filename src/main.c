@@ -293,9 +293,9 @@ static void skybox_draw(void)
     skybox_data.moon_light.y = mid_night;
     skybox_data.moon_light.z = mid_night;
 
-    translation = fsl_matrix_unit();
-    rotation_yaw = fsl_matrix_unit();
-    rotation_pitch = fsl_matrix_unit();
+    translation = fsl_identity_m4f32();
+    rotation_yaw = fsl_identity_m4f32();
+    rotation_pitch = fsl_identity_m4f32();
 
     glUseProgram(shader_p[SHADER_SKYBOX].asset.id);
 
@@ -334,24 +334,24 @@ static void skybox_draw(void)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    translation = fsl_matrix_unit();
+    translation = fsl_identity_m4f32();
     translation.a41 = skybox_data.sun_rotation.x * 2.0f;
     translation.a42 = skybox_data.sun_rotation.y * 2.0f;
     translation.a43 = skybox_data.sun_rotation.z * 2.0f;
 
-    rotation_yaw = fsl_matrix_unit();
+    rotation_yaw = fsl_identity_m4f32();
     rotation_yaw.a11 = cosf(FSL_HALF_PI);
     rotation_yaw.a12 = -sinf(FSL_HALF_PI);
     rotation_yaw.a21 = sinf(FSL_HALF_PI);
     rotation_yaw.a22 = cosf(FSL_HALF_PI);
 
-    rotation_pitch = fsl_matrix_unit();
+    rotation_pitch = fsl_identity_m4f32();
     rotation_pitch.a11 = cosf(sun_angle);
     rotation_pitch.a13 = sinf(sun_angle);
     rotation_pitch.a31 = -sinf(sun_angle);
     rotation_pitch.a33 = cosf(sun_angle);
 
-    rotation_yaw = fsl_matrix_multiply(rotation_yaw, rotation_pitch);
+    rotation_yaw = fsl_multiply_m4f32(rotation_yaw, rotation_pitch);
 
     glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE, (GLfloat*)&translation);
     glUniformMatrix4fv(uniform.skybox.mat_sun_rotation, 1, GL_FALSE, (GLfloat*)&rotation_yaw);
@@ -371,19 +371,19 @@ static void skybox_draw(void)
 
     sun_angle = skybox_data.time * FSL_PI - FSL_HALF_PI;
 
-    rotation_yaw = fsl_matrix_unit();
+    rotation_yaw = fsl_identity_m4f32();
     rotation_yaw.a11 = cosf(FSL_HALF_PI);
     rotation_yaw.a22 = -sinf(FSL_HALF_PI);
     rotation_yaw.a11 = sinf(FSL_HALF_PI);
     rotation_yaw.a22 = cosf(FSL_HALF_PI);
 
-    rotation_pitch = fsl_matrix_unit();
+    rotation_pitch = fsl_identity_m4f32();
     rotation_pitch.a11 = cosf(sun_angle);
     rotation_pitch.a13 = sinf(sun_angle);
     rotation_pitch.a31 = -sinf(sun_angle);
     rotation_pitch.a33 = cosf(sun_angle);
 
-    rotation_yaw = fsl_matrix_multiply(rotation_yaw, rotation_pitch);
+    rotation_yaw = fsl_multiply_m4f32(rotation_yaw, rotation_pitch);
 
     glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE,
             (GLfloat*)&translation);
@@ -412,7 +412,7 @@ static void ui_hud_draw(void)
 
     if (fsl_on_time_interval(&refresh_interval.fps_string,
                 FSL_SEC2NSEC / SET_TEXT_REFRESH_INTERVAL, render->time))
-        settings.fps = 1 / ((f64)render->time_delta * FSL_NSEC2SEC);
+        settings.fps = 1 / render->time_delta_f;
 
     if (!core.flag.hud)
         return;
@@ -469,7 +469,7 @@ static void draw_world(void)
     i32 i = 0;
     f32 lerp_speed = 0.2f;
     f32 lerp_speed_toggle = 0.5f;
-    f32 k = 1.0f - (f64)render->time_delta * FSL_NSEC2SEC;
+    f32 k = 1.0f - render->time_delta_f;
 
     flashlight.pos.x = player.transform.pos.x - player.yaw.sin * 0.3f;
     flashlight.pos.y = player.transform.pos.y - player.yaw.cos * 0.3f;
@@ -570,9 +570,9 @@ static void draw_debug_gizmo_axis(void)
     m4f32 transform = {0};
 
     transform = player.camera_hud.projection.projection;
-    transform = fsl_matrix_multiply(player.camera_hud.projection.orientation, transform);
-    transform = fsl_matrix_multiply(player.camera_hud.projection.rotation, transform);
-    transform = fsl_matrix_multiply(player.camera_hud.projection.target, transform);
+    transform = fsl_multiply_m4f32(player.camera_hud.projection.orientation, transform);
+    transform = fsl_multiply_m4f32(player.camera_hud.projection.rotation, transform);
+    transform = fsl_multiply_m4f32(player.camera_hud.projection.target, transform);
 
     glUseProgram(shader_p[SHADER_GIZMO_AXIS].asset.id);
 
@@ -592,6 +592,7 @@ static void world_draw(void)
     fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
     fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_texture *texture_p = fsl_mem_handle_get(texture);
     hhc_block *blocks_p = fsl_mem_handle_get(blocks);
     fsl_asset_metadata metadata = {0};
     u32 block_id = 0;
@@ -611,6 +612,7 @@ static void world_draw(void)
     if (player.camera_mode != PLAYER_CAMERA_MODE_1ST_PERSON)
     {
         fsl_mesh_draw(&player.mesh, &player.camera,
+                texture_p[TEXTURE_SUN].asset.id,
                 player.transform.pos.x, player.transform.pos.y, player.transform.pos.z,
                 0.0f, 0.0f, player.transform.rot.z,
                 player.transform.scale.x, player.transform.scale.y, player.transform.scale.z);
@@ -757,9 +759,9 @@ static void world_draw(void)
                     floorf((f32)player.ch.y / CHUNK_REGION_DIAMETER),
                     floorf((f32)player.ch.z / CHUNK_REGION_DIAMETER),
                     player.transform.rot.y, player.transform.rot.z,
-                    player.acceleration.x, player.acceleration.y, player.acceleration.z,
-                    player.velocity.x, player.velocity.y, player.velocity.z,
-                    player.speed),
+                    player.kn.acceleration.x, player.kn.acceleration.y, player.kn.acceleration.z,
+                    player.kn.velocity.x, player.kn.velocity.y, player.kn.velocity.z,
+                    player.kn.speed),
                 SET_MARGIN, SET_MARGIN, 0, 0, 0,
                 COLOR_TEXT_DEFAULT);
 
