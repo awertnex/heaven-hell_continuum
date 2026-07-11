@@ -45,6 +45,7 @@ u32 world_init(str *name, u64 seed, hhc_player *p)
 
     core.flag.hud = TRUE;
     core.flag.world_loaded = TRUE;
+    core.debug.chunk_gizmo = TRUE;
     disable_cursor;
     center_cursor;
 

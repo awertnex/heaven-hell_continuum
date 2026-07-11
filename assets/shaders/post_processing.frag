@@ -7,6 +7,9 @@
 #define VIGNETTE_INTENSITY 0.2
 #define VIGNETTE_RICHNESS 2.0
 
+#define GRAIN_INTENSITY 0.1
+#define GRAIN_SATURATION 0.5
+
 #define COLOR_RICHNESS 0.6
 #define SATURATION 1.0
 
@@ -27,10 +30,6 @@ in vec2 vs_pos;
 in vec2 vs_uv;
 out vec4 color;
 const float kernel_scale = 1.0 / 64.0;
-
-/* ---- settings ------------------------------------------------------------ */
-
-float setting_grain_intensity = 0.2;
 
 /* ---- implementation ------------------------------------------------------ */
 
@@ -135,7 +134,7 @@ void main()
 
     /* ---- effects --------------------------------------------------------- */
 
-    vec3 grain = grain_get(vs_pos, time, setting_grain_intensity, 1.0);
+    vec3 grain = grain_get(vs_pos, time, GRAIN_INTENSITY, GRAIN_SATURATION);
     float ambient_occlusion = ambient_occlusion_get(texture_world_pos, texture_world_normal, vs_pos, vs_uv, 0.4);
 
     /* ---- final ----------------------------------------------------------- */
