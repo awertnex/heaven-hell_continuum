@@ -268,6 +268,6 @@ chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
  */
 chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
 
-void chunk_debug_chunk_gizmo_write_internal(hhc_chunk *chunk);
+void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */

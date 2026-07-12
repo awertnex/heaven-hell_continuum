@@ -611,9 +611,6 @@ chunk_tab_shift:
                 tail_index = *coordinate == *index_bound ? j : j + *index_offset;
                 is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
 
-                if (chunk_tab.p[target_index])
-                    chunk_debug_chunk_gizmo_write_internal(chunk_tab.p[target_index]);
-
                 chunk_tab.p[j] = chunk_tab.p[target_index];
                 if (chunk_tab.p[j])
                 {
