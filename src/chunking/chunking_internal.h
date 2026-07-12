@@ -50,16 +50,6 @@
 
 /* ---- section: chunk ------------------------------------------------------ */
 
-enum chunk_shift_state
-{
-    STATE_CHUNK_SHIFT_PX = 1,
-    STATE_CHUNK_SHIFT_NX = 2,
-    STATE_CHUNK_SHIFT_PY = 3,
-    STATE_CHUNK_SHIFT_NY = 4,
-    STATE_CHUNK_SHIFT_PZ = 5,
-    STATE_CHUNK_SHIFT_NZ = 6
-}; /* chunk_shift_state */
-
 /*!
  *  @brief chunk buffer, raw chunk data.
  */
