@@ -548,7 +548,7 @@ static void draw_world(void)
     for (i = chunk_order.chunks_max - 1; i >= 0; --i)
     {
         chunk = chunk_tab.p[chunk_order.p[i]];
-        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE)
+        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE && chunk->cgi == chunk_tab.gi)
         {
             glBindVertexArray(chunk->mesh_deprecated.vao);
             glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.vbo_len, 1);
@@ -837,7 +837,7 @@ static void world_draw(void)
                     chunk_sched.count,
                     chunk_order.chunks_max,
                     chunk_sched.cursor_pop, chunk_sched.cursor_push,
-                settings.render_distance),
+                    settings.render_distance),
                 render->size.x - SET_MARGIN, SET_MARGIN,
                 FSL_TEXT_ALIGN_RIGHT, 0, 0,
                 COLOR_TEXT_DEFAULT);

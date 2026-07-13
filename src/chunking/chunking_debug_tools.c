@@ -197,16 +197,15 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
     v3u32 chunk_pos = {0};
     v4u32 chunk_color = {0};
     u32 index = chunk_order.inv[chunk->cti];
-    u64 stride = sizeof(hhc_chunk_gizmo_entry);
 
     chunk_gizmo.p[index].color = 0;
     chunk_gizmo.p[index].offset = 0.1f;
 
-    if (chunk->flag & FLAG_CHUNK_VISIBLE)
-        chunk_gizmo.p[index].offset = 0.0f;
-
-    if (chunk->flag & FLAG_CHUNK_LOADED || chunk->flag & FLAG_CHUNK_VISIBLE)
+    if (chunk->flag & FLAG_CHUNK_LOADED)
     {
+        if (chunk->flag & FLAG_CHUNK_VISIBLE)
+            chunk_gizmo.p[index].offset = 0.0f;
+
         chunk_pos.x = chunk->cti % settings.chunk_buf_diameter;
         chunk_pos.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
         chunk_pos.z = chunk->cti / settings.chunk_buf_layer;
@@ -233,7 +232,7 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 void chunk_debug_chunk_gizmo_bake_internal(void)
 {
     static u64 bake_interval = 0;
-    u64 refresh_rate = FSL_SEC2NSEC / 20;
+    u64 refresh_rate = FSL_SEC2NSEC / 15;
 
     if (fsl_on_time_interval(&bake_interval, refresh_rate, render->time))
     {

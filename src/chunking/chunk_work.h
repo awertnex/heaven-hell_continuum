@@ -5,6 +5,7 @@
 #include "deps/fossil/common/limits.h"
 
 #define CHUNK_WORK_BUDGET_DEFAULT 100000000
+#define CHUNK_WORK_PAYCUT 0.5
 #define CHUNK_RECEIPT_LINE_CAP 36
 #define CHUNK_RECEIPT_CAP (CHUNK_RECEIPT_LINE_CAP * 32)
 
@@ -62,6 +63,6 @@ typedef enum chunk_work_cost_table
 } chunk_work_cost_table;
 
 void chunk_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi);
-void chunk_receipt_print(hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst);
+void chunk_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst);
 
 #endif /* HHC_CHUNK_WORK_H */

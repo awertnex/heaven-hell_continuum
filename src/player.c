@@ -261,11 +261,11 @@ void player_collision_update(hhc_player *p, f64 dt)
             {
                 for (x = START.x; x >= MIN.x && x < MAX.x; x += INCREMENT.x)
                 {
-                    ch = get_chunk_resolved(settings.chunk_tab_center, x, y, z);
+                    ch = chunk_resolved_get(settings.chunk_tab_center, x, y, z);
                     if (!ch || !(ch->flag & FLAG_CHUNK_GENERATED))
                         continue;
 
-                    block = get_block_resolved(ch, x, y, z);
+                    block = block_resolved_get(ch, x, y, z);
                     if (!block || !*block)
                         continue;
 

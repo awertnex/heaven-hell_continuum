@@ -309,6 +309,7 @@ void input_update(hhc_player *p)
 
         if (fsl_is_key_press(bind_zoom))
         {
+            chunk_tab_generation_change();
             p->flag |= FLAG_PLAYER_ZOOMER;
             LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
                     "Zoom Toggled On\n");

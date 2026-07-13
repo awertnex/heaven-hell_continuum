@@ -418,28 +418,8 @@ cleanup:
 
 void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hit)
 {
-    u32 index_bound_start = 0;
-    u32 index_bound_end = 0;
-    v3u32 index_offsets_positive = {0};
-    v3u32 index_offsets_negative = {0};
-    u32 *index_bound = NULL;
-    u32 *index_bound_inv = NULL;
-    u32 *index_offset = NULL;
-    u32 *index_offset_inv = NULL;
-    v3u32 mirror_indices = {0};
-    u32 *mirror_index = NULL;
-    u32 target_index = 0;
-    u32 tail_index = 0;
-    b8 is_on_edge = FALSE;
-    v3u32 i = {0};
-    u32 j = 0;
-    v4u32 start = {0};
-    u32 end = 0;
-    u32 *coordinate = NULL;
-    v3i32 DELTA = {0};
-    u8 AXIS = 0;
-    i8 INCREMENT = 0;
-    i32 RENDER_DISTANCE = 0;
+    v3i32 chunk_delta = {0};
+    i32 render_distance = 0;
 
     if (settings.flag.render_distance_dirty)
     {
@@ -449,204 +429,31 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
         chunk_order_load_internal(settings.render_distance);
     }
 
-    chunk_tab.index = get_chunk_index(player_chunk, hit.pos);
+    chunk_tab.index = chunk_index_get(player_chunk, hit.pos);
     chunk_receipt_print(&chunk_tab.p[settings.chunk_tab_center]->receipt,
             &chunk_tab.receipt_center);
 
     chunk_scheduler_update_internal();
     chunk_debug_chunk_gizmo_bake_internal();
 
-    DELTA.x = player_chunk.x - player_chunk_delta->x;
-    DELTA.y = player_chunk.y - player_chunk_delta->y;
-    DELTA.z = player_chunk.z - player_chunk_delta->z;
+    chunk_delta.x = player_chunk.x - player_chunk_delta->x;
+    chunk_delta.y = player_chunk.y - player_chunk_delta->y;
+    chunk_delta.z = player_chunk.z - player_chunk_delta->z;
 
-    if (!(DELTA.x || DELTA.y || DELTA.z))
+    if (!(chunk_delta.x || chunk_delta.y || chunk_delta.z))
         return;
 
-    RENDER_DISTANCE = chunk_sphere_radius_get_internal(settings.render_distance);
+    render_distance = chunk_sphere_radius_get_internal(settings.render_distance);
 
-chunk_tab_shift:
-
-    if (fsl_len_v3i32(DELTA) > RENDER_DISTANCE)
+    if (fsl_len_v3i32(chunk_delta) < render_distance)
+    {
+        chunk_tab_shift_internal(player_chunk, player_chunk_delta);
+    }
+    else
     {
         chunk_buf_dump_internal();
         *player_chunk_delta = player_chunk;
-        goto chunk_buf_push;
     }
-
-    if (DELTA.x > 0)
-    {
-        AXIS = 1;
-        INCREMENT = 1;
-        index_offset = &index_offsets_negative.x;
-        index_offset_inv = &index_offsets_positive.x;
-    }
-    else if (DELTA.x < 0)
-    {
-        AXIS = 1;
-        INCREMENT = -1;
-        index_offset = &index_offsets_positive.x;
-        index_offset_inv = &index_offsets_negative.x;
-    }
-    else if (DELTA.y > 0)
-    {
-        AXIS = 2;
-        INCREMENT = 1;
-        index_offset = &index_offsets_negative.y;
-        index_offset_inv = &index_offsets_positive.y;
-    }
-    else if (DELTA.y < 0)
-    {
-        AXIS = 2;
-        INCREMENT = -1;
-        index_offset = &index_offsets_positive.y;
-        index_offset_inv = &index_offsets_negative.y;
-    }
-    else if (DELTA.z > 0)
-    {
-        AXIS = 3;
-        INCREMENT = 1;
-        index_offset = &index_offsets_negative.z;
-        index_offset_inv = &index_offsets_positive.z;
-    }
-    else if (DELTA.z < 0)
-    {
-        AXIS = 3;
-        INCREMENT = -1;
-        index_offset = &index_offsets_positive.z;
-        index_offset_inv = &index_offsets_negative.z;
-    }
-
-    index_bound_start = 0;
-    index_bound_end = settings.chunk_buf_diameter - 1;
-    index_offsets_positive.x = 1;
-    index_offsets_positive.y = settings.chunk_buf_diameter;
-    index_offsets_positive.z = settings.chunk_buf_layer;
-    index_offsets_negative.x = -1;
-    index_offsets_negative.y = -settings.chunk_buf_diameter;
-    index_offsets_negative.z = -settings.chunk_buf_layer;
-    end = settings.chunk_buf_diameter;
-
-    switch (AXIS)
-    {
-        case 1:
-            DELTA.x -= INCREMENT;
-            player_chunk_delta->x += INCREMENT;
-            mirror_index = &mirror_indices.x;
-            coordinate = &i.x;
-            break;
-
-        case 2:
-            DELTA.y -= INCREMENT;
-            player_chunk_delta->y += INCREMENT;
-            mirror_index = &mirror_indices.y;
-            coordinate = &i.y;
-            break;
-
-        case 3:
-            DELTA.z -= INCREMENT;
-            player_chunk_delta->z += INCREMENT;
-            mirror_index = &mirror_indices.z;
-            coordinate = &i.z;
-            break;
-
-        default:
-            goto chunk_buf_push;
-    }
-
-    switch (INCREMENT)
-    {
-        case -1:
-            index_bound = &index_bound_end;
-            index_bound_inv = &index_bound_start;
-            start.x = settings.chunk_buf_diameter - 1;
-            start.y = settings.chunk_buf_diameter - 1;
-            start.z = settings.chunk_buf_diameter - 1;
-            start.w = settings.chunk_buf_volume - 1;
-            break;
-
-        case 1:
-            index_bound = &index_bound_start;
-            index_bound_inv = &index_bound_end;
-            start.x = 0;
-            start.y = 0;
-            start.z = 0;
-            start.w = 0;
-            break;
-    }
-
-    /* ---- mark chunks on-edge --------------------------------------------- */
-
-    j = 0;
-    for (i.z = 0; i.z < end; ++i.z)
-    {
-        for (i.y = 0; i.y < end; ++i.y)
-        {
-            for (i.x = 0; i.x < end; ++i.x, ++j)
-            {
-                if (!chunk_tab.p[j])
-                    continue;
-
-                is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
-                if (is_on_edge)
-                {
-                    mirror_indices.x = j + settings.chunk_buf_diameter - 1 - i.x * 2;
-                    mirror_indices.y = i.z * settings.chunk_buf_layer +
-                        (settings.chunk_buf_diameter - 1 - i.y) * settings.chunk_buf_diameter + i.x;
-                    mirror_indices.z = (settings.chunk_buf_diameter - 1 - i.z) * settings.chunk_buf_layer +
-                        i.y * settings.chunk_buf_diameter + i.x;
-
-                    chunk_tab.p[j]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_VISIBLE);
-                    chunk_tab.p[j]->color = 0;
-                    if (chunk_tab.p[*mirror_index])
-                        chunk_tab.p[*mirror_index]->flag |= FLAG_CHUNK_EDGE;
-                }
-            }
-        }
-    }
-
-    /* ---- shift `chunk_tab` ----------------------------------------------- */
-
-    j = start.w;
-    for (i.z = start.z; i.z < end; i.z += INCREMENT)
-    {
-        for (i.y = start.y; i.y < end; i.y += INCREMENT)
-        {
-            for (i.x = start.x; i.x < end; i.x += INCREMENT, j += INCREMENT)
-            {
-                if (!chunk_tab.p[j])
-                    continue;
-
-                target_index = *coordinate == *index_bound_inv ? j : j + *index_offset_inv;
-                tail_index = *coordinate == *index_bound ? j : j + *index_offset;
-                is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
-
-                chunk_tab.p[j] = chunk_tab.p[target_index];
-                if (chunk_tab.p[j])
-                {
-                    chunk_pos_set_internal(chunk_tab.p[j], *player_chunk_delta, i);
-
-                    if (chunk_tab.p[j]->flag & FLAG_CHUNK_EDGE)
-                    {
-                        chunk_tab.p[j]->flag &= ~FLAG_CHUNK_EDGE;
-                        chunk_tab.p[target_index] = NULL;
-                    }
-
-                    chunk_debug_chunk_gizmo_write_internal(chunk_tab.p[j]);
-                }
-            }
-        }
-    }
-
-    if (DELTA.x || DELTA.y || DELTA.z)
-    {
-        DELTA.x = player_chunk.x - player_chunk_delta->x;
-        DELTA.y = player_chunk.y - player_chunk_delta->y;
-        DELTA.z = player_chunk.z - player_chunk_delta->z;
-        goto chunk_tab_shift;
-    }
-
-chunk_buf_push:
 
     chunk_buf_update_internal(player_chunk_delta);
 }
@@ -984,13 +791,54 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
     }
 }
 
+u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
+{
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+    return &chunk->block[z][y][x];
+}
+
+hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z)
+{
+    x = (i32)floorf((f32)x / CHUNK_DIAMETER);
+    y = (i32)floorf((f32)y / CHUNK_DIAMETER);
+    z = (i32)floorf((f32)z / CHUNK_DIAMETER);
+    return chunk_tab.p[index + x +
+        y * settings.chunk_buf_diameter +
+        z * settings.chunk_buf_layer];
+}
+
+u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos)
+{
+    v3i32 offset = {0};
+    u32 index = 0;
+
+    offset.x = pos.x / CHUNK_DIAMETER - chunk_pos.x + settings.chunk_buf_radius,
+    offset.y = pos.y / CHUNK_DIAMETER - chunk_pos.y + settings.chunk_buf_radius,
+    offset.z = pos.z / CHUNK_DIAMETER - chunk_pos.z + settings.chunk_buf_radius,
+    index =
+        offset.x +
+        offset.y * settings.chunk_buf_diameter +
+        offset.z * settings.chunk_buf_layer;
+
+    if (index >= settings.chunk_buf_volume)
+        return settings.chunk_tab_center;
+    return index;
+}
+
+void chunk_tab_generation_change(void)
+{
+    ++chunk_tab.gi;
+    chunk_buf.cursor = 0;
+}
+
 u32 chunk_sphere_radius_get_internal(u32 radius)
 {
     return radius ? radius * radius + 2 : 0;
 }
 
-void chunk_pos_set_internal(hhc_chunk *chunk,
-        v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
+void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
 {
     v3u32 center = {0};
     v3f32 chunk_pos = {0};
@@ -1437,7 +1285,8 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 
     do
     {
-        if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED))
+        if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED) ||
+                chunk_buf.p[chunk_buf.cursor].cgi != chunk_tab.gi)
         {
             chunk = &chunk_buf.p[chunk_buf.cursor];
             if (chunk->mesh_deprecated.initialized)
@@ -1450,6 +1299,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             *chunk = nochunk;
 
             chunk_pos_set_internal(chunk, player_chunk_delta, chunk_tab_coordinates);
+            chunk->cgi = chunk_tab.gi;
 
             chunk->color = CHUNK_GIZMO_COLOR_LOADED;
 
@@ -1516,7 +1366,6 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
 
 void chunk_buf_dump_internal(void)
 {
-    hhc_chunk **chunk = NULL;
     u32 i = 0;
     u32 end = chunk_order.chunks_max;
 
@@ -1525,12 +1374,217 @@ void chunk_buf_dump_internal(void)
 
     for (; i < end; ++i)
     {
-        chunk = &chunk_tab.p[chunk_order.p[i]];
-        if (*chunk)
-            chunk_buf_pop_internal(*chunk);
+        if (chunk_tab.p[chunk_order.p[i]])
+        {
+            chunk_tab.p[chunk_order.p[i]]->flag = 0;
+            chunk_tab.p[chunk_order.p[i]] = NULL;
+        }
     }
 
-    chunk_sched.priority = 0;
+    chunk_buf.cursor = 0;
+}
+
+void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta)
+{
+    u32 index_bound_start = 0;
+    u32 index_bound_end = 0;
+    v3u32 index_offsets_positive = {0};
+    v3u32 index_offsets_negative = {0};
+    u32 *index_bound = NULL;
+    u32 *index_bound_inv = NULL;
+    u32 *index_offset = NULL;
+    u32 *index_offset_inv = NULL;
+    v3u32 mirror_indices = {0};
+    u32 *mirror_index = NULL;
+    u32 target_index = 0;
+    u32 tail_index = 0;
+    b8 is_on_edge = FALSE;
+    v3u32 i = {0};
+    u32 j = 0;
+    v4u32 start = {0};
+    u32 end = 0;
+    u32 *coordinate = NULL;
+    v3i32 DELTA = {0};
+    u8 AXIS = 0;
+    i8 INCREMENT = 0;
+
+    index_bound_start = 0;
+    index_bound_end = settings.chunk_buf_diameter - 1;
+    index_offsets_positive.x = 1;
+    index_offsets_positive.y = settings.chunk_buf_diameter;
+    index_offsets_positive.z = settings.chunk_buf_layer;
+    index_offsets_negative.x = -1;
+    index_offsets_negative.y = -settings.chunk_buf_diameter;
+    index_offsets_negative.z = -settings.chunk_buf_layer;
+    end = settings.chunk_buf_diameter;
+
+shift_whichever_axis_that_needs_shifting:
+
+    DELTA.x = player_chunk.x - player_chunk_delta->x;
+    DELTA.y = player_chunk.y - player_chunk_delta->y;
+    DELTA.z = player_chunk.z - player_chunk_delta->z;
+
+    if (DELTA.x > 0)
+    {
+        AXIS = 1;
+        INCREMENT = 1;
+        index_offset = &index_offsets_negative.x;
+        index_offset_inv = &index_offsets_positive.x;
+    }
+    else if (DELTA.x < 0)
+    {
+        AXIS = 1;
+        INCREMENT = -1;
+        index_offset = &index_offsets_positive.x;
+        index_offset_inv = &index_offsets_negative.x;
+    }
+    else if (DELTA.y > 0)
+    {
+        AXIS = 2;
+        INCREMENT = 1;
+        index_offset = &index_offsets_negative.y;
+        index_offset_inv = &index_offsets_positive.y;
+    }
+    else if (DELTA.y < 0)
+    {
+        AXIS = 2;
+        INCREMENT = -1;
+        index_offset = &index_offsets_positive.y;
+        index_offset_inv = &index_offsets_negative.y;
+    }
+    else if (DELTA.z > 0)
+    {
+        AXIS = 3;
+        INCREMENT = 1;
+        index_offset = &index_offsets_negative.z;
+        index_offset_inv = &index_offsets_positive.z;
+    }
+    else if (DELTA.z < 0)
+    {
+        AXIS = 3;
+        INCREMENT = -1;
+        index_offset = &index_offsets_positive.z;
+        index_offset_inv = &index_offsets_negative.z;
+    }
+
+    switch (AXIS)
+    {
+        case 1:
+            DELTA.x -= INCREMENT;
+            player_chunk_delta->x += INCREMENT;
+            mirror_index = &mirror_indices.x;
+            coordinate = &i.x;
+            break;
+
+        case 2:
+            DELTA.y -= INCREMENT;
+            player_chunk_delta->y += INCREMENT;
+            mirror_index = &mirror_indices.y;
+            coordinate = &i.y;
+            break;
+
+        case 3:
+            DELTA.z -= INCREMENT;
+            player_chunk_delta->z += INCREMENT;
+            mirror_index = &mirror_indices.z;
+            coordinate = &i.z;
+            break;
+
+        default:
+            *player_chunk_delta = player_chunk;
+            return;
+    }
+
+    switch (INCREMENT)
+    {
+        case -1:
+            index_bound = &index_bound_end;
+            index_bound_inv = &index_bound_start;
+            start.x = settings.chunk_buf_diameter - 1;
+            start.y = settings.chunk_buf_diameter - 1;
+            start.z = settings.chunk_buf_diameter - 1;
+            start.w = settings.chunk_buf_volume - 1;
+            break;
+
+        case 1:
+            index_bound = &index_bound_start;
+            index_bound_inv = &index_bound_end;
+            start.x = 0;
+            start.y = 0;
+            start.z = 0;
+            start.w = 0;
+            break;
+
+        default:
+            *player_chunk_delta = player_chunk;
+            return;
+    }
+
+    /* ---- mark chunks on-edge --------------------------------------------- */
+
+    j = 0;
+    for (i.z = 0; i.z < end; ++i.z)
+    {
+        for (i.y = 0; i.y < end; ++i.y)
+        {
+            for (i.x = 0; i.x < end; ++i.x, ++j)
+            {
+                if (!chunk_tab.p[j])
+                    continue;
+
+                is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
+                if (is_on_edge)
+                {
+                    mirror_indices.x = j + settings.chunk_buf_diameter - 1 - i.x * 2;
+                    mirror_indices.y = i.z * settings.chunk_buf_layer +
+                        (settings.chunk_buf_diameter - 1 - i.y) * settings.chunk_buf_diameter + i.x;
+                    mirror_indices.z = (settings.chunk_buf_diameter - 1 - i.z) * settings.chunk_buf_layer +
+                        i.y * settings.chunk_buf_diameter + i.x;
+
+                    chunk_tab.p[j]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_VISIBLE);
+                    chunk_tab.p[j]->color = 0;
+                    if (chunk_tab.p[*mirror_index])
+                        chunk_tab.p[*mirror_index]->flag |= FLAG_CHUNK_EDGE;
+                }
+            }
+        }
+    }
+
+    /* ---- shift `chunk_tab` ----------------------------------------------- */
+
+    j = start.w;
+    for (i.z = start.z; i.z < end; i.z += INCREMENT)
+    {
+        for (i.y = start.y; i.y < end; i.y += INCREMENT)
+        {
+            for (i.x = start.x; i.x < end; i.x += INCREMENT, j += INCREMENT)
+            {
+                if (!chunk_tab.p[j])
+                    continue;
+
+                target_index = *coordinate == *index_bound_inv ? j : j + *index_offset_inv;
+                tail_index = *coordinate == *index_bound ? j : j + *index_offset;
+                is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
+
+                chunk_tab.p[j] = chunk_tab.p[target_index];
+                if (chunk_tab.p[j])
+                {
+                    chunk_pos_set_internal(chunk_tab.p[j], *player_chunk_delta, i);
+
+                    if (chunk_tab.p[j]->flag & FLAG_CHUNK_EDGE)
+                    {
+                        chunk_tab.p[j]->flag &= ~FLAG_CHUNK_EDGE;
+                        chunk_tab.p[target_index] = NULL;
+                    }
+
+                    chunk_debug_chunk_gizmo_write_internal(chunk_tab.p[j]);
+                }
+            }
+        }
+    }
+
+    if (DELTA.x || DELTA.y || DELTA.z)
+        goto shift_whichever_axis_that_needs_shifting;
 }
 
 void chunk_scheduler_update_internal(void)
@@ -1574,7 +1628,7 @@ pop:
     end = chunk_sched.buckets_max;
     for (i = 0; i < end && chunk_sched.count && budget > 0; ++i)
     {
-        bucket = &chunk_sched.bucket[chunk_sched.priority];
+        bucket = &chunk_sched.bucket[i];
 
         if (bucket->count)
         {
@@ -1583,7 +1637,7 @@ pop:
             {
                 chunk = chunk_sched.p[bucket->pop];
 
-                if (chunk->cpi != chunk_sched.priority ||
+                if (chunk->cpi != i ||
                         !(chunk->flag & FLAG_CHUNK_QUEUED))
                 {
                     chunk->flag &= ~FLAG_CHUNK_QUEUED;
@@ -1623,15 +1677,7 @@ pop:
                 budget -= receipt.total;
                 receipt = noreceipt;
             } while (bucket->pop != bucket->push && bucket->count && budget > 0);
-
-            if (chunk->cpi > chunk_sched.priority)
-                continue;
         }
-
-        ++chunk_sched.priority;
-        if (chunk_sched.priority >= chunk_sched.buckets_max)
-            chunk_sched.priority = 0;
-        continue;
     }
 }
 
@@ -1646,8 +1692,6 @@ chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
     ++bucket->push;
     if (bucket->push >= bucket_end)
         bucket->push = bucket->pos;
-    if (chunk->cpi < chunk_sched.priority)
-        chunk_sched.priority = chunk->cpi;
     return CHUNK_WORK_COST_PUSH;
 }
 
@@ -1663,40 +1707,4 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
     if (bucket->pop >= bucket_end)
         bucket->pop = bucket->pos;
     return CHUNK_WORK_COST_POP;
-}
-
-u32 *get_block_resolved(hhc_chunk *chunk, i32 x, i32 y, i32 z)
-{
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
-    return &chunk->block[z][y][x];
-}
-
-hhc_chunk *get_chunk_resolved(u32 index, i32 x, i32 y, i32 z)
-{
-    x = (i32)floorf((f32)x / CHUNK_DIAMETER);
-    y = (i32)floorf((f32)y / CHUNK_DIAMETER);
-    z = (i32)floorf((f32)z / CHUNK_DIAMETER);
-    return chunk_tab.p[index + x +
-        y * settings.chunk_buf_diameter +
-        z * settings.chunk_buf_layer];
-}
-
-u32 get_chunk_index(v3i32 chunk_pos, v3i64 pos)
-{
-    v3i32 offset = {0};
-    u32 index = 0;
-
-    offset.x = pos.x / CHUNK_DIAMETER - chunk_pos.x + settings.chunk_buf_radius,
-    offset.y = pos.y / CHUNK_DIAMETER - chunk_pos.y + settings.chunk_buf_radius,
-    offset.z = pos.z / CHUNK_DIAMETER - chunk_pos.z + settings.chunk_buf_radius,
-    index =
-        offset.x +
-        offset.y * settings.chunk_buf_diameter +
-        offset.z * settings.chunk_buf_layer;
-
-    if (index >= settings.chunk_buf_volume)
-        return settings.chunk_tab_center;
-    return index;
 }
