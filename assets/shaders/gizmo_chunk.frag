@@ -12,9 +12,6 @@ out vec4 color;
 
 void main()
 {
-    if (chunk_color.a <= 0.0)
-        discard;
-
     vec3 light_position = camera_position.xyz * camera_distance;
 
     float distance = inversesqrt(length(vertex_position - light_position));

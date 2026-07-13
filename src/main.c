@@ -64,6 +64,7 @@ static struct /* skybox_data */
 static struct /* refresh_interval */
 {
     u64 fps_string;
+    u64 chunk_gizmo_bake;
 } refresh_interval = {0};
 
 static void callback_framebuffer_size(i32 size_x, i32 size_y);

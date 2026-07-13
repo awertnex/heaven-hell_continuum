@@ -160,13 +160,12 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
     m4f32 mat_transform = {0};
     m4f32 mat_offset = {0};
-    f32 gizmo_scale = 150.0f;
 
     mat_offset.a11 = 1.0f;
     mat_offset.a22 = 1.0f;
     mat_offset.a33 = 1.0f;
-    mat_offset.a41 = ((f32)render->size.x - gizmo_scale * 2.0f) / render->size.x;
-    mat_offset.a42 = ((f32)render->size.y - gizmo_scale * 2.0f) / render->size.y;
+    mat_offset.a41 = ((f32)render->size.x - CHUNK_GIZMO_SCALE * 2.0f) / render->size.x;
+    mat_offset.a42 = ((f32)render->size.y - CHUNK_GIZMO_SCALE * 2.0f) / render->size.y;
     mat_offset.a44 = 1.0f;
 
     mat_transform = camera->projection.target;
@@ -208,7 +207,6 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 
     if (chunk->flag & FLAG_CHUNK_LOADED || chunk->flag & FLAG_CHUNK_VISIBLE)
     {
-
         chunk_pos.x = chunk->cti % settings.chunk_buf_diameter;
         chunk_pos.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
         chunk_pos.z = chunk->cti / settings.chunk_buf_layer;
@@ -234,10 +232,16 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 
 void chunk_debug_chunk_gizmo_bake_internal(void)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo.data_buf);
-    glBufferData(GL_ARRAY_BUFFER, chunk_order.chunks_max * sizeof(hhc_chunk_gizmo_entry),
-            chunk_gizmo.p, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    static u64 bake_interval = 0;
+    u64 refresh_rate = FSL_SEC2NSEC / 20;
+
+    if (fsl_on_time_interval(&bake_interval, refresh_rate, render->time))
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo.data_buf);
+        glBufferData(GL_ARRAY_BUFFER, chunk_order.chunks_max * sizeof(hhc_chunk_gizmo_entry),
+                chunk_gizmo.p, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
 }
 
 void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera)

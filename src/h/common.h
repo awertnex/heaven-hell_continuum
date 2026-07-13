@@ -7,7 +7,7 @@
 #define SET_CAMERA_DISTANCE_MAX         4.0f
 #define SET_DAY_TICKS_MAX               24000
 #define SET_RENDER_DISTANCE_DEFAULT     6
-#define SET_RENDER_DISTANCE_MIN         2
+#define SET_RENDER_DISTANCE_MIN         1
 #define SET_RENDER_DISTANCE_MAX         32
 #define SET_FOV_DEFAULT                 70
 #define SET_FOV_MIN                     30

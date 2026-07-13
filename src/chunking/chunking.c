@@ -1426,7 +1426,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
     hhc_chunk nochunk = {0};
     v3u32 chunk_tab_coordinates = {0};
     hhc_chunk *chunk = NULL;
-    v3u64 seed;
+    v3u64 seed = {0};
     v3u8 color_variant;
     u32 end = chunk_buf.cursor;
     b8 pushed = FALSE;
