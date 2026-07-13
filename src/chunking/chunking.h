@@ -159,12 +159,6 @@ typedef struct hhc_chunk
      */
     u32 cpi;
 
-    /*!
-     *  @brief chunk's generational index (Chunk Generation Index), it's chunk's
-     *  current @ref chunk_buf.gi generation.
-     */
-    u32 cgi;
-
     hhc_chunk_mesh mesh_deprecated;
 
     /*!
@@ -193,12 +187,6 @@ typedef struct hhc_chunk_table
 {
     fsl_mem_handle handle;
     hhc_chunk **p; /* cached pointer from `handle` */
-
-    /*!
-     *  @brief chunk table's generation index, for quick invalidation of chunk
-     *  entries that don't match the index.
-     */
-    u32 gi;
 
     /*!
      *  @brief player-relative `p` access.
@@ -319,6 +307,27 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 void chunking_free(void);
 
 /*!
+ *  @brief get chunk relative to position.
+ *
+ *  @remark this function breaks at render-distance of 1.
+ *
+ *  @return chunk at index if `x`, `y` and `z` are within chunk bounds and
+ *  return the correct neighboring chunk otherwise.
+ */
+hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z);
+
+/*!
+ *  @brief get index of chunk in @ref chunk_tab by world coordinates relative to chunk position.
+ *
+ *  @param chunk_pos chunk position in world coordinates.
+ *  @param pos block position in world coordinates.
+ *
+ *  @return index into global array @ref chunk_tab.
+ *  @return @ref settings.chunk_tab_center if index out of bounds.
+ */
+u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos);
+
+/*!
  *  @brief get first block pointed at by start point towards end point.
  *
  *  @param origin entity's origin point, used to get entity's current chunk.
@@ -341,28 +350,5 @@ void block_break(block_hit hit);
  *  return the correct block in the neighboring chunk otherwise.
  */
 u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z);
-
-/*!
- *  @brief get chunk relative to position.
- *
- *  @remark this function breaks at render-distance of 1.
- *
- *  @return chunk at index if `x`, `y` and `z` are within chunk bounds and
- *  return the correct neighboring chunk otherwise.
- */
-hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z);
-
-/*!
- *  @brief get index of chunk in @ref chunk_tab by world coordinates relative to chunk position.
- *
- *  @param chunk_pos chunk position in world coordinates.
- *  @param pos block position in world coordinates.
- *
- *  @return index into global array @ref chunk_tab.
- *  @return @ref settings.chunk_tab_center if index out of bounds.
- */
-u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos);
-
-void chunk_tab_generation_change(void);
 
 #endif /* HHC_CHUNKING_H */

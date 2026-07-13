@@ -172,25 +172,6 @@ u32 chunk_debug_init_internal(fsl_len chunk_count);
 void chunk_debug_free_internal(void);
 
 /*!
- *  @brief get block faces based on neighboring blocks.
- *
- *  @return block with modified faces.
- */
-u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
-
-void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
-        enum block_id block_id);
-
-void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
-
-/*!
- *  @brief execute block logic on the block based on its ID (e.g., make grass
- *  turn to dirt when under another block).
- */
-void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z, enum block_id block_id);
-
-/*!
  *  @brief get radius of sphere squared as per internal conventions.
  */
 u32 chunk_sphere_radius_get_internal(u32 radius);
@@ -276,5 +257,24 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk);
  *  @brief upload entire chunk gizmo buffer to VRAM.
  */
 void chunk_debug_chunk_gizmo_bake_internal(void);
+
+/*!
+ *  @brief get block faces based on neighboring blocks.
+ *
+ *  @return block with modified faces.
+ */
+u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+
+void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
+        enum block_id block_id);
+
+void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+
+/*!
+ *  @brief execute block logic on the block based on its ID (e.g., make grass
+ *  turn to dirt when under another block).
+ */
+void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z, enum block_id block_id);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */

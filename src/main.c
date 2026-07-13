@@ -548,7 +548,7 @@ static void draw_world(void)
     for (i = chunk_order.chunks_max - 1; i >= 0; --i)
     {
         chunk = chunk_tab.p[chunk_order.p[i]];
-        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE && chunk->cgi == chunk_tab.gi)
+        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE)
         {
             glBindVertexArray(chunk->mesh_deprecated.vao);
             glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.vbo_len, 1);

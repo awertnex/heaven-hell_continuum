@@ -40,7 +40,7 @@ hhc_chunk_order chunk_order = {0};
 hhc_chunk_scheduler chunk_sched = {0};
 static hhc_chunk_sampler chunk_sampler = {0};
 
-/* ---- section: implementation --------------------------------------------- */
+/* ---- section: implementation: chunk -------------------------------------- */
 
 u32 chunking_init(v3i32 *player_chunk_delta)
 {
@@ -477,328 +477,6 @@ void chunking_free(void)
             "chunking_free().memory_arena_chunking_internal");
 }
 
-u32 block_get_faces_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
-{
-    hhc_chunk_neighbors *cn = chunk_neighbors;
-
-    u32 block = GET_BLOCK_ID(cn->ch->block[z][y][x]);
-
-    if (x == CHUNK_DIAMETER - 1)
-    {
-        if (!cn->px || !cn->px->block[z][y][0])
-            block |= FLAG_BLOCK_FACE_PX;
-    }
-    else if (!cn->ch->block[z][y][x + 1])
-        block |= FLAG_BLOCK_FACE_PX;
-
-    if (x == 0)
-    {
-        if (!cn->nx || !cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-            block |= FLAG_BLOCK_FACE_NX;
-    }
-    else if (!cn->ch->block[z][y][x - 1])
-        block |= FLAG_BLOCK_FACE_NX;
-
-    if (y == CHUNK_DIAMETER - 1)
-    {
-        if (!cn->py || !cn->py->block[z][0][x])
-            block |= FLAG_BLOCK_FACE_PY;
-    }
-    else if (!cn->ch->block[z][y + 1][x])
-        block |= FLAG_BLOCK_FACE_PY;
-
-    if (y == 0)
-    {
-        if (!cn->ny || !cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-            block |= FLAG_BLOCK_FACE_NY;
-    }
-    else if (!cn->ch->block[z][y - 1][x])
-        block |= FLAG_BLOCK_FACE_NY;
-
-    if (z == CHUNK_DIAMETER - 1)
-    {
-        if (!cn->pz || !cn->pz->block[0][y][x])
-            block |= FLAG_BLOCK_FACE_PZ;
-    }
-    else if (!cn->ch->block[z + 1][y][x])
-        block |= FLAG_BLOCK_FACE_PZ;
-
-    if (z == 0)
-    {
-        if (!cn->nz || !cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-            block |= FLAG_BLOCK_FACE_NZ;
-    }
-    else if (!cn->ch->block[z - 1][y][x])
-        block |= FLAG_BLOCK_FACE_NZ;
-
-    return block;
-}
-
-block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
-        f64 end_x, f64 end_y, f64 end_z, f64 distance_max)
-{
-    block_hit hit = {0};
-    v3f64 delta = {0};
-    v3f64 direction = {0};
-    v3f64 distance = {0};
-    v3i32 step = {1, 1, 1};
-    hhc_chunk *chunk = NULL;
-    i32 x = 0;
-    i32 y = 0;
-    i32 z = 0;
-    i32 chx = 0;
-    i32 chy = 0;
-    i32 chz = 0;
-
-    direction.x = end_x - start_x;
-    direction.y = end_y - start_y;
-    direction.z = end_z - start_z;
-    direction = fsl_normalize_v3f64(direction);
-    delta.x = direction.x == 0.0 ? INFINITY : fabs(1.0 / direction.x);
-    delta.y = direction.y == 0.0 ? INFINITY : fabs(1.0 / direction.y);
-    delta.z = direction.z == 0.0 ? INFINITY : fabs(1.0 / direction.z);
-
-    hit.pos.x = (i64)floor(start_x);
-    hit.pos.y = (i64)floor(start_y);
-    hit.pos.z = (i64)floor(start_z);
-
-    if (direction.x < 0.0f)
-    {
-        distance.x = (start_x - hit.pos.x) * delta.x;
-        step.x = -1;
-    }
-    else distance.x = (hit.pos.x + 1.0 - start_x) * delta.x;
-
-    if (direction.y < 0.0f)
-    {
-        distance.y = (start_y - hit.pos.y) * delta.y;
-        step.y = -1;
-    }
-    else distance.y = (hit.pos.y + 1.0 - start_y) * delta.y;
-
-    if (direction.z < 0.0f)
-    {
-        distance.z = (start_z - hit.pos.z) * delta.z;
-        step.z = -1;
-    }
-    else distance.z = (hit.pos.z + 1.0 - start_z) * delta.z;
-
-    while (fsl_min_v3f64(distance) < distance_max)
-    {
-        switch (fsl_min_axis_v3f64(distance))
-        {
-            case 1:
-                hit.pos.x += step.x;
-                distance.x += delta.x;
-                hit.normal.x = -step.x;
-                hit.normal.y = 0.0;
-                hit.normal.z = 0.0;
-                break;
-
-            case 2:
-                hit.pos.y += step.y;
-                distance.y += delta.y;
-                hit.normal.x = 0.0;
-                hit.normal.y = -step.y;
-                hit.normal.z = 0.0;
-                break;
-
-            case 3:
-                hit.pos.z += step.z;
-                distance.z += delta.z;
-                hit.normal.x = 0.0;
-                hit.normal.y = 0.0;
-                hit.normal.z = -step.z;
-                break;
-        }
-
-        x = hit.pos.x - (i32)floorf((f32)origin.x / CHUNK_DIAMETER) * CHUNK_DIAMETER;
-        y = hit.pos.y - (i32)floorf((f32)origin.y / CHUNK_DIAMETER) * CHUNK_DIAMETER;
-        z = hit.pos.z - (i32)floorf((f32)origin.z / CHUNK_DIAMETER) * CHUNK_DIAMETER;
-
-        chx = floorf((f32)x / CHUNK_DIAMETER);
-        chy = floorf((f32)y / CHUNK_DIAMETER);
-        chz = floorf((f32)z / CHUNK_DIAMETER);
-        chunk = chunk_tab.p[settings.chunk_tab_center +
-            chx +
-            chy * settings.chunk_buf_diameter +
-            chz * settings.chunk_buf_layer];
-        if (!chunk || !(chunk->flag & FLAG_CHUNK_GENERATED))
-            continue;
-
-        x = fsl_mod_i32(x, CHUNK_DIAMETER);
-        y = fsl_mod_i32(y, CHUNK_DIAMETER);
-        z = fsl_mod_i32(z, CHUNK_DIAMETER);
-        if (!chunk->block[z][y][x])
-            continue;
-
-        hit.block = &chunk->block[z][y][x];
-        hit.hit = TRUE;
-        break;
-    }
-
-    return hit;
-}
-
-void block_place(block_hit hit, enum block_id block_id)
-{
-    u32 index = chunk_tab.index;
-    hhc_chunk_neighbors cn = {0};
-
-    if (!hit.hit || (hit.normal.x == 0.0f && hit.normal.y == 0.0f && hit.normal.z == 0.0f))
-        return;
-
-    /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
-
-    /* get block position at normal direction */
-    hit.pos.x += (i32)hit.normal.x;
-    hit.pos.y += (i32)hit.normal.y;
-    hit.pos.z += (i32)hit.normal.z;
-
-    /* get the chunk the new block index is in and make sure it's within bounds */
-    index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
-    index += (i32)floorf((f32)hit.pos.y / CHUNK_DIAMETER) * settings.chunk_buf_diameter;
-    index += (i32)floorf((f32)hit.pos.z / CHUNK_DIAMETER) * settings.chunk_buf_layer;
-    if (index >= settings.chunk_buf_volume)
-        return;
-
-    hit.pos.x = fsl_mod_i32(hit.pos.x, CHUNK_DIAMETER);
-    hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
-    hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
-
-    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
-    if (cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x] || !block_id)
-        return;
-
-    block_add_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z, block_id);
-}
-
-void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z, enum block_id block_id)
-{
-    hhc_chunk_neighbors *cn = chunk_neighbors;
-
-    cn->ch->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_NON_AIR;
-    SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
-    cn->ch->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
-
-    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
-        cn->px->flag |= FLAG_CHUNK_DIRTY;
-    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-        cn->nx->flag |= FLAG_CHUNK_DIRTY;
-
-    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
-        cn->py->flag |= FLAG_CHUNK_DIRTY;
-    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-        cn->ny->flag |= FLAG_CHUNK_DIRTY;
-
-    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
-        cn->pz->flag |= FLAG_CHUNK_DIRTY;
-    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-        cn->nz->flag |= FLAG_CHUNK_DIRTY;
-
-    block_evaluate_internal(cn, x, y, z, block_id);
-}
-
-void block_break(block_hit hit)
-{
-    u32 index = chunk_tab.index;
-    hhc_chunk_neighbors cn = {0};
-
-    if (!hit.hit)
-        return;
-
-    /* canonicalize block position */
-    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
-    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
-    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
-
-    /* get the chunk the new block index is in and make sure it's within bounds */
-    index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
-    index += (i32)floorf((f32)hit.pos.y / CHUNK_DIAMETER) * settings.chunk_buf_diameter;
-    index += (i32)floorf((f32)hit.pos.z / CHUNK_DIAMETER) * settings.chunk_buf_layer;
-    if (index >= settings.chunk_buf_volume)
-        return;
-
-    hit.pos.x = fsl_mod_i32(hit.pos.x, CHUNK_DIAMETER);
-    hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
-    hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
-
-    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
-    if (!cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x])
-        return;
-
-    block_remove_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z);
-}
-
-void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z)
-{
-    hhc_chunk_neighbors *cn = chunk_neighbors;
-    cn->ch->flag |= FLAG_CHUNK_DIRTY;
-    cn->ch->block[z][y][x] = 0;
-
-    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
-        cn->px->flag |= FLAG_CHUNK_DIRTY;
-    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-        cn->nx->flag |= FLAG_CHUNK_DIRTY;
-
-    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
-        cn->py->flag |= FLAG_CHUNK_DIRTY;
-    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-        cn->ny->flag |= FLAG_CHUNK_DIRTY;
-
-    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
-        cn->pz->flag |= FLAG_CHUNK_DIRTY;
-    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-        cn->nz->flag |= FLAG_CHUNK_DIRTY;
-}
-
-void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z, enum block_id block_id)
-{
-    hhc_chunk_neighbors *cn = chunk_neighbors;
-
-    if (z == CHUNK_DIAMETER - 1)
-    {
-        if (cn->pz && cn->pz->block[0][y][x])
-        {
-            cn->pz->flag |= FLAG_CHUNK_DIRTY;
-
-            if (GET_BLOCK_ID(cn->ch->block[z][y][x]) == BLOCK_GRASS)
-                SET_BLOCK_ID(cn->ch->block[z][y][x], BLOCK_DIRT);
-        }
-    }
-
-    if (z == 0)
-    {
-        if (cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-        {
-            cn->nz->flag |= FLAG_CHUNK_DIRTY;
-
-            if (GET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
-                SET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
-        }
-    }
-    else if (GET_BLOCK_ID(cn->ch->block[z - 1][y][x]) == BLOCK_GRASS)
-    {
-        cn->ch->flag |= FLAG_CHUNK_DIRTY;
-
-        SET_BLOCK_ID(cn->ch->block[z - 1][y][x], BLOCK_DIRT);
-    }
-}
-
-u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
-{
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
-    return &chunk->block[z][y][x];
-}
-
 hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z)
 {
     x = (i32)floorf((f32)x / CHUNK_DIAMETER);
@@ -825,12 +503,6 @@ u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos)
     if (index >= settings.chunk_buf_volume)
         return settings.chunk_tab_center;
     return index;
-}
-
-void chunk_tab_generation_change(void)
-{
-    ++chunk_tab.gi;
-    chunk_buf.cursor = 0;
 }
 
 u32 chunk_sphere_radius_get_internal(u32 radius)
@@ -1055,7 +727,7 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *
             pos.x = block_index % CHUNK_DIAMETER;
             pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
             pos.z = block_index / CHUNK_LAYER;
-            block_cache = block_get_faces_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
+            block_cache = block_faces_get_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
             if (block_cache & MASK_BLOCK_FACES)
             {
                 should_render = TRUE;
@@ -1285,8 +957,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 
     do
     {
-        if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED) ||
-                chunk_buf.p[chunk_buf.cursor].cgi != chunk_tab.gi)
+        if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED))
         {
             chunk = &chunk_buf.p[chunk_buf.cursor];
             if (chunk->mesh_deprecated.initialized)
@@ -1299,7 +970,6 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             *chunk = nochunk;
 
             chunk_pos_set_internal(chunk, player_chunk_delta, chunk_tab_coordinates);
-            chunk->cgi = chunk_tab.gi;
 
             chunk->color = CHUNK_GIZMO_COLOR_LOADED;
 
@@ -1707,4 +1377,328 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
     if (bucket->pop >= bucket_end)
         bucket->pop = bucket->pos;
     return CHUNK_WORK_COST_POP;
+}
+
+/* ---- section: implementation: block -------------------------------------- */
+
+u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
+{
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+
+    u32 block = GET_BLOCK_ID(cn->ch->block[z][y][x]);
+
+    if (x == CHUNK_DIAMETER - 1)
+    {
+        if (!cn->px || !cn->px->block[z][y][0])
+            block |= FLAG_BLOCK_FACE_PX;
+    }
+    else if (!cn->ch->block[z][y][x + 1])
+        block |= FLAG_BLOCK_FACE_PX;
+
+    if (x == 0)
+    {
+        if (!cn->nx || !cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+            block |= FLAG_BLOCK_FACE_NX;
+    }
+    else if (!cn->ch->block[z][y][x - 1])
+        block |= FLAG_BLOCK_FACE_NX;
+
+    if (y == CHUNK_DIAMETER - 1)
+    {
+        if (!cn->py || !cn->py->block[z][0][x])
+            block |= FLAG_BLOCK_FACE_PY;
+    }
+    else if (!cn->ch->block[z][y + 1][x])
+        block |= FLAG_BLOCK_FACE_PY;
+
+    if (y == 0)
+    {
+        if (!cn->ny || !cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+            block |= FLAG_BLOCK_FACE_NY;
+    }
+    else if (!cn->ch->block[z][y - 1][x])
+        block |= FLAG_BLOCK_FACE_NY;
+
+    if (z == CHUNK_DIAMETER - 1)
+    {
+        if (!cn->pz || !cn->pz->block[0][y][x])
+            block |= FLAG_BLOCK_FACE_PZ;
+    }
+    else if (!cn->ch->block[z + 1][y][x])
+        block |= FLAG_BLOCK_FACE_PZ;
+
+    if (z == 0)
+    {
+        if (!cn->nz || !cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+            block |= FLAG_BLOCK_FACE_NZ;
+    }
+    else if (!cn->ch->block[z - 1][y][x])
+        block |= FLAG_BLOCK_FACE_NZ;
+
+    return block;
+}
+
+block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
+        f64 end_x, f64 end_y, f64 end_z, f64 distance_max)
+{
+    block_hit hit = {0};
+    v3f64 delta = {0};
+    v3f64 direction = {0};
+    v3f64 distance = {0};
+    v3i32 step = {1, 1, 1};
+    hhc_chunk *chunk = NULL;
+    i32 x = 0;
+    i32 y = 0;
+    i32 z = 0;
+    i32 chx = 0;
+    i32 chy = 0;
+    i32 chz = 0;
+
+    direction.x = end_x - start_x;
+    direction.y = end_y - start_y;
+    direction.z = end_z - start_z;
+    direction = fsl_normalize_v3f64(direction);
+    delta.x = direction.x == 0.0 ? INFINITY : fabs(1.0 / direction.x);
+    delta.y = direction.y == 0.0 ? INFINITY : fabs(1.0 / direction.y);
+    delta.z = direction.z == 0.0 ? INFINITY : fabs(1.0 / direction.z);
+
+    hit.pos.x = (i64)floor(start_x);
+    hit.pos.y = (i64)floor(start_y);
+    hit.pos.z = (i64)floor(start_z);
+
+    if (direction.x < 0.0f)
+    {
+        distance.x = (start_x - hit.pos.x) * delta.x;
+        step.x = -1;
+    }
+    else distance.x = (hit.pos.x + 1.0 - start_x) * delta.x;
+
+    if (direction.y < 0.0f)
+    {
+        distance.y = (start_y - hit.pos.y) * delta.y;
+        step.y = -1;
+    }
+    else distance.y = (hit.pos.y + 1.0 - start_y) * delta.y;
+
+    if (direction.z < 0.0f)
+    {
+        distance.z = (start_z - hit.pos.z) * delta.z;
+        step.z = -1;
+    }
+    else distance.z = (hit.pos.z + 1.0 - start_z) * delta.z;
+
+    while (fsl_min_v3f64(distance) < distance_max)
+    {
+        switch (fsl_min_axis_v3f64(distance))
+        {
+            case 1:
+                hit.pos.x += step.x;
+                distance.x += delta.x;
+                hit.normal.x = -step.x;
+                hit.normal.y = 0.0;
+                hit.normal.z = 0.0;
+                break;
+
+            case 2:
+                hit.pos.y += step.y;
+                distance.y += delta.y;
+                hit.normal.x = 0.0;
+                hit.normal.y = -step.y;
+                hit.normal.z = 0.0;
+                break;
+
+            case 3:
+                hit.pos.z += step.z;
+                distance.z += delta.z;
+                hit.normal.x = 0.0;
+                hit.normal.y = 0.0;
+                hit.normal.z = -step.z;
+                break;
+        }
+
+        x = hit.pos.x - (i32)floorf((f32)origin.x / CHUNK_DIAMETER) * CHUNK_DIAMETER;
+        y = hit.pos.y - (i32)floorf((f32)origin.y / CHUNK_DIAMETER) * CHUNK_DIAMETER;
+        z = hit.pos.z - (i32)floorf((f32)origin.z / CHUNK_DIAMETER) * CHUNK_DIAMETER;
+
+        chx = floorf((f32)x / CHUNK_DIAMETER);
+        chy = floorf((f32)y / CHUNK_DIAMETER);
+        chz = floorf((f32)z / CHUNK_DIAMETER);
+        chunk = chunk_tab.p[settings.chunk_tab_center +
+            chx +
+            chy * settings.chunk_buf_diameter +
+            chz * settings.chunk_buf_layer];
+        if (!chunk || !(chunk->flag & FLAG_CHUNK_GENERATED))
+            continue;
+
+        x = fsl_mod_i32(x, CHUNK_DIAMETER);
+        y = fsl_mod_i32(y, CHUNK_DIAMETER);
+        z = fsl_mod_i32(z, CHUNK_DIAMETER);
+        if (!chunk->block[z][y][x])
+            continue;
+
+        hit.block = &chunk->block[z][y][x];
+        hit.hit = TRUE;
+        break;
+    }
+
+    return hit;
+}
+
+void block_place(block_hit hit, enum block_id block_id)
+{
+    u32 index = chunk_tab.index;
+    hhc_chunk_neighbors cn = {0};
+
+    if (!hit.hit || (hit.normal.x == 0.0f && hit.normal.y == 0.0f && hit.normal.z == 0.0f))
+        return;
+
+    /* canonicalize block position */
+    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
+
+    /* get block position at normal direction */
+    hit.pos.x += (i32)hit.normal.x;
+    hit.pos.y += (i32)hit.normal.y;
+    hit.pos.z += (i32)hit.normal.z;
+
+    /* get the chunk the new block index is in and make sure it's within bounds */
+    index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
+    index += (i32)floorf((f32)hit.pos.y / CHUNK_DIAMETER) * settings.chunk_buf_diameter;
+    index += (i32)floorf((f32)hit.pos.z / CHUNK_DIAMETER) * settings.chunk_buf_layer;
+    if (index >= settings.chunk_buf_volume)
+        return;
+
+    hit.pos.x = fsl_mod_i32(hit.pos.x, CHUNK_DIAMETER);
+    hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
+    hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
+
+    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
+    if (cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x] || !block_id)
+        return;
+
+    block_add_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z, block_id);
+}
+
+void block_break(block_hit hit)
+{
+    u32 index = chunk_tab.index;
+    hhc_chunk_neighbors cn = {0};
+
+    if (!hit.hit)
+        return;
+
+    /* canonicalize block position */
+    hit.pos.x -= chunk_tab.p[index]->pos_world.x * CHUNK_DIAMETER;
+    hit.pos.y -= chunk_tab.p[index]->pos_world.y * CHUNK_DIAMETER;
+    hit.pos.z -= chunk_tab.p[index]->pos_world.z * CHUNK_DIAMETER;
+
+    /* get the chunk the new block index is in and make sure it's within bounds */
+    index += (i32)floorf((f32)hit.pos.x / CHUNK_DIAMETER);
+    index += (i32)floorf((f32)hit.pos.y / CHUNK_DIAMETER) * settings.chunk_buf_diameter;
+    index += (i32)floorf((f32)hit.pos.z / CHUNK_DIAMETER) * settings.chunk_buf_layer;
+    if (index >= settings.chunk_buf_volume)
+        return;
+
+    hit.pos.x = fsl_mod_i32(hit.pos.x, CHUNK_DIAMETER);
+    hit.pos.y = fsl_mod_i32(hit.pos.y, CHUNK_DIAMETER);
+    hit.pos.z = fsl_mod_i32(hit.pos.z, CHUNK_DIAMETER);
+
+    cn = chunk_neighbors_get_internal(chunk_tab.p[index]);
+    if (!cn.ch->block[hit.pos.z][hit.pos.y][hit.pos.x])
+        return;
+
+    block_remove_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z);
+}
+
+void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z, enum block_id block_id)
+{
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+
+    cn->ch->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_NON_AIR;
+    SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
+    cn->ch->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
+
+    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
+        cn->px->flag |= FLAG_CHUNK_DIRTY;
+    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+        cn->nx->flag |= FLAG_CHUNK_DIRTY;
+
+    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
+        cn->py->flag |= FLAG_CHUNK_DIRTY;
+    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+        cn->ny->flag |= FLAG_CHUNK_DIRTY;
+
+    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
+        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+        cn->nz->flag |= FLAG_CHUNK_DIRTY;
+
+    block_evaluate_internal(cn, x, y, z, block_id);
+}
+
+void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z)
+{
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY;
+    cn->ch->block[z][y][x] = 0;
+
+    if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
+        cn->px->flag |= FLAG_CHUNK_DIRTY;
+    else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+        cn->nx->flag |= FLAG_CHUNK_DIRTY;
+
+    if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
+        cn->py->flag |= FLAG_CHUNK_DIRTY;
+    else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+        cn->ny->flag |= FLAG_CHUNK_DIRTY;
+
+    if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
+        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+    else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+        cn->nz->flag |= FLAG_CHUNK_DIRTY;
+}
+
+void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z, enum block_id block_id)
+{
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+
+    if (z == CHUNK_DIAMETER - 1)
+    {
+        if (cn->pz && cn->pz->block[0][y][x])
+        {
+            cn->pz->flag |= FLAG_CHUNK_DIRTY;
+
+            if (GET_BLOCK_ID(cn->ch->block[z][y][x]) == BLOCK_GRASS)
+                SET_BLOCK_ID(cn->ch->block[z][y][x], BLOCK_DIRT);
+        }
+    }
+
+    if (z == 0)
+    {
+        if (cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+        {
+            cn->nz->flag |= FLAG_CHUNK_DIRTY;
+
+            if (GET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
+                SET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
+        }
+    }
+    else if (GET_BLOCK_ID(cn->ch->block[z - 1][y][x]) == BLOCK_GRASS)
+    {
+        cn->ch->flag |= FLAG_CHUNK_DIRTY;
+
+        SET_BLOCK_ID(cn->ch->block[z - 1][y][x], BLOCK_DIRT);
+    }
+}
+
+u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
+{
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+    return &chunk->block[z][y][x];
 }
