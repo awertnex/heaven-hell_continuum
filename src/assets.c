@@ -152,7 +152,7 @@ u32 assets_init(void)
 
     if (fsl_shader_program_init_ex(&shader_p[SHADER_GIZMO_CHUNK],
                 "Gizmo Chunk", "gizmo_chunk",
-                "gizmo_chunk.vert", "gizmo_chunk.geom", "gizmo_chunk.frag",
+                "gizmo_chunk.vert", NULL, "gizmo_chunk.frag",
                 GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
         goto cleanup;
 

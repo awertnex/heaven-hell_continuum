@@ -203,8 +203,17 @@ typedef struct hhc_chunk_table
  */
 typedef struct hhc_chunk_order
 {
-    fsl_mem_handle handle;
-    u32 *p; /* cached pointer from `handle` */
+    fsl_mem_handle handle_p;
+    fsl_mem_handle handle_inv;
+    u32 *p; /* cached pointer from `handle_p` */
+
+    /*!
+     *  @brief inverse of @ref chunk_order.p, to translate @ref chunk_tab.p indices
+     *  to @ref chunk_order.p indices.
+     *
+     *  @remark cached pointer from `handle_inv`.
+     */
+    u32 *inv;
 
     /*!
      *  @brief look-up table to reduce redundant checking of untouched indices of @ref chunk_tab

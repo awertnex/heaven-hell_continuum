@@ -77,12 +77,8 @@ struct hhc_uniform
         GLint gizmo_offset;
         GLint render_size;
         GLint chunk_buf_diameter;
-        GLint mat_translation;
-        GLint mat_rotation;
-        GLint mat_orientation;
         GLint mat_projection;
         GLint camera_position;
-        GLint time;
     } gizmo_chunk;
 
     struct /* post_processing */

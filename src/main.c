@@ -159,18 +159,10 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "render_size");
     uniform.gizmo_chunk.chunk_buf_diameter =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "chunk_buf_diameter");
-    uniform.gizmo_chunk.mat_translation =
-        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_translation");
-    uniform.gizmo_chunk.mat_rotation =
-        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_rotation");
-    uniform.gizmo_chunk.mat_orientation =
-        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_orientation");
     uniform.gizmo_chunk.mat_projection =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "mat_projection");
     uniform.gizmo_chunk.camera_position =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "camera_position");
-    uniform.gizmo_chunk.time =
-        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "time");
 
     uniform.post_processing.texture_skybox =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_skybox");

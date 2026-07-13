@@ -268,6 +268,14 @@ chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
  */
 chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
 
+/*
+ *  @brief write single entry to chunk gizmo buffer.
+ */
 void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk);
+
+/*
+ *  @brief upload entire chunk gizmo buffer to VRAM.
+ */
+void chunk_debug_chunk_gizmo_bake_internal(void);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */

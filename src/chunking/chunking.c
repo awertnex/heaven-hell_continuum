@@ -70,9 +70,13 @@ u32 chunking_init(v3i32 *player_chunk_delta)
                 chunk_sched.buckets_max * sizeof(hhc_chunk_bucket),
                 "chunking_init().chunk_sched.handle_bucket") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_order.handle,
+            fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_order.handle_p,
                 chunk_order.len[SET_RENDER_DISTANCE_MAX] * sizeof(u32),
-                "chunking_init().chunk_order.handle") != FSL_ERR_SUCCESS ||
+                "chunking_init().chunk_order.handle_p") != FSL_ERR_SUCCESS ||
+
+            fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_order.handle_inv,
+                CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+                "chunking_init().chunk_order.handle_inv") != FSL_ERR_SUCCESS ||
 
             fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_tab.handle,
                 CHUNK_BUF_VOLUME_MAX * sizeof(hhc_chunk*),
@@ -89,11 +93,12 @@ u32 chunking_init(v3i32 *player_chunk_delta)
     if (chunk_order_init_internal() != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
+    chunk_order.inv = fsl_mem_handle_get(chunk_order.handle_inv);
+    chunk_order.p = fsl_mem_handle_get(chunk_order.handle_p);
     chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
     chunk_buf.p = fsl_mem_handle_get(chunk_buf.handle);
-    chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
     chunk_sched.bucket = fsl_mem_handle_get(chunk_sched.handle_bucket);
+    chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
 
     if (chunk_bucket_load_internal() != FSL_ERR_SUCCESS)
         goto cleanup;
@@ -143,7 +148,7 @@ u32 chunks_max_init_internal(void)
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
         goto load_from_disk;
 
-    LOGTRACE(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+    LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "Building `chunks_max` Look-up..\n");
 
     for (i = 0; i < SET_RENDER_DISTANCE_MAX + 1; ++i)
@@ -200,7 +205,8 @@ u32 chunk_order_init_internal(void)
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
-    chunk_order.p = fsl_mem_handle_get(chunk_order.handle);
+    chunk_order.inv = fsl_mem_handle_get(chunk_order.handle_inv);
+    chunk_order.p = fsl_mem_handle_get(chunk_order.handle_p);
     chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
     chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
     chunk_sched.bucket = fsl_mem_handle_get(chunk_sched.handle_bucket);
@@ -268,6 +274,7 @@ u32 chunk_order_build_internal(void)
     LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "Building `chunk_order` Look-up..\n");
 
+    i = 0;
     for (pos.z = 0; pos.z < CHUNK_BUF_DIAMETER_MAX; ++pos.z)
     {
         for (pos.y = 0; pos.y < CHUNK_BUF_DIAMETER_MAX; ++pos.y)
@@ -325,11 +332,12 @@ cleanup:
             "chunk_order_build_internal().bucket_buf");
     fsl_mem_unmap((void*)&distance_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
             "chunk_order_build_internal().distance_buf");
-    fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(u32),
+    fsl_mem_unmap((void*)&pos_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
             "chunk_order_build_internal().pos_buf");
     fsl_mem_unmap((void*)&data_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
                 "chunk_order_build_internal().data_buf");
-    fsl_mem_arena_pop(&chunk_order.handle, "chunk_order_build_internal().chunk_order.handle");
+    fsl_mem_arena_pop(&chunk_order.handle_p, "chunk_order_build_internal().chunk_order.handle_p");
+    fsl_mem_arena_pop(&chunk_order.handle_inv, "chunk_order_build_internal().chunk_order.handle_inv");
     chunk_order.p = NULL;
     return *GAME_ERR;
 }
@@ -358,6 +366,7 @@ u32 chunk_order_load_internal(u32 render_distance)
             (file_contents[i].y + radius) * diameter +
             (file_contents[i].z + radius) * layer;
         chunk_order.p[i] = index;
+        chunk_order.inv[index] = i;
     }
 
     fsl_mem_free((void*)&file_contents, file_len,
@@ -445,6 +454,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
             &chunk_tab.receipt_center);
 
     chunk_scheduler_update_internal();
+    chunk_debug_chunk_gizmo_bake_internal();
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
     DELTA.y = player_chunk.y - player_chunk_delta->y;
