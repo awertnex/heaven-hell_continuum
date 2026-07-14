@@ -234,7 +234,8 @@ void chunk_debug_chunk_gizmo_bake_internal(void)
     static u64 bake_interval = 0;
     u64 refresh_rate = FSL_SEC2NSEC / 15;
 
-    if (fsl_on_time_interval(&bake_interval, refresh_rate, render->time))
+    if (core.debug.chunk_gizmo &&
+            fsl_on_time_interval(&bake_interval, refresh_rate, render->time))
     {
         glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo.data_buf);
         glBufferData(GL_ARRAY_BUFFER, chunk_order.chunks_max * sizeof(hhc_chunk_gizmo_entry),

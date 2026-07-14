@@ -54,8 +54,12 @@
 #define MASK_BLOCK_FACES        0x00000000003f0000
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00111111 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_LIGHT        0x000000003f000000
+ *  31 [00000000 00000000 00000000 00001111] 00; */
+#define MASK_BLOCK_LIGHT_VAL    0x000000000000000f
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 11110000] 00; */
+#define MASK_BLOCK_LIGHT_AO     0x00000000000000f0
 
 /*  63 [00000000 00000000 00001111 11111111] 32;
  *  31 [00000000 00000000 00000000 00000000] 00; */
@@ -79,7 +83,8 @@ enum block_shift
     SHIFT_BLOCK_ID =            0,
     SHIFT_BLOCK_STATE =         10,
     SHIFT_BLOCK_FACES =         16,
-    SHIFT_BLOCK_LIGHT =         24,
+    SHIFT_BLOCK_LIGHT_VAL =     0,
+    SHIFT_BLOCK_LIGHT_AO =      4,
     SHIFT_BLOCK_COORDINATES =   32,
     SHIFT_BLOCK_X =             32,
     SHIFT_BLOCK_Y =             36,
@@ -106,9 +111,9 @@ typedef struct hhc_chunk_mesh
 {
     b8 initialized;
     GLuint vao;
-    GLuint vbo;
-    u32 vbo_len;
-    GLuint vbo_transform; /* len: sizeof(v3f32) */
+    GLuint quad_buf; /* stride: sizeof(u32) */
+    GLuint light_buf; /* stride: sizeof(u8) */
+    u32 buf_len; /* length of both buffers */
 } hhc_chunk_mesh;
 
 typedef struct hhc_chunk
@@ -167,6 +172,7 @@ typedef struct hhc_chunk
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    u8 light[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
 
     /*!
      *  @brief cost of work done on generating, meshing, importing and/or exporting
@@ -265,11 +271,23 @@ typedef struct hhc_chunk_draw
     fsl_len len;            /* number of members in `p` */
 } hhc_chunk_draw;
 
-#define GET_BLOCK_ID(block)     (block & MASK_BLOCK_ID)
-#define SET_BLOCK_ID(block, id) (block = (block & ~MASK_BLOCK_ID) | id)
-#define GET_BLOCK_LIGHT(block)      ((block & MASK_BLOCK_LIGHT) >> SHIFT_BLOCK_LIGHT)
-#define SET_BLOCK_LIGHT(block, val) (block = (block & ~MASK_BLOCK_LIGHT) | (val << SHIFT_BLOCK_LIGHT))
-#define COPY_BLOCK_LIGHT(src, dst)  (src = (src & ~MASK_BLOCK_LIGHT) | (dst & MASK_BLOCK_LIGHT))
+#define GET_BLOCK_ID(block) \
+    (block & MASK_BLOCK_ID)
+
+#define SET_BLOCK_ID(block, id) \
+    (block = (block & ~MASK_BLOCK_ID) | (id & MASK_BLOCK_ID))
+
+#define GET_BLOCK_LIGHT(block) \
+    (block & MASK_BLOCK_LIGHT_VAL)
+
+#define SET_BLOCK_LIGHT(block, val) \
+    (block = (block & ~MASK_BLOCK_LIGHT_VAL) | (val & MASK_BLOCK_LIGHT_VAL))
+
+#define SET_BLOCK_AO(block, val) \
+    (block = (block & ~MASK_BLOCK_LIGHT_AO) | ((val << SHIFT_BLOCK_LIGHT_AO) & MASK_BLOCK_LIGHT_AO))
+
+#define COPY_BLOCK_LIGHT(src, dst) \
+    (src = (src & ~MASK_BLOCK_LIGHT_VAL) | (dst & MASK_BLOCK_LIGHT_VAL))
 
 extern hhc_chunk_table chunk_tab;
 extern hhc_chunk_order chunk_order;

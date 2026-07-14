@@ -190,6 +190,8 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_view");
     uniform.voxel.mat_perspective =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_perspective");
+    uniform.voxel.block_world_offset =
+        glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "block_world_offset");
     uniform.voxel.camera_position =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "camera_position");
     uniform.voxel.camera_far =
@@ -550,8 +552,12 @@ static void draw_world(void)
         chunk = chunk_tab.p[chunk_order.p[i]];
         if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE)
         {
+            glUniform3f(uniform.voxel.block_world_offset,
+                    chunk->pos_world.x * CHUNK_DIAMETER,
+                    chunk->pos_world.y * CHUNK_DIAMETER,
+                    chunk->pos_world.z * CHUNK_DIAMETER);
             glBindVertexArray(chunk->mesh_deprecated.vao);
-            glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.vbo_len, 1);
+            glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.buf_len, 1);
         }
     }
 }

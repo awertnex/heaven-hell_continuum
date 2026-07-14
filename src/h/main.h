@@ -99,6 +99,7 @@ struct hhc_uniform
     {
         GLint mat_view;
         GLint mat_perspective;
+        GLint block_world_offset;
         GLint sun_rotation;
         GLint sky_light;
         GLint moon_light;

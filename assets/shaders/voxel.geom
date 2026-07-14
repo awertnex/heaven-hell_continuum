@@ -12,8 +12,6 @@ layout(std430, binding = 1) readonly buffer ssbo_texture_indices
     uint texture_buf[];
 };
 
-#define MASK_BLOCK_ID   0x000003ff
-#define MASK_BLOCK_LIGHT 0x0000003f
 #define FLAG_POSITIVE_X 0x00010000
 #define FLAG_NEGATIVE_X 0x00020000
 #define FLAG_POSITIVE_Y 0x00040000
@@ -23,8 +21,11 @@ layout(std430, binding = 1) readonly buffer ssbo_texture_indices
 
 uniform mat4 mat_view;
 uniform mat4 mat_perspective;
-in uint vs_data[];
+in uint vs_block_id[];
+in uint vs_block_faces[];
 in vec3 vs_pos[];
+in float vs_light[];
+in float vs_ao_weights[][4];
 out vec4 pos;
 out vec4 pos_view;
 out vec2 uv;
@@ -32,14 +33,13 @@ out vec3 normal;
 out vec3 normal_view;
 out flat uint face_index;
 out float block_light;
+out float ao_weights[4];
 
 void voxel_make()
 {
     int i = 0;
     int j = 0;
-    uint block_id = vs_data[0] & MASK_BLOCK_ID;
-    uint block_faces = vs_data[0] >> 16;
-    block_light = ((vs_data[0] >> 0x18) & MASK_BLOCK_LIGHT) / float(MASK_BLOCK_LIGHT);
+    block_light = vs_light[0];
 
     vec3 vertex_buf[8] =
         vec3[](
@@ -87,13 +87,13 @@ void voxel_make()
 
     for (i = 0; i < FACES_MAX; ++i)
     {
-        if (bool(block_faces & (1 << i)))
+        if (bool(vs_block_faces[0] & (1 << i)))
             for (j = 0; j < FACE_VERTICES; ++j)
             {
                 pos = vec4(vs_pos[0] + vertex_buf[index_buf[j + FACE_VERTICES * i]], 1.0);
                 pos_view = mat_view * pos;
                 uv = gs_uv[index_buf_uv[j]];
-                face_index = texture_buf[block_id * 6 + i];
+                face_index = texture_buf[vs_block_id[0] * 6 + i];
                 normal = normal_buf[i];
                 normal_view = mat_view_transpose * normal;
 

@@ -46,6 +46,7 @@ in vec3 normal;
 in vec3 normal_view;
 in flat uint face_index;
 in float block_light;
+in float ao_weights[4];
 
 float sun_direction = clamp(dot(normal, sun_rotation), 0.0, 1.0);
 float moon_direction = clamp(dot(-normal, sun_rotation), 0.0, 1.0);
@@ -80,15 +81,15 @@ float spotlight_get(hhc_spotlight spotlight, vec3 normal)
     return value * value * value * (value * (value * 6.0 - 15.0) + 10.0) * spotlight.intensity;
 }
 
-float bimix(vec4 v, vec2 t)
+float bimix(float weights[4], vec2 t)
 {
     t = smoothstep(0.0, 1.0, t);
     vec2 w = 1.0 - t;
     return
-        v.x * w.x * w.y +
-        v.y * t.x * w.y +
-        v.z * w.x * t.y +
-        v.w * t.x * t.y;
+        weights[0] * w.x * w.y +
+        weights[1] * t.x * w.y +
+        weights[2] * w.x * t.y +
+        weights[3] * t.x * t.y;
 }
 
 void main()

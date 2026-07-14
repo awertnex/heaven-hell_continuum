@@ -513,7 +513,6 @@ u32 chunk_sphere_radius_get_internal(u32 radius)
 void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
 {
     v3u32 center = {0};
-    v3f32 chunk_pos = {0};
 
     center.x = settings.render_distance;
     center.y = settings.render_distance;
@@ -538,16 +537,6 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
         (u64)(chunk->pos_wrap.x & 0xffff) << 0x00 |
         (u64)(chunk->pos_wrap.y & 0xffff) << 0x10 |
         (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
-
-    if (chunk->mesh_deprecated.initialized)
-    {
-        chunk_pos.x = (f32)chunk->pos_world.x * CHUNK_DIAMETER;
-        chunk_pos.y = (f32)chunk->pos_world.y * CHUNK_DIAMETER;
-        chunk_pos.z = (f32)chunk->pos_world.z * CHUNK_DIAMETER;
-
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.vbo_transform);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(v3f32), &chunk_pos, GL_STATIC_DRAW);
-    }
 }
 
 chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget,
@@ -694,20 +683,17 @@ finish_generation:
 chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
-    static u64 buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u64 quad_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u8 light_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
     static u64 cur_buf = 0;
 
-    v3f32 chunk_pos = {0};
-
-    u64 *buf = &buffer[cur_buf][0];
-    u64 *cursor = buf;
-    u32 *start = (u32*)chunk->block;
-    u32 *end = start + CHUNK_VOLUME;
-    u32 *curr = start;
-    u64 block_index = 0;
-    u32 block_cache = 0;
+    u64 *quad_buf = &quad_buffer[cur_buf][0];
+    u8 *light_buf = &light_buffer[cur_buf][0];
+    u32 block = 0;
+    u32 faces = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
-    v3u64 pos = {0};
+    v3u64 i = {0};
+    u32 j = 0;
     b8 should_render = FALSE;
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
@@ -719,23 +705,28 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *
         goto finish_meshing;
     }
 
-    for (; curr < end; ++curr)
+    j = 0;
+    for (i.z = 0; i.z < CHUNK_DIAMETER; ++i.z)
     {
-        if (*curr & MASK_BLOCK_ID)
+        for (i.y = 0; i.y < CHUNK_DIAMETER; ++i.y)
         {
-            block_index = curr - start;
-            pos.x = block_index % CHUNK_DIAMETER;
-            pos.y = (block_index / CHUNK_DIAMETER) % CHUNK_DIAMETER;
-            pos.z = block_index / CHUNK_LAYER;
-            block_cache = block_faces_get_internal(&chunk_neighbors, pos.x, pos.y, pos.z);
-            if (block_cache & MASK_BLOCK_FACES)
+            for (i.x = 0; i.x < CHUNK_DIAMETER; ++i.x)
             {
-                should_render = TRUE;
-                SET_BLOCK_LIGHT(block_cache, 63);
-                *(cursor++) = block_cache |
-                    (pos.x & 0xf) << SHIFT_BLOCK_X |
-                    (pos.y & 0xf) << SHIFT_BLOCK_Y |
-                    (pos.z & 0xf) << SHIFT_BLOCK_Z;
+                block = chunk->block[i.z][i.y][i.x];
+                if (block & MASK_BLOCK_ID)
+                {
+                    faces = block_faces_get_internal(&chunk_neighbors, i.x, i.y, i.z);
+                    if (faces & MASK_BLOCK_FACES)
+                    {
+                        should_render = TRUE;
+                        quad_buf[j] = block | faces |
+                            (i.x << SHIFT_BLOCK_X) |
+                            (i.y << SHIFT_BLOCK_Y) |
+                            (i.z << SHIFT_BLOCK_Z);
+                        light_buf[j] = (i.x + i.y + i.z) / 3;
+                        ++j;
+                    }
+                }
             }
         }
     }
@@ -757,17 +748,13 @@ finish_meshing:
         {
             chunk->mesh_deprecated.initialized = TRUE;
 
-            chunk_pos.x = (f32)chunk->pos_world.x * CHUNK_DIAMETER;
-            chunk_pos.y = (f32)chunk->pos_world.y * CHUNK_DIAMETER;
-            chunk_pos.z = (f32)chunk->pos_world.z * CHUNK_DIAMETER;
-
             glGenVertexArrays(1, &chunk->mesh_deprecated.vao);
-            glGenBuffers(1, &chunk->mesh_deprecated.vbo);
-            glGenBuffers(1, &chunk->mesh_deprecated.vbo_transform);
+            glGenBuffers(1, &chunk->mesh_deprecated.quad_buf);
+            glGenBuffers(1, &chunk->mesh_deprecated.light_buf);
 
             glBindVertexArray(chunk->mesh_deprecated.vao);
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.vbo);
-            glBufferData(GL_ARRAY_BUFFER, (cursor - buf) * sizeof(u64), buf, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.quad_buf);
+            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
 
             glEnableVertexAttribArray(0);
             glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
@@ -775,24 +762,25 @@ finish_meshing:
             glEnableVertexAttribArray(1);
             glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
 
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.vbo_transform);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(v3f32), &chunk_pos, GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
+            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
 
             glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(v3f32), (void*)0);
-            glVertexAttribDivisor(2, 1);
+            glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(u8), (void*)0);
 
             glBindVertexArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
         else
         {
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.vbo);
-            glBufferData(GL_ARRAY_BUFFER, (cursor - buf) * sizeof(u64), buf, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.quad_buf);
+            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
+            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
-        chunk->mesh_deprecated.vbo_len = cursor - buf;
+        chunk->mesh_deprecated.buf_len = j;
     }
     else
     {
@@ -802,8 +790,8 @@ finish_meshing:
         if (chunk->mesh_deprecated.initialized)
         {
             chunk->mesh_deprecated.initialized = FALSE;
-            glDeleteBuffers(1, &chunk->mesh_deprecated.vbo_transform);
-            glDeleteBuffers(1, &chunk->mesh_deprecated.vbo);
+            glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
+            glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
             glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
         }
     }
@@ -963,8 +951,8 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             if (chunk->mesh_deprecated.initialized)
             {
                 chunk->mesh_deprecated.initialized = FALSE;
-                glDeleteBuffers(1, &chunk->mesh_deprecated.vbo_transform);
-                glDeleteBuffers(1, &chunk->mesh_deprecated.vbo);
+                glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
+                glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
                 glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
             }
             *chunk = nochunk;
@@ -1021,8 +1009,8 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     if (chunk->mesh_deprecated.initialized)
     {
         chunk->mesh_deprecated.initialized = FALSE;
-        glDeleteBuffers(1, &chunk->mesh_deprecated.vbo_transform);
-        glDeleteBuffers(1, &chunk->mesh_deprecated.vbo);
+        glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
+        glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
         glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
     }
 
@@ -1384,58 +1372,57 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
-
-    u32 block = GET_BLOCK_ID(cn->ch->block[z][y][x]);
+    u32 faces = 0;
 
     if (x == CHUNK_DIAMETER - 1)
     {
         if (!cn->px || !cn->px->block[z][y][0])
-            block |= FLAG_BLOCK_FACE_PX;
+            faces |= FLAG_BLOCK_FACE_PX;
     }
     else if (!cn->ch->block[z][y][x + 1])
-        block |= FLAG_BLOCK_FACE_PX;
+        faces |= FLAG_BLOCK_FACE_PX;
 
     if (x == 0)
     {
         if (!cn->nx || !cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-            block |= FLAG_BLOCK_FACE_NX;
+            faces |= FLAG_BLOCK_FACE_NX;
     }
     else if (!cn->ch->block[z][y][x - 1])
-        block |= FLAG_BLOCK_FACE_NX;
+        faces |= FLAG_BLOCK_FACE_NX;
 
     if (y == CHUNK_DIAMETER - 1)
     {
         if (!cn->py || !cn->py->block[z][0][x])
-            block |= FLAG_BLOCK_FACE_PY;
+            faces |= FLAG_BLOCK_FACE_PY;
     }
     else if (!cn->ch->block[z][y + 1][x])
-        block |= FLAG_BLOCK_FACE_PY;
+        faces |= FLAG_BLOCK_FACE_PY;
 
     if (y == 0)
     {
         if (!cn->ny || !cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-            block |= FLAG_BLOCK_FACE_NY;
+            faces |= FLAG_BLOCK_FACE_NY;
     }
     else if (!cn->ch->block[z][y - 1][x])
-        block |= FLAG_BLOCK_FACE_NY;
+        faces |= FLAG_BLOCK_FACE_NY;
 
     if (z == CHUNK_DIAMETER - 1)
     {
         if (!cn->pz || !cn->pz->block[0][y][x])
-            block |= FLAG_BLOCK_FACE_PZ;
+            faces |= FLAG_BLOCK_FACE_PZ;
     }
     else if (!cn->ch->block[z + 1][y][x])
-        block |= FLAG_BLOCK_FACE_PZ;
+        faces |= FLAG_BLOCK_FACE_PZ;
 
     if (z == 0)
     {
         if (!cn->nz || !cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-            block |= FLAG_BLOCK_FACE_NZ;
+            faces |= FLAG_BLOCK_FACE_NZ;
     }
     else if (!cn->ch->block[z - 1][y][x])
-        block |= FLAG_BLOCK_FACE_NZ;
+        faces |= FLAG_BLOCK_FACE_NZ;
 
-    return block;
+    return faces;
 }
 
 block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
@@ -1618,7 +1605,7 @@ void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
 
     cn->ch->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_NON_AIR;
     SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
-    cn->ch->block[z][y][x] |= 63 << SHIFT_BLOCK_LIGHT;
+    SET_BLOCK_LIGHT(cn->ch->light[z][y][x], 15);
 
     if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
         cn->px->flag |= FLAG_CHUNK_DIRTY;
