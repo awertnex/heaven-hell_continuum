@@ -723,7 +723,7 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *
                             (i.x << SHIFT_BLOCK_X) |
                             (i.y << SHIFT_BLOCK_Y) |
                             (i.z << SHIFT_BLOCK_Z);
-                        light_buf[j] = (i.x + i.y + i.z) / 3;
+                        light_buf[j] = chunk->light[i.z][i.y][i.x];
                         ++j;
                     }
                 }

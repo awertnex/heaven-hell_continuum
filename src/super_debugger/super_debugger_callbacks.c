@@ -4,6 +4,8 @@
 #include "deps/fossil/ui/ui_element.h"
 #include "deps/fossil/ui/ui_types.h"
 
+#include "../settings/settings.h"
+
 #include "../h/main.h"
 
 #include "super_debugger_callbacks.h"
@@ -116,4 +118,18 @@ void super_debugger_button_click_func_toggle_chunk_scheduler_visualizer(fsl_ui_e
     else
         LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
                 "View Chunk Scheduler Visualizer Off\n");
+}
+
+void super_debugger_button_click_func_toggle_screen_space_ambient_occlusion(fsl_ui_event event, void *data)
+{
+    super_debugger_button_click_func(event, data);
+
+    settings.screen_space_ambient_occlusion ^= 1;
+
+    if (settings.screen_space_ambient_occlusion)
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Screen-Space Ambient Occlusion On\n");
+    else
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Screen-Space Ambient Occlusion Off\n");
 }

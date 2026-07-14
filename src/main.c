@@ -185,6 +185,8 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "camera_near");
     uniform.post_processing.ssao_sample =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "ssao_sample");
+    uniform.post_processing.enable_ssao =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "enable_ssao");
 
     uniform.voxel.mat_view =
         glGetUniformLocation(shader_p[SHADER_VOXEL].asset.id, "mat_view");
@@ -910,6 +912,7 @@ static void world_draw(void)
     glUniform1f(uniform.post_processing.camera_far, player.camera.far);
     glUniform1f(uniform.post_processing.camera_near, player.camera.near);
     glUniform3fv(uniform.post_processing.ssao_sample, 64, (GLfloat*)ssao_buf.sample);
+    glUniform1i(uniform.post_processing.enable_ssao, settings.screen_space_ambient_occlusion);
 
     glBindVertexArray(fsl_mesh_unit_quad.vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -980,6 +983,7 @@ int main(int argc, char **argv)
     player_init(&player, "Lily");
     input_init();
     bind_shader_uniforms();
+    settings.screen_space_ambient_occlusion = TRUE;
 
 #if MODE_INTERNAL_SKIP_TITLE_MENU
     goto section_gameplay;

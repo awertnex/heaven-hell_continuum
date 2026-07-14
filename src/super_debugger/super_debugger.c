@@ -36,6 +36,8 @@ void super_debugger_init(v2i32 render_size)
             &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
+    fsl_ui_element_set_texture(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
 
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_PANEL], 0, 0, 16, 16);
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER], 0, 0, 16, 16);
@@ -45,6 +47,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], 0, 0, 16, 16);
     fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             0, 0, 16, 16);
+    fsl_ui_element_set_uv(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            0, 0, 16, 16);
 
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_PANEL], TRUE, 8);
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER], TRUE, 8);
@@ -53,6 +57,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS], TRUE, 8);
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], TRUE, 8);
     fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            TRUE, 8);
+    fsl_ui_element_set_9_slice(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             TRUE, 8);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
@@ -69,6 +75,8 @@ void super_debugger_init(v2i32 render_size)
             FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_panel_leave_func, NULL);
@@ -84,6 +92,8 @@ void super_debugger_init(v2i32 render_size)
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
             FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_trans_blocks, NULL);
@@ -96,6 +106,9 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_chunk_scheduler_visualizer,
             NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_screen_space_ambient_occlusion,
+            NULL);
 
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
@@ -106,6 +119,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
     fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_set_callback(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
 
     fsl_ui_element_attach(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
@@ -118,6 +133,8 @@ void super_debugger_init(v2i32 render_size)
             &ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO]);
     fsl_ui_element_attach(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
             &ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER]);
+    fsl_ui_element_attach(&ui_element_sdb[UI_ELEMENT_SDB_PANEL],
+            &ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION]);
 
     super_debugger_update(render_size);
 }
@@ -150,12 +167,17 @@ void super_debugger_update(v2i32 render_size)
     fsl_ui_element_set_position(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             ui_element_sdb[UI_ELEMENT_SDB_PANEL].transform.size_baked.x,
             0, 0, 0, -SET_MARGIN, SET_MARGIN);
+    fsl_ui_element_set_position(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            ui_element_sdb[UI_ELEMENT_SDB_PANEL].transform.size_baked.x,
+            0, 0, 0, -SET_MARGIN, SET_MARGIN);
 
     fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS], 0, 0, 32, 16);
     fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES], 0, 0, 32, 16);
     fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS], 0, 0, 32, 16);
     fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], 0, 0, 32, 16);
     fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            0, 0, 32, 16);
+    fsl_ui_element_set_size(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             0, 0, 32, 16);
 
     fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
@@ -168,6 +190,8 @@ void super_debugger_update(v2i32 render_size)
             settings.gui_scale, settings.gui_scale);
     fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             settings.gui_scale, settings.gui_scale);
+    fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            settings.gui_scale, settings.gui_scale);
 
     fsl_ui_element_set_alignment(&ui_element_sdb[UI_ELEMENT_SDB_PANEL], -1, -1);
     fsl_ui_element_set_alignment(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER], -1, 1);
@@ -177,6 +201,8 @@ void super_debugger_update(v2i32 render_size)
     fsl_ui_element_set_alignment(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], 1, -10);
     fsl_ui_element_set_alignment(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             1, -13);
+    fsl_ui_element_set_alignment(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
+            1, -16);
 }
 
 void super_debugger_draw(v2i32 render_size, GLuint fbo)
@@ -195,6 +221,7 @@ void super_debugger_draw(v2i32 render_size, GLuint fbo)
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS]);
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO]);
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER]);
+    fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION]);
 
     fsl_ui_element_draw(&ui_element_sdb[UI_ELEMENT_SDB_PANEL_LOGGER]);
     fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
@@ -233,6 +260,8 @@ void super_debugger_gui_scale_set(f32 scale)
     fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
             scale, scale);
     fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            scale, scale);
+    fsl_ui_element_set_scale(&ui_element_sdb[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             scale, scale);
 }
 

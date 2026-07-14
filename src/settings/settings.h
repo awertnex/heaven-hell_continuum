@@ -35,6 +35,7 @@ typedef struct hhc_settings
     f32 fov;
     u32 render_distance;
     b8 anti_aliasing;
+    b8 screen_space_ambient_occlusion;
 
     struct /* flag */
     {

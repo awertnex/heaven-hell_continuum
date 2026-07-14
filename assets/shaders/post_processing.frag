@@ -26,6 +26,7 @@ uniform mat4 mat_projection;
 uniform float camera_far;
 uniform float camera_near;
 uniform vec3 ssao_sample[64];
+uniform bool enable_ssao;
 in vec2 vs_pos;
 in vec2 vs_uv;
 out vec4 color;
@@ -135,7 +136,8 @@ void main()
     /* ---- effects --------------------------------------------------------- */
 
     vec3 grain = grain_get(vs_pos, time, GRAIN_INTENSITY, GRAIN_SATURATION);
-    float ambient_occlusion = ambient_occlusion_get(texture_world_pos, texture_world_normal, vs_pos, vs_uv, 0.4);
+    float ambient_occlusion = enable_ssao ?
+        ambient_occlusion_get(texture_world_pos, texture_world_normal, vs_pos, vs_uv, 0.4) : 1.0;
 
     /* ---- final ----------------------------------------------------------- */
 

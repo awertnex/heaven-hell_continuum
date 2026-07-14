@@ -93,6 +93,7 @@ struct hhc_uniform
         GLint camera_far;
         GLint camera_near;
         GLint ssao_sample;
+        GLint enable_ssao;
     } post_processing;
 
     struct /* voxel */
