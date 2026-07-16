@@ -27,8 +27,8 @@
  */
 typedef struct hhc_chunk_gizmo_entry
 {
-    u32 pos;
-    u32 color;
+    v4i8 pos;
+    v4u8 color;
     f32 offset; /* z offset in screen-space coordinates */
 } hhc_chunk_gizmo_entry;
 
@@ -53,6 +53,9 @@ typedef struct hhc_chunk_gizmo
 /* ---- section: declarations ----------------------------------------------- */
 
 static fsl_mem_arena memory_arena_chunk_debug_internal = {0};
+
+v4u8 chunk_debug_color[CHUNK_DEBUG_COLOR_COUNT] = {0};
+f32 chunk_gizmo_layer_position[CHUNK_DEBUG_COLOR_COUNT] = {0};
 
 /*!
  *  @brief 3D chunk gizmo to showcase chunk status.
@@ -83,9 +86,29 @@ static GLuint index_data_cube[36] =
 
 /* ---- section: implementation --------------------------------------------- */
 
+static void chunk_gizmo_metadata_set_internal(u32 index, u32 debug_color, i32 gizmo_z_layer)
+{
+    chunk_debug_color[index].x = (debug_color >> 0x18) & 0xff;
+    chunk_debug_color[index].y = (debug_color >> 0x10) & 0xff;
+    chunk_debug_color[index].z = (debug_color >> 0x08) & 0xff;
+    chunk_debug_color[index].w = (debug_color >> 0x00) & 0xff;
+    chunk_gizmo_layer_position[index] = (f32)gizmo_z_layer * CHUNK_GIZMO_Z_LAYER_HEIGHT;
+}
+
 u32 chunk_debug_init_internal(fsl_len chunk_count)
 {
     u64 chunk_gizmo_stride = sizeof(hhc_chunk_gizmo_entry);
+
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_NONE, 0, 3);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_LOADING, CHUNK_DEBUG_COLOR_LOADING, 2);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_GENERATING_BASE_TERRAIN, CHUNK_DEBUG_COLOR_GENERATING, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_MESHING, CHUNK_DEBUG_COLOR_MESHING, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_LIGHTING, CHUNK_DEBUG_COLOR_LIGHTING, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_AO, CHUNK_DEBUG_COLOR_AO, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_FINISHING, CHUNK_DEBUG_COLOR_FINISHING, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_DONE, CHUNK_DEBUG_COLOR_DONE, 0);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_DONE_NON_VISIBLE, CHUNK_DEBUG_COLOR_DONE_NON_VISIBLE, 1);
+    chunk_gizmo_metadata_set_internal(CHUNK_DEBUG_COLOR_INDEX_DONE_AIR, CHUNK_DEBUG_COLOR_DONE_AIR, 1);
 
     if (fsl_mem_arena_init(&memory_arena_chunk_debug_internal,
                 "chunk_debug_init().memory_arena_chunk_debug_internal") != FSL_ERR_SUCCESS ||
@@ -118,12 +141,16 @@ u32 chunk_debug_init_internal(fsl_len chunk_count)
     glBufferData(GL_ARRAY_BUFFER, chunk_count * chunk_gizmo_stride, NULL, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, chunk_gizmo_stride, (void*)0);
+    glVertexAttribIPointer(1, 4, GL_BYTE, chunk_gizmo_stride, (void*)0);
     glVertexAttribDivisor(1, 1);
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, chunk_gizmo_stride, (void*)(2 * sizeof(u32)));
+    glVertexAttribIPointer(2, 4, GL_UNSIGNED_BYTE, chunk_gizmo_stride, (void*)sizeof(v4i8));
     glVertexAttribDivisor(2, 1);
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, chunk_gizmo_stride, (void*)(2 * sizeof(v4u8)));
+    glVertexAttribDivisor(3, 1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -176,7 +203,6 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
 
     glUseProgram(shader_p[SHADER_GIZMO_CHUNK].asset.id);
 
-    glUniform1f(uniform.gizmo_chunk.gizmo_offset, (f32)settings.chunk_buf_radius);
     glUniform2iv(uniform.gizmo_chunk.render_size, 1, (GLint*)&render->size);
     glUniform1i(uniform.gizmo_chunk.chunk_buf_diameter, settings.chunk_buf_diameter);
     glUniformMatrix4fv(uniform.gizmo_chunk.mat_projection, 1, GL_FALSE, (GLfloat*)&mat_transform);
@@ -194,45 +220,29 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
 
 void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 {
-    v3u32 chunk_pos = {0};
-    v4u32 chunk_color = {0};
     u32 index = chunk_order.inv[chunk->cti];
-
-    chunk_gizmo.p[index].color = 0;
-    chunk_gizmo.p[index].offset = 0.1f;
+    i8 radius = settings.chunk_buf_radius;
+    hhc_chunk_gizmo_entry *entry = &chunk_gizmo.p[index];
+    v4u8 color = chunk_debug_color[chunk->status];
 
     if (chunk->flag & FLAG_CHUNK_LOADED)
     {
-        if (chunk->flag & FLAG_CHUNK_VISIBLE)
-            chunk_gizmo.p[index].offset = 0.0f;
-
-        chunk_pos.x = chunk->cti % settings.chunk_buf_diameter;
-        chunk_pos.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-        chunk_pos.z = chunk->cti / settings.chunk_buf_layer;
-
-        chunk_color.x = (chunk->color >> 0x18) & 0xff;
-        chunk_color.y = (chunk->color >> 0x10) & 0xff;
-        chunk_color.z = (chunk->color >> 0x08) & 0xff;
-        chunk_color.w = (chunk->color >> 0x00) & 0xff;
-
-        chunk_color.x = (chunk_color.x + ((chunk->color_variant >> 0x18) & 0xff)) / 2;
-        chunk_color.y = (chunk_color.y + ((chunk->color_variant >> 0x10) & 0xff)) / 2;
-        chunk_color.z = (chunk_color.z + ((chunk->color_variant >> 0x08) & 0xff)) / 2;
-
-        chunk_gizmo.p[index].pos =
-            (chunk_pos.x << 0x18) | (chunk_pos.y << 0x10) | (chunk_pos.z << 0x08);
-        chunk_gizmo.p[index].color =
-            (chunk_color.x << 0x18) |
-            (chunk_color.y << 0x10) |
-            (chunk_color.z << 0x08) |
-            (chunk_color.w << 0x00);
+        entry->pos.x = (chunk->cti % settings.chunk_buf_diameter) - radius;
+        entry->pos.y = ((chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter) - radius;
+        entry->pos.z = (chunk->cti / settings.chunk_buf_layer) - radius;
     }
+
+    entry->color.x = (u8)fsl_clamp_i32(color.x + chunk->debug_color_bias, 0, 0xff);
+    entry->color.y = (u8)fsl_clamp_i32(color.y + chunk->debug_color_bias, 0, 0xff);
+    entry->color.z = (u8)fsl_clamp_i32(color.z + chunk->debug_color_bias, 0, 0xff);
+    entry->color.w = color.w;
+    entry->offset = chunk_gizmo_layer_position[chunk->status];
 }
 
 void chunk_debug_chunk_gizmo_bake_internal(void)
 {
     static u64 bake_interval = 0;
-    u64 refresh_rate = FSL_SEC2NSEC / 15;
+    u64 refresh_rate = FSL_SEC2NSEC / 30;
 
     if (core.debug.chunk_gizmo &&
             fsl_on_time_interval(&bake_interval, refresh_rate, render->time))

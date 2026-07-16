@@ -74,7 +74,6 @@ struct hhc_uniform
 
     struct /* gizmo_chunk */
     {
-        GLint gizmo_offset;
         GLint render_size;
         GLint chunk_buf_diameter;
         GLint mat_projection;

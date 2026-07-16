@@ -154,8 +154,6 @@ static void bind_shader_uniforms(void)
     uniform.gizmo.color =
         glGetUniformLocation(shader_p[SHADER_GIZMO_AXIS].asset.id, "gizmo_color");
 
-    uniform.gizmo_chunk.gizmo_offset =
-        glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "gizmo_offset");
     uniform.gizmo_chunk.render_size =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "render_size");
     uniform.gizmo_chunk.chunk_buf_diameter =
@@ -840,11 +838,11 @@ static void world_draw(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
 
         fsl_text_push(fsl_stringf(
-                    "CHUNK SCHEDULER [%7d/%-7"PRIu64"][pop/push: %7"PRIu64"/%-7"PRIu64"]\n"
+                    "CHUNK SCHEDULER [scheduled: %7d/%-7"PRIu64"][priority: %d]\n"
                     "RENDER DISTANCE [%2d]\n",
                     chunk_sched.count,
                     chunk_order.chunks_max,
-                    chunk_sched.cursor_pop, chunk_sched.cursor_push,
+                    chunk_sched.priority,
                     settings.render_distance),
                 render->size.x - SET_MARGIN, SET_MARGIN,
                 FSL_TEXT_ALIGN_RIGHT, 0, 0,
@@ -932,16 +930,17 @@ static void world_draw(void)
 
 int main(int argc, char **argv)
 {
-    if (fsl_engine_init(argc, argv, GAME_TITLE, 1280, 1054,
+    if (fsl_engine_init(argc, argv, GAME_TITLE, 1620, 780,
                 GAME_RELEASE_BUILD | FSL_FLAG_MULTISAMPLE) != FSL_ERR_SUCCESS ||
             game_init() != FSL_ERR_SUCCESS)
         goto cleanup;
+
+    glfwSetWindowPos(render->window, 1920 / 2 - render->size.x / 2, 1080 / 2 - render->size.y / 2);
 
 #ifndef HHC_RELEASE_BUILD
     LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "DEBUG BUILD\n");
 
-    glfwSetWindowPos(render->window, 1920 - render->size.x, 24);
 #endif /* HHC_RELEASE_BUILD */
 
     if (settings_init() != FSL_ERR_SUCCESS)
@@ -983,7 +982,6 @@ int main(int argc, char **argv)
     player_init(&player, "Lily");
     input_init();
     bind_shader_uniforms();
-    settings.screen_space_ambient_occlusion = TRUE;
 
 #if MODE_INTERNAL_SKIP_TITLE_MENU
     goto section_gameplay;

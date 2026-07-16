@@ -91,21 +91,39 @@ enum block_shift
     SHIFT_BLOCK_Z =             40
 }; /* block_shift */
 
+typedef u16 hhc_chunk_flag;
 enum chunk_flag
 {
     FLAG_CHUNK_LOADED =     (1 << 0),
     FLAG_CHUNK_IMPORTED =   (1 << 1),
-    FLAG_CHUNK_DIRTY =      (1 << 2),
-    FLAG_CHUNK_QUEUED =     (1 << 3),
-    FLAG_CHUNK_NON_AIR =    (1 << 4),
-    FLAG_CHUNK_GENERATED =  (1 << 5),
-    FLAG_CHUNK_VISIBLE =    (1 << 6),
+    FLAG_CHUNK_DIRTY_GENERATE = (1 << 2),
+    FLAG_CHUNK_DIRTY_MESH = (1 << 3),
+    FLAG_CHUNK_QUEUED =     (1 << 4),
+    FLAG_CHUNK_NON_AIR =    (1 << 5),
+    FLAG_CHUNK_GENERATED =  (1 << 6),
+    FLAG_CHUNK_VISIBLE =    (1 << 7),
 
     /*!
      *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
-    FLAG_CHUNK_EDGE =       (1 << 7)
+    FLAG_CHUNK_EDGE =       (1 << 8)
 }; /* chunk_flag */
+
+typedef u8 hhc_chunk_status;
+enum chunk_status
+{
+    STATUS_CHUNK_IDLE,
+    STATUS_CHUNK_LOADING,
+    STATUS_CHUNK_GENERATING_BASE_TERRAIN,
+    STATUS_CHUNK_MESHING,
+    STATUS_CHUNK_LIGHTING,
+    STATUS_CHUNK_AO,
+    STATUS_CHUNK_FINISHING,
+    STATUS_CHUNK_DONE,
+    STATUS_CHUNK_DONE_NON_VISIBLE,
+    STATUS_CHUNK_DONE_AIR,
+    STATUS_CHUNK_COUNT
+}; /* chunk_status */
 
 typedef struct hhc_chunk_mesh
 {
@@ -118,35 +136,22 @@ typedef struct hhc_chunk_mesh
 
 typedef struct hhc_chunk
 {
-    u8 flag; /* enum: chunk_flag */
-    v3i16 pos_world;    /* world position, in chunk-space (for rendering) */
-    v3i16 pos_wrap;     /* canonical position, in chunk-space (for serialization) */
+    hhc_chunk_flag flag; /* enum: @ref chunk_flag */
+    hhc_chunk_status status; /* enum: @ref chunk_status */
+    v3i16 pos_world; /* world position, in chunk-space (for rendering) */
+    v3i16 pos_wrap; /* canonical position, in chunk-space (for serialization) */
 
     /*!
-     *  @brief chunk's unique id derived from its position.
+     *  @brief chunk's unique id derived from its canonical position.
      *
      * format:
-     * (pos_world.x & 0xffff) << 0x00 |
-     * (pos_world.y & 0xffff) << 0x10 |
-     * (pos_world.z & 0xffff) << 0x20.
+     * (pos_wrap.x & 0xffff) << 0x00 |
+     * (pos_wrap.y & 0xffff) << 0x10 |
+     * (pos_wrap.z & 0xffff) << 0x20.
      */
     u64 id;
 
-    /*!
-     *  @brief debug color.
-     *
-     *  format: 0xrrggbbaa.
-     */
-    u32 color;
-
-    /*!
-     *  @brief debug color variant.
-     *
-     *  used as offset for 'color'.
-     *
-     *  format: 0xrrggbbaa.
-     */
-    u32 color_variant;
+    i8 debug_color_bias; /* format: 0xrr */
 
     /*!
      *  @brief block iterator for per-chunk generation progress.
@@ -277,17 +282,20 @@ typedef struct hhc_chunk_draw
 #define SET_BLOCK_ID(block, id) \
     (block = (block & ~MASK_BLOCK_ID) | (id & MASK_BLOCK_ID))
 
+#define SET_BLOCK_FACES(block, faces) \
+    (block = (block & ~MASK_BLOCK_FACES) | (faces & MASK_BLOCK_FACES))
+
 #define GET_BLOCK_LIGHT(block) \
     (block & MASK_BLOCK_LIGHT_VAL)
 
 #define SET_BLOCK_LIGHT(block, val) \
     (block = (block & ~MASK_BLOCK_LIGHT_VAL) | (val & MASK_BLOCK_LIGHT_VAL))
 
-#define SET_BLOCK_AO(block, val) \
-    (block = (block & ~MASK_BLOCK_LIGHT_AO) | ((val << SHIFT_BLOCK_LIGHT_AO) & MASK_BLOCK_LIGHT_AO))
-
 #define COPY_BLOCK_LIGHT(src, dst) \
     (src = (src & ~MASK_BLOCK_LIGHT_VAL) | (dst & MASK_BLOCK_LIGHT_VAL))
+
+#define SET_BLOCK_AO(block, val) \
+    (block = (block & ~MASK_BLOCK_LIGHT_AO) | ((val << SHIFT_BLOCK_LIGHT_AO) & MASK_BLOCK_LIGHT_AO))
 
 extern hhc_chunk_table chunk_tab;
 extern hhc_chunk_order chunk_order;

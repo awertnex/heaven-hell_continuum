@@ -11,7 +11,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 /*!
- *  @brief count of temporary static buffers in function @ref chunk_mesh_update_internal().
+ *  @brief count of temporary static buffers in function @ref chunk_mesh_internal().
  */
 #define BLOCK_BUFFERS_MAX 2
 
@@ -100,13 +100,12 @@ typedef struct hhc_chunk_scheduler
 {
     fsl_len count;          /* number of chunks scheduled */
 
-    u32 cursor_push;        /* push position */
-    u32 cursor_pop;         /* pop position */
     fsl_mem_handle handle_p;
     fsl_mem_handle handle_bucket;
     hhc_chunk **p;          /* cached pointer from `schedule` */
     hhc_chunk_bucket *bucket; /* cached pointer from `schedule` */
     u32 buckets_max;        /* total number of members in `bucket` */
+    u32 priority; /* index of current bucket being parsed */
 } hhc_chunk_scheduler;
 
 typedef struct hhc_chunk_sampler
@@ -176,6 +175,8 @@ void chunk_debug_free_internal(void);
  */
 u32 chunk_sphere_radius_get_internal(u32 radius);
 
+hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
+
 /*!
  *  @brief set new chunk position.
  *
@@ -185,49 +186,58 @@ u32 chunk_sphere_radius_get_internal(u32 radius);
 void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates);
 
 /*!
- *  @brief generate chunk blocks.
- *
- *  @remark calls @ref chunk_mesh_update_internal() when done generating.
- *  @remark must be called before @ref chunk_mesh_update_internal().
- *
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ *  @brief load chunk from disk and generate if not found.
  */
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
-
-hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
 
 /*!
  *  @brief generate chunk blocks.
  *
  *  automatically called from @ref chunk_load_internal().
- *
- *  @remark calls @ref chunk_mesh_update_internal() when done generating.
- *  @remark must be called before @ref chunk_mesh_update_internal().
- *
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ *  @brief make chunk mesh and upload to VRAM.
  */
-chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
+void chunk_mesh_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
 
 /*!
- *  @brief write chunk into disk.
- *
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ *  @brief calculate chunk lighting and upload to VRAM.
  */
-chunk_work_cost chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
+void chunk_light_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
+
+/*!
+ *  @brief calculate chunk ambient occlusion and upload to VRAM.
+ */
+void chunk_ao_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
+
+/*!
+ *  @brief finish chunk work and return to idle state.
+ */
+void chunk_finish_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
+
+/*!
+ *  @brief chunk idle state function, do absolutely nothing.
+ */
+void chunk_idle_func_internal(hhc_chunk *chunk,
+        chunk_work_budget budget, hhc_chunk_receipt *receipt);
+
+/*!
+ *  @brief write chunk to disk.
+ */
+void chunk_export_func_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief read chunk from disk.
- *
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
  */
-chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+void chunk_import_func_internal(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt);
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);

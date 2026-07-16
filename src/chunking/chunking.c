@@ -40,6 +40,21 @@ hhc_chunk_order chunk_order = {0};
 hhc_chunk_scheduler chunk_sched = {0};
 static hhc_chunk_sampler chunk_sampler = {0};
 
+static void (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk *chunk,
+        chunk_work_budget budget, hhc_chunk_receipt *receipt) =
+{
+    chunk_idle_func_internal,
+    chunk_load_func_internal,
+    chunk_generate_func_internal,
+    chunk_mesh_func_internal,
+    chunk_light_func_internal,
+    chunk_ao_func_internal,
+    chunk_finish_func_internal,
+    chunk_idle_func_internal,
+    chunk_idle_func_internal,
+    chunk_idle_func_internal
+};
+
 /* ---- section: implementation: chunk -------------------------------------- */
 
 u32 chunking_init(v3i32 *player_chunk_delta)
@@ -135,14 +150,12 @@ u32 chunks_max_init_internal(void)
     str path[FSL_PATH_CAP] = {0};
     u32 *file_contents = NULL;
     u64 file_len = 0;
-    u32 i = 0;
-    u32 j = 0;
-    u32 chunk_sphere_radius = 0;
     v3u32 center = {0};
-    v3u32 coordinates = {0};
-    u32 chunk_buf_diameter = 0;
-    u32 chunk_buf_volume = 0;
+    v3u32 pos = {0};
+    u32 radius = 0;
+    u32 diameter = 0;
     u32 chunk_count = 0;
+    u32 i = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNKS_MAX);
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
@@ -153,32 +166,36 @@ u32 chunks_max_init_internal(void)
 
     for (i = 0; i < SET_RENDER_DISTANCE_MAX + 1; ++i)
     {
-        chunk_buf_diameter = i * 2 + 1;
-        chunk_buf_volume =
-            chunk_buf_diameter * chunk_buf_diameter * chunk_buf_diameter;
+        radius = chunk_sphere_radius_get_internal(i);
+        diameter = i * 2 + 1;
         chunk_count = 0;
-        chunk_sphere_radius = chunk_sphere_radius_get_internal(i);
         center.x = i;
         center.y = i;
         center.z = i;
 
-        for (j = 0; j < chunk_buf_volume; ++j)
+        for (pos.z = 0; pos.z < diameter; ++pos.z)
         {
-            coordinates.x = j % chunk_buf_diameter;
-            coordinates.y = (j / chunk_buf_diameter) % chunk_buf_diameter;
-            coordinates.z = j / (chunk_buf_diameter * chunk_buf_diameter);
-            if (fsl_distance_v3u32(coordinates, center) < chunk_sphere_radius)
-                ++chunk_count;
+            for (pos.y = 0; pos.y < diameter; ++pos.y)
+            {
+                for (pos.x = 0; pos.x < diameter; ++pos.x)
+                {
+                    if (fsl_distance_v3u32(pos, center) < radius)
+                        ++chunk_count;
+                }
+            }
         }
         chunk_order.len[i] = chunk_count;
     }
 
     if (fsl_write_file(path, (SET_RENDER_DISTANCE_MAX + 1) * sizeof(u32),
                 chunk_order.len, TRUE, FALSE) != FSL_ERR_SUCCESS)
-        goto cleanup;
+        return *GAME_ERR;
 
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunks_max` Look-up '%s' Exported\n", path));
+
+    *GAME_ERR = FSL_ERR_SUCCESS;
+    return *GAME_ERR;
 
 load_from_disk:
 
@@ -196,7 +213,6 @@ load_from_disk:
 cleanup:
 
     fsl_mem_free((void*)&file_contents, file_len, "chunks_max_init_internal().file_contents");
-    chunking_free();
     return *GAME_ERR;
 }
 
@@ -205,8 +221,9 @@ u32 chunk_order_init_internal(void)
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
-    chunk_order.inv = fsl_mem_handle_get(chunk_order.handle_inv);
+
     chunk_order.p = fsl_mem_handle_get(chunk_order.handle_p);
+    chunk_order.inv = fsl_mem_handle_get(chunk_order.handle_inv);
     chunk_tab.p = fsl_mem_handle_get(chunk_tab.handle);
     chunk_sched.p = fsl_mem_handle_get(chunk_sched.handle_p);
     chunk_sched.bucket = fsl_mem_handle_get(chunk_sched.handle_bucket);
@@ -274,7 +291,6 @@ u32 chunk_order_build_internal(void)
     LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "Building `chunk_order` Look-up..\n");
 
-    i = 0;
     for (pos.z = 0; pos.z < CHUNK_BUF_DIAMETER_MAX; ++pos.z)
     {
         for (pos.y = 0; pos.y < CHUNK_BUF_DIAMETER_MAX; ++pos.y)
@@ -336,9 +352,6 @@ cleanup:
             "chunk_order_build_internal().pos_buf");
     fsl_mem_unmap((void*)&data_buf, CHUNK_BUF_VOLUME_MAX * sizeof(v3i8),
                 "chunk_order_build_internal().data_buf");
-    fsl_mem_arena_pop(&chunk_order.handle_p, "chunk_order_build_internal().chunk_order.handle_p");
-    fsl_mem_arena_pop(&chunk_order.handle_inv, "chunk_order_build_internal().chunk_order.handle_inv");
-    chunk_order.p = NULL;
     return *GAME_ERR;
 }
 
@@ -393,7 +406,7 @@ u32 chunk_bucket_load_internal(void)
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_BUCKET);
     file_len = fsl_get_file_contents(path, (void*)&file_contents, FALSE);
     if (file_contents == NULL)
-        goto cleanup;
+        return *GAME_ERR;
 
     for (i = 0; i < chunk_sched.buckets_max; ++i)
     {
@@ -404,15 +417,9 @@ u32 chunk_bucket_load_internal(void)
     }
 
     fsl_mem_free((void*)&file_contents, file_len,
-            "chunk_order_load_internal().file_contents");
+            "chunk_bucket_load_internal().file_contents");
 
     *GAME_ERR = FSL_ERR_SUCCESS;
-    return *GAME_ERR;
-
-cleanup:
-
-    fsl_mem_free((void*)&file_contents, file_len,
-            "chunk_order_load_internal().file_contents");
     return *GAME_ERR;
 }
 
@@ -433,15 +440,16 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     chunk_receipt_print(&chunk_tab.p[settings.chunk_tab_center]->receipt,
             &chunk_tab.receipt_center);
 
-    chunk_scheduler_update_internal();
-    chunk_debug_chunk_gizmo_bake_internal();
-
     chunk_delta.x = player_chunk.x - player_chunk_delta->x;
     chunk_delta.y = player_chunk.y - player_chunk_delta->y;
     chunk_delta.z = player_chunk.z - player_chunk_delta->z;
 
     if (!(chunk_delta.x || chunk_delta.y || chunk_delta.z))
+    {
+        chunk_scheduler_update_internal();
+        chunk_debug_chunk_gizmo_bake_internal();
         return;
+    }
 
     render_distance = chunk_sphere_radius_get_internal(settings.render_distance);
 
@@ -477,6 +485,11 @@ void chunking_free(void)
             "chunking_free().memory_arena_chunking_internal");
 }
 
+u32 chunk_sphere_radius_get_internal(u32 radius)
+{
+    return radius ? radius * radius + 2 : 0;
+}
+
 hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z)
 {
     x = (i32)floorf((f32)x / CHUNK_DIAMETER);
@@ -492,9 +505,9 @@ u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos)
     v3i32 offset = {0};
     u32 index = 0;
 
-    offset.x = pos.x / CHUNK_DIAMETER - chunk_pos.x + settings.chunk_buf_radius,
-    offset.y = pos.y / CHUNK_DIAMETER - chunk_pos.y + settings.chunk_buf_radius,
-    offset.z = pos.z / CHUNK_DIAMETER - chunk_pos.z + settings.chunk_buf_radius,
+    offset.x = (i32)floor((f64)pos.x / CHUNK_DIAMETER) - chunk_pos.x + settings.chunk_buf_radius;
+    offset.y = (i32)floor((f64)pos.y / CHUNK_DIAMETER) - chunk_pos.y + settings.chunk_buf_radius;
+    offset.z = (i32)floor((f64)pos.z / CHUNK_DIAMETER) - chunk_pos.z + settings.chunk_buf_radius;
     index =
         offset.x +
         offset.y * settings.chunk_buf_diameter +
@@ -505,9 +518,31 @@ u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos)
     return index;
 }
 
-u32 chunk_sphere_radius_get_internal(u32 radius)
+hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
 {
-    return radius ? radius * radius + 2 : 0;
+    hhc_chunk_neighbors neighbors = {0};
+    v3u32 chunk_tab_coordinates = {0};
+
+    chunk_tab_coordinates.x = chunk->cti % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
+    chunk_tab_coordinates.z = chunk->cti / settings.chunk_buf_layer;
+
+    neighbors.ch = chunk;
+
+    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
+        neighbors.px = chunk_tab.p[chunk->cti + 1];
+    if (chunk_tab_coordinates.x > 0)
+        neighbors.nx = chunk_tab.p[chunk->cti - 1];
+    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
+        neighbors.py = chunk_tab.p[chunk->cti + settings.chunk_buf_diameter];
+    if (chunk_tab_coordinates.y > 0)
+        neighbors.ny = chunk_tab.p[chunk->cti - settings.chunk_buf_diameter];
+    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
+        neighbors.pz = chunk_tab.p[chunk->cti + settings.chunk_buf_layer];
+    if (chunk_tab_coordinates.z > 0)
+        neighbors.nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
+
+    return neighbors;
 }
 
 void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
@@ -539,55 +574,48 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
         (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
 }
 
-chunk_work_cost chunk_load_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_idle_func_internal(hhc_chunk *chunk,
+        chunk_work_budget budget, hhc_chunk_receipt *receipt)
+{
+    (void)budget;
+    (void)receipt;
+
+    if (chunk->flag & FLAG_CHUNK_DIRTY_GENERATE)
+        chunk->status = STATUS_CHUNK_GENERATING_BASE_TERRAIN;
+    else if (chunk->flag & FLAG_CHUNK_DIRTY_MESH)
+        chunk->status = STATUS_CHUNK_MESHING;
+    else if (chunk->flag & FLAG_CHUNK_NON_AIR)
+        chunk->status = STATUS_CHUNK_DONE;
+    else
+        chunk->status = STATUS_CHUNK_DONE_AIR;
+}
+
+void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
+#if MODE_INTERNAL_IMPORT_CHUNKS
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
-    if (!chunk || chunk->flag & FLAG_CHUNK_GENERATED)
-        return 0;
+    (void)budget;
 
     snprintf(path, FSL_PATH_CAP,
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
             world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
-#if MODE_INTERNAL_IMPORT_CHUNKS
     if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
-        chunk_import_internal(path, chunk, receipt);
+        chunk_import_func_internal(path, chunk, receipt);
     else
+        chunk->status = STATUS_CHUNK_LOADING + 1;
+#else
+    (void)chunk;
+    (void)budget;
+    (void)receipt;
+
+    chunk->status = STATUS_CHUNK_LOADING + 1;
 #endif /* MODE_INTERNAL_IMPORT_CHUNKS */
-        chunk_generate_internal(chunk, budget, receipt);
-    return 0;
 }
 
-hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
-{
-    hhc_chunk_neighbors neighbors = {0};
-    v3u32 chunk_tab_coordinates = {0};
-
-    chunk_tab_coordinates.x = chunk->cti % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.y = (chunk->cti / settings.chunk_buf_diameter) % settings.chunk_buf_diameter;
-    chunk_tab_coordinates.z = chunk->cti / settings.chunk_buf_layer;
-
-    neighbors.ch = chunk;
-
-    if (chunk_tab_coordinates.x < settings.chunk_buf_diameter - 1)
-        neighbors.px = chunk_tab.p[chunk->cti + 1];
-    if (chunk_tab_coordinates.x > 0)
-        neighbors.nx = chunk_tab.p[chunk->cti - 1];
-    if (chunk_tab_coordinates.y < settings.chunk_buf_diameter - 1)
-        neighbors.py = chunk_tab.p[chunk->cti + settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.y > 0)
-        neighbors.ny = chunk_tab.p[chunk->cti - settings.chunk_buf_diameter];
-    if (chunk_tab_coordinates.z < settings.chunk_buf_diameter - 1)
-        neighbors.pz = chunk_tab.p[chunk->cti + settings.chunk_buf_layer];
-    if (chunk_tab_coordinates.z > 0)
-        neighbors.nz = chunk_tab.p[chunk->cti - settings.chunk_buf_layer];
-
-    return neighbors;
-}
-
-chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -599,6 +627,8 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
 
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
     fsl_noise_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
             (f64)(chunk->pos_wrap.x * CHUNK_DIAMETER),
             (f64)(chunk->pos_wrap.y * CHUNK_DIAMETER),
@@ -609,6 +639,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
     pos.z = chunk->cursor / CHUNK_LAYER;
 
     for (pos_cheap_check.y = 0; pos_cheap_check.y <= pos.y; ++pos_cheap_check.y)
+    {
         for (pos_cheap_check.x = 0; pos_cheap_check.x < CHUNK_DIAMETER; ++pos_cheap_check.x)
         {
             cost += CHUNK_WORK_COST_CHEAP_CHECK;
@@ -618,6 +649,7 @@ chunk_work_cost chunk_generate_internal(hhc_chunk *chunk, chunk_work_budget budg
                 goto begin_generation;
             }
         }
+    }
 
 begin_generation:
 
@@ -657,10 +689,15 @@ begin_generation:
         if (!non_air)
         {
             chunk->flag |= FLAG_CHUNK_GENERATED;
+            chunk->flag &= ~FLAG_CHUNK_DIRTY_GENERATE;
+            chunk->status = STATUS_CHUNK_GENERATING_BASE_TERRAIN + 1;
             chunk->cursor = 0;
+
+            chunk_debug_chunk_gizmo_write_internal(chunk);
+
             receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
             chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
-            return cost;
+            return;
         }
 
         pos.y = 0;
@@ -672,33 +709,40 @@ finish_generation:
     if (chunk->cursor >= CHUNK_VOLUME)
     {
         chunk->flag |= FLAG_CHUNK_GENERATED;
+        chunk->flag &= ~FLAG_CHUNK_DIRTY_GENERATE;
+        chunk->status = STATUS_CHUNK_GENERATING_BASE_TERRAIN + 1;
         chunk->cursor = 0;
+
+        chunk_debug_chunk_gizmo_write_internal(chunk);
     }
 
     receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
-    return cost;
 }
 
-chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
+void chunk_mesh_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     static u64 quad_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
-    static u8 light_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
-    static u64 cur_buf = 0;
+    static u32 cur_buf = 0;
 
     u64 *quad_buf = &quad_buffer[cur_buf][0];
-    u8 *light_buf = &light_buffer[cur_buf][0];
     u32 block = 0;
     u32 faces = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
-    v3u64 i = {0};
+    v3i64 i = {0};
     u32 j = 0;
     b8 should_render = FALSE;
 
+    (void)budget;
+
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
 
-    if (!(chunk->flag & FLAG_CHUNK_NON_AIR))
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    if (!(chunk->flag & FLAG_CHUNK_NON_AIR) ||
+            !(chunk->flag & FLAG_CHUNK_DIRTY_MESH))
     {
         should_render = FALSE;
         cost = CHUNK_WORK_COST_MESH_AIR;
@@ -716,15 +760,14 @@ chunk_work_cost chunk_mesh_update_internal(hhc_chunk *chunk, hhc_chunk_receipt *
                 if (block & MASK_BLOCK_ID)
                 {
                     faces = block_faces_get_internal(&chunk_neighbors, i.x, i.y, i.z);
+                    SET_BLOCK_FACES(chunk->block[i.z][i.y][i.x], faces);
                     if (faces & MASK_BLOCK_FACES)
                     {
                         should_render = TRUE;
-                        quad_buf[j] = block | faces |
+                        quad_buf[j++] = block | faces |
                             (i.x << SHIFT_BLOCK_X) |
                             (i.y << SHIFT_BLOCK_Y) |
                             (i.z << SHIFT_BLOCK_Z);
-                        light_buf[j] = chunk->light[i.z][i.y][i.x];
-                        ++j;
                     }
                 }
             }
@@ -742,7 +785,7 @@ finish_meshing:
     if (should_render)
     {
         chunk->flag |= FLAG_CHUNK_VISIBLE;
-        chunk->color = CHUNK_GIZMO_COLOR_VISIBLE;
+        chunk->status = STATUS_CHUNK_MESHING + 1;
 
         if (!chunk->mesh_deprecated.initialized)
         {
@@ -763,7 +806,7 @@ finish_meshing:
             glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
 
             glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
-            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), chunk->light, GL_DYNAMIC_DRAW);
 
             glEnableVertexAttribArray(2);
             glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(u8), (void*)0);
@@ -775,8 +818,6 @@ finish_meshing:
         {
             glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.quad_buf);
             glBufferData(GL_ARRAY_BUFFER, j * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
-            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
@@ -785,7 +826,7 @@ finish_meshing:
     else
     {
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
-        chunk->color = CHUNK_GIZMO_COLOR_LOADED;
+        chunk->status = STATUS_CHUNK_FINISHING;
 
         if (chunk->mesh_deprecated.initialized)
         {
@@ -796,15 +837,144 @@ finish_meshing:
         }
     }
 
-    chunk->flag &= ~FLAG_CHUNK_DIRTY;
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
     receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
-    return cost;
 }
 
-chunk_work_cost chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
+void chunk_light_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
+{
+    chunk_work_cost cost = 0;
+    static u8 light_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u64 cur_buf = 0;
+
+    u8 *light_buf = &light_buffer[cur_buf][0];
+    u32 block = 0;
+    u8 light = 0;
+    hhc_chunk_neighbors chunk_neighbors = {0};
+    v3u64 i = {0};
+    u32 j = 0;
+    b8 should_render = TRUE;
+
+    (void)budget;
+
+    chunk_neighbors = chunk_neighbors_get_internal(chunk);
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    if (!(chunk->flag & FLAG_CHUNK_NON_AIR) ||
+            !(chunk->flag & FLAG_CHUNK_DIRTY_MESH) ||
+            !chunk->mesh_deprecated.initialized)
+    {
+        cost = CHUNK_WORK_COST_LIGHT_AIR;
+        should_render = FALSE;
+        goto finish_lighting;
+    }
+
+    j = 0;
+    for (i.z = 0; i.z < CHUNK_DIAMETER; ++i.z)
+    {
+        for (i.y = 0; i.y < CHUNK_DIAMETER; ++i.y)
+        {
+            for (i.x = 0; i.x < CHUNK_DIAMETER; ++i.x)
+            {
+                block = chunk->block[i.z][i.y][i.x];
+                if (block & MASK_BLOCK_ID)
+                {
+                    light = 15;
+                    SET_BLOCK_LIGHT(chunk->light[i.z][i.y][i.x], light);
+                    light_buf[j++] = light;
+                }
+            }
+        }
+    }
+
+    ++cur_buf;
+    if (cur_buf >= BLOCK_BUFFERS_MAX)
+        cur_buf = 0;
+
+    cost = CHUNK_WORK_COST_LIGHT_NON_AIR;
+
+finish_lighting:
+
+    if (should_render)
+    {
+        chunk->status = STATUS_CHUNK_LIGHTING + 1;
+
+        glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
+        glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        chunk->mesh_deprecated.buf_len = j;
+    }
+    else
+    {
+        chunk->flag &= ~FLAG_CHUNK_VISIBLE;
+        chunk->status = STATUS_CHUNK_FINISHING;
+
+        if (chunk->mesh_deprecated.initialized)
+        {
+            chunk->mesh_deprecated.initialized = FALSE;
+            glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
+            glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
+            glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
+        }
+    }
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+}
+
+void chunk_ao_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
+{
+    chunk_work_cost cost = 0;
+
+    (void)budget;
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    /* TODO: do ao stuff */
+
+    chunk->status = STATUS_CHUNK_AO + 1;
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+}
+
+void chunk_finish_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt)
+{
+    (void)budget;
+
+    if (chunk->flag & FLAG_CHUNK_NON_AIR)
+    {
+        if (chunk->flag & FLAG_CHUNK_VISIBLE)
+            chunk->status = STATUS_CHUNK_DONE;
+        else
+            chunk->status = STATUS_CHUNK_DONE_NON_VISIBLE;
+    }
+    else
+        chunk->status = STATUS_CHUNK_DONE_AIR;
+
+#if MODE_INTERNAL_EXPORT_CHUNKS
+    if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
+        chunk_export_func_internal(chunk, &receipt);
+#else
+    (void)receipt;
+#endif /* MODE_INTERNAL_EXPORT_CHUNKS */
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
+
+    chunk->flag &= ~(FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_IMPORTED);
+}
+
+void chunk_export_func_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -846,10 +1016,9 @@ finish_export:
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_EXPORT] += cost;
 
     fsl_write_file(path, j * sizeof(u16), buf, TRUE, FALSE);
-    return cost;
 }
 
-chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+void chunk_import_func_internal(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -874,7 +1043,8 @@ chunk_work_cost chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
             break;
     }
 
-    chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_IMPORTED | FLAG_CHUNK_DIRTY | FLAG_CHUNK_GENERATED;
+    chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_IMPORTED | FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_GENERATED;
+    chunk->status = STATUS_CHUNK_MESHING;
     chunk->pos_wrap.x = pos_cache[0];
     chunk->pos_wrap.y = pos_cache[1];
     chunk->pos_wrap.z = pos_cache[2];
@@ -914,7 +1084,6 @@ finish_import:
 
     receipt->cost[CHUNK_RECEIPT_ITEM_IMPORT] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_IMPORT] += cost;
-    return cost;
 }
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta)
@@ -934,8 +1103,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
     hhc_chunk nochunk = {0};
     v3u32 chunk_tab_coordinates = {0};
     hhc_chunk *chunk = NULL;
-    v3u64 seed = {0};
-    v3u8 color_variant;
+    u32 seed = 0;
     u32 end = chunk_buf.cursor;
     b8 pushed = FALSE;
 
@@ -956,34 +1124,21 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
                 glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
             }
             *chunk = nochunk;
+            chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH;
+            chunk->status = STATUS_CHUNK_LOADING;
 
             chunk_pos_set_internal(chunk, player_chunk_delta, chunk_tab_coordinates);
 
-            chunk->color = CHUNK_GIZMO_COLOR_LOADED;
+            seed = chunk->pos_wrap.x ^ 823948;
+            seed ^= seed << 12;
+            seed ^= chunk->pos_wrap.y ^ 323423;
+            seed ^= seed << 15;
+            seed ^= chunk->pos_wrap.z ^ 211534;
+            seed ^= seed << 18;
+            seed = (u32)fsl_hash_fnv1a_u64(&seed, sizeof(u32));
 
-            seed.x = chunk_tab_coordinates.x ^ (index + player_chunk_delta.z + 823948);
-            seed.y = chunk_tab_coordinates.y ^ (index + player_chunk_delta.x + 323423);
-            seed.z = chunk_tab_coordinates.z ^ (index + player_chunk_delta.y + 211534);
-            seed.x = fsl_hash_fnv1a_u64(&seed.x, sizeof(u64));
-            seed.y = fsl_hash_fnv1a_u64(&seed.y, sizeof(u64));
-            seed.z = fsl_hash_fnv1a_u64(&seed.z, sizeof(u64));
+            chunk->debug_color_bias = (i8)fsl_rand_u32(seed) * CHUNK_DEBUG_COLOR_BIAS_INFLUENCE;
 
-            color_variant.x =
-                (u8)(fsl_map_range_f64((f64)(fsl_rand_u64(seed.x) % 0xff), 0.0, 0xff,
-                            1.0 - CHUNK_GIZMO_COLOR_FACTOR_INFLUENCE, 1.0) * 0xff);
-            color_variant.y =
-                (u8)(fsl_map_range_f64((f64)(fsl_rand_u64(seed.y) % 0xff), 0.0, 0xff,
-                            1.0 - CHUNK_GIZMO_COLOR_FACTOR_INFLUENCE, 1.0) * 0xff);
-            color_variant.z =
-                (u8)(fsl_map_range_f64((f64)(fsl_rand_u64(seed.z) % 0xff), 0.0, 0xff,
-                            1.0 - CHUNK_GIZMO_COLOR_FACTOR_INFLUENCE, 1.0) * 0xff);
-
-            chunk->color_variant = 0 |
-                (color_variant.x << 0x18) |
-                (color_variant.y << 0x10) |
-                (color_variant.z << 0x08);
-
-            chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY;
             chunk_tab.p[index] = chunk;
             chunk_debug_chunk_gizmo_write_internal(chunk);
             pushed = TRUE;
@@ -1024,6 +1179,7 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
 
 void chunk_buf_dump_internal(void)
 {
+    hhc_chunk *chunk = NULL;
     u32 i = 0;
     u32 end = chunk_order.chunks_max;
 
@@ -1032,9 +1188,12 @@ void chunk_buf_dump_internal(void)
 
     for (; i < end; ++i)
     {
-        if (chunk_tab.p[chunk_order.p[i]])
+        chunk = chunk_tab.p[chunk_order.p[i]];
+        if (chunk)
         {
-            chunk_tab.p[chunk_order.p[i]]->flag = 0;
+            chunk->flag = 0;
+            chunk->status = 0;
+            chunk_debug_chunk_gizmo_write_internal(chunk);
             chunk_tab.p[chunk_order.p[i]] = NULL;
         }
     }
@@ -1200,7 +1359,9 @@ shift_whichever_axis_that_needs_shifting:
                         i.y * settings.chunk_buf_diameter + i.x;
 
                     chunk_tab.p[j]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_VISIBLE);
-                    chunk_tab.p[j]->color = 0;
+                    chunk_tab.p[j]->status = 0;
+                    chunk_debug_chunk_gizmo_write_internal(chunk_tab.p[j]);
+
                     if (chunk_tab.p[*mirror_index])
                         chunk_tab.p[*mirror_index]->flag |= FLAG_CHUNK_EDGE;
                 }
@@ -1269,7 +1430,9 @@ void chunk_scheduler_update_internal(void)
         {
             bucket = &chunk_sched.bucket[chunk->cpi];
 
-            if (chunk->flag & FLAG_CHUNK_DIRTY &&
+            if (
+                    (chunk->flag & FLAG_CHUNK_DIRTY_GENERATE ||
+                     chunk->flag & FLAG_CHUNK_DIRTY_MESH) &&
                     !chunk_sched.p[bucket->push])
             {
                 budget -= chunk_scheduler_push_internal(chunk);
@@ -1314,36 +1477,29 @@ pop:
                     continue;
                 }
 
-                if (chunk->flag & FLAG_CHUNK_GENERATED)
-                    chunk_mesh_update_internal(chunk, &receipt);
-                else
-                    chunk_load_internal(chunk, budget, &receipt);
-
-                if (!(chunk->flag & FLAG_CHUNK_DIRTY))
-                {
-#if MODE_INTERNAL_EXPORT_CHUNKS
-                    if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-                        chunk_export_internal(chunk, &receipt);
-#endif /* MODE_INTERNAL_EXPORT_CHUNKS */
-
-                    chunk->flag &= ~FLAG_CHUNK_IMPORTED;
-                    budget -= chunk_scheduler_pop_internal(chunk);
-                }
+                chunk_work_func_internal[chunk->status](chunk, budget, &receipt);
 
                 chunk_receipt_evaluate(&receipt, chunk->cpi);
                 chunk_receipt_evaluate(&chunk->receipt, chunk->cpi);
                 budget -= receipt.total;
                 receipt = noreceipt;
+
+                if (!chunk->status || chunk->status > STATUS_CHUNK_FINISHING)
+                {
+                    budget -= chunk_scheduler_pop_internal(chunk);
+                }
             } while (bucket->pop != bucket->push && bucket->count && budget > 0);
         }
     }
+
+    chunk_sched.priority = i;
 }
 
 chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
 {
     hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
     u32 bucket_end = bucket->pos + bucket->len;
-    chunk->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_QUEUED;
+    chunk->flag |= FLAG_CHUNK_QUEUED;
     chunk_sched.p[bucket->push] = chunk;
     ++chunk_sched.count;
     ++bucket->count;
@@ -1357,7 +1513,7 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 {
     hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
     u32 bucket_end = bucket->pos + bucket->len;
-    chunk->flag &= ~(FLAG_CHUNK_DIRTY | FLAG_CHUNK_QUEUED);
+    chunk->flag &= ~FLAG_CHUNK_QUEUED;
     chunk_sched.p[bucket->pop] = NULL;
     --chunk_sched.count;
     --bucket->count;
@@ -1603,24 +1759,24 @@ void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
 
-    cn->ch->flag |= FLAG_CHUNK_DIRTY | FLAG_CHUNK_NON_AIR;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_NON_AIR;
     SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
     SET_BLOCK_LIGHT(cn->ch->light[z][y][x], 15);
 
     if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
-        cn->px->flag |= FLAG_CHUNK_DIRTY;
+        cn->px->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-        cn->nx->flag |= FLAG_CHUNK_DIRTY;
+        cn->nx->flag |= FLAG_CHUNK_DIRTY_MESH;
 
     if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
-        cn->py->flag |= FLAG_CHUNK_DIRTY;
+        cn->py->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-        cn->ny->flag |= FLAG_CHUNK_DIRTY;
+        cn->ny->flag |= FLAG_CHUNK_DIRTY_MESH;
 
     if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
-        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+        cn->pz->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-        cn->nz->flag |= FLAG_CHUNK_DIRTY;
+        cn->nz->flag |= FLAG_CHUNK_DIRTY_MESH;
 
     block_evaluate_internal(cn, x, y, z, block_id);
 }
@@ -1629,23 +1785,23 @@ void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
-    cn->ch->flag |= FLAG_CHUNK_DIRTY;
+    cn->ch->flag |= FLAG_CHUNK_DIRTY_MESH;
     cn->ch->block[z][y][x] = 0;
 
     if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
-        cn->px->flag |= FLAG_CHUNK_DIRTY;
+        cn->px->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (x == 0 && cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
-        cn->nx->flag |= FLAG_CHUNK_DIRTY;
+        cn->nx->flag |= FLAG_CHUNK_DIRTY_MESH;
 
     if (y == CHUNK_DIAMETER - 1 && cn->py && cn->py->block[z][0][x])
-        cn->py->flag |= FLAG_CHUNK_DIRTY;
+        cn->py->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (y == 0 && cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
-        cn->ny->flag |= FLAG_CHUNK_DIRTY;
+        cn->ny->flag |= FLAG_CHUNK_DIRTY_MESH;
 
     if (z == CHUNK_DIAMETER - 1 && cn->pz && cn->pz->block[0][y][x])
-        cn->pz->flag |= FLAG_CHUNK_DIRTY;
+        cn->pz->flag |= FLAG_CHUNK_DIRTY_MESH;
     else if (z == 0 && cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
-        cn->nz->flag |= FLAG_CHUNK_DIRTY;
+        cn->nz->flag |= FLAG_CHUNK_DIRTY_MESH;
 }
 
 void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
@@ -1657,7 +1813,7 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
     {
         if (cn->pz && cn->pz->block[0][y][x])
         {
-            cn->pz->flag |= FLAG_CHUNK_DIRTY;
+            cn->pz->flag |= FLAG_CHUNK_DIRTY_MESH;
 
             if (GET_BLOCK_ID(cn->ch->block[z][y][x]) == BLOCK_GRASS)
                 SET_BLOCK_ID(cn->ch->block[z][y][x], BLOCK_DIRT);
@@ -1668,7 +1824,7 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
     {
         if (cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
         {
-            cn->nz->flag |= FLAG_CHUNK_DIRTY;
+            cn->nz->flag |= FLAG_CHUNK_DIRTY_MESH;
 
             if (GET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x]) == BLOCK_GRASS)
                 SET_BLOCK_ID(cn->nz->block[CHUNK_DIAMETER - 1][y][x], BLOCK_DIRT);
@@ -1676,7 +1832,7 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
     }
     else if (GET_BLOCK_ID(cn->ch->block[z - 1][y][x]) == BLOCK_GRASS)
     {
-        cn->ch->flag |= FLAG_CHUNK_DIRTY;
+        cn->ch->flag |= FLAG_CHUNK_DIRTY_MESH;
 
         SET_BLOCK_ID(cn->ch->block[z - 1][y][x], BLOCK_DIRT);
     }
