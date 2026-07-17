@@ -1214,7 +1214,6 @@ void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta)
     v3u32 mirror_indices = {0};
     u32 *mirror_index = NULL;
     u32 target_index = 0;
-    u32 tail_index = 0;
     b8 is_on_edge = FALSE;
     v3u32 i = {0};
     u32 j = 0;
@@ -1235,7 +1234,7 @@ void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta)
     index_offsets_negative.z = -settings.chunk_buf_layer;
     end = settings.chunk_buf_diameter;
 
-shift_whichever_axis_that_needs_shifting:
+perform_shift:
 
     DELTA.x = player_chunk.x - player_chunk_delta->x;
     DELTA.y = player_chunk.y - player_chunk_delta->y;
@@ -1337,17 +1336,17 @@ shift_whichever_axis_that_needs_shifting:
             return;
     }
 
-    /* ---- mark chunks on-edge --------------------------------------------- */
-
-    j = 0;
-    for (i.z = 0; i.z < end; ++i.z)
+    j = start.w;
+    for (i.z = start.z; i.z < end; i.z += INCREMENT)
     {
-        for (i.y = 0; i.y < end; ++i.y)
+        for (i.y = start.y; i.y < end; i.y += INCREMENT)
         {
-            for (i.x = 0; i.x < end; ++i.x, ++j)
+            for (i.x = start.x; i.x < end; i.x += INCREMENT, j += INCREMENT)
             {
                 if (!chunk_tab.p[j])
                     continue;
+
+                /* ---- mark chunks on edge --------------------------------- */
 
                 is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
                 if (is_on_edge)
@@ -1360,31 +1359,14 @@ shift_whichever_axis_that_needs_shifting:
 
                     chunk_tab.p[j]->flag &= ~(FLAG_CHUNK_LOADED | FLAG_CHUNK_VISIBLE);
                     chunk_tab.p[j]->status = 0;
-                    chunk_debug_chunk_gizmo_write_internal(chunk_tab.p[j]);
 
                     if (chunk_tab.p[*mirror_index])
                         chunk_tab.p[*mirror_index]->flag |= FLAG_CHUNK_EDGE;
                 }
-            }
-        }
-    }
 
-    /* ---- shift `chunk_tab` ----------------------------------------------- */
-
-    j = start.w;
-    for (i.z = start.z; i.z < end; i.z += INCREMENT)
-    {
-        for (i.y = start.y; i.y < end; i.y += INCREMENT)
-        {
-            for (i.x = start.x; i.x < end; i.x += INCREMENT, j += INCREMENT)
-            {
-                if (!chunk_tab.p[j])
-                    continue;
+                /* ---- shift chunk table ----------------------------------- */
 
                 target_index = *coordinate == *index_bound_inv ? j : j + *index_offset_inv;
-                tail_index = *coordinate == *index_bound ? j : j + *index_offset;
-                is_on_edge = *coordinate == *index_bound || !chunk_tab.p[j + *index_offset];
-
                 chunk_tab.p[j] = chunk_tab.p[target_index];
                 if (chunk_tab.p[j])
                 {
@@ -1403,7 +1385,7 @@ shift_whichever_axis_that_needs_shifting:
     }
 
     if (DELTA.x || DELTA.y || DELTA.z)
-        goto shift_whichever_axis_that_needs_shifting;
+        goto perform_shift;
 }
 
 void chunk_scheduler_update_internal(void)
