@@ -29,7 +29,7 @@ STATUS  DONE DATE       TASK
                         SSBO, and bind chunk pointers to their addresses
 - [ ]   (          ):   bake ambient occlusion flags into block data and send
                         to GPU
-- [ ]   (          ):   possibly reduce the two loops in function
+- [x]   (2026 07 17):   possibly reduce the two loops in function
                         `chunking_update()` for marking chunks on edge and
                         shifting chunks to just one loop
 

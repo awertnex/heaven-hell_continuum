@@ -26,7 +26,7 @@
 #define CHUNK_DEBUG_COLOR_DONE_AIR          color_v4_to_hex(1.000f, 1.000f, 1.000f, 0.392f)
 
 #define CHUNK_DEBUG_COLOR_BIAS_INFLUENCE 0.10f
-#define CHUNK_GIZMO_SCALE 150.0f
+#define CHUNK_GIZMO_PIXEL_HEIGHT 150.0f
 #define CHUNK_GIZMO_Z_LAYER_HEIGHT 0.03f
 
 enum chunk_debug_color_index

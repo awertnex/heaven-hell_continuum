@@ -1,7 +1,6 @@
 #version 430 core
 
 #define CUBE_SCALE 0.9
-#define GIZMO_SCALE 150.0
 #define RENDER_DISTANCE_MAX 32.0
 #define RENDER_DISTANCE_MIN 1.0
 #define CAMERA_DISTANCE_PADDING 3.0
@@ -17,8 +16,6 @@ uniform mat4 mat_projection;
 out vec3 vertex_position;
 out vec4 vertex_color;
 out float camera_distance;
-vec2 ndc_scale = 2.0 / vec2(render_size);
-float gizmo_scale = GIZMO_SCALE * (1.0 / chunk_buf_diameter) * ndc_scale.y;
 float inv_255 = 1.0 / 255.0;
 
 void main()
@@ -38,5 +35,5 @@ void main()
     gl_Position =
         mat_offset *
         mat_projection *
-        vec4(vertex_position * gizmo_scale, 1.0);
+        vec4(vertex_position, 1.0);
 }

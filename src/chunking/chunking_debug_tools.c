@@ -185,17 +185,24 @@ void chunk_debug_free_internal(void)
 void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
 {
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
-    m4f32 mat_transform = {0};
+    f32 scale = (CHUNK_GIZMO_PIXEL_HEIGHT / (f32)settings.chunk_buf_diameter) * render->ndc_scale.y;
+    m4f32 mat_scale = {0};
     m4f32 mat_offset = {0};
+    m4f32 mat_transform = {0};
+
+    mat_scale.a11 = scale;
+    mat_scale.a22 = scale;
+    mat_scale.a33 = scale;
+    mat_scale.a44 = 1.0f;
 
     mat_offset.a11 = 1.0f;
     mat_offset.a22 = 1.0f;
     mat_offset.a33 = 1.0f;
-    mat_offset.a41 = ((f32)render->size.x - CHUNK_GIZMO_SCALE * 2.0f) / render->size.x;
-    mat_offset.a42 = ((f32)render->size.y - CHUNK_GIZMO_SCALE * 2.0f) / render->size.y;
+    mat_offset.a41 = ((f32)render->size.x / 2.0f - CHUNK_GIZMO_PIXEL_HEIGHT) * render->ndc_scale.x;
+    mat_offset.a42 = ((f32)render->size.y / 2.0f - CHUNK_GIZMO_PIXEL_HEIGHT) * render->ndc_scale.y;
     mat_offset.a44 = 1.0f;
 
-    mat_transform = camera->projection.target;
+    mat_transform = fsl_multiply_m4f32(mat_scale, camera->projection.target);
     mat_transform = fsl_multiply_m4f32(mat_transform, camera->projection.rotation);
     mat_transform = fsl_multiply_m4f32(mat_transform, camera->projection.orientation);
     mat_transform = fsl_multiply_m4f32(mat_transform, camera->projection.projection);

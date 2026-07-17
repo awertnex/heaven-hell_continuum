@@ -560,6 +560,9 @@ static void draw_world(void)
             glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.buf_len, 1);
         }
     }
+
+    glBindVertexArray(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 static void draw_debug_gizmo_axis(void)
