@@ -20,6 +20,7 @@ uniform sampler2D texture_skybox;
 uniform sampler2D texture_world_pos;
 uniform sampler2D texture_world_normal;
 uniform sampler2D texture_world_albedo_specular;
+uniform sampler2D texture_world_extra;
 uniform sampler2D texture_hud;
 uniform uint time;
 uniform mat4 mat_projection;
@@ -131,6 +132,8 @@ void main()
     vec4 color_skybox = texture(texture_skybox, vs_uv);
     vec4 color_albedo = aberration_get(texture_world_albedo_specular, vs_pos, vs_uv,
             ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
+    vec4 color_world_extra = aberration_get(texture_world_extra, vs_pos, vs_uv,
+            ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
     vec4 color_ui = texture(texture_hud, vs_uv);
 
     /* ---- effects --------------------------------------------------------- */
@@ -143,6 +146,7 @@ void main()
 
     color.rgb = color_albedo.rgb * ambient_occlusion * color_albedo.a;
     color = mix(color_skybox, vec4(color.rgb, 1.0), color_albedo.a);
+    color.rgb = mix(color.rgb, color_world_extra.rgb, color_world_extra.a);
 
     color.rgb = vignette_get(vs_pos, color.rgb, VIGNETTE_NARROWNESS, VIGNETTE_INTENSITY, VIGNETTE_RICHNESS);
     color.rgb = color_enrich(color.rgb, COLOR_RICHNESS);

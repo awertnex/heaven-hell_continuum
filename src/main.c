@@ -171,6 +171,8 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_normal");
     uniform.post_processing.texture_world_albedo_specular =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_albedo_specular");
+    uniform.post_processing.texture_world_extra =
+        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world_extra");
     uniform.post_processing.texture_hud =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_hud");
     uniform.post_processing.time =
@@ -607,7 +609,7 @@ static void world_draw(void)
     else
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     /* ---- draw player ----------------------------------------------------- */
 
@@ -676,6 +678,8 @@ static void world_draw(void)
 
     if (core.debug.chunk_scheduler_visualizer && core.flag.hud)
         chunk_debug_scheduler_visualizer_draw(&player.camera);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     if (settings.anti_aliasing)
     {
@@ -900,13 +904,16 @@ static void world_draw(void)
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, g_buf.color_buf_albedo_specular);
     glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_WORLD].color_buf);
+    glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
 
     glUniform1i(uniform.post_processing.texture_skybox, 0);
     glUniform1i(uniform.post_processing.texture_world_pos, 1);
     glUniform1i(uniform.post_processing.texture_world_normal, 2);
     glUniform1i(uniform.post_processing.texture_world_albedo_specular, 3);
-    glUniform1i(uniform.post_processing.texture_hud, 4);
+    glUniform1i(uniform.post_processing.texture_world_extra, 4);
+    glUniform1i(uniform.post_processing.texture_hud, 5);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
     glUniformMatrix4fv(uniform.post_processing.mat_projection, 1, GL_FALSE,
             (GLfloat*)&player.camera.projection.projection);
@@ -919,6 +926,8 @@ static void world_draw(void)
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE3);

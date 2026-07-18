@@ -86,6 +86,7 @@ struct hhc_uniform
         GLint texture_world_pos;
         GLint texture_world_normal;
         GLint texture_world_albedo_specular;
+        GLint texture_world_extra;
         GLint texture_hud;
         GLint time;
         GLint mat_projection;
