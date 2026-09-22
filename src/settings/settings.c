@@ -66,7 +66,7 @@ u32 settings_init(void)
     settings_render_distance_set(8);
     settings.frame_budget = CHUNK_WORK_BUDGET_DEFAULT;
     settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
-    settings_mouse_sensitivity_set(SET_MOUSE_SENSITIVITY_DEFAULT);
+    settings_mouse_sensitivity_set(0);
     settings.font_size = 20.0f;
     settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
@@ -124,6 +124,9 @@ void settings_render_distance_set(u32 distance)
 
 void settings_mouse_sensitivity_set(u32 sensitivity)
 {
+    if (sensitivity == 0)
+        sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT;
+
     settings.mouse_sensitivity = (f32)fsl_clamp_u32(sensitivity,
             SET_MOUSE_SENSITIVITY_MIN, SET_MOUSE_SENSITIVITY_MAX) * SET_MOUSE_SENSITIVITY_RATE;
 }
