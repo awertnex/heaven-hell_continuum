@@ -194,7 +194,6 @@ void player_hotbar_selected_advance(hhc_player *p, i32 delta)
     player_hotbar_selected_set(p, index);
 }
 
-
 void player_collision_update(hhc_player *p, f64 dt)
 {
     hhc_chunk *ch = NULL;
@@ -542,7 +541,7 @@ void player_camera_movement_update(hhc_player *p, v2f64 mouse_delta, b8 use_mous
             zoom = p->camera.zoom;
 
         if (p->camera_mode != PLAYER_CAMERA_MODE_STALKER)
-            sensitivity = settings.mouse_sensitivity / (zoom / FSL_CAMERA_ZOOM_SENSITIVITY + 1.0);
+            sensitivity = settings.mouse_sensitivity / (zoom / FSL_CAMERA_ZOOM_SENSITIVITY + 1.0); /* TODO: wtf is this shit? fix it or get rid of it */
 
         p->transform.rot.y += mouse_delta.y * sensitivity;
         p->transform.rot.z += mouse_delta.x * sensitivity;

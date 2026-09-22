@@ -54,5 +54,6 @@ u32 settings_init(void);
 
 void settings_gui_scale_set(f32 scale);
 void settings_render_distance_set(u32 distance);
+void settings_mouse_sensitivity_set(u32 sensitivity);
 
 #endif /* HHC_SETTINGS_H */

@@ -63,10 +63,10 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings_render_distance_set(32);
+    settings_render_distance_set(8);
     settings.frame_budget = CHUNK_WORK_BUDGET_DEFAULT;
     settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
-    settings.mouse_sensitivity = SET_MOUSE_SENSITIVITY_DEFAULT * 0.004f;
+    settings_mouse_sensitivity_set(SET_MOUSE_SENSITIVITY_DEFAULT);
     settings.font_size = 20.0f;
     settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
@@ -108,7 +108,7 @@ void settings_gui_scale_set(f32 scale)
 
 void settings_render_distance_set(u32 distance)
 {
-    u32 radius = distance;
+    u32 radius = fsl_clamp_u32(distance, SET_RENDER_DISTANCE_MIN, SET_RENDER_DISTANCE_MAX);
     u32 diameter = radius * 2 + 1;
     u32 layer = diameter * diameter;
     u32 volume = layer * diameter;
@@ -120,4 +120,10 @@ void settings_render_distance_set(u32 distance)
     settings.chunk_buf_layer = layer;
     settings.chunk_buf_volume = volume;
     settings.chunk_tab_center = radius + radius * diameter + radius * layer;
+}
+
+void settings_mouse_sensitivity_set(u32 sensitivity)
+{
+    settings.mouse_sensitivity = fsl_clamp_u32(sensitivity * SET_MOUSE_SENSITIVITY_RATE,
+            SET_MOUSE_SENSITIVITY_MIN, SET_MOUSE_SENSITIVITY_MAX);
 }

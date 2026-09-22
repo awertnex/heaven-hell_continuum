@@ -12,6 +12,7 @@
 #define SET_FOV_DEFAULT                 70
 #define SET_FOV_MIN                     30
 #define SET_FOV_MAX                     160
+#define SET_MOUSE_SENSITIVITY_RATE      0.004f
 #define SET_MOUSE_SENSITIVITY_DEFAULT   100
 #define SET_MOUSE_SENSITIVITY_MIN       10
 #define SET_MOUSE_SENSITIVITY_MAX       200
