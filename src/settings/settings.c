@@ -124,6 +124,6 @@ void settings_render_distance_set(u32 distance)
 
 void settings_mouse_sensitivity_set(u32 sensitivity)
 {
-    settings.mouse_sensitivity = fsl_clamp_u32(sensitivity * SET_MOUSE_SENSITIVITY_RATE,
-            SET_MOUSE_SENSITIVITY_MIN, SET_MOUSE_SENSITIVITY_MAX);
+    settings.mouse_sensitivity = (f32)fsl_clamp_u32(sensitivity,
+            SET_MOUSE_SENSITIVITY_MIN, SET_MOUSE_SENSITIVITY_MAX) * SET_MOUSE_SENSITIVITY_RATE;
 }
