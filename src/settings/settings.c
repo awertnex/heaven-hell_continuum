@@ -1,5 +1,6 @@
 #include "deps/fossil/common/diagnostics.h"
 #include "deps/fossil/common/config.h"
+#include "deps/fossil/math/math.h"
 #include "deps/fossil/memory/memory.h"
 
 #include "deps/fossil/h/dir.h"

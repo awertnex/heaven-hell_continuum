@@ -7,7 +7,7 @@
 
 #include "deps/fossil/h/time.h"
 
-#include "deps/fossil/external/glad/glad.h"
+#include "deps/fossil/external/glad/gl.h"
 
 #include "../settings/settings.h"
 

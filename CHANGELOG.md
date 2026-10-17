@@ -8,7 +8,7 @@
 - new seamless-tiling noise sampler (moved to engine as plug-in).
 
 #### changes
-- updated engine version to v0.15.0-beta.
+- updated engine version to v0.17.0-beta.
 - fix mouse garbage-delta when centering on screen.
 - changed terrain noise sampling to be cached per axis.
 - put skybox drawing in its own function (as oppose to being part of the giant
