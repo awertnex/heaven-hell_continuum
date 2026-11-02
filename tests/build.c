@@ -138,7 +138,7 @@ void build_test(char **argv)
     cmd_push("-Wextra");
     cmd_push("-fno-builtin");
     cmd_push("-Wl,-rpath="RUNTIME_PATH"/lib/"PLATFORM);
-    engine_link_libs();
+    engine_libs_link();
     cmd_push("-o");
     cmd_push(stringf(DIR_ROOT"%s/%s"EXE,
                 str_tests.i[test_index], str_tests.i[test_index]));

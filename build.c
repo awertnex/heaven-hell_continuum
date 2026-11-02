@@ -89,12 +89,12 @@ int main(int argc, char **argv)
     for (i = 0; i < arr_len(str_cflags); ++i)
         cmd_push(&cmd, str_cflags[i]);
 
-    fsl_engine_set_runtime_path(&cmd);
+    fsl_engine_runtime_path_set(&cmd);
 
     for (i = 0; i < arr_len(str_files); ++i)
         cmd_push(&cmd, str_files[i]);
 
-    fsl_engine_link_libs(&cmd);
+    fsl_engine_libs_link(&cmd);
     for (i = 0; i < arr_len(str_libs); ++i)
         cmd_push(&cmd, str_libs[i]);
 

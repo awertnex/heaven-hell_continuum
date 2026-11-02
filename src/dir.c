@@ -1,9 +1,8 @@
 #include "deps/fossil/common/limits.h"
 #include "deps/fossil/common/session.h"
 #include "deps/fossil/engine/engine.h"
+#include "deps/fossil/file_io/file_io.h"
 #include "deps/fossil/logger/logger.h"
-
-#include "deps/fossil/h/dir.h"
 
 #include "h/main.h"
 #include "h/common.h"
@@ -46,9 +45,9 @@ u32 game_init(void)
 
     for (i = 0; i < DIR_ROOT_COUNT; ++i)
     {
-        if (fsl_is_dir_exists(DIR_ROOT[i], FALSE) != FSL_ERR_SUCCESS)
+        if (fsl_dir_is_exists(DIR_ROOT[i], FALSE) != FSL_ERR_SUCCESS)
         {
-            fsl_make_dir(DIR_ROOT[i]);
+            fsl_dir_make(DIR_ROOT[i]);
             if (*GAME_ERR != FSL_ERR_SUCCESS && *GAME_ERR != FSL_ERR_DIR_EXISTS)
                 return *GAME_ERR;
         }

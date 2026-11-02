@@ -1,11 +1,10 @@
 #include "deps/fossil/common/limits.h"
+#include "deps/fossil/file_io/file_io.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/plugins/fsl_native/torus_noise/torus_noise.h"
 #include "deps/fossil/string/string.h"
-
-#include "deps/fossil/h/dir.h"
 
 #include "../settings/settings.h"
 #include "../terrain/terrain.h"
@@ -158,7 +157,7 @@ u32 chunks_max_init_internal(void)
     u32 i = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNKS_MAX);
-    if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
+    if (fsl_file_is_exists(path, FALSE) == FSL_ERR_SUCCESS)
         goto load_from_disk;
 
     LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
@@ -187,7 +186,7 @@ u32 chunks_max_init_internal(void)
         chunk_order.len[i] = chunk_count;
     }
 
-    if (fsl_write_file(path, (SET_RENDER_DISTANCE_MAX + 1) * sizeof(u32),
+    if (fsl_file_write(path, (SET_RENDER_DISTANCE_MAX + 1) * sizeof(u32),
                 chunk_order.len, TRUE, FALSE) != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
@@ -199,7 +198,7 @@ u32 chunks_max_init_internal(void)
 
 load_from_disk:
 
-    file_len = fsl_get_file_contents(path, (void*)&file_contents, FALSE);
+    file_len = fsl_file_contents_get(path, (void*)&file_contents, FALSE);
     if (*GAME_ERR != FSL_ERR_SUCCESS)
         goto cleanup;
 
@@ -236,7 +235,7 @@ u32 chunk_order_init_internal(void)
         return *GAME_ERR;
     }
 
-    if (fsl_is_file_exists(path, FALSE) != FSL_ERR_SUCCESS)
+    if (fsl_file_is_exists(path, FALSE) != FSL_ERR_SUCCESS)
     {
         if (chunk_order_build_internal() != FSL_ERR_SUCCESS)
             return *GAME_ERR;
@@ -319,13 +318,13 @@ u32 chunk_order_build_internal(void)
         data_buf[--bucket_buf[distance_buf[i]].pos] = pos_buf[i];
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
-    if (fsl_write_file(path, chunk_count * sizeof(v3i8), data_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
+    if (fsl_file_write(path, chunk_count * sizeof(v3i8), data_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
         goto cleanup;
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunk_order` Look-up '%s' Exported\n", path));
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_BUCKET);
-    if (fsl_write_file(path, buckets_max * sizeof(hhc_chunk_bucket_format), bucket_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
+    if (fsl_file_write(path, buckets_max * sizeof(hhc_chunk_bucket_format), bucket_buf, TRUE, FALSE) != FSL_ERR_SUCCESS)
         goto cleanup;
     LOGSUCCESS(FSL_FLAG_LOG_NO_VERBOSE,
             fsl_logger_stringf("`chunk_sched` Look-up '%s' Exported\n", path));
@@ -368,7 +367,7 @@ u32 chunk_order_load_internal(u32 render_distance)
     u32 index = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_ORDER);
-    file_len = fsl_get_file_contents(path, (void*)&file_contents, FALSE);
+    file_len = fsl_file_contents_get(path, (void*)&file_contents, FALSE);
     if (file_contents == NULL)
         goto cleanup;
 
@@ -404,7 +403,7 @@ u32 chunk_bucket_load_internal(void)
     u32 i = 0;
 
     snprintf(path, FSL_PATH_CAP, "%s%s", GAME_DIR_NAME_LOOKUPS, GAME_FILE_NAME_LOOKUP_CHUNK_BUCKET);
-    file_len = fsl_get_file_contents(path, (void*)&file_contents, FALSE);
+    file_len = fsl_file_contents_get(path, (void*)&file_contents, FALSE);
     if (file_contents == NULL)
         return *GAME_ERR;
 
@@ -602,7 +601,7 @@ void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
             "%s"GAME_DIR_WORLD_NAME_CHUNKS FORMAT_FILE_NAME_HHCC,
             world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
-    if (fsl_is_file_exists(path, FALSE) == FSL_ERR_SUCCESS)
+    if (fsl_file_is_exists(path, FALSE) == FSL_ERR_SUCCESS)
         chunk_import_func_internal(path, chunk, receipt);
     else
         chunk->status = STATUS_CHUNK_LOADING + 1;
@@ -1015,7 +1014,7 @@ finish_export:
     receipt->cost[CHUNK_RECEIPT_ITEM_EXPORT] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_EXPORT] += cost;
 
-    fsl_write_file(path, j * sizeof(u16), buf, TRUE, FALSE);
+    fsl_file_write(path, j * sizeof(u16), buf, TRUE, FALSE);
 }
 
 void chunk_import_func_internal(const fsl_fs_path *path, hhc_chunk *chunk,
@@ -1032,11 +1031,11 @@ void chunk_import_func_internal(const fsl_fs_path *path, hhc_chunk *chunk,
     u32 j = 0;
     u32 rle = 0;
 
-    fsl_get_base_name(path, file_name, FSL_ID_CAP);
+    fsl_base_name_get(path, file_name, FSL_ID_CAP);
 
     for (i = 0; i < 3; ++i)
     {
-        fsl_convert_str_to_i64(cursor, &pos_cache[i]);
+        fsl_str_to_i64(cursor, &pos_cache[i]);
         while (cursor && *cursor++ != '.')
         {}
         if (!cursor)
