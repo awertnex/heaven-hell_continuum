@@ -637,6 +637,7 @@ void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     pos.y = (chunk->cursor / CHUNK_DIAMETER) % CHUNK_DIAMETER;
     pos.z = chunk->cursor / CHUNK_LAYER;
 
+#if MODE_INTERNAL_CHUNK_GENERATE_CHEAP_CHECK
     for (pos_cheap_check.y = 0; pos_cheap_check.y <= pos.y; ++pos_cheap_check.y)
     {
         for (pos_cheap_check.x = 0; pos_cheap_check.x < CHUNK_DIAMETER; ++pos_cheap_check.x)
@@ -649,6 +650,7 @@ void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
             }
         }
     }
+#endif /* MODE_INTERNAL_CHUNK_GENERATE_CHEAP_CHECK */
 
 begin_generation:
 
@@ -685,6 +687,7 @@ begin_generation:
             pos.x = 0;
         }
 
+#if MODE_INTERNAL_CHUNK_GENERATE_SKIP_AIR_LAYER
         if (!non_air)
         {
             chunk->flag |= FLAG_CHUNK_GENERATED;
@@ -698,6 +701,7 @@ begin_generation:
             chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
             return;
         }
+#endif /* MODE_INTERNAL_CHUNK_GENERATE_SKIP_AIR_LAYER */
 
         pos.y = 0;
     }
