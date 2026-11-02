@@ -96,6 +96,10 @@ cleanup:
 void settings_gui_scale_set(f32 scale)
 {
     settings.flag.gui_scale_dirty = TRUE;
+
+    if (scale == 0)
+        scale = SET_GUI_SCALE_DEFAULT;
+
     settings.gui_scale = scale;
 
     fsl_ui_element_scale_set(&ui_element[UI_ELEMENT_CROSSHAIR], scale, scale);
@@ -108,10 +112,18 @@ void settings_gui_scale_set(f32 scale)
 
 void settings_render_distance_set(u32 distance)
 {
-    u32 radius = fsl_clamp_u32(distance, SET_RENDER_DISTANCE_MIN, SET_RENDER_DISTANCE_MAX);
-    u32 diameter = radius * 2 + 1;
-    u32 layer = diameter * diameter;
-    u32 volume = layer * diameter;
+    u32 radius = 0;
+    u32 diameter = 0;
+    u32 layer = 0;
+    u32 volume = 0;
+
+    if (distance == 0)
+        distance = SET_RENDER_DISTANCE_DEFAULT;
+
+    radius = fsl_clamp_u32(distance, SET_RENDER_DISTANCE_MIN, SET_RENDER_DISTANCE_MAX);
+    diameter = radius * 2 + 1;
+    layer = diameter * diameter;
+    volume = layer * diameter;
 
     settings.flag.render_distance_dirty = TRUE;
     settings.render_distance = radius;
