@@ -42,16 +42,16 @@ static hhc_chunk_sampler chunk_sampler = {0};
 static void (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt) =
 {
-    chunk_idle_func_internal,
-    chunk_load_func_internal,
-    chunk_generate_func_internal,
-    chunk_mesh_func_internal,
-    chunk_light_func_internal,
-    chunk_ao_func_internal,
-    chunk_finish_func_internal,
-    chunk_idle_func_internal,
-    chunk_idle_func_internal,
-    chunk_idle_func_internal
+    chunk_idle_func,
+    chunk_load_func,
+    chunk_generate_func,
+    chunk_mesh_func,
+    chunk_light_func,
+    chunk_ao_func,
+    chunk_finish_func,
+    chunk_idle_func,
+    chunk_idle_func,
+    chunk_idle_func
 };
 
 /* ---- section: implementation: chunk -------------------------------------- */
@@ -573,7 +573,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
         (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
 }
 
-void chunk_idle_func_internal(hhc_chunk *chunk,
+void chunk_idle_func(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -589,7 +589,7 @@ void chunk_idle_func_internal(hhc_chunk *chunk,
         chunk->status = STATUS_CHUNK_DONE_AIR;
 }
 
-void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
 #if MODE_INTERNAL_IMPORT_CHUNKS
@@ -602,7 +602,7 @@ void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
             world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
     if (fsl_file_is_exists(path, FALSE) == FSL_ERR_SUCCESS)
-        chunk_import_func_internal(path, chunk, receipt);
+        chunk_import_func(path, chunk, receipt);
     else
         chunk->status = STATUS_CHUNK_LOADING + 1;
 #else
@@ -614,7 +614,7 @@ void chunk_load_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
 #endif /* MODE_INTERNAL_IMPORT_CHUNKS */
 }
 
-void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -625,8 +625,6 @@ void chunk_generate_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     b8 non_air = FALSE;
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
-
-    chunk_debug_chunk_gizmo_write_internal(chunk);
 
     fsl_torus_sampler_context_init(&chunk_sampler.sampler, &chunk_sampler.context,
             (f64)(chunk->pos_wrap.x * CHUNK_DIAMETER),
@@ -689,18 +687,7 @@ begin_generation:
 
 #if MODE_INTERNAL_CHUNK_GENERATE_SKIP_AIR_LAYER
         if (!non_air)
-        {
-            chunk->flag |= FLAG_CHUNK_GENERATED;
-            chunk->flag &= ~FLAG_CHUNK_DIRTY_GENERATE;
-            chunk->status = STATUS_CHUNK_GENERATING_BASE_TERRAIN + 1;
-            chunk->cursor = 0;
-
-            chunk_debug_chunk_gizmo_write_internal(chunk);
-
-            receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
-            chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
-            return;
-        }
+            goto finish_generation;
 #endif /* MODE_INTERNAL_CHUNK_GENERATE_SKIP_AIR_LAYER */
 
         pos.y = 0;
@@ -715,15 +702,15 @@ finish_generation:
         chunk->flag &= ~FLAG_CHUNK_DIRTY_GENERATE;
         chunk->status = STATUS_CHUNK_GENERATING_BASE_TERRAIN + 1;
         chunk->cursor = 0;
-
-        chunk_debug_chunk_gizmo_write_internal(chunk);
     }
+
+    chunk_debug_chunk_gizmo_write_internal(chunk);
 
     receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
 }
 
-void chunk_mesh_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -741,8 +728,6 @@ void chunk_mesh_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     (void)budget;
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
-
-    chunk_debug_chunk_gizmo_write_internal(chunk);
 
     if (!(chunk->flag & FLAG_CHUNK_NON_AIR) ||
             !(chunk->flag & FLAG_CHUNK_DIRTY_MESH))
@@ -846,7 +831,7 @@ finish_meshing:
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
 }
 
-void chunk_light_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -864,8 +849,6 @@ void chunk_light_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     (void)budget;
 
     chunk_neighbors = chunk_neighbors_get_internal(chunk);
-
-    chunk_debug_chunk_gizmo_write_internal(chunk);
 
     if (!(chunk->flag & FLAG_CHUNK_NON_AIR) ||
             !(chunk->flag & FLAG_CHUNK_DIRTY_MESH) ||
@@ -931,14 +914,12 @@ finish_lighting:
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
 }
 
-void chunk_ao_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
 
     (void)budget;
-
-    chunk_debug_chunk_gizmo_write_internal(chunk);
 
     /* TODO: do ao stuff */
 
@@ -950,7 +931,7 @@ void chunk_ao_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
 }
 
-void chunk_finish_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
+void chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -967,7 +948,7 @@ void chunk_finish_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
 
 #if MODE_INTERNAL_EXPORT_CHUNKS
     if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-        chunk_export_func_internal(chunk, &receipt);
+        chunk_export_func(chunk, &receipt);
 #else
     (void)receipt;
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
@@ -977,7 +958,7 @@ void chunk_finish_func_internal(hhc_chunk *chunk, chunk_work_budget budget,
     chunk->flag &= ~(FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_IMPORTED);
 }
 
-void chunk_export_func_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
+void chunk_export_func(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -1021,7 +1002,7 @@ finish_export:
     fsl_file_write(path, j * sizeof(u16), buf, TRUE, FALSE);
 }
 
-void chunk_import_func_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+void chunk_import_func(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;

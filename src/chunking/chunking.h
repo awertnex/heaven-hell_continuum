@@ -107,6 +107,7 @@ enum chunk_flag
      *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
     FLAG_CHUNK_EDGE =       (1 << 8)
+
 }; /* chunk_flag */
 
 typedef u8 hhc_chunk_status;
