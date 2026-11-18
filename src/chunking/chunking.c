@@ -39,7 +39,7 @@ hhc_chunk_order chunk_order = {0};
 hhc_chunk_scheduler chunk_sched = {0};
 static hhc_chunk_sampler chunk_sampler = {0};
 
-static void (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk *chunk,
+static chunk_work_func (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt) =
 {
     chunk_idle_func,
@@ -99,6 +99,9 @@ u32 chunking_init(v3i32 *player_chunk_delta)
             fsl_mem_arena_push(&memory_arena_chunking_internal, &chunk_buf.handle,
                 chunk_order.len[SET_RENDER_DISTANCE_MAX] * sizeof(hhc_chunk),
                 "chunking_init().chunk_buf.handle") != FSL_ERR_SUCCESS)
+        goto cleanup;
+
+    if (chunk_draw_init_internal() != FSL_ERR_SUCCESS)
         goto cleanup;
 
     if (chunk_debug_init_internal(CHUNK_BUF_VOLUME_MAX) != FSL_ERR_SUCCESS)
@@ -479,6 +482,7 @@ void chunking_free(void)
     }
 
     chunk_debug_free_internal();
+    chunk_draw_free_internal();
 
     fsl_mem_arena_free(&memory_arena_chunking_internal,
             "chunking_free().memory_arena_chunking_internal");
@@ -573,7 +577,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
         (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
 }
 
-void chunk_idle_func(hhc_chunk *chunk,
+chunk_work_func chunk_idle_func(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -587,9 +591,11 @@ void chunk_idle_func(hhc_chunk *chunk,
         chunk->status = STATUS_CHUNK_DONE;
     else
         chunk->status = STATUS_CHUNK_DONE_AIR;
+
+    return 0;
 }
 
-void chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
 #if MODE_INTERNAL_IMPORT_CHUNKS
@@ -612,9 +618,11 @@ void chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
 
     chunk->status = STATUS_CHUNK_LOADING + 1;
 #endif /* MODE_INTERNAL_IMPORT_CHUNKS */
+
+    return 0;
 }
 
-void chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -708,9 +716,11 @@ finish_generation:
 
     receipt->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN] += cost;
+
+    return 0;
 }
 
-void chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -829,9 +839,11 @@ finish_meshing:
 
     receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+
+    return 0;
 }
 
-void chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -912,9 +924,11 @@ finish_lighting:
 
     receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+
+    return 0;
 }
 
-void chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -929,9 +943,11 @@ void chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
 
     receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+
+    return 0;
 }
 
-void chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -956,6 +972,8 @@ void chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
     chunk->flag &= ~(FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_IMPORTED);
+
+    return 0;
 }
 
 void chunk_export_func(hhc_chunk *chunk, hhc_chunk_receipt *receipt)

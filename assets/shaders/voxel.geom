@@ -40,6 +40,7 @@ void voxel_make()
     int i = 0;
     int j = 0;
     block_light = vs_light[0];
+    ao_weights = vs_ao_weights[0];
 
     vec3 vertex_buf[8] =
         vec3[](

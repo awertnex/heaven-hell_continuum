@@ -13,6 +13,7 @@
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_LAYER * CHUNK_DIAMETER)
+#define CHUNK_QUADS_MAX (((CHUNK_VOLUME) / 2) * 6)
 
 #define CHUNK_REGION_DIAMETER   32
 #define CHUNK_REGION_LAYER      (CHUNK_REGION_DIAMETER * CHUNK_REGION_DIAMETER)
@@ -173,12 +174,25 @@ typedef struct hhc_chunk
     hhc_chunk_mesh mesh_deprecated;
 
     /*!
-     *  @brief allocated by, or pushed onto, a @ref chunk_draw, if needed.
+     *  @brief allocated by, or pushed onto, a @ref hhc_chunk_draw, if needed.
      */
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 light[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+
+    /**
+     *  @brief flexible array compiled from RAM buffer data to VRAM format.
+     *
+     *  data packing format:
+     *      ao[4-bits]: baked ambient occlusion weights, one bit per quad corner.
+     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
+     *      pos_z[5-bits]: quad's Z position within chunk, 5 bits for a position in range [0, 16].
+     *      pos_y[5-bits]: quad's Y position within chunk, 5 bits for a position in range [0, 16].
+     *      pos_x[5-bits]: quad's X position within chunk, 5 bits for a position in range [0, 16].
+     *      texture_index[10-bits]: quad's texture index.
+     */
+    u32 *quad;
 
     /*!
      *  @brief cost of work done on generating, meshing, importing and/or exporting
@@ -260,10 +274,8 @@ typedef struct hhc_chunk_order
 /*!
  *  @brief buffer of drawable chunks.
  *
- *  there are as many chunk-draw buffers as there are chunk schedulers.
- *
- *  @ref chunk_order is traversed backwards, visible chunks are pushed to this buffer
- *  so further chunks can be drawn first.
+ *  @ref chunk_order is traversed backwards, visible chunks are pushed to this
+ *  buffer so further chunks can be drawn first.
  *
  *  @remark updated on a fixed time-step.
  */

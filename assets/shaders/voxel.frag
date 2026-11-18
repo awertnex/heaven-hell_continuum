@@ -109,6 +109,8 @@ void main()
     vec3 color_flashlight = FLASHLIGHT_COLOR *
         spotlight_get(flashlight, normal) * flashlight_attenuation;
 
+    albedo.rgb = mix(albedo.rgb * 0.6, albedo.rgb, bimix(ao_weights, uv));
+
     vec3 color_composite = global_illumination + albedo.rgb *
         (color_block_light +
          color_flashlight);

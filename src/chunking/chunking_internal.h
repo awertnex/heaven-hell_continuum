@@ -50,6 +50,8 @@
 
 /* ---- section: chunk ------------------------------------------------------ */
 
+typedef void (*chunk_work_func)(hhc_chunk *chunk, chunk_work_budget budget, hhc_chunk_receipt *receipt);
+
 /*!
  *  @brief chunk buffer, raw chunk data.
  */
@@ -169,6 +171,8 @@ u32 chunk_bucket_load_internal(void);
 u32 chunk_debug_init_internal(fsl_len chunk_count);
 
 void chunk_debug_free_internal(void);
+u32 chunk_draw_init_internal(void);
+void chunk_draw_free_internal(void);
 
 /*!
  *  @brief get radius of sphere squared as per internal conventions.
@@ -188,7 +192,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
 /*!
  *  @brief load chunk from disk and generate if not found.
  */
-void chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
@@ -196,38 +200,38 @@ void chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
  *
  *  automatically called from @ref chunk_load_internal().
  */
-void chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief make chunk mesh and upload to VRAM.
  */
-void chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief calculate chunk lighting and upload to VRAM.
  */
-void chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief calculate chunk ambient occlusion and upload to VRAM.
  */
-void chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief finish chunk work and return to idle state.
  */
-void chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief chunk idle state function, do absolutely nothing.
  */
-void chunk_idle_func(hhc_chunk *chunk,
-        chunk_work_budget budget, hhc_chunk_receipt *receipt);
+chunk_work_func chunk_idle_func(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
 
 /*!
  *  @brief write chunk to disk.

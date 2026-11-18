@@ -978,7 +978,7 @@ int main(int argc, char **argv)
     glfwSetScrollCallback(render->window, callback_scroll);
     callback_scroll(render->window, 0.0f, 0.0f);
 
-    /* ---- set graphics ---------------------------------------------------- */
+    /* ---- region.start: set graphics -------------------------------------- */
 
     if (assets_init() != FSL_ERR_SUCCESS)
         goto cleanup;
@@ -988,7 +988,7 @@ int main(int argc, char **argv)
 
     super_debugger_init(render->size);
 
-    /* ---- end set graphics ------------------------------------------------ */
+    /* ---- region.end: set graphics ---------------------------------------- */
 
     player_init(&player, "Lily");
     input_init();
