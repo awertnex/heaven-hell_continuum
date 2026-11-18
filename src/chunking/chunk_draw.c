@@ -1,6 +1,9 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/memory/memory.h"
+#include "deps/fossil/shaders/shader_types.h"
 
+#include "../h/main.h"
+#include "../settings/settings.h"
 #include "../h/diagnostics.h"
 
 #include "chunking.h"
@@ -39,4 +42,9 @@ void chunk_draw_push(hhc_chunk *chunk)
 void chunk_draw_update_internal(void)
 {
     chunk_draw.p = fsl_mem_handle_get(chunk_draw.handle);
+}
+
+void chunk_draw_render(fsl_camera *camera,
+        v3f32 sun_rotation, v3f32 sky_light, v3f32 moon_light)
+{
 }

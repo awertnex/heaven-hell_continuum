@@ -168,6 +168,12 @@ u32 assets_init(void)
                 GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
         goto cleanup;
 
+    if (fsl_shader_program_init_ex(&shader_p[SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION],
+                "Screen-Space Ambient Occlusion", "screen_space_ambient_occlusion",
+                "screen_space_ambient_occlusion.vert", NULL, "screen_space_ambient_occlusion.frag",
+                GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
+        goto cleanup;
+
     if (fsl_shader_program_init_ex(&shader_p[SHADER_BOUNDING_BOX],
                 "Bounding Box", "bounding_box",
                 "bounding_box.vert", NULL, "bounding_box.frag",

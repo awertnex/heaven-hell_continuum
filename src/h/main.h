@@ -83,17 +83,9 @@ struct hhc_uniform
     struct /* post_processing */
     {
         GLint texture_skybox;
-        GLint texture_world_pos;
-        GLint texture_world_normal;
-        GLint texture_world_albedo_specular;
-        GLint texture_world_extra;
+        GLint texture_world;
         GLint texture_hud;
         GLint time;
-        GLint mat_projection;
-        GLint camera_far;
-        GLint camera_near;
-        GLint ssao_sample;
-        GLint enable_ssao;
     } post_processing;
 
     struct /* voxel */
@@ -122,6 +114,19 @@ struct hhc_uniform
         } spotlight;
 
     } voxel;
+
+    struct /* ssao */
+    {
+        GLint texture_world_pos;
+        GLint texture_world_normal;
+        GLint texture_world_albedo_specular;
+        GLint mat_projection;
+        GLint camera_far;
+        GLint camera_near;
+        GLint ssao_sample;
+        GLint ssao_enable;
+        GLint time;
+    } ssao;
 
     struct /* bounding_box */
     {
