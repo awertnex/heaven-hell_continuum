@@ -84,7 +84,6 @@ static void callback_framebuffer_size(i32 size_x, i32 size_y)
     player.camera.ratio = (f32)size_x / (f32)size_y;
     player.camera_hud.ratio = (f32)size_x / (f32)size_y;
 
-    fsl_fbo_realloc(&fbo_p[FBO_SKYBOX], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_WORLD], render->size.x, render->size.y, FALSE, 0);
     fsl_fbo_realloc(&fbo_p[FBO_WORLD_MSAA], render->size.x, render->size.y, TRUE, 4);
     fsl_fbo_realloc(&fbo_p[FBO_HUD], render->size.x, render->size.y, FALSE, 0);
@@ -290,8 +289,10 @@ static void skybox_draw(void)
     rotation_yaw = fsl_identity_m4f32();
     rotation_pitch = fsl_identity_m4f32();
 
-    glEnable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_p[SHADER_SKYBOX].asset.id);
@@ -323,12 +324,6 @@ static void skybox_draw(void)
             GL_UNSIGNED_INT, 0);
 
     /* ---- draw sun -------------------------------------------------------- */
-
-    if (settings.anti_aliasing)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
-    else
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
-    glClear(GL_DEPTH_BUFFER_BIT);
 
     translation = fsl_identity_m4f32();
     translation.a41 = skybox_data.sun_rotation.x * 2.0f;
@@ -390,13 +385,7 @@ static void skybox_draw(void)
     glBindTexture(GL_TEXTURE_2D, texture_p[TEXTURE_MOON].asset.id);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    if (settings.anti_aliasing)
-    {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
-        glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
-                render->size.x, render->size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    }
+    glEnable(GL_DEPTH_TEST);
 
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, 0);

@@ -19,8 +19,8 @@
 uniform sampler2D texture_world;
 uniform sampler2D texture_hud;
 uniform uint time;
-in vec2 vs_pos;
-in vec2 vs_uv;
+in vec2 pos;
+in vec2 uv;
 out vec4 color;
 
 /* ---- implementation ------------------------------------------------------ */
@@ -75,19 +75,19 @@ void main()
 {
     /* ---- base ------------------------------------------------------------ */
 
-    vec4 color_albedo = aberration_get(texture_world, vs_pos, vs_uv,
+    vec4 color_albedo = aberration_get(texture_world, pos, uv,
             ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
-    vec4 color_ui = texture(texture_hud, vs_uv);
+    vec4 color_ui = texture(texture_hud, uv);
 
     /* ---- effects --------------------------------------------------------- */
 
-    vec3 grain = 1.0 + grain_get(vs_pos, time, GRAIN_INTENSITY, GRAIN_SATURATION);
+    vec3 grain = 1.0 + grain_get(pos, time, GRAIN_INTENSITY, GRAIN_SATURATION);
 
     /* ---- final ----------------------------------------------------------- */
 
     color.rgb = color_albedo.rgb * color_albedo.a;
 
-    color.rgb = vignette_get(vs_pos, color.rgb, VIGNETTE_NARROWNESS, VIGNETTE_INTENSITY, VIGNETTE_RICHNESS);
+    color.rgb = vignette_get(pos, color.rgb, VIGNETTE_NARROWNESS, VIGNETTE_INTENSITY, VIGNETTE_RICHNESS);
     color.rgb = color_enrich(color.rgb, COLOR_RICHNESS);
 
     color.rgb = mix(color.rgb, color_ui.rgb, color_ui.a);

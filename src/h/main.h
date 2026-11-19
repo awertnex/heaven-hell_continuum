@@ -36,6 +36,7 @@ struct hhc_core
         b8 chunk_gizmo;
         b8 chunk_scheduler_visualizer;
     } debug;
+
 }; /* hhc_core */
 
 struct hhc_uniform
@@ -82,7 +83,6 @@ struct hhc_uniform
 
     struct /* post_processing */
     {
-        GLint texture_skybox;
         GLint texture_world;
         GLint texture_hud;
         GLint time;

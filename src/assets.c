@@ -112,9 +112,6 @@ u32 assets_init(void)
     /* ---- framebuffers ---------------------------------------------------- */
 
     if (
-            fsl_fbo_init(&fbo_p[FBO_SKYBOX],
-                render->size.x, render->size.y, NULL, FALSE, 0) != FSL_ERR_SUCCESS ||
-
             fsl_fbo_init(&fbo_p[FBO_WORLD],
                 render->size.x, render->size.y, NULL, FALSE, 0) != FSL_ERR_SUCCESS ||
 

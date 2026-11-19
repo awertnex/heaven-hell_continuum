@@ -87,7 +87,6 @@ enum mesh_index
 
 enum fbo_index
 {
-    FBO_SKYBOX,
     FBO_WORLD,
     FBO_WORLD_MSAA,
     FBO_HUD,
