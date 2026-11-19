@@ -16,7 +16,6 @@
 #define PI 3.14159265358979323846
 #define HALF_PI 1.57079632679489661923
 
-uniform sampler2D texture_skybox;
 uniform sampler2D texture_world;
 uniform sampler2D texture_hud;
 uniform uint time;
@@ -76,7 +75,6 @@ void main()
 {
     /* ---- base ------------------------------------------------------------ */
 
-    vec4 color_skybox = texture(texture_skybox, vs_uv);
     vec4 color_albedo = aberration_get(texture_world, vs_pos, vs_uv,
             ABERRATION_NARROWNESS, ABERRATION_INTENSITY);
     vec4 color_ui = texture(texture_hud, vs_uv);

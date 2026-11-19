@@ -36,6 +36,7 @@ typedef struct hhc_settings
     u32 render_distance;
     b8 anti_aliasing;
     b8 screen_space_ambient_occlusion;
+    f32 line_width; /* width of line geometry. (e.g., bounding boxes) */
 
     struct /* flag */
     {

@@ -71,6 +71,7 @@ u32 settings_init(void)
     settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
     settings.anti_aliasing = FALSE;
+    settings.line_width = 1.0f;
 
     settings_gui_scale_set(SET_GUI_SCALE_DEFAULT);
 

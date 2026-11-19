@@ -274,7 +274,6 @@ void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera)
 
     distance = chunk_sphere_radius_get_internal(settings.render_distance);
 
-    glClear(GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&camera->projection.perspective);

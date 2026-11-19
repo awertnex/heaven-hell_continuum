@@ -162,8 +162,6 @@ static void bind_shader_uniforms(void)
     uniform.gizmo_chunk.camera_position =
         glGetUniformLocation(shader_p[SHADER_GIZMO_CHUNK].asset.id, "camera_position");
 
-    uniform.post_processing.texture_skybox =
-        glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_skybox");
     uniform.post_processing.texture_world =
         glGetUniformLocation(shader_p[SHADER_POST_PROCESSING].asset.id, "texture_world");
     uniform.post_processing.texture_hud =
@@ -255,10 +253,6 @@ static void skybox_draw(void)
     fsl_mesh *fsl_mesh_p = fsl_mem_handle_get(fsl_mesh_buf);
     fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
 
-    glEnable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     skybox_data.time = fmodf((f32)world.tick / SET_DAY_TICKS_MAX, 1.0f);
     skybox_data.time = fmodf(skybox_data.time * 2.0f - delay_in_hours / 12.0f, 2.0f);
     skybox_data.sun_rotation.x = cos(skybox_data.time * FSL_PI);
@@ -296,6 +290,10 @@ static void skybox_draw(void)
     rotation_yaw = fsl_identity_m4f32();
     rotation_pitch = fsl_identity_m4f32();
 
+    glEnable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     glUseProgram(shader_p[SHADER_SKYBOX].asset.id);
 
     glUniformMatrix4fv(uniform.skybox.mat_translation, 1, GL_FALSE, (GLfloat*)&translation);
@@ -327,15 +325,10 @@ static void skybox_draw(void)
     /* ---- draw sun -------------------------------------------------------- */
 
     if (settings.anti_aliasing)
-    {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
     else
-    {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
-        glClear(GL_DEPTH_BUFFER_BIT);
-    }
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     translation = fsl_identity_m4f32();
     translation.a41 = skybox_data.sun_rotation.x * 2.0f;
@@ -653,6 +646,8 @@ static void world_draw(void)
     fsl_asset_metadata metadata = {0};
     u32 block_id = 0;
 
+    glLineWidth(settings.line_width);
+
     skybox_draw();
     draw_world();
 
@@ -726,10 +721,10 @@ static void world_draw(void)
 
     /* ---- draw chunk scheduler visualizer --------------------------------- */
 
+    glDisable(GL_DEPTH_TEST);
+
     if (core.debug.chunk_scheduler_visualizer && core.flag.hud)
         chunk_debug_scheduler_visualizer_draw(&player.camera);
-
-    glClear(GL_DEPTH_BUFFER_BIT);
 
     if (settings.anti_aliasing)
     {
@@ -738,6 +733,8 @@ static void world_draw(void)
         glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
                 render->size.x, render->size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
+
+    glEnable(GL_DEPTH_TEST);
 
     /* ---- draw hud gizmos ------------------------------------------------- */
 
@@ -946,23 +943,18 @@ static void world_draw(void)
     glUseProgram(shader_p[SHADER_POST_PROCESSING].asset.id);
     glClear(GL_COLOR_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_SKYBOX].color_buf);
-    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_WORLD].color_buf);
-    glActiveTexture(GL_TEXTURE2);
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, fbo_p[FBO_HUD].color_buf);
 
-    glUniform1i(uniform.post_processing.texture_skybox, 0);
-    glUniform1i(uniform.post_processing.texture_world, 1);
-    glUniform1i(uniform.post_processing.texture_hud, 2);
+    glUniform1i(uniform.post_processing.texture_world, 0);
+    glUniform1i(uniform.post_processing.texture_hud, 1);
     glUniform1ui(uniform.post_processing.time, ((u32)(render->time) & 0x1ff) + 1);
 
     glBindVertexArray(fsl_mesh_unit_quad.vao);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);

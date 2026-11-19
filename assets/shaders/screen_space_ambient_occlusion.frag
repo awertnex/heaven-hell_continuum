@@ -17,7 +17,7 @@ in vec2 uv;
 out vec4 color;
 
 const float kernel_scale = 1.0 / 64.0;
-float ambient_occlusion_intensity = 0.4;
+float ambient_occlusion_intensity = 0.3;
 
 /* ---- implementation ------------------------------------------------------ */
 
