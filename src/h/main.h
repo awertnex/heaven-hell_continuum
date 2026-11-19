@@ -123,7 +123,6 @@ struct hhc_uniform
         GLint mat_projection;
         GLint camera_far;
         GLint camera_near;
-        GLint ssao_sample;
         GLint ssao_enable;
         GLint time;
     } ssao;

@@ -12,7 +12,7 @@
 #extension GL_ARB_bindless_texture: require
 
 layout(location = 0) out vec4 g_pos;
-layout(location = 1) out vec4 g_normal_depth;
+layout(location = 1) out vec4 g_normal;
 layout(location = 2) out vec4 g_albedo_specular;
 
 layout(std430, binding = 2) readonly buffer ssbo_textures
@@ -122,8 +122,7 @@ void main()
 
     color_final = reinhard_tone_mapping(color_final, WHITE_POINT);
 
-    float mix_factor = floor(albedo.a);
     g_pos = pos_view;
-    g_normal_depth = vec4(normalize(normal_view), 1.0);
+    g_normal = vec4(normalize(normal_view), 1.0);
     g_albedo_specular = vec4(color_final * albedo.a * opacity, albedo.a * opacity);
 }

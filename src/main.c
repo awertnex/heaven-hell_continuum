@@ -217,8 +217,6 @@ static void bind_shader_uniforms(void)
         glGetUniformLocation(shader_p[SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION].asset.id, "camera_far");
     uniform.ssao.camera_near =
         glGetUniformLocation(shader_p[SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION].asset.id, "camera_near");
-    uniform.ssao.ssao_sample =
-        glGetUniformLocation(shader_p[SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION].asset.id, "ssao_sample");
     uniform.ssao.ssao_enable =
         glGetUniformLocation(shader_p[SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION].asset.id, "ssao_enable");
     uniform.ssao.time =
@@ -555,7 +553,10 @@ static void draw_world(void)
     }
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buf.fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
+    if (settings.anti_aliasing)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_WORLD_MSAA].fbo);
+    else
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_p[FBO_WORLD].fbo);
     glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
             render->size.x, render->size.y, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
@@ -582,7 +583,6 @@ static void draw_world(void)
             (GLfloat*)&player.camera.projection.projection);
     glUniform1f(uniform.ssao.camera_far, player.camera.far);
     glUniform1f(uniform.ssao.camera_near, player.camera.near);
-    glUniform3fv(uniform.ssao.ssao_sample, 64, (GLfloat*)ssao_buf.sample);
     glUniform1i(uniform.ssao.ssao_enable, settings.screen_space_ambient_occlusion);
     glUniform1ui(uniform.ssao.time, ((u32)(render->time) & 0x1ff) + 1);
 

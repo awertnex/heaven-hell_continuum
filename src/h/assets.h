@@ -72,11 +72,6 @@ typedef struct hhc_g_buffer
     GLuint rbo;
 } hhc_g_buffer;
 
-typedef struct hhc_ssao
-{
-    v3f32 sample[64];
-} hhc_ssao;
-
 enum block_id
 {
     BLOCK_NONE,
@@ -123,7 +118,6 @@ extern fsl_mem_arena memory_arena_assets_internal;
 extern fsl_mem_handle texture;
 extern fsl_mem_handle fbo;
 extern hhc_g_buffer g_buf;
-extern hhc_ssao ssao_buf;
 extern fsl_mem_handle mesh;
 extern fsl_mem_handle shader;
 extern fsl_mem_handle blocks;
@@ -146,7 +140,14 @@ void assets_free(void);
 u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y);
 
 void g_buffer_free(hhc_g_buffer *buf);
-void ssao_init(hhc_ssao *ssao);
+
+/**
+ *  @brief print an array of random vec3 values in range [-1, 1] in GLSL syntax
+ *  to stdout.
+ *
+ *  @param count number of kernel samples to generate, 0 for default count.
+ */
+void ssao_kernel_samples_generate(u32 count);
 
 /*!
  *  @param index index into @ref block_textures.

@@ -18,7 +18,6 @@
 fsl_mem_arena memory_arena_assets_internal = {0};
 fsl_mem_handle fbo = {0};
 hhc_g_buffer g_buf = {0};
-hhc_ssao ssao_buf = {0};
 fsl_mem_handle texture = {0};
 fsl_mem_handle mesh = {0};
 fsl_mem_handle shader = {0};
@@ -130,8 +129,6 @@ u32 assets_init(void)
 
     if (g_buffer_init(&g_buf, render->size.x, render->size.y) != FSL_ERR_SUCCESS)
         goto cleanup;
-
-    ssao_init(&ssao_buf);
 
     /* ---- shaders --------------------------------------------------------- */
 
@@ -456,31 +453,48 @@ void g_buffer_free(hhc_g_buffer *buf)
     *buf = nogbuf;
 }
 
-void ssao_init(hhc_ssao *ssao)
+void ssao_kernel_samples_generate(u32 count)
 {
-    u32 kernel_size = 64;
+    v3f32 sample = {0};
+    u32 kernel_size = 0;
     f32 scale = 0.0f;
     f32 rand_scale = 1.0f / FSL_U32_MAX;
     static u32 seed = 0;
     u32 i = 0;
+
+    if (count == 0)
+        count = 64;
+
+    kernel_size = count;
+
+    printf("const vec3 noise_vec[%u] = vec3[%u](\n", count, count);
 
     for (; i < kernel_size; ++i)
     {
         scale = (f32)i / kernel_size;
         scale = fsl_lerp_f32(0.1f, 1.0f, scale * scale);
 
-        ssao->sample[i].x = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
-        ssao->sample[i].y = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
-        ssao->sample[i].z = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
-        ssao->sample[i] = fsl_normalize_v3f32(ssao->sample[i]);
+        sample.x = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
+        sample.y = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale * 2.0f - 1.0f;
+        sample.z = (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        sample = fsl_normalize_v3f32(sample);
 
-        ssao->sample[i].x *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
-        ssao->sample[i].y *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
-        ssao->sample[i].z *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
-        ssao->sample[i].x *= scale;
-        ssao->sample[i].y *= scale;
-        ssao->sample[i].z *= scale;
+        sample.x *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        sample.y *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        sample.z *= (f32)fsl_rand_u32((u32)render->time + seed++) * rand_scale;
+        sample.x *= scale;
+        sample.y *= scale;
+        sample.z *= scale;
+
+        printf("    vec3(%.3f, %.3f, %.3f),\n",
+                sample.x,
+                sample.y,
+                sample.z);
     }
+
+    printf("%s\n\n", ");");
+
+    LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE, "SSAO Kernel Samples Generated, Copy and Paste Code to SSAO Fragment Shader!\n");
 }
 
 u32 block_texture_init(u32 index, const fsl_name *name, const fsl_name_id *name_id, const fsl_file *file)
