@@ -22,7 +22,7 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-/*!
+/**
  *  @brief one entry in a chunk gizmo render buffer.
  */
 typedef struct hhc_chunk_gizmo_entry
@@ -32,7 +32,7 @@ typedef struct hhc_chunk_gizmo_entry
     f32 offset; /* z offset in screen-space coordinates */
 } hhc_chunk_gizmo_entry;
 
-/*!
+/**
  *  @brief chunk gizmo render buffer data for chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
@@ -57,7 +57,7 @@ static fsl_mem_arena memory_arena_chunk_debug_internal = {0};
 v4u8 chunk_debug_color[CHUNK_DEBUG_COLOR_COUNT] = {0};
 f32 chunk_gizmo_layer_position[CHUNK_DEBUG_COLOR_COUNT] = {0};
 
-/*!
+/**
  *  @brief 3D chunk gizmo to showcase chunk status.
  */
 hhc_chunk_gizmo chunk_gizmo = {0};

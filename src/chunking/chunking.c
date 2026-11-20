@@ -26,7 +26,7 @@
 
 /* ---- section: declarations ----------------------------------------------- */
 
-/*!
+/**
  *  @internal
  *
  *  @brief memory arena used to store all chunk buffers and data.
