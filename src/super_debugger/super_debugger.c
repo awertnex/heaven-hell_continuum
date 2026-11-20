@@ -38,6 +38,8 @@ void super_debugger_init(v2i32 render_size)
             FSL_UI_ELEMENT_TYPE_BUTTON);
     fsl_ui_element_type_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_ELEMENT_TYPE_BUTTON);
+    fsl_ui_element_type_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            FSL_UI_ELEMENT_TYPE_BUTTON);
     fsl_ui_element_type_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_ELEMENT_TYPE_BUTTON);
 
@@ -55,6 +57,8 @@ void super_debugger_init(v2i32 render_size)
             &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_texture_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
+    fsl_ui_element_texture_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
     fsl_ui_element_texture_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             &fsl_texture_p[FSL_TEXTURE_INDEX_BUTTON_ACTIVE]);
 
@@ -66,6 +70,7 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_uv_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], 0, 0, 16, 16);
     fsl_ui_element_uv_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             0, 0, 16, 16);
+    fsl_ui_element_uv_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING], 0, 0, 16, 16);
     fsl_ui_element_uv_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             0, 0, 16, 16);
 
@@ -77,6 +82,7 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_9_slice_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], TRUE, 8);
     fsl_ui_element_9_slice_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             TRUE, 8);
+    fsl_ui_element_9_slice_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING], TRUE, 8);
     fsl_ui_element_9_slice_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             TRUE, 8);
 
@@ -94,6 +100,8 @@ void super_debugger_init(v2i32 render_size)
             FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
+    fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_EVENT_TYPE_ENTER, super_debugger_button_enter_func, NULL);
 
@@ -111,6 +119,8 @@ void super_debugger_init(v2i32 render_size)
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
+    fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_EVENT_TYPE_LEAVE, super_debugger_button_leave_func, NULL);
 
@@ -125,6 +135,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_chunk_scheduler_visualizer,
             NULL);
+    fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_anti_aliasing, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_EVENT_TYPE_CLICK, super_debugger_button_click_func_toggle_screen_space_ambient_occlusion,
             NULL);
@@ -138,6 +150,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
+    fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
     fsl_ui_element_callback_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             FSL_UI_EVENT_TYPE_RELEASE, super_debugger_button_release_func, NULL);
@@ -153,6 +167,8 @@ void super_debugger_init(v2i32 render_size)
     fsl_ui_element_attach(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL],
             &ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER]);
     fsl_ui_element_attach(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL],
+            &ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING]);
+    fsl_ui_element_attach(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL],
             &ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION]);
 
     super_debugger_update(render_size);
@@ -167,7 +183,7 @@ void super_debugger_update(v2i32 render_size)
     fsl_ui_element_position_set(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER],
             0, render_size.y, SET_MARGIN, -SET_MARGIN, 0, 0);
     fsl_ui_element_size_set(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL],
-            400, render_size.y - SET_MARGIN * 2, 0, 0);
+            470, render_size.y - SET_MARGIN * 2, 0, 0);
     fsl_ui_element_size_set(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER],
             render_size.x - SET_MARGIN * 2, 400, 0, 0);
 
@@ -188,6 +204,9 @@ void super_debugger_update(v2i32 render_size)
     fsl_ui_element_position_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL].header.transform.baked.size.x,
             0, 0, 0, -SET_MARGIN, SET_MARGIN);
+    fsl_ui_element_position_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL].header.transform.baked.size.x,
+            0, 0, 0, -SET_MARGIN, SET_MARGIN);
     fsl_ui_element_position_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL].header.transform.baked.size.x,
             0, 0, 0, -SET_MARGIN, SET_MARGIN);
@@ -198,21 +217,12 @@ void super_debugger_update(v2i32 render_size)
     fsl_ui_element_size_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO], 0, 0, 32, 16);
     fsl_ui_element_size_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
             0, 0, 32, 16);
+    fsl_ui_element_size_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
+            0, 0, 32, 16);
     fsl_ui_element_size_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             0, 0, 32, 16);
 
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
-            settings.gui_scale, settings.gui_scale);
-    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
-            settings.gui_scale, settings.gui_scale);
+    super_debugger_gui_scale_set(settings.gui_scale);
 
     fsl_ui_element_alignment_set(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL], -1, -1);
     fsl_ui_element_alignment_set(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER], -1, 1);
@@ -223,11 +233,14 @@ void super_debugger_update(v2i32 render_size)
 
 void super_debugger_draw(v2i32 render_size, GLuint fbo)
 {
-    i32 i = 0;
+    u32 color_setting_on = COLOR_TEXT_ENABLED;
     u32 index = 0;
     i32 logger_panel_height =
         ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER].header.transform.baked.size.y - SET_MARGIN * 2;
     fsl_log_entry *log_entry = NULL;
+    i32 i = 0;
+
+    /* ---- configs panel --------------------------------------------------- */
 
     fsl_ui_start(FALSE);
 
@@ -237,7 +250,44 @@ void super_debugger_draw(v2i32 render_size, GLuint fbo)
     fsl_ui_element_draw(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS]);
     fsl_ui_element_draw(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO]);
     fsl_ui_element_draw(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER]);
+    fsl_ui_element_draw(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING]);
     fsl_ui_element_draw(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION]);
+    fsl_text_start(font[FONT_MONO], settings.font_size, 0, FALSE);
+
+    fsl_text_push("Toggle Trans Blocks\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_TRANS_BLOCKS].header.transform.baked.pos.y,
+            0, 0, 0, core.debug.trans_blocks ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle Bounding Boxes\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_BOUNDING_BOXES].header.transform.baked.pos.y,
+            0, 0, 0, core.debug.bounding_boxes ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle Chunk Boundaries\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_BOUNDS].header.transform.baked.pos.y,
+            0, 0, 0, core.debug.chunk_bounds ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle Chunk Gizmo\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO].header.transform.baked.pos.y,
+            0, 0, 0, core.debug.chunk_gizmo ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle Chunk Scheduler Visualizer\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER].header.transform.baked.pos.y,
+            0, 0, 0, core.debug.chunk_scheduler_visualizer ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle MSAA\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING].header.transform.baked.pos.y,
+            0, 0, 0, settings.anti_aliasing ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Toggle SSAO\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION].header.transform.baked.pos.y,
+            0, 0, 0, settings.screen_space_ambient_occlusion ? color_setting_on : COLOR_TEXT_DEFAULT);
+
+    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+
+    /* ---- logger panel ---------------------------------------------------- */
+
+    fsl_ui_start(FALSE);
 
     fsl_ui_element_draw(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER]);
     fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
@@ -276,6 +326,8 @@ void super_debugger_gui_scale_set(f32 scale)
     fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_GIZMO],
             scale, scale);
     fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_CHUNK_SCHEDULER_VISUALIZER],
+            scale, scale);
+    fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_ANTI_ALIASING],
             scale, scale);
     fsl_ui_element_scale_set(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             scale, scale);

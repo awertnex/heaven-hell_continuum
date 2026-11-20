@@ -1,6 +1,7 @@
 #version 430 core
 
 #define GLOBAL_ILLUMINATION 0.5
+#define BAKED_AMBIENT_OCCLUSION_BRIGHTNESS 0.6
 #define SKY_INFLUENCE 1.5
 #define SUN_INFLUENCE 1.7
 #define MOON_INFLUENCE 0.4
@@ -13,7 +14,7 @@
 
 layout(location = 0) out vec4 g_pos;
 layout(location = 1) out vec4 g_normal;
-layout(location = 2) out vec4 g_albedo_specular;
+layout(location = 2) out vec4 g_albedo;
 
 layout(std430, binding = 2) readonly buffer ssbo_textures
 {
@@ -58,17 +59,27 @@ float square_length(vec3 v)
     return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
+float bimix(float weights[4], vec2 t)
+{
+    t = smoothstep(0.0, 1.0, t);
+    vec2 w = 1.0 - t;
+    return
+        weights[0] * w.x * w.y +
+        weights[1] * t.x * w.y +
+        weights[2] * w.x * t.y +
+        weights[3] * t.x * t.y;
+}
+
+float fog_linear(float distance, float min, float max)
+{
+    return 1.0 - clamp((max - distance) / (max - min), 0.0, 1.0);
+}
+
 vec3 reinhard_tone_mapping(vec3 color, float white_point)
 {
     white_point *= white_point;
     color = (color * (1.0 + color / white_point)) / (1.0 + color);
     return color * color;
-}
-
-vec3 fog_linear(vec3 color_a, vec3 color_b, float distance, float min, float max)
-{
-    float factor = clamp((max - distance) / (max - min), 0.0, 1.0);
-    return mix(color_a, color_b, 1.0 - factor);
 }
 
 float spotlight_get(hhc_spotlight spotlight, vec3 normal)
@@ -81,23 +92,17 @@ float spotlight_get(hhc_spotlight spotlight, vec3 normal)
     return value * value * value * (value * (value * 6.0 - 15.0) + 10.0) * spotlight.intensity;
 }
 
-float bimix(float weights[4], vec2 t)
-{
-    t = smoothstep(0.0, 1.0, t);
-    vec2 w = 1.0 - t;
-    return
-        weights[0] * w.x * w.y +
-        weights[1] * t.x * w.y +
-        weights[2] * w.x * t.y +
-        weights[3] * t.x * t.y;
-}
-
 void main()
 {
     float distance = square_length(pos.xyz - flashlight.pos);
     float flashlight_attenuation = 1.0 / pow(sqrt(distance), 1.0 / FLASHLIGHT_DISTANCE);
     float sun_brightness = (sky_light.r + sky_light.g + sky_light.b) / 3.0;
     float moon_brightness = (moon_light.r + moon_light.g + moon_light.b) / 3.0;
+
+    float fog_distance = distance / (float(render_distance) * (1.0 - FOG_SOFTNESS / 1.5));
+    float fog_start = render_distance - render_distance * FOG_SOFTNESS;
+    float fog_end = render_distance + render_distance * FOG_SOFTNESS;
+    float fog_factor = fog_linear(fog_distance, fog_start, fog_end);
 
     vec4 albedo = texture(textures[face_index], uv);
     vec3 global_illumination = albedo.rgb * GLOBAL_ILLUMINATION;
@@ -109,20 +114,17 @@ void main()
     vec3 color_flashlight = FLASHLIGHT_COLOR *
         spotlight_get(flashlight, normal) * flashlight_attenuation;
 
-    albedo.rgb = mix(albedo.rgb * 0.6, albedo.rgb, bimix(ao_weights, uv));
+    albedo.rgb = mix(albedo.rgb, albedo.rgb * BAKED_AMBIENT_OCCLUSION_BRIGHTNESS, bimix(ao_weights, uv));
 
     vec3 color_composite = global_illumination + albedo.rgb *
         (color_block_light +
          color_flashlight);
 
-    vec3 color_final = fog_linear(color_composite, sky_light,
-            distance / (float(render_distance) * (1.0 - FOG_SOFTNESS / 1.5)),
-            render_distance - render_distance * FOG_SOFTNESS,
-            render_distance + render_distance * FOG_SOFTNESS);
+    vec3 color_final = mix(color_composite, sky_light, fog_factor);
 
     color_final = reinhard_tone_mapping(color_final, WHITE_POINT);
 
     g_pos = pos_view;
     g_normal = vec4(normalize(normal_view), 1.0);
-    g_albedo_specular = vec4(color_final * albedo.a * opacity, albedo.a * opacity);
+    g_albedo = vec4(color_final * albedo.a * opacity, albedo.a * opacity);
 }

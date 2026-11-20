@@ -36,8 +36,8 @@ typedef struct hhc_chunk_receipt_printed
     str cost[CHUNK_RECEIPT_ITEM_COUNT][FSL_ID_CAP];
 
     str subtotal[FSL_ID_CAP];
-    str priority_rate[FSL_ID_CAP]; /* `subtotal` multiplier */
-    str total[FSL_ID_CAP]; /* `subtotal` multiplied by `priority_rate` */
+    str priority_rate[FSL_ID_CAP];
+    str total[FSL_ID_CAP];
 
     str printed[CHUNK_RECEIPT_CAP];
 } hhc_chunk_receipt_printed;
@@ -45,7 +45,7 @@ typedef struct hhc_chunk_receipt_printed
 /**
  *  @brief cost of work requested by chunks in a @ref hhc_chunk_scheduler.
  */
-typedef enum chunk_work_cost_table
+enum chunk_work_cost_table
 {
     CHUNK_WORK_COST_SCAN = 5,
     CHUNK_WORK_COST_PUSH = 20,
@@ -64,7 +64,7 @@ typedef enum chunk_work_cost_table
     CHUNK_WORK_COST_LIGHT_NON_AIR = 600,
     CHUNK_WORK_COST_AO_AIR = 50,
     CHUNK_WORK_COST_AO_NON_AIR = 700
-} chunk_work_cost_table;
+}; /* chunk_work_cost_table */
 
 void chunk_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi);
 void chunk_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst);

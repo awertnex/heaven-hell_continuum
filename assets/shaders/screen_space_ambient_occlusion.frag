@@ -150,7 +150,8 @@ void main()
     vec4 color_albedo = texture(texture_world_albedo_specular, uv);
     float ambient_occlusion = ssao_enable ? ambient_occlusion_get(texture_world_pos,
             texture_world_normal, pos, uv, ambient_occlusion_intensity) : 1.0;
+    ambient_occlusion *= color_albedo.a;
 
-    color = color_albedo * color_albedo.a;
+    color = color_albedo;
     color.rgb *= ambient_occlusion;
 }

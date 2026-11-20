@@ -1,7 +1,7 @@
 #ifndef HHC_SUPER_DEBUGGER_CALLBACKS_H
 #define HHC_SUPER_DEBUGGER_CALLBACKS_H
 
-#include "deps/fossil/ui/ui_types.h"
+#include "deps/fossil/ui/ui_event.h"
 
 void super_debugger_panel_enter_func(fsl_ui_event event, void *data);
 void super_debugger_panel_leave_func(fsl_ui_event event, void *data);
@@ -15,6 +15,7 @@ void super_debugger_button_click_func_toggle_bounding_boxes(fsl_ui_event event, 
 void super_debugger_button_click_func_toggle_chunk_bounds(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_chunk_gizmo(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_chunk_scheduler_visualizer(fsl_ui_event event, void *data);
+void super_debugger_button_click_func_toggle_anti_aliasing(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_screen_space_ambient_occlusion(fsl_ui_event event, void *data);
 
 #endif /* HHC_SUPER_DEBUGGER_CALLBACKS_H */
