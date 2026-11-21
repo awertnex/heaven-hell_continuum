@@ -1054,8 +1054,8 @@ section_menu_pause:
             core.request.menu_back = FALSE;
 
             core.flag.paused = FALSE;
-            center_cursor;
             enable_cursor;
+            center_cursor;
             goto section_gameplay;
         }
     }
