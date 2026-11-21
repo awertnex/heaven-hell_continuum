@@ -97,7 +97,7 @@ cleanup:
 
 void gui_update(v2i32 render_size)
 {
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+    fsl_texture *texture_p = fsl_mem_handle_get(hhc_texture_buf);
 
     /* element: crosshair */
     fsl_ui_element_type_set(&ui_element_sprite[UI_ELEMENT_CROSSHAIR], FSL_UI_ELEMENT_TYPE_SPRITE);

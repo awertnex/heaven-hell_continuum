@@ -131,7 +131,7 @@ void input_init(void)
 
 void input_update(hhc_player *p)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     u32 shader_err = FSL_ERR_SUCCESS;
     u32 i = 0;
     f64 px = 0.0;

@@ -115,13 +115,13 @@ typedef struct hhc_block
  */
 extern fsl_mem_arena memory_arena_assets_internal;
 
-extern fsl_mem_handle texture;
-extern fsl_mem_handle fbo;
+extern fsl_mem_handle hhc_texture_buf;
+extern fsl_mem_handle hhc_fbo_buf;
 extern hhc_g_buffer g_buf;
-extern fsl_mem_handle mesh;
-extern fsl_mem_handle shader;
-extern fsl_mem_handle blocks;
-extern fsl_font *font[FONT_COUNT];
+extern fsl_mem_handle hhc_mesh_buf;
+extern fsl_mem_handle hhc_shader_buf;
+extern fsl_mem_handle hhc_blocks_buf;
+extern fsl_font *hhc_font_buf[FONT_COUNT];
 
 /* ---- section: signatures ------------------------------------------------- */
 

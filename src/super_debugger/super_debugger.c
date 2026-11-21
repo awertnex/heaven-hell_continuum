@@ -140,7 +140,7 @@ void super_debugger_draw(v2i32 render_size, GLuint fbo)
     for (i = 0; i < UI_ELEMENT_SDB_BUTTON_COUNT; ++i)
         fsl_ui_element_draw(&ui_element_sdb_button[i]);
 
-    fsl_text_start(font[FONT_MONO], settings.font_size, 0, FALSE);
+    fsl_text_start(hhc_font_buf[FONT_MONO], settings.font_size, 0, FALSE);
 
     fsl_text_push("Toggle Logger\r",
             SET_MARGIN * 3,
@@ -192,7 +192,7 @@ void super_debugger_draw(v2i32 render_size, GLuint fbo)
         fsl_ui_start(FALSE);
 
         fsl_ui_element_draw(&ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER]);
-        fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+        fsl_text_start(hhc_font_buf[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
         log_entry = fsl_mem_handle_get(fsl_log_core.buf);
         for (i = logger_panel_height / settings.font_size; i > 0; --i)
@@ -227,7 +227,7 @@ void super_debugger_panel_config_height_set(b8 logger_panel_is_visible)
             ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER].header.transform.baked.size.y +
             SET_MARGIN;
         height = fsl_clamp_i32(height,
-                ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_LOGGER].quad.slice_size * 4,
+                ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_CONFIG].quad.slice_size * 4,
                 render->size.y);
     }
 

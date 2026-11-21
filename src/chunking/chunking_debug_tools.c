@@ -184,7 +184,7 @@ void chunk_debug_free_internal(void)
 
 void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     f32 scale = (CHUNK_GIZMO_PIXEL_HEIGHT / (f32)settings.chunk_buf_diameter) * render->ndc_scale.y;
     m4f32 mat_scale = {0};
     m4f32 mat_offset = {0};
@@ -268,7 +268,7 @@ void chunk_debug_chunk_gizmo_bake_internal(void)
 
 void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera)
 {
-    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
     u32 i = 0;
     hhc_chunk *chunk = NULL;
     hhc_chunk_bucket bucket = {0};

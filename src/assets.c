@@ -16,18 +16,18 @@
 #include <stdio.h>
 
 fsl_mem_arena memory_arena_assets_internal = {0};
-fsl_mem_handle fbo = {0};
+fsl_mem_handle hhc_fbo_buf = {0};
 hhc_g_buffer g_buf = {0};
-fsl_mem_handle texture = {0};
-fsl_mem_handle mesh = {0};
-fsl_mem_handle shader = {0};
-fsl_mem_handle blocks = {0};
+fsl_mem_handle hhc_texture_buf = {0};
+fsl_mem_handle hhc_mesh_buf = {0};
+fsl_mem_handle hhc_shader_buf = {0};
+fsl_mem_handle hhc_blocks_buf = {0};
 static fsl_mem_handle block_textures = {0};
 static GLuint ssbo_texture_indices_id = 0;
 static u32 ssbo_texture_indices[BLOCK_COUNT * 6] = {0};
 static GLuint ssbo_texture_handles_id = 0;
 static u64 ssbo_texture_handles[TEXTURE_BLOCK_COUNT] = {0};
-fsl_font *font[FONT_COUNT] = {0};
+fsl_font *hhc_font_buf[FONT_COUNT] = {0};
 
 u32 assets_init(void)
 {
@@ -67,32 +67,32 @@ u32 assets_init(void)
     };
 
     font_p = fsl_mem_handle_get(fsl_font_buf);
-    font[FONT_REG] =        &font_p[FSL_FONT_INDEX_DEJAVU_SANS];
-    font[FONT_REG_BOLD] =   &font_p[FSL_FONT_INDEX_DEJAVU_SANS_BOLD];
-    font[FONT_MONO] =       &font_p[FSL_FONT_INDEX_DEJAVU_SANS_MONO];
-    font[FONT_MONO_BOLD] =  &font_p[FSL_FONT_INDEX_DEJAVU_SANS_MONO_BOLD];
+    hhc_font_buf[FONT_REG] =        &font_p[FSL_FONT_INDEX_DEJAVU_SANS];
+    hhc_font_buf[FONT_REG_BOLD] =   &font_p[FSL_FONT_INDEX_DEJAVU_SANS_BOLD];
+    hhc_font_buf[FONT_MONO] =       &font_p[FSL_FONT_INDEX_DEJAVU_SANS_MONO];
+    hhc_font_buf[FONT_MONO_BOLD] =  &font_p[FSL_FONT_INDEX_DEJAVU_SANS_MONO_BOLD];
 
 
     if (fsl_mem_arena_init(&memory_arena_assets_internal,
                 "assets_init().memory_arena_assets_internal") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_assets_internal, &fbo,
+            fsl_mem_arena_push(&memory_arena_assets_internal, &hhc_fbo_buf,
                 FBO_COUNT * sizeof(fsl_fbo),
                 "assets_init().fbo") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_assets_internal, &texture,
+            fsl_mem_arena_push(&memory_arena_assets_internal, &hhc_texture_buf,
                 TEXTURE_COUNT * sizeof(fsl_texture),
                 "assets_init().texture") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_assets_internal, &mesh,
+            fsl_mem_arena_push(&memory_arena_assets_internal, &hhc_mesh_buf,
                 MESH_COUNT * sizeof(fsl_mesh),
-                "assets_init().mesh") != FSL_ERR_SUCCESS ||
+                "assets_init().hhc_mesh_buf") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_assets_internal, &shader,
+            fsl_mem_arena_push(&memory_arena_assets_internal, &hhc_shader_buf,
                 SHADER_COUNT * sizeof(fsl_shader_program),
                 "assets_init().shader") != FSL_ERR_SUCCESS ||
 
-            fsl_mem_arena_push(&memory_arena_assets_internal, &blocks,
+            fsl_mem_arena_push(&memory_arena_assets_internal, &hhc_blocks_buf,
                 BLOCK_COUNT * sizeof(hhc_block),
                 "assets_init().blocks") != FSL_ERR_SUCCESS ||
 
@@ -101,12 +101,12 @@ u32 assets_init(void)
                 "assets_init().block_textures") != FSL_ERR_SUCCESS)
         goto cleanup;
 
-    fbo_p = fsl_mem_handle_get(fbo);
-    texture_p = fsl_mem_handle_get(texture);
-    mesh_p = fsl_mem_handle_get(mesh);
-    shader_p = fsl_mem_handle_get(shader);
+    fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
+    texture_p = fsl_mem_handle_get(hhc_texture_buf);
+    mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
+    shader_p = fsl_mem_handle_get(hhc_shader_buf);
     block_textures_p = fsl_mem_handle_get(block_textures);
-    blocks_p = fsl_mem_handle_get(blocks);
+    blocks_p = fsl_mem_handle_get(hhc_blocks_buf);
 
     /* ---- framebuffers ---------------------------------------------------- */
 
@@ -302,27 +302,27 @@ void assets_free(void)
         for (i = 0; i < TEXTURE_BLOCK_COUNT; ++i)
             fsl_texture_free(&block_textures_p[i]);
     }
-    if (shader.arena)
+    if (hhc_shader_buf.arena)
     {
-        shader_p = fsl_mem_handle_get(shader);
+        shader_p = fsl_mem_handle_get(hhc_shader_buf);
         for (i = 0; i < SHADER_COUNT; ++i)
             fsl_shader_program_free(&shader_p[i]);
     }
-    if (mesh.arena)
+    if (hhc_mesh_buf.arena)
     {
-        mesh_p = fsl_mem_handle_get(mesh);
+        mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
         for (i = 0; i < MESH_COUNT; ++i)
             fsl_mesh_free(&mesh_p[i]);
     }
-    if (texture.arena)
+    if (hhc_texture_buf.arena)
     {
-        texture_p = fsl_mem_handle_get(texture);
+        texture_p = fsl_mem_handle_get(hhc_texture_buf);
         for (i = 0; i < TEXTURE_COUNT; ++i)
             fsl_texture_free(&texture_p[i]);
     }
-    if (fbo.arena)
+    if (hhc_fbo_buf.arena)
     {
-        fbo_p = fsl_mem_handle_get(fbo);
+        fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
         for (i = 0; i < FBO_COUNT; ++i)
             fsl_fbo_free(&fbo_p[i]);
     }
@@ -437,7 +437,7 @@ cleanup:
 
 void g_buffer_free(hhc_g_buffer *buf)
 {
-    hhc_g_buffer nogbuf = {0};
+    hhc_g_buffer nog_buf = {0};
 
     if (!buf)
         return;
@@ -450,7 +450,7 @@ void g_buffer_free(hhc_g_buffer *buf)
         glDeleteTextures(1, &buf->color_buf_albedo_specular);
     }
 
-    *buf = nogbuf;
+    *buf = nog_buf;
 }
 
 void ssao_kernel_samples_generate(u32 count)
@@ -524,7 +524,7 @@ cleanup:
 
 void blocks_init(void)
 {
-    hhc_block *blocks_p = fsl_mem_handle_get(blocks);
+    hhc_block *blocks_p = fsl_mem_handle_get(hhc_blocks_buf);
 
     fsl_asset_metadata_set(&blocks_p[BLOCK_NONE].asset, FSL_ASSET_CUSTOM,
             "None", "none", NULL, NULL);

@@ -79,7 +79,7 @@ static void world_draw(void);
 
 static void callback_framebuffer_size(i32 size_x, i32 size_y)
 {
-    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
+    fsl_fbo *fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
 
     player.camera.ratio = (f32)size_x / (f32)size_y;
     player.camera_hud.ratio = (f32)size_x / (f32)size_y;
@@ -121,7 +121,7 @@ static void callback_scroll(GLFWwindow *window, double xoffset, double yoffset)
 
 static void bind_shader_uniforms(void)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     uniform.skybox.mat_translation =
         glGetUniformLocation(shader_p[SHADER_SKYBOX].asset.id, "mat_translation");
     uniform.skybox.mat_rotation =
@@ -245,10 +245,10 @@ static void skybox_draw(void)
     m4f32 translation = {0};
     m4f32 rotation_yaw = {0};
     m4f32 rotation_pitch = {0};
-    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
+    fsl_fbo *fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
+    fsl_texture *texture_p = fsl_mem_handle_get(hhc_texture_buf);
     fsl_mesh *fsl_mesh_p = fsl_mem_handle_get(fsl_mesh_buf);
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
 
     skybox_data.time = fmodf((f32)world.tick / SET_DAY_TICKS_MAX, 1.0f);
     skybox_data.time = fmodf(skybox_data.time * 2.0f - delay_in_hours / 12.0f, 2.0f);
@@ -449,8 +449,8 @@ static void ui_hud_draw(void)
 
 static void draw_world(void)
 {
-    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_fbo *fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     hhc_chunk *chunk = NULL;
     static hhc_spotlight flashlight = {0};
     static hhc_spotlight flashlight_last = {0};
@@ -603,8 +603,8 @@ static void draw_world(void)
 
 static void draw_debug_gizmo_axis(void)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
-    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
     m4f32 transform = {0};
 
     transform = player.camera_hud.projection.projection;
@@ -627,11 +627,11 @@ static void draw_debug_gizmo_axis(void)
 static void world_draw(void)
 {
     static str engine_version[FSL_ID_CAP] = {0};
-    fsl_fbo *fbo_p = fsl_mem_handle_get(fbo);
-    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
-    fsl_texture *texture_p = fsl_mem_handle_get(texture);
-    hhc_block *blocks_p = fsl_mem_handle_get(blocks);
+    fsl_fbo *fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
+    fsl_texture *texture_p = fsl_mem_handle_get(hhc_texture_buf);
+    hhc_block *blocks_p = fsl_mem_handle_get(hhc_blocks_buf);
     fsl_asset_metadata metadata = {0};
     u32 block_id = 0;
 
@@ -712,8 +712,10 @@ static void world_draw(void)
 
     glDisable(GL_DEPTH_TEST);
 
-    if (core.debug.chunk_scheduler_visualizer && core.flag.hud)
+    if (core.flag.hud && core.debug.chunk_scheduler_visualizer)
         chunk_debug_scheduler_visualizer_draw(&player.camera);
+
+    glEnable(GL_DEPTH_TEST);
 
     if (settings.anti_aliasing)
     {
@@ -722,8 +724,6 @@ static void world_draw(void)
         glBlitFramebuffer(0, 0, render->size.x, render->size.y, 0, 0,
                 render->size.x, render->size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
-
-    glEnable(GL_DEPTH_TEST);
 
     /* ---- draw hud gizmos ------------------------------------------------- */
 
@@ -762,7 +762,7 @@ static void world_draw(void)
 
     /* ---- draw debug info ------------------------------------------------- */
 
-    fsl_text_start(font[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
+    fsl_text_start(hhc_font_buf[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
     fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
             SET_MARGIN, SET_MARGIN, 0, 0, 0,
@@ -892,7 +892,7 @@ static void world_draw(void)
                 COLOR_TEXT_DEFAULT);
 
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
-        fsl_text_start(font[FONT_MONO], FSL_FONT_SIZE_DEFAULT, 0, FALSE);
+        fsl_text_start(hhc_font_buf[FONT_MONO], FSL_FONT_SIZE_DEFAULT, 0, FALSE);
 
         fsl_engine_string_get(engine_version, FSL_ENGINE_STR_INDEX_VERSION);
         fsl_text_push(fsl_stringf(
