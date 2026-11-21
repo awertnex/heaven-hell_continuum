@@ -6,8 +6,10 @@
 
 #include "../settings/settings.h"
 
+#include "../h/common.h"
 #include "../h/main.h"
 
+#include "super_debugger.h"
 #include "super_debugger_callbacks.h"
 
 void super_debugger_panel_enter_func(fsl_ui_event event, void *data)
@@ -48,6 +50,27 @@ void super_debugger_button_click_func(fsl_ui_event event, void *data)
 void super_debugger_button_release_func(fsl_ui_event event, void *data)
 {
     super_debugger_button_enter_func(event, data);
+}
+
+void super_debugger_button_click_func_toggle_logger(fsl_ui_event event, void *data)
+{
+    super_debugger_button_click_func(event, data);
+
+    core.debug.logger ^= 1;
+
+    super_debugger_panel_config_height_set(core.debug.logger);
+
+    if (core.debug.logger)
+    {
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Logger Panel On\n");
+    }
+    else
+    {
+        LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+                "Logger Panel Off\n");
+
+    }
 }
 
 void super_debugger_button_click_func_toggle_trans_blocks(fsl_ui_event event, void *data)

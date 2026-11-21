@@ -189,6 +189,11 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     m4f32 mat_scale = {0};
     m4f32 mat_offset = {0};
     m4f32 mat_transform = {0};
+    v2f32 align_top_left = {0};
+
+    /* TODO: please use `align_top_left` for drawing chunk gizmo to prepare for embedding into a UI element */
+    align_top_left.x = (CHUNK_GIZMO_PIXEL_HEIGHT - render->size.x / 2.0f) * render->ndc_scale.x;
+    align_top_left.y = (-CHUNK_GIZMO_PIXEL_HEIGHT + render->size.y / 2.0f) * render->ndc_scale.y;
 
     mat_scale.a11 = scale;
     mat_scale.a22 = scale;
@@ -249,7 +254,7 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 void chunk_debug_chunk_gizmo_bake_internal(void)
 {
     static u64 bake_interval = 0;
-    u64 refresh_rate = FSL_SEC2NSEC / 30;
+    u64 refresh_rate = FSL_SEC2NSEC / CHUNK_GIZMO_REFRESH_RATE;
 
     if (core.debug.chunk_gizmo &&
             fsl_on_time_interval(&bake_interval, refresh_rate, render->time))

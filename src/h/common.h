@@ -25,7 +25,7 @@
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
-#define SET_TEXT_REFRESH_INTERVAL       4 /* unit: fps */
+#define SET_TEXT_REFRESH_INTERVAL       6 /* unit: fps */
 #define SET_CONSOLE_SCROLL_SPEED        4
 
 #define COLOR_TEXT_DEFAULT      FSL_DIAGNOSTIC_COLOR_DEBUG

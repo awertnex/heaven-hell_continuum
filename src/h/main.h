@@ -30,6 +30,7 @@ struct hhc_core
 
     struct /* debug */
     {
+        b8 logger;
         b8 trans_blocks;
         b8 bounding_boxes;
         b8 chunk_bounds;

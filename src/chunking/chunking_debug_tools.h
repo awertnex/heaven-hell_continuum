@@ -3,6 +3,8 @@
 
 #include "deps/fossil/assets/asset_types.h"
 
+#define CHUNK_GIZMO_REFRESH_RATE 30 /* fps */
+
 /**
  *  @brief convert RGBA color to 4-Byte hex color.
  *

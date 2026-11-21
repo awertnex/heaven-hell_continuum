@@ -10,6 +10,7 @@ void super_debugger_button_leave_func(fsl_ui_event event, void *data);
 void super_debugger_button_click_func(fsl_ui_event event, void *data);
 void super_debugger_button_release_func(fsl_ui_event event, void *data);
 
+void super_debugger_button_click_func_toggle_logger(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_trans_blocks(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_bounding_boxes(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_chunk_bounds(fsl_ui_event event, void *data);
