@@ -734,17 +734,11 @@ static void world_draw(void)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (core.flag.hud)
-    {
-        if (core.flag.debug)
-            draw_debug_gizmo_axis();
+    if (core.flag.hud && core.flag.debug)
+        draw_debug_gizmo_axis();
 
-        if (core.debug.chunk_gizmo)
-        {
-            glClear(GL_DEPTH_BUFFER_BIT);
-            chunk_debug_chunk_gizmo_draw(&player.camera_hud);
-        }
-    }
+    if (core.debug.chunk_gizmo)
+        chunk_debug_chunk_gizmo_draw(&player.camera_hud);
 
     if (settings.anti_aliasing)
     {
@@ -764,11 +758,13 @@ static void world_draw(void)
 
     fsl_text_start(hhc_font_buf[FONT_MONO_BOLD], settings.font_size, 0, FALSE);
 
-    fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
-            SET_MARGIN, SET_MARGIN, 0, 0, 0,
-            settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
-
-    fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+    if (core.flag.hud)
+    {
+        fsl_text_push(fsl_stringf("FPS         [%u]\n", settings.fps),
+                SET_MARGIN, SET_MARGIN, 0, 0, 0,
+                settings.fps > 60 ? COLOR_TEXT_MOSS : COLOR_DIAGNOSTIC_ERROR);
+        fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
+    }
 
     if (core.flag.hud && core.flag.debug)
     {
@@ -917,13 +913,13 @@ static void world_draw(void)
         fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
     }
 
-    fsl_fbo_blit(fbo_p[FBO_HUD].fbo);
-    fsl_ui_stop();
-
-    /* ---- draw super debugger --------------------------------------------- */
-
     if (core.flag.super_debug)
         super_debugger_draw(render->size, fbo_p[FBO_HUD].fbo);
+    else
+        fsl_fbo_blit(fbo_p[FBO_HUD].fbo);
+
+    fsl_ui_stop();
+
 
     /* ---- post-processing ------------------------------------------------- */
 
