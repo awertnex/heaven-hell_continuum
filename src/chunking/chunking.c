@@ -1402,7 +1402,7 @@ void chunk_scheduler_update_internal(void)
     u32 bucket_end = 0;
 
     if (chunk_sched.count >= end)
-        goto pop;
+        goto skip_push;
 
     if (budget <= 0)
         return;
@@ -1425,7 +1425,7 @@ void chunk_scheduler_update_internal(void)
         budget -= CHUNK_WORK_COST_SCAN;
     }
 
-pop:
+skip_push:
 
     if (!chunk_sched.count || budget <= 0)
         return;
