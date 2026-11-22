@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <math.h>
 
-/*!
+/**
  *  @internal
  *
  *  @brief handle player being near or past a world edge.
@@ -197,7 +197,7 @@ void player_hotbar_selected_advance(hhc_player *p, i32 delta)
 void player_collision_update(hhc_player *p, f64 dt)
 {
     hhc_chunk *ch = NULL;
-    hhc_block *block_p = fsl_mem_handle_get(blocks);
+    hhc_block *block_p = fsl_mem_handle_get(hhc_blocks_buf);
     u32 *block = NULL;
     f64 speed;
     v3f64 velocity = {0};

@@ -13,6 +13,7 @@
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_LAYER * CHUNK_DIAMETER)
+#define CHUNK_QUADS_MAX (((CHUNK_VOLUME) / 2) * 6)
 
 #define CHUNK_REGION_DIAMETER   32
 #define CHUNK_REGION_LAYER      (CHUNK_REGION_DIAMETER * CHUNK_REGION_DIAMETER)
@@ -25,7 +26,7 @@
 #define WORLD_DIAMETER_VERTICAL (WORLD_RADIUS_VERTICAL * 2)
 #define WORLD_CHUNKS_MAX        (WORLD_DIAMETER * WORLD_DIAMETER * WORLD_DIAMETER_VERTICAL)
 
-/*!
+/**
  *  @brief a margin of chunks before any world edge.
  */
 #define WORLD_MARGIN            SET_RENDER_DISTANCE_MAX
@@ -103,7 +104,7 @@ enum chunk_flag
     FLAG_CHUNK_GENERATED =  (1 << 6),
     FLAG_CHUNK_VISIBLE =    (1 << 7),
 
-    /*!
+    /**
      *  @brief chunk marking for @ref chunk_tab shifting logic.
      */
     FLAG_CHUNK_EDGE =       (1 << 8)
@@ -142,7 +143,7 @@ typedef struct hhc_chunk
     v3i16 pos_world; /* world position, in chunk-space (for rendering) */
     v3i16 pos_wrap; /* canonical position, in chunk-space (for serialization) */
 
-    /*!
+    /**
      *  @brief chunk's unique id derived from its canonical position.
      *
      * format:
@@ -154,33 +155,46 @@ typedef struct hhc_chunk
 
     i8 debug_color_bias; /* format: 0xrr */
 
-    /*!
+    /**
      *  @brief block iterator for per-chunk generation progress.
      */
     u32 cursor;
 
-    /*!
+    /**
      *  @brief chunk's own index in @ref chunk_table.p (Chunk-Tab Index).
      */
     u32 cti;
 
-    /*!
-     *  @brief chunk's priority index (Chunk Priority Index), it's chunk's distance
-     *  away from center index of @ref chunk_table.p.
+    /**
+     *  @brief chunk's priority index (Chunk Priority Index), it's chunk's
+     *  distance away from center index of @ref chunk_table.p.
      */
     u32 cpi;
 
     hhc_chunk_mesh mesh_deprecated;
 
-    /*!
-     *  @brief allocated by, or pushed onto, a @ref chunk_draw, if needed.
+    /**
+     *  @brief allocated by, or pushed onto, a @ref hhc_chunk_draw, if needed.
      */
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 light[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
 
-    /*!
+    /**
+     *  @brief flexible array compiled from RAM buffer data to VRAM format.
+     *
+     *  data packing format:
+     *      ao[4-bits]: baked ambient occlusion weights, one bit per quad corner.
+     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
+     *      pos_z[5-bits]: quad's Z position within chunk, 5 bits for a position in range [0, 16].
+     *      pos_y[5-bits]: quad's Y position within chunk, 5 bits for a position in range [0, 16].
+     *      pos_x[5-bits]: quad's X position within chunk, 5 bits for a position in range [0, 16].
+     *      texture_index[10-bits]: quad's texture index.
+     */
+    u32 *quad;
+
+    /**
      *  @brief cost of work done on generating, meshing, importing and/or exporting
      *  this chunk.
      *
@@ -190,7 +204,7 @@ typedef struct hhc_chunk
 
 } hhc_chunk;
 
-/*!
+/**
  *  @brief chunk pointer look-up table that points to @ref chunk_buffer.p addresses.
  *
  *  @ref chunk_buffer.p addresses ordered by their positions in 3d space relative to player position.
@@ -200,7 +214,7 @@ typedef struct hhc_chunk_table
     fsl_mem_handle handle;
     hhc_chunk **p; /* cached pointer from `handle` */
 
-    /*!
+    /**
      *  @brief player-relative `p` access.
      */
     u32 index;
@@ -208,7 +222,7 @@ typedef struct hhc_chunk_table
     hhc_chunk_receipt_printed receipt_center; /* receipt info of center-most chunk */
 } hhc_chunk_table;
 
-/*!
+/**
  *  @brief chunk pointer pointer look-up table that points to @ref chunk_table.p addresses.
  *
  *  @ref chunk_table.p addresses ordered by distance from @ref chunk_tab center in ascending order.
@@ -219,7 +233,7 @@ typedef struct hhc_chunk_order
     fsl_mem_handle handle_inv;
     u32 *p; /* cached pointer from `handle_p` */
 
-    /*!
+    /**
      *  @brief inverse of @ref chunk_order.p, to translate @ref chunk_tab.p indices
      *  to @ref chunk_order.p indices.
      *
@@ -227,7 +241,7 @@ typedef struct hhc_chunk_order
      */
     u32 *inv;
 
-    /*!
+    /**
      *  @brief look-up table to reduce redundant checking of untouched indices of @ref chunk_tab
      *  and @ref chunk_order.
      *
@@ -246,7 +260,7 @@ typedef struct hhc_chunk_order
      */
     u32 len[SET_RENDER_DISTANCE_MAX + 1];
 
-    /*!
+    /**
      *  @brief max number of chunks for current render distance setting,
      *  cached from `len`.
      *
@@ -257,13 +271,11 @@ typedef struct hhc_chunk_order
 
 } hhc_chunk_order;
 
-/*!
+/**
  *  @brief buffer of drawable chunks.
  *
- *  there are as many chunk-draw buffers as there are chunk schedulers.
- *
- *  @ref chunk_order is traversed backwards, visible chunks are pushed to this buffer
- *  so further chunks can be drawn first.
+ *  @ref chunk_order is traversed backwards, visible chunks are pushed to this
+ *  buffer so further chunks can be drawn first.
  *
  *  @remark updated on a fixed time-step.
  */
@@ -301,7 +313,7 @@ typedef struct hhc_chunk_draw
 extern hhc_chunk_table chunk_tab;
 extern hhc_chunk_order chunk_order;
 
-/*!
+/**
  *  @brief initialize chunking resources.
  *
  *  - allocate @ref chunk_arena and push @ref chunk_buf, @ref chunk_tab,
@@ -312,7 +324,7 @@ extern hhc_chunk_order chunk_order;
  */
 u32 chunking_init(v3i32 *player_chunk_delta);
 
-/*!
+/**
  *  @update everything about chunks during gameplay.
  *
  *  1. load dirty chunks into @ref chunk_sched based on their distance from
@@ -333,7 +345,13 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
 void chunking_free(void);
 
-/*!
+/**
+ *  @brief draw chunk meshes onto world.
+ */
+void chunk_draw_render(fsl_camera *camera,
+        v3f32 sun_rotation, v3f32 sky_light, v3f32 moon_light);
+
+/**
  *  @brief get chunk relative to position.
  *
  *  @remark this function breaks at render-distance of 1.
@@ -343,7 +361,7 @@ void chunking_free(void);
  */
 hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z);
 
-/*!
+/**
  *  @brief get index of chunk in @ref chunk_tab by world coordinates relative to chunk position.
  *
  *  @param chunk_pos chunk position in world coordinates.
@@ -354,7 +372,7 @@ hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z);
  */
 u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos);
 
-/*!
+/**
  *  @brief get first block pointed at by start point towards end point.
  *
  *  @param origin entity's origin point, used to get entity's current chunk.
@@ -362,7 +380,7 @@ u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos);
 block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
         f64 end_x, f64 end_y, f64 end_z, f64 distance_max);
 
-/*!
+/**
  *  @param index index into global array @ref chunk_tab.
  *  @param normal face direction to place block onto.
  */
@@ -370,7 +388,7 @@ void block_place(block_hit hit, enum block_id block_id);
 
 void block_break(block_hit hit);
 
-/*!
+/**
  *  @brief get block relative to chunk.
  *
  *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and

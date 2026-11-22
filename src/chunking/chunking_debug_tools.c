@@ -22,7 +22,7 @@
 
 /* ---- section: definitions ------------------------------------------------ */
 
-/*!
+/**
  *  @brief one entry in a chunk gizmo render buffer.
  */
 typedef struct hhc_chunk_gizmo_entry
@@ -32,7 +32,7 @@ typedef struct hhc_chunk_gizmo_entry
     f32 offset; /* z offset in screen-space coordinates */
 } hhc_chunk_gizmo_entry;
 
-/*!
+/**
  *  @brief chunk gizmo render buffer data for chunk colors.
  *
  *  for rendering chunk gizmo in one draw call.
@@ -57,7 +57,7 @@ static fsl_mem_arena memory_arena_chunk_debug_internal = {0};
 v4u8 chunk_debug_color[CHUNK_DEBUG_COLOR_COUNT] = {0};
 f32 chunk_gizmo_layer_position[CHUNK_DEBUG_COLOR_COUNT] = {0};
 
-/*!
+/**
  *  @brief 3D chunk gizmo to showcase chunk status.
  */
 hhc_chunk_gizmo chunk_gizmo = {0};
@@ -184,11 +184,16 @@ void chunk_debug_free_internal(void)
 
 void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     f32 scale = (CHUNK_GIZMO_PIXEL_HEIGHT / (f32)settings.chunk_buf_diameter) * render->ndc_scale.y;
     m4f32 mat_scale = {0};
     m4f32 mat_offset = {0};
     m4f32 mat_transform = {0};
+    v2f32 align_top_left = {0};
+
+    /* TODO: please use `align_top_left` for drawing chunk gizmo to prepare for embedding into a UI element */
+    align_top_left.x = (CHUNK_GIZMO_PIXEL_HEIGHT - render->size.x / 2.0f) * render->ndc_scale.x;
+    align_top_left.y = (-CHUNK_GIZMO_PIXEL_HEIGHT + render->size.y / 2.0f) * render->ndc_scale.y;
 
     mat_scale.a11 = scale;
     mat_scale.a22 = scale;
@@ -249,7 +254,7 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk)
 void chunk_debug_chunk_gizmo_bake_internal(void)
 {
     static u64 bake_interval = 0;
-    u64 refresh_rate = FSL_SEC2NSEC / 30;
+    u64 refresh_rate = FSL_SEC2NSEC / CHUNK_GIZMO_REFRESH_RATE;
 
     if (core.debug.chunk_gizmo &&
             fsl_on_time_interval(&bake_interval, refresh_rate, render->time))
@@ -263,7 +268,7 @@ void chunk_debug_chunk_gizmo_bake_internal(void)
 
 void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera)
 {
-    fsl_mesh *mesh_p = fsl_mem_handle_get(mesh);
+    fsl_mesh *mesh_p = fsl_mem_handle_get(hhc_mesh_buf);
     u32 i = 0;
     hhc_chunk *chunk = NULL;
     hhc_chunk_bucket bucket = {0};
@@ -274,7 +279,6 @@ void chunk_debug_scheduler_visualizer_draw(const fsl_camera *camera)
 
     distance = chunk_sphere_radius_get_internal(settings.render_distance);
 
-    glClear(GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(mesh_p[MESH_CUBE_OF_HAPPINESS].vao);
     glUniformMatrix4fv(uniform.bounding_box.mat_perspective, 1, GL_FALSE,
             (GLfloat*)&camera->projection.perspective);

@@ -131,7 +131,7 @@ void input_init(void)
 
 void input_update(hhc_player *p)
 {
-    fsl_shader_program *shader_p = fsl_mem_handle_get(shader);
+    fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
     u32 shader_err = FSL_ERR_SUCCESS;
     u32 i = 0;
     f64 px = 0.0;
@@ -258,14 +258,15 @@ void input_update(hhc_player *p)
             {
                 state_menu_depth = 0;
                 p->menu_state = 0;
-                disable_cursor;
                 center_cursor;
+                disable_cursor;
             }
             else if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && !state_menu_depth)
             {
                 state_menu_depth = 1;
                 p->menu_state = STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
                 enable_cursor;
+                center_cursor;
             }
 
             if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && state_menu_depth)
@@ -284,14 +285,15 @@ void input_update(hhc_player *p)
                 menu_index_curr = MENU_GAME_PAUSE;
                 p->menu_state = 0;
                 enable_cursor;
+                center_cursor;
             }
             else
                 --state_menu_depth;
 
             if (!state_menu_depth)
             {
-                disable_cursor;
                 center_cursor;
+                disable_cursor;
             }
         }
 
@@ -382,11 +384,14 @@ void input_update(hhc_player *p)
         core.flag.super_debug ^= 1;
 
         if (core.flag.super_debug)
+        {
             enable_cursor;
+            center_cursor;
+        }
         else
         {
-            disable_cursor;
             center_cursor;
+            disable_cursor;
         }
     }
 }

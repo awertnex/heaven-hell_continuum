@@ -25,13 +25,14 @@
 #define SET_LERP_SPEED_DEFAULT          25.0f
 #define SET_LERP_SPEED_FOV_MODE         16.0f
 #define SET_COLLISION_CAPSULE_PADDING   1.0f
-#define SET_TEXT_REFRESH_INTERVAL       4 /* unit: fps */
+#define SET_TEXT_REFRESH_INTERVAL       6 /* unit: fps */
 #define SET_CONSOLE_SCROLL_SPEED        4
 
 #define COLOR_TEXT_DEFAULT      FSL_DIAGNOSTIC_COLOR_DEBUG
 #define COLOR_TEXT_BRIGHT       FSL_DIAGNOSTIC_COLOR_DEFAULT
 #define COLOR_TEXT_MOSS         0x6f9f3fff
 #define COLOR_TEXT_RADIOACTIVE  0x3f9f3fff
+#define COLOR_TEXT_ENABLED      0xa1cc6bff
 #define COLOR_TEXT_ECONOMIC     0xdfdf00ff
 #define COLOR_DIAGNOSTIC_NONE   0x995429ff
 #define COLOR_DIAGNOSTIC_ERROR  0xec6051ff
@@ -87,7 +88,6 @@ enum mesh_index
 
 enum fbo_index
 {
-    FBO_SKYBOX,
     FBO_WORLD,
     FBO_WORLD_MSAA,
     FBO_HUD,

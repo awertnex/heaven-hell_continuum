@@ -63,14 +63,15 @@ u32 settings_init(void)
 
     settings.lerp_speed = SET_LERP_SPEED_DEFAULT;
 
-    settings_render_distance_set(24);
+    settings_render_distance_set(0);
     settings.frame_budget = CHUNK_WORK_BUDGET_DEFAULT;
     settings.reach_distance = PLAYER_REACH_DISTANCE_MAX;
     settings_mouse_sensitivity_set(0);
     settings.font_size = 20.0f;
     settings.target_fps = 0;
     settings.fov = SET_FOV_DEFAULT;
-    settings.anti_aliasing = TRUE;
+    settings.anti_aliasing = FALSE;
+    settings.line_width = 1.0f;
 
     settings_gui_scale_set(SET_GUI_SCALE_DEFAULT);
 

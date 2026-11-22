@@ -21,6 +21,7 @@ enum shader_index
     SHADER_GIZMO_CHUNK,
     SHADER_POST_PROCESSING,
     SHADER_VOXEL,
+    SHADER_SCREEN_SPACE_AMBIENT_OCCLUSION,
     SHADER_BOUNDING_BOX,
     SHADER_COUNT
 }; /* shader_index */
@@ -71,11 +72,6 @@ typedef struct hhc_g_buffer
     GLuint rbo;
 } hhc_g_buffer;
 
-typedef struct hhc_ssao
-{
-    v3f32 sample[64];
-} hhc_ssao;
-
 enum block_id
 {
     BLOCK_NONE,
@@ -110,7 +106,7 @@ typedef struct hhc_block
 
 /* ---- section: declarations ----------------------------------------------- */
 
-/*!
+/**
  *  @internal
  *
  *  @brief global memory arena, manages all asset data for the game.
@@ -119,25 +115,24 @@ typedef struct hhc_block
  */
 extern fsl_mem_arena memory_arena_assets_internal;
 
-extern fsl_mem_handle texture;
-extern fsl_mem_handle fbo;
+extern fsl_mem_handle hhc_texture_buf;
+extern fsl_mem_handle hhc_fbo_buf;
 extern hhc_g_buffer g_buf;
-extern hhc_ssao ssao_buf;
-extern fsl_mem_handle mesh;
-extern fsl_mem_handle shader;
-extern fsl_mem_handle blocks;
-extern fsl_font *font[FONT_COUNT];
+extern fsl_mem_handle hhc_mesh_buf;
+extern fsl_mem_handle hhc_shader_buf;
+extern fsl_mem_handle hhc_blocks_buf;
+extern fsl_font *hhc_font_buf[FONT_COUNT];
 
 /* ---- section: signatures ------------------------------------------------- */
 
-/*!
+/**
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 assets_init(void);
 
 void assets_free(void);
 
-/*!
+/**
  *  @brief initialize a rendering G-buffer.
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
@@ -145,16 +140,23 @@ void assets_free(void);
 u32 g_buffer_init(hhc_g_buffer *buf, i32 size_x, i32 size_y);
 
 void g_buffer_free(hhc_g_buffer *buf);
-void ssao_init(hhc_ssao *ssao);
 
-/*!
+/**
+ *  @brief print an array of random vec3 values in range [-1, 1] in GLSL syntax
+ *  to stdout.
+ *
+ *  @param count number of kernel samples to generate, 0 for default count.
+ */
+void ssao_kernel_samples_generate(u32 count);
+
+/**
  *  @param index index into @ref block_textures.
  *
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 u32 block_texture_init(u32 index, const fsl_name *name, const fsl_name_id *name_id, const fsl_file *file);
 
-/*!
+/**
  *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
  */
 void blocks_init(void);

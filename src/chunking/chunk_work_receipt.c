@@ -1,5 +1,3 @@
-#include "deps/fossil/common/api.h"
-
 #include "deps/fossil/plugins/fsl_native/big_num_separator/big_num_separator.h"
 
 #include "chunk_work.h"
