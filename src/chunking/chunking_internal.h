@@ -175,6 +175,16 @@ u32 chunk_draw_init_internal(void);
 void chunk_draw_free_internal(void);
 
 /**
+ *  @brief allocate a new mesh for a chunk onto a @ref hhc_chunk_draw or update
+ *  existing allocated mesh.
+ */
+void chunk_draw_push_internal(hhc_chunk *chunk, u64 *quad_buf, u8 *light_buf,
+        u32 buf_len);
+
+void chunk_draw_pop_internal(u32 index);
+void chunk_draw_pop_chunk_internal(hhc_chunk *chunk);
+
+/**
  *  @brief get radius of sphere squared as per internal conventions.
  */
 u32 chunk_sphere_radius_get_internal(u32 radius);

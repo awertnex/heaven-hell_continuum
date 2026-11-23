@@ -131,8 +131,33 @@ typedef struct hhc_chunk_mesh
 {
     b8 initialized;
     GLuint vao;
-    GLuint quad_buf; /* stride: sizeof(u32) */
-    GLuint light_buf; /* stride: sizeof(u8) */
+
+    /**
+     *  @brief buffer of block faces compiled from RAM buffer data to VRAM
+     *  format.
+     *
+     *  stride: sizeof(u32).
+     *
+     *  data packing format:
+     *      ao[4-bits]: baked ambient occlusion weights, 1-bit per quad corner.
+     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
+     *      pos_z[4-bits]: quad's Z position within chunk.
+     *      pos_y[4-bits]: quad's Y position within chunk.
+     *      pos_x[4-bits]: quad's X position within chunk.
+     *      texture_index[10-bits]: quad's texture index.
+     */
+    GLuint quad_buf;
+
+    /**
+     *  @brief buffer of quad lighting data.
+     *
+     *  stride: sizeof(u8).
+     *
+     *  data packing format:
+     *      light[5-bits]: quad's light value.
+     */
+    GLuint light_buf;
+
     u32 buf_len; /* length of both buffers */
 } hhc_chunk_mesh;
 
@@ -174,25 +199,12 @@ typedef struct hhc_chunk
     hhc_chunk_mesh mesh_deprecated;
 
     /**
-     *  @brief allocated by, or pushed onto, a @ref hhc_chunk_draw, if needed.
+     *  @brief managed by a @ref hhc_chunk_draw, if needed.
      */
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
     u8 light[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
-
-    /**
-     *  @brief flexible array compiled from RAM buffer data to VRAM format.
-     *
-     *  data packing format:
-     *      ao[4-bits]: baked ambient occlusion weights, one bit per quad corner.
-     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
-     *      pos_z[5-bits]: quad's Z position within chunk, 5 bits for a position in range [0, 16].
-     *      pos_y[5-bits]: quad's Y position within chunk, 5 bits for a position in range [0, 16].
-     *      pos_x[5-bits]: quad's X position within chunk, 5 bits for a position in range [0, 16].
-     *      texture_index[10-bits]: quad's texture index.
-     */
-    u32 *quad;
 
     /**
      *  @brief cost of work done on generating, meshing, importing and/or exporting
@@ -283,7 +295,7 @@ typedef struct hhc_chunk_draw
 {
     fsl_len count;          /* number of chunks listed */
     u32 offset;             /* offset of draw into @ref chunk_order.p */
-    u32 cursor_scan;        /* dirty chunk scanner */
+    u32 cursor;             /* dirty chunk scanner */
     fsl_mem_handle handle;
     hhc_chunk_mesh *p;      /* cached pointer from `handle` */
     fsl_len len;            /* number of members in `p` */
@@ -310,8 +322,13 @@ typedef struct hhc_chunk_draw
 #define SET_BLOCK_AO(block, val) \
     (block = (block & ~MASK_BLOCK_LIGHT_AO) | ((val << SHIFT_BLOCK_LIGHT_AO) & MASK_BLOCK_LIGHT_AO))
 
+/* ---- section: declarations ----------------------------------------------- */
+
 extern hhc_chunk_table chunk_tab;
 extern hhc_chunk_order chunk_order;
+extern hhc_chunk_draw chunk_draw;
+
+/* ---- section: signatures ------------------------------------------------- */
 
 /**
  *  @brief initialize chunking resources.

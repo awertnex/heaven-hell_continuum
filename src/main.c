@@ -541,14 +541,14 @@ static void draw_world(void)
     for (i = chunk_order.chunks_max - 1; i >= 0; --i)
     {
         chunk = chunk_tab.p[chunk_order.p[i]];
-        if (chunk && chunk->flag & FLAG_CHUNK_VISIBLE)
+        if (chunk && chunk->mesh)
         {
             glUniform3f(uniform.voxel.block_world_offset,
                     chunk->pos_world.x * CHUNK_DIAMETER,
                     chunk->pos_world.y * CHUNK_DIAMETER,
                     chunk->pos_world.z * CHUNK_DIAMETER);
-            glBindVertexArray(chunk->mesh_deprecated.vao);
-            glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh_deprecated.buf_len, 1);
+            glBindVertexArray(chunk->mesh->vao);
+            glDrawArraysInstanced(GL_POINTS, 0, chunk->mesh->buf_len, 1);
         }
     }
 

@@ -785,6 +785,8 @@ finish_meshing:
         chunk->flag |= FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_MESHING + 1;
 
+        chunk_draw_push_internal(chunk, quad_buf, (u8*)chunk->light, j);
+
         if (!chunk->mesh_deprecated.initialized)
         {
             chunk->mesh_deprecated.initialized = TRUE;
@@ -826,6 +828,7 @@ finish_meshing:
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
 
+        chunk_draw_pop_chunk_internal(chunk);
         if (chunk->mesh_deprecated.initialized)
         {
             chunk->mesh_deprecated.initialized = FALSE;
@@ -911,6 +914,7 @@ finish_lighting:
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
 
+        chunk_draw_pop_chunk_internal(chunk);
         if (chunk->mesh_deprecated.initialized)
         {
             chunk->mesh_deprecated.initialized = FALSE;
@@ -1125,6 +1129,9 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
                 glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
                 glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
             }
+            if (chunk->mesh)
+                chunk_draw_pop_chunk_internal(chunk);
+
             *chunk = nochunk;
             chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH;
             chunk->status = STATUS_CHUNK_LOADING;
@@ -1163,6 +1170,7 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
 {
     u32 index_popped = chunk - chunk_buf.p;
 
+    chunk_draw_pop_chunk_internal(chunk);
     if (chunk->mesh_deprecated.initialized)
     {
         chunk->mesh_deprecated.initialized = FALSE;
