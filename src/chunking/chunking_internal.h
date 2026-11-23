@@ -192,7 +192,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
 /**
  *  @brief load chunk from disk and generate if not found.
  */
-chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_load_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
@@ -200,48 +200,48 @@ chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
  *
  *  automatically called from @ref chunk_load_internal().
  */
-chunk_work_func chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief make chunk mesh and upload to VRAM.
  */
-chunk_work_func chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief calculate chunk lighting and upload to VRAM.
  */
-chunk_work_func chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief calculate chunk ambient occlusion and upload to VRAM.
  */
-chunk_work_func chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief finish chunk work and return to idle state.
  */
-chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief chunk idle state function, do absolutely nothing.
  */
-chunk_work_func chunk_idle_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_idle_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
 /**
  *  @brief write chunk to disk.
  */
-void chunk_export_func(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
+void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
 
 /**
  *  @brief read chunk from disk.
  */
-void chunk_import_func(const fsl_fs_path *path, hhc_chunk *chunk,
+void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt);
 
 void chunk_buf_update_internal(v3i32 *player_chunk_delta);

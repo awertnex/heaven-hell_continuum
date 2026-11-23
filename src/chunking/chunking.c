@@ -42,16 +42,16 @@ static hhc_chunk_sampler chunk_sampler = {0};
 static chunk_work_func (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt) =
 {
-    chunk_idle_func,
-    chunk_load_func,
-    chunk_generate_func,
-    chunk_mesh_func,
-    chunk_light_func,
-    chunk_ao_func,
-    chunk_finish_func,
-    chunk_idle_func,
-    chunk_idle_func,
-    chunk_idle_func
+    chunk_work_idle_func,
+    chunk_work_load_func,
+    chunk_work_generate_func,
+    chunk_work_mesh_func,
+    chunk_work_light_func,
+    chunk_work_ao_func,
+    chunk_work_finish_func,
+    chunk_work_idle_func,
+    chunk_work_idle_func,
+    chunk_work_idle_func
 };
 
 /* ---- section: implementation: chunk -------------------------------------- */
@@ -577,7 +577,7 @@ void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 ch
         (u64)(chunk->pos_wrap.z & 0xffff) << 0x20;
 }
 
-chunk_work_func chunk_idle_func(hhc_chunk *chunk,
+chunk_work_func chunk_work_idle_func(hhc_chunk *chunk,
         chunk_work_budget budget, hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -595,7 +595,7 @@ chunk_work_func chunk_idle_func(hhc_chunk *chunk,
     return 0;
 }
 
-chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_load_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
 #if MODE_INTERNAL_IMPORT_CHUNKS
@@ -608,7 +608,7 @@ chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
             world.path, chunk->pos_wrap.x, chunk->pos_wrap.y, chunk->pos_wrap.z);
 
     if (fsl_file_is_exists(path, FALSE) == FSL_ERR_SUCCESS)
-        chunk_import_func(path, chunk, receipt);
+        chunk_import_internal(path, chunk, receipt);
     else
         chunk->status = STATUS_CHUNK_LOADING + 1;
 #else
@@ -622,7 +622,7 @@ chunk_work_func chunk_load_func(hhc_chunk *chunk, chunk_work_budget budget,
     return 0;
 }
 
-chunk_work_func chunk_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_generate_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -720,7 +720,7 @@ finish_generation:
     return 0;
 }
 
-chunk_work_func chunk_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -843,7 +843,7 @@ finish_meshing:
     return 0;
 }
 
-chunk_work_func chunk_light_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -928,7 +928,7 @@ finish_lighting:
     return 0;
 }
 
-chunk_work_func chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -947,7 +947,7 @@ chunk_work_func chunk_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
     return 0;
 }
 
-chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
+chunk_work_func chunk_work_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     (void)budget;
@@ -964,7 +964,7 @@ chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
 
 #if MODE_INTERNAL_EXPORT_CHUNKS
     if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-        chunk_export_func(chunk, &receipt);
+        chunk_export_internal(chunk, &receipt);
 #else
     (void)receipt;
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
@@ -976,7 +976,7 @@ chunk_work_func chunk_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
     return 0;
 }
 
-void chunk_export_func(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
+void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -1020,7 +1020,7 @@ finish_export:
     fsl_file_write(path, j * sizeof(u16), buf, TRUE, FALSE);
 }
 
-void chunk_import_func(const fsl_fs_path *path, hhc_chunk *chunk,
+void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;

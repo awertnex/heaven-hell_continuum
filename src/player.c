@@ -279,7 +279,10 @@ void player_collision_update(hhc_player *p, f64 dt)
                     block_box.size.z = 1.0;
 
                     p->collision_info = fsl_swept_aabb_get(p->bbox, block_box, displacement);
+#if 0 /* TODO: fix Swept AABB collision resolution getting stuck in blocks */
                     if (p->collision_info.hit)
+#endif /* temp disable */
+                    if (fsl_is_intersect_aabb(p->bbox, block_box))
                     {
                         /* ---- resolution ---------------------------------- */
 
