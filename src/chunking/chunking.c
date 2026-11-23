@@ -784,58 +784,13 @@ finish_meshing:
     {
         chunk->flag |= FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_MESHING + 1;
-
-        chunk_draw_push_internal(chunk, quad_buf, (u8*)chunk->light, j);
-
-        if (!chunk->mesh_deprecated.initialized)
-        {
-            chunk->mesh_deprecated.initialized = TRUE;
-
-            glGenVertexArrays(1, &chunk->mesh_deprecated.vao);
-            glGenBuffers(1, &chunk->mesh_deprecated.quad_buf);
-            glGenBuffers(1, &chunk->mesh_deprecated.light_buf);
-
-            glBindVertexArray(chunk->mesh_deprecated.vao);
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.quad_buf);
-            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
-
-            glEnableVertexAttribArray(0);
-            glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
-
-            glEnableVertexAttribArray(1);
-            glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
-
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
-            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), chunk->light, GL_DYNAMIC_DRAW);
-
-            glEnableVertexAttribArray(2);
-            glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(u8), (void*)0);
-
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-        else
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.quad_buf);
-            glBufferData(GL_ARRAY_BUFFER, j * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-
-        chunk->mesh_deprecated.buf_len = j;
+        chunk_draw_push_internal(chunk, quad_buf, NULL, j);
     }
     else
     {
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
-
         chunk_draw_pop_chunk_internal(chunk);
-        if (chunk->mesh_deprecated.initialized)
-        {
-            chunk->mesh_deprecated.initialized = FALSE;
-            glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
-            glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
-            glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
-        }
     }
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
@@ -867,7 +822,7 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
 
     if (!(chunk->flag & FLAG_CHUNK_NON_AIR) ||
             !(chunk->flag & FLAG_CHUNK_DIRTY_MESH) ||
-            !chunk->mesh_deprecated.initialized)
+            !chunk->mesh)
     {
         cost = CHUNK_WORK_COST_LIGHT_AIR;
         should_render = FALSE;
@@ -902,26 +857,15 @@ finish_lighting:
 
     if (should_render)
     {
+        chunk->flag |= FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_LIGHTING + 1;
-
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh_deprecated.light_buf);
-        glBufferData(GL_ARRAY_BUFFER, j * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        chunk->mesh_deprecated.buf_len = j;
+        chunk_draw_push_internal(chunk, NULL, light_buf, j);
     }
     else
     {
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
-
         chunk_draw_pop_chunk_internal(chunk);
-        if (chunk->mesh_deprecated.initialized)
-        {
-            chunk->mesh_deprecated.initialized = FALSE;
-            glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
-            glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
-            glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
-        }
     }
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
@@ -1122,13 +1066,6 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
         if (!(chunk_buf.p[chunk_buf.cursor].flag & FLAG_CHUNK_LOADED))
         {
             chunk = &chunk_buf.p[chunk_buf.cursor];
-            if (chunk->mesh_deprecated.initialized)
-            {
-                chunk->mesh_deprecated.initialized = FALSE;
-                glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
-                glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
-                glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
-            }
             if (chunk->mesh)
                 chunk_draw_pop_chunk_internal(chunk);
 
@@ -1171,14 +1108,6 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     u32 index_popped = chunk - chunk_buf.p;
 
     chunk_draw_pop_chunk_internal(chunk);
-    if (chunk->mesh_deprecated.initialized)
-    {
-        chunk->mesh_deprecated.initialized = FALSE;
-        glDeleteBuffers(1, &chunk->mesh_deprecated.light_buf);
-        glDeleteBuffers(1, &chunk->mesh_deprecated.quad_buf);
-        glDeleteVertexArrays(1, &chunk->mesh_deprecated.vao);
-    }
-
     chunk->flag = 0;
     chunk_debug_chunk_gizmo_write_internal(chunk);
 

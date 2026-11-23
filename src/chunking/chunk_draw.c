@@ -56,10 +56,16 @@ void chunk_draw_push_internal(hhc_chunk *chunk, u64 *quad_buf, u8 *light_buf,
 
     if (chunk->mesh && chunk->mesh->initialized)
     {
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh->quad_buf);
-        glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh->light_buf);
-        glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
+        if (quad_buf)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh->quad_buf);
+            glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
+        }
+        if (light_buf)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, chunk->mesh->light_buf);
+            glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
+        }
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         chunk->mesh->buf_len = buf_len;
         return;
@@ -75,18 +81,17 @@ void chunk_draw_push_internal(hhc_chunk *chunk, u64 *quad_buf, u8 *light_buf,
             mesh = &chunk_draw.p[chunk_draw.cursor];
 
             mesh->initialized = TRUE;
-            mesh->buf_len = buf_len;
             glGenVertexArrays(1, &mesh->vao);
             glGenBuffers(1, &mesh->quad_buf);
             glGenBuffers(1, &mesh->light_buf);
 
             glBindVertexArray(mesh->vao);
+
             glBindBuffer(GL_ARRAY_BUFFER, mesh->quad_buf);
             glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u64), quad_buf, GL_DYNAMIC_DRAW);
 
             glEnableVertexAttribArray(0);
             glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)0);
-
             glEnableVertexAttribArray(1);
             glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, sizeof(u64), (void*)sizeof(u32));
 
@@ -99,6 +104,8 @@ void chunk_draw_push_internal(hhc_chunk *chunk, u64 *quad_buf, u8 *light_buf,
             glBindVertexArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+            mesh->buf_len = buf_len;
+            mesh->chunk = chunk;
             chunk->mesh = mesh;
             ++chunk_draw.count;
 
@@ -131,6 +138,8 @@ void chunk_draw_pop_internal(u32 index)
         glDeleteBuffers(1, &mesh->quad_buf);
         glDeleteVertexArrays(1, &mesh->vao);
 
+        if (mesh->chunk)
+            mesh->chunk->mesh = NULL;
         --chunk_draw.count;
     }
 }

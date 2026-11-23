@@ -78,6 +78,12 @@
  *  31 [00000000 00000000 00000000 00000000] 00; */
 #define MASK_BLOCK_Z            0x00000f000000000
 
+typedef struct hhc_chunk        hhc_chunk;
+typedef struct hhc_chunk_mesh   hhc_chunk_mesh;
+typedef struct hhc_chunk_order  hhc_chunk_order;
+typedef struct hhc_chunk_table  hhc_chunk_table;
+typedef struct hhc_chunk_draw   hhc_chunk_draw;
+
 enum block_shift
 {
     SHIFT_BLOCK_DATA =          0,
@@ -127,41 +133,7 @@ enum chunk_status
     STATUS_CHUNK_COUNT
 }; /* chunk_status */
 
-typedef struct hhc_chunk_mesh
-{
-    b8 initialized;
-    GLuint vao;
-
-    /**
-     *  @brief buffer of block faces compiled from RAM buffer data to VRAM
-     *  format.
-     *
-     *  stride: sizeof(u32).
-     *
-     *  data packing format:
-     *      ao[4-bits]: baked ambient occlusion weights, 1-bit per quad corner.
-     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
-     *      pos_z[4-bits]: quad's Z position within chunk.
-     *      pos_y[4-bits]: quad's Y position within chunk.
-     *      pos_x[4-bits]: quad's X position within chunk.
-     *      texture_index[10-bits]: quad's texture index.
-     */
-    GLuint quad_buf;
-
-    /**
-     *  @brief buffer of quad lighting data.
-     *
-     *  stride: sizeof(u8).
-     *
-     *  data packing format:
-     *      light[5-bits]: quad's light value.
-     */
-    GLuint light_buf;
-
-    u32 buf_len; /* length of both buffers */
-} hhc_chunk_mesh;
-
-typedef struct hhc_chunk
+struct hhc_chunk
 {
     hhc_chunk_flag flag; /* enum: @ref chunk_flag */
     hhc_chunk_status status; /* enum: @ref chunk_status */
@@ -196,8 +168,6 @@ typedef struct hhc_chunk
      */
     u32 cpi;
 
-    hhc_chunk_mesh mesh_deprecated;
-
     /**
      *  @brief managed by a @ref hhc_chunk_draw, if needed.
      */
@@ -214,14 +184,50 @@ typedef struct hhc_chunk
      */
     hhc_chunk_receipt receipt;
 
-} hhc_chunk;
+}; /* hhc_chunk */
+
+struct hhc_chunk_mesh
+{
+    b8 initialized;
+    GLuint vao;
+
+    /**
+     *  @brief buffer of block faces compiled from RAM buffer data to VRAM
+     *  format.
+     *
+     *  stride: sizeof(u32).
+     *
+     *  data packing format:
+     *      ao[4-bits]: baked ambient occlusion weights, 1-bit per quad corner.
+     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
+     *      pos_z[4-bits]: quad's Z position within chunk.
+     *      pos_y[4-bits]: quad's Y position within chunk.
+     *      pos_x[4-bits]: quad's X position within chunk.
+     *      texture_index[10-bits]: quad's texture index.
+     */
+    GLuint quad_buf;
+
+    /**
+     *  @brief buffer of quad lighting data.
+     *
+     *  stride: sizeof(u8).
+     *
+     *  data packing format:
+     *      light[5-bits]: quad's light value.
+     */
+    GLuint light_buf;
+
+    u32 buf_len; /* length of both buffers */
+
+    hhc_chunk *chunk; /* chunk the mesh is a member of */
+}; /* hhc_chunk_mesh */
 
 /**
  *  @brief chunk pointer look-up table that points to @ref chunk_buffer.p addresses.
  *
  *  @ref chunk_buffer.p addresses ordered by their positions in 3d space relative to player position.
  */
-typedef struct hhc_chunk_table
+struct hhc_chunk_table
 {
     fsl_mem_handle handle;
     hhc_chunk **p; /* cached pointer from `handle` */
@@ -232,14 +238,14 @@ typedef struct hhc_chunk_table
     u32 index;
 
     hhc_chunk_receipt_printed receipt_center; /* receipt info of center-most chunk */
-} hhc_chunk_table;
+}; /* hhc_chunk_table */
 
 /**
  *  @brief chunk pointer pointer look-up table that points to @ref chunk_table.p addresses.
  *
  *  @ref chunk_table.p addresses ordered by distance from @ref chunk_tab center in ascending order.
  */
-typedef struct hhc_chunk_order
+struct hhc_chunk_order
 {
     fsl_mem_handle handle_p;
     fsl_mem_handle handle_inv;
@@ -281,7 +287,7 @@ typedef struct hhc_chunk_order
      */
     u32 chunks_max;
 
-} hhc_chunk_order;
+}; /* hhc_chunk_order */
 
 /**
  *  @brief buffer of drawable chunks.
@@ -291,7 +297,7 @@ typedef struct hhc_chunk_order
  *
  *  @remark updated on a fixed time-step.
  */
-typedef struct hhc_chunk_draw
+struct hhc_chunk_draw
 {
     fsl_len count;          /* number of chunks listed */
     u32 offset;             /* offset of draw into @ref chunk_order.p */
@@ -299,7 +305,7 @@ typedef struct hhc_chunk_draw
     fsl_mem_handle handle;
     hhc_chunk_mesh *p;      /* cached pointer from `handle` */
     fsl_len len;            /* number of members in `p` */
-} hhc_chunk_draw;
+}; /* hhc_chunk_draw */
 
 #define GET_BLOCK_ID(block) \
     (block & MASK_BLOCK_ID)
