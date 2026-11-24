@@ -833,6 +833,7 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
     u8 faces = 0;
     u8 light = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
+    hhc_block_neighbors block_neighbors = {0};
     v3u64 i = {0};
     b8 should_render = TRUE;
 
@@ -881,6 +882,9 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
 
                         if (faces & FLAG_BLOCK_FACE_NZ)
                             light_buf[buf_len++] = light;
+
+                        block_neighbors = block_neighbors_get_internal(&chunk_neighbors,
+                                i.x, i.y, i.z);
                     }
                 }
             }
@@ -1544,6 +1548,73 @@ u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, 
     return faces;
 }
 
+u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
+{
+    x = fsl_mod_i32(x, CHUNK_DIAMETER);
+    y = fsl_mod_i32(y, CHUNK_DIAMETER);
+    z = fsl_mod_i32(z, CHUNK_DIAMETER);
+    return &chunk->block[z][y][x];
+}
+
+hhc_block_neighbors block_neighbors_get_internal(hhc_chunk_neighbors *chunk_neighbors, /* TODO: make this function get all 27 neighbors */
+        i32 x, i32 y, i32 z)
+{
+    hhc_chunk_neighbors *cn = chunk_neighbors;
+    hhc_block_neighbors bn = {0};
+
+    bn.b = &cn->ch->block[z][y][x];
+
+    if (x == CHUNK_DIAMETER - 1)
+    {
+        if (cn->px && cn->px->block[z][y][0])
+            bn.px = &cn->px->block[z][y][0];
+    }
+    else if (cn->ch->block[z][y][x + 1])
+        bn.px = &cn->ch->block[z][y][x + 1];
+
+    if (x == 0)
+    {
+        if (cn->nx && cn->nx->block[z][y][CHUNK_DIAMETER - 1])
+            bn.nx = &cn->nx->block[z][y][CHUNK_DIAMETER - 1];
+    }
+    else if (cn->ch->block[z][y][x - 1])
+        bn.px = &cn->ch->block[z][y][x - 1];
+
+    if (y == CHUNK_DIAMETER - 1)
+    {
+        if (cn->py && cn->py->block[z][0][x])
+            bn.py = &cn->py->block[z][0][x];
+    }
+    else if (cn->ch->block[z][y + 1][x])
+        bn.py = &cn->ch->block[z][y + 1][x];
+
+    if (y == 0)
+    {
+        if (cn->ny && cn->ny->block[z][CHUNK_DIAMETER - 1][x])
+            bn.ny = &cn->ny->block[z][CHUNK_DIAMETER - 1][x];
+    }
+    else if (cn->ch->block[z][y - 1][x])
+        bn.ny = &cn->ch->block[z][y - 1][x];
+
+    if (z == CHUNK_DIAMETER - 1)
+    {
+        if (cn->pz && cn->pz->block[0][y][x])
+            bn.pz = &cn->pz->block[0][y][x];
+    }
+    else if (cn->ch->block[z + 1][y][x])
+        bn.pz = &cn->ch->block[z + 1][y][x];
+
+    if (z == 0)
+    {
+        if (cn->nz && cn->nz->block[CHUNK_DIAMETER - 1][y][x])
+            bn.nz = &cn->nz->block[CHUNK_DIAMETER - 1][y][x];
+    }
+    else if (cn->ch->block[z - 1][y][x])
+        bn.nz = &cn->ch->block[z - 1][y][x];
+
+    return bn;
+}
+
 block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
         f64 end_x, f64 end_y, f64 end_z, f64 distance_max)
 {
@@ -1798,14 +1869,6 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
 
         SET_BLOCK_ID(cn->ch->block[z - 1][y][x], BLOCK_DIRT);
     }
-}
-
-u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
-{
-    x = fsl_mod_i32(x, CHUNK_DIAMETER);
-    y = fsl_mod_i32(y, CHUNK_DIAMETER);
-    z = fsl_mod_i32(z, CHUNK_DIAMETER);
-    return &chunk->block[z][y][x];
 }
 
 /* ---- section: implementation: quads -------------------------------------- */

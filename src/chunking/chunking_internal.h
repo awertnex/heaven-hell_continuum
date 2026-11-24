@@ -53,6 +53,22 @@
 typedef void (*chunk_work_func)(hhc_chunk *chunk, chunk_work_budget budget, hhc_chunk_receipt *receipt);
 
 /**
+ *  @brief a block and all six neighbors surrounding it.
+ */
+typedef struct hhc_block_neighbors
+{
+    u16 *b, *px, *nx, *py, *ny, *pz, *nz;
+} hhc_block_neighbors;
+
+/**
+ *  @brief a chunk and all six neighbors surrounding it.
+ */
+typedef struct hhc_chunk_neighbors
+{
+    hhc_chunk *ch, *px, *nx, *py, *ny, *pz, *nz;
+} hhc_chunk_neighbors;
+
+/**
  *  @brief chunk buffer, raw chunk data.
  */
 typedef struct hhc_chunk_buffer
@@ -65,14 +81,6 @@ typedef struct hhc_chunk_buffer
     fsl_mem_handle handle;
     hhc_chunk *p;           /* cached pointer from `handle` */
 } hhc_chunk_buffer;
-
-/**
- *  @brief a chunk and all six neighbors surrounding it.
- */
-typedef struct hhc_chunk_neighbors
-{
-    hhc_chunk *ch, *px, *nx, *py, *ny, *pz, *nz;
-} hhc_chunk_neighbors;
 
 /**
  *  @brief chunk-scheduler bucket for a unique distance away from @ref chunk_tab center index.
@@ -287,6 +295,9 @@ void chunk_debug_chunk_gizmo_bake_internal(void);
  *  @return mask of block faces.
  */
 u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+
+hhc_block_neighbors block_neighbors_get_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z);
 
 void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
         enum block_id block_id);

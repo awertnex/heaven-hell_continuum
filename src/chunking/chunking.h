@@ -402,6 +402,14 @@ hhc_chunk *chunk_resolved_get(u32 index, i32 x, i32 y, i32 z);
 u32 chunk_index_get(v3i32 chunk_pos, v3i64 pos);
 
 /**
+ *  @brief get block relative to chunk.
+ *
+ *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and
+ *  return the correct block in the neighboring chunk otherwise.
+ */
+u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z);
+
+/**
  *  @brief get first block pointed at by start point towards end point.
  *
  *  @param origin entity's origin point, used to get entity's current chunk.
@@ -416,13 +424,5 @@ block_hit block_hit_get(v3f64 origin, f64 start_x, f64 start_y, f64 start_z,
 void block_place(block_hit hit, enum block_id block_id);
 
 void block_break(block_hit hit);
-
-/**
- *  @brief get block relative to chunk.
- *
- *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and
- *  return the correct block in the neighboring chunk otherwise.
- */
-u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z);
 
 #endif /* HHC_CHUNKING_H */
