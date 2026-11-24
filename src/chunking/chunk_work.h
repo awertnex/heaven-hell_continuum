@@ -4,8 +4,8 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/common/limits.h"
 
-#define CHUNK_WORK_BUDGET_DEFAULT 100000000
-#define CHUNK_WORK_PAYCUT 0.5
+#define CHUNK_WORK_BUDGET_DEFAULT 300000000
+#define CHUNK_WORK_PAYCUT 1.4
 #define CHUNK_RECEIPT_LINE_CAP 36
 #define CHUNK_RECEIPT_CAP (CHUNK_RECEIPT_LINE_CAP * 32)
 
@@ -47,26 +47,26 @@ typedef struct hhc_chunk_receipt_printed
  */
 enum chunk_work_cost_table
 {
-    CHUNK_WORK_COST_SCAN = 5,
-    CHUNK_WORK_COST_PUSH = 20,
-    CHUNK_WORK_COST_POP = 20,
-    CHUNK_WORK_COST_IMPORT_AIR = 25,
-    CHUNK_WORK_COST_IMPORT_NON_AIR = 100,
-    CHUNK_WORK_COST_EXPORT_AIR = 25,
-    CHUNK_WORK_COST_EXPORT_NON_AIR = 100,
-    CHUNK_WORK_COST_CHEAP_CHECK = 3,
-    CHUNK_WORK_COST_GENERATE_NOISE_INIT = 20,
-    CHUNK_WORK_COST_GENERATE_NOISE_SAMPLE_2D = 40,
-    CHUNK_WORK_COST_GENERATE_NOISE_SAMPLE_3D = 50,
-    CHUNK_WORK_COST_MESH_AIR = 50,
-    CHUNK_WORK_COST_MESH_NON_AIR = 2, /* per block */
-    CHUNK_WORK_COST_LIGHT_AIR = 50,
-    CHUNK_WORK_COST_LIGHT_NON_AIR = 600,
-    CHUNK_WORK_COST_AO_AIR = 50,
-    CHUNK_WORK_COST_AO_NON_AIR = 700
+    CHUNK_WORK_COST_SCAN = 10,
+    CHUNK_WORK_COST_PUSH = 15,
+    CHUNK_WORK_COST_POP = 15,
+    CHUNK_WORK_COST_IMPORT_AIR = 5000,
+    CHUNK_WORK_COST_IMPORT_NON_AIR = 15000,
+    CHUNK_WORK_COST_EXPORT_AIR = 5000,
+    CHUNK_WORK_COST_EXPORT_NON_AIR = 15000,
+    CHUNK_WORK_COST_CHEAP_CHECK = 15,
+    CHUNK_WORK_COST_GENERATE_NOISE_INIT = 60,
+    CHUNK_WORK_COST_GENERATE_NOISE_SAMPLE_2D = 120,
+    CHUNK_WORK_COST_GENERATE_NOISE_SAMPLE_3D = 150,
+    CHUNK_WORK_COST_MESH_AIR = 150,
+    CHUNK_WORK_COST_MESH_NON_AIR = 10, /* per block */
+    CHUNK_WORK_COST_LIGHT_AIR = 150,
+    CHUNK_WORK_COST_LIGHT_NON_AIR = 1800,
+    CHUNK_WORK_COST_AO_AIR = 150,
+    CHUNK_WORK_COST_AO_NON_AIR = 2100
 }; /* chunk_work_cost_table */
 
-void chunk_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi);
-void chunk_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst);
+void chunk_work_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi);
+void chunk_work_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst);
 
 #endif /* HHC_CHUNK_WORK_H */

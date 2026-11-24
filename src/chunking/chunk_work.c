@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void chunk_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi)
+void chunk_work_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi)
 {
     u32 i = 0;
     f32 distance_multiplier = sqrtf((f32)chunk_cpi) * CHUNK_WORK_PAYCUT;
@@ -21,7 +21,7 @@ void chunk_receipt_evaluate(hhc_chunk_receipt *receipt, u32 chunk_cpi)
     receipt->total = receipt->subtotal * distance_multiplier;
 }
 
-void chunk_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst)
+void chunk_work_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_printed *dst)
 {
     u32 i = 0;
 

@@ -439,7 +439,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
     }
 
     chunk_tab.index = chunk_index_get(player_chunk, hit.pos);
-    chunk_receipt_print(&chunk_tab.p[settings.chunk_tab_center]->receipt,
+    chunk_work_receipt_print(&chunk_tab.p[settings.chunk_tab_center]->receipt,
             &chunk_tab.receipt_center);
 
     chunk_delta.x = player_chunk.x - player_chunk_delta->x;
@@ -956,7 +956,7 @@ chunk_work_func chunk_work_finish_func(hhc_chunk *chunk, chunk_work_budget budge
 
 #if MODE_INTERNAL_EXPORT_CHUNKS
     if (!(chunk->flag & FLAG_CHUNK_IMPORTED))
-        chunk_export_internal(chunk, &receipt);
+        chunk_export_internal(chunk, receipt);
 #else
     (void)receipt;
 #endif /* MODE_INTERNAL_EXPORT_CHUNKS */
@@ -1446,8 +1446,8 @@ skip_push:
 
                 chunk_work_func_internal[chunk->status](chunk, budget, &receipt);
 
-                chunk_receipt_evaluate(&receipt, chunk->cpi);
-                chunk_receipt_evaluate(&chunk->receipt, chunk->cpi);
+                chunk_work_receipt_evaluate(&receipt, chunk->cpi);
+                chunk_work_receipt_evaluate(&chunk->receipt, chunk->cpi);
                 budget -= receipt.total;
                 receipt = noreceipt;
 
