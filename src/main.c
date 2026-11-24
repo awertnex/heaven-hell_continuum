@@ -635,7 +635,7 @@ static void world_draw(void)
     fsl_texture *texture_p = fsl_mem_handle_get(hhc_texture_buf);
     hhc_block *blocks_p = fsl_mem_handle_get(hhc_blocks_buf);
     fsl_asset_metadata metadata = {0};
-    u32 block_id = 0;
+    u16 block_id = 0;
 
     glLineWidth(settings.line_width);
 

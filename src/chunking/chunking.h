@@ -41,6 +41,18 @@
 /* ---- section: block mask ------------------------------------------------- */
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 00001111] 00; */
+#define MASK_QUAD_POS           0x000000000000000f
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 00000111] 00; */
+#define MASK_QUAD_ID            0x0000000000000007
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000011 11111111] 00; */
+#define MASK_QUAD_TEXTURE_ID    0x00000000000003ff
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 00000000 00111111 11111111] 00; */
 #define MASK_BLOCK_DATA         0x0000000000003fff
 
@@ -49,36 +61,20 @@
 #define MASK_BLOCK_ID           0x00000000000003ff
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00000000 00111100 00000000] 00; */
-#define MASK_BLOCK_STATE        0x0000000000003c00
+ *  31 [00000000 00000000 00000000 00001111] 00; */
+#define MASK_BLOCK_STATE        0x000000000000000f
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00111111 00000000 00000000] 00; */
-#define MASK_BLOCK_FACES        0x00000000003f0000
+ *  31 [00000000 00000000 00000000 00111111] 00; */
+#define MASK_BLOCK_FACES        0x000000000000003f
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 00000000 00000000 00001111] 00; */
-#define MASK_BLOCK_LIGHT_VAL    0x000000000000000f
+#define MASK_BLOCK_LIGHT        0x000000000000000f
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
  *  31 [00000000 00000000 00000000 11110000] 00; */
-#define MASK_BLOCK_LIGHT_AO     0x00000000000000f0
-
-/*  63 [00000000 00000000 00001111 11111111] 32;
- *  31 [00000000 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_COORDINATES  0x00000fff00000000
-
-/*  63 [00000000 00000000 00000000 00001111] 32;
- *  31 [00000000 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_X            0x0000000f00000000
-
-/*  63 [00000000 00000000 00000000 11110000] 32;
- *  31 [00000000 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_Y            0x000000f000000000
-
-/*  63 [00000000 00000000 00001111 00000000] 32;
- *  31 [00000000 00000000 00000000 00000000] 00; */
-#define MASK_BLOCK_Z            0x00000f000000000
+#define MASK_BLOCK_AO           0x00000000000000f0
 
 typedef struct hhc_chunk        hhc_chunk;
 typedef struct hhc_chunk_mesh   hhc_chunk_mesh;
@@ -86,18 +82,26 @@ typedef struct hhc_chunk_order  hhc_chunk_order;
 typedef struct hhc_chunk_table  hhc_chunk_table;
 typedef struct hhc_chunk_draw   hhc_chunk_draw;
 
+enum quad_shift
+{
+    SHIFT_QUAD_X =              0,
+    SHIFT_QUAD_Y =              4,
+    SHIFT_QUAD_Z =              8,
+    SHIFT_QUAD_ID =             12,
+
+    SHIFT_QUAD_DATA =           15,
+    SHIFT_QUAD_TEXTURE_ID =     15,
+    SHIFT_QUAD_STATE =          27,
+
+    SHIFT_QUAD_LIGHT =          0,
+    SHIFT_QUAD_AO =             4
+}; /* quad_shift */
+
 enum block_shift
 {
     SHIFT_BLOCK_DATA =          0,
     SHIFT_BLOCK_ID =            0,
-    SHIFT_BLOCK_STATE =         10,
-    SHIFT_BLOCK_FACES =         16,
-    SHIFT_BLOCK_LIGHT_VAL =     0,
-    SHIFT_BLOCK_LIGHT_AO =      4,
-    SHIFT_BLOCK_COORDINATES =   32,
-    SHIFT_BLOCK_X =             32,
-    SHIFT_BLOCK_Y =             36,
-    SHIFT_BLOCK_Z =             40
+    SHIFT_BLOCK_STATE =         12
 }; /* block_shift */
 
 typedef u16 hhc_chunk_flag;
@@ -175,7 +179,7 @@ struct hhc_chunk
      */
     hhc_chunk_mesh *mesh;
 
-    u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
+    u16 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
 
     /**
      *  @brief cost of work done on generating, meshing, importing and/or exporting
@@ -199,12 +203,13 @@ struct hhc_chunk_mesh
      *  stride: sizeof(u32).
      *
      *  data packing format:
+     *      pos_z[4-bit]: quad's voxel Z position within chunk.
+     *      pos_y[4-bit]: quad's voxel Y position within chunk.
+     *      pos_x[4-bit]: quad's voxel X position within chunk.
+     *      face_id[3-bit]: face id. (e.g., 0 = positive X face, etc..)
+     *      texture_id[10-bit]: quad's texture index.
+     *      block_state[3-bit]: quad's block state.
      *      ao[4-bit]: baked ambient occlusion weights, 1-bit per quad corner.
-     *      id[3-bit]: face id. (e.g., 0 = positive X face, etc..)
-     *      pos_z[4-bit]: quad's Z position within chunk.
-     *      pos_y[4-bit]: quad's Y position within chunk.
-     *      pos_x[4-bit]: quad's X position within chunk.
-     *      texture_index[10-bit]: quad's texture index.
      */
     GLuint quad_buf;
 
@@ -418,6 +423,6 @@ void block_break(block_hit hit);
  *  @return block address in chunk if `x`, `y` and `z` are within chunk bounds and
  *  return the correct block in the neighboring chunk otherwise.
  */
-u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z);
+u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z);
 
 #endif /* HHC_CHUNKING_H */

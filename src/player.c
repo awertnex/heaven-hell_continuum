@@ -198,7 +198,7 @@ void player_collision_update(hhc_player *p, f64 dt)
 {
     hhc_chunk *ch = NULL;
     hhc_block *block_p = fsl_mem_handle_get(hhc_blocks_buf);
-    u32 *block = NULL;
+    u16 *block = NULL;
     f64 speed;
     v3f64 velocity = {0};
     v3f64 displacement = {0};

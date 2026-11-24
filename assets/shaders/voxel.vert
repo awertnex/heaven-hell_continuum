@@ -1,16 +1,49 @@
 #version 430 core
 
-#define FACES_MAX 6
+#define BLOCK_FACES_MAX 6
 
-#define MASK_FACE_ID 0x00000007
-#define MASK_BLOCK_ID 0x000003ff
-#define MASK_BLOCK_LIGHT_VAL 0x0f
-#define MASK_BLOCK_LIGHT_AO 0x0f
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 00001111] 00; */
+#define MASK_QUAD_POS           0x000000000000000f
 
-layout (location = 0) in vec3 a_quad_pos;
-layout (location = 1) in vec3 a_quad_uv;
-layout (location = 2) in uint a_data;
-layout (location = 3) in uint a_light;
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 00000111] 00; */
+#define MASK_QUAD_ID            0x0000000000000007
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000011 11111111] 00; */
+#define MASK_QUAD_TEXTURE_ID    0x00000000000003ff
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00111111 11111111] 00; */
+#define MASK_BLOCK_DATA         0x0000000000003fff
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000011 11111111] 00; */
+#define MASK_BLOCK_ID           0x00000000000003ff
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 00001111] 00; */
+#define MASK_BLOCK_LIGHT        0x000000000000000f
+
+/*  63 [00000000 00000000 00000000 00000000] 32;
+ *  31 [00000000 00000000 00000000 11110000] 00; */
+#define MASK_BLOCK_AO           0x00000000000000f0
+
+#define SHIFT_QUAD_X            0
+#define SHIFT_QUAD_Y            4
+#define SHIFT_QUAD_Z            8
+#define SHIFT_QUAD_ID           12
+
+#define SHIFT_QUAD_DATA         15
+#define SHIFT_QUAD_TEXTURE_ID   15
+#define SHIFT_QUAD_STATE        25
+
+#define SHIFT_QUAD_LIGHT        0
+#define SHIFT_QUAD_AO           4
+
+layout (location = 0) in uint a_data;
+layout (location = 1) in uint a_light;
 
 layout(std430, binding = 1) readonly buffer ssbo_texture_indices
 {
@@ -42,7 +75,7 @@ const vec2 uv_buf[4] = vec2[](
         vec2(1.0, 0.0),
         vec2(1.0, 1.0));
 
-vec3 normal_buf[FACES_MAX] = vec3[](
+vec3 normal_buf[BLOCK_FACES_MAX] = vec3[](
         vec3(1.0, 0.0, 0.0),
         vec3(-1.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0),
@@ -50,7 +83,7 @@ vec3 normal_buf[FACES_MAX] = vec3[](
         vec3(0.0, 0.0, 1.0),
         vec3(0.0, 0.0, -1.0));
 
-const mat3 orientation_tab[FACES_MAX] = mat3[](
+const mat3 orientation_tab[BLOCK_FACES_MAX] = mat3[](
         mat3( /* px */
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
@@ -79,21 +112,21 @@ const mat3 orientation_tab[FACES_MAX] = mat3[](
 void main()
 {
     mat3 mat_view_transpose = transpose(inverse(mat3(mat_view)));
-    uint face_id = (a_data >> 4) & MASK_FACE_ID;
-    uint block_id = (a_data >> 19) & MASK_BLOCK_ID;
+    uint quad_id = (a_data >> SHIFT_QUAD_ID) & MASK_QUAD_ID;
+    uint block_id = (a_data >> SHIFT_QUAD_TEXTURE_ID) & MASK_BLOCK_ID;
     vec3 pos_voxel = block_world_offset + pos_fixup + vec3(
-            float((a_data >> 15) & 0xf),
-            float((a_data >> 11) & 0xf),
-            float((a_data >> 7) & 0xf));
+            float((a_data >> SHIFT_QUAD_X) & MASK_QUAD_POS),
+            float((a_data >> SHIFT_QUAD_Y) & MASK_QUAD_POS),
+            float((a_data >> SHIFT_QUAD_Z) & MASK_QUAD_POS));
 
-    pos = vec4(pos_voxel + orientation_tab[face_id] * pos_buf[gl_VertexID], 1.0);
+    pos = vec4(pos_voxel + orientation_tab[quad_id] * pos_buf[gl_VertexID], 1.0);
     pos_view = mat_view * pos;
     uv = uv_buf[gl_VertexID];
-    normal = normal_buf[face_id];
+    normal = normal_buf[quad_id];
     normal_view = mat_view_transpose * normal;
 
-    texture_id = texture_buf[block_id * FACES_MAX + face_id];
-    block_light = float(a_light & MASK_BLOCK_LIGHT_VAL) / float(MASK_BLOCK_LIGHT_VAL);
+    texture_id = texture_buf[block_id * BLOCK_FACES_MAX + quad_id];
+    block_light = float(a_light & MASK_BLOCK_LIGHT) / float(MASK_BLOCK_LIGHT);
 
     gl_Position = mat_perspective * pos;
 }

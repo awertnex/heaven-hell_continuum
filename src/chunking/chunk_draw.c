@@ -1,50 +1,29 @@
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/memory/memory.h"
-#include "deps/fossil/shaders/shader_types.h"
 
-#include "../h/main.h"
-#include "../settings/settings.h"
 #include "../h/diagnostics.h"
 
 #include "chunking.h"
 #include "chunking_internal.h"
 
+#include <stddef.h>
+
 hhc_chunk_draw chunk_draw = {0};
 
-static struct /* chunk_draw_core */
-{
-    fsl_mem_arena memory_arena;
-    b8 unit_quad_initialized;
-    GLuint unit_quad;
-} chunk_draw_core = {0};
+fsl_mem_arena memory_arena_chunk_draw_internal = {0};
 
 u32 chunk_draw_init_internal(void)
 {
-    u32 unit_quad_len = 4;
+    if (fsl_mem_arena_init(&memory_arena_chunk_draw_internal,
+                "chunk_draw_init_internal().memory_arena_chunk_draw_internal") != FSL_ERR_SUCCESS ||
 
-    if (fsl_mem_arena_init(&chunk_draw_core.memory_arena,
-                "chunk_draw_init_internal().chunk_draw_core.memory_arena") != FSL_ERR_SUCCESS ||
-
-            fsl_mem_arena_push(&chunk_draw_core.memory_arena, &chunk_draw.handle,
+            fsl_mem_arena_push(&memory_arena_chunk_draw_internal, &chunk_draw.handle,
                 chunk_order.chunks_max * sizeof(hhc_chunk_mesh),
                 "chunk_draw_init_internal().chunk_draw.handle") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
     chunk_draw.p = fsl_mem_handle_get(chunk_draw.handle);
     chunk_draw.len = chunk_order.chunks_max;
-
-    if (!chunk_draw_core.unit_quad_initialized)
-    {
-        chunk_draw_core.unit_quad_initialized = TRUE;
-        glGenBuffers(1, &chunk_draw_core.unit_quad);
-        glBindBuffer(GL_ARRAY_BUFFER, chunk_draw_core.unit_quad);
-        glBufferData(GL_ARRAY_BUFFER, unit_quad_len * 5 * sizeof(f32), NULL, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(f32), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(f32), (void*)(3 * sizeof(f32)));
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -62,14 +41,8 @@ void chunk_draw_free_internal(void)
                 chunk_draw_pop_internal(chunk_draw.p[i].chunk);
     }
 
-    if (chunk_draw_core.unit_quad_initialized)
-    {
-        chunk_draw_core.unit_quad_initialized = FALSE;
-        glDeleteBuffers(1, &chunk_draw_core.unit_quad);
-    }
-
-    fsl_mem_arena_free(&chunk_draw_core.memory_arena,
-            "chunk_draw_free_internal().chunk_draw_core.memory_arena");
+    fsl_mem_arena_free(&memory_arena_chunk_draw_internal,
+            "chunk_draw_free_internal().memory_arena_chunk_draw_internal");
 
     chunk_draw = nochunk_draw;
 }
@@ -114,21 +87,19 @@ void chunk_draw_push_internal(hhc_chunk *chunk, u32 *quad_buf, u8 *light_buf,
 
             glBindVertexArray(mesh->vao);
 
-            glBindBuffer(GL_ARRAY_BUFFER, chunk_draw_core.unit_quad);
-
             glBindBuffer(GL_ARRAY_BUFFER, mesh->quad_buf);
             glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u32), quad_buf, GL_DYNAMIC_DRAW);
 
-            glEnableVertexAttribArray(2);
-            glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(u32), (void*)0);
-            glVertexAttribDivisor(2, 1);
+            glEnableVertexAttribArray(0);
+            glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(u32), (void*)0);
+            glVertexAttribDivisor(0, 1);
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh->light_buf);
             glBufferData(GL_ARRAY_BUFFER, buf_len * sizeof(u8), light_buf, GL_DYNAMIC_DRAW);
 
-            glEnableVertexAttribArray(3);
-            glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, sizeof(u8), (void*)0);
-            glVertexAttribDivisor(3, 1);
+            glEnableVertexAttribArray(1);
+            glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, sizeof(u8), (void*)0);
+            glVertexAttribDivisor(1, 1);
 
             glBindVertexArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);

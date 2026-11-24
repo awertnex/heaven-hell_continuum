@@ -687,7 +687,7 @@ begin_generation:
                     non_air = TRUE;
                 }
 
-                if (cost >= (u32)budget)
+                if (cost >= budget)
                     goto finish_generation;
             }
             pos.x = 0;
@@ -729,8 +729,8 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
 
     u32 *quad_buf = &quad_buffer[cur_buf][0];
     u32 buf_len = 0;
-    u32 block = 0;
-    u32 faces = 0;
+    u16 block = 0;
+    u8 faces = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
     v3i64 i = {0};
     b8 should_render = FALSE;
@@ -763,52 +763,28 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
                         should_render = TRUE;
 
                         if (faces & FLAG_BLOCK_FACE_PX)
-                            quad_buf[buf_len++] =
-                                (0 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 0);
 
                         if (faces & FLAG_BLOCK_FACE_NX)
-                            quad_buf[buf_len++] =
-                                (1 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 1);
 
                         if (faces & FLAG_BLOCK_FACE_PY)
-                            quad_buf[buf_len++] =
-                                (2 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 2);
 
                         if (faces & FLAG_BLOCK_FACE_NY)
-                            quad_buf[buf_len++] =
-                                (3 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 3);
 
                         if (faces & FLAG_BLOCK_FACE_PZ)
-                            quad_buf[buf_len++] =
-                                (4 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 4);
 
                         if (faces & FLAG_BLOCK_FACE_NZ)
-                            quad_buf[buf_len++] =
-                                (5 << 4) |                          /* face ID */
-                                ((i.z & 0xf) << 7) |                /* pos-Z */
-                                ((i.y & 0xf) << 11) |               /* pos-Y */
-                                ((i.x & 0xf) << 15) |               /* pos-X */
-                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+                            quad_buf[buf_len++] = quad_compile_internal(block,
+                                    i.x, i.y, i.z, 5);
 
                         cost += CHUNK_WORK_COST_MESH_NON_AIR;
                     }
@@ -853,8 +829,8 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
 
     u8 *light_buf = &light_buffer[cur_buf][0];
     u32 buf_len = 0;
-    u32 block = 0;
-    u32 faces = 0;
+    u16 block = 0;
+    u8 faces = 0;
     u8 light = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
     v3u64 i = {0};
@@ -993,7 +969,7 @@ void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
     static u16 buf[CHUNK_VOLUME] = {0};
-    u32 *blocks = (u32*)chunk->block;
+    u16 *block_buf = (u16*)chunk->block;
     u32 i = 0;
     u32 j = 0;
     u32 rle = 0; /* run-length */
@@ -1011,10 +987,10 @@ void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
         goto finish_export;
     }
 
-    for (; i < CHUNK_VOLUME; ++j, i += rle, blocks += rle)
+    for (; i < CHUNK_VOLUME; ++j, i += rle, block_buf += rle)
     {
-        buf[j] = *blocks;
-        rle = fsl_rle(blocks, sizeof(u32), CHUNK_VOLUME - i);
+        buf[j] = *block_buf;
+        rle = fsl_rle(block_buf, sizeof(u16), CHUNK_VOLUME - i);
         if (rle > 1)
         {
             buf[j++] |= FLAG_BLOCK_RLE;
@@ -1041,7 +1017,7 @@ void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
     str *cursor = file_name;
     i64 pos_cache[3] = {0};
     static u16 buf[CHUNK_VOLUME] = {0};
-    u32 *blocks = (u32*)chunk->block;
+    u16 *block_buf = (u16*)chunk->block;
     u32 i = 0;
     u32 j = 0;
     u32 rle = 0;
@@ -1085,11 +1061,11 @@ void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
             buf[i] &= ~FLAG_BLOCK_RLE;
             rle = buf[i + 1];
             while (rle--)
-                blocks[j++] = buf[i];
+                block_buf[j++] = buf[i];
             ++i;
         }
         else
-            blocks[j++] = buf[i];
+            block_buf[j++] = buf[i];
     }
 
     cost = CHUNK_WORK_COST_IMPORT_NON_AIR;
@@ -1391,6 +1367,8 @@ perform_shift:
         goto perform_shift;
 }
 
+/* ---- section: implementation: chunk scheduler ---------------------------- */
+
 void chunk_scheduler_update_internal(void)
 {
     chunk_work_budget budget = settings.frame_budget;
@@ -1510,10 +1488,10 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 
 /* ---- section: implementation: block -------------------------------------- */
 
-u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
+u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
-    u32 faces = 0;
+    u8 faces = 0;
 
     if (x == CHUNK_DIAMETER - 1)
     {
@@ -1822,10 +1800,22 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
     }
 }
 
-u32 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
+u16 *block_resolved_get(hhc_chunk *chunk, i32 x, i32 y, i32 z)
 {
     x = fsl_mod_i32(x, CHUNK_DIAMETER);
     y = fsl_mod_i32(y, CHUNK_DIAMETER);
     z = fsl_mod_i32(z, CHUNK_DIAMETER);
     return &chunk->block[z][y][x];
+}
+
+/* ---- section: implementation: quads -------------------------------------- */
+
+u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id)
+{
+    return
+        ((x & MASK_QUAD_POS) << SHIFT_QUAD_X) |
+        ((y & MASK_QUAD_POS) << SHIFT_QUAD_Y) |
+        ((z & MASK_QUAD_POS) << SHIFT_QUAD_Z) |
+        ((block & MASK_BLOCK_ID) << SHIFT_QUAD_TEXTURE_ID) |
+        ((face_id & MASK_QUAD_ID) << SHIFT_QUAD_ID);
 }

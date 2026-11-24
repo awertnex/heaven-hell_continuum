@@ -18,28 +18,28 @@
 /* ---- section: block flag ------------------------------------------------- */
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00000001 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_PX      0x0000000000010000
+ *  31 [00000000 00000000 00000000 00000001] 00; */
+#define FLAG_BLOCK_FACE_PX      0x0000000000000001
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00000010 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_NX      0x0000000000020000
+ *  31 [00000000 00000000 00000000 00000010] 00; */
+#define FLAG_BLOCK_FACE_NX      0x0000000000000002
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00000100 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_PY      0x0000000000040000
+ *  31 [00000000 00000000 00000000 00000100] 00; */
+#define FLAG_BLOCK_FACE_PY      0x0000000000000004
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00001000 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_NY      0x0000000000080000
+ *  31 [00000000 00000000 00000000 00001000] 00; */
+#define FLAG_BLOCK_FACE_NY      0x0000000000000008
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00010000 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_PZ      0x0000000000100000
+ *  31 [00000000 00000000 00000000 00010000] 00; */
+#define FLAG_BLOCK_FACE_PZ      0x0000000000000010
 
 /*  63 [00000000 00000000 00000000 00000000] 32;
- *  31 [00000000 00100000 00000000 00000000] 00; */
-#define FLAG_BLOCK_FACE_NZ      0x0000000000200000
+ *  31 [00000000 00000000 00000000 00100000] 00; */
+#define FLAG_BLOCK_FACE_NZ      0x0000000000000020
 
 /**
  *  @brief run-length encoding, for chunk serialization.
@@ -284,9 +284,9 @@ void chunk_debug_chunk_gizmo_bake_internal(void);
 /**
  *  @brief get block faces based on neighboring blocks.
  *
- *  @return block with modified faces.
+ *  @return mask of block faces.
  */
-u32 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
 
 void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
         enum block_id block_id);
@@ -299,5 +299,16 @@ void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i
  */
 void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id);
+
+/**
+ *  @brief compile a quad from block data.
+ *
+ *  @param block block's data, from RAM.
+ *  @param x block's X position within chunk.
+ *  @param y block's Y position within chunk.
+ *  @param z block's Z position within chunk.
+ *  @param face_id block's face ID to compile. (e.g., 0 for positive-X, etc..)
+ */
+u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */
