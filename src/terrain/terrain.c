@@ -50,19 +50,19 @@ void terrain_init(void)
             coef, BIOME_NOISE_LIFE_FREQUENCY, coef);
 
     terrain_spec.biome[BIOME_STONE] = biome_init("Stone",
-            32.033, 12.030, 0.334, 17.047, -10.068, 1.009);
+            32.033, 12.030, 0.334, 0.847, 0.000, 8.009, BLOCK_STONE);
 
     terrain_spec.biome[BIOME_HILLS] = biome_init("Hills",
-            0.390, 0.100, 0.600, 0.500, 70.000, 50.000);
+            27.390, 39.100, 0.611, 0.520, 0.000, 50.000, BLOCK_GRASS);
 
     terrain_spec.biome[BIOME_SANDSTORM] = biome_init("Sandstorm",
-            0.557, 0.000, 0.100, 0.200, 0.000, 0.300);
+            44.557, 0.203, 0.428, 0.200, 0.000, 5.300, BLOCK_SAND);
 
     terrain_spec.biome[BIOME_DECAYING_LANDS] = biome_init("Decaying Lands",
-            0.163, 0.040, 0.900, 0.953, 0.000, 7.000);
+            -7.163, 17.040, 0.900, 0.953, 0.000, 2.008, BLOCK_BLOOD);
 
     terrain_spec.biome[BIOME_JUNGLE] = biome_init("Jungle",
-            0.270, 0.290, 0.430, 0.780, 3.000, 260.000);
+            32.270, 46.290, 0.430, 0.780, 0.000, 136.445, BLOCK_DIRT);
 }
 
 void terrain_spec_set(hhc_terrain_noise_index noise_index, f64 amp, f64 freq, f64 post_offset)
@@ -177,7 +177,7 @@ chunk_work_cost terrain_shape(hhc_terrain_sample *terrain, fsl_torus_sampler_con
 
     if (ctx->pos_tab[0][2] < terrain->value)
     {
-        terrain->block_id = biome_best_index + 1;
+        terrain->block_id = terrain_spec.biome[biome_best_index].favorite_block;
     }
 
     return cost;

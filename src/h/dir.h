@@ -1,6 +1,7 @@
 #ifndef HHC_DIR_H
 #define HHC_DIR_H
 
+#include "deps/fossil/common/limits.h"
 #include "deps/fossil/common/types.h"
 
 #define DIR_MAX 128

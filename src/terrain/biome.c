@@ -20,8 +20,8 @@
 #define BIOME_NOISE_LIFE_MAX            140.0
 #define BIOME_NOISE_LIFE_MIN            2.0
 
-hhc_biome biome_init(str *name,
-        f64 temperature, f64 humidity, f64 extremity, f64 roughness, f64 depth, f64 life)
+hhc_biome biome_init(str *name, f64 temperature, f64 humidity, f64 extremity,
+        f64 roughness, f64 depth, f64 life, enum block_id favorite_block)
 {
     hhc_biome biome = {0};
 
@@ -43,6 +43,8 @@ hhc_biome biome_init(str *name,
 
     biome.spec[BIOME_NOISE_LIFE] = biome_param_set(life,
             BIOME_NOISE_LIFE_MIN, BIOME_NOISE_LIFE_MAX);
+
+    biome.favorite_block = favorite_block;
 
     return biome;
 }

@@ -2,6 +2,7 @@
 #define HHC_PLAYER_H
 
 #include "deps/fossil/common/limits.h"
+
 #include "deps/fossil/assets/mesh/mesh.h"
 #include "deps/fossil/math/trigonometry.h"
 #include "deps/fossil/math/vector.h"

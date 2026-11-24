@@ -2,7 +2,7 @@
 #define HHC_WORLD_H
 
 #include "deps/fossil/common/types.h"
-#include "deps/fossil/math/vector.h"
+
 #include "deps/fossil/physics/physics_types.h"
 
 #include "player.h"

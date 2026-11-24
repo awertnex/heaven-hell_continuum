@@ -2,6 +2,7 @@
 #define HHC_RAYCAST_H
 
 #include "deps/fossil/common/types.h"
+
 #include "deps/fossil/math/vector.h"
 
 typedef struct block_hit

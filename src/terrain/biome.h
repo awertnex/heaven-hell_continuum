@@ -4,6 +4,8 @@
 #include "deps/fossil/common/types.h"
 #include "deps/fossil/common/limits.h"
 
+#include "../h/assets.h"
+
 typedef enum hhc_biome_noise_index
 {
     BIOME_NOISE_TEMPERATURE,
@@ -17,8 +19,8 @@ typedef enum hhc_biome_noise_index
 
 typedef enum hhc_biome_index
 {
-    BIOME_STONE,
     BIOME_HILLS,
+    BIOME_STONE,
     BIOME_SANDSTORM,
     BIOME_DECAYING_LANDS,
     BIOME_JUNGLE,
@@ -29,13 +31,14 @@ typedef struct hhc_biome
 {
     str name[FSL_ID_CAP];
     f64 spec[BIOME_NOISE_COUNT]; /* preferred value for each noise */
+    enum block_id favorite_block;
 } hhc_biome;
 
 /**
  *  @brief initialize a biome.
  */
 hhc_biome biome_init(str *name, f64 temperature, f64 humidity, f64 extremity,
-        f64 roughness, f64 depth, f64 life);
+        f64 roughness, f64 depth, f64 life, enum block_id favorite_block);
 
 /**
  *  @brief initialize a single parameter for a biome.

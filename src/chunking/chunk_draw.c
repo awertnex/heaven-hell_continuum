@@ -144,8 +144,3 @@ void chunk_draw_pop_internal(hhc_chunk *chunk)
         --chunk_draw.count;
     }
 }
-
-void chunk_draw_render(fsl_camera *camera,
-        v3f32 sun_rotation, v3f32 sky_light, v3f32 moon_light)
-{
-}

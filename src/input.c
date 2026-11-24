@@ -59,7 +59,6 @@ fsl_key_bind bind_right = {0};
 fsl_key_bind bind_down = {0};
 fsl_key_bind bind_up = {0};
 
-u32 bind_debug_mod = FSL_ALT_LEFT;
 fsl_key_bind bind_toggle_super_debug = {0};
 
 void input_init(void)

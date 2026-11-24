@@ -375,12 +375,6 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 void chunking_free(void);
 
 /**
- *  @brief draw chunk meshes onto world.
- */
-void chunk_draw_render(fsl_camera *camera,
-        v3f32 sun_rotation, v3f32 sky_light, v3f32 moon_light);
-
-/**
  *  @brief get chunk relative to position.
  *
  *  @remark this function breaks at render-distance of 1.

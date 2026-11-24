@@ -2,6 +2,7 @@
 #define HHC_H
 
 #include "deps/fossil/common/types.h"
+
 #include "deps/fossil/engine/engine.h"
 
 struct hhc_core

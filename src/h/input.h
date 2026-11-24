@@ -1,8 +1,6 @@
 #ifndef HHC_INPUT_H
 #define HHC_INPUT_H
 
-#include "deps/fossil/common/types.h"
-
 #include "deps/fossil/input/input.h"
 
 #include "container.h"
@@ -55,7 +53,6 @@ extern fsl_key_bind bind_reload_shaders;
 /* extern fsl_key_bind bind_down; */
 /* extern fsl_key_bind bind_up; */
 
-extern u32 bind_debug_mod;
 extern fsl_key_bind bind_toggle_super_debug;
 
 /**
