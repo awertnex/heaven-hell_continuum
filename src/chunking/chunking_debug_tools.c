@@ -43,8 +43,6 @@ typedef struct hhc_chunk_gizmo
 {
     b8 initialized;
     GLuint vao;
-    GLuint vertex_buf;
-    GLuint index_buf;
     GLuint data_buf;
     fsl_mem_handle handle;
     hhc_chunk_gizmo_entry *p; /* cached pointer from `handle` */
@@ -61,28 +59,6 @@ f32 chunk_gizmo_layer_position[CHUNK_DEBUG_COLOR_COUNT] = {0};
  *  @brief 3D chunk gizmo to showcase chunk status.
  */
 hhc_chunk_gizmo chunk_gizmo = {0};
-
-static GLfloat vertex_data_cube[24] =
-{
-    -0.5f, -0.5f, -0.5f,
-    0.5f, -0.5f, -0.5f,
-    -0.5f, 0.5f, -0.5f,
-    0.5f, 0.5f, -0.5f,
-    -0.5f, -0.5f, 0.5f,
-    0.5f, -0.5f, 0.5f,
-    -0.5f, 0.5f, 0.5f,
-    0.5f, 0.5f, 0.5f
-};
-
-static GLuint index_data_cube[36] =
-{
-    1, 5, 7, 1, 7, 3,
-    2, 6, 4, 2, 4, 0,
-    3, 7, 6, 3, 6, 2,
-    0, 4, 5, 0, 5, 1,
-    4, 6, 7, 4, 7, 5,
-    0, 1, 3, 0, 3, 2
-};
 
 /* ---- section: implementation --------------------------------------------- */
 
@@ -121,39 +97,26 @@ u32 chunk_debug_init_internal(fsl_len chunk_count)
     chunk_gizmo.p = fsl_mem_handle_get(chunk_gizmo.handle);
 
     glGenVertexArrays(1, &chunk_gizmo.vao);
-    glGenBuffers(1, &chunk_gizmo.vertex_buf);
-    glGenBuffers(1, &chunk_gizmo.index_buf);
     glGenBuffers(1, &chunk_gizmo.data_buf);
 
     glBindVertexArray(chunk_gizmo.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo.vertex_buf);
-    glBufferData(GL_ARRAY_BUFFER, fsl_arr_len(vertex_data_cube) * sizeof(GLfloat),
-            vertex_data_cube, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, chunk_gizmo.index_buf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, fsl_arr_len(index_data_cube) * sizeof(GLuint),
-            index_data_cube, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
 
     glBindBuffer(GL_ARRAY_BUFFER, chunk_gizmo.data_buf);
     glBufferData(GL_ARRAY_BUFFER, chunk_count * chunk_gizmo_stride, NULL, GL_DYNAMIC_DRAW);
 
+    glEnableVertexAttribArray(0);
+    glVertexAttribIPointer(0, 4, GL_BYTE, chunk_gizmo_stride, (void*)0);
+    glVertexAttribDivisor(0, 1);
+
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1, 4, GL_BYTE, chunk_gizmo_stride, (void*)0);
+    glVertexAttribIPointer(1, 4, GL_UNSIGNED_BYTE, chunk_gizmo_stride, (void*)sizeof(v4i8));
     glVertexAttribDivisor(1, 1);
 
     glEnableVertexAttribArray(2);
-    glVertexAttribIPointer(2, 4, GL_UNSIGNED_BYTE, chunk_gizmo_stride, (void*)sizeof(v4i8));
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, chunk_gizmo_stride, (void*)(2 * sizeof(v4u8)));
     glVertexAttribDivisor(2, 1);
 
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, chunk_gizmo_stride, (void*)(2 * sizeof(v4u8)));
-    glVertexAttribDivisor(3, 1);
-
     glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     chunk_gizmo.initialized = TRUE;
@@ -173,8 +136,6 @@ void chunk_debug_free_internal(void)
     {
         chunk_gizmo.initialized = FALSE;
         glDeleteBuffers(1, &chunk_gizmo.data_buf);
-        glDeleteBuffers(1, &chunk_gizmo.index_buf);
-        glDeleteBuffers(1, &chunk_gizmo.vertex_buf);
         glDeleteVertexArrays(1, &chunk_gizmo.vao);
     }
 
@@ -226,7 +187,7 @@ void chunk_debug_chunk_gizmo_draw(const fsl_camera *camera)
     glDisable(GL_BLEND);
     glClear(GL_DEPTH_BUFFER_BIT);
     glBindVertexArray(chunk_gizmo.vao);
-    glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, NULL, chunk_order.chunks_max);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunk_order.chunks_max);
     glEnable(GL_BLEND);
 }
 

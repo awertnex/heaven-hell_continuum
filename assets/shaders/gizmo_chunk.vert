@@ -5,10 +5,9 @@
 #define RENDER_DISTANCE_MIN 1.0
 #define CAMERA_DISTANCE_PADDING 3.0
 
-layout (location = 0) in vec3 a_pos;
-layout (location = 1) in ivec4 a_chunk_pos;
-layout (location = 2) in uvec4 a_chunk_color;
-layout (location = 3) in float a_offset;
+layout (location = 0) in ivec4 a_chunk_pos;
+layout (location = 1) in uvec4 a_chunk_color;
+layout (location = 2) in float a_offset;
 
 uniform ivec2 render_size;
 uniform int chunk_buf_diameter;
@@ -17,6 +16,24 @@ out vec3 vertex_position;
 out vec4 vertex_color;
 out float camera_distance;
 float inv_255 = 1.0 / 255.0;
+
+vec3 pos_buf[8] = vec3[](
+        vec3(-0.5, -0.5, -0.5),
+        vec3(0.5, -0.5, -0.5),
+        vec3(-0.5, 0.5, -0.5),
+        vec3(0.5, 0.5, -0.5),
+        vec3(-0.5, -0.5, 0.5),
+        vec3(0.5, -0.5, 0.5),
+        vec3(-0.5, 0.5, 0.5),
+        vec3(0.5, 0.5, 0.5));
+
+int index_buf[36] = int[](
+        1, 5, 7, 1, 7, 3,
+        2, 6, 4, 2, 4, 0,
+        3, 7, 6, 3, 6, 2,
+        0, 4, 5, 0, 5, 1,
+        4, 6, 7, 4, 7, 5,
+        0, 1, 3, 0, 3, 2);
 
 void main()
 {
@@ -27,7 +44,8 @@ void main()
             0.0, 0.0, 0.001, 0.0,
             0.0, 0.0, a_offset, 1.0);
 
-    vertex_position = a_pos * CUBE_SCALE + vec3(a_chunk_pos.xyz);
+    vertex_position =
+        pos_buf[index_buf[gl_VertexID]] * CUBE_SCALE + vec3(a_chunk_pos.xyz);
     vertex_color = a_chunk_color * inv_255;
 
     camera_distance = float(chunk_buf_diameter) / 2.0 + CAMERA_DISTANCE_PADDING;
