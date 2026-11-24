@@ -549,7 +549,7 @@ static void draw_world(void)
                     mesh->chunk->pos_world.y * CHUNK_DIAMETER,
                     mesh->chunk->pos_world.z * CHUNK_DIAMETER);
             glBindVertexArray(mesh->vao);
-            glDrawArraysInstanced(GL_POINTS, 0, mesh->buf_len, 1);
+            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, mesh->buf_len);
             --draw_count;
         }
     }

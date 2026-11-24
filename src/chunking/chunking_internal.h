@@ -11,7 +11,7 @@
 /* ---- section: definitions ------------------------------------------------ */
 
 /**
- *  @brief count of temporary static buffers in function @ref chunk_mesh_internal().
+ *  @brief count of temporary static buffers in a @ref chunk_work_func function.
  */
 #define BLOCK_BUFFERS_MAX 2
 
@@ -178,11 +178,10 @@ void chunk_draw_free_internal(void);
  *  @brief allocate a new mesh for a chunk onto a @ref hhc_chunk_draw or update
  *  existing allocated mesh.
  */
-void chunk_draw_push_internal(hhc_chunk *chunk, u64 *quad_buf, u8 *light_buf,
+void chunk_draw_push_internal(hhc_chunk *chunk, u32 *quad_buf, u8 *light_buf,
         u32 buf_len);
 
-void chunk_draw_pop_internal(u32 index);
-void chunk_draw_pop_chunk_internal(hhc_chunk *chunk);
+void chunk_draw_pop_internal(hhc_chunk *chunk);
 
 /**
  *  @brief get radius of sphere squared as per internal conventions.

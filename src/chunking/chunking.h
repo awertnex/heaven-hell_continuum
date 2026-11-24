@@ -10,10 +10,12 @@
 
 #include "chunk_work.h"
 
+#define VOXEL_FACES_MAX 6
+
 #define CHUNK_DIAMETER  16
 #define CHUNK_LAYER     (CHUNK_DIAMETER * CHUNK_DIAMETER)
 #define CHUNK_VOLUME    (CHUNK_LAYER * CHUNK_DIAMETER)
-#define CHUNK_QUADS_MAX (((CHUNK_VOLUME) / 2) * 6)
+#define CHUNK_QUADS_MAX (((CHUNK_VOLUME) / 2) * VOXEL_FACES_MAX)
 
 #define CHUNK_REGION_DIAMETER   32
 #define CHUNK_REGION_LAYER      (CHUNK_REGION_DIAMETER * CHUNK_REGION_DIAMETER)
@@ -174,7 +176,6 @@ struct hhc_chunk
     hhc_chunk_mesh *mesh;
 
     u32 block[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
-    u8 light[CHUNK_DIAMETER][CHUNK_DIAMETER][CHUNK_DIAMETER];
 
     /**
      *  @brief cost of work done on generating, meshing, importing and/or exporting
@@ -198,12 +199,12 @@ struct hhc_chunk_mesh
      *  stride: sizeof(u32).
      *
      *  data packing format:
-     *      ao[4-bits]: baked ambient occlusion weights, 1-bit per quad corner.
-     *      id[3-bits]: face id. (e.g., 0 = positive X face, etc..)
-     *      pos_z[4-bits]: quad's Z position within chunk.
-     *      pos_y[4-bits]: quad's Y position within chunk.
-     *      pos_x[4-bits]: quad's X position within chunk.
-     *      texture_index[10-bits]: quad's texture index.
+     *      ao[4-bit]: baked ambient occlusion weights, 1-bit per quad corner.
+     *      id[3-bit]: face id. (e.g., 0 = positive X face, etc..)
+     *      pos_z[4-bit]: quad's Z position within chunk.
+     *      pos_y[4-bit]: quad's Y position within chunk.
+     *      pos_x[4-bit]: quad's X position within chunk.
+     *      texture_index[10-bit]: quad's texture index.
      */
     GLuint quad_buf;
 
@@ -213,7 +214,7 @@ struct hhc_chunk_mesh
      *  stride: sizeof(u8).
      *
      *  data packing format:
-     *      light[5-bits]: quad's light value.
+     *      light[5-bit]: quad's light value.
      */
     GLuint light_buf;
 

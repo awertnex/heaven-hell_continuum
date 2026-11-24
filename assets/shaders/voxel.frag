@@ -45,7 +45,7 @@ in vec4 pos_view;
 in vec2 uv;
 in vec3 normal;
 in vec3 normal_view;
-in flat uint face_index;
+in flat uint texture_id;
 in float block_light;
 in float ao_weights[4];
 
@@ -104,7 +104,7 @@ void main()
     float fog_end = render_distance + render_distance * FOG_SOFTNESS;
     float fog_factor = fog_linear(fog_distance, fog_start, fog_end);
 
-    vec4 albedo = texture(textures[face_index], uv);
+    vec4 albedo = texture(textures[texture_id], uv);
     vec3 global_illumination = albedo.rgb * GLOBAL_ILLUMINATION;
     vec3 color_sky = sky_light * SKY_INFLUENCE * (sun_brightness + moon_brightness);
     float color_sun = sun_direction * SUN_INFLUENCE * sun_brightness;

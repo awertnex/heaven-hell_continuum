@@ -2,15 +2,9 @@
 
 #define FACE_VERTICES 6
 #define VERTICES_MAX 36
-#define FACES_MAX 6
 
 layout(points) in;
 layout(triangle_strip, max_vertices = VERTICES_MAX) out;
-
-layout(std430, binding = 1) readonly buffer ssbo_texture_indices
-{
-    uint texture_buf[];
-};
 
 #define FLAG_POSITIVE_X 0x00010000
 #define FLAG_NEGATIVE_X 0x00020000
@@ -19,28 +13,10 @@ layout(std430, binding = 1) readonly buffer ssbo_texture_indices
 #define FLAG_POSITIVE_Z 0x00100000
 #define FLAG_NEGATIVE_Z 0x00200000
 
-uniform mat4 mat_view;
-uniform mat4 mat_perspective;
-in uint vs_block_id[];
-in uint vs_block_faces[];
-in vec3 vs_pos[];
-in float vs_light[];
-in float vs_ao_weights[][4];
-out vec4 pos;
-out vec4 pos_view;
-out vec2 uv;
-out vec3 normal;
-out vec3 normal_view;
-out flat uint face_index;
-out float block_light;
-out float ao_weights[4];
-
 void voxel_make()
 {
     int i = 0;
     int j = 0;
-    block_light = vs_light[0];
-    ao_weights = vs_ao_weights[0];
 
     vec3 vertex_buf[8] =
         vec3[](
@@ -80,9 +56,6 @@ void voxel_make()
 
     int index_buf_uv[FACE_VERTICES] =
         int[](0, 1, 2, 2, 3, 0);
-
-    int ebo_uv_top[FACE_VERTICES] =
-        int[](3, 0, 1, 1, 2, 3);
 
     mat3 mat_view_transpose = transpose(inverse(mat3(mat_view)));
 

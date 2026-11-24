@@ -158,7 +158,7 @@ u32 assets_init(void)
 
     if (fsl_shader_program_init_ex(&shader_p[SHADER_VOXEL],
                 "Voxel", "voxel",
-                "voxel.vert", "voxel.geom", "voxel.frag",
+                "voxel.vert", NULL, "voxel.frag",
                 GAME_DIR_NAME_SHADERS) != FSL_ERR_SUCCESS)
         goto cleanup;
 

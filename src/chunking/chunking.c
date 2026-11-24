@@ -724,15 +724,15 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
-    static u64 quad_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u32 quad_buffer[BLOCK_BUFFERS_MAX][CHUNK_QUADS_MAX] = {0};
     static u32 cur_buf = 0;
 
-    u64 *quad_buf = &quad_buffer[cur_buf][0];
+    u32 *quad_buf = &quad_buffer[cur_buf][0];
+    u32 buf_len = 0;
     u32 block = 0;
     u32 faces = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
     v3i64 i = {0};
-    u32 j = 0;
     b8 should_render = FALSE;
 
     (void)budget;
@@ -747,7 +747,7 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
         goto finish_meshing;
     }
 
-    j = 0;
+    buf_len = 0;
     for (i.z = 0; i.z < CHUNK_DIAMETER; ++i.z)
     {
         for (i.y = 0; i.y < CHUNK_DIAMETER; ++i.y)
@@ -758,14 +758,59 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
                 if (block & MASK_BLOCK_ID)
                 {
                     faces = block_faces_get_internal(&chunk_neighbors, i.x, i.y, i.z);
-                    SET_BLOCK_FACES(chunk->block[i.z][i.y][i.x], faces);
                     if (faces & MASK_BLOCK_FACES)
                     {
                         should_render = TRUE;
-                        quad_buf[j++] = block | faces |
-                            (i.x << SHIFT_BLOCK_X) |
-                            (i.y << SHIFT_BLOCK_Y) |
-                            (i.z << SHIFT_BLOCK_Z);
+
+                        if (faces & FLAG_BLOCK_FACE_PX)
+                            quad_buf[buf_len++] =
+                                (0 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        if (faces & FLAG_BLOCK_FACE_NX)
+                            quad_buf[buf_len++] =
+                                (1 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        if (faces & FLAG_BLOCK_FACE_PY)
+                            quad_buf[buf_len++] =
+                                (2 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        if (faces & FLAG_BLOCK_FACE_NY)
+                            quad_buf[buf_len++] =
+                                (3 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        if (faces & FLAG_BLOCK_FACE_PZ)
+                            quad_buf[buf_len++] =
+                                (4 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        if (faces & FLAG_BLOCK_FACE_NZ)
+                            quad_buf[buf_len++] =
+                                (5 << 4) |                          /* face ID */
+                                ((i.z & 0xf) << 7) |                /* pos-Z */
+                                ((i.y & 0xf) << 11) |               /* pos-Y */
+                                ((i.x & 0xf) << 15) |               /* pos-X */
+                                ((block & MASK_BLOCK_ID) << 19);    /* block ID */
+
+                        cost += CHUNK_WORK_COST_MESH_NON_AIR;
                     }
                 }
             }
@@ -776,21 +821,19 @@ chunk_work_func chunk_work_mesh_func(hhc_chunk *chunk, chunk_work_budget budget,
     if (cur_buf >= BLOCK_BUFFERS_MAX)
         cur_buf = 0;
 
-    cost = CHUNK_WORK_COST_MESH_NON_AIR;
-
 finish_meshing:
 
     if (should_render)
     {
         chunk->flag |= FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_MESHING + 1;
-        chunk_draw_push_internal(chunk, quad_buf, NULL, j);
+        chunk_draw_push_internal(chunk, quad_buf, NULL, buf_len);
     }
     else
     {
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
-        chunk_draw_pop_chunk_internal(chunk);
+        chunk_draw_pop_internal(chunk);
     }
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
@@ -805,15 +848,16 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
-    static u8 light_buffer[BLOCK_BUFFERS_MAX][CHUNK_VOLUME] = {0};
+    static u8 light_buffer[BLOCK_BUFFERS_MAX][CHUNK_QUADS_MAX] = {0};
     static u64 cur_buf = 0;
 
     u8 *light_buf = &light_buffer[cur_buf][0];
+    u32 buf_len = 0;
     u32 block = 0;
+    u32 faces = 0;
     u8 light = 0;
     hhc_chunk_neighbors chunk_neighbors = {0};
     v3u64 i = {0};
-    u32 j = 0;
     b8 should_render = TRUE;
 
     (void)budget;
@@ -829,7 +873,7 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
         goto finish_lighting;
     }
 
-    j = 0;
+    buf_len = 0;
     for (i.z = 0; i.z < CHUNK_DIAMETER; ++i.z)
     {
         for (i.y = 0; i.y < CHUNK_DIAMETER; ++i.y)
@@ -839,9 +883,29 @@ chunk_work_func chunk_work_light_func(hhc_chunk *chunk, chunk_work_budget budget
                 block = chunk->block[i.z][i.y][i.x];
                 if (block & MASK_BLOCK_ID)
                 {
-                    light = 15;
-                    SET_BLOCK_LIGHT(chunk->light[i.z][i.y][i.x], light);
-                    light_buf[j++] = light;
+                    faces = block_faces_get_internal(&chunk_neighbors, i.x, i.y, i.z);
+                    if (faces & MASK_BLOCK_FACES)
+                    {
+                        light = 15;
+
+                        if (faces & FLAG_BLOCK_FACE_PX)
+                            light_buf[buf_len++] = light;
+
+                        if (faces & FLAG_BLOCK_FACE_NX)
+                            light_buf[buf_len++] = light;
+
+                        if (faces & FLAG_BLOCK_FACE_PY)
+                            light_buf[buf_len++] = light;
+
+                        if (faces & FLAG_BLOCK_FACE_NY)
+                            light_buf[buf_len++] = light;
+
+                        if (faces & FLAG_BLOCK_FACE_PZ)
+                            light_buf[buf_len++] = light;
+
+                        if (faces & FLAG_BLOCK_FACE_NZ)
+                            light_buf[buf_len++] = light;
+                    }
                 }
             }
         }
@@ -859,13 +923,13 @@ finish_lighting:
     {
         chunk->flag |= FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_LIGHTING + 1;
-        chunk_draw_push_internal(chunk, NULL, light_buf, j);
+        chunk_draw_push_internal(chunk, NULL, light_buf, buf_len);
     }
     else
     {
         chunk->flag &= ~FLAG_CHUNK_VISIBLE;
         chunk->status = STATUS_CHUNK_FINISHING;
-        chunk_draw_pop_chunk_internal(chunk);
+        chunk_draw_pop_internal(chunk);
     }
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
@@ -1067,7 +1131,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
         {
             chunk = &chunk_buf.p[chunk_buf.cursor];
             if (chunk->mesh)
-                chunk_draw_pop_chunk_internal(chunk);
+                chunk_draw_pop_internal(chunk);
 
             *chunk = nochunk;
             chunk->flag = FLAG_CHUNK_LOADED | FLAG_CHUNK_DIRTY_GENERATE | FLAG_CHUNK_DIRTY_MESH;
@@ -1107,7 +1171,7 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
 {
     u32 index_popped = chunk - chunk_buf.p;
 
-    chunk_draw_pop_chunk_internal(chunk);
+    chunk_draw_pop_internal(chunk);
     chunk->flag = 0;
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
@@ -1682,7 +1746,6 @@ void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
 
     cn->ch->flag |= FLAG_CHUNK_DIRTY_MESH | FLAG_CHUNK_NON_AIR;
     SET_BLOCK_ID(cn->ch->block[z][y][x], block_id);
-    SET_BLOCK_LIGHT(cn->ch->light[z][y][x], 15);
 
     if (x == CHUNK_DIAMETER - 1 && cn->px && cn->px->block[z][y][0])
         cn->px->flag |= FLAG_CHUNK_DIRTY_MESH;
