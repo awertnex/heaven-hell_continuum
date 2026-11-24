@@ -1,46 +1,62 @@
 # changelog
 
-- - -
-## v0.5.0-dev (current)
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+>**NOTES:**
+>- the changelog format is based on
+   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) since game version
+   `v0.5.0-dev`, with some modification: changelogs start as lower-case,
+   change headers are level 4 instead of level 3.
+
+## unreleased
 
 #### achievements
-- first working version of the continuum (complete).
-- new seamless-tiling noise sampler (moved to engine as plug-in).
+- first working version of the continuum. (complete)
+- new seamless-tiling noise sampler. (moved to engine as plug-in)
+- new quad-mesher and renderer. (7x increase in FPS)
 
-#### changes
-- updated engine version to v0.19.0-beta.
+#### added
+- add inventory container texture.
+- add GUI-scale integration.
+- add back 'super debugger'. (press <Tab> to open panel)
+- add labels to 'super debugger' buttons.
+- add chunk-receipt debug info for player current chunk.
+- new plug-in 'big_num_separator' for an economic representation of numbers.
+  (I wrote this thing back in 2021 thinking I will never use it for anything,
+  so, I brought it back, with its original name)
+    - moved to engine as plug-in.
+- add screen-space ambient occlusion. (SSAO)
+
+#### changed
+- update engine version to v0.19.0-beta.
+- change terrain noise sampling to be cached per axis.
+- put skybox drawing in its own function. (as oppose to being part of the giant
+  function `world_draw()`)
+- make flashlight an actual spotlight and add smooth motion to it.
+
+#### deprecated
+- deprecate `hhc_chunk.mesh`, now it's `hhc_chunk.mesh_deprecated`,
+  and `hhc_chunk.mesh` is now a mesh pointer. (so it can be managed by a
+  chunk_draw)
+
+#### removed
+- since 'super debugger' is back; remove debug key bindings, now <Tab> shows
+  'super debugger' with those options as buttons.
+
+#### fixed
 - fix mouse garbage-delta when centering on screen.
-- changed terrain noise sampling to be cached per axis.
-- put skybox drawing in its own function (as oppose to being part of the giant
-  function `world_draw()`.
-- made flashlight an actual spotlight and added smooth motion to it.
-
-#### fixes
-- fixed chunk gizmo's alpha background not showing up.
-- fixed segfault when player flies at blocks at high speed:
-    - it's not collision, it's an out-of-bounds access when player dies.
+- fix chunk gizmo's alpha background not showing up.
+- fix segfault when player flies at blocks at high speed. (it's not collision,
+  it's an out-of-bounds access when player dies)
 - player can now interact with blocks beyond world edge.
 
-#### additions
-- added inventory container texture.
-- added GUI-scale integration.
-- added back 'super debugger'.
-- added chunk-receipt debug info for player current chunk.
-- new plug-in 'big_num_separator' for an economic representation of numbers
-  (I wrote this thing back in 2021 thinking I will never use it for anything,
-  so, I brought it back, with its original name).
-- added screen-space ambient occlusion (SSAO).
-
-#### deletions
-- since 'super debugger' is back, deleted debug key bindings, now <Tab> shows
-  'super debugger' with those options as buttons (currently without labels).
-
-#### deprecations
-- deprecated `hhc_chunk.mesh`, now it's `hhc_chunk.mesh_deprecated`,
-  and `hhc_chunk.mesh` is now a mesh pointer (so it can be managed by a
-  chunk_draw).
-
-#### known bugs and flaws
+#### security
+- SSAO is very performance-intensive, especially when geometry is near camera.
+- MSAA shows seams in the skybox.
 - player spawn puts player anywhere, even inside blocks.
 - collision is broken:
     - blocks tug on player.
@@ -55,57 +71,71 @@
   move freely like a drone).
 - block light is hard-coded, for now.
 
-- - -
-## v0.5.0-beta (2026 06 08)
+## [0.5.0-beta] 2026-06-08
 
-#### changes
-- added world-saving (chunks are just dumped to disk and retrieved on
-  world-load, but at least they're compressed using RLE)
-- added inventory item displays (no textures yet)
-- added debug info about targeted block
-- changed c standard from c99 -> c89
-- updated engine version to `fossil_engine v0.10.0-beta`
-- fixed engine build tool not copying required libraries to deployment directory
-- improved logging of commands:
+#### added
+- add world-saving (chunks are just dumped to disk and retrieved on world-load,
+        but at least they're compressed using RLE)
+- add inventory item displays (no textures yet)
+    - add debug info about targeted block
+- add function 'engine/dir.c/get_base_name()'
+- add engine API exposure definitions in 'engine/h/common.h'
+- add helpful build commands:
+    - self: build build tool
+    - all: build build tool, engine and game
+    - noproject: don't execute the build function passed to 'engine_build()'
+- add memory manamgement stuff:
+    - arena allocators:
+        - function '_mem_map_arena()'
+        - cool function '_mem_push_arena()', grows dynamically and
+          auto-relocates all resident pointers with it
+        - function '_mem_unmap_arena()'
+        - functions '_mem_request_page_size()' and 'mem_request_page_size()'
+          (internal use)
+    - function '_mem_remap()'
+- added page size alignment for 'sys/mman.h' functions
+- added better memory alignment for memory arena pushes but also tight-packing
+  for small pushes (I made it so that multiple pushes can use the same memory
+  page as long as they're small enough to fit within it, otherwise the
+  overlapping block will be pushed to the next page)
+- add advanced logger, now logs to console, to screen, to file, and takes flags
+  for custom options
+- add function 'fsl_shader_free()' to unload individual shaders
+- add mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to
+  scroll)
+
+#### changed
+- change c standard from c99 -> c89
+- update engine version to `fossil_engine v0.10.0-beta`
+- improve logging of commands:
     - chunk boundary toggling commands
     - chunk queue visualizer toggling commands
     - bounding box toggling commands
     - flashlight toggling commands
-- added function 'engine/dir.c/get_base_name()'
-- fixed misaligned GUI logger strings
-- added engine API exposure definitions in 'engine/h/common.h'
-- changed 'engine/h/platform.h' -> 'engine/h/process.h'
-- added helpful build commands:
-    - self: build build tool
-    - all: build build tool, engine and game
-    - noproject: don't execute the build function passed to 'engine_build()'
-- added memory manamgement stuff:
-    - arena allocators:
-        - function '_mem_map_arena()'
-        - cool function '_mem_push_arena()', grows dynamically and auto-relocates all resident pointers with it
-        - function '_mem_unmap_arena()'
-        - functions '_mem_request_page_size()' and 'mem_request_page_size()' (internal use)
-    - function '_mem_remap()'
-- added page size alignment for 'sys/mman.h' functions
-- added better memory alignment for memory arena pushes but also tight-packing for small pushes:
-    - I made it so that multiple pushes can use the same memory page as long as they're small enough to fit within it,
-      otherwise the overlapping block will be pushed to the next page
-- removed build tool into its own repository and re-introduced as a dependency
-- advanced logger, now logs to console, to screen, to file, and takes flags for custom options
-- fixed very sneaky and annoying segfault:
-    - I wrongfully assumed since "if (!p)" protected against NULL pointers it protected against un-allocated memory... and then I ate dirt
-- added function 'fsl_shader_free()' to unload individual shaders
-- added mouse wheel scrolling in GUI logger (press 'Tab' for 'super debug' to scroll)
-- removed the engine, then added the engine back to the repository as a dependency
-- updated buildtool version to `v1.8.7`
+- change 'engine/h/platform.h' -> 'engine/h/process.h'
+- update buildtool version to `v1.8.7`
 
-#### bugs and flaws
-- segfault when allocating smaller than 256 bytes for 'size' in function 'mem_alloc_buf()'
+#### removed
+- remove build tool into its own repository and re-introduced as a dependency
+- remove the engine, then added the engine back to the repository as a
+  dependency
+
+#### fixed
+- fix engine build tool not copying required libraries to deployment directory
+- fix misaligned GUI logger strings
+- fix very sneaky and annoying segfault:
+    - I wrongfully assumed since "if (!p)" protected against NULL pointers it
+      protected against un-allocated memory... and then I ate dirt
+
+#### security
+- segfault when allocating smaller than 256 bytes for 'size' in function
+  'mem_alloc_buf()'
 - player spawn puts player anywhere, even inside blocks
 - collision is broken:
     - blocks tug on player
     - player collides with imaginary blocks near actual blocks
-    - flying at blocks at high speed results in a floating point exception (segfault)
+    - flying at blocks at high speed results in a floating point exception
+      (segfault)
 - physics have been disabled, now the player glides across blocks and flies
   with no drag except for natural air drag (very annoying)
 - block-breaking is instant, and it's a press-event, not a hold-event,
@@ -117,10 +147,9 @@
 - 'Sample Block' not implemented
 - block light is hard-coded, for now
 
-- - -
-## v0.4.0-beta (18 Jan 2026)
+## [0.4.0-beta] 2026-01-18
 
-#### changes
+#### changed
 - added player air control while not flying
 - made movement kinematic (physically-based):
     - acceleration_rate
@@ -153,16 +182,15 @@
 - added coloring per string for text rendering
 - added ui drawing module for engine (see 'bugs and flaws')
 
-#### bugs and flaws
+#### security
 - extremely high speeds (e.g. 3000 m/s) break collision detection
 - high speeds now segfault
 - if logger can't find log directory, it saves logs to engine log directory, if not found, it saves to current working directory (it should not save at all if so)
 - 'draw_ui_9_slice()' function doesn't work yet
 
-- - -
-## v0.3.0-beta (10 Dec 2025)
+## [0.3.0-beta] 2025-12-10
 
-#### changes
+#### changed
 - nudging the major version up by 1 is an understatement, this is almost
   an entirely different game from the previous version
 - changed directory structure completely
@@ -176,7 +204,7 @@
 - added cool textures
 - revived old code completely and removed all scrap code
 - fixed chunk queue offset miscalculation
-- fixed windows support (10 Dec 2025: actually broke it later)
+- fixed windows support (2025-12-10: actually broke it later)
 - fixed z-fighting between overlapped quads and lines
 - added basic AABB collision
 - added proper skybox and stars
@@ -215,10 +243,9 @@
 - made build tool build engine separately into a dynamic shared library
 - simplified build tool by removing some unnecessary commands
 
-- - -
-## v0.2.3-beta (16 Oct 2025)
+## [0.2.3-beta] 2025-10-16
 
-#### changes
+#### changed
 - added image loading with stb_image.h
 - added UI parsing shaders
 - fixed patchy chunk generation
@@ -228,10 +255,9 @@
   nothing allocated, and just froze there)
 - baked chunk order indices to a table on disk to avoid runtime re-calculation
 
-- - -
-## v0.2.2-beta (12 Oct 2025)
+## [0.2.2-beta] 2025-10-12
 
-#### changes
+#### changed
 - optimized chunk rendering:
     - added queues for processing chunks at a reasonable rate per frame
     - changed block data from 'u64' -> 'u32' to save memory, and sacrifice
@@ -253,10 +279,9 @@
         - added 'rate_chunk' to limit number of chunks processed per frame
         - added 'rate_block' to limit number of blocks processed per chunk
 
-- - -
-## v0.2.0-beta (05 Oct 2025)
+## [0.2.0-beta] 2025-10-05
 
-#### changes
+#### changed
 - added skybox colors for day/night cycle
 - fixed menu buttons not disappearing after leaving menu (forgot to clear background)
 - added windows support for building launcher and tests
@@ -319,17 +344,16 @@
 - added chunk gizmo
 - added debug info for opengl version and other general info
 
-#### bugs
+#### security
 - chunk rendering draws chunk boundary faces for the furthest chunks at chunk-shift direction
 - chunk gizmo size is screen size dependent
 - gizmo size is screen size dependent
 - geometry shaders' precision errors show up sometimes in DEBUG_MORE mode (semi-transparent blocks)
 - setting render distance to 0 segfaults (ofc, but I'm not gonna patch that)
 
-- - -
-## v0.1.4-alpha (08 Apr 2025)
+## [0.1.4-alpha] 2025-04-08
 
-#### changes
+#### changed
 - added windows support for build tool
 - created minecraft.c logo 'resources/logo/'
 - added platform layer C files 'linux_minecraft.c' and 'windows_minecraft.c'
@@ -338,19 +362,17 @@
 - added day/night cycle
 - added compiled release_build for windows
 
-- - -
-## v0.1.3 (03 Apr 2025)
+## [0.1.3] 2025-04-03
 
-#### changes
+#### changed
 - fixed segfault while placing or breaking blocks in non-allocated chunk area
 - switched to C99 standard
 - changed original resources to avoid copyright
 - made build system more difficult to read but easier to use (not tested on windows)
 
-- - -
-## v0.1.2 (01 Apr 2025)
+## [0.1.2] 2025-04-01
 
-#### changes
+#### changed
 - can break and place blocks
 - added menu navigation
 - fixed breaking and placing blocks in other chunks than 'xy: 0, 0'
@@ -367,10 +389,9 @@
 - changed build system from Bash to C
 - made 'defines.h' a local file
 
-- - -
-## v0.1.1 (27 Mar 2025)
+## [0.1.1] 2025-03-27
 
-#### changes
+#### changed
 - added many button names for menus and containers enum
 - added all menu names enum
 - added all container names enum
@@ -383,8 +404,7 @@
 - made the codebase a lot more readable
 - added delta time
 
-- - -
-## v0.1.0 (24 Mar 2025)
+## [0.1.0] 2025-03-24
 
 **first version, as I have started this project long before I version-controlled it with git**
 
