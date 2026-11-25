@@ -459,9 +459,9 @@ static void draw_world(void)
     f32 flashlight_flicker_gathering = 0.8f;
     u32 i = 0;
     u32 draw_count = chunk_draw.count;
-    f32 lerp_speed = 0.2f;
-    f32 lerp_speed_toggle = 0.5f;
-    f32 k = 1.0f - render->time_delta_f;
+    f32 lerp_speed = 30.0f;
+    f32 lerp_speed_toggle = 64.0f;
+    f32 dt = 1.0f - (f32)exp(-1.0 * render->time_delta_f);
 
     flashlight.pos.x = player.transform.pos.x - player.yaw.sin * 0.3f;
     flashlight.pos.y = player.transform.pos.y - player.yaw.cos * 0.3f;
@@ -491,24 +491,24 @@ static void draw_world(void)
         flashlight.intensity = 0.0f;
 
     flashlight_last.pos.x = fsl_lerp_exp_f32(flashlight_last.pos.x, flashlight.pos.x,
-            k, lerp_speed);
+            lerp_speed, dt);
     flashlight_last.pos.y = fsl_lerp_exp_f32(flashlight_last.pos.y, flashlight.pos.y,
-            k, lerp_speed);
+            lerp_speed, dt);
     flashlight_last.pos.z = fsl_lerp_exp_f32(flashlight_last.pos.z, flashlight.pos.z,
-            k, lerp_speed);
+            lerp_speed, dt);
 
     flashlight_last.direction.x = fsl_lerp_exp_f32(flashlight_last.direction.x,
-            flashlight.direction.x, k, lerp_speed);
+            flashlight.direction.x, lerp_speed, dt);
     flashlight_last.direction.y = fsl_lerp_exp_f32(flashlight_last.direction.y,
-            flashlight.direction.y, k, lerp_speed);
+            flashlight.direction.y, lerp_speed, dt);
     flashlight_last.direction.z = fsl_lerp_exp_f32(flashlight_last.direction.z,
-            flashlight.direction.z, k, lerp_speed);
+            flashlight.direction.z, lerp_speed, dt);
 
     flashlight_last.direction = fsl_normalize_v3f32(flashlight_last.direction);
     flashlight_last.cutoff = flashlight.cutoff;
     flashlight_last.feather_factor = flashlight.feather_factor;
     flashlight_last.intensity = fsl_lerp_exp_f32(flashlight_last.intensity,
-            flashlight.intensity, k, lerp_speed_toggle);
+            flashlight.intensity, lerp_speed_toggle, dt);
 
     glBindFramebuffer(GL_FRAMEBUFFER, g_buf.fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

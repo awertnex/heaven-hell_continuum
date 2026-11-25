@@ -221,7 +221,7 @@ void world_update(hhc_player *p)
     world.tick = world.tick_start + (u64)((f64)render->time * FSL_NSEC2SEC * WORLD_TICK_SPEED);
     world.days = world.tick / SET_DAY_TICKS_MAX;
 
-    player_update(p, 1.0 - exp(-1.0 * (f64)render->time_delta * FSL_NSEC2SEC));
+    player_update(p, 1.0 - exp(-1.0 * render->time_delta_f));
     player_camera_movement_update(p, render->mouse_delta, should_the_mouse_move_the_3d_camera);
 
     if (MODE_INTERNAL_LOAD_CHUNKS &&
