@@ -375,6 +375,11 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 void chunking_free(void);
 
 /**
+ *  @brief draw all world chunks to a framebuffer of choice.
+ */
+void chunk_draw_render(void);
+
+/**
  *  @brief get chunk relative to position.
  *
  *  @remark this function breaks at render-distance of 1.

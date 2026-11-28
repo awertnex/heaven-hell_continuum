@@ -2,6 +2,7 @@
 #include "deps/fossil/memory/memory.h"
 
 #include "../h/diagnostics.h"
+#include "../h/main.h"
 
 #include "chunking.h"
 #include "chunking_internal.h"
@@ -143,4 +144,72 @@ void chunk_draw_pop_internal(hhc_chunk *chunk)
         *mesh = nomesh;
         --chunk_draw.count;
     }
+}
+
+void chunk_draw_render_v1_internal(void);
+void chunk_draw_render_v2_internal(void);
+void chunk_draw_render_v3_internal(void);
+
+void chunk_draw_render(void)
+{
+    switch (core.debug.chunk_renderer_version)
+    {
+        case 0:
+            chunk_draw_render_v1_internal();
+            break;
+        case 1:
+            chunk_draw_render_v2_internal();
+            break;
+        case 2:
+            chunk_draw_render_v3_internal();
+            break;
+    }
+}
+
+void chunk_draw_render_v1_internal(void)
+{
+    hhc_chunk *chunk = NULL;
+    fsl_len draw_count = chunk_draw.count;
+    i64 i = chunk_order.chunks_max - 1;
+
+    for (; i >= 0 && draw_count; --i)
+    {
+        chunk = chunk_tab.p[chunk_order.p[i]];
+        if (chunk && chunk->mesh)
+        {
+            glUniform3f(uniform.voxel.block_world_offset,
+                    chunk->pos_world.x * CHUNK_DIAMETER,
+                    chunk->pos_world.y * CHUNK_DIAMETER,
+                    chunk->pos_world.z * CHUNK_DIAMETER);
+            glBindVertexArray(chunk->mesh->vao);
+            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, chunk->mesh->buf_len);
+            --draw_count;
+        }
+    }
+}
+
+void chunk_draw_render_v2_internal(void)
+{
+    hhc_chunk_mesh *mesh = NULL;
+    fsl_len draw_count = chunk_draw.count;
+    u32 i = 0;
+
+    for (; i < chunk_draw.len && draw_count; ++i)
+    {
+        mesh = &chunk_draw.p[i];
+        if (mesh->initialized)
+        {
+            glUniform3f(uniform.voxel.block_world_offset,
+                    mesh->chunk->pos_world.x * CHUNK_DIAMETER,
+                    mesh->chunk->pos_world.y * CHUNK_DIAMETER,
+                    mesh->chunk->pos_world.z * CHUNK_DIAMETER);
+            glBindVertexArray(mesh->vao);
+            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, mesh->buf_len);
+            --draw_count;
+        }
+    }
+}
+
+void chunk_draw_render_v3_internal(void)
+{
 }

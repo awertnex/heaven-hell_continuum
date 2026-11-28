@@ -7,7 +7,7 @@
 
 struct hhc_core
 {
-    struct /* flag */
+    struct /* request */
     {
         b8 menu_back;
         b8 world_load;
@@ -37,6 +37,7 @@ struct hhc_core
         b8 chunk_bounds;
         b8 chunk_gizmo;
         b8 chunk_scheduler_visualizer;
+        u32 chunk_renderer_version;
     } debug;
 
 }; /* hhc_core */
