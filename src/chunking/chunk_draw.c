@@ -152,7 +152,7 @@ void chunk_draw_render_v3_internal(void);
 
 void chunk_draw_render(void)
 {
-    switch (core.debug.chunk_renderer_version)
+    switch (core.debug.chunk_draw_version)
     {
         case 0:
             chunk_draw_render_v1_internal();

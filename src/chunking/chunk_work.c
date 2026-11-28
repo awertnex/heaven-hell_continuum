@@ -38,6 +38,8 @@ void chunk_work_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_pr
             "Generate Terrain    %16s\n"
             "Generate Caves      %16s\n"
             "Mesh                %16s\n"
+            "Light               %16s\n"
+            "AO                  %16s\n"
             "Import              %16s\n"
             "Export              %16s\n"
             "------------------------------------\n\n"
@@ -49,6 +51,8 @@ void chunk_work_receipt_print(const hhc_chunk_receipt *src, hhc_chunk_receipt_pr
             dst->cost[CHUNK_RECEIPT_ITEM_GENERATE_TERRAIN],
             dst->cost[CHUNK_RECEIPT_ITEM_GENERATE_CAVES],
             dst->cost[CHUNK_RECEIPT_ITEM_MESH],
+            dst->cost[CHUNK_RECEIPT_ITEM_LIGHT],
+            dst->cost[CHUNK_RECEIPT_ITEM_AO],
             dst->cost[CHUNK_RECEIPT_ITEM_IMPORT],
             dst->cost[CHUNK_RECEIPT_ITEM_EXPORT],
             dst->subtotal,

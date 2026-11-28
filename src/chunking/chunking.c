@@ -914,8 +914,8 @@ finish_lighting:
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
-    receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
-    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+    receipt->cost[CHUNK_RECEIPT_ITEM_LIGHT] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_LIGHT] += cost;
 
     return 0;
 }
@@ -933,8 +933,8 @@ chunk_work_func chunk_work_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
 
     chunk_debug_chunk_gizmo_write_internal(chunk);
 
-    receipt->cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
-    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_MESH] += cost;
+    receipt->cost[CHUNK_RECEIPT_ITEM_AO] += cost;
+    chunk->receipt.cost[CHUNK_RECEIPT_ITEM_AO] += cost;
 
     return 0;
 }

@@ -1,7 +1,5 @@
-#include "deps/fossil/engine/engine_assets.h"
-#include "deps/fossil/memory/memory.h"
 #include "deps/fossil/ui/ui_element.h"
-#include "deps/fossil/ui/ui_types.h"
+#include "deps/fossil/ui/ui_event.h"
 
 #include "gui_callbacks.h"
 

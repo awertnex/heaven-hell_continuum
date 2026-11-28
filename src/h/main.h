@@ -37,7 +37,7 @@ struct hhc_core
         b8 chunk_bounds;
         b8 chunk_gizmo;
         b8 chunk_scheduler_visualizer;
-        u32 chunk_renderer_version;
+        u32 chunk_draw_version;
     } debug;
 
 }; /* hhc_core */
