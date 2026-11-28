@@ -2,6 +2,7 @@
 #include "deps/fossil/file_io/file_io.h"
 #include "deps/fossil/logger/logger.h"
 #include "deps/fossil/math/math.h"
+#include "deps/fossil/math/vector.h"
 #include "deps/fossil/memory/memory.h"
 #include "deps/fossil/plugins/fsl_native/torus_noise/torus_noise.h"
 #include "deps/fossil/string/string.h"
@@ -53,6 +54,124 @@ static chunk_work_func (*chunk_work_func_internal[STATUS_CHUNK_COUNT])(hhc_chunk
     chunk_work_idle_func,
     chunk_work_idle_func
 };
+
+/* ---- section: signatues -------------------------------------------------- */
+
+static u32 chunks_max_init_internal(void);
+
+/**
+ *  @brief initialize @ref chunk_order.
+ *
+ *  write lookup to disk, and load if exists.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+static u32 chunk_order_init_internal(void);
+
+/**
+ *  @brief build @ref chunk_order look-up and write to disk.
+ *
+ *  format:
+ *      offset-table:   offset of each lookup into file, after compression, in bytes,
+ *      |               size of table is "(SET_RENDER_DISTANCE_MAX + 1) * 4 bytes * 2".
+ *      | - entries:    4 bytes for offset, 4 bytes for size, after compression, in bytes.
+ *
+ *      data:           a flat u32 array of index values.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+static u32 chunk_order_build_internal(void);
+
+/**
+ *  @brief load @ref chunk_order look-up from disk.
+ *
+ *  can be called again when changing render distance.
+ *
+ *  @param render_distance current render distance to use in index-adjustment.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+static u32 chunk_order_load_internal(u32 render_distance);
+
+/**
+ *  @brief load @ref chunk_sched.bucket look-up from disk.
+ *
+ *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
+ */
+static u32 chunk_bucket_load_internal(void);
+
+static void chunk_buf_update_internal(v3i32 *player_chunk_delta);
+static void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
+static void chunk_buf_pop_internal(hhc_chunk *chunk);
+static void chunk_buf_dump_internal(void);
+static void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta);
+
+/**
+ *  @brief set new chunk position.
+ *
+ *  set chunk position and wrapped position.
+ *  set chunk ID, cti and cpi.
+ */
+static void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates);
+
+/**
+ *  @brief write chunk to disk.
+ */
+static void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
+
+/**
+ *  @brief read chunk from disk.
+ */
+static void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+        hhc_chunk_receipt *receipt);
+
+/**
+ *  @param budget frame budget given to chunks to consume.
+ */
+static void chunk_scheduler_update_internal(chunk_work_budget budget);
+
+/*
+ *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ */
+static chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
+
+/*
+ *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
+ */
+static chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
+
+/**
+ *  @brief get block faces based on neighboring blocks.
+ *
+ *  @return mask of block faces.
+ */
+static u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+
+static hhc_block_neighbors block_neighbors_get_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z);
+
+static void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
+        enum block_id block_id);
+
+static void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
+
+/**
+ *  @brief execute block logic on the block based on its ID (e.g., make grass
+ *  turn to dirt when under another block).
+ */
+static void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
+        i32 x, i32 y, i32 z, enum block_id block_id);
+
+/**
+ *  @brief compile a quad from block data.
+ *
+ *  @param block block's data, from RAM.
+ *  @param x block's X position within chunk.
+ *  @param y block's Y position within chunk.
+ *  @param z block's Z position within chunk.
+ *  @param face_id block's face ID to compile. (e.g., 0 for positive-X, etc..)
+ */
+static u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id);
 
 /* ---- section: implementation: chunk -------------------------------------- */
 
@@ -147,7 +266,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-u32 chunks_max_init_internal(void)
+static u32 chunks_max_init_internal(void)
 {
     str path[FSL_PATH_CAP] = {0};
     u32 *file_contents = NULL;
@@ -218,7 +337,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-u32 chunk_order_init_internal(void)
+static u32 chunk_order_init_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
@@ -251,7 +370,7 @@ u32 chunk_order_init_internal(void)
     return *GAME_ERR;
 }
 
-u32 chunk_order_build_internal(void)
+static u32 chunk_order_build_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
@@ -357,7 +476,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-u32 chunk_order_load_internal(u32 render_distance)
+static u32 chunk_order_load_internal(u32 render_distance)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
@@ -397,7 +516,7 @@ cleanup:
     return *GAME_ERR;
 }
 
-u32 chunk_bucket_load_internal(void)
+static u32 chunk_bucket_load_internal(void)
 {
     fsl_fs_path path[FSL_PATH_CAP] = {0};
 
@@ -548,7 +667,7 @@ hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk)
     return neighbors;
 }
 
-void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
+static void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates)
 {
     v3u32 center = {0};
 
@@ -968,7 +1087,7 @@ chunk_work_func chunk_work_finish_func(hhc_chunk *chunk, chunk_work_budget budge
     return 0;
 }
 
-void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
+static void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
     fsl_fs_path path[FSL_PATH_CAP] = {0};
@@ -1012,7 +1131,7 @@ finish_export:
     fsl_file_write(path, j * sizeof(u16), buf, TRUE, FALSE);
 }
 
-void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
+static void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
         hhc_chunk_receipt *receipt)
 {
     chunk_work_cost cost = 0;
@@ -1080,7 +1199,7 @@ finish_import:
     chunk->receipt.cost[CHUNK_RECEIPT_ITEM_IMPORT] += cost;
 }
 
-void chunk_buf_update_internal(v3i32 *player_chunk_delta)
+static void chunk_buf_update_internal(v3i32 *player_chunk_delta)
 {
     i32 i = 0;
     i32 end = chunk_order.chunks_max;
@@ -1092,7 +1211,7 @@ void chunk_buf_update_internal(v3i32 *player_chunk_delta)
     }
 }
 
-void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
+static void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
 {
     hhc_chunk nochunk = {0};
     v3u32 chunk_tab_coordinates = {0};
@@ -1147,7 +1266,7 @@ void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta)
             "Failed to Push to `chunk_buf`, Buffer Full\n");
 }
 
-void chunk_buf_pop_internal(hhc_chunk *chunk)
+static void chunk_buf_pop_internal(hhc_chunk *chunk)
 {
     u32 index_popped = chunk - chunk_buf.p;
 
@@ -1160,7 +1279,7 @@ void chunk_buf_pop_internal(hhc_chunk *chunk)
     chunk_tab.p[chunk->cti] = NULL;
 }
 
-void chunk_buf_dump_internal(void)
+static void chunk_buf_dump_internal(void)
 {
     hhc_chunk *chunk = NULL;
     u32 i = 0;
@@ -1184,7 +1303,7 @@ void chunk_buf_dump_internal(void)
     chunk_buf.cursor = 0;
 }
 
-void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta)
+static void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta)
 {
     u32 index_bound_start = 0;
     u32 index_bound_end = 0;
@@ -1373,7 +1492,7 @@ perform_shift:
 
 /* ---- section: implementation: chunk scheduler ---------------------------- */
 
-void chunk_scheduler_update_internal(chunk_work_budget budget)
+static void chunk_scheduler_update_internal(chunk_work_budget budget)
 {
     hhc_chunk_receipt noreceipt = {0};
     hhc_chunk_receipt receipt = {0};
@@ -1461,7 +1580,7 @@ skip_push:
     chunk_sched.priority = i;
 }
 
-chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
+static chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
 {
     hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
     u32 bucket_end = bucket->pos + bucket->len;
@@ -1475,7 +1594,7 @@ chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk)
     return CHUNK_WORK_COST_PUSH;
 }
 
-chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
+static chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 {
     hhc_chunk_bucket *bucket = &chunk_sched.bucket[chunk->cpi];
     u32 bucket_end = bucket->pos + bucket->len;
@@ -1491,7 +1610,7 @@ chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk)
 
 /* ---- section: implementation: block -------------------------------------- */
 
-u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
+static u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
     u8 faces = 0;
@@ -1787,7 +1906,7 @@ void block_break(block_hit hit)
     block_remove_internal(&cn, hit.pos.x, hit.pos.y, hit.pos.z);
 }
 
-void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
+static void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
@@ -1813,7 +1932,7 @@ void block_add_internal(hhc_chunk_neighbors *chunk_neighbors,
     block_evaluate_internal(cn, x, y, z, block_id);
 }
 
-void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
+static void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
@@ -1836,7 +1955,7 @@ void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors,
         cn->nz->flag |= FLAG_CHUNK_DIRTY_MESH;
 }
 
-void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
+static void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
         i32 x, i32 y, i32 z, enum block_id block_id)
 {
     hhc_chunk_neighbors *cn = chunk_neighbors;
@@ -1872,7 +1991,7 @@ void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
 
 /* ---- section: implementation: quads -------------------------------------- */
 
-u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id)
+static u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id)
 {
     return
         ((x & MASK_QUAD_POS) << SHIFT_QUAD_X) |

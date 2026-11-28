@@ -2,7 +2,6 @@
 #define HHC_CHUNKING_INTERNAL_H
 
 #include "deps/fossil/common/types.h"
-#include "deps/fossil/math/vector.h"
 #include "deps/fossil/plugins/fsl_native/torus_noise/torus_noise.h"
 
 #include "chunk_work.h"
@@ -130,49 +129,6 @@ extern hhc_chunk_scheduler chunk_sched;
 
 /* ---- section: signatures ------------------------------------------------- */
 
-u32 chunks_max_init_internal(void);
-
-/**
- *  @brief initialize @ref chunk_order.
- *
- *  write lookup to disk, and load if exists.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 chunk_order_init_internal(void);
-
-/**
- *  @brief build @ref chunk_order look-up and write to disk.
- *
- *  format:
- *      offset-table:   offset of each lookup into file, after compression, in bytes,
- *      |               size of table is "(SET_RENDER_DISTANCE_MAX + 1) * 4 bytes * 2".
- *      | - entries:    4 bytes for offset, 4 bytes for size, after compression, in bytes.
- *
- *      data:           a flat u32 array of index values.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 chunk_order_build_internal(void);
-
-/**
- *  @brief load @ref chunk_order look-up from disk.
- *
- *  can be called again when changing render distance.
- *
- *  @param render_distance current render distance to use in index-adjustment.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 chunk_order_load_internal(u32 render_distance);
-
-/**
- *  @brief load @ref chunk_sched.bucket look-up from disk.
- *
- *  @return non-zero on failure and @ref *GAME_ERR is set accordingly.
- */
-u32 chunk_bucket_load_internal(void);
-
 /**
  *  @brief initialize resources required by chunk debug tools.
  */
@@ -199,12 +155,10 @@ u32 chunk_sphere_radius_get_internal(u32 radius);
 hhc_chunk_neighbors chunk_neighbors_get_internal(hhc_chunk *chunk);
 
 /**
- *  @brief set new chunk position.
- *
- *  set chunk position and wrapped position.
- *  set chunk ID, cti and cpi.
+ *  @brief chunk idle state function, do absolutely nothing.
  */
-void chunk_pos_set_internal(hhc_chunk *chunk, v3i32 player_chunk_delta, v3u32 chunk_tab_coordinates);
+chunk_work_func chunk_work_idle_func(hhc_chunk *chunk, chunk_work_budget budget,
+        hhc_chunk_receipt *receipt);
 
 /**
  *  @brief load chunk from disk and generate if not found.
@@ -244,45 +198,6 @@ chunk_work_func chunk_work_ao_func(hhc_chunk *chunk, chunk_work_budget budget,
 chunk_work_func chunk_work_finish_func(hhc_chunk *chunk, chunk_work_budget budget,
         hhc_chunk_receipt *receipt);
 
-/**
- *  @brief chunk idle state function, do absolutely nothing.
- */
-chunk_work_func chunk_work_idle_func(hhc_chunk *chunk, chunk_work_budget budget,
-        hhc_chunk_receipt *receipt);
-
-/**
- *  @brief write chunk to disk.
- */
-void chunk_export_internal(hhc_chunk *chunk, hhc_chunk_receipt *receipt);
-
-/**
- *  @brief read chunk from disk.
- */
-void chunk_import_internal(const fsl_fs_path *path, hhc_chunk *chunk,
-        hhc_chunk_receipt *receipt);
-
-void chunk_buf_update_internal(v3i32 *player_chunk_delta);
-void chunk_buf_push_internal(u32 index, v3i32 player_chunk_delta);
-void chunk_buf_pop_internal(hhc_chunk *chunk);
-void chunk_buf_dump_internal(void);
-void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta);
-void chunk_scheduler_update_internal_deprecated(void);
-
-/**
- *  @param budget frame budget given to chunks to consume.
- */
-void chunk_scheduler_update_internal(chunk_work_budget budget);
-
-/*
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
- */
-chunk_work_cost chunk_scheduler_push_internal(hhc_chunk *chunk);
-
-/*
- *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).
- */
-chunk_work_cost chunk_scheduler_pop_internal(hhc_chunk *chunk);
-
 /*
  *  @brief write single entry to chunk gizmo buffer.
  */
@@ -292,38 +207,5 @@ void chunk_debug_chunk_gizmo_write_internal(const hhc_chunk *chunk);
  *  @brief upload entire chunk gizmo buffer to VRAM.
  */
 void chunk_debug_chunk_gizmo_bake_internal(void);
-
-/**
- *  @brief get block faces based on neighboring blocks.
- *
- *  @return mask of block faces.
- */
-u8 block_faces_get_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
-
-hhc_block_neighbors block_neighbors_get_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z);
-
-void block_add_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z,
-        enum block_id block_id);
-
-void block_remove_internal(hhc_chunk_neighbors *chunk_neighbors, i32 x, i32 y, i32 z);
-
-/**
- *  @brief execute block logic on the block based on its ID (e.g., make grass
- *  turn to dirt when under another block).
- */
-void block_evaluate_internal(hhc_chunk_neighbors *chunk_neighbors,
-        i32 x, i32 y, i32 z, enum block_id block_id);
-
-/**
- *  @brief compile a quad from block data.
- *
- *  @param block block's data, from RAM.
- *  @param x block's X position within chunk.
- *  @param y block's Y position within chunk.
- *  @param z block's Z position within chunk.
- *  @param face_id block's face ID to compile. (e.g., 0 for positive-X, etc..)
- */
-u32 quad_compile_internal(u16 block, u8 x, u8 y, u8 z, u8 face_id);
 
 #endif /* HHC_CHUNKING_INTERNAL_H */
