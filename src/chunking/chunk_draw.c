@@ -9,9 +9,25 @@
 
 #include <stddef.h>
 
-hhc_chunk_draw chunk_draw = {0};
+typedef struct hhc_draw_arrays_indirect_command
+{
+    u32 count;
+    u32 instance_count;
+    u32 first;
+    u32 base_instance;
+} hhc_draw_arrays_indirect_command;
 
+hhc_chunk_draw chunk_draw = {0};
 fsl_mem_arena memory_arena_chunk_draw_internal = {0};
+
+fsl_mem_handle handle_draw_command = {0};
+static hhc_draw_arrays_indirect_command *draw_command = NULL;
+GLuint vao_draw_command = 0;
+GLuint vbo_draw_command = 0;
+
+static void chunk_draw_render_v1_internal(void);
+static void chunk_draw_render_v2_internal(void);
+static void chunk_draw_render_v3_internal(void);
 
 u32 chunk_draw_init_internal(void)
 {
@@ -20,11 +36,17 @@ u32 chunk_draw_init_internal(void)
 
             fsl_mem_arena_push(&memory_arena_chunk_draw_internal, &chunk_draw.handle,
                 chunk_order.chunks_max * sizeof(hhc_chunk_mesh),
-                "chunk_draw_init_internal().chunk_draw.handle") != FSL_ERR_SUCCESS)
+                "chunk_draw_init_internal().chunk_draw.handle") != FSL_ERR_SUCCESS ||
+
+            fsl_mem_arena_push(&memory_arena_chunk_draw_internal, &handle_draw_command,
+                chunk_order.chunks_max * sizeof(hhc_draw_arrays_indirect_command),
+                "chunk_draw_init_internal().handle_draw_command") != FSL_ERR_SUCCESS)
         return *GAME_ERR;
 
     chunk_draw.p = fsl_mem_handle_get(chunk_draw.handle);
     chunk_draw.len = chunk_order.chunks_max;
+
+    draw_command = fsl_mem_handle_get(handle_draw_command);
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -142,13 +164,11 @@ void chunk_draw_pop_internal(hhc_chunk *chunk)
 
         chunk->mesh = NULL;
         *mesh = nomesh;
-        --chunk_draw.count;
+
+        if (chunk_draw.count)
+            --chunk_draw.count;
     }
 }
-
-void chunk_draw_render_v1_internal(void);
-void chunk_draw_render_v2_internal(void);
-void chunk_draw_render_v3_internal(void);
 
 void chunk_draw_render(void)
 {
@@ -166,7 +186,7 @@ void chunk_draw_render(void)
     }
 }
 
-void chunk_draw_render_v1_internal(void)
+static void chunk_draw_render_v1_internal(void)
 {
     hhc_chunk *chunk = NULL;
     fsl_len draw_count = chunk_draw.count;
@@ -188,7 +208,7 @@ void chunk_draw_render_v1_internal(void)
     }
 }
 
-void chunk_draw_render_v2_internal(void)
+static void chunk_draw_render_v2_internal(void)
 {
     hhc_chunk_mesh *mesh = NULL;
     fsl_len draw_count = chunk_draw.count;
@@ -210,6 +230,10 @@ void chunk_draw_render_v2_internal(void)
     }
 }
 
-void chunk_draw_render_v3_internal(void)
+static void chunk_draw_render_v3_internal(void) /* TODO: make the indirect rendering function */
 {
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, vbo_draw_command);
+    glMultiDrawArraysIndirect(GL_TRIANGLE_FAN, draw_command, chunk_draw.count,
+            sizeof(hhc_draw_arrays_indirect_command));
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }

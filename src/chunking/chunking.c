@@ -448,7 +448,7 @@ void chunking_update(v3i32 player_chunk, v3i32 *player_chunk_delta, block_hit hi
 
     if (!(chunk_delta.x || chunk_delta.y || chunk_delta.z))
     {
-        chunk_scheduler_update_internal();
+        chunk_scheduler_update_internal(settings.frame_budget);
         chunk_debug_chunk_gizmo_bake_internal();
         return;
     }
@@ -1373,9 +1373,8 @@ perform_shift:
 
 /* ---- section: implementation: chunk scheduler ---------------------------- */
 
-void chunk_scheduler_update_internal(void)
+void chunk_scheduler_update_internal(chunk_work_budget budget)
 {
-    chunk_work_budget budget = settings.frame_budget;
     hhc_chunk_receipt noreceipt = {0};
     hhc_chunk_receipt receipt = {0};
     u32 i = 0;

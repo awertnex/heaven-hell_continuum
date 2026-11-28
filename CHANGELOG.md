@@ -55,14 +55,15 @@ and this project adheres to
 - player can now interact with blocks beyond world edge.
 
 #### security
-- SSAO is very performance-intensive, especially when geometry is near camera.
+- chunk lighting sometimes dips to darkness for a frame when chunks are
+  modified.
+- sometimes chunks are missing meshes, you can place a block in them or break a
+  block to produce the mesh.
+- SSAO is very laggy when geometry is near camera.
 - MSAA shows seams in the skybox.
 - player spawn puts player anywhere, even inside blocks.
-- collision is broken:
-    - blocks tug on player.
-    - player collides with imaginary blocks near actual blocks.
-- physics have been disabled, now the player glides across blocks and flies
-  with no drag except for natural air drag (very annoying).
+- Swept AABB collision has been disabled for now, regular AABB collision is
+  used.
 - block-breaking is instant, and it's a press-event, not a hold-event,
   same for block-placement.
 - camera mode 'stalker' doesn't pick a block to rest on and follow player,

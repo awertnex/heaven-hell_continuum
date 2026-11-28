@@ -267,7 +267,11 @@ void chunk_buf_pop_internal(hhc_chunk *chunk);
 void chunk_buf_dump_internal(void);
 void chunk_tab_shift_internal(v3i32 player_chunk, v3i32 *player_chunk_delta);
 void chunk_scheduler_update_internal_deprecated(void);
-void chunk_scheduler_update_internal(void);
+
+/**
+ *  @param budget frame budget given to chunks to consume.
+ */
+void chunk_scheduler_update_internal(chunk_work_budget budget);
 
 /*
  *  @return cost of operation (used in @ref chunk_scheduler_update_internal()).

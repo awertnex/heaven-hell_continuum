@@ -69,6 +69,9 @@ void super_debugger_init(v2i32 render_size)
     super_debugger_button_init(&ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION],
             &ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_CONFIG],
             super_debugger_button_click_func_toggle_screen_space_ambient_occlusion);
+    super_debugger_button_init(&ui_element_sdb_button[UI_ELEMENT_SDB_CYCLE_CHUNK_RENDERER],
+            &ui_element_sdb_panel[UI_ELEMENT_SDB_PANEL_CONFIG],
+            super_debugger_button_click_func_cycle_chunk_renderer);
 
     super_debugger_update(render_size);
 }
@@ -182,6 +185,11 @@ void super_debugger_draw(v2i32 render_size, GLuint fbo)
             ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION].header.transform.baked.pos.y +
             ui_element_sdb_button[UI_ELEMENT_SDB_TOGGLE_SCREEN_SPACE_AMBIENT_OCCLUSION].header.transform.baked.size.y / 2.0f,
             0, FSL_TEXT_ALIGN_CENTER, 0, settings.screen_space_ambient_occlusion ? color_setting_on : COLOR_TEXT_DEFAULT);
+    fsl_text_push("Cycle Renderer Version\r",
+            SET_MARGIN * 3,
+            ui_element_sdb_button[UI_ELEMENT_SDB_CYCLE_CHUNK_RENDERER].header.transform.baked.pos.y +
+            ui_element_sdb_button[UI_ELEMENT_SDB_CYCLE_CHUNK_RENDERER].header.transform.baked.size.y / 2.0f,
+            0, FSL_TEXT_ALIGN_CENTER, 0, COLOR_TEXT_DEFAULT);
 
     fsl_text_render(TRUE, FSL_TEXT_COLOR_SHADOW);
 

@@ -169,3 +169,13 @@ void super_debugger_button_click_func_toggle_screen_space_ambient_occlusion(fsl_
         LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
                 "Screen-Space Ambient Occlusion Off\n");
 }
+
+void super_debugger_button_click_func_cycle_chunk_renderer(fsl_ui_event event, void *data)
+{
+    super_debugger_button_click_func(event, data);
+
+    core.debug.chunk_draw_version = (core.debug.chunk_draw_version + 1) % 3;
+
+    LOGDEBUG(FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
+            fsl_logger_stringf("Chunk Renderer Version Set to: %u\n", core.debug.chunk_draw_version));
+}

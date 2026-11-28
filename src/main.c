@@ -451,14 +451,11 @@ static void draw_world(void)
 {
     fsl_fbo *fbo_p = fsl_mem_handle_get(hhc_fbo_buf);
     fsl_shader_program *shader_p = fsl_mem_handle_get(hhc_shader_buf);
-    hhc_chunk_mesh *mesh = NULL;
     static hhc_spotlight flashlight = {0};
     static hhc_spotlight flashlight_last = {0};
     f32 flashlight_flicker = 0.0f;
     f32 flashlight_flicker_intensity = 2.0f;
     f32 flashlight_flicker_gathering = 0.8f;
-    u32 i = 0;
-    u32 draw_count = chunk_draw.count;
     f32 lerp_speed = 30.0f;
     f32 lerp_speed_toggle = 64.0f;
     f32 dt = 1.0f - (f32)exp(-1.0 * render->time_delta_f);
@@ -539,20 +536,7 @@ static void draw_world(void)
     else
         glUniform1f(uniform.voxel.opacity, 1.0f);
 
-    for (i = 0; i < chunk_draw.len && draw_count; ++i)
-    {
-        mesh = &chunk_draw.p[i];
-        if (mesh->initialized)
-        {
-            glUniform3f(uniform.voxel.block_world_offset,
-                    mesh->chunk->pos_world.x * CHUNK_DIAMETER,
-                    mesh->chunk->pos_world.y * CHUNK_DIAMETER,
-                    mesh->chunk->pos_world.z * CHUNK_DIAMETER);
-            glBindVertexArray(mesh->vao);
-            glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 4, mesh->buf_len);
-            --draw_count;
-        }
-    }
+    chunk_draw_render();
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, g_buf.fbo);
     if (settings.anti_aliasing)

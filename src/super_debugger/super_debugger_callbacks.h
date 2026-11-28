@@ -18,5 +18,6 @@ void super_debugger_button_click_func_toggle_chunk_gizmo(fsl_ui_event event, voi
 void super_debugger_button_click_func_toggle_chunk_scheduler_visualizer(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_anti_aliasing(fsl_ui_event event, void *data);
 void super_debugger_button_click_func_toggle_screen_space_ambient_occlusion(fsl_ui_event event, void *data);
+void super_debugger_button_click_func_cycle_chunk_renderer(fsl_ui_event event, void *data);
 
 #endif /* HHC_SUPER_DEBUGGER_CALLBACKS_H */
