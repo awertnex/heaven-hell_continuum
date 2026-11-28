@@ -4,7 +4,7 @@
 /* ---- section: video & graphics ------------------------------------------- */
 
 #define MODE_INTERNAL_VSYNC                         0
-#define MODE_INTERNAL_SKIP_TITLE_MENU               1
+#define MODE_INTERNAL_SKIP_TITLE_MENU               0
 
 /* ---- section: cheats ----------------------------------------------------- */
 

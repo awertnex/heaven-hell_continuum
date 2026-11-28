@@ -257,15 +257,13 @@ void input_update(hhc_player *p)
             {
                 state_menu_depth = 0;
                 p->menu_state = 0;
-                center_cursor;
-                disable_cursor;
+                gui_cursor_disable();
             }
             else if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && !state_menu_depth)
             {
                 state_menu_depth = 1;
                 p->menu_state = STATE_PLAYER_MENU_INVENTORY_SURVIVAL;
-                enable_cursor;
-                center_cursor;
+                gui_cursor_enable();
             }
 
             if (p->menu_state != STATE_PLAYER_MENU_INVENTORY_SURVIVAL && state_menu_depth)
@@ -283,16 +281,14 @@ void input_update(hhc_player *p)
                 ++state_menu_depth;
                 menu_index_curr = MENU_GAME_PAUSE;
                 p->menu_state = 0;
-                enable_cursor;
-                center_cursor;
+                gui_cursor_enable();
             }
             else
                 --state_menu_depth;
 
             if (!state_menu_depth)
             {
-                center_cursor;
-                disable_cursor;
+                gui_cursor_disable();
             }
         }
 
@@ -384,13 +380,11 @@ void input_update(hhc_player *p)
 
         if (core.flag.super_debug)
         {
-            enable_cursor;
-            center_cursor;
+            gui_cursor_enable();
         }
         else
         {
-            center_cursor;
-            disable_cursor;
+            gui_cursor_disable();
         }
     }
 }

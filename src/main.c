@@ -963,15 +963,7 @@ int main(int argc, char **argv)
             FSL_FLAG_LOG_NO_VERBOSE | FSL_FLAG_LOG_CMD,
             "GLFW: Raw Mouse Motion Not Supported\n");
 
-    /* ---- set callbacks --------------------------------------------------- */
-
-    glfwSetKeyCallback(render->window, callback_key);
-    callback_key(render->window, 0, 0, 0, 0);
-
-    glfwSetScrollCallback(render->window, callback_scroll);
-    callback_scroll(render->window, 0.0f, 0.0f);
-
-    /* ---- region.start: set graphics -------------------------------------- */
+    /* ---- set graphics ---------------------------------------------------- */
 
     if (assets_init() != FSL_ERR_SUCCESS)
         goto cleanup;
@@ -981,7 +973,13 @@ int main(int argc, char **argv)
 
     super_debugger_init(render->size);
 
-    /* ---- region.end: set graphics ---------------------------------------- */
+    /* ---- set callbacks --------------------------------------------------- */
+
+    glfwSetKeyCallback(render->window, callback_key);
+    callback_key(render->window, 0, 0, 0, 0);
+
+    glfwSetScrollCallback(render->window, callback_scroll);
+    callback_scroll(render->window, 0.0f, 0.0f);
 
     player_init(&player, "Lily");
     input_init();
@@ -993,7 +991,7 @@ int main(int argc, char **argv)
 
 section_menu_title:
 
-    enable_cursor;
+    gui_cursor_enable();
 
     while (fsl_engine_is_running(&callback_framebuffer_size))
     {
@@ -1040,8 +1038,7 @@ section_menu_pause:
             core.request.menu_back = FALSE;
 
             core.flag.paused = FALSE;
-            enable_cursor;
-            center_cursor;
+            gui_cursor_enable();
             goto section_gameplay;
         }
     }

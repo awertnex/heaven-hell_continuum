@@ -20,6 +20,18 @@
 #include <stdio.h>
 #include <math.h>
 
+#define cursor_enable_internal glfwSetInputMode(render->window, \
+        GLFW_CURSOR, GLFW_CURSOR_NORMAL)
+
+#define cursor_disable_internal glfwSetInputMode(render->window, \
+        GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+
+#define cursor_center_internal \
+    do { \
+        glfwSetCursorPos(render->window, render->size.x / 2.0f, render->size.y / 2.0f); \
+        fsl_request_mouse_delta_skip(); \
+    } while (0)
+
 #define UI_ITEM_PITCH -25.0f
 #define UI_ITEM_YAW 50.0f
 #define UI_ITEM_SCALE 16.0f
@@ -83,8 +95,8 @@ u32 gui_init(v2i32 render_size)
     while (button_count--)
         buttons[button_count] = 0;
 
-    gui_update(render_size);
     gui_menus_init(render_size);
+    gui_update(render_size);
 
     *GAME_ERR = FSL_ERR_SUCCESS;
     return *GAME_ERR;
@@ -152,6 +164,29 @@ void gui_free(void)
 {
     fsl_mesh_free(&ui_item_data_internal.mesh_unit_cube);
     fsl_shader_program_free(&ui_item_data_internal.shader);
+}
+
+b8 gui_should_disable_cursor(void);
+
+void gui_cursor_enable(void)
+{
+    cursor_enable_internal;
+    if (!state_menu_depth && !core.flag.menu_open && !core.flag.super_debug)
+        cursor_center_internal;
+}
+
+void gui_cursor_disable(void)
+{
+    if (!state_menu_depth && !core.flag.menu_open && !core.flag.super_debug)
+    {
+        cursor_center_internal;
+        cursor_disable_internal;
+    }
+}
+
+void gui_cursor_center(void)
+{
+    cursor_center_internal;
 }
 
 void gui_start_ui_items(v2i32 render_size)

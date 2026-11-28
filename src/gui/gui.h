@@ -5,18 +5,6 @@
 #include "deps/fossil/math/vector.h"
 #include "deps/fossil/ui/ui_element.h"
 
-#define enable_cursor   glfwSetInputMode(render->window, \
-        GLFW_CURSOR, GLFW_CURSOR_NORMAL)
-
-#define disable_cursor  glfwSetInputMode(render->window, \
-        GLFW_CURSOR, GLFW_CURSOR_DISABLED)
-
-#define center_cursor \
-    do { \
-        glfwSetCursorPos(render->window, render->size.x / 2.0f, render->size.y / 2.0f); \
-        fsl_request_mouse_delta_skip(); \
-    } while (0)
-
 #define BTN_COUNT 110
 
 #define COL_TEXT_DEFAULT    0xbcbcbcff
@@ -108,6 +96,10 @@ u32 gui_init(v2i32 render_size);
 
 void gui_update(v2i32 render_size);
 void gui_free(void);
+
+void gui_cursor_enable(void);
+void gui_cursor_disable(void);
+void gui_cursor_center(void);
 
 /**
  *  @brief bind correct resources to start drawing UI items.
